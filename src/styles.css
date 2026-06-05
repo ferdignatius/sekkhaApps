@@ -116,6 +116,36 @@
     --radius-2xl: calc(var(--radius) * 1.8);
     --radius-3xl: calc(var(--radius) * 2.2);
     --radius-4xl: calc(var(--radius) * 2.6);
+
+    /* ─── Sekkha Design Tokens ─── */
+
+    /* Colors */
+    --color-sekkha-primary: #1c1c1e;
+    --color-sekkha-on-primary: #ffffff;
+    --color-sekkha-canvas: #ffffff;
+    --color-sekkha-surface: #f7f8fa;
+    --color-sekkha-ink: #1c1c1e;
+    --color-sekkha-slate: #555a6a;
+    --color-sekkha-hairline: #e0e2e8;
+    --color-sekkha-hairline-strong: #c7cad5;
+    --color-sekkha-on-dark: #ffffff;
+    --color-sekkha-on-dark-muted: #a5a8b5;
+    --color-sekkha-footer-bg: #1c1c1e;
+    --color-sekkha-brand-yellow: #ffd02f;
+    --color-sekkha-coral-light: #ffc6c6;
+    --color-sekkha-teal-light: #c3faf5;
+    --color-sekkha-rose-light: #fde0f0;
+
+    /* Ring offset for dark contexts (used by on-dark button focus ring) */
+    --color-sekkha-ring-on-dark: #ffffff;
+
+    /* Font */
+    --font-roobert: 'Roobert PRO', 'Noto Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+
+    /* Spacing (section-level) */
+    --spacing-hero: 120px;
+    --spacing-section-lg: 96px;
+    --spacing-section: 64px;
 }
 
 @layer base {
@@ -128,4 +158,127 @@
   html {
     @apply font-sans;
     }
+}
+
+/* ─── Sekkha Typography Utility Classes ─── */
+@layer utilities {
+  .text-hero-display {
+    font-family: var(--font-roobert);
+    font-size: 80px;
+    font-weight: 500;
+    line-height: 1.05;
+    letter-spacing: -2px;
+  }
+
+  .text-heading-1 {
+    font-family: var(--font-roobert);
+    font-size: 48px;
+    font-weight: 500;
+    line-height: 1.15;
+    letter-spacing: -1px;
+  }
+
+  .text-heading-2 {
+    font-family: var(--font-roobert);
+    font-size: 36px;
+    font-weight: 500;
+    line-height: 1.20;
+    letter-spacing: -0.5px;
+  }
+
+  .text-heading-3 {
+    font-family: var(--font-roobert);
+    font-size: 28px;
+    font-weight: 500;
+    line-height: 1.25;
+    letter-spacing: 0;
+  }
+
+  .text-heading-4 {
+    font-family: var(--font-roobert);
+    font-size: 22px;
+    font-weight: 500;
+    line-height: 1.30;
+    letter-spacing: 0;
+  }
+
+  .text-heading-5 {
+    font-family: var(--font-roobert);
+    font-size: 18px;
+    font-weight: 500;
+    line-height: 1.40;
+    letter-spacing: 0;
+  }
+
+  .text-subtitle {
+    font-family: var(--font-roobert);
+    font-size: 18px;
+    font-weight: 400;
+    line-height: 1.50;
+    letter-spacing: 0;
+  }
+
+  .text-body-md {
+    font-family: var(--font-roobert);
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1.50;
+    letter-spacing: 0;
+  }
+
+  .text-body-md-medium {
+    font-family: var(--font-roobert);
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 1.50;
+    letter-spacing: 0;
+  }
+
+  .text-body-sm {
+    font-family: var(--font-roobert);
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.50;
+    letter-spacing: 0;
+  }
+
+  .text-body-sm-medium {
+    font-family: var(--font-roobert);
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.50;
+    letter-spacing: 0;
+  }
+
+  .text-stat-display {
+    font-family: var(--font-roobert);
+    font-size: 64px;
+    font-weight: 500;
+    line-height: 1.10;
+    letter-spacing: -1.5px;
+  }
+
+  .text-micro {
+    font-family: var(--font-roobert);
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.40;
+    letter-spacing: 0;
+  }
+
+  .text-button-md {
+    font-family: var(--font-roobert);
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.30;
+    letter-spacing: 0;
+  }
+
+  .text-footer-link {
+    font-family: var(--font-roobert);
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.50;
+    letter-spacing: 0;
+  }
 }

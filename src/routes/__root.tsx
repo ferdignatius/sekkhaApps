@@ -20,6 +20,13 @@ export const Route = createRootRoute({
     ],
     links: [
       {
+        rel: "preload",
+        href: "/fonts/roobert-pro-medium.woff2",
+        as: "font",
+        type: "font/woff2",
+        crossOrigin: "anonymous",
+      },
+      {
         rel: "stylesheet",
         href: appCss,
       },

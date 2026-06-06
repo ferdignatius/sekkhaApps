@@ -1,9 +1,12 @@
 // Feature: auth-flow
-// Dashboard layout route — route guard via beforeLoad.
+// Dashboard layout route — route guard via beforeLoad + app shell with sidebar/dock.
 // Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7
 
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router"
 import type { RouterContext } from "@/feature/auth"
+import { SekkhaAppSidebar } from "@/components/common/SekkhaAppSidebar"
+import { MobileDock } from "@/components/common/MobileDock"
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
@@ -153,5 +156,22 @@ export const Route = createFileRoute("/dashboard/__layout")({
   // Pending component shown by TanStack Router while beforeLoad is awaited (req 5.3)
   pendingComponent: DashboardSkeleton,
 
-  component: () => <Outlet />,
+  component: DashboardLayout,
 })
+
+function DashboardLayout() {
+  return (
+    <SidebarProvider>
+      {/* Desktop sidebar — hidden on mobile */}
+      <SekkhaAppSidebar className="hidden md:flex" />
+
+      {/* Page content area */}
+      <SidebarInset className="min-h-screen bg-sekkha-surface">
+        <Outlet />
+      </SidebarInset>
+
+      {/* Mobile bottom dock */}
+      <MobileDock />
+    </SidebarProvider>
+  )
+}

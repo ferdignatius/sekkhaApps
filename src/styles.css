@@ -131,6 +131,11 @@
     --color-sekkha-on-dark: #ffffff;
     --color-sekkha-on-dark-muted: #a5a8b5;
     --color-sekkha-footer-bg: #1c1c1e;
+    --color-sekkha-brand-blue: #4262ff;
+    --color-sekkha-brand-red: #fbd4d4;
+    --color-sekkha-brand-red-dark: #e3c5c5;
+    --color-sekkha-muted: #a5a8b5;
+    --color-sekkha-hairline-soft: #eef0f3;
     --color-sekkha-brand-yellow: #ffd02f;
     --color-sekkha-coral-light: #ffc6c6;
     --color-sekkha-teal-light: #c3faf5;
@@ -280,5 +285,30 @@
     font-weight: 400;
     line-height: 1.50;
     letter-spacing: 0;
+  }
+
+  .text-caption {
+    font-family: var(--font-roobert);
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 1.40;
+    letter-spacing: 0;
+  }
+
+  .text-caption-bold {
+    font-family: var(--font-roobert);
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.40;
+    letter-spacing: 0;
+  }
+
+  .text-micro-uppercase {
+    font-family: var(--font-roobert);
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.40;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
   }
 }

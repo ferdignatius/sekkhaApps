@@ -1,16 +1,16 @@
 // feature/profile/components/ProfilePage
-// User profile page: profile card + settings section.
+// User profile page: profile card + achievements + settings.
 
 import { useNavigate } from "@tanstack/react-router"
 import { useAuth } from "@/feature/auth"
 import { ProfileCard } from "./ProfileCard"
+import { AchievementsCard, DUMMY_BADGES } from "./AchievementsCard"
 import { SettingsSection } from "./SettingsSection"
 
 export function ProfilePage() {
   const { authState, logout } = useAuth()
   const navigate = useNavigate()
 
-  // Derive display name
   const isAdmin =
     authState.status === "authenticated" && authState.userId === "admin-user-1"
   const displayName = isAdmin ? "Admin Sekkha" : "Pengguna"
@@ -28,6 +28,13 @@ export function ProfilePage() {
 
         {/* Profile card */}
         <ProfileCard name={displayName} school={school} />
+
+        {/* Achievements */}
+        <AchievementsCard
+          badges={DUMMY_BADGES}
+          totalPoints={1240}
+          rank={5}
+        />
 
         {/* Settings */}
         <SettingsSection onLogout={handleLogout} />

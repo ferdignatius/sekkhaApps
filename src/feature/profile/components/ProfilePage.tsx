@@ -22,14 +22,16 @@ export function ProfilePage() {
   }
 
   return (
-    <main className="mx-auto max-w-2xl space-y-4 px-4 py-6 pb-24 md:pb-8">
-      <h1 className="text-heading-5 text-sekkha-ink">Profil</h1>
+    <main className="px-4 py-6 pb-24 md:px-8 md:pb-8 lg:px-12">
+      <div className="mx-auto max-w-3xl space-y-4">
+        <h1 className="text-heading-5 text-sekkha-ink">Profil</h1>
 
-      {/* Profile card */}
-      <ProfileCard name={displayName} school={school} />
+        {/* Profile card */}
+        <ProfileCard name={displayName} school={school} />
 
-      {/* Settings */}
-      <SettingsSection onLogout={handleLogout} />
+        {/* Settings */}
+        <SettingsSection onLogout={handleLogout} />
+      </div>
     </main>
   )
 }

@@ -102,16 +102,22 @@ export function useLoginForm(): UseLoginFormReturn {
 
   // ── handleSubmit ─────────────────────────────────────────────────────────────
   async function handleSubmit(): Promise<void> {
-    const result = validateLoginForm(fields)
+    // Dummy bypass — skip validation for development credentials
+    const isDummyLogin =
+      fields.email === "admin" && fields.password === "admin"
 
-    if (!result.isValid) {
-      // Map array of errors into a field → message record
-      const mapped: FieldErrors = {}
-      for (const err of result.errors) {
-        mapped[err.field as LoginField] = err.message
+    if (!isDummyLogin) {
+      const result = validateLoginForm(fields)
+
+      if (!result.isValid) {
+        // Map array of errors into a field → message record
+        const mapped: FieldErrors = {}
+        for (const err of result.errors) {
+          mapped[err.field as LoginField] = err.message
+        }
+        setErrors(mapped)
+        return
       }
-      setErrors(mapped)
-      return
     }
 
     setIsLoading(true)

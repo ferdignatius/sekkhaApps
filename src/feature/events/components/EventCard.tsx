@@ -2,7 +2,8 @@
 // Single event row in the list — shows type, title, date, location, rsvp badge.
 
 import { CalendarIcon, MapPinIcon, UsersIcon } from "lucide-react"
-import type { EventListItem, RsvpStatus } from "../types"
+import type { EventListItem, RsvpStatus, EventTag } from "../types"
+import { EVENT_TAG_COLORS } from "../types"
 
 interface EventCardProps {
   event: EventListItem
@@ -38,7 +39,8 @@ function RsvpBadge({ status }: { status: RsvpStatus | null | undefined }) {
 
 export function EventCard({ event, onClick }: EventCardProps) {
   const { day, time } = formatDate(event.event_date)
-  const isSpecial = event.event_type === "special"
+  const tag = (event.tag ?? event.event_type) as EventTag
+  const tagColors = EVENT_TAG_COLORS[tag] ?? EVENT_TAG_COLORS.rutin
 
   return (
     <button
@@ -49,9 +51,7 @@ export function EventCard({ event, onClick }: EventCardProps) {
       <div className="flex items-start gap-3">
         {/* Color dot */}
         <div
-          className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${
-            isSpecial ? "bg-sekkha-brand-yellow" : "bg-sekkha-brand-blue"
-          }`}
+          className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${tagColors.dot}`}
           aria-hidden="true"
         />
 
@@ -59,13 +59,9 @@ export function EventCard({ event, onClick }: EventCardProps) {
           {/* Type tag + RSVP badge */}
           <div className="flex flex-wrap items-center gap-2">
             <span
-              className={`rounded-full px-2 py-0.5 text-caption-bold ${
-                isSpecial
-                  ? "bg-sekkha-surface-yellow text-yellow-700"
-                  : "bg-sekkha-teal-light text-sekkha-brand-blue"
-              }`}
+              className={`rounded-full px-2 py-0.5 text-caption-bold ${tagColors.bg} ${tagColors.text}`}
             >
-              {isSpecial ? "Spesial" : "Rutin"}
+              {tag}
             </span>
             <RsvpBadge status={event.my_rsvp} />
           </div>

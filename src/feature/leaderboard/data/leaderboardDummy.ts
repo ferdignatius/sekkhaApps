@@ -1,8 +1,5 @@
-// Dummy data for leaderboard — replace with API calls later.
-// Simulates GET /leaderboard?period=monthly&year=2025&month=7&metric=points etc.
-import type { LeaderboardFilter, LeaderboardResponse } from "../types"
-
-// ─── Static pool of fake users ────────────────────────────────────────────────
+// Dummy data for season-based leaderboard.
+import type { LeaderboardFilter, LeaderboardResponse, LeaderboardMetric, Season } from "../types"
 
 const USERS = [
   { user_id: "u1",  name: "Budi Santoso",   initials: "BS" },
@@ -17,40 +14,28 @@ const USERS = [
   { user_id: "u10", name: "Nita Rahayu",    initials: "NR" },
 ]
 
-// ─── Seed function — deterministic based on filter ───────────────────────────
-
 function seededRandom(seed: number): () => number {
   let s = seed
-  return () => {
-    s = (s * 16807 + 0) % 2147483647
-    return (s - 1) / 2147483646
-  }
+  return () => { s = (s * 16807 + 0) % 2147483647; return (s - 1) / 2147483646 }
 }
 
 function makeLabel(metric: LeaderboardMetric, value: number): string {
-  if (metric === "points")     return `${value} poin`
-  if (metric === "streak")     return `${value} minggu`
+  if (metric === "points") return `${value.toLocaleString("id-ID")} poin`
+  if (metric === "streak") return `${value} minggu`
   return `${value} hadir`
 }
-
-type LeaderboardMetric = "points" | "streak" | "attendance"
 
 const MAX_VALUES: Record<LeaderboardMetric, [number, number]> = {
   points:     [80, 600],
   streak:     [1,  16],
-  attendance: [1,  20],
+  attendance: [1,  24],
 }
 
-export function getLeaderboardData(
-  filter: LeaderboardFilter,
-  myUserId: string,
-): LeaderboardResponse {
-  const seed = filter.year * 10000 + (filter.period === "monthly" ? filter.month : 0) + filter.metric.length
+export function getLeaderboardData(filter: LeaderboardFilter, _myUserId: string): LeaderboardResponse {
+  const seed = filter.season.year * 100 + filter.season.half * 10 + filter.metric.length
   const rng = seededRandom(seed)
-
   const [minVal, maxVal] = MAX_VALUES[filter.metric]
 
-  // Build scores for all users
   const scores = USERS.map(u => ({
     ...u,
     value: Math.round(minVal + rng() * (maxVal - minVal)),
@@ -66,22 +51,18 @@ export function getLeaderboardData(
     label: makeLabel(filter.metric, u.value),
   }))
 
-  // My rank (admin-user-1 = rank based on seed, always included)
   const MY_VALUE = Math.round(minVal + seededRandom(seed + 999)() * (maxVal - minVal))
   const myRankPos = entries.filter(e => e.value > MY_VALUE).length + 1
-  const isInTop = myRankPos <= entries.length
 
   return {
-    period: filter.period,
+    season: filter.season,
     metric: filter.metric,
-    year: filter.year,
-    month: filter.period === "monthly" ? filter.month : undefined,
     entries,
     my_rank: {
       rank: myRankPos,
       value: MY_VALUE,
       label: makeLabel(filter.metric, MY_VALUE),
-      is_in_top: isInTop,
+      is_in_top: myRankPos <= entries.length,
     },
   }
 }

@@ -1,8 +1,13 @@
 // feature/leaderboard/types.ts
-// Types matching GET /leaderboard API contract.
+// Season-based leaderboard — each season = 6 months.
+// Season 1: Jan–Jun, Season 2: Jul–Dec
 
-export type LeaderboardPeriod = "monthly" | "yearly"
 export type LeaderboardMetric = "points" | "streak" | "attendance"
+
+export interface Season {
+  year: number
+  half: 1 | 2  // 1 = Jan–Jun, 2 = Jul–Dec
+}
 
 export interface LeaderboardEntry {
   rank: number
@@ -11,14 +16,12 @@ export interface LeaderboardEntry {
   initials: string
   photo_url?: string | null
   value: number
-  label: string         // e.g. "530 poin", "8 minggu", "24 hadir"
+  label: string
 }
 
 export interface LeaderboardResponse {
-  period: LeaderboardPeriod
+  season: Season
   metric: LeaderboardMetric
-  year: number
-  month?: number        // only present for monthly
   entries: LeaderboardEntry[]
   my_rank: MyRank
 }
@@ -27,12 +30,41 @@ export interface MyRank {
   rank: number
   value: number
   label: string
-  is_in_top: boolean    // true if already visible in entries list
+  is_in_top: boolean
 }
 
 export interface LeaderboardFilter {
-  period: LeaderboardPeriod
+  season: Season
   metric: LeaderboardMetric
-  year: number
-  month: number         // 1–12, ignored for yearly
+}
+
+// ─── Season helpers ───────────────────────────────────────────────────────────
+
+export function getCurrentSeason(): Season {
+  const now = new Date()
+  return {
+    year: now.getFullYear(),
+    half: now.getMonth() < 6 ? 1 : 2,
+  }
+}
+
+export function seasonLabel(s: Season): string {
+  const range = s.half === 1 ? "Jan – Jun" : "Jul – Des"
+  return `Season ${s.half} · ${range} ${s.year}`
+}
+
+export function prevSeason(s: Season): Season {
+  if (s.half === 1) return { year: s.year - 1, half: 2 }
+  return { year: s.year, half: 1 }
+}
+
+export function nextSeason(s: Season): Season | null {
+  const current = getCurrentSeason()
+  const next: Season = s.half === 2
+    ? { year: s.year + 1, half: 1 }
+    : { year: s.year, half: 2 }
+  // Can't go beyond current season
+  if (next.year > current.year) return null
+  if (next.year === current.year && next.half > current.half) return null
+  return next
 }

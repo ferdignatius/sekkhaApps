@@ -1,10 +1,11 @@
 // feature/leaderboard/components/LeaderboardPage
-// Leaderboard page:
-//  - period toggle: Bulanan / Tahunan
-//  - period navigator: prev/next month (or year)
-//  - metric selector: Poin / Streak / Kehadiran
-//  - ranked list: top 3 podium + rows 4–N
-//  - "posisiku" sticky card when user is outside top N
+// Season-based leaderboard (6 months per season).
+// Layout:
+//  1. Title
+//  2. Metric filter pills (Poin / Streak / Kehadiran)
+//  3. Podium top 3 (crown on #1, #2 left, #3 right)
+//  4. Season navigator ← Season 2 · Jul–Des 2025 →
+//  5. Ranked list — user's row highlighted with accent border + bg
 
 import { useState, useMemo } from "react"
 import {
@@ -14,61 +15,60 @@ import {
   StarIcon,
   FlameIcon,
   CheckSquareIcon,
+  CrownIcon,
 } from "lucide-react"
 import { useAuth } from "@/feature/auth"
 import { getLeaderboardData } from "../data/leaderboardDummy"
-import type { LeaderboardMetric, LeaderboardPeriod, LeaderboardFilter } from "../types"
+import {
+  getCurrentSeason,
+  seasonLabel,
+  prevSeason,
+  nextSeason,
+} from "../types"
+import type { LeaderboardMetric, LeaderboardFilter, LeaderboardEntry, Season } from "../types"
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
-const METRIC_CONFIG: Record<LeaderboardMetric, { label: string; icon: React.ReactNode; unit: string }> = {
-  points:     { label: "Poin",      icon: <StarIcon className="size-4" />,        unit: "poin"     },
-  streak:     { label: "Streak",    icon: <FlameIcon className="size-4" />,       unit: "minggu"   },
-  attendance: { label: "Kehadiran", icon: <CheckSquareIcon className="size-4" />, unit: "hadir"    },
-}
-
-const MONTHS_ID = [
-  "Jan", "Feb", "Mar", "Apr", "Mei", "Jun",
-  "Jul", "Agu", "Sep", "Okt", "Nov", "Des",
+const METRIC_OPTIONS: { value: LeaderboardMetric; label: string; icon: React.ReactNode }[] = [
+  { value: "points",     label: "Poin",      icon: <StarIcon className="size-3.5" />        },
+  { value: "streak",     label: "Streak",    icon: <FlameIcon className="size-3.5" />       },
+  { value: "attendance", label: "Kehadiran", icon: <CheckSquareIcon className="size-3.5" /> },
 ]
-
-const RANK_MEDAL: Record<number, { bg: string; text: string; label: string }> = {
-  1: { bg: "bg-yellow-50 border-yellow-300",   text: "text-yellow-600", label: "🥇" },
-  2: { bg: "bg-slate-50  border-slate-300",    text: "text-slate-500",  label: "🥈" },
-  3: { bg: "bg-orange-50 border-orange-300",   text: "text-orange-600", label: "🥉" },
-}
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function periodLabel(period: LeaderboardPeriod, year: number, month: number): string {
-  if (period === "yearly") return `${year}`
-  return `${MONTHS_ID[month - 1]} ${year}`
-}
-
-function prevPeriod(period: LeaderboardPeriod, year: number, month: number) {
-  if (period === "yearly") return { year: year - 1, month }
-  if (month === 1) return { year: year - 1, month: 12 }
-  return { year, month: month - 1 }
-}
-
-function nextPeriod(period: LeaderboardPeriod, year: number, month: number) {
-  const now = new Date()
-  if (period === "yearly") {
-    if (year >= now.getFullYear()) return null
-    return { year: year + 1, month }
-  }
-  if (year === now.getFullYear() && month === now.getMonth() + 1) return null
-  if (month === 12) return { year: year + 1, month: 1 }
-  return { year, month: month + 1 }
-}
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-function AvatarBubble({ initials, size = "md" }: { initials: string; size?: "sm" | "md" | "lg" }) {
-  const sz = size === "lg" ? "h-12 w-12 text-body-sm-medium" : size === "md" ? "h-9 w-9 text-caption-bold" : "h-7 w-7 text-micro"
+function Avatar({ initials, size = "md" }: { initials: string; size?: "sm" | "md" | "lg" }) {
+  const sz = size === "lg" ? "h-16 w-16 text-heading-4" : size === "md" ? "h-11 w-11 text-body-sm-medium" : "h-8 w-8 text-caption-bold"
   return (
-    <div className={`${sz} flex shrink-0 items-center justify-center rounded-full bg-sekkha-brand-yellow font-semibold text-sekkha-ink`}>
+    <div className={`${sz} flex shrink-0 items-center justify-center rounded-full bg-sekkha-brand-yellow font-semibold text-sekkha-ink ring-2 ring-sekkha-hairline-soft`}>
       {initials}
+    </div>
+  )
+}
+
+function PodiumEntry({ entry, position }: { entry: LeaderboardEntry; position: 1 | 2 | 3 }) {
+  const isFirst = position === 1
+  const heightClass = position === 1 ? "h-20" : position === 2 ? "h-14" : "h-10"
+  const badgeColors = position === 1 ? "bg-yellow-400 text-white" : position === 2 ? "bg-slate-400 text-white" : "bg-orange-400 text-white"
+
+  return (
+    <div className="flex flex-1 flex-col items-center gap-1">
+      {isFirst && <CrownIcon className="size-6 text-yellow-500" aria-hidden="true" />}
+      <div className="relative">
+        <Avatar initials={entry.initials} size={isFirst ? "lg" : "md"} />
+        <span className={`absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full text-micro font-bold ${badgeColors}`}>
+          {position}
+        </span>
+      </div>
+      <p className={`mt-1 w-full truncate text-center ${isFirst ? "text-body-sm-medium" : "text-caption"} text-sekkha-ink`}>
+        {entry.name.split(" ")[0]}
+      </p>
+      <p className="text-caption text-sekkha-slate">{entry.value.toLocaleString("id-ID")}</p>
+      <div className={`${heightClass} w-full rounded-t-xl ${
+        position === 1 ? "border border-yellow-300 bg-yellow-100" :
+        position === 2 ? "border border-slate-200 bg-slate-100" :
+        "border border-orange-200 bg-orange-50"
+      }`} />
     </div>
   )
 }
@@ -79,159 +79,71 @@ export function LeaderboardPage() {
   const { authState } = useAuth()
   const myId = authState.status === "authenticated" ? (authState.userId ?? "me") : "me"
 
-  const now = new Date()
-  const [period, setPeriod]   = useState<LeaderboardPeriod>("monthly")
-  const [metric, setMetric]   = useState<LeaderboardMetric>("points")
-  const [year, setYear]       = useState(now.getFullYear())
-  const [month, setMonth]     = useState(now.getMonth() + 1)
+  const [season, setSeason] = useState<Season>(getCurrentSeason())
+  const [metric, setMetric] = useState<LeaderboardMetric>("points")
 
-  const filter: LeaderboardFilter = useMemo(() => ({ period, metric, year, month }), [period, metric, year, month])
-
+  const filter: LeaderboardFilter = useMemo(() => ({ season, metric }), [season, metric])
   const data = useMemo(() => getLeaderboardData(filter, myId), [filter, myId])
 
-  const next = nextPeriod(period, year, month)
+  const next = nextSeason(season)
 
-  function handlePrev() {
-    const p = prevPeriod(period, year, month)
-    setYear(p.year); setMonth(p.month)
-  }
-  function handleNext() {
-    if (!next) return
-    setYear(next.year); setMonth(next.month)
-  }
+  function handlePrev() { setSeason(prevSeason(season)) }
+  function handleNext() { if (next) setSeason(next) }
 
   const podium = data.entries.slice(0, 3)
-  const rest   = data.entries.slice(3)
+  const rest = data.entries.slice(3)
   const myEntry = data.my_rank
 
   return (
     <main className="px-4 py-6 pb-24 md:px-8 md:pb-8 lg:px-12">
-      <div className="mx-auto max-w-3xl space-y-5">
+      <div className="mx-auto max-w-3xl space-y-4">
 
-        {/* ── Header ────────────────────────────────────────────────────── */}
+        {/* ── Title ─────────────────────────────────────────────────────── */}
         <div className="flex items-center gap-2">
           <TrophyIcon className="size-5 text-sekkha-brand-yellow" aria-hidden="true" />
           <h1 className="text-heading-5 text-sekkha-ink">Leaderboard</h1>
         </div>
 
-        {/* ── Period toggle ─────────────────────────────────────────────── */}
-        <div className="flex gap-1 rounded-full bg-sekkha-surface p-1">
-          {(["monthly", "yearly"] as LeaderboardPeriod[]).map(p => (
+        {/* ── Metric filter pills ───────────────────────────────────────── */}
+        <div className="flex flex-wrap gap-2">
+          {METRIC_OPTIONS.map(m => (
             <button
-              key={p}
+              key={m.value}
               type="button"
-              onClick={() => setPeriod(p)}
-              className={`flex-1 rounded-full py-2 text-body-sm-medium transition-colors ${
-                period === p
-                  ? "bg-sekkha-canvas text-sekkha-ink shadow-sm"
-                  : "text-sekkha-muted"
+              onClick={() => setMetric(m.value)}
+              className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 text-caption-bold transition-colors ${
+                metric === m.value
+                  ? "bg-sekkha-primary text-white"
+                  : "border border-sekkha-hairline-strong text-sekkha-slate"
               }`}
             >
-              {p === "monthly" ? "Bulanan" : "Tahunan"}
+              {m.icon}
+              {m.label}
             </button>
           ))}
         </div>
 
-        {/* ── Period navigator ──────────────────────────────────────────── */}
-        <div className="flex items-center justify-between rounded-xl border border-sekkha-hairline-soft bg-sekkha-canvas px-4 py-3">
-          <button
-            type="button"
-            onClick={handlePrev}
-            aria-label="Periode sebelumnya"
-            className="rounded-full p-1.5 text-sekkha-slate hover:bg-sekkha-surface"
-          >
+        {/* ── Podium top 3 ──────────────────────────────────────────────── */}
+        {podium.length >= 3 && (
+          <div className="flex items-end justify-center gap-2 pt-4 pb-2">
+            <PodiumEntry entry={podium[1]} position={2} />
+            <PodiumEntry entry={podium[0]} position={1} />
+            <PodiumEntry entry={podium[2]} position={3} />
+          </div>
+        )}
+
+        {/* ── Season navigator ──────────────────────────────────────────── */}
+        <div className="flex items-center justify-between rounded-xl border border-sekkha-hairline-soft bg-sekkha-canvas px-4 py-2.5">
+          <button type="button" onClick={handlePrev} aria-label="Season sebelumnya" className="rounded-full p-1 text-sekkha-slate hover:bg-sekkha-surface">
             <ChevronLeftIcon className="size-5" />
           </button>
-          <span className="text-body-sm-medium text-sekkha-ink">
-            {periodLabel(period, year, month)}
-          </span>
-          <button
-            type="button"
-            onClick={handleNext}
-            disabled={!next}
-            aria-label="Periode berikutnya"
-            className="rounded-full p-1.5 text-sekkha-slate hover:bg-sekkha-surface disabled:opacity-30"
-          >
+          <span className="text-body-sm-medium text-sekkha-ink">{seasonLabel(season)}</span>
+          <button type="button" onClick={handleNext} disabled={!next} aria-label="Season berikutnya" className="rounded-full p-1 text-sekkha-slate hover:bg-sekkha-surface disabled:opacity-30">
             <ChevronRightIcon className="size-5" />
           </button>
         </div>
 
-        {/* ── Metric selector ───────────────────────────────────────────── */}
-        <div className="flex gap-2">
-          {(Object.entries(METRIC_CONFIG) as [LeaderboardMetric, typeof METRIC_CONFIG[LeaderboardMetric]][]).map(
-            ([m, cfg]) => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => setMetric(m)}
-                className={`flex flex-1 items-center justify-center gap-1.5 rounded-full py-2 text-caption-bold transition-colors ${
-                  metric === m
-                    ? "bg-sekkha-primary text-white"
-                    : "border border-sekkha-hairline-strong text-sekkha-slate"
-                }`}
-              >
-                {cfg.icon}
-                {cfg.label}
-              </button>
-            ),
-          )}
-        </div>
-
-        {/* ── My rank card (always visible) ─────────────────────────────── */}
-        <div className="flex items-center gap-3 rounded-xl border-2 border-sekkha-brand-blue bg-sekkha-surface px-4 py-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sekkha-brand-blue text-body-sm-medium text-white font-semibold">
-            #{myEntry.rank}
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-body-sm-medium text-sekkha-ink">Posisiku</p>
-            <p className="text-caption text-sekkha-slate">{myEntry.label}</p>
-          </div>
-          {myEntry.is_in_top && (
-            <span className="text-caption text-sekkha-brand-blue">Masuk Top {data.entries.length}</span>
-          )}
-        </div>
-
-        {/* ── Podium top 3 ──────────────────────────────────────────────── */}
-        {podium.length > 0 && (
-          <div className="flex items-end justify-center gap-3">
-            {/* #2 */}
-            {podium[1] && (
-              <div className="flex flex-1 flex-col items-center gap-2">
-                <AvatarBubble initials={podium[1].initials} size="md" />
-                <p className="w-full truncate text-center text-caption text-sekkha-ink">{podium[1].name.split(" ")[0]}</p>
-                <p className="text-caption-bold text-sekkha-slate">{podium[1].label}</p>
-                <div className="flex h-14 w-full items-center justify-center rounded-t-xl border border-slate-200 bg-slate-50 text-xl">
-                  🥈
-                </div>
-              </div>
-            )}
-            {/* #1 */}
-            {podium[0] && (
-              <div className="flex flex-1 flex-col items-center gap-2">
-                <AvatarBubble initials={podium[0].initials} size="lg" />
-                <TrophyIcon className="size-5 text-yellow-500" aria-hidden="true" />
-                <p className="w-full truncate text-center text-caption-bold text-sekkha-ink">{podium[0].name.split(" ")[0]}</p>
-                <p className="text-caption-bold text-yellow-600">{podium[0].label}</p>
-                <div className="flex h-20 w-full items-center justify-center rounded-t-xl border border-yellow-300 bg-yellow-50 text-2xl">
-                  🥇
-                </div>
-              </div>
-            )}
-            {/* #3 */}
-            {podium[2] && (
-              <div className="flex flex-1 flex-col items-center gap-2">
-                <AvatarBubble initials={podium[2].initials} size="md" />
-                <p className="w-full truncate text-center text-caption text-sekkha-ink">{podium[2].name.split(" ")[0]}</p>
-                <p className="text-caption-bold text-sekkha-slate">{podium[2].label}</p>
-                <div className="flex h-10 w-full items-center justify-center rounded-t-xl border border-orange-200 bg-orange-50 text-lg">
-                  🥉
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ── Rows 4–N ──────────────────────────────────────────────────── */}
+        {/* ── Ranked list ───────────────────────────────────────────────── */}
         {rest.length > 0 && (
           <div className="overflow-hidden rounded-xl border border-sekkha-hairline-soft bg-sekkha-canvas">
             <ul role="list">
@@ -240,26 +152,18 @@ export function LeaderboardPage() {
                 return (
                   <li
                     key={entry.user_id}
-                    className={`flex items-center gap-3 px-4 py-3 ${
-                      idx < rest.length - 1 ? "border-b border-sekkha-hairline-soft" : ""
-                    } ${isMe ? "bg-sekkha-teal-light" : ""}`}
+                    className={[
+                      "flex items-center gap-3 px-4 py-3",
+                      idx < rest.length - 1 ? "border-b border-sekkha-hairline-soft" : "",
+                      isMe ? "border-l-4 border-l-sekkha-brand-blue bg-sekkha-teal-light" : "",
+                    ].join(" ")}
                   >
-                    {/* Rank number */}
-                    <span className="w-6 shrink-0 text-center text-caption-bold text-sekkha-muted">
-                      {entry.rank}
-                    </span>
-
-                    <AvatarBubble initials={entry.initials} size="sm" />
-
-                    <div className="min-w-0 flex-1">
-                      <p className={`truncate text-body-sm ${isMe ? "font-medium text-sekkha-ink" : "text-sekkha-ink"}`}>
-                        {entry.name}{isMe ? " (kamu)" : ""}
-                      </p>
-                    </div>
-
-                    <span className="shrink-0 text-body-sm-medium text-sekkha-slate">
-                      {entry.label}
-                    </span>
+                    <span className={`w-6 shrink-0 text-center text-caption-bold ${isMe ? "text-sekkha-brand-blue" : "text-sekkha-muted"}`}>{entry.rank}</span>
+                    <Avatar initials={entry.initials} size="sm" />
+                    <p className={`min-w-0 flex-1 truncate text-body-sm ${isMe ? "font-semibold text-sekkha-brand-blue" : "text-sekkha-ink"}`}>
+                      {entry.name}{isMe ? " (kamu)" : ""}
+                    </p>
+                    <span className={`shrink-0 text-body-sm-medium ${isMe ? "text-sekkha-brand-blue" : "text-sekkha-slate"}`}>{entry.value.toLocaleString("id-ID")}</span>
                   </li>
                 )
               })}
@@ -267,22 +171,17 @@ export function LeaderboardPage() {
           </div>
         )}
 
-        {/* ── My rank row (if not in top list at all) ───────────────────── */}
+        {/* ── My rank if not in top ─────────────────────────────────────── */}
         {!myEntry.is_in_top && (
-          <div className="overflow-hidden rounded-xl border-2 border-dashed border-sekkha-brand-blue bg-sekkha-canvas">
+          <div className="overflow-hidden rounded-xl border-l-4 border-sekkha-brand-blue bg-sekkha-teal-light">
             <div className="flex items-center gap-3 px-4 py-3">
-              <span className="w-6 shrink-0 text-center text-caption-bold text-sekkha-brand-blue">
-                {myEntry.rank}
-              </span>
-              <AvatarBubble initials="AK" size="sm" />
-              <div className="min-w-0 flex-1">
-                <p className="text-body-sm-medium text-sekkha-ink">Kamu</p>
-              </div>
-              <span className="text-body-sm-medium text-sekkha-slate">{myEntry.label}</span>
+              <span className="w-6 shrink-0 text-center text-caption-bold text-sekkha-brand-blue">{myEntry.rank}</span>
+              <Avatar initials="AK" size="sm" />
+              <p className="min-w-0 flex-1 text-body-sm font-semibold text-sekkha-brand-blue">Kamu</p>
+              <span className="text-body-sm-medium text-sekkha-brand-blue">{myEntry.value.toLocaleString("id-ID")}</span>
             </div>
           </div>
         )}
-
       </div>
     </main>
   )

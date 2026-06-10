@@ -131,7 +131,7 @@ export function BadgePage() {
 
   return (
     <main className="px-4 py-6 pb-24 md:px-8 md:pb-8 lg:px-12">
-      <div className="mx-auto max-w-3xl space-y-5">
+      <div className="mx-auto max-w-7xl space-y-5">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">

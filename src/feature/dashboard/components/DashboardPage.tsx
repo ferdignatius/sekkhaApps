@@ -71,7 +71,7 @@ export function DashboardPage() {
 
   return (
     <main className="px-4 py-6 pb-24 md:px-8 md:pb-8 lg:px-12">
-      <div className="mx-auto max-w-3xl space-y-4">
+      <div className="mx-auto max-w-7xl space-y-4">
         <h1 className="text-heading-5 text-sekkha-ink">Beranda</h1>
 
         {/* Profile summary with tiered flame streak */}

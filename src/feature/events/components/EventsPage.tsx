@@ -247,7 +247,7 @@ export function EventsPage() {
   if (view === "form") {
     return (
       <main className="px-4 py-6 pb-24 md:px-8 md:pb-8 lg:px-12">
-        <div className="mx-auto max-w-3xl">
+        <div className="mx-auto max-w-7xl">
           <h1 className="mb-6 text-heading-5 text-sekkha-ink">
             {editTarget ? "Edit Event" : "Buat Event Baru"}
           </h1>
@@ -267,7 +267,7 @@ export function EventsPage() {
   if (view === "detail" && selected) {
     return (
       <main className="px-4 py-6 pb-24 md:px-8 md:pb-8 lg:px-12">
-        <div className="mx-auto max-w-3xl">
+        <div className="mx-auto max-w-7xl">
           <div className="rounded-xl border border-sekkha-hairline-soft bg-sekkha-canvas p-5">
             <EventDetailSheet
               event={selected}
@@ -288,7 +288,7 @@ export function EventsPage() {
   // Calendar + list view
   return (
     <main className="px-4 py-6 pb-24 md:px-8 md:pb-8 lg:px-12">
-      <div className="mx-auto max-w-3xl space-y-4">
+      <div className="mx-auto max-w-7xl space-y-4">
         {/* Page header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">

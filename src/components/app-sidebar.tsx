@@ -1,5 +1,19 @@
 import { Link, useRouterState } from "@tanstack/react-router"
-import { LayoutDashboardIcon, UserIcon, LogOutIcon, CalendarDaysIcon } from "lucide-react"
+import {
+  LayoutDashboardIcon,
+  UserIcon,
+  LogOutIcon,
+  CalendarDaysIcon,
+  AwardIcon,
+  LayersIcon,
+  TagIcon,
+  ZapIcon,
+  ActivityIcon,
+  BellIcon,
+  BuildingIcon,
+  UsersIcon,
+  ChevronRightIcon,
+} from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -8,8 +22,18 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
+  SidebarMenuSub,
+  SidebarMenuSubItem,
+  SidebarMenuSubButton,
+  SidebarGroup,
+  SidebarGroupLabel,
   SidebarRail,
 } from "@/components/ui/sidebar"
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
 import { useAuth } from "@/feature/auth"
 
 // ─── Nav items ─────────────────────────────────────────────────────────────────
@@ -20,12 +44,52 @@ const NAV_ITEMS = [
   { label: "Profil", to: "/dashboard/profile", icon: UserIcon },
 ] as const
 
+// ─── Configure sub-menu structure (pengurus/admin only) ────────────────────────
+
+const CONFIGURE_SECTIONS = [
+  {
+    label: "Master Data",
+    icon: LayersIcon,
+    items: [
+      { label: "Badge", to: "/configure/master/badge", icon: AwardIcon },
+      { label: "Level", to: "/configure/master/level", icon: ZapIcon },
+      { label: "Event Type", to: "/configure/master/event-type", icon: TagIcon },
+    ],
+  },
+  {
+    label: "Gamifikasi Rules",
+    icon: ActivityIcon,
+    items: [
+      { label: "Poin per Aksi", to: "/configure/gamifikasi/poin", icon: ZapIcon },
+      { label: "Streak Logic", to: "/configure/gamifikasi/streak", icon: ActivityIcon },
+    ],
+  },
+  {
+    label: "Early Warning",
+    icon: BellIcon,
+    items: [
+      { label: "Threshold", to: "/configure/early-warning/threshold", icon: BellIcon },
+    ],
+  },
+  {
+    label: "Organisasi",
+    icon: BuildingIcon,
+    items: [
+      { label: "Profil Vihara", to: "/configure/organisasi/profil", icon: BuildingIcon },
+      { label: "Pengurus", to: "/configure/organisasi/pengurus", icon: UsersIcon },
+    ],
+  },
+] as const
+
 // ─── Component ─────────────────────────────────────────────────────────────────
 
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
-  const { logout } = useAuth()
+  const { logout, authState } = useAuth()
   const { location } = useRouterState()
   const pathname = location.pathname
+
+  const role = authState.status === "authenticated" ? authState.role : null
+  const isPengurus = role === "pengurus" || role === "admin"
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -43,12 +107,15 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
 
       {/* Navigation */}
       <SidebarContent className="px-2 py-3">
+        {/* Main nav */}
         <SidebarMenu>
           {NAV_ITEMS.map(({ label, to, icon: Icon }) => {
             const isActive =
               to === "/dashboard"
                 ? pathname === "/dashboard" || pathname === "/dashboard/"
-                : pathname.startsWith(to)            return (
+                : pathname.startsWith(to)
+
+            return (
               <SidebarMenuItem key={to}>
                 <SidebarMenuButton asChild isActive={isActive} tooltip={label}>
                   <Link to={to}>
@@ -60,6 +127,62 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
             )
           })}
         </SidebarMenu>
+
+        {/* Configure — pengurus/admin only */}
+        {isPengurus && (
+          <SidebarGroup className="mt-4">
+            <SidebarGroupLabel>Configure</SidebarGroupLabel>
+            <SidebarMenu>
+              {CONFIGURE_SECTIONS.map((section) => {
+                const SectionIcon = section.icon
+                const isSectionActive = section.items.some((item) =>
+                  pathname.startsWith(item.to),
+                )
+
+                return (
+                  <Collapsible
+                    key={section.label}
+                    asChild
+                    defaultOpen={isSectionActive}
+                    className="group/collapsible"
+                  >
+                    <SidebarMenuItem>
+                      <CollapsibleTrigger asChild>
+                        <SidebarMenuButton tooltip={section.label}>
+                          <SectionIcon className="size-4 shrink-0" />
+                          <span>{section.label}</span>
+                          <ChevronRightIcon className="ml-auto size-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                        </SidebarMenuButton>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <SidebarMenuSub>
+                          {section.items.map((item) => {
+                            const SubIcon = item.icon
+                            const isSubActive = pathname.startsWith(item.to)
+
+                            return (
+                              <SidebarMenuSubItem key={item.to}>
+                                <SidebarMenuSubButton
+                                  asChild
+                                  isActive={isSubActive}
+                                >
+                                  <a href={item.to}>
+                                    <SubIcon className="size-3.5 shrink-0" />
+                                    <span>{item.label}</span>
+                                  </a>
+                                </SidebarMenuSubButton>
+                              </SidebarMenuSubItem>
+                            )
+                          })}
+                        </SidebarMenuSub>
+                      </CollapsibleContent>
+                    </SidebarMenuItem>
+                  </Collapsible>
+                )
+              })}
+            </SidebarMenu>
+          </SidebarGroup>
+        )}
       </SidebarContent>
 
       {/* Logout */}

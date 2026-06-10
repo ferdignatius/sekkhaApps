@@ -12,9 +12,16 @@ import { EventCard } from "./EventCard"
 import { EventDetailSheet } from "./EventDetailSheet"
 import { EventForm } from "./EventForm"
 import { EVENT_TAG_COLORS } from "../types"
-import type { EventListItem, RsvpStatus, CreateEventPayload, EventTag } from "../types"
+import type { EventListItem, RsvpStatus, CreateEventPayload, EventTag, AttendanceRecord } from "../types"
 
 // ─── Dummy data ───────────────────────────────────────────────────────────────
+
+function generateQrCode(eventId: string) {
+  return {
+    code: `EVT-${eventId.toUpperCase().slice(-6)}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`,
+    expires_at: null,
+  }
+}
 
 const INITIAL_EVENTS: EventListItem[] = [
   {
@@ -28,6 +35,7 @@ const INITIAL_EVENTS: EventListItem[] = [
     status: "published",
     rsvp_count: 23,
     my_rsvp: null,
+    qr_code: { code: "EVT-RUTIN-7A2B", expires_at: null },
   },
   {
     id: "evt-2",
@@ -40,6 +48,7 @@ const INITIAL_EVENTS: EventListItem[] = [
     status: "published",
     rsvp_count: 14,
     my_rsvp: "hadir",
+    qr_code: { code: "EVT-RET25-C3D4", expires_at: null },
   },
   {
     id: "evt-3",
@@ -52,6 +61,7 @@ const INITIAL_EVENTS: EventListItem[] = [
     status: "published",
     rsvp_count: 9,
     my_rsvp: null,
+    qr_code: { code: "EVT-MED-E5F6", expires_at: null },
   },
   {
     id: "evt-4",
@@ -64,6 +74,7 @@ const INITIAL_EVENTS: EventListItem[] = [
     status: "published",
     rsvp_count: 18,
     my_rsvp: null,
+    qr_code: { code: "EVT-KBK-G7H8", expires_at: null },
   },
   {
     id: "evt-5",
@@ -76,6 +87,7 @@ const INITIAL_EVENTS: EventListItem[] = [
     status: "published",
     rsvp_count: 31,
     my_rsvp: null,
+    qr_code: { code: "EVT-SOS-I9J0", expires_at: null },
   },
   {
     id: "evt-6",
@@ -88,6 +100,7 @@ const INITIAL_EVENTS: EventListItem[] = [
     status: "published",
     rsvp_count: 20,
     my_rsvp: null,
+    qr_code: { code: "EVT-KBK-K1L2", expires_at: null },
   },
   {
     id: "evt-7",
@@ -100,6 +113,7 @@ const INITIAL_EVENTS: EventListItem[] = [
     status: "published",
     rsvp_count: 12,
     my_rsvp: null,
+    qr_code: { code: "EVT-RET2-M3N4", expires_at: null },
   },
 ]
 
@@ -140,8 +154,34 @@ export function EventsPage() {
   const [view, setView] = useState<View>("calendar")
   const [selected, setSelected] = useState<EventListItem | null>(null)
   const [editTarget, setEditTarget] = useState<EventListItem | null>(null)
-  const [activeMonth, setActiveMonth] = useState<Date>(new Date(2025, 6, 1)) // July 2025
+  const [activeMonth, setActiveMonth] = useState<Date>(new Date(2025, 6, 1))
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
+
+  // Attendance records keyed by event id
+  const [attendances, setAttendances] = useState<Record<string, AttendanceRecord[]>>({})
+
+  function handleRecordAttendance(eventId: string, record: AttendanceRecord) {
+    setAttendances(prev => ({
+      ...prev,
+      [eventId]: [...(prev[eventId] ?? []), record],
+    }))
+  }
+
+  function handleRegenerateQr(eventId: string) {
+    setEvents(prev =>
+      prev.map(ev =>
+        ev.id === eventId
+          ? { ...ev, qr_code: generateQrCode(eventId) }
+          : ev,
+      ),
+    )
+    // Keep selected in sync
+    setSelected(prev =>
+      prev?.id === eventId
+        ? { ...prev, qr_code: generateQrCode(eventId) }
+        : prev,
+    )
+  }
 
   // ── Build dot map for the calendar ──────────────────────────────────────────
   const dotMap = useMemo<Record<string, string[]>>(() => {
@@ -178,22 +218,23 @@ export function EventsPage() {
     )
   }
 
-  // ── Create / Edit ─────────────────────────────────────────────────────────────
   function handleFormSubmit(payload: CreateEventPayload) {
     if (editTarget) {
       setEvents(prev =>
         prev.map(ev => ev.id === editTarget.id ? { ...ev, ...payload } : ev),
       )
     } else {
+      const newId = `evt-${Date.now()}`
       setEvents(prev => [
         ...prev,
         {
-          id: `evt-${Date.now()}`,
+          id: newId,
           ...payload,
           tag: payload.event_type as EventTag,
           status: "published",
           rsvp_count: 0,
           my_rsvp: null,
+          qr_code: generateQrCode(newId),  // ← auto-generate QR on creation
         },
       ])
     }
@@ -234,6 +275,9 @@ export function EventsPage() {
               onClose={() => { setSelected(null); setView("calendar") }}
               onRsvp={handleRsvp}
               onEdit={isPengurus ? ev => { setEditTarget(ev); setView("form") } : undefined}
+              attendances={attendances[selected.id] ?? []}
+              onRecordAttendance={handleRecordAttendance}
+              onRegenerateQr={handleRegenerateQr}
             />
           </div>
         </div>

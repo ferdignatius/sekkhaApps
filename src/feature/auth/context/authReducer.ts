@@ -5,23 +5,28 @@
 
 export type AuthStatus = "loading" | "authenticated" | "unauthenticated"
 
+// Role mirrors the API contract: umat | pengurus | admin
+export type UserRole = "umat" | "pengurus" | "admin"
+
 export interface AuthState {
   status: AuthStatus
-  accessToken: string | null // null when status is not "authenticated"
+  accessToken: string | null
   userId: string | null
+  role: UserRole | null
 }
 
 export const initialAuthState: AuthState = {
   status: "loading",
   accessToken: null,
   userId: null,
+  role: null,
 }
 
 // ─── Actions ───────────────────────────────────────────────────────────────────
 
 export type AuthAction =
   | { type: "AUTH_LOADING" }
-  | { type: "AUTH_SUCCESS"; payload: { accessToken: string; userId: string } }
+  | { type: "AUTH_SUCCESS"; payload: { accessToken: string; userId: string; role: UserRole } }
   | { type: "AUTH_LOGOUT" }
   | { type: "AUTH_VERIFY_FAILED" }
 
@@ -40,6 +45,7 @@ export function authReducer(state: AuthState, action: AuthAction): AuthState {
         status: "authenticated",
         accessToken: action.payload.accessToken,
         userId: action.payload.userId,
+        role: action.payload.role,
       }
 
     case "AUTH_LOGOUT":
@@ -47,6 +53,7 @@ export function authReducer(state: AuthState, action: AuthAction): AuthState {
         status: "unauthenticated",
         accessToken: null,
         userId: null,
+        role: null,
       }
 
     case "AUTH_VERIFY_FAILED":
@@ -54,6 +61,7 @@ export function authReducer(state: AuthState, action: AuthAction): AuthState {
         status: "unauthenticated",
         accessToken: null,
         userId: null,
+        role: null,
       }
 
     default: {

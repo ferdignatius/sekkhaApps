@@ -8,5 +8,5 @@ export { SignUpPage } from "./components/SignUpPage"
 export { LoginPage } from "./components/LoginPage"
 
 // Type exports used by router context (task 11.2)
-export type { AuthState, AuthStatus } from "./context/authReducer"
+export type { AuthState, AuthStatus, UserRole } from "./context/authReducer"
 export type { RouterContext } from "./context/AuthContext"

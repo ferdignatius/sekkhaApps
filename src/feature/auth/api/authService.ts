@@ -12,9 +12,12 @@ export const STORAGE_KEY = "sekkha_access_token" as const
 
 // ─── Backend Response Types ────────────────────────────────────────────────────
 
+import type { UserRole } from "../context/authReducer"
+
 interface AuthSuccessResponse {
   accessToken: string
   userId: string
+  role?: UserRole
 }
 
 // ─── fetchWithTimeout ──────────────────────────────────────────────────────────
@@ -81,7 +84,7 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
       localStorage.setItem(STORAGE_KEY, dummyToken)
       dispatch({
         type: "AUTH_SUCCESS",
-        payload: { accessToken: dummyToken, userId: "admin-user-1" },
+        payload: { accessToken: dummyToken, userId: "admin-user-1", role: "pengurus" },
       })
       return
     }
@@ -112,7 +115,7 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
       localStorage.setItem(STORAGE_KEY, data.accessToken)
       dispatch({
         type: "AUTH_SUCCESS",
-        payload: { accessToken: data.accessToken, userId: data.userId },
+        payload: { accessToken: data.accessToken, userId: data.userId, role: data.role ?? "umat" },
       })
       return
     }
@@ -166,7 +169,7 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
       localStorage.setItem(STORAGE_KEY, data.accessToken)
       dispatch({
         type: "AUTH_SUCCESS",
-        payload: { accessToken: data.accessToken, userId: data.userId },
+        payload: { accessToken: data.accessToken, userId: data.userId, role: data.role ?? "umat" },
       })
       return
     }

@@ -51,35 +51,35 @@ const CONFIGURE_SECTIONS = [
     label: "Master Data",
     icon: LayersIcon,
     items: [
-      { label: "Badge", to: "/configure/master/badge", icon: AwardIcon },
-      { label: "Level", to: "/configure/master/level", icon: ZapIcon },
-      { label: "Event Type", to: "/configure/master/event-type", icon: TagIcon },
+      { label: "Badge", to: "/configure/master/badge", icon: AwardIcon, hasRoute: true },
+      { label: "Level", to: "/configure/master/level", icon: ZapIcon, hasRoute: true },
+      { label: "Event Type", to: "/configure/master/event-type", icon: TagIcon, hasRoute: true },
     ],
   },
   {
     label: "Gamifikasi Rules",
     icon: ActivityIcon,
     items: [
-      { label: "Poin per Aksi", to: "/configure/gamifikasi/poin", icon: ZapIcon },
-      { label: "Streak Logic", to: "/configure/gamifikasi/streak", icon: ActivityIcon },
+      { label: "Poin per Aksi", to: "/configure/gamifikasi/poin", icon: ZapIcon, hasRoute: false },
+      { label: "Streak Logic", to: "/configure/gamifikasi/streak", icon: ActivityIcon, hasRoute: false },
     ],
   },
   {
     label: "Early Warning",
     icon: BellIcon,
     items: [
-      { label: "Threshold", to: "/configure/early-warning/threshold", icon: BellIcon },
+      { label: "Threshold", to: "/configure/early-warning/threshold", icon: BellIcon, hasRoute: false },
     ],
   },
   {
     label: "Organisasi",
     icon: BuildingIcon,
     items: [
-      { label: "Profil Vihara", to: "/configure/organisasi/profil", icon: BuildingIcon },
-      { label: "Pengurus", to: "/configure/organisasi/pengurus", icon: UsersIcon },
+      { label: "Profil Vihara", to: "/configure/organisasi/profil", icon: BuildingIcon, hasRoute: false },
+      { label: "Pengurus", to: "/configure/organisasi/pengurus", icon: UsersIcon, hasRoute: false },
     ],
   },
-] as const
+]
 
 // ─── Component ─────────────────────────────────────────────────────────────────
 
@@ -166,10 +166,17 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                                   asChild
                                   isActive={isSubActive}
                                 >
-                                  <a href={item.to}>
-                                    <SubIcon className="size-3.5 shrink-0" />
-                                    <span>{item.label}</span>
-                                  </a>
+                                  {item.hasRoute ? (
+                                    <Link to={item.to as "/"}>
+                                      <SubIcon className="size-3.5 shrink-0" />
+                                      <span>{item.label}</span>
+                                    </Link>
+                                  ) : (
+                                    <a href={item.to}>
+                                      <SubIcon className="size-3.5 shrink-0" />
+                                      <span>{item.label}</span>
+                                    </a>
+                                  )}
                                 </SidebarMenuSubButton>
                               </SidebarMenuSubItem>
                             )

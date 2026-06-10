@@ -138,8 +138,8 @@ export function LeaderboardPage() {
   const metricUnit = metric === "points" ? "poin" : metric === "streak" ? "minggu" : "hadir"
 
   return (
-    <main className="relative px-4 py-6 pb-32 md:px-8 md:pb-8 lg:px-12">
-      <div className="mx-auto max-w-4xl space-y-5">
+    <main className="relative px-4 py-6 pb-32 md:px-5 md:pb-8">
+      <div className="mx-auto max-w-7xl space-y-5">
 
         {/* ── Title + season (full width, above columns) ────────────────── */}
         <div>

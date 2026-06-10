@@ -13,6 +13,7 @@ import {
   BuildingIcon,
   UsersIcon,
   ChevronRightIcon,
+  MessageCircleIcon,
 } from "lucide-react"
 import {
   Sidebar,
@@ -41,6 +42,7 @@ import { useAuth } from "@/feature/auth"
 const NAV_ITEMS = [
   { label: "Dashboard", to: "/dashboard", icon: LayoutDashboardIcon },
   { label: "Events", to: "/events", icon: CalendarDaysIcon },
+  { label: "Komunitas", to: "/community", icon: MessageCircleIcon },
   { label: "Profil", to: "/dashboard/profile", icon: UserIcon },
 ] as const
 

@@ -1,0 +1,108 @@
+// Dummy data for Forum — replace with API calls later.
+import type { ForumPost, ForumComment } from "../types"
+
+export const DUMMY_POSTS: ForumPost[] = [
+  {
+    id: "post-1",
+    title: "Tips menjaga konsentrasi saat meditasi pagi",
+    body: "Halo semua, saya sudah 3 bulan rutin meditasi pagi tapi kadang masih susah fokus kalau pikiran lagi penuh. Ada yang punya tips praktis?",
+    category: "pertanyaan",
+    author: { id: "u1", name: "Rina Kartika", role: "umat", initials: "RK" },
+    created_at: "2025-07-10T07:30:00+07:00",
+    comment_count: 5,
+    upvote_count: 14,
+    my_upvote: false,
+  },
+  {
+    id: "post-2",
+    title: "Refleksi setelah ikut Retreat Tahunan",
+    body: "Baru balik dari retreat 2 hari kemarin. Banyak banget yang bisa dipelajari. Mau berbagi beberapa hal yang paling berkesan...",
+    category: "berbagi",
+    author: { id: "u2", name: "Budi Santoso", role: "umat", initials: "BS" },
+    created_at: "2025-07-13T20:00:00+07:00",
+    comment_count: 8,
+    upvote_count: 31,
+    my_upvote: true,
+  },
+  {
+    id: "post-3",
+    title: "Jadwal kebaktian bulan Agustus",
+    body: "Berikut jadwal lengkap kebaktian dan kegiatan komunitas untuk bulan Agustus 2025. Mohon disimak dan catat tanggalnya.",
+    category: "pengumuman",
+    author: { id: "p1", name: "Kakak Dewi", role: "pengurus", initials: "KD" },
+    created_at: "2025-07-15T09:00:00+07:00",
+    comment_count: 2,
+    upvote_count: 45,
+    my_upvote: false,
+    is_pinned: true,
+  },
+  {
+    id: "post-4",
+    title: "Diskusi: Bagaimana cara kita menjaga semangat di hari biasa?",
+    body: "Sering kali semangat tinggi saat acara komunitas tapi cepat menurun di hari-hari biasa. Gimana cara kalian menjaganya?",
+    category: "diskusi",
+    author: { id: "u3", name: "Sari Indah", role: "umat", initials: "SI" },
+    created_at: "2025-07-08T14:00:00+07:00",
+    comment_count: 12,
+    upvote_count: 22,
+    my_upvote: false,
+  },
+  {
+    id: "post-5",
+    title: "Sharing buku favorit tentang spiritual",
+    body: "Yuk share rekomendasi buku yang kalian rasa paling berdampak dalam perjalanan spiritual. Saya mulai: 'The Miracle of Mindfulness' - Thich Nhat Hanh.",
+    category: "berbagi",
+    author: { id: "u4", name: "Aryo Wibowo", role: "umat", initials: "AW" },
+    created_at: "2025-07-05T11:00:00+07:00",
+    comment_count: 9,
+    upvote_count: 17,
+    my_upvote: false,
+  },
+]
+
+export const DUMMY_COMMENTS: Record<string, ForumComment[]> = {
+  "post-1": [
+    {
+      id: "c1",
+      post_id: "post-1",
+      body: "Saya biasanya fokus ke napas dulu 5 menit sebelum mulai. Kalau pikiran kabur, langsung kembalikan ke napas tanpa menghakimi.",
+      author: { id: "u2", name: "Budi Santoso", role: "umat", initials: "BS" },
+      created_at: "2025-07-10T08:00:00+07:00",
+      upvote_count: 7,
+      my_upvote: false,
+    },
+    {
+      id: "c2",
+      post_id: "post-1",
+      body: "Coba body scan sebelum meditasi utama. Sadarkan setiap bagian tubuh dari kaki ke kepala, biasanya membantu ground diri.",
+      author: { id: "p1", name: "Kakak Dewi", role: "pengurus", initials: "KD" },
+      created_at: "2025-07-10T09:30:00+07:00",
+      upvote_count: 11,
+      my_upvote: false,
+    },
+  ],
+  "post-2": [
+    {
+      id: "c3",
+      post_id: "post-2",
+      body: "Wah penasaran banget sama ceritanya! Share dong momen paling berkesan.",
+      author: { id: "u3", name: "Sari Indah", role: "umat", initials: "SI" },
+      created_at: "2025-07-14T07:00:00+07:00",
+      upvote_count: 3,
+      my_upvote: false,
+    },
+  ],
+  "post-3": [],
+  "post-4": [
+    {
+      id: "c4",
+      post_id: "post-4",
+      body: "Personally saya selalu baca atau dengerin podcast inspiratif di pagi hari. Jadi mood sehari-hari terbawa.",
+      author: { id: "u4", name: "Aryo Wibowo", role: "umat", initials: "AW" },
+      created_at: "2025-07-08T15:00:00+07:00",
+      upvote_count: 5,
+      my_upvote: false,
+    },
+  ],
+  "post-5": [],
+}

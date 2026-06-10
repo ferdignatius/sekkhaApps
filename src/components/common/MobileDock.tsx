@@ -3,22 +3,13 @@
 // Visible only on mobile; hidden on md+.
 
 import { Link, useRouterState } from "@tanstack/react-router"
-import { LayoutDashboardIcon, UserIcon, CalendarDaysIcon } from "lucide-react"
+import { LayoutDashboardIcon, UserIcon, CalendarDaysIcon, MessageCircleIcon } from "lucide-react"
 
-// ─── Types ─────────────────────────────────────────────────────────────────────
-
-interface DockItem {
-  label: string
-  to: string
-  icon: React.ComponentType<{ className?: string }>
-}
-
-// ─── Nav items ─────────────────────────────────────────────────────────────────
-
-const DOCK_ITEMS: DockItem[] = [
-  { label: "Beranda", to: "/dashboard", icon: LayoutDashboardIcon },
-  { label: "Events", to: "/events", icon: CalendarDaysIcon },
-  { label: "Profil", to: "/dashboard/profile", icon: UserIcon },
+const DOCK_ITEMS = [
+  { label: "Beranda",   to: "/dashboard",  icon: LayoutDashboardIcon },
+  { label: "Events",   to: "/events",     icon: CalendarDaysIcon    },
+  { label: "Komunitas",to: "/community",  icon: MessageCircleIcon   },
+  { label: "Profil",   to: "/dashboard/profile", icon: UserIcon     },
 ]
 
 // ─── Component ─────────────────────────────────────────────────────────────────

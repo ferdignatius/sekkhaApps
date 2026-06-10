@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router"
-import { LayoutDashboardIcon, UserIcon, LogOutIcon } from "lucide-react"
+import { LayoutDashboardIcon, UserIcon, LogOutIcon, CalendarDaysIcon } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -16,6 +16,7 @@ import { useAuth } from "@/feature/auth"
 
 const NAV_ITEMS = [
   { label: "Dashboard", to: "/dashboard", icon: LayoutDashboardIcon },
+  { label: "Events", to: "/events", icon: CalendarDaysIcon },
   { label: "Profil", to: "/dashboard/profile", icon: UserIcon },
 ] as const
 
@@ -47,9 +48,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
             const isActive =
               to === "/dashboard"
                 ? pathname === "/dashboard" || pathname === "/dashboard/"
-                : pathname.startsWith(to)
-
-            return (
+                : pathname.startsWith(to)            return (
               <SidebarMenuItem key={to}>
                 <SidebarMenuButton asChild isActive={isActive} tooltip={label}>
                   <Link to={to}>

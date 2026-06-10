@@ -3,7 +3,7 @@
 // Visible only on mobile; hidden on md+.
 
 import { Link, useRouterState } from "@tanstack/react-router"
-import { LayoutDashboardIcon, UserIcon } from "lucide-react"
+import { LayoutDashboardIcon, UserIcon, CalendarDaysIcon } from "lucide-react"
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -16,16 +16,9 @@ interface DockItem {
 // ─── Nav items ─────────────────────────────────────────────────────────────────
 
 const DOCK_ITEMS: DockItem[] = [
-  {
-    label: "Beranda",
-    to: "/dashboard",
-    icon: LayoutDashboardIcon,
-  },
-  {
-    label: "Profil",
-    to: "/dashboard/profile",
-    icon: UserIcon,
-  },
+  { label: "Beranda", to: "/dashboard", icon: LayoutDashboardIcon },
+  { label: "Events", to: "/events", icon: CalendarDaysIcon },
+  { label: "Profil", to: "/dashboard/profile", icon: UserIcon },
 ]
 
 // ─── Component ─────────────────────────────────────────────────────────────────

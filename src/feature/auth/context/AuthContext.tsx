@@ -67,7 +67,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (token === "dummy.admin.token") {
         dispatch({
           type: "AUTH_SUCCESS",
-          payload: { accessToken: token, userId: "admin-user-1" },
+          payload: { accessToken: token, userId: "admin-user-1", role: "pengurus" },
         })
         return
       }
@@ -99,7 +99,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
         dispatch({
           type: "AUTH_SUCCESS",
-          payload: { accessToken: token, userId },
+          payload: { accessToken: token, userId, role: "umat" },
         })
       } catch {
         if (cancelled) return

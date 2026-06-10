@@ -14,6 +14,7 @@ import {
   UsersIcon,
   ChevronRightIcon,
   MessageCircleIcon,
+  TrophyIcon,
 } from "lucide-react"
 import {
   Sidebar,
@@ -40,10 +41,11 @@ import { useAuth } from "@/feature/auth"
 // ─── Nav items ─────────────────────────────────────────────────────────────────
 
 const NAV_ITEMS = [
-  { label: "Dashboard", to: "/dashboard", icon: LayoutDashboardIcon },
-  { label: "Events", to: "/events", icon: CalendarDaysIcon },
-  { label: "Komunitas", to: "/community", icon: MessageCircleIcon },
-  { label: "Profil", to: "/dashboard/profile", icon: UserIcon },
+  { label: "Dashboard",   to: "/dashboard",    icon: LayoutDashboardIcon },
+  { label: "Events",      to: "/events",       icon: CalendarDaysIcon    },
+  { label: "Leaderboard", to: "/leaderboard",  icon: TrophyIcon          },
+  { label: "Komunitas",   to: "/community",    icon: MessageCircleIcon   },
+  { label: "Profil",      to: "/dashboard/profile", icon: UserIcon        },
 ] as const
 
 // ─── Configure sub-menu structure (pengurus/admin only) ────────────────────────

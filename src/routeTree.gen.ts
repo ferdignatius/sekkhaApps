@@ -13,6 +13,7 @@ import { Route as SignUpRouteImport } from './routes/sign-up'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedLeaderboardIndexRouteImport } from './routes/_authenticated/leaderboard/index'
 import { Route as AuthenticatedEventsIndexRouteImport } from './routes/_authenticated/events/index'
 import { Route as AuthenticatedDashboardIndexRouteImport } from './routes/_authenticated/dashboard/index'
 import { Route as AuthenticatedCommunityIndexRouteImport } from './routes/_authenticated/community/index'
@@ -40,6 +41,12 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedLeaderboardIndexRoute =
+  AuthenticatedLeaderboardIndexRouteImport.update({
+    id: '/leaderboard/',
+    path: '/leaderboard/',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedEventsIndexRoute =
   AuthenticatedEventsIndexRouteImport.update({
     id: '/events/',
@@ -91,6 +98,7 @@ export interface FileRoutesByFullPath {
   '/community/': typeof AuthenticatedCommunityIndexRoute
   '/dashboard/': typeof AuthenticatedDashboardIndexRoute
   '/events/': typeof AuthenticatedEventsIndexRoute
+  '/leaderboard/': typeof AuthenticatedLeaderboardIndexRoute
   '/configure/master/badge': typeof AuthenticatedConfigureMasterBadgeRoute
   '/configure/master/event-type': typeof AuthenticatedConfigureMasterEventTypeRoute
   '/configure/master/level': typeof AuthenticatedConfigureMasterLevelRoute
@@ -103,6 +111,7 @@ export interface FileRoutesByTo {
   '/community': typeof AuthenticatedCommunityIndexRoute
   '/dashboard': typeof AuthenticatedDashboardIndexRoute
   '/events': typeof AuthenticatedEventsIndexRoute
+  '/leaderboard': typeof AuthenticatedLeaderboardIndexRoute
   '/configure/master/badge': typeof AuthenticatedConfigureMasterBadgeRoute
   '/configure/master/event-type': typeof AuthenticatedConfigureMasterEventTypeRoute
   '/configure/master/level': typeof AuthenticatedConfigureMasterLevelRoute
@@ -117,6 +126,7 @@ export interface FileRoutesById {
   '/_authenticated/community/': typeof AuthenticatedCommunityIndexRoute
   '/_authenticated/dashboard/': typeof AuthenticatedDashboardIndexRoute
   '/_authenticated/events/': typeof AuthenticatedEventsIndexRoute
+  '/_authenticated/leaderboard/': typeof AuthenticatedLeaderboardIndexRoute
   '/_authenticated/configure/master/badge': typeof AuthenticatedConfigureMasterBadgeRoute
   '/_authenticated/configure/master/event-type': typeof AuthenticatedConfigureMasterEventTypeRoute
   '/_authenticated/configure/master/level': typeof AuthenticatedConfigureMasterLevelRoute
@@ -131,6 +141,7 @@ export interface FileRouteTypes {
     | '/community/'
     | '/dashboard/'
     | '/events/'
+    | '/leaderboard/'
     | '/configure/master/badge'
     | '/configure/master/event-type'
     | '/configure/master/level'
@@ -143,6 +154,7 @@ export interface FileRouteTypes {
     | '/community'
     | '/dashboard'
     | '/events'
+    | '/leaderboard'
     | '/configure/master/badge'
     | '/configure/master/event-type'
     | '/configure/master/level'
@@ -156,6 +168,7 @@ export interface FileRouteTypes {
     | '/_authenticated/community/'
     | '/_authenticated/dashboard/'
     | '/_authenticated/events/'
+    | '/_authenticated/leaderboard/'
     | '/_authenticated/configure/master/badge'
     | '/_authenticated/configure/master/event-type'
     | '/_authenticated/configure/master/level'
@@ -197,6 +210,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/leaderboard/': {
+      id: '/_authenticated/leaderboard/'
+      path: '/leaderboard'
+      fullPath: '/leaderboard/'
+      preLoaderRoute: typeof AuthenticatedLeaderboardIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/events/': {
       id: '/_authenticated/events/'
@@ -255,6 +275,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedCommunityIndexRoute: typeof AuthenticatedCommunityIndexRoute
   AuthenticatedDashboardIndexRoute: typeof AuthenticatedDashboardIndexRoute
   AuthenticatedEventsIndexRoute: typeof AuthenticatedEventsIndexRoute
+  AuthenticatedLeaderboardIndexRoute: typeof AuthenticatedLeaderboardIndexRoute
   AuthenticatedConfigureMasterBadgeRoute: typeof AuthenticatedConfigureMasterBadgeRoute
   AuthenticatedConfigureMasterEventTypeRoute: typeof AuthenticatedConfigureMasterEventTypeRoute
   AuthenticatedConfigureMasterLevelRoute: typeof AuthenticatedConfigureMasterLevelRoute
@@ -265,6 +286,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedCommunityIndexRoute: AuthenticatedCommunityIndexRoute,
   AuthenticatedDashboardIndexRoute: AuthenticatedDashboardIndexRoute,
   AuthenticatedEventsIndexRoute: AuthenticatedEventsIndexRoute,
+  AuthenticatedLeaderboardIndexRoute: AuthenticatedLeaderboardIndexRoute,
   AuthenticatedConfigureMasterBadgeRoute:
     AuthenticatedConfigureMasterBadgeRoute,
   AuthenticatedConfigureMasterEventTypeRoute:

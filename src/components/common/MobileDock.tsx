@@ -3,13 +3,14 @@
 // Visible only on mobile; hidden on md+.
 
 import { Link, useRouterState } from "@tanstack/react-router"
-import { LayoutDashboardIcon, UserIcon, CalendarDaysIcon, MessageCircleIcon } from "lucide-react"
+import { LayoutDashboardIcon, UserIcon, CalendarDaysIcon, MessageCircleIcon, TrophyIcon } from "lucide-react"
 
 const DOCK_ITEMS = [
-  { label: "Beranda",   to: "/dashboard",  icon: LayoutDashboardIcon },
-  { label: "Events",   to: "/events",     icon: CalendarDaysIcon    },
-  { label: "Komunitas",to: "/community",  icon: MessageCircleIcon   },
-  { label: "Profil",   to: "/dashboard/profile", icon: UserIcon     },
+  { label: "Beranda",     to: "/dashboard",          icon: LayoutDashboardIcon },
+  { label: "Events",      to: "/events",             icon: CalendarDaysIcon    },
+  { label: "Top",         to: "/leaderboard",        icon: TrophyIcon          },
+  { label: "Komunitas",   to: "/community",          icon: MessageCircleIcon   },
+  { label: "Profil",      to: "/dashboard/profile",  icon: UserIcon            },
 ]
 
 // ─── Component ─────────────────────────────────────────────────────────────────

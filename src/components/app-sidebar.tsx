@@ -134,7 +134,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
 
         {/* Configure — pengurus/admin only */}
         {isPengurus && (
-          <SidebarGroup className="mt-4">
+          <SidebarGroup className="mt-3 pt-3 border-t border-sekkha-hairline-soft">
             <SidebarGroupLabel>Configure</SidebarGroupLabel>
             <SidebarMenu>
               {CONFIGURE_SECTIONS.map((section) => {

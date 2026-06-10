@@ -87,10 +87,10 @@ export function LatestActivityCard({ activities }: LatestActivityCardProps) {
 
                 {/* Method badge */}
                 <span
-                  className={`shrink-0 rounded-full px-2 py-0.5 text-caption-bold ${
+                  className={`shrink-0 rounded-full px-2 py-0.5 text-caption-bold border ${
                     item.method === "qr"
-                      ? "bg-sekkha-teal-light text-sekkha-brand-blue"
-                      : "bg-sekkha-surface text-sekkha-slate"
+                      ? "border-sekkha-brand-blue/30 bg-sekkha-teal-light text-sekkha-brand-blue"
+                      : "border-sekkha-hairline-strong bg-sekkha-surface text-sekkha-slate"
                   }`}
                 >
                   {item.method === "qr" ? "QR" : "Manual"}

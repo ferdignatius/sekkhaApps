@@ -134,13 +134,13 @@ export function ProfileSummaryCard({
 
         {/* Name + level */}
         <div className="min-w-0 flex-1">
-          <p className="truncate text-body-md-medium text-sekkha-ink">{name}</p>
-          <div className="mt-0.5 flex items-center gap-1.5">
-            <span className="text-caption-bold text-sekkha-brand-blue">
+          <p className="truncate text-heading-5 text-sekkha-ink">{name}</p>
+          <div className="mt-1 flex items-center gap-1.5">
+            <span className="rounded-full bg-sekkha-brand-yellow/20 px-2 py-0.5 text-caption-bold text-sekkha-yellow-dark">
               Lv.{level}
             </span>
             <span className="text-caption text-sekkha-muted">·</span>
-            <span className="text-caption text-sekkha-slate">{levelLabel}</span>
+            <span className="text-body-sm-medium text-sekkha-brand-blue">{levelLabel}</span>
           </div>
         </div>
       </div>

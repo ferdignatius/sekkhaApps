@@ -20,6 +20,7 @@ import { Route as AuthenticatedHomeIndexRouteImport } from './routes/_authentica
 import { Route as AuthenticatedEventsIndexRouteImport } from './routes/_authenticated/events/index'
 import { Route as AuthenticatedCommunityIndexRouteImport } from './routes/_authenticated/community/index'
 import { Route as AuthenticatedHomeProfileRouteImport } from './routes/_authenticated/home/profile'
+import { Route as AuthenticatedHomeAchievementsRouteImport } from './routes/_authenticated/home/achievements'
 import { Route as AuthenticatedConfigureMasterLevelRouteImport } from './routes/_authenticated/configure/master/level'
 import { Route as AuthenticatedConfigureMasterEventTypeRouteImport } from './routes/_authenticated/configure/master/event-type'
 import { Route as AuthenticatedConfigureMasterBadgeRouteImport } from './routes/_authenticated/configure/master/badge'
@@ -83,6 +84,12 @@ const AuthenticatedHomeProfileRoute =
     path: '/home/profile',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedHomeAchievementsRoute =
+  AuthenticatedHomeAchievementsRouteImport.update({
+    id: '/home/achievements',
+    path: '/home/achievements',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedConfigureMasterLevelRoute =
   AuthenticatedConfigureMasterLevelRouteImport.update({
     id: '/configure/master/level',
@@ -114,6 +121,7 @@ export interface FileRoutesByFullPath {
   '/sign-up': typeof SignUpRoute
   '/analysis': typeof AuthenticatedAnalysisRoute
   '/insight': typeof AuthenticatedInsightRoute
+  '/home/achievements': typeof AuthenticatedHomeAchievementsRoute
   '/home/profile': typeof AuthenticatedHomeProfileRoute
   '/community/': typeof AuthenticatedCommunityIndexRoute
   '/events/': typeof AuthenticatedEventsIndexRoute
@@ -130,6 +138,7 @@ export interface FileRoutesByTo {
   '/sign-up': typeof SignUpRoute
   '/analysis': typeof AuthenticatedAnalysisRoute
   '/insight': typeof AuthenticatedInsightRoute
+  '/home/achievements': typeof AuthenticatedHomeAchievementsRoute
   '/home/profile': typeof AuthenticatedHomeProfileRoute
   '/community': typeof AuthenticatedCommunityIndexRoute
   '/events': typeof AuthenticatedEventsIndexRoute
@@ -148,6 +157,7 @@ export interface FileRoutesById {
   '/sign-up': typeof SignUpRoute
   '/_authenticated/analysis': typeof AuthenticatedAnalysisRoute
   '/_authenticated/insight': typeof AuthenticatedInsightRoute
+  '/_authenticated/home/achievements': typeof AuthenticatedHomeAchievementsRoute
   '/_authenticated/home/profile': typeof AuthenticatedHomeProfileRoute
   '/_authenticated/community/': typeof AuthenticatedCommunityIndexRoute
   '/_authenticated/events/': typeof AuthenticatedEventsIndexRoute
@@ -166,6 +176,7 @@ export interface FileRouteTypes {
     | '/sign-up'
     | '/analysis'
     | '/insight'
+    | '/home/achievements'
     | '/home/profile'
     | '/community/'
     | '/events/'
@@ -182,6 +193,7 @@ export interface FileRouteTypes {
     | '/sign-up'
     | '/analysis'
     | '/insight'
+    | '/home/achievements'
     | '/home/profile'
     | '/community'
     | '/events'
@@ -199,6 +211,7 @@ export interface FileRouteTypes {
     | '/sign-up'
     | '/_authenticated/analysis'
     | '/_authenticated/insight'
+    | '/_authenticated/home/achievements'
     | '/_authenticated/home/profile'
     | '/_authenticated/community/'
     | '/_authenticated/events/'
@@ -296,6 +309,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedHomeProfileRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/home/achievements': {
+      id: '/_authenticated/home/achievements'
+      path: '/home/achievements'
+      fullPath: '/home/achievements'
+      preLoaderRoute: typeof AuthenticatedHomeAchievementsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/configure/master/level': {
       id: '/_authenticated/configure/master/level'
       path: '/configure/master/level'
@@ -330,6 +350,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteChildren {
   AuthenticatedAnalysisRoute: typeof AuthenticatedAnalysisRoute
   AuthenticatedInsightRoute: typeof AuthenticatedInsightRoute
+  AuthenticatedHomeAchievementsRoute: typeof AuthenticatedHomeAchievementsRoute
   AuthenticatedHomeProfileRoute: typeof AuthenticatedHomeProfileRoute
   AuthenticatedCommunityIndexRoute: typeof AuthenticatedCommunityIndexRoute
   AuthenticatedEventsIndexRoute: typeof AuthenticatedEventsIndexRoute
@@ -344,6 +365,7 @@ interface AuthenticatedRouteChildren {
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAnalysisRoute: AuthenticatedAnalysisRoute,
   AuthenticatedInsightRoute: AuthenticatedInsightRoute,
+  AuthenticatedHomeAchievementsRoute: AuthenticatedHomeAchievementsRoute,
   AuthenticatedHomeProfileRoute: AuthenticatedHomeProfileRoute,
   AuthenticatedCommunityIndexRoute: AuthenticatedCommunityIndexRoute,
   AuthenticatedEventsIndexRoute: AuthenticatedEventsIndexRoute,

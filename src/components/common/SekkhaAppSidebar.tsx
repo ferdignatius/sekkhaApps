@@ -20,13 +20,13 @@ import { useAuth } from "@/feature/auth"
 
 const NAV_ITEMS = [
   {
-    label: "Dashboard",
-    to: "/dashboard",
+    label: "Home",
+    to: "/home",
     icon: LayoutDashboardIcon,
   },
   {
     label: "Profil",
-    to: "/dashboard/profile",
+    to: "/home/profile",
     icon: UserIcon,
   },
 ] as const
@@ -59,8 +59,8 @@ export function SekkhaAppSidebar(
         <SidebarMenu>
           {NAV_ITEMS.map(({ label, to, icon: Icon }) => {
             const isActive =
-              to === "/dashboard"
-                ? pathname === "/dashboard" || pathname === "/dashboard/"
+              to === "/home"
+                ? pathname === "/home" || pathname === "/home/"
                 : pathname.startsWith(to)
 
             return (

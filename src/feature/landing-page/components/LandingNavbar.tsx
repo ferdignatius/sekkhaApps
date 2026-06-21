@@ -49,7 +49,7 @@ function DesktopCTA({ authState }: { authState: AuthState }) {
     return (
       <div className="hidden md:flex items-center">
         <Button variant="primary" asChild>
-          <a href="/dashboard">Dashboard</a>
+          <a href="/home">Dashboard</a>
         </Button>
       </div>
     )
@@ -83,7 +83,7 @@ function MobileInlineCTA({ authState }: { authState: AuthState }) {
   if (authState === 'authenticated') {
     return (
       <Button variant="primary" asChild className="md:hidden text-body-sm px-4 py-2 h-auto">
-        <a href="/dashboard">Dashboard</a>
+        <a href="/home">Dashboard</a>
       </Button>
     )
   }
@@ -209,7 +209,7 @@ function MobileDrawer({ isOpen, onClose, authState, navLinks, firstFocusableRef 
                 )}
                 {authState === 'authenticated' && (
                   <Button variant="primary" asChild>
-                    <a href="/dashboard" onClick={onClose}>Dashboard</a>
+                    <a href="/home" onClick={onClose}>Dashboard</a>
                   </Button>
                 )}
               </div>
@@ -226,7 +226,7 @@ function MobileDrawer({ isOpen, onClose, authState, navLinks, firstFocusableRef 
 /**
  * LandingNavbar — sticky top navigation for the Sekkha landing page.
  *
- * Mobile: login/dashboard button always visible beside hamburger icon.
+ * Mobile: login/home button always visible beside hamburger icon.
  * Desktop: full nav links + auth CTA on the right.
  *
  * @requirements 1.4, 1.5, 1.6, 2.1–2.10
@@ -304,7 +304,7 @@ export function LandingNavbar({ authState, scrollY }: LandingNavbarProps) {
         {/* Desktop CTA */}
         <DesktopCTA authState={authState} />
 
-        {/* Mobile right cluster: inline login/dashboard btn + hamburger */}
+        {/* Mobile right cluster: inline login/home btn + hamburger */}
         <div className="md:hidden flex items-center gap-2">
           <MobileInlineCTA authState={authState} />
 

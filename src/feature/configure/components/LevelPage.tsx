@@ -84,7 +84,7 @@ export function LevelPage() {
 
   return (
     <main>
-      <PageBreadcrumb items={[{ label: "Beranda", href: "/dashboard" }, { label: "Configure" }, { label: "Level" }]} />
+      <PageBreadcrumb items={[{ label: "Beranda", href: "/home" }, { label: "Configure" }, { label: "Level" }]} />
       <div className="px-4 py-6 pb-24 md:px-8 md:pb-8 lg:px-12">
         <div className="mx-auto max-w-8xl space-y-5">
           <div className="flex items-center justify-between">

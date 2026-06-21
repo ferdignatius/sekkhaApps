@@ -147,7 +147,7 @@ export function LeaderboardPage() {
 
   return (
     <main className="relative">
-      <PageBreadcrumb items={[{ label: "Beranda", href: "/dashboard" }, { label: "Leaderboard" }]} />
+      <PageBreadcrumb items={[{ label: "Beranda", href: "/home" }, { label: "Leaderboard" }]} />
       <div className="px-4 py-6 pb-32 md:px-8 md:pb-8 lg:px-12">
         <div className="mx-auto max-w-8xl space-y-5">
 

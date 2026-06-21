@@ -47,7 +47,7 @@ const NAV_ITEMS = [
   { label: "Events",      to: "/events",       icon: CalendarDaysIcon    },
   { label: "Leaderboard", to: "/leaderboard",  icon: TrophyIcon          },
   { label: "Komunitas",   to: "/community",    icon: MessageCircleIcon   },
-  { label: "Profil",      to: "/dashboard/profile", icon: UserIcon        },
+  { label: "Profil",      to: "/home/profile", icon: UserIcon        },
 ] as const
 
 // ─── Configure sub-menu structure (pengurus/admin only) ────────────────────────

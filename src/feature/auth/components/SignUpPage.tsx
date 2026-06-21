@@ -36,7 +36,7 @@ export function SignUpPage() {
   // Redirect authenticated users away (req 1.8)
   useEffect(() => {
     if (authState.status === "authenticated") {
-      void navigate({ to: "/dashboard" })
+      void navigate({ to: "/home" })
     }
   }, [authState.status, navigate])
 

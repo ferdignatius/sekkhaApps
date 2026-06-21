@@ -1,11 +1,6 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute } from "@tanstack/react-router"
+import { AchievementPage } from "@/feature/configure"
 
-export const Route = createFileRoute(
-  '/_authenticated/configure/master/achievement',
-)({
-  component: RouteComponent,
+export const Route = createFileRoute("/_authenticated/configure/master/achievement")({
+  component: AchievementPage,
 })
-
-function RouteComponent() {
-  return <div>Hello "/_authenticated/configure/master/achievement"!</div>
-}

@@ -286,6 +286,23 @@ export function EventsPage() {
             </div>
           </div>
         </div>
+
+        {/* Create / Edit event modal */}
+        <ResponsiveFormModal
+          open={formOpen}
+          onOpenChange={(open) => {
+            setFormOpen(open)
+            if (!open) setEditTarget(null)
+          }}
+          title={editTarget ? "Edit Event" : "Buat Event Baru"}
+          description={editTarget ? "Perbarui detail event." : "Isi form untuk membuat event baru."}
+        >
+          <EventForm
+            initial={editTarget ?? undefined}
+            onSubmit={handleFormSubmit}
+            onCancel={() => { setEditTarget(null); setFormOpen(false) }}
+          />
+        </ResponsiveFormModal>
       </main>
     )
   }

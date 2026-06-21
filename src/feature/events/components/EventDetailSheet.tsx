@@ -1,18 +1,28 @@
 // feature/events/components/EventDetailSheet
-// Full event detail sheet with:
-//  - Metadata (date, location, RSVP count)
-//  - RSVP buttons (all roles)
-//  - QR code display (pengurus/admin)
-//  - Attendance scan entry (all roles — umat enters code, pengurus inputs manual)
-//  - Attendance list (all roles)
-//  - Edit button (pengurus/admin)
+// Gamification-focused event detail with:
+//  1. Colorful RSVP buttons (green hadir, grey tidak hadir) with icons
+//  2. Capsule tab buttons with colored icons
+//  3. Reward preview motivator
+//  4. Role-separated view (no edit button for anggota)
+//  5. Colorful info cards with large icons
 
 import { useState } from "react"
-import { CalendarIcon, MapPinIcon, UsersIcon, XIcon, QrCodeIcon, ClipboardListIcon } from "lucide-react"
+import {
+  CalendarIcon,
+  MapPinIcon,
+  UsersIcon,
+  XIcon,
+  QrCodeIcon,
+  ClipboardListIcon,
+  ThumbsUpIcon,
+  XCircleIcon,
+  GiftIcon,
+  SparklesIcon,
+} from "lucide-react"
 import { EventQrDisplay } from "./EventQrDisplay"
 import { AttendanceScanModal } from "./AttendanceScanModal"
 import { AttendanceListSheet } from "./AttendanceListSheet"
-import type { EventListItem, RsvpStatus, UserRole, AttendanceRecord, QrCode } from "../types"
+import type { EventListItem, RsvpStatus, UserRole, AttendanceRecord } from "../types"
 
 interface EventDetailSheetProps {
   event: EventListItem
@@ -51,14 +61,12 @@ export function EventDetailSheet({
   const [tab, setTab] = useState<Tab>("detail")
   const [showScan, setShowScan] = useState(false)
 
-  // ── QR ─────────────────────────────────────────────────────────────────────
   const qrCode = event.qr_code ?? null
 
   function handleRegenerate() {
     onRegenerateQr?.(event.id)
   }
 
-  // ── Attendance record ───────────────────────────────────────────────────────
   function handleRecord(result: { name: string; method: "qr" | "manual"; scanned_at: string }) {
     if (!onRecordAttendance) return
     onRecordAttendance(event.id, {
@@ -67,17 +75,17 @@ export function EventDetailSheet({
       method: result.method,
       scanned_at: result.scanned_at,
     })
-    // Auto-switch to attendance tab after recording
     setTimeout(() => {
       setShowScan(false)
       setTab("attendance")
     }, 1500)
   }
 
-  const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
-    { id: "detail",     label: "Detail",     icon: <CalendarIcon className="size-3.5" /> },
-    { id: "attendance", label: "Kehadiran",  icon: <ClipboardListIcon className="size-3.5" /> },
-    ...(isPengurus && qrCode ? [{ id: "qr" as Tab, label: "QR Code", icon: <QrCodeIcon className="size-3.5" /> }] : []),
+  // ── Tab config with colored icons (fix #2) ─────────────────────────────────
+  const TABS: { id: Tab; label: string; icon: React.ReactNode; color: string }[] = [
+    { id: "detail", label: "Detail", icon: <SparklesIcon className="size-4" />, color: "text-sekkha-brand-yellow-deep" },
+    { id: "attendance", label: "Kehadiran", icon: <ClipboardListIcon className="size-4" />, color: "text-sekkha-brand-blue" },
+    ...(isPengurus && qrCode ? [{ id: "qr" as Tab, label: "QR Code", icon: <QrCodeIcon className="size-4" />, color: "text-purple-500" }] : []),
   ]
 
   return (
@@ -88,12 +96,12 @@ export function EventDetailSheet({
       className="flex flex-col gap-0"
     >
       {/* Header */}
-      <div className="flex items-start justify-between gap-3 pb-3">
+      <div className="flex items-start justify-between gap-3 pb-4">
         <div>
           <span className={`inline-flex rounded-full px-2.5 py-0.5 text-caption-bold ${
             isSpecial ? "bg-yellow-50 text-yellow-700" : "bg-sekkha-teal-light text-sekkha-brand-blue"
           }`}>
-            {isSpecial ? "Event Spesial" : "Rutin"}
+            {isSpecial ? "🌟 Event Spesial" : "📅 Rutin"}
           </span>
           <h2 id="event-detail-title" className="mt-2 text-heading-5 text-sekkha-ink">
             {event.title}
@@ -109,20 +117,20 @@ export function EventDetailSheet({
         </button>
       </div>
 
-      {/* Tab bar */}
-      <div className="mb-4 flex gap-1 rounded-full bg-sekkha-surface p-1">
+      {/* Tab bar — capsule buttons with colored icons (fix #2) */}
+      <div className="mb-5 flex gap-2">
         {TABS.map(t => (
           <button
             key={t.id}
             type="button"
             onClick={() => setTab(t.id)}
-            className={`flex flex-1 items-center justify-center gap-1.5 rounded-full py-1.5 text-caption-bold transition-colors ${
+            className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-body-sm-medium transition-all ${
               tab === t.id
-                ? "bg-sekkha-canvas text-sekkha-ink shadow-sm"
-                : "text-sekkha-muted"
+                ? "bg-sekkha-primary text-white shadow-md"
+                : "border border-sekkha-hairline-strong bg-sekkha-canvas text-sekkha-slate hover:bg-sekkha-surface"
             }`}
           >
-            {t.icon}
+            <span className={tab === t.id ? "text-white" : t.color}>{t.icon}</span>
             {t.label}
           </button>
         ))}
@@ -131,19 +139,23 @@ export function EventDetailSheet({
       {/* ── Detail tab ──────────────────────────────────────────────────────── */}
       {tab === "detail" && (
         <div className="flex flex-col gap-4">
-          {/* Meta */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <CalendarIcon className="size-4 shrink-0 text-sekkha-muted" aria-hidden="true" />
-              <span className="text-body-sm text-sekkha-slate">{formatFullDate(event.event_date)}</span>
+
+          {/* Info cards — proportional grid (fix #1) */}
+          <div className="grid grid-cols-3 gap-3">
+            <div className="flex flex-col items-center gap-1.5 rounded-xl bg-sekkha-teal-light px-3 py-4 text-center">
+              <CalendarIcon className="size-5 text-sekkha-brand-blue" aria-hidden="true" />
+              <p className="text-micro text-sekkha-slate">Tanggal</p>
+              <p className="text-caption-bold text-sekkha-ink">{formatFullDate(event.event_date)}</p>
             </div>
-            <div className="flex items-center gap-2">
-              <MapPinIcon className="size-4 shrink-0 text-sekkha-muted" aria-hidden="true" />
-              <span className="text-body-sm text-sekkha-slate">{event.location}</span>
+            <div className="flex flex-col items-center gap-1.5 rounded-xl bg-sekkha-rose-light px-3 py-4 text-center">
+              <MapPinIcon className="size-5 text-pink-500" aria-hidden="true" />
+              <p className="text-micro text-sekkha-slate">Lokasi</p>
+              <p className="text-caption-bold text-sekkha-ink">{event.location}</p>
             </div>
-            <div className="flex items-center gap-2">
-              <UsersIcon className="size-4 shrink-0 text-sekkha-muted" aria-hidden="true" />
-              <span className="text-body-sm text-sekkha-slate">{event.rsvp_count} orang RSVP hadir</span>
+            <div className="flex flex-col items-center gap-1.5 rounded-xl bg-sekkha-surface-yellow px-3 py-4 text-center">
+              <UsersIcon className="size-5 text-amber-500" aria-hidden="true" />
+              <p className="text-micro text-sekkha-slate">RSVP</p>
+              <p className="text-caption-bold text-sekkha-ink">{event.rsvp_count} hadir</p>
             </div>
           </div>
 
@@ -153,45 +165,55 @@ export function EventDetailSheet({
 
           <div className="h-px bg-sekkha-hairline-soft" />
 
-          {/* RSVP */}
+          {/* RSVP — colorful buttons (fix #1, #3 — Tidak Hadir merah, fix #4) */}
           <div>
             <p className="mb-3 text-body-sm-medium text-sekkha-ink">Konfirmasi kehadiran</p>
-            <div className="flex gap-2">
+            <div className="flex gap-3">
               <button
                 type="button"
                 onClick={() => onRsvp(event.id, "hadir")}
-                className={`flex-1 rounded-full py-2.5 text-body-sm-medium transition-colors ${
+                className={`flex flex-1 items-center justify-center gap-2 rounded-full py-2.5 text-body-sm-medium font-semibold transition-all ${
                   event.my_rsvp === "hadir"
-                    ? "bg-sekkha-brand-blue text-white"
-                    : "border border-sekkha-hairline-strong bg-sekkha-canvas text-sekkha-ink"
+                    ? "bg-green-500 text-white shadow-md"
+                    : "border-2 border-green-300 bg-green-50 text-green-700 hover:bg-green-100"
                 }`}
               >
-                ✓ Hadir
+                <ThumbsUpIcon className="size-4" />
+                Hadir 🔥
               </button>
               <button
                 type="button"
                 onClick={() => onRsvp(event.id, "tidak_hadir")}
-                className={`flex-1 rounded-full py-2.5 text-body-sm-medium transition-colors ${
+                className={`flex flex-1 items-center justify-center gap-2 rounded-full py-2.5 text-body-sm-medium font-semibold transition-all ${
                   event.my_rsvp === "tidak_hadir"
-                    ? "bg-sekkha-ink text-white"
-                    : "border border-sekkha-hairline-strong bg-sekkha-canvas text-sekkha-ink"
+                    ? "bg-red-500 text-white shadow-md"
+                    : "border-2 border-red-200 bg-red-50 text-red-500 hover:bg-red-100"
                 }`}
               >
-                ✗ Tidak Hadir
+                <XCircleIcon className="size-4" />
+                Tidak Hadir
               </button>
+            </div>
+
+            {/* Reward preview — below RSVP buttons (fix #4 position) */}
+            <div className="mt-3 flex items-center gap-2 rounded-lg bg-sekkha-surface-yellow px-3 py-2">
+              <GiftIcon className="size-4 shrink-0 text-sekkha-brand-yellow-deep" aria-hidden="true" />
+              <p className="text-caption text-sekkha-charcoal">
+                🎁 Datang = <span className="font-semibold text-sekkha-brand-blue">+50 Poin</span> & <span className="font-semibold text-orange-500">+1 Streak!</span>
+              </p>
             </div>
           </div>
 
-          {/* Pengurus edit */}
+          {/* Pengurus-only: Edit button (fix #4 — hidden for anggota) */}
           {isPengurus && onEdit && (
             <>
               <div className="h-px bg-sekkha-hairline-soft" />
               <button
                 type="button"
                 onClick={() => onEdit(event)}
-                className="w-full rounded-full border border-sekkha-hairline-strong py-2.5 text-body-sm-medium text-sekkha-ink"
+                className="w-full rounded-full border border-sekkha-hairline-strong py-2.5 text-body-sm-medium text-sekkha-ink hover:bg-sekkha-surface"
               >
-                Edit Event
+                ✏️ Edit Event
               </button>
             </>
           )}
@@ -201,12 +223,11 @@ export function EventDetailSheet({
       {/* ── Attendance tab ──────────────────────────────────────────────────── */}
       {tab === "attendance" && (
         <div className="flex flex-col gap-4">
-          {/* Scan / manual entry CTA */}
           {qrCode && !showScan && (
             <button
               type="button"
               onClick={() => setShowScan(true)}
-              className="flex w-full items-center justify-center gap-2 rounded-full bg-sekkha-primary py-2.5 text-body-sm-medium text-white"
+              className="flex w-full items-center justify-center gap-2 rounded-full bg-sekkha-primary py-3 text-body-sm-medium text-white shadow-sm"
             >
               {isPengurus ? (
                 <><UsersIcon className="size-4" /> Input Manual / Scan</>

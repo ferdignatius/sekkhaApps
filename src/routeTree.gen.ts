@@ -16,10 +16,10 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedInsightRouteImport } from './routes/_authenticated/insight'
 import { Route as AuthenticatedAnalysisRouteImport } from './routes/_authenticated/analysis'
 import { Route as AuthenticatedLeaderboardIndexRouteImport } from './routes/_authenticated/leaderboard/index'
+import { Route as AuthenticatedHomeIndexRouteImport } from './routes/_authenticated/home/index'
 import { Route as AuthenticatedEventsIndexRouteImport } from './routes/_authenticated/events/index'
-import { Route as AuthenticatedDashboardIndexRouteImport } from './routes/_authenticated/dashboard/index'
 import { Route as AuthenticatedCommunityIndexRouteImport } from './routes/_authenticated/community/index'
-import { Route as AuthenticatedDashboardProfileRouteImport } from './routes/_authenticated/dashboard/profile'
+import { Route as AuthenticatedHomeProfileRouteImport } from './routes/_authenticated/home/profile'
 import { Route as AuthenticatedConfigureMasterLevelRouteImport } from './routes/_authenticated/configure/master/level'
 import { Route as AuthenticatedConfigureMasterEventTypeRouteImport } from './routes/_authenticated/configure/master/event-type'
 import { Route as AuthenticatedConfigureMasterBadgeRouteImport } from './routes/_authenticated/configure/master/badge'
@@ -60,16 +60,15 @@ const AuthenticatedLeaderboardIndexRoute =
     path: '/leaderboard/',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedHomeIndexRoute = AuthenticatedHomeIndexRouteImport.update({
+  id: '/home/',
+  path: '/home/',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedEventsIndexRoute =
   AuthenticatedEventsIndexRouteImport.update({
     id: '/events/',
     path: '/events/',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
-const AuthenticatedDashboardIndexRoute =
-  AuthenticatedDashboardIndexRouteImport.update({
-    id: '/dashboard/',
-    path: '/dashboard/',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedCommunityIndexRoute =
@@ -78,10 +77,10 @@ const AuthenticatedCommunityIndexRoute =
     path: '/community/',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
-const AuthenticatedDashboardProfileRoute =
-  AuthenticatedDashboardProfileRouteImport.update({
-    id: '/dashboard/profile',
-    path: '/dashboard/profile',
+const AuthenticatedHomeProfileRoute =
+  AuthenticatedHomeProfileRouteImport.update({
+    id: '/home/profile',
+    path: '/home/profile',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedConfigureMasterLevelRoute =
@@ -115,10 +114,10 @@ export interface FileRoutesByFullPath {
   '/sign-up': typeof SignUpRoute
   '/analysis': typeof AuthenticatedAnalysisRoute
   '/insight': typeof AuthenticatedInsightRoute
-  '/dashboard/profile': typeof AuthenticatedDashboardProfileRoute
+  '/home/profile': typeof AuthenticatedHomeProfileRoute
   '/community/': typeof AuthenticatedCommunityIndexRoute
-  '/dashboard/': typeof AuthenticatedDashboardIndexRoute
   '/events/': typeof AuthenticatedEventsIndexRoute
+  '/home/': typeof AuthenticatedHomeIndexRoute
   '/leaderboard/': typeof AuthenticatedLeaderboardIndexRoute
   '/configure/master/achievement': typeof AuthenticatedConfigureMasterAchievementRoute
   '/configure/master/badge': typeof AuthenticatedConfigureMasterBadgeRoute
@@ -131,10 +130,10 @@ export interface FileRoutesByTo {
   '/sign-up': typeof SignUpRoute
   '/analysis': typeof AuthenticatedAnalysisRoute
   '/insight': typeof AuthenticatedInsightRoute
-  '/dashboard/profile': typeof AuthenticatedDashboardProfileRoute
+  '/home/profile': typeof AuthenticatedHomeProfileRoute
   '/community': typeof AuthenticatedCommunityIndexRoute
-  '/dashboard': typeof AuthenticatedDashboardIndexRoute
   '/events': typeof AuthenticatedEventsIndexRoute
+  '/home': typeof AuthenticatedHomeIndexRoute
   '/leaderboard': typeof AuthenticatedLeaderboardIndexRoute
   '/configure/master/achievement': typeof AuthenticatedConfigureMasterAchievementRoute
   '/configure/master/badge': typeof AuthenticatedConfigureMasterBadgeRoute
@@ -149,10 +148,10 @@ export interface FileRoutesById {
   '/sign-up': typeof SignUpRoute
   '/_authenticated/analysis': typeof AuthenticatedAnalysisRoute
   '/_authenticated/insight': typeof AuthenticatedInsightRoute
-  '/_authenticated/dashboard/profile': typeof AuthenticatedDashboardProfileRoute
+  '/_authenticated/home/profile': typeof AuthenticatedHomeProfileRoute
   '/_authenticated/community/': typeof AuthenticatedCommunityIndexRoute
-  '/_authenticated/dashboard/': typeof AuthenticatedDashboardIndexRoute
   '/_authenticated/events/': typeof AuthenticatedEventsIndexRoute
+  '/_authenticated/home/': typeof AuthenticatedHomeIndexRoute
   '/_authenticated/leaderboard/': typeof AuthenticatedLeaderboardIndexRoute
   '/_authenticated/configure/master/achievement': typeof AuthenticatedConfigureMasterAchievementRoute
   '/_authenticated/configure/master/badge': typeof AuthenticatedConfigureMasterBadgeRoute
@@ -167,10 +166,10 @@ export interface FileRouteTypes {
     | '/sign-up'
     | '/analysis'
     | '/insight'
-    | '/dashboard/profile'
+    | '/home/profile'
     | '/community/'
-    | '/dashboard/'
     | '/events/'
+    | '/home/'
     | '/leaderboard/'
     | '/configure/master/achievement'
     | '/configure/master/badge'
@@ -183,10 +182,10 @@ export interface FileRouteTypes {
     | '/sign-up'
     | '/analysis'
     | '/insight'
-    | '/dashboard/profile'
+    | '/home/profile'
     | '/community'
-    | '/dashboard'
     | '/events'
+    | '/home'
     | '/leaderboard'
     | '/configure/master/achievement'
     | '/configure/master/badge'
@@ -200,10 +199,10 @@ export interface FileRouteTypes {
     | '/sign-up'
     | '/_authenticated/analysis'
     | '/_authenticated/insight'
-    | '/_authenticated/dashboard/profile'
+    | '/_authenticated/home/profile'
     | '/_authenticated/community/'
-    | '/_authenticated/dashboard/'
     | '/_authenticated/events/'
+    | '/_authenticated/home/'
     | '/_authenticated/leaderboard/'
     | '/_authenticated/configure/master/achievement'
     | '/_authenticated/configure/master/badge'
@@ -269,18 +268,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedLeaderboardIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/home/': {
+      id: '/_authenticated/home/'
+      path: '/home'
+      fullPath: '/home/'
+      preLoaderRoute: typeof AuthenticatedHomeIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/events/': {
       id: '/_authenticated/events/'
       path: '/events'
       fullPath: '/events/'
       preLoaderRoute: typeof AuthenticatedEventsIndexRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/dashboard/': {
-      id: '/_authenticated/dashboard/'
-      path: '/dashboard'
-      fullPath: '/dashboard/'
-      preLoaderRoute: typeof AuthenticatedDashboardIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/community/': {
@@ -290,11 +289,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCommunityIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/dashboard/profile': {
-      id: '/_authenticated/dashboard/profile'
-      path: '/dashboard/profile'
-      fullPath: '/dashboard/profile'
-      preLoaderRoute: typeof AuthenticatedDashboardProfileRouteImport
+    '/_authenticated/home/profile': {
+      id: '/_authenticated/home/profile'
+      path: '/home/profile'
+      fullPath: '/home/profile'
+      preLoaderRoute: typeof AuthenticatedHomeProfileRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/configure/master/level': {
@@ -331,10 +330,10 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteChildren {
   AuthenticatedAnalysisRoute: typeof AuthenticatedAnalysisRoute
   AuthenticatedInsightRoute: typeof AuthenticatedInsightRoute
-  AuthenticatedDashboardProfileRoute: typeof AuthenticatedDashboardProfileRoute
+  AuthenticatedHomeProfileRoute: typeof AuthenticatedHomeProfileRoute
   AuthenticatedCommunityIndexRoute: typeof AuthenticatedCommunityIndexRoute
-  AuthenticatedDashboardIndexRoute: typeof AuthenticatedDashboardIndexRoute
   AuthenticatedEventsIndexRoute: typeof AuthenticatedEventsIndexRoute
+  AuthenticatedHomeIndexRoute: typeof AuthenticatedHomeIndexRoute
   AuthenticatedLeaderboardIndexRoute: typeof AuthenticatedLeaderboardIndexRoute
   AuthenticatedConfigureMasterAchievementRoute: typeof AuthenticatedConfigureMasterAchievementRoute
   AuthenticatedConfigureMasterBadgeRoute: typeof AuthenticatedConfigureMasterBadgeRoute
@@ -345,10 +344,10 @@ interface AuthenticatedRouteChildren {
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAnalysisRoute: AuthenticatedAnalysisRoute,
   AuthenticatedInsightRoute: AuthenticatedInsightRoute,
-  AuthenticatedDashboardProfileRoute: AuthenticatedDashboardProfileRoute,
+  AuthenticatedHomeProfileRoute: AuthenticatedHomeProfileRoute,
   AuthenticatedCommunityIndexRoute: AuthenticatedCommunityIndexRoute,
-  AuthenticatedDashboardIndexRoute: AuthenticatedDashboardIndexRoute,
   AuthenticatedEventsIndexRoute: AuthenticatedEventsIndexRoute,
+  AuthenticatedHomeIndexRoute: AuthenticatedHomeIndexRoute,
   AuthenticatedLeaderboardIndexRoute: AuthenticatedLeaderboardIndexRoute,
   AuthenticatedConfigureMasterAchievementRoute:
     AuthenticatedConfigureMasterAchievementRoute,

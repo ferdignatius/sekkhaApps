@@ -4,6 +4,7 @@
 // Right: Pengumuman, Jadwal Terdekat, Renungan Harian
 
 import { useAuth } from "@/feature/auth"
+import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
 import { ProfileSummaryCard } from "./ProfileSummaryCard"
 import { LatestActivityCard } from "./LatestActivityCard"
 import { NextEventCard } from "./NextEventCard"
@@ -49,8 +50,9 @@ export function DashboardPage() {
       : "Pengguna"
 
   return (
-    <main className="px-4 py-6 pb-24 md:px-6 md:pb-8">
-      <div className="mx-auto max-w-7xl space-y-5">
+    <main className="px-4 py-6 pb-24 md:px-8 md:pb-8 lg:px-12">
+      <div className="mx-auto max-w-8xl space-y-5">
+        <PageBreadcrumb items={[{ label: "Beranda" }]} />
         <h1 className="text-heading-5 text-sekkha-ink">Beranda</h1>
 
         {/* ── Two-column layout (desktop 75:25) ────────────────────────── */}

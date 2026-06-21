@@ -7,6 +7,8 @@
 import { useState, useMemo } from "react"
 import { PlusIcon, CalendarDaysIcon } from "lucide-react"
 import { useAuth } from "@/feature/auth"
+import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
+import { ResponsiveFormModal } from "@/components/common/ResponsiveFormModal"
 import { EventCalendar } from "@/components/ui/EventCalendar"
 import { EventCard } from "./EventCard"
 import { EventDetailSheet } from "./EventDetailSheet"
@@ -143,7 +145,7 @@ function formatMonthLabel(month: Date): string {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-type View = "calendar" | "detail" | "form"
+type View = "calendar" | "detail"
 
 export function EventsPage() {
   const { authState } = useAuth()
@@ -154,6 +156,7 @@ export function EventsPage() {
   const [view, setView] = useState<View>("calendar")
   const [selected, setSelected] = useState<EventListItem | null>(null)
   const [editTarget, setEditTarget] = useState<EventListItem | null>(null)
+  const [formOpen, setFormOpen] = useState(false)
   const [activeMonth, setActiveMonth] = useState<Date>(new Date(2025, 6, 1))
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
 
@@ -239,42 +242,23 @@ export function EventsPage() {
       ])
     }
     setEditTarget(null)
-    setView("calendar")
+    setFormOpen(false)
   }
 
   // ────────────────────────────────────────────────────────────────────────────
-  // Form view
-  if (view === "form") {
-    return (
-      <main className="px-4 py-6 pb-24 md:px-8 md:pb-8 lg:px-12">
-        <div className="mx-auto max-w-7xl">
-          <h1 className="mb-6 text-heading-5 text-sekkha-ink">
-            {editTarget ? "Edit Event" : "Buat Event Baru"}
-          </h1>
-          <div className="rounded-xl border border-sekkha-hairline-soft bg-sekkha-canvas p-5">
-            <EventForm
-              initial={editTarget ?? undefined}
-              onSubmit={handleFormSubmit}
-              onCancel={() => { setEditTarget(null); setView("calendar") }}
-            />
-          </div>
-        </div>
-      </main>
-    )
-  }
-
   // Detail view
   if (view === "detail" && selected) {
     return (
       <main className="px-4 py-6 pb-24 md:px-8 md:pb-8 lg:px-12">
-        <div className="mx-auto max-w-7xl">
+        <div className="mx-auto max-w-8xl">
+          <PageBreadcrumb items={[{ label: "Beranda", href: "/dashboard" }, { label: "Events", href: "/events" }, { label: selected.title }]} />
           <div className="rounded-xl border border-sekkha-hairline-soft bg-sekkha-canvas p-5">
             <EventDetailSheet
               event={selected}
               role={role}
               onClose={() => { setSelected(null); setView("calendar") }}
               onRsvp={handleRsvp}
-              onEdit={isPengurus ? ev => { setEditTarget(ev); setView("form") } : undefined}
+              onEdit={isPengurus ? ev => { setEditTarget(ev); setFormOpen(true) } : undefined}
               attendances={attendances[selected.id] ?? []}
               onRecordAttendance={handleRecordAttendance}
               onRegenerateQr={handleRegenerateQr}
@@ -288,7 +272,8 @@ export function EventsPage() {
   // Calendar + list view
   return (
     <main className="px-4 py-6 pb-24 md:px-8 md:pb-8 lg:px-12">
-      <div className="mx-auto max-w-7xl space-y-4">
+      <div className="mx-auto max-w-8xl space-y-4">
+        <PageBreadcrumb items={[{ label: "Beranda", href: "/dashboard" }, { label: "Events" }]} />
         {/* Page header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -298,7 +283,7 @@ export function EventsPage() {
           {isPengurus && (
             <button
               type="button"
-              onClick={() => { setEditTarget(null); setView("form") }}
+              onClick={() => { setEditTarget(null); setFormOpen(true) }}
               className="flex items-center gap-1.5 rounded-full bg-sekkha-primary px-4 py-2 text-body-sm-medium text-white transition-opacity hover:opacity-90"
             >
               <PlusIcon className="size-4" aria-hidden="true" />
@@ -307,69 +292,92 @@ export function EventsPage() {
           )}
         </div>
 
-        {/* Calendar */}
-        <div className="rounded-xl border border-sekkha-hairline-soft bg-sekkha-canvas p-4">
-          <EventCalendar
-            dots={dotMap}
-            selected={selectedDate}
-            onSelect={setSelectedDate}
-            month={activeMonth}
-            onMonthChange={month => { setActiveMonth(month); setSelectedDate(null) }}
-          />
+        {/* ── Two-column layout: Event list (2/3) | Calendar (1/3) ──────── */}
+        <div className="flex flex-col-reverse gap-4 lg:flex-row">
 
-          {/* Tag legend */}
-          <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 border-t border-sekkha-hairline-soft pt-3">
-            {(Object.entries(EVENT_TAG_COLORS) as [EventTag, typeof EVENT_TAG_COLORS[EventTag]][]).map(
-              ([tag, colors]) => (
-                <div key={tag} className="flex items-center gap-1.5">
-                  <span className={`h-2 w-2 rounded-full ${colors.dot}`} aria-hidden="true" />
-                  <span className="text-caption capitalize text-sekkha-slate">{tag}</span>
-                </div>
-              ),
+          {/* ── Left: Event list (2/3 on desktop) ──────────────────────── */}
+          <div className="flex-1 lg:min-w-0">
+            {/* List header */}
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-body-sm-medium text-sekkha-ink">
+                {selectedDate
+                  ? formatSelectedDate(selectedDate)
+                  : formatMonthLabel(activeMonth)}
+              </h2>
+              {selectedDate && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedDate(null)}
+                  className="text-caption text-sekkha-brand-blue hover:underline"
+                >
+                  Lihat semua
+                </button>
+              )}
+            </div>
+
+            {listedEvents.length === 0 ? (
+              <div className="flex flex-col items-center gap-2 rounded-xl border border-sekkha-hairline-soft bg-sekkha-canvas py-10 text-center">
+                <CalendarDaysIcon className="size-8 text-sekkha-muted" aria-hidden="true" />
+                <p className="text-body-sm text-sekkha-muted">
+                  {selectedDate ? "Tidak ada event di tanggal ini." : "Tidak ada event bulan ini."}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {listedEvents.map(ev => (
+                  <EventCard
+                    key={ev.id}
+                    event={ev}
+                    onClick={() => { setSelected(ev); setView("detail") }}
+                  />
+                ))}
+              </div>
             )}
           </div>
-        </div>
 
-        {/* Event list below calendar */}
-        <div>
-          {/* List header */}
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-body-sm-medium text-sekkha-ink">
-              {selectedDate
-                ? formatSelectedDate(selectedDate)
-                : formatMonthLabel(activeMonth)}
-            </h2>
-            {selectedDate && (
-              <button
-                type="button"
-                onClick={() => setSelectedDate(null)}
-                className="text-caption text-sekkha-brand-blue hover:underline"
-              >
-                Lihat semua
-              </button>
-            )}
-          </div>
+          {/* ── Right: Calendar (1/3 on desktop) ───────────────────────── */}
+          <aside className="w-full shrink-0 lg:w-1/3">
+            <div className="sticky top-6 rounded-xl border border-sekkha-hairline-soft bg-sekkha-canvas p-4">
+              <EventCalendar
+                dots={dotMap}
+                selected={selectedDate}
+                onSelect={setSelectedDate}
+                month={activeMonth}
+                onMonthChange={month => { setActiveMonth(month); setSelectedDate(null) }}
+              />
 
-          {listedEvents.length === 0 ? (
-            <div className="flex flex-col items-center gap-2 rounded-xl border border-sekkha-hairline-soft bg-sekkha-canvas py-10 text-center">
-              <CalendarDaysIcon className="size-8 text-sekkha-muted" aria-hidden="true" />
-              <p className="text-body-sm text-sekkha-muted">
-                {selectedDate ? "Tidak ada event di tanggal ini." : "Tidak ada event bulan ini."}
-              </p>
+              {/* Tag legend */}
+              <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 border-t border-sekkha-hairline-soft pt-3">
+                {(Object.entries(EVENT_TAG_COLORS) as [EventTag, typeof EVENT_TAG_COLORS[EventTag]][]).map(
+                  ([tag, colors]) => (
+                    <div key={tag} className="flex items-center gap-1.5">
+                      <span className={`h-2 w-2 rounded-full ${colors.dot}`} aria-hidden="true" />
+                      <span className="text-caption capitalize text-sekkha-slate">{tag}</span>
+                    </div>
+                  ),
+                )}
+              </div>
             </div>
-          ) : (
-            <div className="space-y-3">
-              {listedEvents.map(ev => (
-                <EventCard
-                  key={ev.id}
-                  event={ev}
-                  onClick={() => { setSelected(ev); setView("detail") }}
-                />
-              ))}
-            </div>
-          )}
+          </aside>
         </div>
       </div>
+
+      {/* Create / Edit event modal (drawer on mobile, modal on desktop) */}
+      <ResponsiveFormModal
+        open={formOpen}
+        onOpenChange={(open) => {
+          setFormOpen(open)
+          if (!open) setEditTarget(null)
+        }}
+        title={editTarget ? "Edit Event" : "Buat Event Baru"}
+        description={editTarget ? "Perbarui detail event." : "Isi form untuk membuat event baru."}
+      >
+        <EventForm
+          initial={editTarget ?? undefined}
+          onSubmit={handleFormSubmit}
+          onCancel={() => { setEditTarget(null); setFormOpen(false) }}
+        />
+      </ResponsiveFormModal>
     </main>
   )
 }

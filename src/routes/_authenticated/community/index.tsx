@@ -1,6 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router"
-import { CommunityPage } from "@/feature/community"
+import { createFileRoute, lazyRouteComponent } from "@tanstack/react-router"
+import { CommunitySkeleton } from "@/components/common/PageSkeletons"
 
 export const Route = createFileRoute("/_authenticated/community/")({
-  component: CommunityPage,
+  component: lazyRouteComponent(() => import("@/feature/community").then(m => ({ default: m.CommunityPage }))),
+  pendingComponent: CommunitySkeleton,
 })

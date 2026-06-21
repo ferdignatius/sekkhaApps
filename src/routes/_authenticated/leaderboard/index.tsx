@@ -1,6 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router"
-import { LeaderboardPage } from "@/feature/leaderboard"
+import { createFileRoute, lazyRouteComponent } from "@tanstack/react-router"
+import { LeaderboardSkeleton } from "@/components/common/PageSkeletons"
 
 export const Route = createFileRoute("/_authenticated/leaderboard/")({
-  component: LeaderboardPage,
+  component: lazyRouteComponent(() => import("@/feature/leaderboard").then(m => ({ default: m.LeaderboardPage }))),
+  pendingComponent: LeaderboardSkeleton,
 })

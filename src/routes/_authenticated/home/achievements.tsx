@@ -1,6 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router"
-import { AchievementsPage } from "@/feature/profile"
+import { createFileRoute, lazyRouteComponent } from "@tanstack/react-router"
+import { GenericSkeleton } from "@/components/common/PageSkeletons"
 
 export const Route = createFileRoute("/_authenticated/home/achievements")({
-  component: AchievementsPage,
+  component: lazyRouteComponent(() => import("@/feature/profile").then(m => ({ default: m.AchievementsPage }))),
+  pendingComponent: GenericSkeleton,
 })

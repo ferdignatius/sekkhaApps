@@ -1,6 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router"
-import { EventsPage } from "@/feature/events"
+import { createFileRoute, lazyRouteComponent } from "@tanstack/react-router"
+import { EventsSkeleton } from "@/components/common/PageSkeletons"
 
 export const Route = createFileRoute("/_authenticated/events/")({
-  component: EventsPage,
+  component: lazyRouteComponent(() => import("@/feature/events").then(m => ({ default: m.EventsPage }))),
+  pendingComponent: EventsSkeleton,
 })

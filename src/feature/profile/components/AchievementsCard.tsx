@@ -1,15 +1,15 @@
 // feature/profile/components/AchievementsCard
 // Displays user badges in a compact grid (first 4 shown).
-// "Lihat Semua" opens a responsive modal/drawer with full badge list.
+// "Lihat Semua" navigates to a dedicated achievements page.
 // Clickable badges show detail overlay.
 
-import { AwardIcon, XIcon } from "lucide-react"
+import { AwardIcon, XIcon, ChevronRightIcon } from "lucide-react"
 import { useState } from "react"
-import { ResponsiveFormModal } from "@/components/common/ResponsiveFormModal"
+import { Link } from "@tanstack/react-router"
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-interface Badge {
+export interface Badge {
   badge_id: string
   name: string
   icon_url: string // emoji or image URL
@@ -42,9 +42,9 @@ export const DUMMY_BADGES: Badge[] = [
 
 const PREVIEW_COUNT = 4
 
-// ─── Badge Item (reused in card + modal) ─────────────────────────────────────
+// ─── Badge Item ──────────────────────────────────────────────────────────────
 
-function BadgeItem({
+export function BadgeItem({
   badge,
   onSelect,
 }: {
@@ -87,11 +87,77 @@ function BadgeItem({
   )
 }
 
+// ─── Badge Detail Overlay ────────────────────────────────────────────────────
+
+export function BadgeDetailOverlay({
+  badge,
+  onClose,
+}: {
+  badge: Badge
+  onClose: () => void
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="badge-detail-title"
+    >
+      <div
+        className="relative w-full max-w-xs rounded-xl border border-sekkha-hairline-soft bg-sekkha-canvas p-6 shadow-lg"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute right-3 top-3 rounded-full p-1 text-sekkha-muted hover:bg-sekkha-surface"
+          aria-label="Tutup"
+        >
+          <XIcon className="size-4" />
+        </button>
+
+        <div className="flex flex-col items-center gap-3">
+          <div
+            className={`flex h-20 w-20 items-center justify-center rounded-full text-4xl ring-4 ${
+              badge.earned_at === null
+                ? "bg-sekkha-surface opacity-50 ring-sekkha-hairline-soft grayscale"
+                : "bg-sekkha-surface-yellow ring-sekkha-brand-yellow/30"
+            }`}
+          >
+            <span>{badge.icon_url}</span>
+          </div>
+
+          <h3
+            id="badge-detail-title"
+            className="text-heading-5 text-sekkha-ink"
+          >
+            {badge.name}
+          </h3>
+
+          <p className="text-center text-body-sm text-sekkha-slate">
+            {badge.description}
+          </p>
+
+          {badge.earned_at ? (
+            <span className="rounded-full bg-sekkha-teal-light px-3 py-1 text-caption-bold text-sekkha-brand-blue">
+              Didapat {new Date(badge.earned_at).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
+            </span>
+          ) : (
+            <span className="rounded-full bg-sekkha-surface px-3 py-1 text-caption-bold text-sekkha-muted">
+              🔒 Belum didapatkan
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export function AchievementsCard({ badges, totalPoints, rank }: AchievementsCardProps) {
+export function AchievementsCard({ badges }: AchievementsCardProps) {
   const [selectedBadge, setSelectedBadge] = useState<Badge | null>(null)
-  const [showAll, setShowAll] = useState(false)
 
   const earnedCount = badges.filter((b) => b.earned_at !== null).length
   const previewBadges = badges.slice(0, PREVIEW_COUNT)
@@ -105,120 +171,42 @@ export function AchievementsCard({ badges, totalPoints, rank }: AchievementsCard
       {/* Header */}
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <AwardIcon className="size-4 text-sekkha-brand-yellow" aria-hidden="true" />
+          <AwardIcon className="size-5 text-sekkha-brand-yellow" aria-hidden="true" />
           <h2 id="achievements-heading" className="text-body-sm-medium text-sekkha-ink">
             Achievements
           </h2>
         </div>
-        <div className="flex items-center gap-3 text-caption text-sekkha-slate">
-          <span>{totalPoints.toLocaleString("id-ID")} pts</span>
-          <span className="text-sekkha-muted">|</span>
-          <span>Rank #{rank}</span>
-        </div>
+        <span className="rounded-full bg-sekkha-surface px-2.5 py-0.5 text-caption-bold text-sekkha-slate">
+          {earnedCount}/{badges.length}
+        </span>
       </div>
 
       {/* Progress indicator */}
       <p className="mb-4 text-caption text-sekkha-muted">
-        {earnedCount}/{badges.length} badge didapatkan — terus hadir untuk membuka sisanya!
+        Terus hadir untuk membuka badge baru!
       </p>
 
-      {/* Badge grid — show preview only */}
+      {/* Badge grid — preview */}
       <div className="grid grid-cols-4 gap-4">
         {previewBadges.map((badge) => (
           <BadgeItem key={badge.badge_id} badge={badge} onSelect={setSelectedBadge} />
         ))}
       </div>
 
-      {/* See all button */}
+      {/* See all — link to dedicated page */}
       {hasMore && (
-        <button
-          type="button"
-          onClick={() => setShowAll(true)}
-          className="mt-4 w-full rounded-full border border-sekkha-hairline-strong py-2 text-body-sm-medium text-sekkha-ink transition-colors hover:bg-sekkha-surface active:bg-sekkha-hairline-soft"
+        <Link
+          to="/home/achievements"
+          className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-full border border-sekkha-hairline-strong py-2 text-body-sm-medium text-sekkha-ink transition-colors hover:bg-sekkha-surface active:bg-sekkha-hairline-soft"
         >
           Lihat Semua ({badges.length})
-        </button>
+          <ChevronRightIcon className="size-4 text-sekkha-muted" aria-hidden="true" />
+        </Link>
       )}
 
-      {/* ── See All Modal (drawer on mobile, modal on desktop) ────────── */}
-      <ResponsiveFormModal
-        open={showAll}
-        onOpenChange={setShowAll}
-        title="Semua Badge"
-        description={`${earnedCount} dari ${badges.length} badge telah didapatkan`}
-      >
-        <div className="grid grid-cols-4 gap-4 sm:grid-cols-5">
-          {badges.map((badge) => (
-            <BadgeItem
-              key={badge.badge_id}
-              badge={badge}
-              onSelect={(b) => {
-                setShowAll(false)
-                setSelectedBadge(b)
-              }}
-            />
-          ))}
-        </div>
-      </ResponsiveFormModal>
-
-      {/* ── Badge detail overlay ──────────────────────────────────────── */}
+      {/* Badge detail overlay */}
       {selectedBadge && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-          onClick={() => setSelectedBadge(null)}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="badge-detail-title"
-        >
-          <div
-            className="relative w-full max-w-xs rounded-xl border border-sekkha-hairline-soft bg-sekkha-canvas p-6 shadow-lg"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Close */}
-            <button
-              type="button"
-              onClick={() => setSelectedBadge(null)}
-              className="absolute right-3 top-3 rounded-full p-1 text-sekkha-muted hover:bg-sekkha-surface"
-              aria-label="Tutup"
-            >
-              <XIcon className="size-4" />
-            </button>
-
-            {/* Badge icon */}
-            <div className="flex flex-col items-center gap-3">
-              <div
-                className={`flex h-20 w-20 items-center justify-center rounded-full text-4xl ring-4 ${
-                  selectedBadge.earned_at === null
-                    ? "bg-sekkha-surface opacity-50 ring-sekkha-hairline-soft grayscale"
-                    : "bg-sekkha-surface-yellow ring-sekkha-brand-yellow/30"
-                }`}
-              >
-                <span>{selectedBadge.icon_url}</span>
-              </div>
-
-              <h3
-                id="badge-detail-title"
-                className="text-heading-5 text-sekkha-ink"
-              >
-                {selectedBadge.name}
-              </h3>
-
-              <p className="text-center text-body-sm text-sekkha-slate">
-                {selectedBadge.description}
-              </p>
-
-              {selectedBadge.earned_at ? (
-                <span className="rounded-full bg-sekkha-teal-light px-3 py-1 text-caption-bold text-sekkha-brand-blue">
-                  Didapat {new Date(selectedBadge.earned_at).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
-                </span>
-              ) : (
-                <span className="rounded-full bg-sekkha-surface px-3 py-1 text-caption-bold text-sekkha-muted">
-                  🔒 Belum didapatkan
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
+        <BadgeDetailOverlay badge={selectedBadge} onClose={() => setSelectedBadge(null)} />
       )}
     </section>
   )

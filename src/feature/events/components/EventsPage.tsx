@@ -5,7 +5,7 @@
 // - Pengurus+: "Buat Event" button, edit from detail view
 
 import { useState, useMemo } from "react"
-import { PlusIcon, CalendarDaysIcon } from "lucide-react"
+import { PlusIcon, CalendarDaysIcon, SearchIcon } from "lucide-react"
 import { useAuth } from "@/feature/auth"
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
 import { ResponsiveFormModal } from "@/components/common/ResponsiveFormModal"
@@ -159,6 +159,8 @@ export function EventsPage() {
   const [formOpen, setFormOpen] = useState(false)
   const [activeMonth, setActiveMonth] = useState<Date>(new Date(2025, 6, 1))
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState("")
+  const [tagFilter, setTagFilter] = useState<EventTag | "all">("all")
 
   // Attendance records keyed by event id
   const [attendances, setAttendances] = useState<Record<string, AttendanceRecord[]>>({})
@@ -201,13 +203,30 @@ export function EventsPage() {
 
   // ── Events to display in the list below the calendar ────────────────────────
   const listedEvents = useMemo(() => {
-    const base = events
+    let base = events
       .filter(ev => isSameMonth(ev.event_date, activeMonth))
       .sort((a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime())
 
-    if (!selectedDate) return base
-    return base.filter(ev => toDateKey(ev.event_date) === selectedDate)
-  }, [events, activeMonth, selectedDate])
+    if (selectedDate) {
+      base = base.filter(ev => toDateKey(ev.event_date) === selectedDate)
+    }
+
+    // Search filter
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase()
+      base = base.filter(ev =>
+        ev.title.toLowerCase().includes(q) ||
+        ev.location.toLowerCase().includes(q)
+      )
+    }
+
+    // Tag filter
+    if (tagFilter !== "all") {
+      base = base.filter(ev => (ev.tag ?? ev.event_type) === tagFilter)
+    }
+
+    return base
+  }, [events, activeMonth, selectedDate, searchQuery, tagFilter])
 
   // ── RSVP ─────────────────────────────────────────────────────────────────────
   function handleRsvp(eventId: string, status: RsvpStatus) {
@@ -281,19 +300,54 @@ export function EventsPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <CalendarDaysIcon className="size-5 text-sekkha-brand-blue" aria-hidden="true" />
-            <h1 className="text-heading-5 text-sekkha-ink">Events</h1>
+              <h1 className="text-heading-5 text-sekkha-ink">Events</h1>
+            </div>
           </div>
-          {isPengurus && (
-            <button
-              type="button"
-              onClick={() => { setEditTarget(null); setFormOpen(true) }}
-              className="flex items-center gap-1.5 rounded-full bg-sekkha-primary px-4 py-2 text-body-sm-medium text-white transition-opacity hover:opacity-90"
-            >
-              <PlusIcon className="size-4" aria-hidden="true" />
-              Buat Event
-            </button>
-          )}
-        </div>
+
+          {/* Search + Filter + Create button row */}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            {/* Search */}
+            <div className="relative flex-1">
+              <SearchIcon className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-sekkha-muted" aria-hidden="true" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder="Cari event..."
+                className="w-full rounded-lg border border-sekkha-hairline-strong bg-sekkha-canvas py-2 pl-9 pr-3 text-body-sm text-sekkha-ink placeholder:text-sekkha-muted outline-none focus:border-sekkha-brand-blue"
+              />
+            </div>
+
+            {/* Tag filter */}
+            <div className="flex flex-wrap items-center gap-2">
+              {(["all", "rutin", "special", "retreat", "meditasi", "sosial"] as const).map(t => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setTagFilter(t)}
+                  className={`rounded-full px-3 py-1.5 text-caption-bold capitalize transition-colors ${
+                    tagFilter === t
+                      ? "bg-sekkha-primary text-white"
+                      : "border border-sekkha-hairline bg-sekkha-canvas text-sekkha-slate hover:bg-sekkha-surface"
+                  }`}
+                >
+                  {t === "all" ? "Semua" : t}
+                </button>
+              ))}
+            </div>
+
+            {/* Create button */}
+            {isPengurus && (
+              <button
+                type="button"
+                onClick={() => { setEditTarget(null); setFormOpen(true) }}
+                className="flex shrink-0 items-center gap-1.5 rounded-full bg-sekkha-primary px-4 py-2 text-body-sm-medium text-white transition-opacity hover:opacity-90"
+              >
+                <PlusIcon className="size-4" aria-hidden="true" />
+                Buat Event
+              </button>
+            )}
+          </div>
 
         {/* ── Two-column layout: Event list (2/3) | Calendar (1/3) ──────── */}
         <div className="flex flex-col-reverse gap-4 lg:flex-row">

@@ -1,7 +1,8 @@
 // feature/events/components/EventCard
-// Single event row in the list — shows type, title, date, location, rsvp badge.
+// Event card in the list — shows type, title, date, location, rsvp badge.
+// Right side: "Lihat Detail" button + chevron for click affordance.
 
-import { CalendarIcon, MapPinIcon, UsersIcon } from "lucide-react"
+import { CalendarIcon, MapPinIcon, UsersIcon, ChevronRightIcon } from "lucide-react"
 import type { EventListItem, RsvpStatus, EventTag } from "../types"
 import { EVENT_TAG_COLORS } from "../types"
 
@@ -46,20 +47,21 @@ export function EventCard({ event, onClick }: EventCardProps) {
     <button
       type="button"
       onClick={onClick}
-      className="w-full rounded-xl border border-sekkha-hairline-soft bg-sekkha-canvas p-4 text-left transition-shadow hover:shadow-sm active:scale-[0.99]"
+      className="group w-full rounded-xl border border-sekkha-hairline-soft bg-sekkha-canvas p-4 text-left transition-all hover:border-sekkha-brand-blue/30 hover:shadow-sm active:scale-[0.99]"
     >
-      <div className="flex items-start gap-3">
+      <div className="flex items-center gap-3">
         {/* Color dot */}
         <div
-          className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${tagColors.dot}`}
+          className={`mt-0.5 h-2.5 w-2.5 shrink-0 self-start rounded-full ${tagColors.dot}`}
           aria-hidden="true"
         />
 
+        {/* Content — left */}
         <div className="min-w-0 flex-1">
           {/* Type tag + RSVP badge */}
           <div className="flex flex-wrap items-center gap-2">
             <span
-              className={`rounded-full px-2 py-0.5 text-caption-bold ${tagColors.bg} ${tagColors.text}`}
+              className={`rounded-full px-2 py-0.5 text-caption-bold capitalize ${tagColors.bg} ${tagColors.text}`}
             >
               {tag}
             </span>
@@ -70,7 +72,7 @@ export function EventCard({ event, onClick }: EventCardProps) {
           <p className="mt-1.5 text-body-sm-medium text-sekkha-ink">{event.title}</p>
 
           {/* Meta */}
-          <div className="mt-2 space-y-1">
+          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
             <div className="flex items-center gap-1.5">
               <CalendarIcon className="size-3.5 shrink-0 text-sekkha-muted" aria-hidden="true" />
               <span className="text-caption text-sekkha-slate">{day} · {time}</span>
@@ -84,6 +86,17 @@ export function EventCard({ event, onClick }: EventCardProps) {
               <span className="text-caption text-sekkha-slate">{event.rsvp_count} RSVP</span>
             </div>
           </div>
+        </div>
+
+        {/* Action — right */}
+        <div className="flex shrink-0 items-center gap-2">
+          <span className="hidden text-caption-bold text-sekkha-brand-blue sm:inline">
+            Lihat Detail
+          </span>
+          <ChevronRightIcon
+            className="size-4 text-sekkha-muted transition-transform group-hover:translate-x-0.5 group-hover:text-sekkha-brand-blue"
+            aria-hidden="true"
+          />
         </div>
       </div>
     </button>

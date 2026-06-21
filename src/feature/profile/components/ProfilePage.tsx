@@ -23,27 +23,29 @@ export function ProfilePage() {
   }
 
   return (
-    <main className="px-4 py-6 pb-24 md:px-8 md:pb-8 lg:px-12">
-      <div className="mx-auto max-w-8xl space-y-4">
-        <PageBreadcrumb items={[{ label: "Beranda", href: "/dashboard" }, { label: "Profil" }]} />
-        <h1 className="text-heading-5 text-sekkha-ink">Profil</h1>
+    <main>
+      <PageBreadcrumb items={[{ label: "Beranda", href: "/dashboard" }, { label: "Profil" }]} />
+      <div className="px-4 py-6 pb-24 md:px-8 md:pb-8 lg:px-12">
+        <div className="mx-auto max-w-8xl space-y-4">
+          <h1 className="text-heading-5 text-sekkha-ink">Profil</h1>
 
-        {/* Profile card */}
-        <ProfileCard
-          name={displayName}
-          school={school}
-          joinedAt="2025-07-01"
-        />
+          {/* Profile card */}
+          <ProfileCard
+            name={displayName}
+            school={school}
+            joinedAt="2025-07-01"
+          />
 
-        {/* Achievements */}
-        <AchievementsCard
-          badges={DUMMY_BADGES}
-          totalPoints={1240}
-          rank={5}
-        />
+          {/* Achievements */}
+          <AchievementsCard
+            badges={DUMMY_BADGES}
+            totalPoints={1240}
+            rank={5}
+          />
 
-        {/* Settings */}
-        <SettingsSection onLogout={handleLogout} />
+          {/* Settings */}
+          <SettingsSection onLogout={handleLogout} />
+        </div>
       </div>
     </main>
   )

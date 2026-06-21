@@ -249,20 +249,22 @@ export function EventsPage() {
   // Detail view
   if (view === "detail" && selected) {
     return (
-      <main className="px-4 py-6 pb-24 md:px-8 md:pb-8 lg:px-12">
-        <div className="mx-auto max-w-8xl">
-          <PageBreadcrumb items={[{ label: "Beranda", href: "/dashboard" }, { label: "Events", href: "/events" }, { label: selected.title }]} />
-          <div className="rounded-xl border border-sekkha-hairline-soft bg-sekkha-canvas p-5">
-            <EventDetailSheet
-              event={selected}
-              role={role}
-              onClose={() => { setSelected(null); setView("calendar") }}
-              onRsvp={handleRsvp}
-              onEdit={isPengurus ? ev => { setEditTarget(ev); setFormOpen(true) } : undefined}
-              attendances={attendances[selected.id] ?? []}
-              onRecordAttendance={handleRecordAttendance}
-              onRegenerateQr={handleRegenerateQr}
-            />
+      <main>
+        <PageBreadcrumb items={[{ label: "Beranda", href: "/dashboard" }, { label: "Events", href: "/events" }, { label: selected.title }]} />
+        <div className="px-4 py-6 pb-24 md:px-8 md:pb-8 lg:px-12">
+          <div className="mx-auto max-w-8xl">
+            <div className="rounded-xl border border-sekkha-hairline-soft bg-sekkha-canvas p-5">
+              <EventDetailSheet
+                event={selected}
+                role={role}
+                onClose={() => { setSelected(null); setView("calendar") }}
+                onRsvp={handleRsvp}
+                onEdit={isPengurus ? ev => { setEditTarget(ev); setFormOpen(true) } : undefined}
+                attendances={attendances[selected.id] ?? []}
+                onRecordAttendance={handleRecordAttendance}
+                onRegenerateQr={handleRegenerateQr}
+              />
+            </div>
           </div>
         </div>
       </main>
@@ -271,13 +273,14 @@ export function EventsPage() {
 
   // Calendar + list view
   return (
-    <main className="px-4 py-6 pb-24 md:px-8 md:pb-8 lg:px-12">
-      <div className="mx-auto max-w-8xl space-y-4">
-        <PageBreadcrumb items={[{ label: "Beranda", href: "/dashboard" }, { label: "Events" }]} />
-        {/* Page header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <CalendarDaysIcon className="size-5 text-sekkha-brand-blue" aria-hidden="true" />
+    <main>
+      <PageBreadcrumb items={[{ label: "Beranda", href: "/dashboard" }, { label: "Events" }]} />
+      <div className="px-4 py-6 pb-24 md:px-8 md:pb-8 lg:px-12">
+        <div className="mx-auto max-w-8xl space-y-4">
+          {/* Page header */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <CalendarDaysIcon className="size-5 text-sekkha-brand-blue" aria-hidden="true" />
             <h1 className="text-heading-5 text-sekkha-ink">Events</h1>
           </div>
           {isPengurus && (
@@ -359,6 +362,7 @@ export function EventsPage() {
               </div>
             </div>
           </aside>
+        </div>
         </div>
       </div>
 

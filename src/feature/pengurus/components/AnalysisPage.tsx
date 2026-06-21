@@ -22,9 +22,10 @@ const ENGAGEMENT_METRICS = [
 
 export function AnalysisPage() {
   return (
-    <main className="px-4 py-6 pb-24 md:px-8 md:pb-8 lg:px-12">
-      <div className="mx-auto max-w-8xl space-y-5">
-        <PageBreadcrumb items={[{ label: "Beranda", href: "/dashboard" }, { label: "Analysis" }]} />
+    <main>
+      <PageBreadcrumb items={[{ label: "Beranda", href: "/dashboard" }, { label: "Analysis" }]} />
+      <div className="px-4 py-6 pb-24 md:px-8 md:pb-8 lg:px-12">
+        <div className="mx-auto max-w-8xl space-y-5">
 
         <div className="flex items-center gap-2">
           <TrendingDownIcon className="size-5 text-sekkha-brand-blue" aria-hidden="true" />
@@ -88,6 +89,7 @@ export function AnalysisPage() {
                 )}
               </div>
             ))}
+          </div>
           </div>
         </div>
       </div>

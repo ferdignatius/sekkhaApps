@@ -105,14 +105,15 @@ export function AchievementPage() {
   }
 
   return (
-    <main className="px-4 py-6 pb-24 md:px-8 md:pb-8 lg:px-12">
-      <div className="mx-auto max-w-8xl space-y-5">
-        <PageBreadcrumb items={[{ label: "Beranda", href: "/dashboard" }, { label: "Configure" }, { label: "Achievement" }]} />
+    <main>
+      <PageBreadcrumb items={[{ label: "Beranda", href: "/dashboard" }, { label: "Configure" }, { label: "Achievement" }]} />
+      <div className="px-4 py-6 pb-24 md:px-8 md:pb-8 lg:px-12">
+        <div className="mx-auto max-w-8xl space-y-5">
 
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <TrophyIcon className="size-5 text-sekkha-brand-yellow" />
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <TrophyIcon className="size-5 text-sekkha-brand-yellow" />
             <h1 className="text-heading-5 text-sekkha-ink">Achievement</h1>
           </div>
           <button
@@ -221,6 +222,7 @@ export function AchievementPage() {
                 ))}
               </tbody>
             </table>
+          </div>
           </div>
         </div>
       </div>

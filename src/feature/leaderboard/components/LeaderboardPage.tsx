@@ -139,12 +139,12 @@ export function LeaderboardPage() {
   const metricUnit = metric === "points" ? "poin" : metric === "streak" ? "minggu" : "hadir"
 
   return (
-    <main className="relative px-4 py-6 pb-32 md:px-8 md:pb-8 lg:px-12">
-      <div className="mx-auto max-w-8xl space-y-5">
+    <main className="relative">
+      <PageBreadcrumb items={[{ label: "Beranda", href: "/dashboard" }, { label: "Leaderboard" }]} />
+      <div className="px-4 py-6 pb-32 md:px-8 md:pb-8 lg:px-12">
+        <div className="mx-auto max-w-8xl space-y-5">
 
-        <PageBreadcrumb items={[{ label: "Beranda", href: "/dashboard" }, { label: "Leaderboard" }]} />
-
-        {/* ── Title + season (full width, above columns) ────────────────── */}
+          {/* ── Title + season (full width, above columns) ────────────────── */}
         <div>
           <div className="flex items-center gap-2">
             <TrophyIcon className="size-5 text-sekkha-brand-yellow" aria-hidden="true" />
@@ -308,6 +308,7 @@ export function LeaderboardPage() {
               <p className="text-micro text-sekkha-muted">{metricUnit}</p>
             </div>
           </div>
+        </div>
         </div>
       </div>
     </main>

@@ -25,14 +25,15 @@ export function CommunityPage() {
   } as const
 
   return (
-    <main className="px-4 py-6 pb-24 md:px-8 md:pb-8 lg:px-12">
-      <div className="mx-auto max-w-8xl space-y-4">
-        <PageBreadcrumb items={[{ label: "Beranda", href: "/dashboard" }, { label: "Komunitas" }]} />
-        {/* Tab switcher */}
-        <div className="flex gap-1 rounded-full bg-sekkha-surface p-1">
-          <button
-            type="button"
-            onClick={() => setActiveTab("forum")}
+    <main>
+      <PageBreadcrumb items={[{ label: "Beranda", href: "/dashboard" }, { label: "Komunitas" }]} />
+      <div className="px-4 py-6 pb-24 md:px-8 md:pb-8 lg:px-12">
+        <div className="mx-auto max-w-8xl space-y-4">
+          {/* Tab switcher */}
+          <div className="flex gap-1 rounded-full bg-sekkha-surface p-1">
+            <button
+              type="button"
+              onClick={() => setActiveTab("forum")}
             className={`flex flex-1 items-center justify-center gap-1.5 rounded-full py-2 text-body-sm-medium transition-colors ${
               activeTab === "forum"
                 ? "bg-sekkha-canvas text-sekkha-ink shadow-sm"
@@ -56,8 +57,9 @@ export function CommunityPage() {
           </button>
         </div>
 
-        {activeTab === "forum" && <ForumTab currentUser={currentUser} />}
-        {activeTab === "curhat" && <CurhatTab currentUser={currentUser} />}
+          {activeTab === "forum" && <ForumTab currentUser={currentUser} />}
+          {activeTab === "curhat" && <CurhatTab currentUser={currentUser} />}
+        </div>
       </div>
     </main>
   )

@@ -81,19 +81,20 @@ export function EventTypePage() {
   }
 
   return (
-    <main className="px-4 py-6 pb-24 md:px-8 md:pb-8 lg:px-12">
-      <div className="mx-auto max-w-8xl space-y-5">
-        <PageBreadcrumb items={[{ label: "Beranda", href: "/dashboard" }, { label: "Configure" }, { label: "Event Type" }]} />
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <TagIcon className="size-5 text-sekkha-brand-blue" />
-            <h1 className="text-heading-5 text-sekkha-ink">Event Type</h1>
+    <main>
+      <PageBreadcrumb items={[{ label: "Beranda", href: "/dashboard" }, { label: "Configure" }, { label: "Event Type" }]} />
+      <div className="px-4 py-6 pb-24 md:px-8 md:pb-8 lg:px-12">
+        <div className="mx-auto max-w-8xl space-y-5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <TagIcon className="size-5 text-sekkha-brand-blue" />
+              <h1 className="text-heading-5 text-sekkha-ink">Event Type</h1>
+            </div>
+            <button type="button" onClick={openCreate} className="flex items-center gap-1.5 rounded-full bg-sekkha-primary px-4 py-2 text-body-sm-medium text-white transition-opacity hover:opacity-90">
+              <PlusIcon className="size-4" />
+              Tambah Tipe
+            </button>
           </div>
-          <button type="button" onClick={openCreate} className="flex items-center gap-1.5 rounded-full bg-sekkha-primary px-4 py-2 text-body-sm-medium text-white transition-opacity hover:opacity-90">
-            <PlusIcon className="size-4" />
-            Tambah Tipe
-          </button>
-        </div>
 
         {showForm && (
           <div className="rounded-xl border border-sekkha-hairline-soft bg-sekkha-canvas p-5">
@@ -159,6 +160,7 @@ export function EventTypePage() {
             </table>
           </div>
           {types.length === 0 && <div className="py-10 text-center"><p className="text-body-sm text-sekkha-muted">Belum ada tipe event.</p></div>}
+          </div>
         </div>
       </div>
     </main>

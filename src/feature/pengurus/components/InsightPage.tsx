@@ -17,9 +17,10 @@ const STATS = [
 
 export function InsightPage() {
   return (
-    <main className="px-4 py-6 pb-24 md:px-8 md:pb-8 lg:px-12">
-      <div className="mx-auto max-w-8xl space-y-5">
-        <PageBreadcrumb items={[{ label: "Beranda", href: "/dashboard" }, { label: "Insight" }]} />
+    <main>
+      <PageBreadcrumb items={[{ label: "Beranda", href: "/dashboard" }, { label: "Insight" }]} />
+      <div className="px-4 py-6 pb-24 md:px-8 md:pb-8 lg:px-12">
+        <div className="mx-auto max-w-8xl space-y-5">
 
         <div className="flex items-center gap-2">
           <BarChart3Icon className="size-5 text-sekkha-brand-blue" aria-hidden="true" />
@@ -58,6 +59,7 @@ export function InsightPage() {
           <h2 className="mb-4 text-body-sm-medium text-sekkha-ink">Breakdown Kehadiran per Event</h2>
           <div className="flex h-36 items-center justify-center rounded-lg bg-sekkha-surface">
             <p className="text-body-sm text-sekkha-muted">Data breakdown akan ditampilkan di sini</p>
+          </div>
           </div>
         </div>
       </div>

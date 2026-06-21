@@ -50,10 +50,11 @@ export function DashboardPage() {
       : "Pengguna"
 
   return (
-    <main className="px-4 py-6 pb-24 md:px-8 md:pb-8 lg:px-12">
-      <div className="mx-auto max-w-8xl space-y-5">
-        <PageBreadcrumb items={[{ label: "Beranda" }]} />
-        <h1 className="text-heading-5 text-sekkha-ink">Beranda</h1>
+    <main>
+      <PageBreadcrumb items={[{ label: "Beranda" }]} />
+      <div className="px-4 py-6 pb-24 md:px-8 md:pb-8 lg:px-12">
+        <div className="mx-auto max-w-8xl space-y-5">
+          <h1 className="text-heading-5 text-sekkha-ink">Beranda</h1>
 
         {/* ── Two-column layout (desktop 75:25) ────────────────────────── */}
         <div className="flex flex-col gap-5 lg:flex-row">
@@ -84,6 +85,7 @@ export function DashboardPage() {
             {/* Renungan Dhamma Harian */}
             <DhammaWidget />
           </aside>
+        </div>
         </div>
       </div>
     </main>

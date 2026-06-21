@@ -131,15 +131,16 @@ export function BadgePage() {
   }
 
   return (
-    <main className="px-4 py-6 pb-24 md:px-8 md:pb-8 lg:px-12">
-      <div className="mx-auto max-w-8xl space-y-5">
-        <PageBreadcrumb items={[{ label: "Beranda", href: "/dashboard" }, { label: "Configure" }, { label: "Badge" }]} />
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <AwardIcon className="size-5 text-sekkha-brand-blue" />
-            <h1 className="text-heading-5 text-sekkha-ink">Badge</h1>
-          </div>
+    <main>
+      <PageBreadcrumb items={[{ label: "Beranda", href: "/dashboard" }, { label: "Configure" }, { label: "Badge" }]} />
+      <div className="px-4 py-6 pb-24 md:px-8 md:pb-8 lg:px-12">
+        <div className="mx-auto max-w-8xl space-y-5">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <AwardIcon className="size-5 text-sekkha-brand-blue" />
+              <h1 className="text-heading-5 text-sekkha-ink">Badge</h1>
+            </div>
           <button
             type="button"
             onClick={openCreate}
@@ -236,6 +237,7 @@ export function BadgePage() {
               <p className="text-body-sm text-sekkha-muted">Belum ada badge.</p>
             </div>
           )}
+          </div>
         </div>
       </div>
     </main>

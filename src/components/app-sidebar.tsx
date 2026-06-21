@@ -43,7 +43,7 @@ import { useAuth } from "@/feature/auth"
 // ─── Nav items ─────────────────────────────────────────────────────────────────
 
 const NAV_ITEMS = [
-  { label: "Dashboard",   to: "/dashboard",    icon: LayoutDashboardIcon },
+  { label: "Home",   to: "/home",    icon: LayoutDashboardIcon },
   { label: "Events",      to: "/events",       icon: CalendarDaysIcon    },
   { label: "Leaderboard", to: "/leaderboard",  icon: TrophyIcon          },
   { label: "Komunitas",   to: "/community",    icon: MessageCircleIcon   },
@@ -118,8 +118,8 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
         <SidebarMenu>
           {NAV_ITEMS.map(({ label, to, icon: Icon }) => {
             const isActive =
-              to === "/dashboard"
-                ? pathname === "/dashboard" || pathname === "/dashboard/"
+              to === "/home"
+                ? pathname === "/home" || pathname === "/home/"
                 : pathname.startsWith(to)
 
             return (

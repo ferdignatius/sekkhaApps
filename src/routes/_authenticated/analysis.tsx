@@ -1,6 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router"
-import { AnalysisPage } from "@/feature/pengurus"
+import { createFileRoute, lazyRouteComponent } from "@tanstack/react-router"
+import { GenericSkeleton } from "@/components/common/PageSkeletons"
 
 export const Route = createFileRoute("/_authenticated/analysis")({
-  component: AnalysisPage,
+  component: lazyRouteComponent(() => import("@/feature/pengurus").then(m => ({ default: m.AnalysisPage }))),
+  pendingComponent: GenericSkeleton,
 })

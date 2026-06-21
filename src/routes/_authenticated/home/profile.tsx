@@ -1,6 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router"
-import { ProfilePage } from "@/feature/profile"
+import { createFileRoute, lazyRouteComponent } from "@tanstack/react-router"
+import { ProfileSkeleton } from "@/components/common/PageSkeletons"
 
 export const Route = createFileRoute("/_authenticated/home/profile")({
-  component: ProfilePage,
+  component: lazyRouteComponent(() => import("@/feature/profile").then(m => ({ default: m.ProfilePage }))),
+  pendingComponent: ProfileSkeleton,
 })

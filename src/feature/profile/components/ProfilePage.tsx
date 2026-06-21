@@ -24,7 +24,7 @@ export function ProfilePage() {
 
   return (
     <main>
-      <PageBreadcrumb items={[{ label: "Beranda", href: "/dashboard" }, { label: "Profil" }]} />
+      <PageBreadcrumb items={[{ label: "Beranda", href: "/home" }, { label: "Profil" }]} />
       <div className="px-4 py-6 pb-24 md:px-8 md:pb-8 lg:px-12">
         <div className="mx-auto max-w-8xl space-y-4">
           <h1 className="text-heading-5 text-sekkha-ink">Profil</h1>

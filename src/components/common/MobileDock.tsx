@@ -6,11 +6,11 @@ import { Link, useRouterState } from "@tanstack/react-router"
 import { LayoutDashboardIcon, UserIcon, CalendarDaysIcon, MessageCircleIcon, TrophyIcon } from "lucide-react"
 
 const DOCK_ITEMS = [
-  { label: "Beranda",     to: "/dashboard",          icon: LayoutDashboardIcon },
+  { label: "Beranda",     to: "/home",          icon: LayoutDashboardIcon },
   { label: "Events",      to: "/events",             icon: CalendarDaysIcon    },
   { label: "Top",         to: "/leaderboard",        icon: TrophyIcon          },
   { label: "Komunitas",   to: "/community",          icon: MessageCircleIcon   },
-  { label: "Profil",      to: "/dashboard/profile",  icon: UserIcon            },
+  { label: "Profil",      to: "/home/profile",  icon: UserIcon            },
 ]
 
 // ─── Component ─────────────────────────────────────────────────────────────────
@@ -26,8 +26,8 @@ export function MobileDock() {
     >
       {DOCK_ITEMS.map(({ label, to, icon: Icon }) => {
         const isActive =
-          to === "/dashboard"
-            ? pathname === "/dashboard" || pathname === "/dashboard/"
+          to === "/home"
+            ? pathname === "/home" || pathname === "/home/"
             : pathname.startsWith(to)
 
         return (

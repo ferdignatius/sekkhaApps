@@ -132,7 +132,7 @@ export function useLoginForm(): UseLoginFormReturn {
       if (isValidRedirectTo(redirectTo)) {
         void navigate({ to: redirectTo })
       } else {
-        void navigate({ to: "/dashboard" })
+        void navigate({ to: "/home" })
       }
     } catch (error) {
       if (error instanceof AuthError) {

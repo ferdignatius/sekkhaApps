@@ -1,7 +1,7 @@
 // _authenticated.tsx — Pathless layout route for all pages that require auth.
 // Named with _ prefix so TanStack Router treats it as a pathless layout wrapper
 // (no URL segment added). All routes under _authenticated/ share this guard +
-// shell. The URLs stay clean: /dashboard, /dashboard/profile, etc.
+// shell. The URLs stay clean: /home, /home/profile, /events, etc.
 //
 // To add more protected pages, create files under src/routes/_authenticated/.
 

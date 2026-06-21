@@ -269,7 +269,7 @@ export function EventsPage() {
   if (view === "detail" && selected) {
     return (
       <main>
-        <PageBreadcrumb items={[{ label: "Beranda", href: "/dashboard" }, { label: "Events", href: "/events" }, { label: selected.title }]} />
+        <PageBreadcrumb items={[{ label: "Beranda", href: "/home" }, { label: "Events", href: "/events" }, { label: selected.title }]} />
         <div className="px-4 py-6 pb-24 md:px-8 md:pb-8 lg:px-12">
           <div className="mx-auto max-w-8xl">
             <div className="rounded-xl border border-sekkha-hairline-soft bg-sekkha-canvas p-5">
@@ -293,7 +293,7 @@ export function EventsPage() {
   // Calendar + list view
   return (
     <main>
-      <PageBreadcrumb items={[{ label: "Beranda", href: "/dashboard" }, { label: "Events" }]} />
+      <PageBreadcrumb items={[{ label: "Beranda", href: "/home" }, { label: "Events" }]} />
       <div className="px-4 py-6 pb-24 md:px-8 md:pb-8 lg:px-12">
         <div className="mx-auto max-w-8xl space-y-4">
           {/* Page header */}

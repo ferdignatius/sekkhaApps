@@ -93,7 +93,7 @@ export function useSignUpForm(): UseSignUpFormReturn {
 
     try {
       await register(fields.email, fields.password)
-      void navigate({ to: "/dashboard" })
+      void navigate({ to: "/home" })
     } catch (error) {
       if (error instanceof AuthError) {
         switch (error.code) {

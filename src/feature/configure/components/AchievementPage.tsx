@@ -106,7 +106,7 @@ export function AchievementPage() {
 
   return (
     <main>
-      <PageBreadcrumb items={[{ label: "Beranda", href: "/dashboard" }, { label: "Configure" }, { label: "Achievement" }]} />
+      <PageBreadcrumb items={[{ label: "Beranda", href: "/home" }, { label: "Configure" }, { label: "Achievement" }]} />
       <div className="px-4 py-6 pb-24 md:px-8 md:pb-8 lg:px-12">
         <div className="mx-auto max-w-8xl space-y-5">
 

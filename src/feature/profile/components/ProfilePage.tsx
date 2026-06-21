@@ -67,11 +67,12 @@ export function ProfilePage() {
             favoriteEvent="Kebaktian Minggu"
           />
 
-          {/* Attendance tracker — streak + weekly calendar (fix #2) */}
+          {/* Attendance tracker — streak + monthly calendar (fix #2) */}
           <AttendanceTracker
             currentStreak={5}
             longestStreak={8}
-            weeklyCheckins={[true, true, true, true, true, false, false]}
+            monthlyCheckins={[true, true, true, false]}
+            monthLabel="Juli 2025"
           />
 
           {/* Achievements */}

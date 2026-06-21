@@ -1,10 +1,19 @@
 // feature/profile/components/SettingsSection
-// Settings section on the profile page. Contains logout action.
+// Settings section: account management items + logout (destructive, always last).
 
-import { LogOutIcon, ChevronRightIcon } from "lucide-react"
+import {
+  LogOutIcon,
+  KeyRoundIcon,
+  BellIcon,
+  ChevronRightIcon,
+} from "lucide-react"
+
+// ─── Types ───────────────────────────────────────────────────────────────────
 
 interface SettingsSectionProps {
   onLogout: () => void
+  onChangePassword?: () => void
+  onNotificationSettings?: () => void
 }
 
 interface SettingsItem {
@@ -16,8 +25,28 @@ interface SettingsItem {
   variant?: "default" | "danger"
 }
 
-export function SettingsSection({ onLogout }: SettingsSectionProps) {
+// ─── Component ───────────────────────────────────────────────────────────────
+
+export function SettingsSection({
+  onLogout,
+  onChangePassword,
+  onNotificationSettings,
+}: SettingsSectionProps) {
   const items: SettingsItem[] = [
+    {
+      id: "password",
+      icon: KeyRoundIcon,
+      label: "Ubah Kata Sandi",
+      description: "Ganti password akun kamu",
+      onClick: onChangePassword ?? (() => {}),
+    },
+    {
+      id: "notifications",
+      icon: BellIcon,
+      label: "Notifikasi",
+      description: "Atur pengingat kebaktian dan event",
+      onClick: onNotificationSettings ?? (() => {}),
+    },
     {
       id: "logout",
       icon: LogOutIcon,
@@ -62,9 +91,7 @@ export function SettingsSection({ onLogout }: SettingsSectionProps) {
               >
                 <div
                   className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
-                    isDanger
-                      ? "bg-red-50"
-                      : "bg-sekkha-surface"
+                    isDanger ? "bg-red-50" : "bg-sekkha-surface"
                   }`}
                 >
                   <Icon

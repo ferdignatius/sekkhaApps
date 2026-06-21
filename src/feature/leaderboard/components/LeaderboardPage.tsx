@@ -16,6 +16,7 @@ import {
   AwardIcon,
 } from "lucide-react"
 import { useAuth } from "@/feature/auth"
+import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
 import { getLeaderboardData } from "../data/leaderboardDummy"
 import { getCurrentSeason, seasonLabel } from "../types"
 import type { LeaderboardMetric, LeaderboardFilter, LeaderboardEntry } from "../types"
@@ -138,8 +139,10 @@ export function LeaderboardPage() {
   const metricUnit = metric === "points" ? "poin" : metric === "streak" ? "minggu" : "hadir"
 
   return (
-    <main className="relative px-4 py-6 pb-32 md:px-5 md:pb-8">
-      <div className="mx-auto max-w-7xl space-y-5">
+    <main className="relative px-4 py-6 pb-32 md:px-8 md:pb-8 lg:px-12">
+      <div className="mx-auto max-w-8xl space-y-5">
+
+        <PageBreadcrumb items={[{ label: "Beranda", href: "/dashboard" }, { label: "Leaderboard" }]} />
 
         {/* ── Title + season (full width, above columns) ────────────────── */}
         <div>

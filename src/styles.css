@@ -151,6 +151,9 @@
     --spacing-hero: 120px;
     --spacing-section-lg: 96px;
     --spacing-section: 64px;
+
+    /* Container max-width */
+    --max-width-8xl: 88rem;
 }
 
 @layer base {

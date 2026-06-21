@@ -15,6 +15,8 @@ import {
   ChevronRightIcon,
   MessageCircleIcon,
   TrophyIcon,
+  BarChart3Icon,
+  TrendingDownIcon,
 } from "lucide-react"
 import {
   Sidebar,
@@ -58,6 +60,7 @@ const CONFIGURE_SECTIONS = [
       { label: "Badge", to: "/configure/master/badge", icon: AwardIcon, hasRoute: true },
       { label: "Level", to: "/configure/master/level", icon: ZapIcon, hasRoute: true },
       { label: "Event Type", to: "/configure/master/event-type", icon: TagIcon, hasRoute: true },
+      { label: "Achievement", to: "/configure/master/achievement", icon: TrophyIcon, hasRoute: true },
     ],
   },
   {
@@ -131,6 +134,31 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
             )
           })}
         </SidebarMenu>
+
+        {/* Pengurus section — Insight & Analysis */}
+        {isPengurus && (
+          <SidebarGroup className="mt-3 pt-3 border-t border-sekkha-hairline-soft">
+            <SidebarGroupLabel>Pengurus</SidebarGroupLabel>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={pathname.startsWith("/insight")} tooltip="Insight">
+                  <Link to="/insight">
+                    <BarChart3Icon className="size-4 shrink-0" />
+                    <span>Insight</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={pathname.startsWith("/analysis")} tooltip="Analysis">
+                  <Link to="/analysis">
+                    <TrendingDownIcon className="size-4 shrink-0" />
+                    <span>Analysis</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroup>
+        )}
 
         {/* Configure — pengurus/admin only */}
         {isPengurus && (

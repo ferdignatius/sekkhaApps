@@ -3,6 +3,7 @@
 
 import { useState } from "react"
 import { useAuth } from "@/feature/auth"
+import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
 import { ForumTab } from "./ForumTab"
 import { CurhatTab } from "./CurhatTab"
 import { UsersIcon, LockIcon } from "lucide-react"
@@ -25,7 +26,8 @@ export function CommunityPage() {
 
   return (
     <main className="px-4 py-6 pb-24 md:px-8 md:pb-8 lg:px-12">
-      <div className="mx-auto max-w-7xl space-y-4">
+      <div className="mx-auto max-w-8xl space-y-4">
+        <PageBreadcrumb items={[{ label: "Beranda", href: "/dashboard" }, { label: "Komunitas" }]} />
         {/* Tab switcher */}
         <div className="flex gap-1 rounded-full bg-sekkha-surface p-1">
           <button

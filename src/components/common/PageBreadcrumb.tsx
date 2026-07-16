@@ -2,6 +2,7 @@
 // Full-width breadcrumb bar that visually connects to the sidebar.
 // Rendered OUTSIDE the max-w container for true edge-to-edge coverage.
 
+import { Fragment } from "react"
 import { Link } from "@tanstack/react-router"
 import {
   Breadcrumb,
@@ -36,16 +37,18 @@ export function PageBreadcrumb({ items }: PageBreadcrumbProps) {
             const isLast = idx === items.length - 1
 
             return (
-              <BreadcrumbItem key={item.label + idx}>
+              <Fragment key={item.label + idx}>
                 {idx > 0 && <BreadcrumbSeparator />}
-                {isLast ? (
-                  <BreadcrumbPage>{item.label}</BreadcrumbPage>
-                ) : (
-                  <BreadcrumbLink asChild>
-                    <Link to={item.href ?? "#"}>{item.label}</Link>
-                  </BreadcrumbLink>
-                )}
-              </BreadcrumbItem>
+                <BreadcrumbItem>
+                  {isLast ? (
+                    <BreadcrumbPage>{item.label}</BreadcrumbPage>
+                  ) : (
+                    <BreadcrumbLink asChild>
+                      <Link to={item.href ?? "#"}>{item.label}</Link>
+                    </BreadcrumbLink>
+                  )}
+                </BreadcrumbItem>
+              </Fragment>
             )
           })}
         </BreadcrumbList>

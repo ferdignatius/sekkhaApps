@@ -1,23 +1,10 @@
+// ─── Dynamic Sidebar ─────────────────────────────────────────────────────────
+// Shell reads Registry to build sidebar dynamically.
+// Tidak tahu apa isi internal modul — hanya baca navItems, pengurusNavItems,
+// dan configureSections dari ModuleDefinition.
+
 import { Link, useRouterState } from "@tanstack/react-router"
-import {
-  LayoutDashboardIcon,
-  UserIcon,
-  LogOutIcon,
-  CalendarDaysIcon,
-  AwardIcon,
-  LayersIcon,
-  TagIcon,
-  ZapIcon,
-  ActivityIcon,
-  BellIcon,
-  BuildingIcon,
-  UsersIcon,
-  ChevronRightIcon,
-  MessageCircleIcon,
-  TrophyIcon,
-  BarChart3Icon,
-  TrendingDownIcon,
-} from "lucide-react"
+import { LogOutIcon, ChevronRightIcon } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -38,55 +25,9 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
-import { useAuth } from "@/feature/auth"
-
-// ─── Nav items ─────────────────────────────────────────────────────────────────
-
-const NAV_ITEMS = [
-  { label: "Home",   to: "/home",    icon: LayoutDashboardIcon },
-  { label: "Events",      to: "/events",       icon: CalendarDaysIcon    },
-  { label: "Leaderboard", to: "/leaderboard",  icon: TrophyIcon          },
-  { label: "Komunitas",   to: "/community",    icon: MessageCircleIcon   },
-  { label: "Profil",      to: "/home/profile", icon: UserIcon        },
-] as const
-
-// ─── Configure sub-menu structure (pengurus/admin only) ────────────────────────
-
-const CONFIGURE_SECTIONS = [
-  {
-    label: "Master Data",
-    icon: LayersIcon,
-    items: [
-      { label: "Badge", to: "/configure/master/badge", icon: AwardIcon, hasRoute: true },
-      { label: "Level", to: "/configure/master/level", icon: ZapIcon, hasRoute: true },
-      { label: "Event Type", to: "/configure/master/event-type", icon: TagIcon, hasRoute: true },
-      { label: "Achievement", to: "/configure/master/achievement", icon: TrophyIcon, hasRoute: true },
-    ],
-  },
-  {
-    label: "Gamifikasi Rules",
-    icon: ActivityIcon,
-    items: [
-      { label: "Poin per Aksi", to: "/configure/gamifikasi/poin", icon: ZapIcon, hasRoute: false },
-      { label: "Streak Logic", to: "/configure/gamifikasi/streak", icon: ActivityIcon, hasRoute: false },
-    ],
-  },
-  {
-    label: "Early Warning",
-    icon: BellIcon,
-    items: [
-      { label: "Threshold", to: "/configure/early-warning/threshold", icon: BellIcon, hasRoute: false },
-    ],
-  },
-  {
-    label: "Organisasi",
-    icon: BuildingIcon,
-    items: [
-      { label: "Profil Vihara", to: "/configure/organisasi/profil", icon: BuildingIcon, hasRoute: false },
-      { label: "Pengurus", to: "/configure/organisasi/pengurus", icon: UsersIcon, hasRoute: false },
-    ],
-  },
-]
+import { useAuth } from "@/modules/auth"
+import { activeModules } from "@/shell/registry"
+import { iconMap } from "@/shell/icon-map"
 
 // ─── Component ─────────────────────────────────────────────────────────────────
 
@@ -97,6 +38,11 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
 
   const role = authState.status === "authenticated" ? authState.role : null
   const isPengurus = role === "pengurus" || role === "admin"
+
+  // ── Build nav items dari Registry ─────────────────────────────────────────
+  const mainNavItems = activeModules.flatMap((m) => m.navItems)
+  const pengurusNavItems = activeModules.flatMap((m) => m.pengurusNavItems ?? [])
+  const configureSections = activeModules.flatMap((m) => m.configureSections ?? [])
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -114,9 +60,10 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
 
       {/* Navigation */}
       <SidebarContent className="px-2 py-3">
-        {/* Main nav */}
+        {/* Main nav — dari Registry */}
         <SidebarMenu>
-          {NAV_ITEMS.map(({ label, to, icon: Icon }) => {
+          {mainNavItems.map(({ label, to, icon }) => {
+            const Icon = iconMap[icon]
             const isActive =
               to === "/home"
                 ? pathname === "/home" || pathname === "/home/"
@@ -126,7 +73,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
               <SidebarMenuItem key={to}>
                 <SidebarMenuButton asChild isActive={isActive} tooltip={label}>
                   <Link to={to}>
-                    <Icon className="size-4 shrink-0" />
+                    {Icon && <Icon className="size-4 shrink-0" />}
                     <span>{label}</span>
                   </Link>
                 </SidebarMenuButton>
@@ -135,38 +82,35 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
           })}
         </SidebarMenu>
 
-        {/* Pengurus section — Insight & Analysis */}
-        {isPengurus && (
+        {/* Pengurus section — dari Registry */}
+        {isPengurus && pengurusNavItems.length > 0 && (
           <SidebarGroup className="mt-3 pt-3 border-t border-sekkha-hairline-soft">
             <SidebarGroupLabel>Pengurus</SidebarGroupLabel>
             <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={pathname.startsWith("/insight")} tooltip="Insight">
-                  <Link to="/insight">
-                    <BarChart3Icon className="size-4 shrink-0" />
-                    <span>Insight</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={pathname.startsWith("/analysis")} tooltip="Analysis">
-                  <Link to="/analysis">
-                    <TrendingDownIcon className="size-4 shrink-0" />
-                    <span>Analysis</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+              {pengurusNavItems.map(({ label, to, icon }) => {
+                const Icon = iconMap[icon]
+                return (
+                  <SidebarMenuItem key={to}>
+                    <SidebarMenuButton asChild isActive={pathname.startsWith(to)} tooltip={label}>
+                      <Link to={to}>
+                        {Icon && <Icon className="size-4 shrink-0" />}
+                        <span>{label}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )
+              })}
             </SidebarMenu>
           </SidebarGroup>
         )}
 
-        {/* Configure — pengurus/admin only */}
-        {isPengurus && (
+        {/* Configure — dari Registry */}
+        {isPengurus && configureSections.length > 0 && (
           <SidebarGroup className="mt-3 pt-3 border-t border-sekkha-hairline-soft">
             <SidebarGroupLabel>Configure</SidebarGroupLabel>
             <SidebarMenu>
-              {CONFIGURE_SECTIONS.map((section) => {
-                const SectionIcon = section.icon
+              {configureSections.map((section) => {
+                const SectionIcon = iconMap[section.icon]
                 const isSectionActive = section.items.some((item) =>
                   pathname.startsWith(item.to),
                 )
@@ -181,7 +125,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                     <SidebarMenuItem>
                       <CollapsibleTrigger asChild>
                         <SidebarMenuButton tooltip={section.label}>
-                          <SectionIcon className="size-4 shrink-0" />
+                          {SectionIcon && <SectionIcon className="size-4 shrink-0" />}
                           <span>{section.label}</span>
                           <ChevronRightIcon className="ml-auto size-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                         </SidebarMenuButton>
@@ -189,7 +133,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                       <CollapsibleContent>
                         <SidebarMenuSub>
                           {section.items.map((item) => {
-                            const SubIcon = item.icon
+                            const SubIcon = iconMap[item.icon]
                             const isSubActive = pathname.startsWith(item.to)
 
                             return (
@@ -200,12 +144,12 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                                 >
                                   {item.hasRoute ? (
                                     <Link to={item.to as "/"}>
-                                      <SubIcon className="size-3.5 shrink-0" />
+                                      {SubIcon && <SubIcon className="size-3.5 shrink-0" />}
                                       <span>{item.label}</span>
                                     </Link>
                                   ) : (
                                     <a href={item.to}>
-                                      <SubIcon className="size-3.5 shrink-0" />
+                                      {SubIcon && <SubIcon className="size-3.5 shrink-0" />}
                                       <span>{item.label}</span>
                                     </a>
                                   )}

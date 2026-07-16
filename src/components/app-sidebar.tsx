@@ -26,6 +26,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
 import { useAuth } from "@/modules/auth"
+import { useUnreadNotificationsCount } from "@/modules/notifications"
 import { activeModules } from "@/shell/registry"
 import { iconMap } from "@/shell/icon-map"
 
@@ -35,6 +36,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const { logout, authState } = useAuth()
   const { location } = useRouterState()
   const pathname = location.pathname
+  const unreadNotificationsCount = useUnreadNotificationsCount()
 
   const role = authState.status === "authenticated" ? authState.role : null
   const isPengurus = role === "pengurus" || role === "admin"
@@ -69,12 +71,19 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                 ? pathname === "/home" || pathname === "/home/"
                 : pathname.startsWith(to)
 
+            const isNotifications = to === "/notifications"
+
             return (
               <SidebarMenuItem key={to}>
                 <SidebarMenuButton asChild isActive={isActive} tooltip={label}>
                   <Link to={to}>
                     {Icon && <Icon className="size-4 shrink-0" />}
-                    <span>{label}</span>
+                    <span className="flex-1">{label}</span>
+                    {isNotifications && unreadNotificationsCount > 0 && (
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+                        {unreadNotificationsCount}
+                      </span>
+                    )}
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

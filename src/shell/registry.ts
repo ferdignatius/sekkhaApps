@@ -49,6 +49,8 @@ import { communityModule } from "@/modules/community"
 import { profileModule } from "@/modules/profile"
 import { configureModule } from "@/modules/configure"
 import { pengurusModule } from "@/modules/pengurus"
+import { teamsModule } from "@/modules/teams"
+import { notificationsModule } from "@/modules/notifications"
 
 /**
  * Daftar semua modul frontend yang aktif.
@@ -61,6 +63,8 @@ export const activeModules: ModuleDefinition[] = [
   leaderboardModule,
   communityModule,
   profileModule,
+  notificationsModule,
   configureModule,
+  teamsModule,
   pengurusModule,
 ]

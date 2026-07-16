@@ -5,6 +5,7 @@
 import { useState } from "react"
 import { PlusIcon, PencilIcon, TrashIcon, TrophyIcon } from "lucide-react"
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
+import { useAuth } from "@/modules/auth"
 import { achievementsApi } from "../api/configureApi"
 import { useConfigureCrud } from "../hooks/useConfigureCrud"
 import type { AchievementDto } from "../api/configureApi"
@@ -47,6 +48,9 @@ const conditionLabel: Record<Achievement["condition_type"], string> = {
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export function AchievementPage() {
+  const { authState } = useAuth()
+  const isAdmin = authState.status === "authenticated" && authState.role === "admin"
+
   const { items: achievements, create: apiCreate, update: apiUpdate, remove: apiRemove } = useConfigureCrud<AchievementDto>(achievementsApi, INITIAL_ACHIEVEMENTS as any)
   const [formOpen, setFormOpen] = useState(false)
   const [editTarget, setEditTarget] = useState<Achievement | null>(null)
@@ -118,20 +122,22 @@ export function AchievementPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <TrophyIcon className="size-5 text-sekkha-brand-yellow" />
-            <h1 className="text-heading-5 text-sekkha-ink">Achievement</h1>
+              <h1 className="text-heading-5 text-sekkha-ink">Achievement</h1>
+            </div>
+            {isAdmin && (
+              <button
+                type="button"
+                onClick={openCreate}
+                className="flex items-center gap-1.5 rounded-full bg-sekkha-primary px-4 py-2 text-body-sm-medium text-white transition-opacity hover:opacity-90"
+              >
+                <PlusIcon className="size-4" />
+                Tambah Achievement
+              </button>
+            )}
           </div>
-          <button
-            type="button"
-            onClick={openCreate}
-            className="flex items-center gap-1.5 rounded-full bg-sekkha-primary px-4 py-2 text-body-sm-medium text-white transition-opacity hover:opacity-90"
-          >
-            <PlusIcon className="size-4" />
-            Tambah Achievement
-          </button>
-        </div>
 
         {/* Inline form */}
-        {formOpen && (
+        {formOpen && isAdmin && (
           <div className="rounded-xl border border-sekkha-hairline-soft bg-sekkha-canvas p-5">
             <h2 className="mb-4 text-body-sm-medium text-sekkha-ink">
               {editTarget ? "Edit Achievement" : "Tambah Achievement Baru"}
@@ -186,7 +192,7 @@ export function AchievementPage() {
                   <th className="hidden px-4 py-3 text-left font-medium text-sekkha-slate sm:table-cell">Kondisi</th>
                   <th className="hidden px-4 py-3 text-left font-medium text-sekkha-slate sm:table-cell">Nilai</th>
                   <th className="px-4 py-3 text-left font-medium text-sekkha-slate">Status</th>
-                  <th className="px-4 py-3 text-left font-medium text-sekkha-slate">Aksi</th>
+                  {isAdmin && <th className="px-4 py-3 text-left font-medium text-sekkha-slate">Aksi</th>}
                 </tr>
               </thead>
               <tbody>
@@ -202,8 +208,11 @@ export function AchievementPage() {
                     <td className="px-4 py-3">
                       <button
                         type="button"
+                        disabled={!isAdmin}
                         onClick={() => toggleActive(ach.id)}
                         className={`rounded-full px-2.5 py-0.5 text-caption-bold ${
+                          !isAdmin ? "" : "cursor-pointer"
+                        } ${
                           ach.is_active
                             ? "bg-sekkha-teal-light text-sekkha-brand-blue"
                             : "bg-sekkha-surface text-sekkha-muted"
@@ -212,16 +221,18 @@ export function AchievementPage() {
                         {ach.is_active ? "Aktif" : "Nonaktif"}
                       </button>
                     </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1">
-                        <button type="button" onClick={() => openEdit(ach)} className="rounded-md p-1.5 text-sekkha-slate hover:bg-sekkha-surface hover:text-sekkha-ink" aria-label="Edit">
-                          <PencilIcon className="size-3.5" />
-                        </button>
-                        <button type="button" onClick={() => handleDelete(ach.id)} className="rounded-md p-1.5 text-sekkha-slate hover:bg-red-50 hover:text-red-500" aria-label="Hapus">
-                          <TrashIcon className="size-3.5" />
-                        </button>
-                      </div>
-                    </td>
+                    {isAdmin && (
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1">
+                          <button type="button" onClick={() => openEdit(ach)} className="rounded-md p-1.5 text-sekkha-slate hover:bg-sekkha-surface hover:text-sekkha-ink" aria-label="Edit">
+                            <PencilIcon className="size-3.5" />
+                          </button>
+                          <button type="button" onClick={() => handleDelete(ach.id)} className="rounded-md p-1.5 text-sekkha-slate hover:bg-red-50 hover:text-red-500" aria-label="Hapus">
+                            <TrashIcon className="size-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>

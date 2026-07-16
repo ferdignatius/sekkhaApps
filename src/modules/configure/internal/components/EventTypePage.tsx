@@ -5,6 +5,7 @@
 import { useState } from "react"
 import { PlusIcon, PencilIcon, TrashIcon, TagIcon } from "lucide-react"
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
+import { useAuth } from "@/modules/auth"
 import { eventTypesApi } from "../api/configureApi"
 import { useConfigureCrud } from "../hooks/useConfigureCrud"
 import type { EventTypeDto } from "../api/configureApi"
@@ -32,6 +33,9 @@ const INITIAL_TYPES: EventTypeItem[] = [
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export function EventTypePage() {
+  const { authState } = useAuth()
+  const isAdmin = authState.status === "authenticated" && authState.role === "admin"
+
   const { items: types, create: apiCreate, update: apiUpdate, remove: apiRemove } = useConfigureCrud<EventTypeDto>(eventTypesApi, INITIAL_TYPES as any)
   const [editing, setEditing] = useState<EventTypeItem | null>(null)
   const [showForm, setShowForm] = useState(false)
@@ -89,13 +93,15 @@ export function EventTypePage() {
               <TagIcon className="size-5 text-sekkha-brand-blue" />
               <h1 className="text-heading-5 text-sekkha-ink">Event Type</h1>
             </div>
-            <button type="button" onClick={openCreate} className="flex items-center gap-1.5 rounded-full bg-sekkha-primary px-4 py-2 text-body-sm-medium text-white transition-opacity hover:opacity-90">
-              <PlusIcon className="size-4" />
-              Tambah Tipe
-            </button>
+            {isAdmin && (
+              <button type="button" onClick={openCreate} className="flex items-center gap-1.5 rounded-full bg-sekkha-primary px-4 py-2 text-body-sm-medium text-white transition-opacity hover:opacity-90">
+                <PlusIcon className="size-4" />
+                Tambah Tipe
+              </button>
+            )}
           </div>
 
-        {showForm && (
+        {showForm && isAdmin && (
           <div className="rounded-xl border border-sekkha-hairline-soft bg-sekkha-canvas p-5">
             <h2 className="mb-4 text-body-sm-medium text-sekkha-ink">{editing ? "Edit Tipe" : "Tipe Baru"}</h2>
             <form onSubmit={handleSubmit} className="space-y-3">
@@ -133,7 +139,7 @@ export function EventTypePage() {
                   <th className="px-4 py-3 font-medium text-sekkha-slate">Kode</th>
                   <th className="px-4 py-3 font-medium text-sekkha-slate">Label</th>
                   <th className="px-4 py-3 font-medium text-sekkha-slate">Default</th>
-                  <th className="px-4 py-3 font-medium text-sekkha-slate">Aksi</th>
+                  {isAdmin && <th className="px-4 py-3 font-medium text-sekkha-slate">Aksi</th>}
                 </tr>
               </thead>
               <tbody>
@@ -145,14 +151,16 @@ export function EventTypePage() {
                     <td className="px-4 py-3 font-mono text-caption text-sekkha-slate">{item.code}</td>
                     <td className="px-4 py-3 font-medium text-sekkha-ink">{item.label}</td>
                     <td className="px-4 py-3 text-sekkha-slate">{item.is_default ? "Ya" : "—"}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1">
-                        <button type="button" onClick={() => openEdit(item)} className="rounded-md p-1.5 text-sekkha-slate hover:bg-sekkha-surface hover:text-sekkha-ink" aria-label="Edit"><PencilIcon className="size-3.5" /></button>
-                        {!item.is_default && (
-                          <button type="button" onClick={() => handleDelete(item.id)} className="rounded-md p-1.5 text-sekkha-slate hover:bg-red-50 hover:text-red-500" aria-label="Hapus"><TrashIcon className="size-3.5" /></button>
-                        )}
-                      </div>
-                    </td>
+                    {isAdmin && (
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1">
+                          <button type="button" onClick={() => openEdit(item)} className="rounded-md p-1.5 text-sekkha-slate hover:bg-sekkha-surface hover:text-sekkha-ink" aria-label="Edit"><PencilIcon className="size-3.5" /></button>
+                          {!item.is_default && (
+                            <button type="button" onClick={() => handleDelete(item.id)} className="rounded-md p-1.5 text-sekkha-slate hover:bg-red-50 hover:text-red-500" aria-label="Hapus"><TrashIcon className="size-3.5" /></button>
+                          )}
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>

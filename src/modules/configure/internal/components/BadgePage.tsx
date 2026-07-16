@@ -5,6 +5,7 @@
 import { useState } from "react"
 import { PlusIcon, PencilIcon, TrashIcon, AwardIcon } from "lucide-react"
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
+import { useAuth } from "@/modules/auth"
 import { badgesApi } from "../api/configureApi"
 import { useConfigureCrud } from "../hooks/useConfigureCrud"
 import type { BadgeDto } from "../api/configureApi"
@@ -60,6 +61,9 @@ const INITIAL_BADGES: Badge[] = [
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export function BadgePage() {
+  const { authState } = useAuth()
+  const isAdmin = authState.status === "authenticated" && authState.role === "admin"
+
   const { items: badges, create: apiCreate, update: apiUpdate, remove: apiRemove, loading } = useConfigureCrud<BadgeDto>(badgesApi, INITIAL_BADGES as any)
   const [editing, setEditing] = useState<Badge | null>(null)
   const [showForm, setShowForm] = useState(false)
@@ -137,18 +141,20 @@ export function BadgePage() {
               <AwardIcon className="size-5 text-sekkha-brand-blue" />
               <h1 className="text-heading-5 text-sekkha-ink">Badge</h1>
             </div>
-          <button
-            type="button"
-            onClick={openCreate}
-            className="flex items-center gap-1.5 rounded-full bg-sekkha-primary px-4 py-2 text-body-sm-medium text-white transition-opacity hover:opacity-90"
-          >
-            <PlusIcon className="size-4" />
-            Tambah Badge
-          </button>
-        </div>
+            {isAdmin && (
+              <button
+                type="button"
+                onClick={openCreate}
+                className="flex items-center gap-1.5 rounded-full bg-sekkha-primary px-4 py-2 text-body-sm-medium text-white transition-opacity hover:opacity-90"
+              >
+                <PlusIcon className="size-4" />
+                Tambah Badge
+              </button>
+            )}
+          </div>
 
         {/* Form */}
-        {showForm && (
+        {showForm && isAdmin && (
           <div className="rounded-xl border border-sekkha-hairline-soft bg-sekkha-canvas p-5">
             <h2 className="mb-4 text-body-sm-medium text-sekkha-ink">
               {editing ? "Edit Badge" : "Badge Baru"}
@@ -200,7 +206,7 @@ export function BadgePage() {
                   <th className="px-4 py-3 font-medium text-sekkha-slate">Nama</th>
                   <th className="hidden px-4 py-3 font-medium text-sekkha-slate sm:table-cell">Kondisi</th>
                   <th className="hidden px-4 py-3 font-medium text-sekkha-slate sm:table-cell">Nilai</th>
-                  <th className="px-4 py-3 font-medium text-sekkha-slate">Aksi</th>
+                  {isAdmin && <th className="px-4 py-3 font-medium text-sekkha-slate">Aksi</th>}
                 </tr>
               </thead>
               <tbody>
@@ -213,16 +219,18 @@ export function BadgePage() {
                     </td>
                     <td className="hidden px-4 py-3 text-sekkha-slate sm:table-cell">{conditionLabel[badge.condition_type]}</td>
                     <td className="hidden px-4 py-3 text-sekkha-ink sm:table-cell">{badge.condition_value}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1">
-                        <button type="button" onClick={() => openEdit(badge)} className="rounded-md p-1.5 text-sekkha-slate hover:bg-sekkha-surface hover:text-sekkha-ink" aria-label="Edit">
-                          <PencilIcon className="size-3.5" />
-                        </button>
-                        <button type="button" onClick={() => handleDelete(badge.id)} className="rounded-md p-1.5 text-sekkha-slate hover:bg-red-50 hover:text-red-500" aria-label="Hapus">
-                          <TrashIcon className="size-3.5" />
-                        </button>
-                      </div>
-                    </td>
+                    {isAdmin && (
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1">
+                          <button type="button" onClick={() => openEdit(badge)} className="rounded-md p-1.5 text-sekkha-slate hover:bg-sekkha-surface hover:text-sekkha-ink" aria-label="Edit">
+                            <PencilIcon className="size-3.5" />
+                          </button>
+                          <button type="button" onClick={() => handleDelete(badge.id)} className="rounded-md p-1.5 text-sekkha-slate hover:bg-red-50 hover:text-red-500" aria-label="Hapus">
+                            <TrashIcon className="size-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>

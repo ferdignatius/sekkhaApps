@@ -5,7 +5,7 @@ export type EventType = "rutin" | "special"
 export type EventStatus = "draft" | "published" | "done" | "cancelled"
 export type RsvpStatus = "hadir" | "tidak_hadir"
 export type AttendanceMethod = "qr" | "manual"
-export type UserRole = "umat" | "pengurus" | "admin"
+export type UserRole = "umat" | "aktivis" | "pengurus" | "admin"
 
 // ─── Tag system — dynamic from master data, fallback hardcoded ────────────────
 

@@ -3,7 +3,7 @@
 // Requirements: 2.1, 5.2
 
 import { createFileRoute } from "@tanstack/react-router"
-import { LoginPage } from "@/feature/auth"
+import { LoginPage } from "@/modules/auth"
 
 export const Route = createFileRoute("/login")({
   component: LoginPage,

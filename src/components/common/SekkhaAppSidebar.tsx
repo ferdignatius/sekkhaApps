@@ -14,7 +14,7 @@ import {
   SidebarMenuButton,
   SidebarRail,
 } from "@/components/ui/sidebar"
-import { useAuth } from "@/feature/auth"
+import { useAuth } from "@/modules/auth"
 
 // ─── Nav items ─────────────────────────────────────────────────────────────────
 

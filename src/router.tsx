@@ -5,8 +5,8 @@
 import { useEffect } from "react"
 import { createRouter as createTanStackRouter, useRouter } from "@tanstack/react-router"
 import { routeTree } from "./routeTree.gen"
-import { useAuth } from "@/feature/auth"
-import type { AuthState } from "@/feature/auth"
+import { useAuth } from "@/modules/auth"
+import type { AuthState } from "@/modules/auth"
 
 // ─── RouterContext ─────────────────────────────────────────────────────────────
 // Defines the shape available to `beforeLoad` via `context` on all routes.

@@ -6,7 +6,7 @@
 // To add more protected pages, create files under src/routes/_authenticated/.
 
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router"
-import type { RouterContext } from "@/feature/auth"
+import type { RouterContext } from "@/modules/auth"
 import { AppSidebar } from "@/components/app-sidebar"
 import { MobileDock } from "@/components/common/MobileDock"
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"

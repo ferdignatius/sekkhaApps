@@ -1,7 +1,7 @@
 import { HeadContent, Scripts, createRootRoute } from "@tanstack/react-router"
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools"
 import { TanStackDevtools } from "@tanstack/react-devtools"
-import { AuthProvider } from "@/feature/auth"
+import { AuthProvider } from "@/modules/auth"
 import { RouterAuthSync } from "@/router"
 
 import appCss from "../styles.css?url"

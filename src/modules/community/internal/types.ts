@@ -3,7 +3,7 @@
 
 // ─── Shared ───────────────────────────────────────────────────────────────────
 
-export type UserRole = "umat" | "pengurus" | "admin"
+export type UserRole = "umat" | "aktivis" | "pengurus" | "admin"
 
 export interface Author {
   id: string

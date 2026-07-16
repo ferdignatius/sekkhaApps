@@ -14,7 +14,6 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedInsightRouteImport } from './routes/_authenticated/insight'
-import { Route as AuthenticatedAnalysisRouteImport } from './routes/_authenticated/analysis'
 import { Route as AuthenticatedLeaderboardIndexRouteImport } from './routes/_authenticated/leaderboard/index'
 import { Route as AuthenticatedHomeIndexRouteImport } from './routes/_authenticated/home/index'
 import { Route as AuthenticatedEventsIndexRouteImport } from './routes/_authenticated/events/index'
@@ -48,11 +47,6 @@ const IndexRoute = IndexRouteImport.update({
 const AuthenticatedInsightRoute = AuthenticatedInsightRouteImport.update({
   id: '/insight',
   path: '/insight',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
-const AuthenticatedAnalysisRoute = AuthenticatedAnalysisRouteImport.update({
-  id: '/analysis',
-  path: '/analysis',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedLeaderboardIndexRoute =
@@ -119,7 +113,6 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/sign-up': typeof SignUpRoute
-  '/analysis': typeof AuthenticatedAnalysisRoute
   '/insight': typeof AuthenticatedInsightRoute
   '/home/achievements': typeof AuthenticatedHomeAchievementsRoute
   '/home/profile': typeof AuthenticatedHomeProfileRoute
@@ -136,7 +129,6 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/sign-up': typeof SignUpRoute
-  '/analysis': typeof AuthenticatedAnalysisRoute
   '/insight': typeof AuthenticatedInsightRoute
   '/home/achievements': typeof AuthenticatedHomeAchievementsRoute
   '/home/profile': typeof AuthenticatedHomeProfileRoute
@@ -155,7 +147,6 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
   '/sign-up': typeof SignUpRoute
-  '/_authenticated/analysis': typeof AuthenticatedAnalysisRoute
   '/_authenticated/insight': typeof AuthenticatedInsightRoute
   '/_authenticated/home/achievements': typeof AuthenticatedHomeAchievementsRoute
   '/_authenticated/home/profile': typeof AuthenticatedHomeProfileRoute
@@ -174,7 +165,6 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/sign-up'
-    | '/analysis'
     | '/insight'
     | '/home/achievements'
     | '/home/profile'
@@ -191,7 +181,6 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/sign-up'
-    | '/analysis'
     | '/insight'
     | '/home/achievements'
     | '/home/profile'
@@ -209,7 +198,6 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/login'
     | '/sign-up'
-    | '/_authenticated/analysis'
     | '/_authenticated/insight'
     | '/_authenticated/home/achievements'
     | '/_authenticated/home/profile'
@@ -265,13 +253,6 @@ declare module '@tanstack/react-router' {
       path: '/insight'
       fullPath: '/insight'
       preLoaderRoute: typeof AuthenticatedInsightRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/analysis': {
-      id: '/_authenticated/analysis'
-      path: '/analysis'
-      fullPath: '/analysis'
-      preLoaderRoute: typeof AuthenticatedAnalysisRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/leaderboard/': {
@@ -348,7 +329,6 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteChildren {
-  AuthenticatedAnalysisRoute: typeof AuthenticatedAnalysisRoute
   AuthenticatedInsightRoute: typeof AuthenticatedInsightRoute
   AuthenticatedHomeAchievementsRoute: typeof AuthenticatedHomeAchievementsRoute
   AuthenticatedHomeProfileRoute: typeof AuthenticatedHomeProfileRoute
@@ -363,7 +343,6 @@ interface AuthenticatedRouteChildren {
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
-  AuthenticatedAnalysisRoute: AuthenticatedAnalysisRoute,
   AuthenticatedInsightRoute: AuthenticatedInsightRoute,
   AuthenticatedHomeAchievementsRoute: AuthenticatedHomeAchievementsRoute,
   AuthenticatedHomeProfileRoute: AuthenticatedHomeProfileRoute,

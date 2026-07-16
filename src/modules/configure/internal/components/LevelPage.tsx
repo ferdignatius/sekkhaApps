@@ -5,6 +5,7 @@
 import { useState } from "react"
 import { PlusIcon, PencilIcon, TrashIcon, ZapIcon } from "lucide-react"
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
+import { useAuth } from "@/modules/auth"
 import { levelsApi } from "../api/configureApi"
 import { useConfigureCrud } from "../hooks/useConfigureCrud"
 import type { LevelDto } from "../api/configureApi"
@@ -31,6 +32,9 @@ const INITIAL_LEVELS: Level[] = [
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export function LevelPage() {
+  const { authState } = useAuth()
+  const isAdmin = authState.status === "authenticated" && authState.role === "admin"
+
   const { items: levels, create: apiCreate, update: apiUpdate, remove: apiRemove } = useConfigureCrud<LevelDto>(levelsApi, INITIAL_LEVELS as any)
   const [editing, setEditing] = useState<Level | null>(null)
   const [showForm, setShowForm] = useState(false)
@@ -89,13 +93,15 @@ export function LevelPage() {
               <ZapIcon className="size-5 text-sekkha-brand-blue" />
               <h1 className="text-heading-5 text-sekkha-ink">Level</h1>
             </div>
-            <button type="button" onClick={openCreate} className="flex items-center gap-1.5 rounded-full bg-sekkha-primary px-4 py-2 text-body-sm-medium text-white transition-opacity hover:opacity-90">
-              <PlusIcon className="size-4" />
-            Tambah Level
-          </button>
-        </div>
+            {isAdmin && (
+              <button type="button" onClick={openCreate} className="flex items-center gap-1.5 rounded-full bg-sekkha-primary px-4 py-2 text-body-sm-medium text-white transition-opacity hover:opacity-90">
+                <PlusIcon className="size-4" />
+                Tambah Level
+              </button>
+            )}
+          </div>
 
-        {showForm && (
+        {showForm && isAdmin && (
           <div className="rounded-xl border border-sekkha-hairline-soft bg-sekkha-canvas p-5">
             <h2 className="mb-4 text-body-sm-medium text-sekkha-ink">{editing ? "Edit Level" : "Level Baru"}</h2>
             <form onSubmit={handleSubmit} className="space-y-3">
@@ -129,7 +135,7 @@ export function LevelPage() {
                   <th className="px-4 py-3 font-medium text-sekkha-slate">Level</th>
                   <th className="px-4 py-3 font-medium text-sekkha-slate">Label</th>
                   <th className="px-4 py-3 font-medium text-sekkha-slate">Min. Poin</th>
-                  <th className="px-4 py-3 font-medium text-sekkha-slate">Aksi</th>
+                  {isAdmin && <th className="px-4 py-3 font-medium text-sekkha-slate">Aksi</th>}
                 </tr>
               </thead>
               <tbody>
@@ -138,12 +144,14 @@ export function LevelPage() {
                     <td className="px-4 py-3 font-medium text-sekkha-ink">{lvl.level}</td>
                     <td className="px-4 py-3 text-sekkha-ink">{lvl.label}</td>
                     <td className="px-4 py-3 text-sekkha-slate">{lvl.min_points.toLocaleString("id-ID")}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1">
-                        <button type="button" onClick={() => openEdit(lvl)} className="rounded-md p-1.5 text-sekkha-slate hover:bg-sekkha-surface hover:text-sekkha-ink" aria-label="Edit"><PencilIcon className="size-3.5" /></button>
-                        <button type="button" onClick={() => handleDelete(lvl.id)} className="rounded-md p-1.5 text-sekkha-slate hover:bg-red-50 hover:text-red-500" aria-label="Hapus"><TrashIcon className="size-3.5" /></button>
-                      </div>
-                    </td>
+                    {isAdmin && (
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1">
+                          <button type="button" onClick={() => openEdit(lvl)} className="rounded-md p-1.5 text-sekkha-slate hover:bg-sekkha-surface hover:text-sekkha-ink" aria-label="Edit"><PencilIcon className="size-3.5" /></button>
+                          <button type="button" onClick={() => handleDelete(lvl.id)} className="rounded-md p-1.5 text-sekkha-slate hover:bg-red-50 hover:text-red-500" aria-label="Hapus"><TrashIcon className="size-3.5" /></button>
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>

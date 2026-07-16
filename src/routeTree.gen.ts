@@ -13,6 +13,8 @@ import { Route as SignUpRouteImport } from './routes/sign-up'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedTeamsRouteImport } from './routes/_authenticated/teams'
+import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated/notifications'
 import { Route as AuthenticatedInsightRouteImport } from './routes/_authenticated/insight'
 import { Route as AuthenticatedLeaderboardIndexRouteImport } from './routes/_authenticated/leaderboard/index'
 import { Route as AuthenticatedHomeIndexRouteImport } from './routes/_authenticated/home/index'
@@ -44,6 +46,17 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedTeamsRoute = AuthenticatedTeamsRouteImport.update({
+  id: '/teams',
+  path: '/teams',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedNotificationsRoute =
+  AuthenticatedNotificationsRouteImport.update({
+    id: '/notifications',
+    path: '/notifications',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedInsightRoute = AuthenticatedInsightRouteImport.update({
   id: '/insight',
   path: '/insight',
@@ -114,6 +127,8 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/sign-up': typeof SignUpRoute
   '/insight': typeof AuthenticatedInsightRoute
+  '/notifications': typeof AuthenticatedNotificationsRoute
+  '/teams': typeof AuthenticatedTeamsRoute
   '/home/achievements': typeof AuthenticatedHomeAchievementsRoute
   '/home/profile': typeof AuthenticatedHomeProfileRoute
   '/community/': typeof AuthenticatedCommunityIndexRoute
@@ -130,6 +145,8 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/sign-up': typeof SignUpRoute
   '/insight': typeof AuthenticatedInsightRoute
+  '/notifications': typeof AuthenticatedNotificationsRoute
+  '/teams': typeof AuthenticatedTeamsRoute
   '/home/achievements': typeof AuthenticatedHomeAchievementsRoute
   '/home/profile': typeof AuthenticatedHomeProfileRoute
   '/community': typeof AuthenticatedCommunityIndexRoute
@@ -148,6 +165,8 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/sign-up': typeof SignUpRoute
   '/_authenticated/insight': typeof AuthenticatedInsightRoute
+  '/_authenticated/notifications': typeof AuthenticatedNotificationsRoute
+  '/_authenticated/teams': typeof AuthenticatedTeamsRoute
   '/_authenticated/home/achievements': typeof AuthenticatedHomeAchievementsRoute
   '/_authenticated/home/profile': typeof AuthenticatedHomeProfileRoute
   '/_authenticated/community/': typeof AuthenticatedCommunityIndexRoute
@@ -166,6 +185,8 @@ export interface FileRouteTypes {
     | '/login'
     | '/sign-up'
     | '/insight'
+    | '/notifications'
+    | '/teams'
     | '/home/achievements'
     | '/home/profile'
     | '/community/'
@@ -182,6 +203,8 @@ export interface FileRouteTypes {
     | '/login'
     | '/sign-up'
     | '/insight'
+    | '/notifications'
+    | '/teams'
     | '/home/achievements'
     | '/home/profile'
     | '/community'
@@ -199,6 +222,8 @@ export interface FileRouteTypes {
     | '/login'
     | '/sign-up'
     | '/_authenticated/insight'
+    | '/_authenticated/notifications'
+    | '/_authenticated/teams'
     | '/_authenticated/home/achievements'
     | '/_authenticated/home/profile'
     | '/_authenticated/community/'
@@ -247,6 +272,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/teams': {
+      id: '/_authenticated/teams'
+      path: '/teams'
+      fullPath: '/teams'
+      preLoaderRoute: typeof AuthenticatedTeamsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/notifications': {
+      id: '/_authenticated/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof AuthenticatedNotificationsRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/insight': {
       id: '/_authenticated/insight'
@@ -330,6 +369,8 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteChildren {
   AuthenticatedInsightRoute: typeof AuthenticatedInsightRoute
+  AuthenticatedNotificationsRoute: typeof AuthenticatedNotificationsRoute
+  AuthenticatedTeamsRoute: typeof AuthenticatedTeamsRoute
   AuthenticatedHomeAchievementsRoute: typeof AuthenticatedHomeAchievementsRoute
   AuthenticatedHomeProfileRoute: typeof AuthenticatedHomeProfileRoute
   AuthenticatedCommunityIndexRoute: typeof AuthenticatedCommunityIndexRoute
@@ -344,6 +385,8 @@ interface AuthenticatedRouteChildren {
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedInsightRoute: AuthenticatedInsightRoute,
+  AuthenticatedNotificationsRoute: AuthenticatedNotificationsRoute,
+  AuthenticatedTeamsRoute: AuthenticatedTeamsRoute,
   AuthenticatedHomeAchievementsRoute: AuthenticatedHomeAchievementsRoute,
   AuthenticatedHomeProfileRoute: AuthenticatedHomeProfileRoute,
   AuthenticatedCommunityIndexRoute: AuthenticatedCommunityIndexRoute,

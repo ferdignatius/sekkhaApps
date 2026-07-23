@@ -140,11 +140,11 @@ export function DashboardPage() {
 
               </div>
 
-              {/* Stats (Streak & Poin) & Full-Width QR Button on Mobile */}
-              <div className="flex flex-col items-center w-full sm:w-auto gap-3 border-t border-sekkha-hairline-soft/60 pt-3 sm:border-t-0 sm:pt-0 sm:items-end">
+              {/* Stats (Streak & Poin) & QR Button: Inline on Desktop (lg+), Stacked on Mobile/Tablet */}
+              <div className="flex flex-col items-center w-full lg:w-auto gap-3 border-t border-sekkha-hairline-soft/60 pt-3 lg:border-t-0 lg:pt-0 lg:flex-row lg:items-center">
                 
                 {/* Stats pills: Streak & Poin */}
-                <div className="flex items-center justify-center gap-2 w-full sm:w-auto">
+                <div className="flex items-center justify-center gap-2 w-full sm:w-auto shrink-0">
                   <div className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 rounded-xl bg-sekkha-coral-light/40 border border-sekkha-brand-red/30 px-3.5 py-1.5 backdrop-blur-xs">
                     <FlameIcon className="size-4 text-sekkha-ink shrink-0 animate-pulse" />
                     <div className="text-left">
@@ -166,7 +166,7 @@ export function DashboardPage() {
                 <button
                   type="button"
                   onClick={() => setShowQrModal(true)}
-                  className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-sekkha-brand-blue py-2.5 px-4 text-caption-bold text-white shadow-xs hover:bg-blue-700 transition-all active:scale-[0.99]"
+                  className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-sekkha-brand-blue py-2.5 px-4 text-caption-bold text-white shadow-xs hover:bg-blue-700 transition-all active:scale-[0.99] shrink-0"
                 >
                   <QrCodeIcon className="size-4" />
                   <span>Tunjukkan QR Presensi</span>

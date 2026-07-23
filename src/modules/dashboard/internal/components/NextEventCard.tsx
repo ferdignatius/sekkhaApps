@@ -2,7 +2,7 @@
 // Shows the next upcoming event with direct RSVP buttons (Hadir / Tidak Hadir).
 
 import { CalendarIcon, MapPinIcon, UsersIcon } from "lucide-react"
-import { useState } from "react"
+import { Link } from "@tanstack/react-router"
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -41,9 +41,6 @@ function formatEventTime(isoDate: string): string {
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export function NextEventCard({ event }: NextEventCardProps) {
-  const [rsvpStatus, setRsvpStatus] = useState<"hadir" | "tidak_hadir" | null>(
-    event?.my_rsvp ?? null
-  )
 
   return (
     <section
@@ -98,36 +95,20 @@ export function NextEventCard({ event }: NextEventCardProps) {
 
           {/* RSVP count */}
           <div className="mt-1.5 flex items-center gap-1.5">
-            <UsersIcon className="size-3.5 text-sekkha-muted" aria-hidden="true" />
-            <span className="text-caption text-sekkha-slate">
-              {event.rsvp_count} orang akan hadir
+            <UsersIcon className="size-3.5 text-sekkha-brand-blue" aria-hidden="true" />
+            <span className="text-caption font-semibold text-sekkha-slate">
+              {event.rsvp_count} Peserta Hadir
             </span>
           </div>
 
-          {/* RSVP buttons */}
-          <div className="mt-4 flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setRsvpStatus("hadir")}
-              className={`flex-1 rounded-full px-4 py-2 text-button-md font-medium transition-colors ${
-                rsvpStatus === "hadir"
-                  ? "bg-sekkha-brand-blue text-white"
-                  : "border border-sekkha-hairline-strong bg-sekkha-canvas text-sekkha-ink"
-              }`}
+          {/* Action button */}
+          <div className="mt-4">
+            <Link
+              to="/events"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-sekkha-brand-blue py-2.5 px-4 text-caption-bold text-white shadow-xs hover:bg-blue-700 transition-all active:scale-[0.99]"
             >
-              Hadir
-            </button>
-            <button
-              type="button"
-              onClick={() => setRsvpStatus("tidak_hadir")}
-              className={`flex-1 rounded-full px-4 py-2 text-button-md font-medium transition-colors ${
-                rsvpStatus === "tidak_hadir"
-                  ? "bg-sekkha-slate text-white"
-                  : "border border-sekkha-hairline-strong bg-sekkha-canvas text-sekkha-ink"
-              }`}
-            >
-              Tidak Hadir
-            </button>
+              <span>Lihat Detail Event</span>
+            </Link>
           </div>
         </div>
       )}

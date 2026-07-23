@@ -84,7 +84,7 @@ export function NotificationsPage() {
 
   return (
     <main>
-      <PageBreadcrumb items={[{ label: "Beranda", href: "/home" }, { label: "Notifikasi" }]} />
+      <PageBreadcrumb items={[{ label: "Notifikasi" }]} />
       <div className="px-4 py-6 pb-24 md:px-8 md:pb-8 lg:px-12">
         <div className="mx-auto max-w-4xl space-y-6">
           <div className="flex items-center gap-2">

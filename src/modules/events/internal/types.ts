@@ -2,7 +2,7 @@
 // Shared types for the events feature, shaped after the API contract.
 
 export type EventType = "rutin" | "special"
-export type EventStatus = "draft" | "published" | "done" | "cancelled"
+export type EventStatus = "draft" | "published" | "active" | "closed" | "done" | "cancelled"
 export type RsvpStatus = "hadir" | "tidak_hadir"
 export type AttendanceMethod = "qr" | "manual"
 export type UserRole = "umat" | "aktivis" | "pengurus" | "admin"
@@ -17,13 +17,13 @@ export interface TagColors {
   text: string
 }
 
-// Fallback colors — used when API is not available
+// Fallback colors — pastel & soft youth-friendly aesthetic
 export const DEFAULT_EVENT_TAG_COLORS: Record<string, TagColors> = {
-  rutin:    { dot: "bg-sekkha-brand-blue",   bg: "bg-sekkha-teal-light", text: "text-sekkha-brand-blue" },
-  special:  { dot: "bg-sekkha-brand-yellow", bg: "bg-yellow-50",         text: "text-yellow-700"         },
-  retreat:  { dot: "bg-purple-500",          bg: "bg-purple-50",         text: "text-purple-700"         },
-  meditasi: { dot: "bg-emerald-500",         bg: "bg-emerald-50",        text: "text-emerald-700"        },
-  sosial:   { dot: "bg-orange-400",          bg: "bg-orange-50",         text: "text-orange-700"         },
+  rutin:    { dot: "bg-sky-400",     bg: "bg-sky-50/80 border border-sky-200/60",     text: "text-sky-700"     },
+  special:  { dot: "bg-amber-400",   bg: "bg-amber-50/80 border border-amber-200/60", text: "text-amber-800"  },
+  retreat:  { dot: "bg-purple-400",  bg: "bg-purple-50/80 border border-purple-200/60",text: "text-purple-700" },
+  meditasi: { dot: "bg-emerald-400", bg: "bg-emerald-50/80 border border-emerald-200/60", text: "text-emerald-700" },
+  sosial:   { dot: "bg-rose-400",    bg: "bg-rose-50/80 border border-rose-200/60",   text: "text-rose-700"    },
 }
 
 // Re-export as EVENT_TAG_COLORS for backward compatibility
@@ -65,13 +65,22 @@ export interface QrCode {
   expires_at: string | null
 }
 
-// ─── Attendance record ────────────────────────────────────────────────────────
+// ─── Attendance record & Badge System ─────────────────────────────────────────
+
+export interface AttendanceBadge {
+  id: string
+  name: string
+  points: number
+  color?: string
+}
 
 export interface AttendanceRecord {
   user_id: string
   name: string
   method: AttendanceMethod
   scanned_at: string
+  base_points?: number
+  badges?: AttendanceBadge[]
 }
 
 // ─── POST /events (create) ────────────────────────────────────────────────────

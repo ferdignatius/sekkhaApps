@@ -41,9 +41,9 @@ export function NotificationBell() {
 
   return (
     <div className="relative">
-      <BellIcon className="size-4 shrink-0" />
+      <BellIcon className="size-5 shrink-0 text-sekkha-ink" />
       {unreadCount > 0 && (
-        <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white">
+        <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[9px] font-black text-white shadow-2xs">
           {unreadCount > 9 ? "9+" : unreadCount}
         </span>
       )}

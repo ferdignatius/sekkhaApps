@@ -11,6 +11,7 @@ import { useAuth } from "@/modules/auth"
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
 import { ResponsiveFormModal } from "@/components/common/ResponsiveFormModal"
 import { ProfileCard } from "./ProfileCard"
+import { MemberQrCard } from "./MemberQrCard"
 import { StatsHero } from "./StatsHero"
 import { AttendanceTracker } from "./AttendanceTracker"
 import { AchievementsCard, DUMMY_BADGES } from "./AchievementsCard"
@@ -33,7 +34,7 @@ export function ProfilePage() {
 
   return (
     <main>
-      <PageBreadcrumb items={[{ label: "Beranda", href: "/home" }, { label: "Profil" }]} />
+      <PageBreadcrumb items={[{ label: "Profil" }]} />
       <div className="px-4 py-6 pb-24 md:px-8 md:pb-8 lg:px-12">
         <div className="mx-auto max-w-8xl space-y-4">
 
@@ -55,6 +56,12 @@ export function ProfilePage() {
             name={displayName}
             school={school}
             joinedAt="2025-07-01"
+          />
+
+          {/* Member QR Card (Digital & Printable Physical Vihara Card) */}
+          <MemberQrCard
+            memberName={displayName}
+            memberId={isAdmin ? "SKH-0001" : "SKH-8821"}
           />
 
           {/* Stats hero — rank & points prominent (fix #1) */}

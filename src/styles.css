@@ -330,4 +330,13 @@
   .animate-spin-slow {
     animation: spin 3s linear infinite;
   }
+
+  /* Hide scrollbar — used by WheelTimePicker drum columns */
+  .scrollbar-none {
+    scrollbar-width: none;       /* Firefox */
+    -ms-overflow-style: none;    /* IE / Edge */
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;               /* Chrome / Safari / WebKit */
+  }
 }

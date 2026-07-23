@@ -5,7 +5,7 @@
 // - Pengurus+: "Buat Event" button, edit from detail view
 
 import { useState, useMemo } from "react"
-import { PlusIcon, CalendarDaysIcon, SearchIcon } from "lucide-react"
+import { PlusIcon, CalendarDaysIcon, SearchIcon, FilterIcon } from "lucide-react"
 import { useAuth } from "@/modules/auth"
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
 import { ResponsiveFormModal } from "@/components/common/ResponsiveFormModal"
@@ -14,7 +14,7 @@ import { EventCard } from "./EventCard"
 import { EventDetailSheet } from "./EventDetailSheet"
 import { EventForm } from "./EventForm"
 import { EVENT_TAG_COLORS } from "../types"
-import type { EventListItem, RsvpStatus, CreateEventPayload, EventTag, AttendanceRecord } from "../types"
+import type { EventListItem, CreateEventPayload, EventTag, AttendanceRecord } from "../types"
 
 // ─── Dummy data ───────────────────────────────────────────────────────────────
 
@@ -172,22 +172,6 @@ export function EventsPage() {
     }))
   }
 
-  function handleRegenerateQr(eventId: string) {
-    setEvents(prev =>
-      prev.map(ev =>
-        ev.id === eventId
-          ? { ...ev, qr_code: generateQrCode(eventId) }
-          : ev,
-      ),
-    )
-    // Keep selected in sync
-    setSelected(prev =>
-      prev?.id === eventId
-        ? { ...prev, qr_code: generateQrCode(eventId) }
-        : prev,
-    )
-  }
-
   // ── Build dot map for the calendar ──────────────────────────────────────────
   const dotMap = useMemo<Record<string, string[]>>(() => {
     const map: Record<string, string[]> = {}
@@ -228,18 +212,6 @@ export function EventsPage() {
     return base
   }, [events, activeMonth, selectedDate, searchQuery, tagFilter])
 
-  // ── RSVP ─────────────────────────────────────────────────────────────────────
-  function handleRsvp(eventId: string, status: RsvpStatus) {
-    setEvents(prev =>
-      prev.map(ev =>
-        ev.id === eventId ? { ...ev, my_rsvp: status } : ev,
-      ),
-    )
-    setSelected(prev =>
-      prev?.id === eventId ? { ...prev, my_rsvp: status } : prev,
-    )
-  }
-
   function handleFormSubmit(payload: CreateEventPayload) {
     if (editTarget) {
       setEvents(prev =>
@@ -269,19 +241,45 @@ export function EventsPage() {
   if (view === "detail" && selected) {
     return (
       <main>
-        <PageBreadcrumb items={[{ label: "Beranda", href: "/home" }, { label: "Events", href: "/events" }, { label: selected.title }]} />
-        <div className="px-4 py-6 pb-24 md:px-8 md:pb-8 lg:px-12">
-          <div className="mx-auto max-w-8xl">
+        <PageBreadcrumb
+          items={[
+            {
+              label: "Events",
+              href: "/events",
+              onClick: () => { setSelected(null); setView("calendar") },
+            },
+            { label: selected.title },
+          ]}
+          onBack={() => { setSelected(null); setView("calendar") }}
+        />
+        <div className="px-3.5 py-4 sm:px-6 sm:py-6 md:px-8 lg:px-12 pb-24 md:pb-12">
+          <div className="mx-auto max-w-7xl">
             <div className="rounded-xl border border-sekkha-hairline-soft bg-sekkha-canvas p-5">
               <EventDetailSheet
                 event={selected}
                 role={role}
                 onClose={() => { setSelected(null); setView("calendar") }}
-                onRsvp={handleRsvp}
                 onEdit={isPengurus ? ev => { setEditTarget(ev); setFormOpen(true) } : undefined}
+                onDelete={isPengurus ? ev => {
+                  setEvents(prev => prev.filter(e => e.id !== ev.id))
+                  setSelected(null)
+                  setView("calendar")
+                } : undefined}
+                onDuplicate={isPengurus ? ev => {
+                  const dup: EventListItem = {
+                    ...ev,
+                    id: `event-${Date.now()}`,
+                    title: `${ev.title} (Salinan)`,
+                  }
+                  setEvents(prev => [dup, ...prev])
+                  setSelected(dup)
+                } : undefined}
+                onStatusChange={isPengurus ? (eventId, newStatus) => {
+                  setEvents(prev => prev.map(e => e.id === eventId ? { ...e, status: newStatus } : e))
+                  setSelected(prev => prev && prev.id === eventId ? { ...prev, status: newStatus } : prev)
+                } : undefined}
                 attendances={attendances[selected.id] ?? []}
                 onRecordAttendance={handleRecordAttendance}
-                onRegenerateQr={handleRegenerateQr}
               />
             </div>
           </div>
@@ -309,109 +307,27 @@ export function EventsPage() {
 
   // Calendar + list view
   return (
-    <main>
-      <PageBreadcrumb items={[{ label: "Beranda", href: "/home" }, { label: "Events" }]} />
-      <div className="px-4 py-6 pb-24 md:px-8 md:pb-8 lg:px-12">
-        <div className="mx-auto max-w-8xl space-y-4">
-          {/* Page header */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <CalendarDaysIcon className="size-5 text-sekkha-brand-blue" aria-hidden="true" />
-              <h1 className="text-heading-5 text-sekkha-ink">Events</h1>
+    <main className="min-h-screen bg-sekkha-surface pb-32 md:pb-12">
+      <PageBreadcrumb items={[{ label: "Events" }]} />
+
+      <div className="px-3.5 py-4 sm:px-6 sm:py-6 md:px-8 lg:px-12">
+        <div className="mx-auto max-w-7xl space-y-4 sm:space-y-5">
+          
+          {/* ── Month & Year Title Header ── */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+            <div>
+              <h1 className="text-body-base sm:text-heading-4 font-extrabold text-sekkha-ink tracking-tight">
+                {selectedDate ? formatSelectedDate(selectedDate) : formatMonthLabel(activeMonth)}
+              </h1>
+              <p className="text-micro sm:text-caption font-medium text-sekkha-slate">
+                Agenda kegiatan & kebaktian pemuda vihara
+              </p>
             </div>
           </div>
 
-          {/* Search + Filter + Create button row */}
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            {/* Search */}
-            <div className="relative flex-1">
-              <SearchIcon className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-sekkha-muted" aria-hidden="true" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                placeholder="Cari event..."
-                className="w-full rounded-lg border border-sekkha-hairline-strong bg-sekkha-canvas py-2 pl-9 pr-3 text-body-sm text-sekkha-ink placeholder:text-sekkha-muted outline-none focus:border-sekkha-brand-blue"
-              />
-            </div>
-
-            {/* Tag filter */}
-            <div className="flex flex-wrap items-center gap-2">
-              {(["all", "rutin", "special", "retreat", "meditasi", "sosial"] as const).map(t => (
-                <button
-                  key={t}
-                  type="button"
-                  onClick={() => setTagFilter(t)}
-                  className={`rounded-full px-3 py-1.5 text-caption-bold capitalize transition-colors ${
-                    tagFilter === t
-                      ? "bg-sekkha-primary text-white"
-                      : "border border-sekkha-hairline bg-sekkha-canvas text-sekkha-slate hover:bg-sekkha-surface"
-                  }`}
-                >
-                  {t === "all" ? "Semua" : t}
-                </button>
-              ))}
-            </div>
-
-            {/* Create button */}
-            {isPengurus && (
-              <button
-                type="button"
-                onClick={() => { setEditTarget(null); setFormOpen(true) }}
-                className="flex shrink-0 items-center gap-1.5 rounded-full bg-sekkha-primary px-4 py-2 text-body-sm-medium text-white transition-opacity hover:opacity-90"
-              >
-                <PlusIcon className="size-4" aria-hidden="true" />
-                Buat Event
-              </button>
-            )}
-          </div>
-
-        {/* ── Two-column layout: Event list (2/3) | Calendar (1/3) ──────── */}
-        <div className="flex flex-col-reverse gap-4 lg:flex-row">
-
-          {/* ── Left: Event list (2/3 on desktop) ──────────────────────── */}
-          <div className="flex-1 lg:min-w-0">
-            {/* List header */}
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-body-sm-medium text-sekkha-ink">
-                {selectedDate
-                  ? formatSelectedDate(selectedDate)
-                  : formatMonthLabel(activeMonth)}
-              </h2>
-              {selectedDate && (
-                <button
-                  type="button"
-                  onClick={() => setSelectedDate(null)}
-                  className="text-caption text-sekkha-brand-blue hover:underline"
-                >
-                  Lihat semua
-                </button>
-              )}
-            </div>
-
-            {listedEvents.length === 0 ? (
-              <div className="flex flex-col items-center gap-2 rounded-xl border border-sekkha-hairline-soft bg-sekkha-canvas py-10 text-center">
-                <CalendarDaysIcon className="size-8 text-sekkha-muted" aria-hidden="true" />
-                <p className="text-body-sm text-sekkha-muted">
-                  {selectedDate ? "Tidak ada event di tanggal ini." : "Tidak ada event bulan ini."}
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {listedEvents.map(ev => (
-                  <EventCard
-                    key={ev.id}
-                    event={ev}
-                    onClick={() => { setSelected(ev); setView("detail") }}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* ── Right: Calendar (1/3 on desktop) ───────────────────────── */}
-          <aside className="w-full shrink-0 lg:w-1/3">
-            <div className="sticky top-6 rounded-xl border border-sekkha-hairline-soft bg-sekkha-canvas p-4">
+          {/* ── Mobile-Only: Calendar Mini Top Section ── */}
+          <div className="w-full lg:hidden">
+            <div className="relative rounded-2xl border border-sekkha-hairline bg-sekkha-canvas/95 backdrop-blur-md p-3.5 shadow-xs">
               <EventCalendar
                 dots={dotMap}
                 selected={selectedDate}
@@ -419,21 +335,133 @@ export function EventsPage() {
                 month={activeMonth}
                 onMonthChange={month => { setActiveMonth(month); setSelectedDate(null) }}
               />
+            </div>
+          </div>
+          
+          {/* ── Search Bar + Filter Button + Create Button Row (Inline 1 Baris di Mobile) ── */}
+          <div className="relative flex flex-row items-center gap-2 w-full z-20">
+            
+            {/* Search Input */}
+            <div className="relative flex-1 min-w-0">
+              <SearchIcon className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-sekkha-brand-blue pointer-events-none z-10" aria-hidden="true" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder="Cari event..."
+                className="w-full rounded-xl border border-sekkha-hairline bg-sekkha-canvas/95 backdrop-blur-md py-2.5 pl-9 pr-3 text-caption text-sekkha-ink placeholder:text-sekkha-slate/70 outline-none shadow-2xs focus:border-sekkha-brand-blue transition-all"
+              />
+            </div>
 
-              {/* Tag legend */}
-              <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 border-t border-sekkha-hairline-soft pt-3">
-                {(Object.entries(EVENT_TAG_COLORS) as [EventTag, typeof EVENT_TAG_COLORS[EventTag]][]).map(
-                  ([tag, colors]) => (
-                    <div key={tag} className="flex items-center gap-1.5">
-                      <span className={`h-2 w-2 rounded-full ${colors.dot}`} aria-hidden="true" />
-                      <span className="text-caption capitalize text-sekkha-slate">{tag}</span>
-                    </div>
-                  ),
+            {/* Single Filter Button (Icon-only di mobile, Icon + Text di sm+) */}
+            <button
+              type="button"
+              onClick={() => setTagFilter(prev => prev === "all" ? "retreat" : prev === "retreat" ? "meditasi" : prev === "meditasi" ? "rutin" : prev === "rutin" ? "sosial" : prev === "sosial" ? "special" : "all")}
+              className="flex h-10 items-center justify-center gap-2 rounded-xl border border-sekkha-hairline bg-sekkha-canvas/95 backdrop-blur-md px-3 sm:px-4 text-caption-bold text-sekkha-ink shadow-2xs hover:bg-sekkha-surface transition-all shrink-0 active:scale-95"
+              title={tagFilter === "all" ? "Semua Filter" : `Kategori: ${tagFilter}`}
+            >
+              <FilterIcon className="size-4 text-sekkha-brand-blue" />
+              <span className="hidden sm:inline capitalize">
+                {tagFilter === "all" ? "Semua Filter" : `Kategori: ${tagFilter}`}
+              </span>
+            </button>
+
+            {/* Create button for Pengurus (Icon-only di mobile, Icon + Text di sm+) */}
+            {isPengurus && (
+              <button
+                type="button"
+                onClick={() => { setEditTarget(null); setFormOpen(true) }}
+                className="flex h-10 items-center justify-center gap-1.5 rounded-xl bg-sekkha-brand-blue px-3 sm:px-4 text-caption-bold text-white shadow-2xs hover:bg-blue-700 transition-all shrink-0 active:scale-95"
+                title="Buat Event Baru"
+              >
+                <PlusIcon className="size-4" aria-hidden="true" />
+                <span className="hidden sm:inline">Buat Event</span>
+              </button>
+            )}
+
+          </div>
+
+          {/* ── Two-column layout: Single Integrated Event Card (2/3) | Calendar Mini (1/3 Desktop) ──────── */}
+          <div className="flex flex-col gap-4 sm:gap-5 lg:flex-row items-start">
+
+            {/* ── Left: Single Integrated Glassmorphism Event Card (2/3 on desktop) ──────────────────────── */}
+            <div className="flex-1 w-full lg:min-w-0">
+              <div className="relative rounded-2xl border border-sekkha-hairline bg-sekkha-canvas/95 backdrop-blur-md p-4 sm:p-5 shadow-xs">
+                
+                {/* Card Sub-header */}
+                <div className="mb-3 flex items-center justify-between border-b border-sekkha-hairline-soft pb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-sekkha-brand-blue text-white shadow-xs">
+                      <CalendarDaysIcon className="size-4" />
+                    </span>
+                    <h2 className="text-body-sm-medium font-bold text-sekkha-ink">
+                      Daftar Kegiatan Vihara
+                    </h2>
+                    <span className="rounded-full bg-sekkha-brand-blue/10 px-2 py-0.5 text-micro-bold text-sekkha-brand-blue">
+                      {listedEvents.length} Event
+                    </span>
+                  </div>
+                  {selectedDate && (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedDate(null)}
+                      className="text-xs font-bold text-sekkha-brand-blue hover:underline"
+                    >
+                      Tampilkan Semua
+                    </button>
+                  )}
+                </div>
+
+                {listedEvents.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center gap-2.5 py-12 text-center">
+                    <CalendarDaysIcon className="size-10 text-sekkha-slate/40" aria-hidden="true" />
+                    <p className="text-caption font-medium text-sekkha-slate">
+                      {selectedDate ? "Tidak ada event di tanggal ini." : "Tidak ada event bulan ini."}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-sekkha-hairline-soft">
+                    {listedEvents.map(ev => (
+                      <EventCard
+                        key={ev.id}
+                        event={ev}
+                        onClick={() => { setSelected(ev); setView("detail") }}
+                      />
+                    ))}
+                  </div>
                 )}
+
               </div>
             </div>
-          </aside>
-        </div>
+
+            {/* ── Right: Mini Calendar Card (Desktop Only lg+) ───────────────────────── */}
+            <aside className="hidden lg:block w-full shrink-0 lg:w-80 xl:w-96">
+              <div className="sticky top-16 relative rounded-2xl border border-sekkha-hairline bg-sekkha-canvas/95 backdrop-blur-md p-4 shadow-xs">
+                
+                <EventCalendar
+                  dots={dotMap}
+                  selected={selectedDate}
+                  onSelect={setSelectedDate}
+                  month={activeMonth}
+                  onMonthChange={month => { setActiveMonth(month); setSelectedDate(null) }}
+                />
+
+                {/* Tag Legend */}
+                <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1.5 border-t border-sekkha-hairline-soft pt-3 text-micro">
+                  {(Object.entries(EVENT_TAG_COLORS) as [EventTag, typeof EVENT_TAG_COLORS[EventTag]][]).map(
+                    ([tag, colors]) => (
+                      <div key={tag} className="flex items-center gap-1.5">
+                        <span className={`h-2 w-2 rounded-full ${colors.dot}`} aria-hidden="true" />
+                        <span className="capitalize font-medium text-sekkha-slate">{tag}</span>
+                      </div>
+                    ),
+                  )}
+                </div>
+
+              </div>
+            </aside>
+
+          </div>
         </div>
       </div>
 

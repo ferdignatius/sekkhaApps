@@ -77,7 +77,7 @@ export function TeamsPage() {
 
   return (
     <main>
-      <PageBreadcrumb items={[{ label: "Beranda", href: "/home" }, { label: "Teams" }]} />
+      <PageBreadcrumb items={[{ label: "Teams" }]} />
       <div className="px-4 py-6 pb-24 md:px-8 md:pb-8 lg:px-12">
         <div className="mx-auto max-w-7xl space-y-6">
           

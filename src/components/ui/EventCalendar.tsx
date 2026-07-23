@@ -1,13 +1,6 @@
 // components/ui/EventCalendar
 // Custom month-grid calendar with colored event dots (max 3 per day).
-// Built from scratch — no react-day-picker — so dot rendering is fully controlled.
-//
-// Props:
-//   dots       — map of "YYYY-MM-DD" → array of color strings (Tailwind bg-* class)
-//   selected   — currently selected date ("YYYY-MM-DD") or null
-//   onSelect   — called with "YYYY-MM-DD" when a day is clicked (same date → deselect)
-//   month      — controlled month (Date object, day doesn't matter)
-//   onMonthChange — called when user navigates prev/next
+// Redesigned with Glassmorphism aesthetic and smooth day tiles.
 
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
 
@@ -22,6 +15,8 @@ export interface EventCalendarProps {
   /** The month to display (only year/month matter) */
   month: Date
   onMonthChange?: (month: Date) => void
+  /** Render compact layout for form pickers */
+  compact?: boolean
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -43,7 +38,6 @@ function isSameDay(a: Date, b: Date) {
 
 /**
  * Build a 6-row × 7-col grid of Date objects for the given month.
- * Cells outside the month are included (for the full grid).
  */
 function buildGrid(year: number, month: number): Date[][] {
   const firstDay = new Date(year, month, 1)
@@ -62,7 +56,11 @@ function buildGrid(year: number, month: number): Date[][] {
 }
 
 function monthLabel(date: Date): string {
-  return date.toLocaleDateString("id-ID", { month: "long", year: "numeric" })
+  const months = [
+    "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+    "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+  ]
+  return `${months[date.getMonth()]} ${date.getFullYear()}`
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -73,6 +71,7 @@ export function EventCalendar({
   onSelect,
   month,
   onMonthChange,
+  compact = false,
 }: EventCalendarProps) {
   const today = new Date()
   const year = month.getFullYear()
@@ -85,6 +84,10 @@ export function EventCalendar({
   function nextMonth() {
     onMonthChange?.(new Date(year, mo + 1, 1))
   }
+  function resetToToday() {
+    onMonthChange?.(new Date())
+    onSelect?.(toKey(today))
+  }
 
   function handleDayClick(date: Date) {
     const key = toKey(date)
@@ -96,38 +99,57 @@ export function EventCalendar({
   }
 
   return (
-    <div className="w-full select-none rounded-xl bg-sekkha-canvas">
-      {/* ── Month navigation ──────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between px-1 pb-3">
-        <button
-          type="button"
-          onClick={prevMonth}
-          aria-label="Bulan sebelumnya"
-          className="flex h-8 w-8 items-center justify-center rounded-full text-sekkha-slate transition-colors hover:bg-sekkha-surface hover:text-sekkha-ink"
-        >
-          <ChevronLeftIcon className="size-4" />
-        </button>
+    <div className={`w-full select-none font-sans text-left ${
+      compact
+        ? "p-1.5 space-y-2 bg-transparent"
+        : "rounded-2xl border border-sekkha-hairline bg-white/95 backdrop-blur-md p-3.5 shadow-xs space-y-3"
+    }`}>
+      
+      {/* ── Month Navigation Header ────────────────────────────────────────── */}
+      <div className="flex items-center justify-between pb-1.5 border-b border-sekkha-hairline-soft px-0.5">
+        <div className="flex items-center gap-1.5">
+          <span className={`font-extrabold text-sekkha-ink tracking-tight ${compact ? "text-caption" : "text-caption-bold"}`}>
+            {monthLabel(month)}
+          </span>
+          <button
+            type="button"
+            onClick={resetToToday}
+            className="rounded-lg bg-blue-50 px-1.5 py-0.5 text-micro-bold text-sekkha-brand-blue hover:bg-blue-100 transition-colors"
+            title="Kembali ke Bulan Hari Ini"
+          >
+            Hari Ini
+          </button>
+        </div>
 
-        <span className="text-body-sm-medium text-sekkha-ink">
-          {monthLabel(month)}
-        </span>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={prevMonth}
+            aria-label="Bulan sebelumnya"
+            className="flex h-7 w-7 items-center justify-center rounded-lg border border-sekkha-hairline bg-white text-sekkha-slate hover:bg-sekkha-surface hover:text-sekkha-ink transition-all shadow-2xs active:scale-95 cursor-pointer"
+          >
+            <ChevronLeftIcon className="size-3.5" />
+          </button>
 
-        <button
-          type="button"
-          onClick={nextMonth}
-          aria-label="Bulan berikutnya"
-          className="flex h-8 w-8 items-center justify-center rounded-full text-sekkha-slate transition-colors hover:bg-sekkha-surface hover:text-sekkha-ink"
-        >
-          <ChevronRightIcon className="size-4" />
-        </button>
+          <button
+            type="button"
+            onClick={nextMonth}
+            aria-label="Bulan berikutnya"
+            className="flex h-7 w-8 items-center justify-center rounded-lg border border-sekkha-hairline bg-white text-sekkha-slate hover:bg-sekkha-surface hover:text-sekkha-ink transition-all shadow-2xs active:scale-95 cursor-pointer"
+          >
+            <ChevronRightIcon className="size-3.5" />
+          </button>
+        </div>
       </div>
 
       {/* ── Day-of-week headers ───────────────────────────────────────────── */}
-      <div className="grid grid-cols-7 pb-1">
-        {DAYS_ID.map(d => (
+      <div className="grid grid-cols-7 text-center">
+        {DAYS_ID.map((d, idx) => (
           <div
             key={d}
-            className="text-center text-caption text-sekkha-muted"
+            className={`text-micro font-bold uppercase tracking-tight py-0.5 ${
+              idx === 0 || idx === 6 ? "text-rose-500" : "text-sekkha-slate"
+            }`}
           >
             {d}
           </div>
@@ -135,7 +157,7 @@ export function EventCalendar({
       </div>
 
       {/* ── Day grid ─────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-7 gap-y-1">
+      <div className="grid grid-cols-7 gap-0.5 sm:gap-1">
         {grid.flat().map((date, i) => {
           const key = toKey(date)
           const isCurrentMonth = date.getMonth() === mo
@@ -151,31 +173,34 @@ export function EventCalendar({
               aria-label={date.toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
               aria-pressed={isSelected}
               className={[
-                "relative mx-auto flex h-9 w-9 flex-col items-center justify-center rounded-full text-caption transition-colors",
+                "relative mx-auto flex flex-col items-center justify-center transition-all cursor-pointer",
+                compact
+                  ? "h-7 w-7 sm:h-7.5 sm:w-7.5 rounded-xl text-micro font-bold"
+                  : "h-9 w-9 sm:h-10 sm:w-10 rounded-2xl text-caption",
                 isSelected
-                  ? "bg-sekkha-primary text-white"
+                  ? "bg-sekkha-brand-blue text-white font-black shadow-md scale-105 ring-2 ring-blue-300/80"
                   : isToday
-                    ? "bg-sekkha-surface font-semibold text-sekkha-brand-blue"
+                    ? "border-2 border-sekkha-brand-blue bg-blue-50/60 font-black text-sekkha-brand-blue shadow-2xs"
                     : isCurrentMonth
-                      ? "text-sekkha-ink hover:bg-sekkha-surface"
-                      : "text-sekkha-muted hover:bg-sekkha-surface",
+                      ? "text-sekkha-ink font-bold hover:bg-sekkha-surface/90 hover:scale-105"
+                      : "text-sekkha-slate/30 font-medium hover:bg-sekkha-surface/50",
               ].join(" ")}
             >
               {/* Day number */}
               <span className="leading-none">{date.getDate()}</span>
 
-              {/* Event dots */}
+              {/* Event dots indicator */}
               {dayDots.length > 0 && (
                 <span
-                  className="mt-0.5 flex items-center gap-[3px]"
+                  className="mt-1 flex items-center gap-[3px]"
                   aria-hidden="true"
                 >
                   {dayDots.map((color, di) => (
                     <span
                       key={di}
                       className={[
-                        "h-1 w-1 rounded-full",
-                        isSelected ? "bg-white/80" : color,
+                        "h-1.5 w-1.5 rounded-full shadow-2xs",
+                        isSelected ? "bg-white/90" : color,
                       ].join(" ")}
                     />
                   ))}
@@ -185,6 +210,7 @@ export function EventCalendar({
           )
         })}
       </div>
+
     </div>
   )
 }

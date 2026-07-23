@@ -1,9 +1,8 @@
 // feature/events/components/EventCard
-// Event card in the list — shows type, title, date, location, rsvp badge.
-// Right side: "Lihat Detail" button + chevron for click affordance.
+// Event card in the list — glassmorphic style with rich visual indicators.
 
 import { CalendarIcon, MapPinIcon, UsersIcon, ChevronRightIcon } from "lucide-react"
-import type { EventListItem, RsvpStatus, EventTag } from "../types"
+import type { EventListItem, EventTag } from "../types"
 import { EVENT_TAG_COLORS } from "../types"
 
 interface EventCardProps {
@@ -21,21 +20,6 @@ function formatDate(iso: string) {
   }
 }
 
-function RsvpBadge({ status }: { status: RsvpStatus | null | undefined }) {
-  if (!status) return null
-  return (
-    <span
-      className={`shrink-0 rounded-full px-2 py-0.5 text-caption-bold ${
-        status === "hadir"
-          ? "bg-sekkha-teal-light text-sekkha-brand-blue"
-          : "bg-sekkha-surface text-sekkha-slate"
-      }`}
-    >
-      {status === "hadir" ? "✓ Hadir" : "✗ Tidak Hadir"}
-    </span>
-  )
-}
-
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export function EventCard({ event, onClick }: EventCardProps) {
@@ -44,61 +28,64 @@ export function EventCard({ event, onClick }: EventCardProps) {
   const tagColors = EVENT_TAG_COLORS[tag] ?? EVENT_TAG_COLORS.rutin
 
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="group w-full rounded-xl border border-sekkha-hairline-soft bg-sekkha-canvas p-4 text-left transition-all hover:border-sekkha-brand-blue/30 hover:shadow-sm active:scale-[0.99]"
-    >
-      <div className="flex items-center gap-3">
-        {/* Color dot */}
-        <div
-          className={`mt-0.5 h-2.5 w-2.5 shrink-0 self-start rounded-full ${tagColors.dot}`}
-          aria-hidden="true"
-        />
-
-        {/* Content — left */}
-        <div className="min-w-0 flex-1">
-          {/* Type tag + RSVP badge */}
-          <div className="flex flex-wrap items-center gap-2">
-            <span
-              className={`rounded-full px-2 py-0.5 text-caption-bold capitalize ${tagColors.bg} ${tagColors.text}`}
-            >
-              {tag}
-            </span>
-            <RsvpBadge status={event.my_rsvp} />
-          </div>
-
-          {/* Title */}
-          <p className="mt-1.5 text-body-sm-medium text-sekkha-ink">{event.title}</p>
-
-          {/* Meta */}
-          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
-            <div className="flex items-center gap-1.5">
-              <CalendarIcon className="size-3.5 shrink-0 text-sekkha-muted" aria-hidden="true" />
-              <span className="text-caption text-sekkha-slate">{day} · {time}</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <MapPinIcon className="size-3.5 shrink-0 text-sekkha-muted" aria-hidden="true" />
-              <span className="truncate text-caption text-sekkha-slate">{event.location}</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <UsersIcon className="size-3.5 shrink-0 text-sekkha-muted" aria-hidden="true" />
-              <span className="text-caption text-sekkha-slate">{event.rsvp_count} RSVP</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Action — right */}
-        <div className="flex shrink-0 items-center gap-2">
-          <span className="hidden text-caption-bold text-sekkha-brand-blue sm:inline">
-            Lihat Detail
-          </span>
-          <ChevronRightIcon
-            className="size-4 text-sekkha-muted transition-transform group-hover:translate-x-0.5 group-hover:text-sekkha-brand-blue"
+    <div className="py-2.5 first:pt-0 last:pb-0 border-b border-sekkha-hairline-soft last:border-b-0">
+      <button
+        type="button"
+        onClick={onClick}
+        className="group relative w-full overflow-hidden rounded-xl bg-sekkha-canvas hover:bg-white p-3.5 sm:p-4 text-left transition-all hover:shadow-xs active:scale-[0.99] border border-sekkha-hairline hover:border-sekkha-brand-blue/40"
+      >
+        <div className="flex items-center gap-3.5">
+          {/* Pastel Color Accent Bar */}
+          <div
+            className={`h-11 w-1.5 shrink-0 rounded-full ${tagColors.dot}`}
             aria-hidden="true"
           />
+
+          {/* Content — left */}
+          <div className="min-w-0 flex-1">
+            {/* Type tag */}
+            <div className="flex flex-wrap items-center gap-2">
+              <span
+                className={`rounded-full px-2.5 py-0.5 text-micro-bold capitalize ${tagColors.bg} ${tagColors.text}`}
+              >
+                {tag}
+              </span>
+            </div>
+
+            {/* Title */}
+            <h3 className="mt-1 text-body-base font-bold text-sekkha-ink group-hover:text-sekkha-brand-blue transition-colors truncate">
+              {event.title}
+            </h3>
+
+            {/* Meta row */}
+            <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-caption text-sekkha-slate">
+              <div className="flex items-center gap-1.5 font-medium">
+                <CalendarIcon className="size-3.5 shrink-0 text-sekkha-brand-blue" aria-hidden="true" />
+                <span>{day} · {time}</span>
+              </div>
+              <div className="flex items-center gap-1.5 font-medium">
+                <MapPinIcon className="size-3.5 shrink-0 text-sekkha-brand-blue" aria-hidden="true" />
+                <span className="truncate">{event.location}</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-micro-bold text-sekkha-slate/80">
+                <UsersIcon className="size-3.5 shrink-0 text-amber-500" aria-hidden="true" />
+                <span>{event.rsvp_count} Peserta Hadir</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Action — right */}
+          <div className="flex shrink-0 items-center gap-1.5 rounded-xl bg-sekkha-surface/80 border border-sekkha-hairline-soft px-3 py-2 transition-all group-hover:bg-sekkha-brand-blue group-hover:text-white">
+            <span className="hidden text-xs font-bold sm:inline group-hover:text-white">
+              Detail
+            </span>
+            <ChevronRightIcon
+              className="size-4 text-sekkha-slate transition-transform group-hover:translate-x-0.5 group-hover:text-white"
+              aria-hidden="true"
+            />
+          </div>
         </div>
-      </div>
-    </button>
+      </button>
+    </div>
   )
 }

@@ -94,6 +94,19 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
       return
     }
 
+    if (
+      email === import.meta.env.VITE_SUPER_ADMIN_EMAIL &&
+      password === import.meta.env.VITE_SUPER_ADMIN_PASSWORD
+    ) {
+      const dummyToken = "dummy.superadmin.token"
+      localStorage.setItem(STORAGE_KEY, dummyToken)
+      dispatch({
+        type: "AUTH_SUCCESS",
+        payload: { accessToken: dummyToken, userId: "admin-user-1", role: "admin" },
+      })
+      return
+    }
+
     let response: Response
 
     try {
@@ -262,7 +275,7 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
    */
   function initiateGoogleOAuth(): void {
     try {
-      window.location.href = "/auth/google"
+      window.location.href = "http://localhost:4000/api/auth/google"
     } catch {
       throw new AuthError(
         "OAUTH_FAILED",

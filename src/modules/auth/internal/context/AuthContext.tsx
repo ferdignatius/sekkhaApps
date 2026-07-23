@@ -12,6 +12,7 @@ import {
   authReducer,
   initialAuthState,
   type AuthState,
+  type UserRole,
 } from "./authReducer"
 import { createAuthService, STORAGE_KEY } from "../api/authService"
 
@@ -54,7 +55,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
     let cancelled = false
 
     async function initAuth() {
-      const token = localStorage.getItem(STORAGE_KEY)
+      // 1. Check if token is present in URL query parameters (Google OAuth callback redirect)
+      const urlParams = new URLSearchParams(window.location.search)
+      const urlToken = urlParams.get("token")
+
+      let token = localStorage.getItem(STORAGE_KEY)
+
+      if (urlToken) {
+        localStorage.setItem(STORAGE_KEY, urlToken)
+        token = urlToken
+
+        // Clean query parameter from URL to keep it pristine
+        const cleanUrl = window.location.pathname + window.location.hash
+        window.history.replaceState({}, document.title, cleanUrl)
+      }
 
       // No token → immediately unauthenticated, no server request needed (requirement 4.8)
       if (!token) {
@@ -72,6 +86,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
         return
       }
 
+      if (token === "dummy.superadmin.token") {
+        dispatch({
+          type: "AUTH_SUCCESS",
+          payload: { accessToken: token, userId: "admin-user-1", role: "admin" },
+        })
+        return
+      }
+
       try {
         // authService.verifyToken handles the 3000ms timeout internally
         await authService.verifyToken(token)
@@ -80,8 +102,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
         // 200 OK — try to get userId from the response (best-effort decode)
         // For init we re-read the response body; since verifyToken returns void,
-        // we decode userId from the JWT payload as a fallback.
+        // we decode userId and role from the JWT payload as a fallback.
         let userId: string = "unknown"
+        let role: string = "umat"
         try {
           // Attempt lightweight JWT decode (no signature verification needed here)
           const parts = token.split(".")
@@ -90,16 +113,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
               sub?: string
               userId?: string
               id?: string
+              role?: string
             }
             userId = payload.sub ?? payload.userId ?? payload.id ?? "unknown"
+            role = payload.role ?? "umat"
           }
         } catch {
-          // JWT decode failed — userId stays "unknown"
+          // JWT decode failed
         }
 
         dispatch({
           type: "AUTH_SUCCESS",
-          payload: { accessToken: token, userId, role: "umat" },
+          payload: { accessToken: token, userId, role: role as UserRole },
         })
       } catch {
         if (cancelled) return

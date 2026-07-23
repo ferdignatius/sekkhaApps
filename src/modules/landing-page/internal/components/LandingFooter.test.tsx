@@ -88,7 +88,7 @@ describe("LandingFooter", () => {
   // Requirement 7.2 — logo text "Sekkha" rendered
   it("renders logo text 'Sekkha' in a <span> element - Requirement 7.2", () => {
     render(<LandingFooter navColumns={mockNavColumns} />)
-    const logoEl = screen.getAllByText((content, element) => {
+    const logoEl = screen.getAllByText((content) => {
       return content.includes("Sekkha")
     })
     expect(logoEl.length).toBeGreaterThanOrEqual(1)

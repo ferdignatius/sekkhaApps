@@ -70,7 +70,7 @@ describe("authService.login — success", () => {
     expect(dispatch).toHaveBeenCalledOnce()
     expect(dispatch).toHaveBeenCalledWith<[AuthAction]>({
       type: "AUTH_SUCCESS",
-      payload: { accessToken: "tok-abc", userId: "user-1" },
+      payload: { accessToken: "tok-abc", userId: "user-1", role: "umat" },
     })
   })
 })
@@ -139,7 +139,7 @@ describe("authService.register — success", () => {
     expect(dispatch).toHaveBeenCalledOnce()
     expect(dispatch).toHaveBeenCalledWith<[AuthAction]>({
       type: "AUTH_SUCCESS",
-      payload: { accessToken: "reg-tok", userId: "user-2" },
+      payload: { accessToken: "reg-tok", userId: "user-2", role: "umat" },
     })
   })
 })

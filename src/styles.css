@@ -274,6 +274,14 @@
     letter-spacing: 0;
   }
 
+  .text-micro-bold {
+    font-family: var(--font-roobert);
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.40;
+    letter-spacing: 0;
+  }
+
   .text-button-md {
     font-family: var(--font-roobert);
     font-size: 14px;

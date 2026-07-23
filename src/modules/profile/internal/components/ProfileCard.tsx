@@ -43,7 +43,9 @@ export function ProfileCard({
   onEditProfile,
 }: ProfileCardProps) {
   return (
-    <div className="relative rounded-xl border border-sekkha-hairline-soft bg-sekkha-canvas p-5">
+    <div className="relative overflow-hidden rounded-2xl border border-white/80 bg-gradient-to-br from-sekkha-canvas/95 via-white/90 to-amber-50/50 backdrop-blur-md p-5 shadow-xs transition-all hover:shadow-md">
+      {/* Decorative Glow */}
+      <div className="absolute -top-10 -right-10 size-32 rounded-full bg-sekkha-brand-yellow/20 blur-2xl pointer-events-none" />
       {/* Edit button — top right */}
       <button
         type="button"

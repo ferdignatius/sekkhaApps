@@ -6,6 +6,7 @@ import {
   KeyRoundIcon,
   BellIcon,
   ChevronRightIcon,
+  TargetIcon,
 } from "lucide-react"
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -14,6 +15,7 @@ interface SettingsSectionProps {
   onLogout: () => void
   onChangePassword?: () => void
   onNotificationSettings?: () => void
+  onMonthlyTargetSettings?: () => void
 }
 
 interface SettingsItem {
@@ -31,8 +33,16 @@ export function SettingsSection({
   onLogout,
   onChangePassword,
   onNotificationSettings,
+  onMonthlyTargetSettings,
 }: SettingsSectionProps) {
   const items: SettingsItem[] = [
+    {
+      id: "target",
+      icon: TargetIcon,
+      label: "Target Kehadiran Bulanan",
+      description: "Atur target jumlah kehadiran kamu setiap bulan",
+      onClick: onMonthlyTargetSettings ?? (() => {}),
+    },
     {
       id: "password",
       icon: KeyRoundIcon,
@@ -60,7 +70,7 @@ export function SettingsSection({
   return (
     <section
       aria-labelledby="settings-heading"
-      className="rounded-xl border border-sekkha-hairline-soft bg-sekkha-canvas"
+      className="relative overflow-hidden rounded-2xl border border-white/80 bg-gradient-to-br from-sekkha-canvas/95 via-white/90 to-blue-50/20 backdrop-blur-md shadow-xs transition-all hover:shadow-md"
     >
       <div className="border-b border-sekkha-hairline-soft px-5 py-4">
         <h2

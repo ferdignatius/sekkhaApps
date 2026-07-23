@@ -22,7 +22,9 @@ export function StatsHero({
   favoriteEvent,
 }: StatsHeroProps) {
   return (
-    <div className="rounded-xl border border-sekkha-hairline-soft bg-sekkha-canvas p-5">
+    <div className="relative overflow-hidden rounded-2xl border border-white/80 bg-gradient-to-br from-sekkha-canvas/95 via-white/90 to-blue-50/30 backdrop-blur-md p-5 shadow-xs transition-all hover:shadow-md">
+      {/* Decorative Glow */}
+      <div className="absolute -top-10 -left-10 size-32 rounded-full bg-sekkha-brand-blue/10 blur-2xl pointer-events-none" />
       {/* Big numbers row */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         {/* Rank */}

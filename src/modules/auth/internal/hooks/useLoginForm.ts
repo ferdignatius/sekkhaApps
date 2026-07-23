@@ -104,7 +104,9 @@ export function useLoginForm(): UseLoginFormReturn {
   async function handleSubmit(): Promise<void> {
     // Dummy bypass — skip validation for development credentials
     const isDummyLogin =
-      fields.email === "admin" && fields.password === "admin"
+      (fields.email === "admin" && fields.password === "admin") ||
+      (fields.email === import.meta.env.VITE_SUPER_ADMIN_EMAIL &&
+        fields.password === import.meta.env.VITE_SUPER_ADMIN_PASSWORD)
 
     if (!isDummyLogin) {
       const result = validateLoginForm(fields)

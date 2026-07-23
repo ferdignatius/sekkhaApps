@@ -15,7 +15,7 @@ import type { AchievementDto } from "../api/configureApi"
 interface Achievement {
   id: string
   name: string
-  icon: string
+  icon_url: string
   description: string
   condition_type: "streak" | "attendance" | "points" | "event_count" | "manual"
   condition_value: number
@@ -25,16 +25,16 @@ interface Achievement {
 // ─── Dummy data ──────────────────────────────────────────────────────────────
 
 const INITIAL_ACHIEVEMENTS: Achievement[] = [
-  { id: "ach-1", name: "Pertama Hadir", icon: "🎯", description: "Hadir di kebaktian pertama", condition_type: "attendance", condition_value: 1, is_active: true },
-  { id: "ach-2", name: "Streak 5", icon: "🔥", description: "Hadir 5 minggu berturut-turut", condition_type: "streak", condition_value: 5, is_active: true },
-  { id: "ach-3", name: "Streak 10", icon: "⚡", description: "Hadir 10 minggu berturut-turut", condition_type: "streak", condition_value: 10, is_active: true },
-  { id: "ach-4", name: "Streak 20", icon: "💎", description: "Hadir 20 minggu berturut-turut", condition_type: "streak", condition_value: 20, is_active: true },
-  { id: "ach-5", name: "Loyal", icon: "❤️", description: "Aktif selama 3 bulan tanpa putus", condition_type: "attendance", condition_value: 12, is_active: true },
-  { id: "ach-6", name: "Rajin", icon: "📚", description: "Hadir 4x berturut-turut di event rutin", condition_type: "event_count", condition_value: 4, is_active: true },
-  { id: "ach-7", name: "100 Poin", icon: "⭐", description: "Kumpulkan total 100 poin", condition_type: "points", condition_value: 100, is_active: true },
-  { id: "ach-8", name: "500 Poin", icon: "🏆", description: "Kumpulkan total 500 poin", condition_type: "points", condition_value: 500, is_active: true },
-  { id: "ach-9", name: "1000 Poin", icon: "👑", description: "Kumpulkan total 1000 poin", condition_type: "points", condition_value: 1000, is_active: false },
-  { id: "ach-10", name: "Sosial", icon: "🤝", description: "Ikut 3 kegiatan bakti sosial", condition_type: "event_count", condition_value: 3, is_active: true },
+  { id: "ach-1", name: "Pertama Hadir", icon_url: "🎯", description: "Hadir di kebaktian pertama", condition_type: "attendance", condition_value: 1, is_active: true },
+  { id: "ach-2", name: "Streak 5", icon_url: "🔥", description: "Hadir 5 minggu berturut-turut", condition_type: "streak", condition_value: 5, is_active: true },
+  { id: "ach-3", name: "Streak 10", icon_url: "⚡", description: "Hadir 10 minggu berturut-turut", condition_type: "streak", condition_value: 10, is_active: true },
+  { id: "ach-4", name: "Streak 20", icon_url: "💎", description: "Hadir 20 minggu berturut-turut", condition_type: "streak", condition_value: 20, is_active: true },
+  { id: "ach-5", name: "Loyal", icon_url: "❤️", description: "Aktif selama 3 bulan tanpa putus", condition_type: "attendance", condition_value: 12, is_active: true },
+  { id: "ach-6", name: "Rajin", icon_url: "📚", description: "Hadir 4x berturut-turut di event rutin", condition_type: "event_count", condition_value: 4, is_active: true },
+  { id: "ach-7", name: "100 Poin", icon_url: "⭐", description: "Kumpulkan total 100 poin", condition_type: "points", condition_value: 100, is_active: true },
+  { id: "ach-8", name: "500 Poin", icon_url: "🏆", description: "Kumpulkan total 500 poin", condition_type: "points", condition_value: 500, is_active: true },
+  { id: "ach-9", name: "1000 Poin", icon_url: "👑", description: "Kumpulkan total 1000 poin", condition_type: "points", condition_value: 1000, is_active: false },
+  { id: "ach-10", name: "Sosial", icon_url: "🤝", description: "Ikut 3 kegiatan bakti sosial", condition_type: "event_count", condition_value: 3, is_active: true },
 ]
 
 const conditionLabel: Record<Achievement["condition_type"], string> = {
@@ -75,7 +75,7 @@ export function AchievementPage() {
   function openEdit(ach: Achievement) {
     setEditTarget(ach)
     setName(ach.name)
-    setIcon(ach.icon)
+    setIcon(ach.icon_url)
     setDescription(ach.description)
     setConditionType(ach.condition_type)
     setConditionValue(ach.condition_value)
@@ -198,7 +198,7 @@ export function AchievementPage() {
               <tbody>
                 {achievements.map((ach) => (
                   <tr key={ach.id} className="border-b border-sekkha-hairline-soft last:border-0">
-                    <td className="px-4 py-3 text-lg">{ach.icon}</td>
+                    <td className="px-4 py-3 text-lg">{ach.icon_url}</td>
                     <td className="px-4 py-3">
                       <p className="font-medium text-sekkha-ink">{ach.name}</p>
                       <p className="text-caption text-sekkha-muted">{ach.description}</p>

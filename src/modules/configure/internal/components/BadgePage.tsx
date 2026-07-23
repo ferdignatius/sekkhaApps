@@ -17,8 +17,9 @@ interface Badge {
   name: string
   description: string
   icon_url: string
-  condition_type: "total_attendance" | "streak" | "points"
+  condition_type: "streak" | "attendance" | "points" | "event_count" | "manual"
   condition_value: number
+  is_active: boolean
 }
 
 // ─── Dummy data ──────────────────────────────────────────────────────────────
@@ -29,8 +30,9 @@ const INITIAL_BADGES: Badge[] = [
     name: "Pertama Kali Hadir",
     description: "Berhasil scan QR pertama kalinya",
     icon_url: "🎯",
-    condition_type: "total_attendance",
+    condition_type: "attendance",
     condition_value: 1,
+    is_active: true,
   },
   {
     id: "badge-2",
@@ -39,6 +41,7 @@ const INITIAL_BADGES: Badge[] = [
     icon_url: "🔥",
     condition_type: "streak",
     condition_value: 5,
+    is_active: true,
   },
   {
     id: "badge-3",
@@ -47,6 +50,7 @@ const INITIAL_BADGES: Badge[] = [
     icon_url: "⚡",
     condition_type: "streak",
     condition_value: 10,
+    is_active: true,
   },
   {
     id: "badge-4",
@@ -55,6 +59,7 @@ const INITIAL_BADGES: Badge[] = [
     icon_url: "⭐",
     condition_type: "points",
     condition_value: 100,
+    is_active: true,
   },
 ]
 
@@ -64,7 +69,7 @@ export function BadgePage() {
   const { authState } = useAuth()
   const isAdmin = authState.status === "authenticated" && authState.role === "admin"
 
-  const { items: badges, create: apiCreate, update: apiUpdate, remove: apiRemove, loading } = useConfigureCrud<BadgeDto>(badgesApi, INITIAL_BADGES as any)
+  const { items: badges, create: apiCreate, update: apiUpdate, remove: apiRemove } = useConfigureCrud<BadgeDto>(badgesApi, INITIAL_BADGES)
   const [editing, setEditing] = useState<Badge | null>(null)
   const [showForm, setShowForm] = useState(false)
 
@@ -72,14 +77,14 @@ export function BadgePage() {
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")
   const [iconUrl, setIconUrl] = useState("")
-  const [conditionType, setConditionType] = useState<Badge["condition_type"]>("total_attendance")
+  const [conditionType, setConditionType] = useState<Badge["condition_type"]>("attendance")
   const [conditionValue, setConditionValue] = useState("")
 
   function resetForm() {
     setName("")
     setDescription("")
     setIconUrl("")
-    setConditionType("total_attendance")
+    setConditionType("attendance")
     setConditionValue("")
     setEditing(null)
     setShowForm(false)
@@ -110,6 +115,7 @@ export function BadgePage() {
       icon_url: iconUrl || "🏅",
       condition_type: conditionType as any,
       condition_value: Number(conditionValue) || 0,
+      is_active: true,
     }
 
     if (editing) {
@@ -124,10 +130,12 @@ export function BadgePage() {
     void apiRemove(id).catch(() => {})
   }
 
-  const conditionLabel = {
-    total_attendance: "Total Kehadiran",
+  const conditionLabel: Record<Badge["condition_type"], string> = {
+    attendance: "Total Kehadiran",
     streak: "Streak (minggu)",
     points: "Total Poin",
+    event_count: "Jumlah Event",
+    manual: "Manual",
   }
 
   return (
@@ -178,9 +186,11 @@ export function BadgePage() {
                 <div className="flex flex-col gap-1.5">
                   <label htmlFor="badge-cond-type" className="text-caption text-sekkha-slate">Kondisi</label>
                   <select id="badge-cond-type" value={conditionType} onChange={(e) => setConditionType(e.target.value as Badge["condition_type"])} className="rounded-lg border border-sekkha-hairline-strong px-3 py-2 text-body-sm text-sekkha-ink outline-none focus:border-sekkha-brand-blue">
-                    <option value="total_attendance">Total Kehadiran</option>
+                    <option value="attendance">Total Kehadiran</option>
                     <option value="streak">Streak (minggu)</option>
                     <option value="points">Total Poin</option>
+                    <option value="event_count">Jumlah Event</option>
+                    <option value="manual">Manual</option>
                   </select>
                 </div>
                 <div className="flex flex-col gap-1.5">

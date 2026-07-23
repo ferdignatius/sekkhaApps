@@ -129,14 +129,14 @@ export function DashboardPage() {
 
             {/* Stats row — large animated icons */}
             <div className="mt-4 grid grid-cols-2 gap-3">
-              <div className="flex items-center gap-3 rounded-xl bg-orange-50 px-4 py-3">
-                <FlameIcon className="size-8 animate-pulse text-orange-500" aria-hidden="true" />
+              <div className="flex items-center gap-3 rounded-xl bg-sekkha-coral-light px-4 py-3 border border-sekkha-brand-red-dark/20">
+                <FlameIcon className="size-8 animate-pulse text-sekkha-ink" aria-hidden="true" />
                 <div>
-                  <p className="text-heading-4 font-semibold text-orange-500">{DUMMY_USER.currentStreak}</p>
+                  <p className="text-heading-4 font-semibold text-sekkha-ink">{DUMMY_USER.currentStreak}</p>
                   <p className="text-caption text-sekkha-slate">🔥 Minggu streak</p>
                 </div>
               </div>
-              <div className="flex items-center gap-3 rounded-xl bg-sekkha-surface-yellow px-4 py-3">
+              <div className="flex items-center gap-3 rounded-xl bg-sekkha-surface-yellow px-4 py-3 border border-sekkha-brand-yellow-deep/20">
                 <StarIcon className="size-8 animate-bounce text-sekkha-brand-yellow" aria-hidden="true" />
                 <div>
                   <p className="text-heading-4 font-semibold text-sekkha-ink">{DUMMY_USER.totalPoints.toLocaleString("id-ID")}</p>
@@ -188,15 +188,15 @@ export function DashboardPage() {
                     </span>
                   </div>
 
-                  {/* RSVP buttons — green Hadir prominent, grey Tidak Hadir */}
+                  {/* RSVP buttons — Sekkha-branded action buttons */}
                   <div className="mt-4 flex gap-2">
                     <button
                       type="button"
                       onClick={() => setRsvp("hadir")}
                       className={`flex flex-1 items-center justify-center gap-2 rounded-full py-2.5 text-body-sm-medium font-semibold transition-all ${
                         rsvp === "hadir"
-                          ? "bg-green-500 text-white shadow-md"
-                          : "border-2 border-green-300 bg-green-50 text-green-700 hover:bg-green-100"
+                          ? "bg-sekkha-brand-blue text-white shadow-md"
+                          : "border-2 border-sekkha-brand-blue bg-white text-sekkha-brand-blue hover:bg-sekkha-surface"
                       }`}
                     >
                       <ThumbsUpIcon className="size-4" />
@@ -207,8 +207,8 @@ export function DashboardPage() {
                       onClick={() => setRsvp("tidak_hadir")}
                       className={`rounded-full px-4 py-2.5 text-body-sm-medium transition-all ${
                         rsvp === "tidak_hadir"
-                          ? "bg-slate-200 text-slate-600"
-                          : "text-slate-400 hover:text-slate-600"
+                          ? "bg-sekkha-slate/20 text-sekkha-ink font-semibold"
+                          : "text-sekkha-slate hover:text-sekkha-ink"
                       }`}
                     >
                       Tidak Hadir

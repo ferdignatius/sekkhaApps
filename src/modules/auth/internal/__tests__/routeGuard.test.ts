@@ -58,7 +58,7 @@ function makeContext(
   userId: string | null = null,
 ): RouterContext {
   return {
-    authState: { status, accessToken, userId },
+    authState: { status, accessToken, userId, role: null },
   }
 }
 
@@ -98,7 +98,7 @@ function getRedirectToParam(err: unknown): string | undefined {
 
 // ─── Import the functions under test ───────────────────────────────────────────
 
-import { routeGuardBeforeLoad } from "../../../routes/dashboard/__layout"
+import { routeGuardBeforeLoad } from "../../../../routes/_authenticated"
 import { LoginPage } from "../components/LoginPage"
 
 // ─── Unit Tests: Route Guard (unauthenticated → redirect to /login) ─────────────

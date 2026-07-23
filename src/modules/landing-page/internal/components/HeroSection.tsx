@@ -1,5 +1,6 @@
 import { motion } from 'motion/react'
 import { Button } from '@/components/base/Button'
+import { DashboardMockup } from './DashboardMockup'
 
 interface HeroSectionProps {
   headline: string
@@ -11,7 +12,7 @@ const EASE = "easeOut"
 
 export function HeroSection({ headline, subheadline }: HeroSectionProps) {
   return (
-    <section aria-labelledby="hero-heading" className="w-full bg-sekkha-canvas py-[120px]">
+    <section aria-labelledby="hero-heading" className="w-full bg-sekkha-canvas py-[120px] overflow-hidden">
       <div className="mx-auto w-full max-w-[1280px] px-4 md:px-8">
 
         {/* Badge */}
@@ -29,7 +30,7 @@ export function HeroSection({ headline, subheadline }: HeroSectionProps) {
         {/* Headline */}
         <motion.h1
           id="hero-heading"
-          className="text-heading-1 md:text-hero-display text-sekkha-ink max-w-[800px] mx-auto text-center"
+          className="text-hero-display text-sekkha-ink max-w-[800px] mx-auto text-center font-bold tracking-tight text-4xl sm:text-5xl md:text-7xl leading-tight"
           initial={{ opacity: 0, y: 32 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: EASE, delay: 0.1 }}
@@ -39,7 +40,7 @@ export function HeroSection({ headline, subheadline }: HeroSectionProps) {
 
         {/* Subheadline */}
         <motion.p
-          className="text-subtitle text-sekkha-slate max-w-[600px] mx-auto text-center mt-6"
+          className="text-subtitle text-sekkha-slate max-w-[600px] mx-auto text-center mt-6 text-base md:text-lg leading-relaxed"
           initial={{ opacity: 0, y: 32 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: EASE, delay: 0.2 }}
@@ -54,13 +55,16 @@ export function HeroSection({ headline, subheadline }: HeroSectionProps) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: EASE, delay: 0.35 }}
         >
-          <Button variant="primary" className="w-full md:w-auto">
-            Bergabung Sekarang
+          <Button variant="primary" className="w-full md:w-auto" asChild>
+            <a href="/sign-up">Bergabung Sekarang</a>
           </Button>
-          <Button variant="secondary" className="w-full md:w-auto">
-            Lihat Kegiatan
+          <Button variant="secondary" className="w-full md:w-auto" asChild>
+            <a href="#events">Lihat Kegiatan</a>
           </Button>
         </motion.div>
+
+        {/* Whiteboard Interactive Dashboard Mockup */}
+        <DashboardMockup />
 
         {/* Decorative background orbs — relative to viewport, not section */}
         <motion.div

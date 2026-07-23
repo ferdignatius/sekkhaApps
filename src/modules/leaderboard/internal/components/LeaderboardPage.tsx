@@ -165,9 +165,9 @@ export function LeaderboardPage() {
               <p className="mt-1 text-body-sm text-sekkha-slate">{seasonLabel(season)}</p>
             </div>
             {/* Season countdown — urgency (fix) */}
-            <div className="flex items-center gap-2 rounded-full bg-orange-50 px-4 py-2">
-              <TimerIcon className="size-4 text-orange-500" aria-hidden="true" />
-              <span className="text-caption-bold text-orange-600">
+            <div className="flex items-center gap-2 rounded-full bg-sekkha-coral-light px-4 py-2 border border-sekkha-brand-red-dark/20">
+              <TimerIcon className="size-4 text-sekkha-ink" aria-hidden="true" />
+              <span className="text-caption-bold text-sekkha-ink">
                 ⏳ {SEASON_DAYS_LEFT} Hari Lagi Season Selesai!
               </span>
             </div>
@@ -243,7 +243,7 @@ export function LeaderboardPage() {
                           className={[
                             "flex items-center gap-4 rounded-lg px-4 py-3 transition-colors",
                             isMe
-                              ? "border-2 border-sekkha-brand-blue bg-blue-50 shadow-sm"
+                              ? "border-2 border-sekkha-brand-blue bg-sekkha-brand-blue/10 shadow-sm"
                               : "hover:bg-sekkha-surface",
                           ].join(" ")}
                         >

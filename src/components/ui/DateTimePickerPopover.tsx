@@ -12,13 +12,11 @@ interface DateTimePickerPopoverProps {
   error?: string
 }
 
-// Quick preset time slots for Vihara events
-const QUICK_TIMES = [
-  { label: "08:00 WIB (Puja Pagi)", time: "08:00" },
-  { label: "14:00 WIB (Kebaktian Siang)", time: "14:00" },
-  { label: "18:30 WIB (Puja Malam)", time: "18:30" },
-  { label: "19:00 WIB (Diskusi Dhamma)", time: "19:00" },
-]
+import { getMasterTimePresets } from "@/modules/events/internal/masterdata"
+import { WheelTimePickerTrigger } from "@/components/ui/WheelTimePicker"
+
+// Quick preset time slots — hanya yang aktif (dari Master Data)
+const QUICK_TIMES = getMasterTimePresets(true)
 
 function parseValue(isoStr: string) {
   if (!isoStr) {
@@ -207,13 +205,13 @@ export function DateTimePickerPopover({
                   </div>
                 </div>
 
+                {/* Apple-style Drum Wheel Time Picker — muncul saat tekan tombol */}
                 <div className="flex items-center justify-between pt-3 border-t border-sekkha-hairline-soft">
                   <span className="text-caption font-bold text-sekkha-ink">Atur Jam Presisi:</span>
-                  <input
-                    type="time"
-                    value={draftTime}
-                    onChange={e => setDraftTime(e.target.value)}
-                    className="rounded-xl border border-sekkha-hairline bg-white px-3.5 py-1.5 text-caption-bold text-sekkha-ink outline-none focus:border-sekkha-brand-blue shadow-2xs"
+                  <WheelTimePickerTrigger
+                    value={draftTime || "08:00"}
+                    onChange={setDraftTime}
+                    label="Pilih Jam"
                   />
                 </div>
               </div>

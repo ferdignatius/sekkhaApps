@@ -5,6 +5,8 @@ export { BadgePage } from "./internal/components/BadgePage"
 export { LevelPage } from "./internal/components/LevelPage"
 export { EventTypePage } from "./internal/components/EventTypePage"
 export { AchievementPage } from "./internal/components/AchievementPage"
+export { EventTimePage } from "./internal/components/EventTimePage"
+export { AttendanceBadgePage } from "./internal/components/AttendanceBadgePage"
 
 export const configureModule: ModuleDefinition = {
   name: "configure",
@@ -15,9 +17,11 @@ export const configureModule: ModuleDefinition = {
       label: "Master Data",
       icon: "Layers",
       items: [
-        { label: "Badge", to: "/configure/master/badge", icon: "Award", hasRoute: true },
-        { label: "Level", to: "/configure/master/level", icon: "Zap", hasRoute: true },
-        { label: "Event Type", to: "/configure/master/event-type", icon: "Tag", hasRoute: true },
+        { label: "Kategori Event", to: "/configure/master/event-type", icon: "Tag", hasRoute: true },
+        { label: "Badge Tugas Presensi", to: "/configure/master/attendance-badge", icon: "Award", hasRoute: true },
+        { label: "Preset Jam Vihara", to: "/configure/master/event-time", icon: "Clock", hasRoute: true },
+        { label: "Badge Pencapaian Umat", to: "/configure/master/badge", icon: "Award", hasRoute: true },
+        { label: "Level Umat", to: "/configure/master/level", icon: "Zap", hasRoute: true },
         { label: "Achievement", to: "/configure/master/achievement", icon: "Trophy", hasRoute: true },
       ],
     },

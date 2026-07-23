@@ -72,6 +72,7 @@ export interface AttendanceBadge {
   name: string
   points: number
   color?: string
+  is_active?: boolean
 }
 
 export interface AttendanceRecord {

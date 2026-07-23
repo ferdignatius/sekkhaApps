@@ -5,6 +5,7 @@ import { useState } from "react"
 import { CalendarIcon, MapPinIcon, SparklesIcon, TagIcon, FileTextIcon, AlertCircleIcon, CheckIcon, Wand2Icon } from "lucide-react"
 import { DateTimePickerPopover } from "@/components/ui/DateTimePickerPopover"
 import type { CreateEventPayload, EventListItem, EventTag } from "../types"
+import { getMasterCategories } from "../masterdata"
 
 interface EventFormProps {
   /** If provided, pre-fill the form for editing */
@@ -38,72 +39,22 @@ export interface CategoryOption {
     title: string
     location: string
     description: string
+    time?: string  // "HH:mm" preset jam default
   }
 }
 
-// Master data category options with 'basic' as default
-const CATEGORY_OPTIONS: CategoryOption[] = [
-  {
-    id: "basic",
-    label: "Basic",
-    bg: "bg-slate-100 text-slate-800 border-slate-300",
-    autofill: {
-      title: "Kegiatan Pemuda Sekkha",
-      location: "Vihara Sekkha",
-      description: "Kegiatan kebersamaan dan pembinaan pemuda vihara."
-    }
+// Dynamic Master Data category options — hanya yang aktif
+const CATEGORY_OPTIONS: CategoryOption[] = getMasterCategories(true).map(cat => ({
+  id: cat.tag as EventTag,
+  label: cat.name,
+  bg: `${cat.bg} ${cat.text} border-current/30`,
+  autofill: {
+    title: `Kegiatan ${cat.name} Vihara`,
+    location: "Vihara Sekkha",
+    description: `Kegiatan ${cat.name.toLowerCase()} bersama Umat Vihara Sekkha.`,
+    time: cat.autofillTime,
   },
-  {
-    id: "rutin",
-    label: "Rutin",
-    bg: "bg-sky-100 text-sky-800 border-sky-300",
-    autofill: {
-      title: "Kebaktian Minggu Remaja",
-      location: "Dhammasala Utama",
-      description: "Kebaktian rutin mingguan pemuda, pembacaan paritta, dan Dhammadesana."
-    }
-  },
-  {
-    id: "special",
-    label: "Special",
-    bg: "bg-amber-100 text-amber-800 border-amber-300",
-    autofill: {
-      title: "Perayaan Hari Besar Vihara",
-      location: "Gedung Utama Vihara",
-      description: "Acara perayaan hari besar agama Buddha bersama Umat."
-    }
-  },
-  {
-    id: "retreat",
-    label: "Retreat",
-    bg: "bg-purple-100 text-purple-800 border-purple-300",
-    autofill: {
-      title: "Retreat Meditasi Pemuda",
-      location: "Pusat Meditasi",
-      description: "Retreat pembinaan diri dan sesi meditasi intensif."
-    }
-  },
-  {
-    id: "meditasi",
-    label: "Meditasi",
-    bg: "bg-emerald-100 text-emerald-800 border-emerald-300",
-    autofill: {
-      title: "Sesi Meditasi & Chanting",
-      location: "Ruang Meditasi",
-      description: "Sesi latihan meditasi pernapasan dan olah ketenangan jiwa."
-    }
-  },
-  {
-    id: "sosial",
-    label: "Sosial",
-    bg: "bg-rose-100 text-rose-800 border-rose-300",
-    autofill: {
-      title: "Bakti Sosial & Aksi Kasih",
-      location: "Area Luar Vihara",
-      description: "Kegiatan bakti sosial dan penyaluran bantuan kepada masyarakat."
-    }
-  },
-]
+}))
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
@@ -123,10 +74,9 @@ export function EventForm({
   )
   const [errors, setErrors] = useState<Record<string, string>>({})
 
-  // Handle Category Select with Masterdata Autofill
+  // Handle Category Select with Masterdata Autofill (title, location, description, time)
   function handleSelectCategory(cat: CategoryOption) {
     setTag(cat.id)
-    // Autofill fields if currently empty or matches previous default
     if (!title.trim() || CATEGORY_OPTIONS.some(c => c.autofill.title === title)) {
       setTitle(cat.autofill.title)
     }
@@ -135,6 +85,18 @@ export function EventForm({
     }
     if (!description.trim() || CATEGORY_OPTIONS.some(c => c.autofill.description === description)) {
       setDescription(cat.autofill.description)
+    }
+    // Autofill jam — set jika field tanggal kosong atau hanya berisi tanggal tanpa jam
+    if (cat.autofill.time) {
+      const today = new Date()
+      const datePart = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`
+      if (!eventDate) {
+        setEventDate(`${datePart}T${cat.autofill.time}`)
+      } else {
+        // Update hanya bagian waktu jika tanggal sudah terisi
+        const existingDate = eventDate.split("T")[0]
+        setEventDate(`${existingDate}T${cat.autofill.time}`)
+      }
     }
   }
 

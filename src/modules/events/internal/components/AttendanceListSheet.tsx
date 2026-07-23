@@ -16,6 +16,8 @@ import {
 } from "lucide-react"
 import type { AttendanceRecord, UserRole, AttendanceBadge } from "../types"
 
+import { getMasterBadges } from "../masterdata"
+
 interface AttendanceListSheetProps {
   records: AttendanceRecord[]
   role: UserRole | null
@@ -25,14 +27,8 @@ interface AttendanceListSheetProps {
   onDeleteRecord?: (userId: string) => void
 }
 
-// Preset Badges that Pengurus can award to participants
-const BADGE_PRESETS: AttendanceBadge[] = [
-  { id: "puja", name: "Petugas Puja", points: 20, color: "bg-blue-50/90 text-blue-700 border-blue-200/80" },
-  { id: "paritta", name: "Pembaca Paritta", points: 30, color: "bg-amber-50/90 text-amber-800 border-amber-200/80" },
-  { id: "panitia", name: "Panitia / Relawan", points: 50, color: "bg-purple-50/90 text-purple-800 border-purple-200/80" },
-  { id: "pemusik", name: "Pemusik / Speaker", points: 40, color: "bg-rose-50/90 text-rose-800 border-rose-200/80" },
-  { id: "kebersihan", name: "Tim Kebersihan", points: 25, color: "bg-emerald-50/90 text-emerald-800 border-emerald-200/80" },
-]
+// Preset Badges — hanya yang aktif (dari Master Data)
+const BADGE_PRESETS: AttendanceBadge[] = getMasterBadges(true)
 
 function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString("id-ID", {

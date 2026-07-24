@@ -108,24 +108,6 @@ export function ProfileSkeleton() {
   )
 }
 
-// ─── Community Page Skeleton ─────────────────────────────────────────────────
-
-export function CommunitySkeleton() {
-  return (
-    <div className="px-4 py-6 md:px-8 lg:px-12" aria-busy="true" aria-label="Memuat komunitas...">
-      <div className="mx-auto max-w-8xl space-y-4">
-        {/* Tabs */}
-        <Skeleton className="h-10 w-full max-w-xs rounded-full" />
-        {/* Posts */}
-        <div className="space-y-3">
-          <Skeleton className="h-28 w-full rounded-xl" />
-          <Skeleton className="h-28 w-full rounded-xl" />
-          <Skeleton className="h-28 w-full rounded-xl" />
-        </div>
-      </div>
-    </div>
-  )
-}
 
 // ─── Configure Page Skeleton ─────────────────────────────────────────────────
 

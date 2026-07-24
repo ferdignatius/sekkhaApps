@@ -45,7 +45,6 @@ export interface ConfigureItem {
 import { dashboardModule } from "@/modules/dashboard"
 import { eventsModule } from "@/modules/events"
 import { leaderboardModule } from "@/modules/leaderboard"
-import { communityModule } from "@/modules/community"
 import { profileModule } from "@/modules/profile"
 import { configureModule } from "@/modules/configure"
 import { pengurusModule } from "@/modules/pengurus"
@@ -61,7 +60,6 @@ export const activeModules: ModuleDefinition[] = [
   dashboardModule,
   eventsModule,
   leaderboardModule,
-  communityModule,
   profileModule,
   notificationsModule,
   configureModule,

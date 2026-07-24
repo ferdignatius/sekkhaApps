@@ -19,7 +19,6 @@ import { Route as AuthenticatedInsightRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedLeaderboardIndexRouteImport } from './routes/_authenticated/leaderboard/index'
 import { Route as AuthenticatedHomeIndexRouteImport } from './routes/_authenticated/home/index'
 import { Route as AuthenticatedEventsIndexRouteImport } from './routes/_authenticated/events/index'
-import { Route as AuthenticatedCommunityIndexRouteImport } from './routes/_authenticated/community/index'
 import { Route as AuthenticatedHomeProfileRouteImport } from './routes/_authenticated/home/profile'
 import { Route as AuthenticatedHomeAchievementsRouteImport } from './routes/_authenticated/home/achievements'
 import { Route as AuthenticatedConfigureMasterLevelRouteImport } from './routes/_authenticated/configure/master/level'
@@ -81,12 +80,6 @@ const AuthenticatedEventsIndexRoute =
     path: '/events/',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
-const AuthenticatedCommunityIndexRoute =
-  AuthenticatedCommunityIndexRouteImport.update({
-    id: '/community/',
-    path: '/community/',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
 const AuthenticatedHomeProfileRoute =
   AuthenticatedHomeProfileRouteImport.update({
     id: '/home/profile',
@@ -145,7 +138,6 @@ export interface FileRoutesByFullPath {
   '/teams': typeof AuthenticatedTeamsRoute
   '/home/achievements': typeof AuthenticatedHomeAchievementsRoute
   '/home/profile': typeof AuthenticatedHomeProfileRoute
-  '/community/': typeof AuthenticatedCommunityIndexRoute
   '/events/': typeof AuthenticatedEventsIndexRoute
   '/home/': typeof AuthenticatedHomeIndexRoute
   '/leaderboard/': typeof AuthenticatedLeaderboardIndexRoute
@@ -165,7 +157,6 @@ export interface FileRoutesByTo {
   '/teams': typeof AuthenticatedTeamsRoute
   '/home/achievements': typeof AuthenticatedHomeAchievementsRoute
   '/home/profile': typeof AuthenticatedHomeProfileRoute
-  '/community': typeof AuthenticatedCommunityIndexRoute
   '/events': typeof AuthenticatedEventsIndexRoute
   '/home': typeof AuthenticatedHomeIndexRoute
   '/leaderboard': typeof AuthenticatedLeaderboardIndexRoute
@@ -187,7 +178,6 @@ export interface FileRoutesById {
   '/_authenticated/teams': typeof AuthenticatedTeamsRoute
   '/_authenticated/home/achievements': typeof AuthenticatedHomeAchievementsRoute
   '/_authenticated/home/profile': typeof AuthenticatedHomeProfileRoute
-  '/_authenticated/community/': typeof AuthenticatedCommunityIndexRoute
   '/_authenticated/events/': typeof AuthenticatedEventsIndexRoute
   '/_authenticated/home/': typeof AuthenticatedHomeIndexRoute
   '/_authenticated/leaderboard/': typeof AuthenticatedLeaderboardIndexRoute
@@ -209,7 +199,6 @@ export interface FileRouteTypes {
     | '/teams'
     | '/home/achievements'
     | '/home/profile'
-    | '/community/'
     | '/events/'
     | '/home/'
     | '/leaderboard/'
@@ -229,7 +218,6 @@ export interface FileRouteTypes {
     | '/teams'
     | '/home/achievements'
     | '/home/profile'
-    | '/community'
     | '/events'
     | '/home'
     | '/leaderboard'
@@ -250,7 +238,6 @@ export interface FileRouteTypes {
     | '/_authenticated/teams'
     | '/_authenticated/home/achievements'
     | '/_authenticated/home/profile'
-    | '/_authenticated/community/'
     | '/_authenticated/events/'
     | '/_authenticated/home/'
     | '/_authenticated/leaderboard/'
@@ -341,13 +328,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEventsIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/community/': {
-      id: '/_authenticated/community/'
-      path: '/community'
-      fullPath: '/community/'
-      preLoaderRoute: typeof AuthenticatedCommunityIndexRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
     '/_authenticated/home/profile': {
       id: '/_authenticated/home/profile'
       path: '/home/profile'
@@ -413,7 +393,6 @@ interface AuthenticatedRouteChildren {
   AuthenticatedTeamsRoute: typeof AuthenticatedTeamsRoute
   AuthenticatedHomeAchievementsRoute: typeof AuthenticatedHomeAchievementsRoute
   AuthenticatedHomeProfileRoute: typeof AuthenticatedHomeProfileRoute
-  AuthenticatedCommunityIndexRoute: typeof AuthenticatedCommunityIndexRoute
   AuthenticatedEventsIndexRoute: typeof AuthenticatedEventsIndexRoute
   AuthenticatedHomeIndexRoute: typeof AuthenticatedHomeIndexRoute
   AuthenticatedLeaderboardIndexRoute: typeof AuthenticatedLeaderboardIndexRoute
@@ -431,7 +410,6 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedTeamsRoute: AuthenticatedTeamsRoute,
   AuthenticatedHomeAchievementsRoute: AuthenticatedHomeAchievementsRoute,
   AuthenticatedHomeProfileRoute: AuthenticatedHomeProfileRoute,
-  AuthenticatedCommunityIndexRoute: AuthenticatedCommunityIndexRoute,
   AuthenticatedEventsIndexRoute: AuthenticatedEventsIndexRoute,
   AuthenticatedHomeIndexRoute: AuthenticatedHomeIndexRoute,
   AuthenticatedLeaderboardIndexRoute: AuthenticatedLeaderboardIndexRoute,

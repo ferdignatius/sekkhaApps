@@ -115,23 +115,23 @@ export function AchievementPage() {
   return (
     <main>
       <PageBreadcrumb items={[{ label: "Configure" }, { label: "Achievement" }]} />
-      <div className="px-4 py-6 pb-24 md:px-8 md:pb-8 lg:px-12">
+      <div className="px-4 py-6 pb-32 sm:pb-36 md:px-8 md:pb-12 lg:px-12">
         <div className="mx-auto max-w-8xl space-y-5">
 
           {/* Header */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <TrophyIcon className="size-5 text-sekkha-brand-yellow" />
-              <h1 className="text-heading-5 text-sekkha-ink">Achievement</h1>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <TrophyIcon className="size-5 text-sekkha-brand-yellow shrink-0" />
+              <h1 className="text-body-base sm:text-heading-5 font-extrabold text-sekkha-ink">Achievement</h1>
             </div>
             {isAdmin && (
               <button
                 type="button"
                 onClick={openCreate}
-                className="flex items-center gap-1.5 rounded-full bg-sekkha-primary px-4 py-2 text-body-sm-medium text-white transition-opacity hover:opacity-90"
+                className="w-full sm:w-auto shrink-0 flex items-center justify-center gap-1.5 rounded-full bg-sekkha-primary px-4 py-2.5 sm:py-2 text-body-sm-medium text-white transition-opacity hover:opacity-90 cursor-pointer"
               >
                 <PlusIcon className="size-4" />
-                Tambah Achievement
+                <span>Tambah Achievement</span>
               </button>
             )}
           </div>
@@ -183,8 +183,8 @@ export function AchievementPage() {
 
         {/* Table */}
         <div className="overflow-hidden rounded-xl border border-sekkha-hairline-soft bg-sekkha-canvas">
-          <div className="overflow-x-auto">
-            <table className="w-full text-body-sm">
+          <div className="overflow-x-auto scrollbar-none">
+            <table className="w-full min-w-[600px] text-body-sm">
               <thead>
                 <tr className="border-b border-sekkha-hairline-soft bg-sekkha-surface">
                   <th className="px-4 py-3 text-left font-medium text-sekkha-slate">Icon</th>

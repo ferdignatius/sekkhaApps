@@ -19,7 +19,7 @@ export const configureModule: ModuleDefinition = {
       items: [
         { label: "Kategori Event", to: "/configure/master/event-type", icon: "Tag", hasRoute: true },
         { label: "Badge Tugas Presensi", to: "/configure/master/attendance-badge", icon: "Award", hasRoute: true },
-        { label: "Preset Jam Vihara", to: "/configure/master/event-time", icon: "Clock", hasRoute: true },
+        { label: "Preset Waktu Vihara", to: "/configure/master/event-time", icon: "Clock", hasRoute: true },
         { label: "Badge Pencapaian Umat", to: "/configure/master/badge", icon: "Award", hasRoute: true },
         { label: "Level Umat", to: "/configure/master/level", icon: "Zap", hasRoute: true },
         { label: "Achievement", to: "/configure/master/achievement", icon: "Trophy", hasRoute: true },

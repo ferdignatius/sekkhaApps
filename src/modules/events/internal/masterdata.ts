@@ -43,15 +43,68 @@ export interface EventTimePresetItem {
   id: string
   label: string
   time: string
+  day_of_week?: number // 0 = Minggu, 1 = Senin, ..., 6 = Sabtu, -1/undefined = Bebas/Semua Hari
+  description?: string
   is_active?: boolean
 }
 
+export const DAY_NAMES = [
+  "Minggu",
+  "Senin",
+  "Selasa",
+  "Rabu",
+  "Kamis",
+  "Jumat",
+  "Sabtu",
+] as const
+
 export const DEFAULT_TIME_PRESETS: EventTimePresetItem[] = [
-  { id: "etp-1", label: "08:00 WIB (Puja Pagi)", time: "08:00", is_active: true },
-  { id: "etp-2", label: "14:00 WIB (Kebaktian Siang)", time: "14:00", is_active: true },
-  { id: "etp-3", label: "18:30 WIB (Puja Malam)", time: "18:30", is_active: true },
-  { id: "etp-4", label: "19:00 WIB (Diskusi Dhamma)", time: "19:00", is_active: true },
+  { id: "etp-1", label: "08:00 WIB (Puja Pagi)", time: "08:00", day_of_week: -1, description: "Jadwal Puja Bakti Pagi Umat & Pemuda", is_active: true },
+  { id: "etp-2", label: "14:00 WIB (Kebaktian Siang)", time: "14:00", day_of_week: 0, description: "Kebaktian Umum & Sekolah Minggu (Hari Minggu)", is_active: true },
+  { id: "etp-3", label: "18:30 WIB (Puja Malam)", time: "18:30", day_of_week: -1, description: "Puja Bakti Malam & Meditasi", is_active: true },
+  { id: "etp-4", label: "19:00 WIB (Diskusi Dhamma)", time: "19:00", day_of_week: 4, description: "Sesi Dhammasakaccha & Kelas Dhamma (Hari Kamis)", is_active: true },
 ]
+
+/**
+ * Calculates the next target date string ("YYYY-MM-DD") for a given day_of_week (0=Minggu..6=Sabtu).
+ * If day_of_week is -1 or undefined, returns the date part of fromDate.
+ * If today IS the target day:
+ *  - If targetTime has NOT passed yet -> returns today.
+ *  - If targetTime HAS passed -> returns target day next week (+7 days).
+ */
+export function getNextDateForDayOfWeek(
+  dayOfWeek?: number,
+  targetTimeStr: string = "08:00",
+  fromDate: Date = new Date()
+): string {
+  const y = fromDate.getFullYear()
+  const m = String(fromDate.getMonth() + 1).padStart(2, "0")
+  const d = String(fromDate.getDate()).padStart(2, "0")
+
+  if (dayOfWeek === undefined || dayOfWeek === null || dayOfWeek < 0) {
+    return `${y}-${m}-${d}`
+  }
+
+  const currentDay = fromDate.getDay()
+  let daysUntil = (dayOfWeek - currentDay + 7) % 7
+
+  if (daysUntil === 0) {
+    const [h, min] = targetTimeStr.split(":").map(Number)
+    const targetTimeToday = new Date(fromDate)
+    targetTimeToday.setHours(h ?? 0, min ?? 0, 0, 0)
+
+    if (fromDate.getTime() >= targetTimeToday.getTime()) {
+      daysUntil = 7
+    }
+  }
+
+  const targetDate = new Date(fromDate)
+  targetDate.setDate(fromDate.getDate() + daysUntil)
+  const ty = targetDate.getFullYear()
+  const tm = String(targetDate.getMonth() + 1).padStart(2, "0")
+  const td = String(targetDate.getDate()).padStart(2, "0")
+  return `${ty}-${tm}-${td}`
+}
 
 // Local Storage Helper for Master Data persistence
 const STORAGE_KEYS = {
@@ -88,4 +141,10 @@ export function getMasterTimePresets(activeOnly = false): EventTimePresetItem[] 
   } catch {}
   if (activeOnly) return res.filter(t => t.is_active !== false)
   return res
+}
+
+export function saveMasterTimePresets(items: EventTimePresetItem[]): void {
+  try {
+    localStorage.setItem(STORAGE_KEYS.TIMES, JSON.stringify(items))
+  } catch {}
 }

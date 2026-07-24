@@ -14,10 +14,6 @@ import { ClockIcon, CheckIcon } from "lucide-react"
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const ITEM_H  = 44
-const VISIBLE = 5
-const PAD     = Math.floor(VISIBLE / 2)   // 2
-
 const HOURS   = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"))
 const MINUTES = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, "0"))
 
@@ -32,9 +28,18 @@ interface DrumProps {
   tripled: string[]      // items × 3      (e.g. HOURS_3X)
   selected: string
   onSelect: (v: string) => void
+  itemHeight?: number
+  visibleCount?: number
 }
 
-function Drum({ items, tripled, selected, onSelect }: DrumProps) {
+function Drum({
+  items,
+  tripled,
+  selected,
+  onSelect,
+  itemHeight = 40,
+  visibleCount = 5,
+}: DrumProps) {
   const ref      = useRef<HTMLDivElement>(null)
   const timer    = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const jumping  = useRef(false)       // guard against recursive scroll events
@@ -42,8 +47,9 @@ function Drum({ items, tripled, selected, onSelect }: DrumProps) {
   const startY   = useRef(0)
   const startST  = useRef(0)
 
+  const pad       = Math.floor(visibleCount / 2)
   const len       = items.length
-  const midOffset = len * ITEM_H       // scroll position of the first item in middle copy
+  const midOffset = len * itemHeight    // scroll position of the first item in middle copy
 
   const selectedIdx = Math.max(0, items.indexOf(selected))
 
@@ -60,9 +66,9 @@ function Drum({ items, tripled, selected, onSelect }: DrumProps) {
 
   // Snap to selected in the middle copy (no animation on mount / value change)
   useEffect(() => {
-    const t = setTimeout(() => scrollTo(midOffset + selectedIdx * ITEM_H, false), 16)
+    const t = setTimeout(() => scrollTo(midOffset + selectedIdx * itemHeight, false), 16)
     return () => clearTimeout(t)
-  }, [selectedIdx, midOffset, scrollTo])
+  }, [selectedIdx, midOffset, itemHeight, scrollTo])
 
   // ── Infinite loop logic ─────────────────────────────────────────────────
   const loopIfNeeded = useCallback(() => {
@@ -97,18 +103,18 @@ function Drum({ items, tripled, selected, onSelect }: DrumProps) {
       if (!el) return
 
       // Normalize scrollTop to an index within the original list
-      const rawIdx     = Math.round(el.scrollTop / ITEM_H)
+      const rawIdx     = Math.round(el.scrollTop / itemHeight)
       const normalized = ((rawIdx % len) + len) % len
 
       onSelect(items[normalized])
 
       // Snap to the exact position in the middle copy (no animation jump visible)
-      const target = midOffset + normalized * ITEM_H
+      const target = midOffset + normalized * itemHeight
       if (Math.abs(el.scrollTop - target) > 2) {
         el.scrollTo({ top: target, behavior: "smooth" })
       }
     }, 120)
-  }, [items, len, midOffset, loopIfNeeded, onSelect])
+  }, [items, len, midOffset, itemHeight, loopIfNeeded, onSelect])
 
   // ── Pointer drag (mouse + touch) ────────────────────────────────────────
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -128,23 +134,23 @@ function Drum({ items, tripled, selected, onSelect }: DrumProps) {
 
   return (
     <div
-      className="relative overflow-hidden"
-      style={{ width: 80, height: ITEM_H * VISIBLE }}
+      className="relative overflow-hidden touch-pan-y select-none"
+      style={{ width: 76, height: itemHeight * visibleCount }}
     >
       {/* Selection highlight ring */}
       <div
-        className="pointer-events-none absolute inset-x-2 z-20 rounded-2xl bg-sekkha-brand-blue/10 border border-sekkha-brand-blue/30"
-        style={{ top: PAD * ITEM_H, height: ITEM_H }}
+        className="pointer-events-none absolute inset-x-1.5 z-20 rounded-xl bg-sekkha-brand-blue/10 border border-sekkha-brand-blue/30"
+        style={{ top: pad * itemHeight, height: itemHeight }}
       />
       {/* Top fade */}
       <div
         className="pointer-events-none absolute inset-x-0 top-0 z-10"
-        style={{ height: PAD * ITEM_H + 10, background: "linear-gradient(to bottom, white 35%, transparent)" }}
+        style={{ height: pad * itemHeight + 6, background: "linear-gradient(to bottom, white 40%, transparent)" }}
       />
       {/* Bottom fade */}
       <div
         className="pointer-events-none absolute inset-x-0 bottom-0 z-10"
-        style={{ height: PAD * ITEM_H + 10, background: "linear-gradient(to top, white 35%, transparent)" }}
+        style={{ height: pad * itemHeight + 6, background: "linear-gradient(to top, white 40%, transparent)" }}
       />
 
       {/* Infinite scroll list */}
@@ -158,24 +164,23 @@ function Drum({ items, tripled, selected, onSelect }: DrumProps) {
         className="absolute inset-0 overflow-y-scroll scrollbar-none select-none cursor-grab active:cursor-grabbing"
       >
         {/* Top padding so first item can be centred */}
-        <div style={{ height: PAD * ITEM_H }} />
+        <div style={{ height: pad * itemHeight }} />
 
         {tripled.map((item, i) => {
-          // Determine if this cell corresponds to the currently selected value
           const active = item === selected
           return (
             <div
               key={i}
-              style={{ height: ITEM_H }}
+              style={{ height: itemHeight }}
               onClick={() => {
                 onSelect(item)
-                const absIdx = i - PAD  // rough offset inside tripled list
-                scrollTo(absIdx * ITEM_H + PAD * ITEM_H, true)
+                const absIdx = i - pad
+                scrollTo(absIdx * itemHeight + pad * itemHeight, true)
               }}
               className={`flex items-center justify-center cursor-pointer transition-all duration-100 ${
                 active
-                  ? "text-sekkha-brand-blue font-extrabold text-2xl"
-                  : "text-sekkha-slate/40 font-medium text-base"
+                  ? "text-sekkha-brand-blue font-extrabold text-xl sm:text-2xl scale-105"
+                  : "text-sekkha-slate/40 font-medium text-sm sm:text-base"
               }`}
             >
               {item}
@@ -184,7 +189,7 @@ function Drum({ items, tripled, selected, onSelect }: DrumProps) {
         })}
 
         {/* Bottom padding */}
-        <div style={{ height: PAD * ITEM_H }} />
+        <div style={{ height: pad * itemHeight }} />
       </div>
     </div>
   )
@@ -195,9 +200,18 @@ function Drum({ items, tripled, selected, onSelect }: DrumProps) {
 interface WheelTimePickerProps {
   value: string      // "HH:mm"
   onChange: (v: string) => void
+  itemHeight?: number
+  visibleCount?: number
+  showLabels?: boolean
 }
 
-export function WheelTimePicker({ value, onChange }: WheelTimePickerProps) {
+export function WheelTimePicker({
+  value,
+  onChange,
+  itemHeight = 40,
+  visibleCount = 5,
+  showLabels = true,
+}: WheelTimePickerProps) {
   const parts = value.split(":")
   const hh = (parts[0] ?? "08").padStart(2, "0")
   const mm = (parts[1] ?? "00").padStart(2, "0")
@@ -205,15 +219,17 @@ export function WheelTimePicker({ value, onChange }: WheelTimePickerProps) {
   return (
     <div className="flex flex-col items-center">
       {/* Labels row */}
-      <div className="flex items-center mb-1.5">
-        <div className="text-center text-micro-bold uppercase tracking-widest text-sekkha-slate/60 select-none" style={{ width: 80 }}>
-          Jam
+      {showLabels && (
+        <div className="flex items-center mb-1">
+          <div className="text-center text-micro-bold uppercase tracking-widest text-sekkha-slate/60 select-none" style={{ width: 76 }}>
+            Jam
+          </div>
+          <div style={{ width: 24 }} />
+          <div className="text-center text-micro-bold uppercase tracking-widest text-sekkha-slate/60 select-none" style={{ width: 76 }}>
+            Menit
+          </div>
         </div>
-        <div style={{ width: 28 }} />
-        <div className="text-center text-micro-bold uppercase tracking-widest text-sekkha-slate/60 select-none" style={{ width: 80 }}>
-          Menit
-        </div>
-      </div>
+      )}
 
       {/* Drums + colon */}
       <div className="flex items-center">
@@ -222,14 +238,16 @@ export function WheelTimePicker({ value, onChange }: WheelTimePickerProps) {
           tripled={HOURS_3X}
           selected={hh}
           onSelect={h => onChange(`${h}:${mm}`)}
+          itemHeight={itemHeight}
+          visibleCount={visibleCount}
         />
 
         {/* Colon: same height as drum, vertically centered */}
         <div
-          className="flex items-center justify-center select-none"
-          style={{ width: 28, height: ITEM_H * VISIBLE }}
+          className="flex items-center justify-center select-none shrink-0"
+          style={{ width: 24, height: itemHeight * visibleCount }}
         >
-          <span className="text-2xl font-black text-sekkha-brand-blue">:</span>
+          <span className="text-xl sm:text-2xl font-black text-sekkha-brand-blue">:</span>
         </div>
 
         <Drum
@@ -237,6 +255,8 @@ export function WheelTimePicker({ value, onChange }: WheelTimePickerProps) {
           tripled={MINUTES_3X}
           selected={mm}
           onSelect={m => onChange(`${hh}:${m}`)}
+          itemHeight={itemHeight}
+          visibleCount={visibleCount}
         />
       </div>
     </div>

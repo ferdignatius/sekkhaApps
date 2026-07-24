@@ -91,19 +91,25 @@ export function ResponsiveFormModal({
     )
   }
 
-  // Mobile (<768px): Native Bottom Drawer Sheet with Scroll Container & Fixed Drag Handle
+  // Mobile (<768px): Native Bottom Drawer Sheet with Sticky Blurred Drag Handle & Scroll Body
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="max-h-[88vh] flex flex-col">
-        <DrawerHeader className="px-5 pb-2 text-left border-b border-sekkha-hairline-soft shrink-0">
-          <DrawerTitle className="text-body-sm-medium font-bold text-sekkha-ink">{title}</DrawerTitle>
-          {description && (
-            <DrawerDescription className="text-caption font-medium text-sekkha-slate">
-              {description}
-            </DrawerDescription>
-          )}
-        </DrawerHeader>
-        <div className="flex-1 overflow-y-auto px-5 py-3 pb-8">
+      <DrawerContent className="max-h-[88vh] flex flex-col p-0 overflow-hidden">
+        {/* Sticky Drag Handle Header with Blur Background */}
+        <div className="sticky top-0 z-20 flex items-center justify-center py-3 bg-sekkha-canvas/80 backdrop-blur-md border-b border-sekkha-hairline-soft/40 shrink-0">
+          <div className="h-1.5 w-12 rounded-full bg-sekkha-slate/40" />
+        </div>
+
+        {/* Scrollable Container (Title, Description, & Form Content all scroll together) */}
+        <div className="flex-1 overflow-y-auto px-5 pt-3 pb-8">
+          <DrawerHeader className="px-0 pb-3 pt-0 text-left border-b border-sekkha-hairline-soft mb-3">
+            <DrawerTitle className="text-body-sm-medium font-bold text-sekkha-ink">{title}</DrawerTitle>
+            {description && (
+              <DrawerDescription className="text-caption font-medium text-sekkha-slate mt-0.5">
+                {description}
+              </DrawerDescription>
+            )}
+          </DrawerHeader>
           {children}
         </div>
       </DrawerContent>

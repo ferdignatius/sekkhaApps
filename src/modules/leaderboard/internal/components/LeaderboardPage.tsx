@@ -1,9 +1,9 @@
 // feature/leaderboard/components/LeaderboardPage
-// Full gamification leaderboard:
-//  - Highlighted "Kamu" row, solid podium colors, medal icons
-//  - Season countdown, competition hints
-//  - Streak Shield feature, Community Goals progress
-//  - Badge section with locked/unlocked
+// Overhauled UI/UX with Rich Glassmorphism Aesthetics & Clear User Rank Indicator:
+// - Ambient background blur glow effects
+// - Dedicated My Rank Indicator Banner & Right Sidebar Widget
+// - Clean desktop padding with no empty bottom gap
+// - Frosted glass cards with backdrop-blur-2xl & subtle borders.
 
 import { useState, useMemo } from "react"
 import {
@@ -16,6 +16,9 @@ import {
   ShieldIcon,
   UsersIcon,
   TimerIcon,
+  SparklesIcon,
+  ZapIcon,
+  ChevronRightIcon,
 } from "lucide-react"
 import { useAuth } from "@/modules/auth"
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
@@ -26,96 +29,79 @@ import type { LeaderboardMetric, LeaderboardFilter, LeaderboardEntry } from "../
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
 const METRIC_OPTIONS: { value: LeaderboardMetric; label: string; icon: React.ReactNode }[] = [
-  { value: "points",     label: "Poin",      icon: <StarIcon className="size-4" />        },
-  { value: "streak",     label: "Streak",    icon: <FlameIcon className="size-4" />       },
-  { value: "attendance", label: "Kehadiran", icon: <CheckSquareIcon className="size-4" /> },
+  { value: "points",     label: "Total Poin",  icon: <StarIcon className="size-3.5 sm:size-4 text-amber-400" /> },
+  { value: "streak",     label: "Streak",       icon: <FlameIcon className="size-3.5 sm:size-4 text-orange-500" /> },
+  { value: "attendance", label: "Hadir",        icon: <CheckSquareIcon className="size-3.5 sm:size-4 text-emerald-500" /> },
 ]
 
-const PODIUM_AVATAR_COLORS: Record<1 | 2 | 3, string> = {
-  1: "bg-yellow-400 text-yellow-900",
-  2: "bg-slate-300 text-slate-700",
-  3: "bg-orange-300 text-orange-800",
-}
-
-// Solid medal colors for podium bars
-const PODIUM_BAR_STYLES: Record<1 | 2 | 3, { height: string; bg: string; rankColor: string }> = {
-  1: { height: "h-28", bg: "bg-gradient-to-t from-yellow-400 to-yellow-200 border border-yellow-500", rankColor: "text-yellow-700" },
-  2: { height: "h-16", bg: "bg-gradient-to-t from-slate-300 to-slate-100 border border-slate-400", rankColor: "text-slate-600" },
-  3: { height: "h-10", bg: "bg-gradient-to-t from-orange-300 to-orange-100 border border-orange-400", rankColor: "text-orange-600" },
+// Solid & Gradient Medal Colors for Podium
+const PODIUM_CONFIG: Record<1 | 2 | 3, {
+  height: string
+  barBg: string
+  border: string
+  avatarRing: string
+  avatarBg: string
+  crownColor: string
+  badgeBg: string
+  rankText: string
+  medalEmoji: string
+}> = {
+  1: {
+    height: "h-32 sm:h-40",
+    barBg: "bg-gradient-to-t from-amber-500 via-amber-400 to-yellow-300 shadow-amber-200",
+    border: "border-amber-400/80 ring-2 ring-amber-300/50",
+    avatarRing: "ring-3 sm:ring-4 ring-amber-300 shadow-lg shadow-amber-300/40",
+    avatarBg: "bg-gradient-to-br from-amber-300 via-yellow-400 to-amber-500 text-amber-950 font-black",
+    crownColor: "text-amber-400 drop-shadow-md animate-bounce duration-1000",
+    badgeBg: "bg-amber-500 text-amber-950",
+    rankText: "text-amber-950 font-black",
+    medalEmoji: "🥇",
+  },
+  2: {
+    height: "h-20 sm:h-28",
+    barBg: "bg-gradient-to-t from-slate-400 via-slate-300 to-slate-200 shadow-slate-200",
+    border: "border-slate-300/80 ring-2 ring-slate-200/50",
+    avatarRing: "ring-3 sm:ring-4 ring-slate-200 shadow-md",
+    avatarBg: "bg-gradient-to-br from-slate-200 via-slate-300 to-slate-400 text-slate-900 font-bold",
+    crownColor: "text-slate-400",
+    badgeBg: "bg-slate-400 text-slate-950",
+    rankText: "text-slate-800 font-extrabold",
+    medalEmoji: "🥈",
+  },
+  3: {
+    height: "h-14 sm:h-20",
+    barBg: "bg-gradient-to-t from-amber-700 via-amber-600 to-orange-400 shadow-orange-200",
+    border: "border-amber-600/80 ring-2 ring-orange-300/40",
+    avatarRing: "ring-3 sm:ring-4 ring-amber-500/60 shadow-md",
+    avatarBg: "bg-gradient-to-br from-orange-400 via-amber-600 to-amber-700 text-amber-950 font-bold",
+    crownColor: "text-amber-600",
+    badgeBg: "bg-amber-600 text-amber-950",
+    rankText: "text-amber-950 font-bold",
+    medalEmoji: "🥉",
+  },
 }
 
 // Dummy community goal
-const COMMUNITY_GOAL = { target: 500, current: 342, label: "Absensi Komunitas Bulan Ini" }
+const COMMUNITY_GOAL = { target: 500, current: 342, label: "Target Absensi Komunitas Vihara" }
 
 // Dummy streak shield
 const STREAK_SHIELD = { owned: 1, cost: 200 }
 
-// Sidebar badges
+// Gamification Sidebar badges
 interface SidebarBadge { icon: string; name: string; earned: boolean; hint?: string }
 const SIDEBAR_BADGES: SidebarBadge[] = [
-  { icon: "🔥", name: "Streak 5", earned: true },
+  { icon: "🔥", name: "Streak 5x", earned: true },
   { icon: "⭐", name: "100 Poin", earned: true },
-  { icon: "🎯", name: "Hadir", earned: true },
-  { icon: "💎", name: "Streak 20", earned: false, hint: "Hadir 20 minggu berturut-turut" },
+  { icon: "🎯", name: "Hadir Setia", earned: true },
+  { icon: "💎", name: "Streak 20x", earned: false, hint: "Hadir 20 minggu berturut-turut" },
   { icon: "🏆", name: "500 Poin", earned: false, hint: "Kumpulkan 500 poin total" },
+  { icon: "🎖️", name: "Top 3 Vihara", earned: false, hint: "Masuk peringkat 3 besar season" },
 ]
 
-// Season countdown (dummy)
+// Season countdown
 const SEASON_DAYS_LEFT = 12
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
-
-function PodiumAvatar({ initials, position }: { initials: string; position: 1 | 2 | 3 }) {
-  const isFirst = position === 1
-  const sz = isFirst ? "h-16 w-16 text-heading-4" : "h-12 w-12 text-body-md-medium"
-  const colors = PODIUM_AVATAR_COLORS[position]
-
-  return (
-    <div className="relative">
-      {/* Medal icon above avatar */}
-      <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-        {position === 1 && <span className="text-lg">🥇</span>}
-        {position === 2 && <span className="text-lg">🥈</span>}
-        {position === 3 && <span className="text-lg">🥉</span>}
-      </div>
-      <div className={`${sz} flex shrink-0 items-center justify-center rounded-full font-semibold ring-3 ring-white ${colors}`}>
-        {initials}
-      </div>
-    </div>
-  )
-}
-
-function PodiumEntry({ entry, position }: { entry: LeaderboardEntry; position: 1 | 2 | 3 }) {
-  const isFirst = position === 1
-  const bar = PODIUM_BAR_STYLES[position]
-
-  return (
-    <div className="flex flex-1 flex-col items-center gap-2">
-      {isFirst && <CrownIcon className="size-7 text-yellow-500 drop-shadow-sm" aria-hidden="true" />}
-      <PodiumAvatar initials={entry.initials} position={position} />
-      <p className={`mt-1 w-full truncate text-center ${isFirst ? "text-body-sm-medium text-sekkha-ink" : "text-caption text-sekkha-ink"}`}>
-        {entry.name.split(" ")[0]}
-      </p>
-      <p className={`${isFirst ? "text-body-md-medium text-sekkha-ink" : "text-body-sm-medium text-sekkha-charcoal"}`}>
-        {entry.value.toLocaleString("id-ID")}
-      </p>
-      {/* Solid podium bar */}
-      <div className={`${bar.height} relative w-full overflow-hidden rounded-t-xl ${bar.bg}`}>
-        <span className={`absolute inset-0 flex items-center justify-center text-stat-display font-bold opacity-70 ${bar.rankColor}`}>
-          {position}
-        </span>
-      </div>
-    </div>
-  )
-}
-
-function ListAvatar({ initials }: { initials: string }) {
-  return (
-    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sekkha-surface text-caption-bold font-semibold text-sekkha-slate ring-1 ring-sekkha-hairline-soft">
-      {initials}
-    </div>
-  )
-}
+// ─── Helper Functions ─────────────────────────────────────────────────────────
 
 function getCompetitionHint(
   entry: LeaderboardEntry,
@@ -127,14 +113,96 @@ function getCompetitionHint(
   const above = allEntries[idx - 1]
   const diff = above.value - entry.value
   if (diff <= 0) return null
-  return `${diff} ${metricUnit} lagi untuk menyalip ${above.name.split(" ")[0]}!`
+  return `${diff.toLocaleString("id-ID")} ${metricUnit} lagi untuk menyalip ${above.name.split(" ")[0]}!`
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
+// ─── Sub-Components ───────────────────────────────────────────────────────────
+
+function PodiumEntry({ entry, position, myId }: { entry: LeaderboardEntry; position: 1 | 2 | 3; myId?: string }) {
+  const isFirst = position === 1
+  const isMe = entry.user_id === myId
+  const cfg = PODIUM_CONFIG[position]
+  const avatarSize = isFirst ? "h-14 w-14 sm:h-20 sm:w-20 text-caption-bold sm:text-body-lg font-black" : "h-11 w-11 sm:h-14 sm:w-14 text-micro-bold sm:text-body-base font-bold"
+
+  return (
+    <div className={`flex flex-1 flex-col items-center gap-1 sm:gap-1.5 min-w-0 transition-all duration-300 relative ${
+      isMe ? "scale-102 z-20" : ""
+    }`}>
+      {/* Crown or Medal Emoji for top 3 */}
+      {isFirst ? (
+        <CrownIcon className={`size-6 sm:size-8 ${cfg.crownColor}`} aria-hidden="true" />
+      ) : (
+        <span className="text-base sm:text-xl leading-none">{cfg.medalEmoji}</span>
+      )}
+
+      {/* Avatar Container */}
+      <div className="relative shrink-0">
+        {isMe && (
+          <div className="absolute -inset-1 rounded-2xl bg-sekkha-brand-blue/30 blur-sm animate-pulse" />
+        )}
+        <div className={`relative ${avatarSize} flex shrink-0 items-center justify-center rounded-2xl shadow-md ${
+          isMe
+            ? "ring-4 ring-sekkha-brand-blue ring-offset-2 ring-offset-white shadow-lg shadow-sekkha-brand-blue/30 bg-gradient-to-br from-blue-600 via-sekkha-brand-blue to-indigo-700 text-white"
+            : `${cfg.avatarRing} ${cfg.avatarBg}`
+        }`}>
+          {entry.initials}
+        </div>
+        <div className={`absolute -bottom-2 left-1/2 -translate-x-1/2 rounded-full px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-black uppercase tracking-wider shadow-xs ${
+          isMe ? "bg-sekkha-brand-blue text-white ring-2 ring-white" : cfg.badgeBg
+        }`}>
+          #{position}
+        </div>
+      </div>
+
+      {/* User Name & Score */}
+      <div className="mt-1.5 text-center w-full px-0.5 min-w-0">
+        <div className="flex items-center justify-center gap-1">
+          <p className={`truncate font-black ${isMe ? "text-sekkha-brand-blue text-caption-bold" : "text-sekkha-ink"} ${isFirst ? "text-micro-bold sm:text-body-sm" : "text-[11px] sm:text-caption"}`}>
+            {entry.name.split(" ")[0]}
+          </p>
+          {isMe && (
+            <span className="rounded-md bg-sekkha-brand-blue text-white px-1.5 py-0.5 text-[8px] sm:text-[9px] font-black uppercase shrink-0 shadow-2xs">
+              Kamu
+            </span>
+          )}
+        </div>
+        <p className="text-[10px] sm:text-micro font-black text-sekkha-brand-blue flex items-center justify-center gap-0.5 sm:gap-1 mt-0.5">
+          <ZapIcon className="size-2.5 sm:size-3 text-amber-500 fill-amber-400 shrink-0" />
+          <span className="truncate">{entry.value.toLocaleString("id-ID")}</span>
+        </p>
+      </div>
+
+      {/* Clean Metallic Podium Pillar Bar */}
+      <div className={`${cfg.height} relative w-full overflow-hidden rounded-t-2xl border-t border-x ${
+        isMe
+          ? "border-sekkha-brand-blue ring-2 ring-sekkha-brand-blue/30 shadow-md shadow-sekkha-brand-blue/10"
+          : cfg.border
+      } ${cfg.barBg} flex items-center justify-center shadow-md`}>
+        <span className={`text-body-lg sm:text-stat-display opacity-40 select-none ${cfg.rankText}`}>
+          {position}
+        </span>
+      </div>
+    </div>
+  )
+}
+
+function ListAvatar({ initials, isMe }: { initials: string; isMe?: boolean }) {
+  return (
+    <div className={`flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-xl text-micro-bold sm:text-caption-bold font-bold transition-transform ${
+      isMe
+        ? "bg-sekkha-brand-blue text-white shadow-xs"
+        : "bg-sekkha-surface/90 text-sekkha-slate ring-1 ring-sekkha-hairline-soft"
+    }`}>
+      {initials}
+    </div>
+  )
+}
+
+// ─── Main Page Component ──────────────────────────────────────────────────────
 
 export function LeaderboardPage() {
   const { authState } = useAuth()
-  const myId = authState.status === "authenticated" ? (authState.userId ?? "me") : "me"
+  const myId = authState.status === "authenticated" ? (authState.userId ?? "admin-us") : "admin-us"
 
   const season = getCurrentSeason()
   const [metric, setMetric] = useState<LeaderboardMetric>("points")
@@ -145,242 +213,319 @@ export function LeaderboardPage() {
   const podium = data.entries.slice(0, 3)
   const rest = data.entries.slice(3)
   const myEntry = data.my_rank
-  const metricUnit = metric === "points" ? "poin" : metric === "streak" ? "minggu" : "hadir"
+  const metricUnit = metric === "points" ? "poin" : metric === "streak" ? "minggu" : "kehadiran"
 
   const communityPct = Math.round((COMMUNITY_GOAL.current / COMMUNITY_GOAL.target) * 100)
 
   return (
-    <main className="relative">
+    <main className="relative font-sans overflow-hidden">
+      {/* ── Glassmorphism Ambient Glow Backdrops ── */}
+      <div className="pointer-events-none absolute -top-20 left-1/4 h-96 w-96 rounded-full bg-sekkha-brand-blue/15 blur-3xl" />
+      <div className="pointer-events-none absolute top-40 right-10 h-80 w-80 rounded-full bg-amber-400/15 blur-3xl" />
+      <div className="pointer-events-none absolute bottom-40 left-10 h-96 w-96 rounded-full bg-indigo-500/10 blur-3xl" />
+
+      {/* ── Page Breadcrumb (No redundant H1 header below as per user request) ── */}
       <PageBreadcrumb items={[{ label: "Leaderboard" }]} />
-      <div className="px-4 py-6 pb-32 md:px-8 md:pb-8 lg:px-12">
-        <div className="mx-auto max-w-8xl space-y-5">
 
-          {/* Title + Season countdown */}
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <div className="flex items-center gap-2">
-                <TrophyIcon className="size-5 text-sekkha-brand-yellow" aria-hidden="true" />
-                <h1 className="text-heading-5 text-sekkha-ink">Leaderboard</h1>
+      <div className="relative px-3.5 py-4 pb-24 md:pb-8 lg:pb-10 sm:px-6 md:px-8 lg:px-12">
+        <div className="mx-auto max-w-7xl space-y-4 sm:space-y-5">
+
+          {/* ── Top Header Banner: Season Badge & Countdown Urgency ── */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-white/70 bg-white/80 backdrop-blur-xl p-3.5 sm:p-4 shadow-lg shadow-sekkha-brand-blue/5">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-sekkha-brand-blue text-white shadow-md shadow-sekkha-brand-blue/30">
+                <TrophyIcon className="size-5 sm:size-6 text-amber-300" aria-hidden="true" />
               </div>
-              <p className="mt-1 text-body-sm text-sekkha-slate">{seasonLabel(season)}</p>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="text-caption-bold font-extrabold text-sekkha-ink">Klasemen Kebaktian</span>
+                  <span className="rounded-md bg-sekkha-brand-blue/15 px-2 py-0.5 text-[10px] font-bold text-sekkha-brand-blue">
+                    {seasonLabel(season)}
+                  </span>
+                </div>
+                <p className="text-[11px] font-medium text-sekkha-slate mt-0.5 line-clamp-1 sm:line-clamp-none">
+                  Presensi, weekly streak, & peringkat Vihara!
+                </p>
+              </div>
             </div>
-            {/* Season countdown — urgency (fix) */}
-            <div className="flex items-center gap-2 rounded-full bg-sekkha-coral-light px-4 py-2 border border-sekkha-brand-red-dark/20">
-              <TimerIcon className="size-4 text-sekkha-ink" aria-hidden="true" />
-              <span className="text-caption-bold text-sekkha-ink">
-                ⏳ {SEASON_DAYS_LEFT} Hari Lagi Season Selesai!
-              </span>
+
+            {/* Countdown Badge */}
+            <div className="flex items-center justify-center gap-2 rounded-xl bg-amber-500/15 border border-amber-500/30 px-3 py-1.5 text-amber-900 shrink-0 self-stretch sm:self-center">
+              <TimerIcon className="size-3.5 text-amber-700 animate-spin duration-3000" aria-hidden="true" />
+              <span className="text-micro-bold font-extrabold">⏳ Sisa {SEASON_DAYS_LEFT} Hari Season Ini!</span>
             </div>
           </div>
 
-          {/* Community Goal (new feature #2) */}
-          <div className="rounded-xl border border-sekkha-hairline-soft bg-sekkha-canvas p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <UsersIcon className="size-4 text-sekkha-brand-blue" aria-hidden="true" />
-              <p className="text-body-sm-medium text-sekkha-ink">{COMMUNITY_GOAL.label}</p>
-              <span className="ml-auto text-caption-bold text-sekkha-brand-blue">{COMMUNITY_GOAL.current}/{COMMUNITY_GOAL.target}</span>
+          {/* ── Glassmorphic My Rank Status Indicator Hero Card (Mobile & Tablet only to avoid desktop sidebar redundancy) ── */}
+          <div className="lg:hidden rounded-2xl border border-sekkha-brand-blue/30 bg-gradient-to-r from-sekkha-brand-blue/15 via-blue-50/60 to-amber-500/10 backdrop-blur-xl p-3.5 sm:p-4 shadow-md shadow-sekkha-brand-blue/10 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-sekkha-brand-blue text-caption-bold font-black text-white shadow-xs">
+                AS
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-caption-bold font-extrabold text-sekkha-ink">Admin Sekkha</span>
+                  <span className="rounded-md bg-sekkha-brand-blue text-white px-1.5 py-0.5 text-[9px] font-black uppercase shadow-2xs">
+                    Kamu
+                  </span>
+                </div>
+                <p className="text-micro font-extrabold text-sekkha-brand-blue mt-0.5 flex items-center gap-1">
+                  <TrophyIcon className="size-3.5 text-amber-500 fill-amber-400" />
+                  <span>Peringkat #{myEntry.rank} dari {data.entries.length} Anggota</span>
+                </p>
+              </div>
             </div>
-            <div className="h-3 w-full overflow-hidden rounded-full bg-sekkha-surface">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-sekkha-brand-blue to-blue-400 transition-all"
-                style={{ width: `${communityPct}%` }}
-              />
+
+            <div className="flex items-center gap-1.5 text-caption-bold font-black text-sekkha-brand-blue bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/90 shadow-2xs shrink-0 self-center">
+              <ZapIcon className="size-3.5 text-amber-500 fill-amber-400 shrink-0" />
+              <span>{myEntry.value.toLocaleString("id-ID")}</span>
+              <span className="text-micro font-bold text-sekkha-slate capitalize">{metricUnit}</span>
             </div>
-            <p className="mt-2 text-caption text-sekkha-slate">
-              🎁 Target tercapai = semua anggota dapat <span className="font-semibold text-sekkha-brand-blue">+100 Poin Bonus</span>!
-            </p>
           </div>
 
-          {/* Metric filter pills */}
-          <div className="flex flex-wrap gap-2">
-            {METRIC_OPTIONS.map(m => (
-              <button
-                key={m.value}
-                type="button"
-                onClick={() => setMetric(m.value)}
-                className={`flex items-center gap-2 rounded-full px-5 py-2.5 text-body-sm-medium transition-colors ${
-                  metric === m.value
-                    ? "bg-sekkha-primary text-white shadow-sm"
-                    : "border border-sekkha-hairline-strong text-sekkha-slate hover:bg-sekkha-surface"
-                }`}
-              >
-                <span className={metric === m.value ? "text-white" : "text-sekkha-muted"}>{m.icon}</span>
-                {m.label}
-              </button>
-            ))}
+          {/* ── Glassmorphic Metric Filter Segmented Tabs ── */}
+          <div className="grid grid-cols-3 gap-1.5 p-1 bg-white/60 backdrop-blur-lg rounded-2xl border border-white/80 shadow-xs sm:flex sm:bg-transparent sm:p-0 sm:border-none sm:gap-2.5">
+            {METRIC_OPTIONS.map(m => {
+              const isActive = metric === m.value
+              return (
+                <button
+                  key={m.value}
+                  type="button"
+                  onClick={() => setMetric(m.value)}
+                  className={`flex items-center justify-center gap-1.5 sm:gap-2.5 rounded-xl sm:rounded-2xl px-2 sm:px-5 py-2 sm:py-2.5 text-micro sm:text-caption font-bold transition-all cursor-pointer ${
+                    isActive
+                      ? "bg-sekkha-brand-blue text-white shadow-md shadow-sekkha-brand-blue/20 ring-2 ring-sekkha-brand-blue/30 scale-102"
+                      : "bg-white/80 sm:bg-white/80 backdrop-blur-md text-sekkha-slate border border-white/70 hover:bg-white hover:text-sekkha-ink"
+                  }`}
+                >
+                  {m.icon}
+                  <span className="truncate">{m.label}</span>
+                </button>
+              )
+            })}
           </div>
 
-          {/* Two-column layout */}
-          <div className="md:flex md:gap-6">
+          {/* ── Two-Column Responsive Layout ── */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-6 items-start">
 
-            {/* Left column */}
-            <div className="flex-1 space-y-5">
-              <div className="rounded-xl border border-sekkha-hairline-soft bg-sekkha-canvas p-5">
+            {/* Main Content Area (Left 8 Cols) */}
+            <div className="lg:col-span-8 space-y-5">
+              
+              {/* Glassmorphic Leaderboard Card Container */}
+              <div className="rounded-3xl border border-white/70 bg-white/85 backdrop-blur-2xl p-4 sm:p-6 shadow-xl shadow-slate-200/50 ring-1 ring-black/5 space-y-5 sm:space-y-6">
 
-                {/* Podium top 3 — solid colors + medal icons */}
+                {/* 3D Metallic Podium for Top 3 Champions */}
                 {podium.length >= 3 && (
-                  <div className="flex items-end justify-center gap-3 pb-5 pt-4">
-                    <PodiumEntry entry={podium[1]} position={2} />
-                    <PodiumEntry entry={podium[0]} position={1} />
-                    <PodiumEntry entry={podium[2]} position={3} />
+                  <div className="pt-2 pb-2 px-1 border-b border-sekkha-hairline-soft/80 bg-gradient-to-b from-white/60 via-slate-50/40 to-white/60 backdrop-blur-md rounded-2xl">
+                    <div className="flex items-end justify-center gap-2 sm:gap-5 max-w-lg mx-auto">
+                      <PodiumEntry entry={podium[1]} position={2} myId={myId} />
+                      <PodiumEntry entry={podium[0]} position={1} myId={myId} />
+                      <PodiumEntry entry={podium[2]} position={3} myId={myId} />
+                    </div>
                   </div>
                 )}
 
-                {podium.length >= 3 && rest.length > 0 && (
-                  <div className="mb-4 h-px bg-sekkha-hairline-soft" aria-hidden="true" />
-                )}
-
-                {/* Ranked list — highlighted "Kamu" row (fix) */}
+                {/* Ranked List (Rank 4+) */}
                 {rest.length > 0 && (
-                  <ul role="list" className="space-y-1">
-                    {rest.map(entry => {
-                      const isMe = entry.user_id === myId
-                      const hint = isMe ? getCompetitionHint(entry, data.entries, metricUnit) : null
+                  <div className="space-y-2">
+                    <p className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-widest text-sekkha-slate/70 px-1">
+                      Peringkat Anggota (4+)
+                    </p>
+                    <ul role="list" className="space-y-2">
+                      {rest.map(entry => {
+                        const isMe = entry.user_id === myId
+                        const hint = isMe ? getCompetitionHint(entry, data.entries, metricUnit) : null
 
-                      return (
-                        <li
-                          key={entry.user_id}
-                          className={[
-                            "flex items-center gap-4 rounded-lg px-4 py-3 transition-colors",
-                            isMe
-                              ? "border-2 border-sekkha-brand-blue bg-sekkha-brand-blue/10 shadow-sm"
-                              : "hover:bg-sekkha-surface",
-                          ].join(" ")}
-                        >
-                          <span className={`w-7 shrink-0 text-center text-body-sm-medium ${isMe ? "text-sekkha-brand-blue font-bold" : "text-sekkha-muted"}`}>
-                            {entry.rank}
-                          </span>
-                          <ListAvatar initials={entry.initials} />
-                          <div className="min-w-0 flex-1">
-                            <p className={`truncate text-body-sm ${isMe ? "font-bold text-sekkha-brand-blue" : "text-sekkha-ink"}`}>
-                              {entry.name}{isMe ? " ← Ini Kamu!" : ""}
-                            </p>
-                            {hint && (
-                              <p className="mt-0.5 text-caption text-sekkha-brand-blue">
-                                🚀 {hint}
-                              </p>
-                            )}
-                          </div>
-                          <span className={`shrink-0 text-body-sm-medium ${isMe ? "text-sekkha-brand-blue font-bold" : "text-sekkha-ink"}`}>
-                            {entry.value.toLocaleString("id-ID")}
-                          </span>
-                        </li>
-                      )
-                    })}
-                  </ul>
-                )}
+                        return (
+                          <li
+                            key={entry.user_id}
+                            className={`flex items-center gap-2.5 sm:gap-3.5 rounded-2xl px-3 sm:px-4 py-2.5 sm:py-3 transition-all ${
+                              isMe
+                                ? "border-2 border-sekkha-brand-blue bg-sekkha-brand-blue/15 backdrop-blur-xl shadow-lg shadow-sekkha-brand-blue/10 ring-1 ring-sekkha-brand-blue/30"
+                                : "border border-white/80 bg-white/70 backdrop-blur-md hover:bg-white/95 hover:border-sekkha-hairline hover:shadow-md"
+                            }`}
+                          >
+                            {/* Rank Number */}
+                            <span className={`w-6 sm:w-8 shrink-0 text-center text-micro-bold sm:text-caption-bold font-extrabold ${
+                              isMe ? "text-sekkha-brand-blue" : "text-sekkha-slate"
+                            }`}>
+                              #{entry.rank}
+                            </span>
 
-                {/* My rank if not in top */}
-                {!myEntry.is_in_top && (
-                  <div className="mt-2 flex items-center gap-4 rounded-lg border-2 border-sekkha-brand-blue bg-blue-50 px-4 py-3 shadow-sm">
-                    <span className="w-7 shrink-0 text-center text-body-sm-medium font-bold text-sekkha-brand-blue">{myEntry.rank}</span>
-                    <ListAvatar initials="AK" />
-                    <p className="min-w-0 flex-1 text-body-sm font-bold text-sekkha-brand-blue">← Ini Kamu!</p>
-                    <span className="text-body-sm-medium font-bold text-sekkha-brand-blue">{myEntry.value.toLocaleString("id-ID")}</span>
+                            {/* Avatar */}
+                            <ListAvatar initials={entry.initials} isMe={isMe} />
+
+                            {/* Name & Motivational Hint */}
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-1.5">
+                                <p className={`truncate text-caption-bold font-extrabold ${
+                                  isMe ? "text-sekkha-brand-blue" : "text-sekkha-ink"
+                                }`}>
+                                  {entry.name}
+                                </p>
+                                {isMe && (
+                                  <span className="rounded-md bg-sekkha-brand-blue text-white px-1.5 py-0.5 text-[9px] font-black uppercase shrink-0 shadow-2xs">
+                                    Kamu
+                                  </span>
+                                )}
+                              </div>
+
+                              {hint && (
+                                <p className="mt-0.5 text-[10px] sm:text-micro font-extrabold text-sekkha-brand-blue flex items-center gap-1 line-clamp-1">
+                                  <span>🚀</span>
+                                  <span>{hint}</span>
+                                </p>
+                              )}
+                            </div>
+
+                            {/* Score Value */}
+                            <div className="text-right shrink-0">
+                              <span className={`text-caption-bold font-black ${
+                                isMe ? "text-sekkha-brand-blue" : "text-sekkha-ink"
+                              }`}>
+                                {entry.value.toLocaleString("id-ID")}
+                              </span>
+                              <span className="block text-[9px] sm:text-[10px] font-medium text-sekkha-slate capitalize">
+                                {metricUnit}
+                              </span>
+                            </div>
+                          </li>
+                        )
+                      })}
+                    </ul>
                   </div>
                 )}
+
               </div>
             </div>
 
-            {/* Right sidebar (desktop) */}
-            <aside className="hidden w-80 shrink-0 md:block">
-              <div className="sticky top-6 max-h-[calc(100vh-4rem)] space-y-4 overflow-y-auto">
-
-                {/* My rank card */}
-                <div className="rounded-xl border border-sekkha-hairline-soft bg-sekkha-canvas p-4">
-                  <div className="flex items-center gap-4">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-sekkha-brand-yellow text-body-md-medium font-semibold text-sekkha-ink ring-2 ring-sekkha-hairline-soft">
-                      AK
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-body-sm-medium text-sekkha-ink">Kamu</p>
-                      <p className="text-caption text-sekkha-slate">{seasonLabel(season)}</p>
-                    </div>
+            {/* Right Sidebar Glassmorphic Widgets (Right 4 Cols on Desktop) */}
+            <aside className="lg:col-span-4 space-y-4 sm:space-y-5">
+              
+              {/* Glassmorphic My Rank Sidebar Widget (Desktop only to prevent mobile duplication with top Hero Card) */}
+              <div className="hidden lg:block rounded-3xl border border-sekkha-brand-blue/30 bg-gradient-to-br from-sekkha-brand-blue/10 via-white/80 to-blue-50/50 backdrop-blur-2xl p-4 sm:p-5 shadow-xl shadow-sekkha-brand-blue/5 ring-1 ring-sekkha-brand-blue/20 space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-sekkha-brand-blue text-caption-bold font-black text-white shadow-md">
+                    AS
                   </div>
-                  <div className="mt-3 flex items-center justify-center gap-5 rounded-lg bg-sekkha-surface py-3">
-                    <div className="text-center">
-                      <p className="text-heading-4 font-semibold text-sekkha-brand-blue">#{myEntry.rank}</p>
-                      <p className="text-caption text-sekkha-slate">Rank</p>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-caption-bold font-extrabold text-sekkha-ink">Admin Sekkha</span>
+                      <span className="rounded-md bg-sekkha-brand-blue text-white px-1.5 py-0.5 text-[9px] font-black uppercase">
+                        Kamu
+                      </span>
                     </div>
-                    <div className="h-8 w-px bg-sekkha-hairline" />
-                    <div className="text-center">
-                      <p className="text-heading-4 font-semibold text-sekkha-ink">{myEntry.value.toLocaleString("id-ID")}</p>
-                      <p className="text-caption text-sekkha-slate capitalize">{metricUnit}</p>
-                    </div>
+                    <p className="text-micro text-sekkha-slate font-medium">{seasonLabel(season)}</p>
                   </div>
                 </div>
 
-                {/* Streak Shield (new feature #1) */}
-                <div className="rounded-xl border border-sekkha-hairline-soft bg-gradient-to-br from-blue-50 to-sekkha-canvas p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-sekkha-brand-blue/10">
-                      <ShieldIcon className="size-5 text-sekkha-brand-blue" aria-hidden="true" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-body-sm-medium text-sekkha-ink">Streak Shield</p>
-                      <p className="text-caption text-sekkha-slate">Milik kamu: <span className="font-semibold text-sekkha-brand-blue">{STREAK_SHIELD.owned}x</span></p>
-                    </div>
+                <div className="flex items-center justify-center gap-4 rounded-2xl bg-white/90 backdrop-blur-md p-3 border border-white/80 shadow-2xs">
+                  <div className="text-center flex-1">
+                    <p className="text-body-lg font-black text-sekkha-brand-blue">#{myEntry.rank}</p>
+                    <p className="text-[10px] font-bold text-sekkha-slate">Peringkat</p>
                   </div>
-                  <p className="mt-2 text-caption text-sekkha-slate">
-                    🛡️ Lindungi streak-mu dari putus! Tukar {STREAK_SHIELD.cost} poin untuk 1 shield.
-                  </p>
-                  <button
-                    type="button"
-                    className="mt-3 w-full rounded-full bg-sekkha-brand-blue py-2 text-body-sm-medium text-white transition-opacity hover:opacity-90"
-                  >
-                    Tukar {STREAK_SHIELD.cost} Poin → 1 Shield
-                  </button>
-                </div>
-
-                {/* Badges */}
-                <div className="rounded-xl border border-sekkha-hairline-soft bg-sekkha-canvas p-5">
-                  <div className="mb-3 flex items-center gap-2">
-                    <AwardIcon className="size-5 text-sekkha-brand-yellow" aria-hidden="true" />
-                    <h3 className="text-body-sm-medium text-sekkha-ink">Badge</h3>
+                  <div className="h-7 w-px bg-sekkha-hairline" />
+                  <div className="text-center flex-1">
+                    <p className="text-body-lg font-black text-sekkha-ink">{myEntry.value.toLocaleString("id-ID")}</p>
+                    <p className="text-[10px] font-bold text-sekkha-slate capitalize">{metricUnit}</p>
                   </div>
-                  <div className="grid grid-cols-3 gap-3">
-                    {SIDEBAR_BADGES.map(b => (
-                      <div key={b.name} className="flex flex-col items-center gap-1.5" title={b.earned ? b.name : b.hint ?? ""}>
-                        <div className={`flex h-11 w-11 items-center justify-center rounded-full text-lg ring-2 transition-transform ${
-                          b.earned ? "bg-sekkha-surface-yellow ring-sekkha-brand-yellow/40 hover:scale-110" : "bg-sekkha-surface opacity-40 ring-sekkha-hairline-soft grayscale"
-                        }`}>
-                          {b.earned ? b.icon : "🔒"}
-                        </div>
-                        <p className={`w-full truncate text-center text-micro ${b.earned ? "text-sekkha-ink" : "text-sekkha-muted"}`}>{b.name}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Season end motivator */}
-                <div className="rounded-xl border border-orange-200 bg-orange-50 p-4 text-center">
-                  <p className="text-body-sm font-medium text-orange-700">
-                    ⏳ {SEASON_DAYS_LEFT} hari lagi! Ayo kejar peringkatmu! 🔥
-                  </p>
                 </div>
               </div>
+
+              {/* Glassmorphic Community Goal Progress Card */}
+              <div className="rounded-3xl border border-white/70 bg-white/85 backdrop-blur-2xl p-4 sm:p-5 shadow-xl shadow-slate-200/50 ring-1 ring-black/5 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-sekkha-brand-blue/10 text-sekkha-brand-blue">
+                      <UsersIcon className="size-4" aria-hidden="true" />
+                    </div>
+                    <h3 className="text-caption-bold font-extrabold text-sekkha-ink">{COMMUNITY_GOAL.label}</h3>
+                  </div>
+                  <span className="text-micro-bold font-black text-sekkha-brand-blue bg-sekkha-brand-blue/10 px-2 py-0.5 rounded-lg">
+                    {communityPct}%
+                  </span>
+                </div>
+
+                {/* Progress bar */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between text-micro font-bold text-sekkha-slate">
+                    <span>Tercapai: {COMMUNITY_GOAL.current}</span>
+                    <span>Target: {COMMUNITY_GOAL.target} Absensi</span>
+                  </div>
+                  <div className="h-3 w-full overflow-hidden rounded-full bg-sekkha-surface border border-sekkha-hairline-soft">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-sekkha-brand-blue via-indigo500 to-amber-400 transition-all duration-500 shadow-xs"
+                      style={{ width: `${communityPct}%` }}
+                    />
+                  </div>
+                </div>
+
+                <div className="rounded-2xl bg-amber-500/10 border border-amber-500/20 p-3 text-micro font-bold text-amber-900 flex items-start gap-2">
+                  <SparklesIcon className="size-4 text-amber-600 shrink-0 mt-0.5" />
+                  <span>Jika target 500 absensi tercapai, seluruh umat Vihara akan mendapat bonus <strong className="text-amber-950">+100 Poin ekstra</strong>!</span>
+                </div>
+              </div>
+
+              {/* Glassmorphic Streak Shield Widget Card */}
+              <div className="rounded-3xl border border-blue-200/80 bg-gradient-to-br from-blue-50/90 via-white/80 to-indigo-50/70 backdrop-blur-2xl p-4 sm:p-5 shadow-xl shadow-blue-500/5 ring-1 ring-blue-500/10 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-2xl bg-sekkha-brand-blue text-white shadow-xs">
+                      <ShieldIcon className="size-4 sm:size-5" aria-hidden="true" />
+                    </div>
+                    <div>
+                      <h3 className="text-caption-bold font-extrabold text-sekkha-ink">Streak Shield</h3>
+                      <p className="text-micro font-bold text-sekkha-brand-blue">Tersedia: {STREAK_SHIELD.owned}x Item Shield</p>
+                    </div>
+                  </div>
+                </div>
+
+                <p className="text-micro text-sekkha-slate font-medium leading-relaxed">
+                  🛡️ Lindungi rekor weekly streak kamu jika terlewat 1 minggu kebaktian.
+                </p>
+
+                <button
+                  type="button"
+                  className="flex w-full items-center justify-center gap-2 rounded-2xl bg-sekkha-brand-blue py-2.5 text-caption-bold text-white shadow-md hover:bg-blue-700 transition-all cursor-pointer active:scale-98"
+                >
+                  <span>Tukar {STREAK_SHIELD.cost} Poin → 1 Shield</span>
+                  <ChevronRightIcon className="size-4" />
+                </button>
+              </div>
+
+              {/* Glassmorphic Gamification Badges Widget */}
+              <div className="rounded-3xl border border-white/70 bg-white/85 backdrop-blur-2xl p-4 sm:p-5 shadow-xl shadow-slate-200/50 ring-1 ring-black/5 space-y-3">
+                <div className="flex items-center gap-2">
+                  <AwardIcon className="size-5 text-amber-500" aria-hidden="true" />
+                  <h3 className="text-caption-bold font-extrabold text-sekkha-ink">Koleksi Badge Gamifikasi</h3>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2.5 pt-1">
+                  {SIDEBAR_BADGES.map(b => (
+                    <div
+                      key={b.name}
+                      className={`flex flex-col items-center gap-1.5 rounded-2xl p-2.5 border transition-all ${
+                        b.earned
+                          ? "bg-amber-500/15 backdrop-blur-md border-amber-300 shadow-2xs hover:scale-105"
+                          : "bg-sekkha-surface/60 border-sekkha-hairline-soft opacity-50 grayscale"
+                      }`}
+                      title={b.earned ? b.name : (b.hint ?? "Belum terbuka")}
+                    >
+                      <div className="text-2xl">{b.earned ? b.icon : "🔒"}</div>
+                      <span className={`text-[10px] font-extrabold text-center truncate w-full ${
+                        b.earned ? "text-sekkha-ink" : "text-sekkha-slate"
+                      }`}>
+                        {b.name}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
             </aside>
-          </div>
-        </div>
-      </div>
 
-      {/* Floating My Rank (mobile) */}
-      <div className="fixed bottom-16 left-4 right-4 z-40 md:hidden">
-        <div className="flex items-center gap-3 rounded-xl border border-sekkha-hairline-soft bg-sekkha-canvas px-4 py-3 shadow-lg">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sekkha-brand-yellow text-caption-bold font-semibold text-sekkha-ink">
-            AK
           </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-body-sm-medium text-sekkha-ink">Posisimu</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <p className="text-body-sm-medium text-sekkha-brand-blue">#{myEntry.rank}</p>
-            <div className="h-5 w-px bg-sekkha-hairline" />
-            <div className="text-right">
-              <p className="text-body-sm-medium text-sekkha-ink">{myEntry.value.toLocaleString("id-ID")}</p>
-              <p className="text-micro text-sekkha-muted">{metricUnit}</p>
-            </div>
-          </div>
+
         </div>
       </div>
     </main>

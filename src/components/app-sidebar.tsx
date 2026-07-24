@@ -28,6 +28,7 @@ import {
   SidebarGroupLabel,
   SidebarRail,
   SidebarTrigger,
+  useSidebar,
 } from "@/components/ui/sidebar"
 import {
   Collapsible,
@@ -44,6 +45,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const { logout, authState } = useAuth()
   const { location } = useRouterState()
   const pathname = location.pathname
+  const { state, toggleSidebar } = useSidebar()
   const [showProfileMenu, setShowProfileMenu] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const profileMenuRef = useRef<HTMLDivElement>(null)
@@ -82,8 +84,14 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
       {/* Brand Header & Sidebar Toggle Button */}
       <SidebarHeader className="border-b border-sekkha-hairline-soft px-3 py-3.5">
         <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-sekkha-brand-blue text-white shadow-xs font-black">
+          {/* Logo & Title Toggle Trigger */}
+          <button
+            type="button"
+            onClick={toggleSidebar}
+            className="flex items-center gap-2.5 min-w-0 text-left cursor-pointer group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:w-full focus:outline-hidden"
+            title={state === "collapsed" ? "Buka Sidebar" : undefined}
+          >
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-sekkha-brand-blue text-white shadow-xs font-black transition-transform active:scale-95">
               <SparklesIcon className="size-5 text-amber-300" />
             </div>
             <div className="flex flex-col min-w-0 group-data-[collapsible=icon]:hidden">
@@ -95,10 +103,10 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                 <span>{roleLabel}</span>
               </span>
             </div>
-          </div>
+          </button>
 
-          {/* Toggle Sidebar Expand / Collapse Button */}
-          <SidebarTrigger className="shrink-0 text-sekkha-slate hover:bg-sekkha-surface hover:text-sekkha-ink cursor-pointer" />
+          {/* Toggle Sidebar Expand / Collapse Button (Hidden when collapsed to prevent overlap) */}
+          <SidebarTrigger className="shrink-0 text-sekkha-slate hover:bg-sekkha-surface hover:text-sekkha-ink cursor-pointer group-data-[collapsible=icon]:hidden" />
         </div>
       </SidebarHeader>
 
@@ -253,7 +261,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
       </SidebarContent>
 
       {/* Footer Unified User Profile Menu */}
-      <SidebarFooter ref={profileMenuRef} className="relative border-t border-sekkha-hairline-soft p-2.5">
+      <SidebarFooter ref={profileMenuRef} className="relative border-t border-sekkha-hairline-soft p-2.5 group-data-[collapsible=icon]:px-1 group-data-[collapsible=icon]:py-2">
         {/* Floating Options Dropdown Menu */}
         {showProfileMenu && userId && (
           <div className="absolute bottom-full mb-2 left-2.5 right-2.5 z-50 rounded-2xl border border-sekkha-hairline bg-white/95 backdrop-blur-xl p-1.5 shadow-2xl space-y-0.5 animate-in fade-in-0 slide-in-from-bottom-2 group-data-[collapsible=icon]:w-48 group-data-[collapsible=icon]:left-12">
@@ -299,14 +307,17 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
           <button
             type="button"
             onClick={() => setShowProfileMenu(!showProfileMenu)}
-            className={`flex w-full items-center gap-2.5 rounded-xl border border-sekkha-hairline-soft bg-sekkha-canvas/80 p-2 text-left transition-all cursor-pointer hover:bg-sekkha-surface hover:border-sekkha-hairline ${
-              showProfileMenu ? "ring-2 ring-sekkha-brand-blue/30 bg-sekkha-surface" : ""
+            title={roleLabel}
+            className={`flex w-full items-center gap-2.5 rounded-xl transition-all cursor-pointer group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:border-none group-data-[collapsible=icon]:bg-transparent ${
+              showProfileMenu
+                ? "ring-2 ring-sekkha-brand-blue/30 bg-sekkha-surface border border-sekkha-hairline p-2"
+                : "border border-sekkha-hairline-soft bg-sekkha-canvas/80 p-2 hover:bg-sekkha-surface hover:border-sekkha-hairline"
             }`}
           >
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sekkha-brand-blue text-micro-bold text-white font-bold uppercase">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-sekkha-brand-blue text-caption-bold text-white font-extrabold shadow-xs uppercase transition-transform active:scale-95">
               {roleLabel.slice(0, 2)}
             </div>
-            <div className="flex flex-col min-w-0 flex-1 group-data-[collapsible=icon]:hidden">
+            <div className="flex flex-col min-w-0 flex-1 group-data-[collapsible=icon]:hidden text-left">
               <span className="truncate text-micro-bold text-sekkha-ink font-extrabold">{roleLabel}</span>
               <span className="truncate text-[10px] text-sekkha-slate font-medium">ID: {userId.slice(0, 8)}</span>
             </div>

@@ -59,8 +59,6 @@ function DrawerContent({
         )}
         {...props}
       >
-        {/* Visible, fixed drag handle pill at top */}
-        <div className="mx-auto my-3 h-1.5 w-12 shrink-0 rounded-full bg-sekkha-slate/40" />
         {children}
       </DrawerPrimitive.Content>
     </DrawerPortal>

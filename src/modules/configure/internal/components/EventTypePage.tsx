@@ -211,7 +211,7 @@ export function EventTypePage() {
 
           {/* Form Pop-Up Modal Sub-Dialog (Responsive Bottom Sheet on Mobile) */}
           {showModal && (
-            <div className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-xs p-0 sm:p-4 animate-in fade-in-0">
+            <div className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center bg-slate-900/60 backdrop-blur-md p-0 sm:p-4 animate-in fade-in-0">
               <div className="w-full sm:max-w-lg max-h-[92vh] sm:max-h-[90vh] rounded-t-[28px] sm:rounded-2xl border-t sm:border border-sekkha-hairline bg-white p-5 sm:p-6 shadow-2xl space-y-4 text-left font-sans overflow-y-auto animate-in slide-in-from-bottom-full sm:zoom-in-95 duration-200">
                 
                 {/* Mobile Drag Handle */}

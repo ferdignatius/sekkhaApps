@@ -120,7 +120,7 @@ export function DateTimePickerPopover({
       {/* ── Dedicated Mobile Bottom Sheet / Centered Pop-up Sub-Modal ─── */}
       {open && (
         <div
-          className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-xs p-0 sm:p-4 animate-in fade-in-0"
+          className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center bg-slate-900/60 backdrop-blur-md p-0 sm:p-4 animate-in fade-in-0"
           onClick={e => { if (e.target === e.currentTarget) setOpen(false) }}
         >
           <div className="w-full sm:max-w-md max-h-[92vh] sm:max-h-[90vh] rounded-t-[28px] sm:rounded-3xl border-t sm:border border-sekkha-hairline bg-white p-4 sm:p-5 shadow-2xl flex flex-col font-sans animate-in slide-in-from-bottom-full sm:zoom-in-95 duration-200">

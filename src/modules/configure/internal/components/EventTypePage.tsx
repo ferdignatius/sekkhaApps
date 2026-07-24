@@ -99,17 +99,17 @@ export function EventTypePage() {
   return (
     <main className="font-sans text-left">
       <PageBreadcrumb items={[{ label: "Configure" }, { label: "Kategori Event" }]} />
-      <div className="px-4 py-6 pb-24 md:px-8 md:pb-8 lg:px-12">
+      <div className="px-4 py-6 pb-32 sm:pb-36 md:px-8 md:pb-12 lg:px-12">
         <div className="mx-auto max-w-7xl space-y-5">
           
           {/* Header */}
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
-              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-sky-100 text-sky-700">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-sky-100 text-sky-700 shrink-0">
                 <TagIcon className="size-5" />
               </div>
-              <div>
-                <h1 className="text-heading-5 font-extrabold text-sekkha-ink">Master Data Kategori Event</h1>
+              <div className="min-w-0">
+                <h1 className="text-body-base sm:text-heading-5 font-extrabold text-sekkha-ink">Master Data Kategori Event</h1>
                 <p className="text-micro text-sekkha-slate">Kelola kategori event dan template autofill untuk formulir kegiatan</p>
               </div>
             </div>
@@ -118,18 +118,18 @@ export function EventTypePage() {
               <button
                 type="button"
                 onClick={openCreate}
-                className="flex items-center gap-1.5 rounded-xl bg-sekkha-brand-blue px-4 py-2 text-caption-bold text-white shadow-xs hover:bg-blue-700 transition-all active:scale-95"
+                className="w-full sm:w-auto shrink-0 flex items-center justify-center gap-1.5 rounded-xl bg-sekkha-brand-blue px-4 py-2.5 sm:py-2 text-caption-bold text-white shadow-xs hover:bg-blue-700 transition-all active:scale-95"
               >
                 <PlusIcon className="size-4" />
-                Tambah Kategori Event
+                <span>Tambah Kategori Event</span>
               </button>
             )}
           </div>
 
           {/* Table Container */}
           <div className="rounded-2xl border border-sekkha-hairline bg-white/95 backdrop-blur-md p-4 shadow-xs">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-caption border-collapse">
+            <div className="overflow-x-auto scrollbar-none">
+              <table className="w-full min-w-[650px] text-left text-caption border-collapse">
                 <thead>
                   <tr className="border-b border-sekkha-hairline-soft bg-sekkha-canvas/60 text-micro-bold uppercase tracking-wider text-sekkha-slate">
                     <th className="py-3 px-4">Nama Kategori</th>
@@ -209,10 +209,14 @@ export function EventTypePage() {
             </div>
           </div>
 
-          {/* Form Pop-Up Modal Sub-Dialog */}
+          {/* Form Pop-Up Modal Sub-Dialog (Responsive Bottom Sheet on Mobile) */}
           {showModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 animate-in fade-in-0">
-              <div className="w-full max-w-lg rounded-2xl border border-sekkha-hairline bg-white p-5 sm:p-6 shadow-2xl space-y-4 text-left font-sans animate-in zoom-in-95">
+            <div className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-xs p-0 sm:p-4 animate-in fade-in-0">
+              <div className="w-full sm:max-w-lg max-h-[92vh] sm:max-h-[90vh] rounded-t-[28px] sm:rounded-2xl border-t sm:border border-sekkha-hairline bg-white p-5 sm:p-6 shadow-2xl space-y-4 text-left font-sans overflow-y-auto animate-in slide-in-from-bottom-full sm:zoom-in-95 duration-200">
+                
+                {/* Mobile Drag Handle */}
+                <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto -mt-2 mb-1 sm:hidden shrink-0" />
+
                 <div className="flex items-center justify-between pb-3 border-b border-sekkha-hairline-soft">
                   <div className="flex items-center gap-2">
                     <SparklesIcon className="size-5 text-sekkha-brand-blue" />

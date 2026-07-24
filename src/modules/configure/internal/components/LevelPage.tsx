@@ -86,17 +86,21 @@ export function LevelPage() {
   return (
     <main>
       <PageBreadcrumb items={[{ label: "Configure" }, { label: "Level" }]} />
-      <div className="px-4 py-6 pb-24 md:px-8 md:pb-8 lg:px-12">
+      <div className="px-4 py-6 pb-32 sm:pb-36 md:px-8 md:pb-12 lg:px-12">
         <div className="mx-auto max-w-8xl space-y-5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <ZapIcon className="size-5 text-sekkha-brand-blue" />
-              <h1 className="text-heading-5 text-sekkha-ink">Level</h1>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <ZapIcon className="size-5 text-sekkha-brand-blue shrink-0" />
+              <h1 className="text-body-base sm:text-heading-5 font-extrabold text-sekkha-ink">Level</h1>
             </div>
             {isAdmin && (
-              <button type="button" onClick={openCreate} className="flex items-center gap-1.5 rounded-full bg-sekkha-primary px-4 py-2 text-body-sm-medium text-white transition-opacity hover:opacity-90">
+              <button
+                type="button"
+                onClick={openCreate}
+                className="w-full sm:w-auto shrink-0 flex items-center justify-center gap-1.5 rounded-full bg-sekkha-primary px-4 py-2.5 sm:py-2 text-body-sm-medium text-white transition-opacity hover:opacity-90 cursor-pointer"
+              >
                 <PlusIcon className="size-4" />
-                Tambah Level
+                <span>Tambah Level</span>
               </button>
             )}
           </div>
@@ -128,8 +132,8 @@ export function LevelPage() {
         )}
 
         <div className="overflow-hidden rounded-xl border border-sekkha-hairline-soft bg-sekkha-canvas">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-body-sm">
+          <div className="overflow-x-auto scrollbar-none">
+            <table className="w-full min-w-[450px] text-left text-body-sm">
               <thead>
                 <tr className="border-b border-sekkha-hairline-soft bg-sekkha-surface">
                   <th className="px-4 py-3 font-medium text-sekkha-slate">Level</th>

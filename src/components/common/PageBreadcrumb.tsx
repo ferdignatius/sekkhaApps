@@ -25,14 +25,16 @@ export interface BreadcrumbEntry {
 interface PageBreadcrumbProps {
   items: BreadcrumbEntry[]
   onBack?: () => void
+  showBack?: boolean
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export function PageBreadcrumb({ items, onBack }: PageBreadcrumbProps) {
+export function PageBreadcrumb({ items, onBack, showBack }: PageBreadcrumbProps) {
   if (items.length === 0) return null
 
   const lastItem = items[items.length - 1]
+  const shouldShowBack = showBack ?? items.length > 1
 
   function handleBack() {
     if (onBack) {
@@ -47,16 +49,20 @@ export function PageBreadcrumb({ items, onBack }: PageBreadcrumbProps) {
       <div className="px-3.5 py-3 sm:px-6 md:py-3.5 md:px-8 lg:px-12">
         <div className="mx-auto max-w-7xl flex items-center justify-between gap-3">
           
-          {/* ── Left: Back Button (HIG Standard 40x40 Touch Target) ── */}
-          <button
-            type="button"
-            onClick={handleBack}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-sekkha-hairline bg-white/95 text-sekkha-ink hover:bg-sekkha-surface hover:border-sekkha-hairline-strong transition-all shadow-2xs active:scale-95 cursor-pointer"
-            title="Kembali ke halaman sebelumnya"
-            aria-label="Kembali"
-          >
-            <ArrowLeftIcon className="size-5 text-sekkha-ink" />
-          </button>
+          {/* ── Left: Back Button (Only rendered on nested sub-pages) ── */}
+          {shouldShowBack ? (
+            <button
+              type="button"
+              onClick={handleBack}
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-sekkha-hairline bg-white/95 text-sekkha-ink hover:bg-sekkha-surface hover:border-sekkha-hairline-strong transition-all shadow-2xs active:scale-95 cursor-pointer"
+              title="Kembali ke halaman sebelumnya"
+              aria-label="Kembali"
+            >
+              <ArrowLeftIcon className="size-5 text-sekkha-ink" />
+            </button>
+          ) : (
+            <div className="w-2 shrink-0 md:hidden" />
+          )}
 
           {/* ── Center: Desktop Breadcrumb & Mobile Page Title ── */}
           {/* Desktop Breadcrumb */}

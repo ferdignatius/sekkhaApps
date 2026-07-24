@@ -63,7 +63,7 @@ export function ResponsiveFormModal({
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         {/* Backdrop Overlay */}
         <div
-          className="fixed inset-0 bg-black/40 backdrop-blur-xs transition-opacity animate-in fade-in-0"
+          className="fixed inset-0 bg-slate-900/60 backdrop-blur-md transition-opacity animate-in fade-in-0"
           onClick={() => onOpenChange(false)}
         />
         {/* Centered Compact Card Container */}

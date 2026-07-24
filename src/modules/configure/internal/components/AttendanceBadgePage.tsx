@@ -34,7 +34,7 @@ export function AttendanceBadgePage() {
     setBadges(updated)
     try {
       localStorage.setItem("sekkha_master_badges", JSON.stringify(updated))
-    } catch {}
+    } catch { }
   }
 
   function resetForm() {
@@ -95,7 +95,7 @@ export function AttendanceBadgePage() {
       <PageBreadcrumb items={[{ label: "Configure" }, { label: "Badge Tugas Presensi" }]} />
       <div className="px-4 py-6 pb-32 sm:pb-36 md:px-8 md:pb-12 lg:px-12">
         <div className="mx-auto max-w-7xl space-y-5">
-          
+
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
@@ -167,11 +167,10 @@ export function AttendanceBadgePage() {
                             <button
                               type="button"
                               onClick={() => handleToggleActive(b.id)}
-                              className={`rounded-lg border px-2.5 py-1 text-micro-bold transition-all ${
-                                b.is_active !== false
+                              className={`rounded-lg border px-2.5 py-1 text-micro-bold transition-all ${b.is_active !== false
                                   ? "border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100"
                                   : "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-                              }`}
+                                }`}
                               title={b.is_active !== false ? "Non-Aktifkan" : "Aktifkan"}
                             >
                               {b.is_active !== false ? "Non-Aktifkan" : "Aktifkan"}
@@ -206,7 +205,7 @@ export function AttendanceBadgePage() {
           {showForm && (
             <div className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center bg-slate-900/60 backdrop-blur-md p-0 sm:p-4 animate-in fade-in-0">
               <div className="w-full sm:max-w-md max-h-[92vh] sm:max-h-[90vh] rounded-t-[28px] sm:rounded-2xl border-t sm:border border-sekkha-hairline bg-white p-5 shadow-2xl space-y-4 text-left font-sans overflow-y-auto animate-in slide-in-from-bottom-full sm:zoom-in-95 duration-200">
-                
+
                 {/* Mobile Drag Handle */}
                 <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto -mt-2 mb-1 sm:hidden shrink-0" />
 

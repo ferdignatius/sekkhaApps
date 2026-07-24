@@ -72,15 +72,15 @@ export function LevelPage() {
     const payload = { level: Number(levelNum), label, min_points: Number(minPoints) || 0 }
 
     if (editing) {
-      void apiUpdate(editing.id, payload).catch(() => {})
+      void apiUpdate(editing.id, payload).catch(() => { })
     } else {
-      void apiCreate(payload as any).catch(() => {})
+      void apiCreate(payload as any).catch(() => { })
     }
     resetForm()
   }
 
   function handleDelete(id: string) {
-    void apiRemove(id).catch(() => {})
+    void apiRemove(id).catch(() => { })
   }
 
   return (
@@ -105,63 +105,63 @@ export function LevelPage() {
             )}
           </div>
 
-        {showForm && isAdmin && (
-          <div className="rounded-xl border border-sekkha-hairline-soft bg-sekkha-canvas p-5">
-            <h2 className="mb-4 text-body-sm-medium text-sekkha-ink">{editing ? "Edit Level" : "Level Baru"}</h2>
-            <form onSubmit={handleSubmit} className="space-y-3">
-              <div className="grid gap-3 sm:grid-cols-3">
-                <div className="flex flex-col gap-1.5">
-                  <label htmlFor="lvl-num" className="text-caption text-sekkha-slate">Level</label>
-                  <input id="lvl-num" type="number" value={levelNum} onChange={(e) => setLevelNum(e.target.value)} className="rounded-lg border border-sekkha-hairline-strong px-3 py-2 text-body-sm text-sekkha-ink outline-none focus:border-sekkha-brand-blue" />
+          {showForm && isAdmin && (
+            <div className="rounded-xl border border-sekkha-hairline-soft bg-sekkha-canvas p-5">
+              <h2 className="mb-4 text-body-sm-medium text-sekkha-ink">{editing ? "Edit Level" : "Level Baru"}</h2>
+              <form onSubmit={handleSubmit} className="space-y-3">
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="lvl-num" className="text-caption text-sekkha-slate">Level</label>
+                    <input id="lvl-num" type="number" value={levelNum} onChange={(e) => setLevelNum(e.target.value)} className="rounded-lg border border-sekkha-hairline-strong px-3 py-2 text-body-sm text-sekkha-ink outline-none focus:border-sekkha-brand-blue" />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="lvl-label" className="text-caption text-sekkha-slate">Label</label>
+                    <input id="lvl-label" type="text" value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Umat Setia" className="rounded-lg border border-sekkha-hairline-strong px-3 py-2 text-body-sm text-sekkha-ink outline-none focus:border-sekkha-brand-blue" />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="lvl-pts" className="text-caption text-sekkha-slate">Min. Poin</label>
+                    <input id="lvl-pts" type="number" value={minPoints} onChange={(e) => setMinPoints(e.target.value)} placeholder="200" className="rounded-lg border border-sekkha-hairline-strong px-3 py-2 text-body-sm text-sekkha-ink outline-none focus:border-sekkha-brand-blue" />
+                  </div>
                 </div>
-                <div className="flex flex-col gap-1.5">
-                  <label htmlFor="lvl-label" className="text-caption text-sekkha-slate">Label</label>
-                  <input id="lvl-label" type="text" value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Umat Setia" className="rounded-lg border border-sekkha-hairline-strong px-3 py-2 text-body-sm text-sekkha-ink outline-none focus:border-sekkha-brand-blue" />
+                <div className="flex gap-2 pt-2">
+                  <button type="button" onClick={resetForm} className="flex-1 rounded-full border border-sekkha-hairline-strong py-2 text-body-sm-medium text-sekkha-ink">Batal</button>
+                  <button type="submit" className="flex-1 rounded-full bg-sekkha-primary py-2 text-body-sm-medium text-white">{editing ? "Simpan" : "Buat"}</button>
                 </div>
-                <div className="flex flex-col gap-1.5">
-                  <label htmlFor="lvl-pts" className="text-caption text-sekkha-slate">Min. Poin</label>
-                  <input id="lvl-pts" type="number" value={minPoints} onChange={(e) => setMinPoints(e.target.value)} placeholder="200" className="rounded-lg border border-sekkha-hairline-strong px-3 py-2 text-body-sm text-sekkha-ink outline-none focus:border-sekkha-brand-blue" />
-                </div>
-              </div>
-              <div className="flex gap-2 pt-2">
-                <button type="button" onClick={resetForm} className="flex-1 rounded-full border border-sekkha-hairline-strong py-2 text-body-sm-medium text-sekkha-ink">Batal</button>
-                <button type="submit" className="flex-1 rounded-full bg-sekkha-primary py-2 text-body-sm-medium text-white">{editing ? "Simpan" : "Buat"}</button>
-              </div>
-            </form>
-          </div>
-        )}
+              </form>
+            </div>
+          )}
 
-        <div className="overflow-hidden rounded-xl border border-sekkha-hairline-soft bg-sekkha-canvas">
-          <div className="overflow-x-auto scrollbar-none">
-            <table className="w-full min-w-[450px] text-left text-body-sm">
-              <thead>
-                <tr className="border-b border-sekkha-hairline-soft bg-sekkha-surface">
-                  <th className="px-4 py-3 font-medium text-sekkha-slate">Level</th>
-                  <th className="px-4 py-3 font-medium text-sekkha-slate">Label</th>
-                  <th className="px-4 py-3 font-medium text-sekkha-slate">Min. Poin</th>
-                  {isAdmin && <th className="px-4 py-3 font-medium text-sekkha-slate">Aksi</th>}
-                </tr>
-              </thead>
-              <tbody>
-                {levels.map((lvl) => (
-                  <tr key={lvl.id} className="border-b border-sekkha-hairline-soft last:border-0">
-                    <td className="px-4 py-3 font-medium text-sekkha-ink">{lvl.level}</td>
-                    <td className="px-4 py-3 text-sekkha-ink">{lvl.label}</td>
-                    <td className="px-4 py-3 text-sekkha-slate">{lvl.min_points.toLocaleString("id-ID")}</td>
-                    {isAdmin && (
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-1">
-                          <button type="button" onClick={() => openEdit(lvl)} className="rounded-md p-1.5 text-sekkha-slate hover:bg-sekkha-surface hover:text-sekkha-ink" aria-label="Edit"><PencilIcon className="size-3.5" /></button>
-                          <button type="button" onClick={() => handleDelete(lvl.id)} className="rounded-md p-1.5 text-sekkha-slate hover:bg-red-50 hover:text-red-500" aria-label="Hapus"><TrashIcon className="size-3.5" /></button>
-                        </div>
-                      </td>
-                    )}
+          <div className="overflow-hidden rounded-xl border border-sekkha-hairline-soft bg-sekkha-canvas">
+            <div className="overflow-x-auto scrollbar-none">
+              <table className="w-full min-w-[450px] text-left text-body-sm">
+                <thead>
+                  <tr className="border-b border-sekkha-hairline-soft bg-sekkha-surface">
+                    <th className="px-4 py-3 font-medium text-sekkha-slate">Level</th>
+                    <th className="px-4 py-3 font-medium text-sekkha-slate">Label</th>
+                    <th className="px-4 py-3 font-medium text-sekkha-slate">Min. Poin</th>
+                    {isAdmin && <th className="px-4 py-3 font-medium text-sekkha-slate">Aksi</th>}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          {levels.length === 0 && <div className="py-10 text-center"><p className="text-body-sm text-sekkha-muted">Belum ada level.</p></div>}
+                </thead>
+                <tbody>
+                  {levels.map((lvl) => (
+                    <tr key={lvl.id} className="border-b border-sekkha-hairline-soft last:border-0">
+                      <td className="px-4 py-3 font-medium text-sekkha-ink">{lvl.level}</td>
+                      <td className="px-4 py-3 text-sekkha-ink">{lvl.label}</td>
+                      <td className="px-4 py-3 text-sekkha-slate">{lvl.min_points.toLocaleString("id-ID")}</td>
+                      {isAdmin && (
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-1">
+                            <button type="button" onClick={() => openEdit(lvl)} className="rounded-md p-1.5 text-sekkha-slate hover:bg-sekkha-surface hover:text-sekkha-ink" aria-label="Edit"><PencilIcon className="size-3.5" /></button>
+                            <button type="button" onClick={() => handleDelete(lvl.id)} className="rounded-md p-1.5 text-sekkha-slate hover:bg-red-50 hover:text-red-500" aria-label="Hapus"><TrashIcon className="size-3.5" /></button>
+                          </div>
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {levels.length === 0 && <div className="py-10 text-center"><p className="text-body-sm text-sekkha-muted">Belum ada level.</p></div>}
           </div>
         </div>
       </div>

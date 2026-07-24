@@ -31,17 +31,25 @@ const MAX_VALUES: Record<LeaderboardMetric, [number, number]> = {
   attendance: [1,  24],
 }
 
-export function getLeaderboardData(filter: LeaderboardFilter, _myUserId: string): LeaderboardResponse {
+export function getLeaderboardData(filter: LeaderboardFilter, myUserId: string): LeaderboardResponse {
   const seed = filter.season.year * 100 + filter.season.half * 10 + filter.metric.length
   const rng = seededRandom(seed)
   const [minVal, maxVal] = MAX_VALUES[filter.metric]
 
-  const scores = USERS.map(u => ({
+  const sorted = USERS.map((u) => ({
     ...u,
     value: Math.round(minVal + rng() * (maxVal - minVal)),
   })).sort((a, b) => b.value - a.value)
 
-  const entries = scores.map((u, i) => ({
+  // Explicitly set 2nd place (index 1) to be the logged in user ("Admin Sekkha") as requested
+  sorted[1] = {
+    ...sorted[1],
+    user_id: myUserId,
+    name: "Admin Sekkha",
+    initials: "AS",
+  }
+
+  const entries = sorted.map((u, i) => ({
     rank: i + 1,
     user_id: u.user_id,
     name: u.name,
@@ -51,18 +59,17 @@ export function getLeaderboardData(filter: LeaderboardFilter, _myUserId: string)
     label: makeLabel(filter.metric, u.value),
   }))
 
-  const MY_VALUE = Math.round(minVal + seededRandom(seed + 999)() * (maxVal - minVal))
-  const myRankPos = entries.filter(e => e.value > MY_VALUE).length + 1
+  const myEntry = entries.find(e => e.user_id === myUserId) ?? entries[1]
 
   return {
     season: filter.season,
     metric: filter.metric,
     entries,
     my_rank: {
-      rank: myRankPos,
-      value: MY_VALUE,
-      label: makeLabel(filter.metric, MY_VALUE),
-      is_in_top: myRankPos <= entries.length,
+      rank: myEntry.rank,
+      value: myEntry.value,
+      label: myEntry.label,
+      is_in_top: true,
     },
   }
 }

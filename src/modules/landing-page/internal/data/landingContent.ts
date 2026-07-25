@@ -53,64 +53,64 @@ export const landingContent: LandingContent = {
   hero: {
     headline: 'Komunitas Remaja Vihara Tri Maha Dharma',
     subheadline:
-      'Platform digital untuk mengelola kegiatan, kebaktian, dan komunitas remaja Buddhis — terhubung, berkembang, dan berkarya bersama.',
+      'Platform digital terpadu untuk umat remaja Buddhis — presensi kebaktian, daftar retreat, kumpulkan poin kebaikan, dan terhubung bersama komunitas.',
   },
 
   features: [
     {
-      title: 'Kebaktian Remaja',
+      title: 'Presensi Kebaktian Quick-Scan',
       description:
-        'Ikuti jadwal kebaktian rutin setiap minggu, pantau kehadiranmu, dan dapatkan materi dhamma yang bisa kamu akses kapan saja.',
+        'Hadir kebaktian rutin setiap Minggu, pindai QR presensi instan di lokasi vihara, dan riwayat kehadiranmu langsung tercatat secara otomatis.',
     },
     {
-      title: 'Kegiatan & Retreat',
+      title: 'Poin & Leaderboard Umat',
       description:
-        'Daftar kegiatan retreat, kamp dhamma, dan program pengembangan diri yang dirancang khusus untuk generasi muda Buddhis.',
+        'Kumpulkan poin kebaikan setiap kali mengikuti kebaktian dan kegiatan, raih badge prestasi, serta naikkan level peringkatmu di komunitas.',
     },
     {
-      title: 'Bakti Sosial',
+      title: 'Pendaftaran Retreat & Event',
       description:
-        'Bergabung dalam program bakti sosial dan kegiatan amal — dari donor darah, santunan, hingga penghijauan lingkungan vihara.',
+        'Daftar kegiatan retreat youth, kamp Dhamma, dan workshop pengembangan diri hanya dalam beberapa sentuhan dengan konfirmasi langsung.',
     },
     {
-      title: 'Leaderboard Umat',
+      title: 'Aksi Bakti Sosial',
       description:
-        'Sistem poin untuk menghargai keaktifan anggota — hadiri kebaktian, ikuti kegiatan, dan raih posisi teratas leaderboard komunitas.',
+        'Bergabung dalam aksi nyata kepedulian sosial, donor darah, dan penghijauan lingkungan vihara bersama teman-teman se-dharma.',
     },
     {
-      title: 'Forum & Diskusi',
+      title: 'Akses Materi & Paritta',
       description:
-        'Ruang diskusi dhamma, berbagi cerita inspiratif, dan tanya jawab bersama Bhikku dan pembimbing komunitas secara online.',
+        'Akses kumpulan materi Dhamma interaktif, teks paritta kebaktian, dan rekaman pembacaan kapan saja untuk memperdalam pengetahuan spiritual.',
     },
     {
-      title: 'Pengumuman & Notifikasi',
+      title: 'Notifikasi & Pengumuman Instant',
       description:
-        'Tidak ketinggalan satu pun informasi penting — jadwal kebaktian, perubahan kegiatan, dan pengumuman vihara langsung ke tanganmu.',
+        'Dapatkan informasi jadwal kebaktian terbaru, pergeseran jam kegiatan, dan pengumuman penting vihara langsung di genggamanmu.',
     },
   ],
 
   stats: [
     {
       value: '500+',
-      label: 'Anggota aktif',
+      label: 'Anggota Aktif',
     },
     {
       value: '120+',
-      label: 'Kegiatan per tahun',
+      label: 'Kegiatan per Tahun',
     },
     {
       value: '15+',
-      label: 'Tahun komunitas',
+      label: 'Tahun Komunitas',
     },
     {
       value: '98%',
-      label: 'Kepuasan anggota',
+      label: 'Kepuasan Umat',
     },
   ],
 
   leaderboard: {
     heading: 'Leaderboard Umat Aktif',
-    subheading: 'Anggota paling aktif bulan ini berdasarkan kehadiran dan partisipasi kegiatan.',
+    subheading: 'Umat remaja paling aktif bulan ini berdasarkan presensi kebaktian dan partisipasi kegiatan.',
     entries: [
       { rank: 1, name: 'Sari Dewi', points: 980, badge: '🥇' },
       { rank: 2, name: 'Budi Santoso', points: 870, badge: '🥈' },
@@ -143,7 +143,7 @@ export const landingContent: LandingContent = {
         category: 'bakti-sosial',
       },
       {
-        title: 'Perayaan Asadha',
+        title: 'Perayaan Asadha Youth',
         date: '5 Jul 2026',
         location: 'Vihara Tri Maha Dharma',
         category: 'event',
@@ -168,7 +168,7 @@ export const landingContent: LandingContent = {
         ],
       },
       {
-        heading: 'Program',
+        heading: 'Program Umat',
         links: [
           { label: 'Retreat & Kamp', href: '/retreat' },
           { label: 'Bakti Sosial', href: '/bakti-sosial' },
@@ -188,3 +188,4 @@ export const landingContent: LandingContent = {
     ],
   },
 }
+

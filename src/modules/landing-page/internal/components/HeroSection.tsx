@@ -12,8 +12,11 @@ const EASE = "easeOut"
 
 export function HeroSection({ headline, subheadline }: HeroSectionProps) {
   return (
-    <section aria-labelledby="hero-heading" className="w-full bg-sekkha-canvas py-[120px] overflow-hidden">
-      <div className="mx-auto w-full max-w-[1280px] px-4 md:px-8">
+    <section aria-labelledby="hero-heading" className="relative w-full py-[120px] overflow-hidden">
+      {/* Background ambient mesh gradient */}
+      <div className="absolute inset-0 -z-10 bg-gradient-to-b from-amber-50/40 via-teal-50/20 to-white pointer-events-none" />
+
+      <div className="mx-auto w-full max-w-[1280px] px-4 md:px-8 relative z-10">
 
         {/* Badge */}
         <motion.div
@@ -22,15 +25,15 @@ export function HeroSection({ headline, subheadline }: HeroSectionProps) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: EASE, delay: 0 }}
         >
-          <span className="inline-flex items-center gap-2 rounded-full border border-sekkha-hairline bg-sekkha-surface px-4 py-1.5 text-body-sm text-sekkha-slate">
-            🙏 Komunitas Remaja Buddhist
+          <span className="inline-flex items-center gap-2 rounded-full glass-pill px-4 py-1.5 text-body-sm text-sekkha-ink font-medium shadow-sm">
+            ✨ Platform Digital Remaja • Vihara Tri Maha Dharma
           </span>
         </motion.div>
 
         {/* Headline */}
         <motion.h1
           id="hero-heading"
-          className="text-hero-display text-sekkha-ink max-w-[800px] mx-auto text-center font-bold tracking-tight text-4xl sm:text-5xl md:text-7xl leading-tight"
+          className="text-hero-display text-sekkha-ink max-w-[840px] mx-auto text-center font-bold tracking-tight text-4xl sm:text-5xl md:text-7xl leading-tight"
           initial={{ opacity: 0, y: 32 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: EASE, delay: 0.1 }}
@@ -40,7 +43,7 @@ export function HeroSection({ headline, subheadline }: HeroSectionProps) {
 
         {/* Subheadline */}
         <motion.p
-          className="text-subtitle text-sekkha-slate max-w-[600px] mx-auto text-center mt-6 text-base md:text-lg leading-relaxed"
+          className="text-subtitle text-sekkha-slate max-w-[640px] mx-auto text-center mt-6 text-base md:text-lg leading-relaxed font-normal"
           initial={{ opacity: 0, y: 32 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: EASE, delay: 0.2 }}
@@ -55,27 +58,27 @@ export function HeroSection({ headline, subheadline }: HeroSectionProps) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: EASE, delay: 0.35 }}
         >
-          <Button variant="primary" className="w-full md:w-auto" asChild>
-            <a href="/sign-up">Bergabung Sekarang</a>
+          <Button variant="primary" className="w-full md:w-auto shadow-md hover:shadow-lg transition-all" asChild>
+            <a href="/sign-up" role="button">Bergabung Sekarang</a>
           </Button>
-          <Button variant="secondary" className="w-full md:w-auto" asChild>
-            <a href="#events">Lihat Kegiatan</a>
+          <Button variant="secondary" className="w-full md:w-auto glass-pill hover:bg-white/80 transition-all" asChild>
+            <a href="#events" role="button">Lihat Kegiatan</a>
           </Button>
         </motion.div>
 
         {/* Whiteboard Interactive Dashboard Mockup */}
         <DashboardMockup />
 
-        {/* Decorative background orbs — relative to viewport, not section */}
+        {/* Glowing background ambient orbs */}
         <motion.div
-          className="pointer-events-none fixed left-[15%] top-[20%] -z-10 h-72 w-72 rounded-full bg-sekkha-brand-yellow/15 blur-3xl"
+          className="pointer-events-none absolute left-[10%] top-[15%] -z-10 h-96 w-96 rounded-full bg-sekkha-brand-yellow/20 blur-3xl animate-pulse-slow"
           initial={{ opacity: 0, scale: 0.6 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 1.4, delay: 0.2, ease: 'easeOut' }}
           aria-hidden="true"
         />
         <motion.div
-          className="pointer-events-none fixed right-[15%] top-[30%] -z-10 h-64 w-64 rounded-full bg-sekkha-teal-light/25 blur-3xl"
+          className="pointer-events-none absolute right-[10%] top-[25%] -z-10 h-80 w-80 rounded-full bg-sekkha-teal-light/40 blur-3xl animate-float"
           initial={{ opacity: 0, scale: 0.6 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 1.4, delay: 0.4, ease: 'easeOut' }}

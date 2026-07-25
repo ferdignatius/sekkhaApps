@@ -133,7 +133,11 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
       localStorage.setItem(STORAGE_KEY, data.accessToken)
       dispatch({
         type: "AUTH_SUCCESS",
-        payload: { accessToken: data.accessToken, userId: data.user.id, role: (data.user.role as UserRole) ?? "umat" },
+        payload: {
+          accessToken: data.accessToken,
+          userId: data.user?.id ?? (data as any).userId ?? "user-1",
+          role: (data.user?.role as UserRole) ?? ((data as any).role as UserRole) ?? "umat",
+        },
       })
       return
     }
@@ -187,7 +191,11 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
       localStorage.setItem(STORAGE_KEY, data.accessToken)
       dispatch({
         type: "AUTH_SUCCESS",
-        payload: { accessToken: data.accessToken, userId: data.user.id, role: (data.user.role as UserRole) ?? "umat" },
+        payload: {
+          accessToken: data.accessToken,
+          userId: data.user?.id ?? (data as any).userId ?? "user-1",
+          role: (data.user?.role as UserRole) ?? ((data as any).role as UserRole) ?? "umat",
+        },
       })
       return
     }

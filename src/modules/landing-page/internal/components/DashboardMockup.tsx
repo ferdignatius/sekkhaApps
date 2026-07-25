@@ -43,11 +43,11 @@ export function DashboardMockup() {
   const levelProgress = Math.round((userPoints / 1500) * 100)
 
   return (
-    <div className="relative w-full max-w-[960px] mx-auto mt-16 px-2 select-none">
+    <div className="relative w-full mx-auto mt-16 px-2 select-none">
       
       {/* ── Outer Whiteboard Frame ── */}
       <motion.div
-        className="w-full bg-sekkha-canvas rounded-2xl border border-sekkha-hairline-soft p-4 md:p-6 shadow-xl relative z-10"
+        className="w-full glass-panel rounded-2xl p-4 md:p-6 shadow-xl relative z-10"
         initial={{ opacity: 0, y: 48 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.85, ease: 'easeOut', delay: 0.4 }}
@@ -76,7 +76,7 @@ export function DashboardMockup() {
           <div className="md:col-span-2 space-y-6">
             
             {/* User Level Info Card */}
-            <div className="rounded-xl border border-sekkha-hairline-soft bg-sekkha-surface p-4">
+            <div className="rounded-xl border border-sekkha-hairline-soft bg-white/60 backdrop-blur-md p-4">
               <div className="flex items-center gap-3">
                 {/* Avatar mockup */}
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-sekkha-brand-yellow text-body-sm-medium font-bold text-sekkha-ink ring-2 ring-white">
@@ -85,7 +85,7 @@ export function DashboardMockup() {
                 {/* Level details */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <p className="truncate text-body-sm-medium text-sekkha-ink font-semibold">Admin Sekkha</p>
+                    <p className="truncate text-body-sm-medium text-sekkha-ink font-semibold">Umat Sekkha</p>
                     <span className="rounded-full bg-sekkha-brand-yellow/20 px-2 py-0.5 text-micro font-bold text-sekkha-yellow-dark">
                       Lv.3
                     </span>
@@ -121,14 +121,14 @@ export function DashboardMockup() {
 
               {/* Quick Stats Grid */}
               <div className="grid grid-cols-2 gap-3 mt-4">
-                <div className="flex items-center gap-3.5 rounded-lg bg-orange-50 px-3 py-2">
+                <div className="flex items-center gap-3.5 rounded-lg bg-orange-50/80 px-3 py-2">
                   <FlameIcon className="size-6 text-orange-500 fill-orange-55" />
                   <div>
                     <span className="block text-body-sm-medium font-bold text-orange-600">5 Minggu</span>
                     <span className="text-micro text-sekkha-slate">Streak Keaktifan 🔥</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-3.5 rounded-lg bg-blue-50 px-3 py-2">
+                <div className="flex items-center gap-3.5 rounded-lg bg-blue-50/80 px-3 py-2">
                   <ShieldCheckIcon className="size-6 text-sekkha-brand-blue" />
                   <div>
                     <span className="block text-body-sm-medium font-bold text-sekkha-brand-blue">Aktif</span>
@@ -139,20 +139,21 @@ export function DashboardMockup() {
             </div>
 
             {/* Weekly Missions Card */}
-            <div className="rounded-xl border border-sekkha-hairline bg-white p-4">
+            <div className="rounded-xl border border-sekkha-hairline bg-white/70 backdrop-blur-md p-4">
               <div className="flex items-center gap-2 mb-3">
                 <CalendarIcon className="size-4 text-sekkha-brand-blue" />
-                <h4 className="text-body-sm-medium font-semibold text-sekkha-ink">Misi Minggu Ini (Ketuk untuk Simulasi)</h4>
+                <h4 className="text-body-sm-medium font-semibold text-sekkha-ink">Misi Minggu Ini (Klik untuk Simulasi)</h4>
               </div>
 
               <div className="space-y-2">
                 {missions.map(mission => (
-                  <motion.button
+                  <motion.div
                     key={mission.id}
+                    role="presentation"
                     onClick={() => toggleMission(mission.id)}
-                    className={`flex w-full items-center justify-between gap-3 rounded-lg px-3.5 py-2.5 text-left border transition-all ${
+                    className={`flex w-full cursor-pointer items-center justify-between gap-3 rounded-lg px-3.5 py-2.5 text-left border transition-all ${
                       mission.done
-                        ? 'bg-sekkha-teal-light border-sekkha-brand-teal/20 text-sekkha-ink'
+                        ? 'bg-sekkha-teal-light/70 border-sekkha-brand-teal/20 text-sekkha-ink'
                         : 'bg-sekkha-surface border-sekkha-hairline-soft text-sekkha-slate hover:bg-white'
                     }`}
                     whileHover={{ scale: 1.01 }}
@@ -177,7 +178,7 @@ export function DashboardMockup() {
                     >
                       {mission.done ? 'Selesai' : `+${mission.reward} XP`}
                     </span>
-                  </motion.button>
+                  </motion.div>
                 ))}
               </div>
             </div>
@@ -187,7 +188,7 @@ export function DashboardMockup() {
           <div className="space-y-6">
             
             {/* Leaderboard Panel */}
-            <div className="rounded-xl border border-sekkha-hairline-soft bg-sekkha-surface p-4">
+            <div className="rounded-xl border border-sekkha-hairline-soft bg-white/60 backdrop-blur-md p-4">
               <div className="flex items-center gap-2 mb-3">
                 <TrophyIcon className="size-4 text-sekkha-brand-yellow" />
                 <h4 className="text-body-sm-medium font-semibold text-sekkha-ink font-roobert">Top 3 Remaja Aktif</h4>
@@ -197,7 +198,7 @@ export function DashboardMockup() {
                 {MOCK_LEADERBOARD.map(item => (
                   <div
                     key={item.rank}
-                    className="flex items-center justify-between rounded-lg bg-white px-3 py-2 border border-sekkha-hairline-soft"
+                    className="flex items-center justify-between rounded-lg bg-white/80 px-3 py-2 border border-sekkha-hairline-soft"
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
                       <span className="text-body-sm font-bold text-sekkha-slate">{item.badge}</span>
@@ -210,10 +211,10 @@ export function DashboardMockup() {
             </div>
 
             {/* Badges Collection Panel */}
-            <div className="rounded-xl border border-sekkha-hairline bg-white p-4">
+            <div className="rounded-xl border border-sekkha-hairline bg-white/70 backdrop-blur-md p-4">
               <div className="flex items-center gap-2 mb-3">
                 <UsersIcon className="size-4 text-sekkha-brand-teal" />
-                <h4 className="text-body-sm-medium font-semibold text-sekkha-ink">Koleksi Lencana</h4>
+                <h4 className="text-body-sm-medium font-semibold text-sekkha-ink">Koleksi Lencana Umat</h4>
               </div>
 
               <div className="grid grid-cols-4 gap-2">

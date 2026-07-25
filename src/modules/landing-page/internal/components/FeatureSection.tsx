@@ -13,28 +13,33 @@ interface FeatureSectionProps {
 
 export function FeatureSection({ features }: FeatureSectionProps) {
   return (
-    <section aria-labelledby="features-heading" className="py-[96px]">
+    <section aria-labelledby="features-heading" id="features" className="relative py-[96px] overflow-hidden">
+      {/* Background ambient lighting */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[500px] bg-gradient-to-tr from-amber-100/30 via-teal-100/20 to-pink-100/30 blur-3xl pointer-events-none -z-10 rounded-full" />
+
       <div className="mx-auto w-full max-w-[1280px] px-4 md:px-8">
-        <motion.h2
-          id="features-heading"
-          className="text-heading-2 text-sekkha-ink text-center mb-4"
+        <motion.div
+          className="text-center mb-16"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6, ease: "easeOut" }}
         >
-          Apa yang Bisa Kamu Lakukan?
-        </motion.h2>
-        <motion.p
-          className="text-subtitle text-sekkha-slate text-center max-w-[560px] mx-auto mb-12"
-          initial={{ opacity: 0, y: 16 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6, delay: 0.1, ease: "easeOut" }}
-        >
-          Semua yang kamu butuhkan untuk tetap terhubung dengan komunitas vihara.
-        </motion.p>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <span className="inline-flex items-center gap-1.5 rounded-full glass-pill px-3.5 py-1 text-micro font-semibold text-sekkha-ink uppercase tracking-wider mb-3">
+            ⭐ Fitur Khusus Umat Remaja
+          </span>
+          <h2
+            id="features-heading"
+            className="text-heading-2 text-sekkha-ink text-center tracking-tight font-bold text-3xl sm:text-4xl md:text-5xl"
+          >
+            Apa yang Bisa Kamu Lakukan?
+          </h2>
+          <p className="text-subtitle text-sekkha-slate text-center max-w-[600px] mx-auto mt-4 text-base md:text-lg">
+            Semua fasilitas digital terpadu untuk umat remaja agar tetap terhubung, aktif, dan bertumbuh bersama vihara.
+          </p>
+        </motion.div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {features.map((feature, index) => (
             <FeatureCard
               key={index}

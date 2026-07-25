@@ -155,6 +155,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const logout = (): void => {
     authService.logout()
+    if (typeof window !== "undefined" && window.location.pathname !== "/") {
+      window.location.href = "/"
+    }
   }
 
   const initiateGoogleOAuth = (): void => {

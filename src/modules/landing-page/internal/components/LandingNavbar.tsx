@@ -49,7 +49,7 @@ function DesktopCTA({ authState }: { authState: AuthState }) {
     return (
       <div className="hidden md:flex items-center">
         <Button variant="primary" asChild>
-          <a href="/home">Dashboard</a>
+          <a href="/dashboard">Dashboard</a>
         </Button>
       </div>
     )
@@ -83,7 +83,7 @@ function MobileInlineCTA({ authState }: { authState: AuthState }) {
   if (authState === 'authenticated') {
     return (
       <Button variant="primary" asChild className="md:hidden text-body-sm px-4 py-2 h-auto">
-        <a href="/home">Dashboard</a>
+        <a href="/dashboard">Dashboard</a>
       </Button>
     )
   }
@@ -263,8 +263,8 @@ export function LandingNavbar({ authState, scrollY }: LandingNavbarProps) {
   return (
     <header
       className={cn(
-        'sticky top-0 z-50 h-16 bg-sekkha-canvas transition-shadow duration-200',
-        isScrolledPastNavbar && 'backdrop-blur-md bg-sekkha-canvas/80',
+        'sticky top-0 z-50 h-16 bg-sekkha-canvas transition-all duration-300',
+        isScrolledPastNavbar && 'backdrop-blur-md bg-white/80 glass-nav',
         hasScrolled && 'border-b border-sekkha-hairline shadow-sm',
       )}
     >

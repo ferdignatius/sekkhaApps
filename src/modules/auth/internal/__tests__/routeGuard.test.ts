@@ -190,7 +190,7 @@ describe("LoginPage — authenticated user accessing /login", () => {
     })
 
     await waitFor(() => {
-      expect(navigateMock).toHaveBeenCalledWith({ to: "/dashboard" })
+      expect(navigateMock).toHaveBeenCalledWith({ to: "/home" })
     })
   })
 })

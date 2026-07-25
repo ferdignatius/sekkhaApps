@@ -58,26 +58,26 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const mainNavItems = activeModules
     .flatMap((m) => m.navItems)
     .filter((item) => item.to !== "/notifications" && item.to !== "/home/profile")
-
   const pengurusNavItems = activeModules.flatMap((m) => m.pengurusNavItems ?? [])
   const configureSections = activeModules.flatMap((m) => m.configureSections ?? [])
 
   const roleLabel = role === "admin" ? "Admin Vihara" : role === "pengurus" ? "Pengurus" : "Umat"
 
-  // Close profile dropdown menu when clicking outside
+  // Close profile menu when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
+      if (
+        profileMenuRef.current &&
+        !profileMenuRef.current.contains(event.target as Node)
+      ) {
         setShowProfileMenu(false)
       }
     }
-    if (showProfileMenu) {
-      document.addEventListener("mousedown", handleClickOutside)
-    }
+    document.addEventListener("mousedown", handleClickOutside)
     return () => {
       document.removeEventListener("mousedown", handleClickOutside)
     }
-  }, [showProfileMenu])
+  }, [])
 
   return (
     <Sidebar collapsible="icon" className="border-r border-sekkha-hairline font-sans bg-white/95 backdrop-blur-md" {...props}>
@@ -105,7 +105,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
             </div>
           </button>
 
-          {/* Toggle Sidebar Expand / Collapse Button (Hidden when collapsed to prevent overlap) */}
+          {/* Toggle Sidebar Expand / Collapse Button */}
           <SidebarTrigger className="shrink-0 text-sekkha-slate hover:bg-sekkha-surface hover:text-sekkha-ink cursor-pointer group-data-[collapsible=icon]:hidden" />
         </div>
       </SidebarHeader>

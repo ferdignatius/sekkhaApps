@@ -325,10 +325,53 @@
 }
 
 
-/* ─── Custom Animations ─── */
-@layer utilities {
+  /* ─── Custom Glassmorphism & Animations ─── */
+  .glass-panel {
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    box-shadow: 0 10px 30px -10px rgba(5, 0, 56, 0.06), 0 4px 12px 0 rgba(255, 255, 255, 0.8) inset;
+  }
+
+  .glass-panel-dark {
+    background: rgba(28, 28, 30, 0.82);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.4), 0 1px 0 0 rgba(255, 255, 255, 0.1) inset;
+  }
+
+  .glass-pill {
+    background: rgba(255, 255, 255, 0.65);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    box-shadow: 0 2px 10px 0 rgba(0, 0, 0, 0.03);
+  }
+
+  .glass-nav {
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border-bottom: 1px solid rgba(224, 226, 232, 0.5);
+  }
+
   .animate-spin-slow {
     animation: spin 3s linear infinite;
+  }
+
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  .animate-pulse-slow {
+    animation: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
   }
 
   /* Hide scrollbar — used by WheelTimePicker drum columns */
@@ -340,3 +383,4 @@
     display: none;               /* Chrome / Safari / WebKit */
   }
 }
+

@@ -331,10 +331,10 @@ export function RecencyAlertsPage() {
             </div>
           )}
 
-          {/* Controls Bar: Search Input (Left), Sort Dropdown & Refresh Button (Right) */}
-          <div className="flex flex-col gap-3 rounded-2xl border border-sekkha-hairline-soft bg-sekkha-canvas p-4 md:flex-row md:items-center md:justify-between">
+          {/* Controls Bar: Search Input (Left), View Toggle & Filters (Right) */}
+          <div className="flex flex-col gap-2.5 rounded-2xl border border-sekkha-hairline-soft bg-sekkha-canvas p-3 sm:p-4 md:flex-row md:items-center md:justify-between">
             {/* Left: Search Input */}
-            <div className="relative flex-1 max-w-md">
+            <div className="relative w-full md:max-w-md">
               <SearchIcon className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-sekkha-muted" />
               <input
                 type="text"
@@ -346,78 +346,85 @@ export function RecencyAlertsPage() {
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-sekkha-slate hover:text-sekkha-ink"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-sekkha-slate hover:text-sekkha-ink cursor-pointer"
                 >
                   <XIcon className="size-4" />
                 </button>
               )}
             </div>
 
-            {/* Right: View Mode Toggle + Reset Level Filter + Sort Dropdown + Refresh Button */}
-            <div className="flex flex-wrap items-center gap-2 shrink-0">
-              {/* View Mode Toggle: Grid vs List */}
-              <div className="flex items-center rounded-xl border border-sekkha-hairline-soft bg-sekkha-surface p-1 shadow-2xs">
-                <button
-                  type="button"
-                  onClick={() => setViewMode("grid")}
-                  className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-caption-bold transition cursor-pointer ${
-                    viewMode === "grid"
-                      ? "bg-white font-bold text-sekkha-ink shadow-2xs"
-                      : "text-sekkha-slate hover:text-sekkha-ink"
-                  }`}
-                  title="Tampilan Grid (Kartu)"
-                >
-                  <LayoutGridIcon className="size-4" />
-                  <span className="hidden sm:inline">Grid</span>
-                </button>
+            {/* Right: Controls Group (View Toggle + Sort Dropdown + Refresh Button + Reset Filter) */}
+            <div className="flex flex-col gap-2 w-full md:w-auto">
+              <div className="flex items-center gap-2 w-full justify-between">
+                {/* 1. View Mode Toggle */}
+                <div className="flex items-center rounded-xl border border-sekkha-hairline-soft bg-sekkha-surface p-1 shadow-2xs shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setViewMode("grid")}
+                    className={`flex items-center justify-center p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg text-caption-bold transition cursor-pointer ${
+                      viewMode === "grid"
+                        ? "bg-white font-bold text-sekkha-ink shadow-2xs"
+                        : "text-sekkha-slate hover:text-sekkha-ink"
+                    }`}
+                    title="Tampilan Grid (Kartu)"
+                  >
+                    <LayoutGridIcon className="size-4" />
+                    <span className="hidden sm:inline ml-1">Grid</span>
+                  </button>
 
+                  <button
+                    type="button"
+                    onClick={() => setViewMode("list")}
+                    className={`flex items-center justify-center p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg text-caption-bold transition cursor-pointer ${
+                      viewMode === "list"
+                        ? "bg-white font-bold text-sekkha-ink shadow-2xs"
+                        : "text-sekkha-slate hover:text-sekkha-ink"
+                    }`}
+                    title="Tampilan Daftar (Tabel)"
+                  >
+                    <ListIcon className="size-4" />
+                    <span className="hidden sm:inline ml-1">Daftar</span>
+                  </button>
+                </div>
+
+                {/* 2. Sort Dropdown */}
+                <div className="flex items-center gap-1 rounded-xl border border-sekkha-hairline-soft bg-sekkha-surface px-2.5 py-1.5 text-caption-bold text-sekkha-ink min-w-0 flex-1 sm:flex-none">
+                  <ArrowUpDownIcon className="size-3.5 text-sekkha-muted shrink-0" />
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    className="w-full bg-transparent text-caption-bold text-sekkha-ink outline-none cursor-pointer truncate"
+                  >
+                    <option value="longest_absence">Paling Lama Absen</option>
+                    <option value="consecutive_missed">Absen Berturut-turut</option>
+                    <option value="name">Nama (A-Z)</option>
+                  </select>
+                </div>
+
+                {/* 3. Refresh Button */}
                 <button
-                  type="button"
-                  onClick={() => setViewMode("list")}
-                  className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-caption-bold transition cursor-pointer ${
-                    viewMode === "list"
-                      ? "bg-white font-bold text-sekkha-ink shadow-2xs"
-                      : "text-sekkha-slate hover:text-sekkha-ink"
-                  }`}
-                  title="Tampilan Daftar (Tabel)"
+                  onClick={() => loadData(true)}
+                  disabled={isRefreshing}
+                  className="flex items-center justify-center gap-1.5 rounded-xl border border-sekkha-hairline-soft bg-sekkha-surface p-2 sm:px-3 sm:py-1.5 text-caption-bold font-bold text-sekkha-ink transition hover:bg-sekkha-hairline-soft disabled:opacity-50 cursor-pointer shrink-0"
+                  title="Muat ulang data"
                 >
-                  <ListIcon className="size-4" />
-                  <span className="hidden sm:inline">Daftar</span>
+                  <RefreshCwIcon className={`size-4 ${isRefreshing ? "animate-spin" : ""}`} />
+                  <span className="hidden sm:inline">Refresh</span>
                 </button>
               </div>
 
+              {/* Reset Level Filter Badge (If filter is active) */}
               {activeLevel !== "all" && (
-                <button
-                  onClick={() => setActiveLevel("all")}
-                  className="inline-flex items-center gap-1 rounded-xl bg-sekkha-brand-blue/10 px-3 py-2 text-caption-bold font-bold text-sekkha-brand-blue transition hover:bg-sekkha-brand-blue/20 cursor-pointer"
-                >
-                  <span>Reset Filter ({activeLevel})</span>
-                  <XIcon className="size-3.5" />
-                </button>
+                <div className="flex items-center justify-end">
+                  <button
+                    onClick={() => setActiveLevel("all")}
+                    className="inline-flex items-center gap-1 rounded-lg bg-sekkha-brand-blue/10 px-2.5 py-1 text-micro-bold font-bold text-sekkha-brand-blue transition hover:bg-sekkha-brand-blue/20 cursor-pointer"
+                  >
+                    <span>Reset Filter ({activeLevel})</span>
+                    <XIcon className="size-3" />
+                  </button>
+                </div>
               )}
-
-              <div className="flex items-center gap-1.5 border-l border-sekkha-hairline-soft pl-2">
-                <ArrowUpDownIcon className="size-4 text-sekkha-muted" />
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="rounded-xl border border-sekkha-hairline-soft bg-sekkha-surface px-3 py-2 text-caption-bold text-sekkha-ink outline-none cursor-pointer"
-                >
-                  <option value="longest_absence">Paling Lama Absen</option>
-                  <option value="consecutive_missed">Absen Berturut-turut</option>
-                  <option value="name">Nama Member (A-Z)</option>
-                </select>
-              </div>
-
-              <button
-                onClick={() => loadData(true)}
-                disabled={isRefreshing}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-sekkha-hairline-soft bg-sekkha-surface px-3 py-2 text-caption-bold font-bold text-sekkha-ink transition hover:bg-sekkha-hairline-soft disabled:opacity-50 cursor-pointer"
-                title="Muat ulang data"
-              >
-                <RefreshCwIcon className={`size-4 ${isRefreshing ? "animate-spin" : ""}`} />
-                <span>Refresh</span>
-              </button>
             </div>
           </div>
 
@@ -574,7 +581,7 @@ export function RecencyAlertsPage() {
           ) : (
             /* ── LIST VIEW (TABEL DAFTAR BARIS) ── */
             <div className="overflow-x-auto rounded-2xl border border-sekkha-hairline-soft bg-sekkha-canvas shadow-xs">
-              <table className="w-full text-left border-collapse">
+              <table className="w-full text-left border-collapse min-w-[660px]">
                 <thead>
                   <tr className="border-b border-sekkha-hairline-soft bg-sekkha-surface/60 text-micro font-extrabold uppercase tracking-wider text-sekkha-slate">
                     <th className="px-4 py-3.5">Member</th>
@@ -713,15 +720,15 @@ export function RecencyAlertsPage() {
 
           {/* ── PAGINATION CONTROLS BAR ── */}
           {!isLoading && members.length > 0 && (
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-2xl border border-sekkha-hairline-soft bg-sekkha-canvas p-4 text-caption text-sekkha-slate shadow-2xs">
+            <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between rounded-2xl border border-sekkha-hairline-soft bg-sekkha-canvas p-3 sm:p-4 text-caption text-sekkha-slate shadow-2xs">
               {/* Left: Range Info & Page Size Select */}
-              <div className="flex flex-wrap items-center gap-3">
-                <span>
-                  Menampilkan <strong className="text-sekkha-ink">{startIndex + 1}</strong> - <strong className="text-sekkha-ink">{endIndex}</strong> dari <strong className="text-sekkha-ink">{totalItems}</strong> member
+              <div className="flex items-center justify-between gap-2 w-full sm:w-auto sm:justify-start">
+                <span className="text-micro sm:text-caption">
+                  Menampilkan <strong className="text-sekkha-ink">{startIndex + 1}</strong>–<strong className="text-sekkha-ink">{endIndex}</strong> dari <strong className="text-sekkha-ink">{totalItems}</strong> member
                 </span>
 
-                <div className="flex items-center gap-1.5 border-l border-sekkha-hairline-soft pl-3">
-                  <span className="text-micro text-sekkha-slate">Tampilkan:</span>
+                <div className="flex items-center gap-1.5 sm:border-l sm:border-sekkha-hairline-soft sm:pl-3">
+                  <span className="hidden sm:inline text-micro text-sekkha-slate">Tampilkan:</span>
                   <select
                     value={pageSize}
                     onChange={(e) => {
@@ -738,7 +745,7 @@ export function RecencyAlertsPage() {
               </div>
 
               {/* Right: Page Navigation Buttons */}
-              <div className="flex items-center gap-1">
+              <div className="flex items-center justify-center sm:justify-end gap-1 w-full sm:w-auto overflow-x-auto py-0.5">
                 <button
                   type="button"
                   onClick={() => setCurrentPage(1)}

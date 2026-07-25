@@ -6,6 +6,9 @@ import {
   UserCheckIcon,
   ArrowUpDownIcon,
   ChevronRightIcon,
+  ChevronLeftIcon,
+  ChevronsLeftIcon,
+  ChevronsRightIcon,
   XIcon,
   MessageCircleIcon,
   CalendarIcon,
@@ -13,6 +16,8 @@ import {
   ExternalLinkIcon,
   SaveIcon,
   CheckCircle2Icon,
+  LayoutGridIcon,
+  ListIcon,
 } from "lucide-react"
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
 import {
@@ -109,6 +114,11 @@ export function RecencyAlertsPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [sortBy, setSortBy] = useState("longest_absence")
 
+  // View Mode & Pagination State
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
+  const [currentPage, setCurrentPage] = useState<number>(1)
+  const [pageSize, setPageSize] = useState<number>(12) // Default 12 card
+
   // Modal Detail State
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
   const [memberDetail, setMemberDetail] = useState<MemberDetailResponse | null>(null)
@@ -144,10 +154,12 @@ export function RecencyAlertsPage() {
   }
 
   useEffect(() => {
+    setCurrentPage(1)
     loadData(true)
   }, [activeLevel, sortBy])
 
   useEffect(() => {
+    setCurrentPage(1)
     const timer = setTimeout(() => {
       loadData(false)
     }, 300)
@@ -222,6 +234,14 @@ export function RecencyAlertsPage() {
       [userId]: true,
     }))
   }
+
+  // Pagination Calculations
+  const totalItems = members.length
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize))
+  const validCurrentPage = Math.min(currentPage, totalPages)
+  const startIndex = totalItems > 0 ? (validCurrentPage - 1) * pageSize : 0
+  const endIndex = Math.min(startIndex + pageSize, totalItems)
+  const paginatedMembers = members.slice(startIndex, endIndex)
 
   return (
     <main className="min-h-screen pb-24 md:pb-12">
@@ -333,12 +353,43 @@ export function RecencyAlertsPage() {
               )}
             </div>
 
-            {/* Right: Reset Level Filter (if active) + Sort Dropdown + Refresh Button */}
+            {/* Right: View Mode Toggle + Reset Level Filter + Sort Dropdown + Refresh Button */}
             <div className="flex flex-wrap items-center gap-2 shrink-0">
+              {/* View Mode Toggle: Grid vs List */}
+              <div className="flex items-center rounded-xl border border-sekkha-hairline-soft bg-sekkha-surface p-1 shadow-2xs">
+                <button
+                  type="button"
+                  onClick={() => setViewMode("grid")}
+                  className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-caption-bold transition cursor-pointer ${
+                    viewMode === "grid"
+                      ? "bg-white font-bold text-sekkha-ink shadow-2xs"
+                      : "text-sekkha-slate hover:text-sekkha-ink"
+                  }`}
+                  title="Tampilan Grid (Kartu)"
+                >
+                  <LayoutGridIcon className="size-4" />
+                  <span className="hidden sm:inline">Grid</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setViewMode("list")}
+                  className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-caption-bold transition cursor-pointer ${
+                    viewMode === "list"
+                      ? "bg-white font-bold text-sekkha-ink shadow-2xs"
+                      : "text-sekkha-slate hover:text-sekkha-ink"
+                  }`}
+                  title="Tampilan Daftar (Tabel)"
+                >
+                  <ListIcon className="size-4" />
+                  <span className="hidden sm:inline">Daftar</span>
+                </button>
+              </div>
+
               {activeLevel !== "all" && (
                 <button
                   onClick={() => setActiveLevel("all")}
-                  className="inline-flex items-center gap-1 rounded-xl bg-sekkha-brand-blue/10 px-3 py-2 text-caption-bold font-bold text-sekkha-brand-blue transition hover:bg-sekkha-brand-blue/20"
+                  className="inline-flex items-center gap-1 rounded-xl bg-sekkha-brand-blue/10 px-3 py-2 text-caption-bold font-bold text-sekkha-brand-blue transition hover:bg-sekkha-brand-blue/20 cursor-pointer"
                 >
                   <span>Reset Filter ({activeLevel})</span>
                   <XIcon className="size-3.5" />
@@ -350,7 +401,7 @@ export function RecencyAlertsPage() {
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="rounded-xl border border-sekkha-hairline-soft bg-sekkha-surface px-3 py-2 text-caption-bold text-sekkha-ink outline-none"
+                  className="rounded-xl border border-sekkha-hairline-soft bg-sekkha-surface px-3 py-2 text-caption-bold text-sekkha-ink outline-none cursor-pointer"
                 >
                   <option value="longest_absence">Paling Lama Absen</option>
                   <option value="consecutive_missed">Absen Berturut-turut</option>
@@ -361,7 +412,7 @@ export function RecencyAlertsPage() {
               <button
                 onClick={() => loadData(true)}
                 disabled={isRefreshing}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-sekkha-hairline-soft bg-sekkha-surface px-3 py-2 text-caption-bold font-bold text-sekkha-ink transition hover:bg-sekkha-hairline-soft disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-sekkha-hairline-soft bg-sekkha-surface px-3 py-2 text-caption-bold font-bold text-sekkha-ink transition hover:bg-sekkha-hairline-soft disabled:opacity-50 cursor-pointer"
                 title="Muat ulang data"
               >
                 <RefreshCwIcon className={`size-4 ${isRefreshing ? "animate-spin" : ""}`} />
@@ -370,7 +421,7 @@ export function RecencyAlertsPage() {
             </div>
           </div>
 
-          {/* Member Card Grid */}
+          {/* Member Content (Grid / List View) */}
           {isLoading ? (
             <div className="flex h-64 items-center justify-center rounded-2xl border border-sekkha-hairline-soft bg-sekkha-canvas">
               <div className="flex flex-col items-center gap-2 text-sekkha-muted">
@@ -384,9 +435,10 @@ export function RecencyAlertsPage() {
               <p className="mt-2 text-body-sm-medium font-bold text-sekkha-ink">Tidak ada member ditemukan</p>
               <p className="text-caption text-sekkha-slate">Coba ubah kata kunci pencarian atau klik kartu mini dashboard untuk memfilter.</p>
             </div>
-          ) : (
+          ) : viewMode === "grid" ? (
+            /* ── GRID VIEW ── */
             <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-              {members.map((m) => {
+              {paginatedMembers.map((m) => {
                 const overrideLevel = userStatusOverrides[m.userId]
                 const effectiveLevel = overrideLevel || m.level
                 const config = LEVEL_CONFIG[effectiveLevel]
@@ -507,8 +559,9 @@ export function RecencyAlertsPage() {
                         </a>
 
                         <button
+                          type="button"
                           onClick={() => handleOpenDetail(m.userId)}
-                          className="inline-flex items-center justify-center gap-1 rounded-xl border border-sekkha-hairline-soft bg-sekkha-surface px-3 py-2 text-caption-bold font-bold text-sekkha-ink transition hover:bg-sekkha-hairline-soft"
+                          className="inline-flex items-center justify-center gap-1 rounded-xl border border-sekkha-hairline-soft bg-sekkha-surface px-3 py-2 text-caption-bold font-bold text-sekkha-ink transition hover:bg-sekkha-hairline-soft cursor-pointer"
                         >
                           Detail <ChevronRightIcon className="size-4" />
                         </button>
@@ -517,6 +570,233 @@ export function RecencyAlertsPage() {
                   </div>
                 )
               })}
+            </div>
+          ) : (
+            /* ── LIST VIEW (TABEL DAFTAR BARIS) ── */
+            <div className="overflow-x-auto rounded-2xl border border-sekkha-hairline-soft bg-sekkha-canvas shadow-xs">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-sekkha-hairline-soft bg-sekkha-surface/60 text-micro font-extrabold uppercase tracking-wider text-sekkha-slate">
+                    <th className="px-4 py-3.5">Member</th>
+                    <th className="px-4 py-3.5">Status Risk</th>
+                    <th className="px-4 py-3.5 text-center">Event Dilewati</th>
+                    <th className="px-4 py-3.5">Status Action</th>
+                    <th className="px-4 py-3.5 text-center">Tren 4 Minggu</th>
+                    <th className="px-4 py-3.5 text-right">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-sekkha-hairline-soft/80 text-body-sm">
+                  {paginatedMembers.map((m) => {
+                    const overrideLevel = userStatusOverrides[m.userId]
+                    const effectiveLevel = overrideLevel || m.level
+                    const config = LEVEL_CONFIG[effectiveLevel]
+
+                    const actionId = userActionStatuses[m.userId] || (followedUpUserIds[m.userId] ? "sapa_wa" : "none")
+                    const actionConfig = ACTION_STATUS_OPTIONS.find((a) => a.id === actionId) || ACTION_STATUS_OPTIONS[0]
+
+                    const missedCount = Math.min(4, Math.max(0, m.consecutiveMissedEvents))
+                    const attendedCount = 4 - missedCount
+
+                    return (
+                      <tr key={m.userId} className="hover:bg-sekkha-surface/50 transition-colors">
+                        {/* Member Info */}
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-3">
+                            <div className="relative flex size-9 shrink-0 items-center justify-center rounded-xl bg-sekkha-brand-blue/10 text-caption-bold font-bold text-sekkha-brand-blue overflow-hidden shadow-2xs">
+                              {m.avatarUrl ? (
+                                <img src={m.avatarUrl} alt={m.name} className="size-full object-cover" />
+                              ) : (
+                                m.name.slice(0, 2).toUpperCase()
+                              )}
+                            </div>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <p className="font-bold text-sekkha-ink truncate">{m.name}</p>
+                                <span className="rounded-md bg-sekkha-surface px-1.5 py-0.2 text-[9px] font-bold uppercase tracking-wider text-sekkha-slate">
+                                  {m.role}
+                                </span>
+                              </div>
+                              <p className="text-micro text-sekkha-slate truncate">{m.email}</p>
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Status Risk Level */}
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-1.5">
+                            <span className={`inline-flex items-center gap-1 rounded-xl border px-2 py-0.5 text-micro-bold font-bold ${config.badgeBg}`}>
+                              {config.shortLabel}
+                            </span>
+                            {overrideLevel && (
+                              <span className="text-[9px] font-extrabold text-sekkha-brand-blue bg-sekkha-brand-blue/10 px-1.5 py-0.2 rounded-md">
+                                Override
+                              </span>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* Event Dilewati */}
+                        <td className="px-4 py-3 text-center">
+                          <span className="inline-flex items-center rounded-lg bg-sekkha-surface border border-sekkha-hairline-soft px-2.5 py-1 text-caption-bold font-extrabold text-sekkha-ink">
+                            {m.consecutiveMissedEvents}x Event
+                          </span>
+                        </td>
+
+                        {/* Status Action */}
+                        <td className="px-4 py-3">
+                          <span className={`inline-flex items-center gap-1 rounded-xl border px-2.5 py-1 text-micro-bold font-bold ${actionConfig.color}`}>
+                            <span>{actionConfig.icon}</span>
+                            <span>{actionConfig.label}</span>
+                          </span>
+                        </td>
+
+                        {/* Tren 4 Minggu */}
+                        <td className="px-4 py-3">
+                          <div className="flex items-center justify-center gap-1" title="Kilas Presensi 4 Minggu (1 Bulan)">
+                            {Array.from({ length: attendedCount }).map((_, i) => (
+                              <span
+                                key={`att-${i}`}
+                                title={`Minggu ${i + 1}: Hadir`}
+                                className="size-2.5 rounded-full bg-emerald-500 shadow-xs"
+                              />
+                            ))}
+                            {Array.from({ length: missedCount }).map((_, i) => (
+                              <span
+                                key={`miss-${i}`}
+                                title={`Minggu ${attendedCount + i + 1}: Absen`}
+                                className="size-2.5 rounded-full bg-rose-400 opacity-80"
+                              />
+                            ))}
+                          </div>
+                        </td>
+
+                        {/* Aksi */}
+                        <td className="px-4 py-3 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <a
+                              href={`https://wa.me/?text=${encodeURIComponent(
+                                `Halo Kak ${m.name}, semoga sehat selalu! Kapan-kapan kalau sempat, yuk kumpul lagi di Vihara 😊`
+                              )}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleDirectWA(m.userId)
+                              }}
+                              className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-micro-bold font-bold transition ${
+                                actionId !== "none"
+                                  ? "bg-emerald-600 text-white border-emerald-600"
+                                  : "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500 hover:text-white"
+                              }`}
+                            >
+                              <MessageCircleIcon className="size-3.5" />
+                              <span>{actionId !== "none" ? "Done" : "Sapa WA"}</span>
+                            </a>
+
+                            <button
+                              type="button"
+                              onClick={() => handleOpenDetail(m.userId)}
+                              className="inline-flex items-center gap-1 rounded-lg border border-sekkha-hairline-soft bg-sekkha-surface px-2.5 py-1.5 text-micro-bold font-bold text-sekkha-ink hover:bg-sekkha-hairline-soft cursor-pointer"
+                            >
+                              <span>Detail</span>
+                              <ChevronRightIcon className="size-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* ── PAGINATION CONTROLS BAR ── */}
+          {!isLoading && members.length > 0 && (
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-2xl border border-sekkha-hairline-soft bg-sekkha-canvas p-4 text-caption text-sekkha-slate shadow-2xs">
+              {/* Left: Range Info & Page Size Select */}
+              <div className="flex flex-wrap items-center gap-3">
+                <span>
+                  Menampilkan <strong className="text-sekkha-ink">{startIndex + 1}</strong> - <strong className="text-sekkha-ink">{endIndex}</strong> dari <strong className="text-sekkha-ink">{totalItems}</strong> member
+                </span>
+
+                <div className="flex items-center gap-1.5 border-l border-sekkha-hairline-soft pl-3">
+                  <span className="text-micro text-sekkha-slate">Tampilkan:</span>
+                  <select
+                    value={pageSize}
+                    onChange={(e) => {
+                      setPageSize(Number(e.target.value))
+                      setCurrentPage(1)
+                    }}
+                    className="rounded-lg border border-sekkha-hairline-soft bg-sekkha-surface px-2 py-1 text-micro-bold text-sekkha-ink outline-none cursor-pointer"
+                  >
+                    <option value={12}>12 / hal</option>
+                    <option value={24}>24 / hal</option>
+                    <option value={48}>48 / hal</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Right: Page Navigation Buttons */}
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage(1)}
+                  disabled={validCurrentPage === 1}
+                  className="flex size-8 items-center justify-center rounded-lg border border-sekkha-hairline-soft bg-sekkha-surface text-sekkha-slate hover:bg-sekkha-hairline-soft disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
+                  title="Halaman Pertama"
+                >
+                  <ChevronsLeftIcon className="size-4" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                  disabled={validCurrentPage === 1}
+                  className="flex size-8 items-center justify-center rounded-lg border border-sekkha-hairline-soft bg-sekkha-surface text-sekkha-slate hover:bg-sekkha-hairline-soft disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
+                  title="Halaman Sebelumnya"
+                >
+                  <ChevronLeftIcon className="size-4" />
+                </button>
+
+                {/* Page Numbers */}
+                <div className="flex items-center gap-1 px-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                    <button
+                      key={page}
+                      type="button"
+                      onClick={() => setCurrentPage(page)}
+                      className={`flex size-8 items-center justify-center rounded-lg text-micro-bold transition cursor-pointer ${
+                        page === validCurrentPage
+                          ? "bg-sekkha-brand-blue font-bold text-white shadow-2xs"
+                          : "border border-sekkha-hairline-soft bg-sekkha-surface text-sekkha-slate hover:bg-sekkha-hairline-soft"
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                  disabled={validCurrentPage === totalPages}
+                  className="flex size-8 items-center justify-center rounded-lg border border-sekkha-hairline-soft bg-sekkha-surface text-sekkha-slate hover:bg-sekkha-hairline-soft disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
+                  title="Halaman Selanjutnya"
+                >
+                  <ChevronRightIcon className="size-4" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage(totalPages)}
+                  disabled={validCurrentPage === totalPages}
+                  className="flex size-8 items-center justify-center rounded-lg border border-sekkha-hairline-soft bg-sekkha-surface text-sekkha-slate hover:bg-sekkha-hairline-soft disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
+                  title="Halaman Terakhir"
+                >
+                  <ChevronsRightIcon className="size-4" />
+                </button>
+              </div>
             </div>
           )}
         </div>

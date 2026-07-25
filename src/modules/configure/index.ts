@@ -7,6 +7,7 @@ export { EventTypePage } from "./internal/components/EventTypePage"
 export { AchievementPage } from "./internal/components/AchievementPage"
 export { EventTimePage } from "./internal/components/EventTimePage"
 export { AttendanceBadgePage } from "./internal/components/AttendanceBadgePage"
+export { ThresholdPage } from "./internal/components/ThresholdPage"
 
 export const configureModule: ModuleDefinition = {
   name: "configure",
@@ -37,7 +38,7 @@ export const configureModule: ModuleDefinition = {
       label: "Early Warning",
       icon: "Bell",
       items: [
-        { label: "Threshold", to: "/configure/early-warning/threshold", icon: "Bell", hasRoute: false },
+        { label: "Threshold", to: "/configure/early-warning/threshold", icon: "Bell", hasRoute: true },
       ],
     },
     {

@@ -21,8 +21,8 @@ import {
 } from "lucide-react"
 import { AttendanceScanModal } from "./AttendanceScanModal"
 import { AttendanceListSheet } from "./AttendanceListSheet"
-import type { EventListItem, RsvpStatus, UserRole, AttendanceRecord, EventTag, EventStatus } from "../types"
-import { EVENT_TAG_COLORS } from "../types"
+import type { EventListItem, RsvpStatus, UserRole, AttendanceRecord, EventStatus } from "../types"
+import { getCategoryColor } from "../masterdata"
 
 interface EventDetailSheetProps {
   event: EventListItem
@@ -75,8 +75,8 @@ export function EventDetailSheet({
   const canEdit = isPengurus && !isActive && !isClosed
 
   const { dayName, dateStr, timeStr } = formatFullDate(event.event_date)
-  const tag = (event.tag ?? event.event_type) as EventTag
-  const tagColors = EVENT_TAG_COLORS[tag] ?? EVENT_TAG_COLORS.rutin
+  const tag = event.tag ?? event.event_type ?? "rutin"
+  const colorInfo = getCategoryColor(tag)
 
   // Handle Activation Trigger
   function handleActivateClick() {
@@ -122,9 +122,12 @@ export function EventDetailSheet({
           <div className="space-y-1.5 min-w-0 flex-1">
             {/* Tag Badges */}
             <div className="flex items-center gap-2 flex-wrap">
-              <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-micro-bold capitalize ${tagColors.bg} ${tagColors.text}`}>
-                <span className={`h-1.5 w-1.5 rounded-full ${tagColors.dot}`} />
-                {tag}
+              <span
+                className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-micro-bold capitalize border font-extrabold shadow-2xs"
+                style={colorInfo.bgStyle}
+              >
+                <span className="h-1.5 w-1.5 rounded-full shrink-0" style={colorInfo.dotStyle} />
+                {colorInfo.name}
               </span>
 
               {/* Status Badge */}

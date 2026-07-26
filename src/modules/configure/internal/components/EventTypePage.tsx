@@ -1,13 +1,13 @@
 // feature/configure/components/EventTypePage
-// Master Data: Event Category & Type management — with Custom Autofill Templates for Event Creation.
+// Master Data: Event Category & Type management — with Shadcn Color Wheel Picker, Role Access Permissions, & Custom Autofill Templates.
 
 import { useState } from "react"
-import { PlusIcon, PencilIcon, TrashIcon, TagIcon, SparklesIcon, CheckIcon, Wand2Icon } from "lucide-react"
+import { PlusIcon, PencilIcon, TrashIcon, TagIcon, SparklesIcon, CheckIcon, Wand2Icon, ShieldCheckIcon } from "lucide-react"
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
 import { useAuth } from "@/modules/auth"
-import { getMasterCategories } from "@/modules/events/internal/masterdata"
-import type { EventCategoryItem } from "@/modules/events/internal/masterdata"
-import { WheelTimePickerTrigger } from "@/components/ui/WheelTimePicker"
+import { getMasterCategories, ALL_USER_ROLES } from "@/modules/events/internal/masterdata"
+import type { EventCategoryItem, UserRoleName } from "@/modules/events/internal/masterdata"
+import { ColorWheelPicker } from "@/components/ui/ColorWheelPicker"
 
 export function EventTypePage() {
   const { authState } = useAuth()
@@ -17,12 +17,12 @@ export function EventTypePage() {
   const [editing, setEditing] = useState<EventCategoryItem | null>(null)
   const [showModal, setShowModal] = useState(false)
 
-  const [tag, setTag] = useState("")
   const [name, setName] = useState("")
+  const [colorHex, setColorHex] = useState("#0284c7")
   const [autofillTitle, setAutofillTitle] = useState("")
   const [autofillLocation, setAutofillLocation] = useState("")
   const [autofillDesc, setAutofillDesc] = useState("")
-  const [autofillTime, setAutofillTime] = useState("08:00")
+  const [targetRoles, setTargetRoles] = useState<string[]>(["admin", "pengurus", "aktivis", "umat"])
 
   function saveToStorage(updated: EventCategoryItem[]) {
     setCategories(updated)
@@ -32,12 +32,12 @@ export function EventTypePage() {
   }
 
   function resetForm() {
-    setTag("")
     setName("")
+    setColorHex("#0284c7")
     setAutofillTitle("")
     setAutofillLocation("")
     setAutofillDesc("")
-    setAutofillTime("08:00")
+    setTargetRoles(["admin", "pengurus", "aktivis", "umat"])
     setEditing(null)
     setShowModal(false)
   }
@@ -48,31 +48,44 @@ export function EventTypePage() {
   }
 
   function openEdit(item: EventCategoryItem) {
-    setTag(item.tag)
     setName(item.name)
-    setAutofillTitle(`Kegiatan ${item.name} Vihara`)
-    setAutofillLocation("Vihara Sekkha")
-    setAutofillDesc(`Kegiatan ${item.name.toLowerCase()} bersama Umat Vihara Sekkha.`)
-    setAutofillTime(item.autofillTime ?? "08:00")
+    setColorHex(item.colorHex || "#0284c7")
+    setAutofillTitle(item.autofillTitle ?? `Kegiatan ${item.name} Vihara`)
+    setAutofillLocation(item.autofillLocation ?? "Vihara Sekkha")
+    setAutofillDesc(item.autofillDesc ?? `Kegiatan ${item.name.toLowerCase()} bersama Umat Vihara Sekkha.`)
+    setTargetRoles(item.target_roles && item.target_roles.length > 0 ? item.target_roles : ["admin", "pengurus", "aktivis", "umat"])
     setEditing(item)
     setShowModal(true)
   }
 
+  function toggleRolePermission(roleId: UserRoleName) {
+    if (targetRoles.includes(roleId)) {
+      if (targetRoles.length === 1) return // Keep at least 1 role selected
+      setTargetRoles(targetRoles.filter(r => r !== roleId))
+    } else {
+      setTargetRoles([...targetRoles, roleId])
+    }
+  }
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!name.trim() || !tag.trim()) return
+    if (!name.trim()) return
 
-    const tagKey = tag.toLowerCase().replace(/\s+/g, "_")
+    const tagKey = editing ? editing.tag : name.toLowerCase().trim().replace(/\s+/g, "_")
     const newCat: EventCategoryItem = {
       id: editing ? editing.id : `cat-${Date.now()}`,
       tag: tagKey,
-      name,
+      name: name.trim(),
+      colorHex: colorHex,
       bg: editing?.bg ?? "bg-sky-100/90",
       text: editing?.text ?? "text-sky-800",
       dot: editing?.dot ?? "bg-sky-500",
       points: editing?.points ?? 50,
       is_active: editing?.is_active ?? true,
-      autofillTime,
+      autofillTitle: autofillTitle.trim(),
+      autofillLocation: autofillLocation.trim(),
+      autofillDesc: autofillDesc.trim(),
+      target_roles: targetRoles,
     }
 
     if (editing) {
@@ -110,7 +123,7 @@ export function EventTypePage() {
               </div>
               <div className="min-w-0">
                 <h1 className="text-body-base sm:text-heading-5 font-extrabold text-sekkha-ink">Master Data Kategori Event</h1>
-                <p className="text-micro text-sekkha-slate">Kelola kategori event dan template autofill untuk formulir kegiatan</p>
+                <p className="text-micro text-sekkha-slate">Kelola kategori event, skema warna, hak akses role pengguna, dan template autofill formulir</p>
               </div>
             </div>
 
@@ -129,86 +142,107 @@ export function EventTypePage() {
           {/* Table Container */}
           <div className="rounded-2xl border border-sekkha-hairline bg-white/95 backdrop-blur-md p-4 shadow-xs">
             <div className="overflow-x-auto scrollbar-none">
-              <table className="w-full min-w-[650px] text-left text-caption border-collapse">
+              <table className="w-full min-w-[700px] text-left text-caption border-collapse">
                 <thead>
                   <tr className="border-b border-sekkha-hairline-soft bg-sekkha-canvas/60 text-micro-bold uppercase tracking-wider text-sekkha-slate">
-                    <th className="py-3 px-4">Nama Kategori</th>
-                    <th className="py-3 px-4">Kode Tag</th>
-                    <th className="py-3 px-4">Template Autofill Judul</th>
+                    <th className="py-3 px-4">Nama Kategori & Color Badge</th>
+                    <th className="py-3 px-4">Hak Akses Role Pengguna</th>
+                    <th className="py-3 px-4">Template Judul Autofill</th>
                     <th className="py-3 px-4 text-center">Status</th>
                     {isPengurusOrAdmin && <th className="py-3 px-4 text-right">Aksi</th>}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-sekkha-hairline-soft font-sans">
-                  {categories.map(c => (
-                    <tr key={c.id} className="hover:bg-sekkha-surface/60 transition-colors">
-                      <td className="py-3 px-4 font-bold text-sekkha-ink">
-                        <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-micro-bold capitalize ${c.bg} ${c.text}`}>
-                          <span className={`h-1.5 w-1.5 rounded-full ${c.dot}`} />
-                          {c.name}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 font-mono text-micro text-sekkha-slate">
-                        {c.tag}
-                      </td>
-                      <td className="py-3 px-4 text-sekkha-ink font-medium">
-                        <span className="flex items-center gap-1">
-                          <Wand2Icon className="size-3 text-sekkha-brand-blue" />
-                          <span>Kegiatan {c.name} Vihara</span>
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-center">
-                        {c.is_active !== false ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 border border-emerald-300 px-2.5 py-0.5 text-micro-bold text-emerald-800">
-                            <CheckIcon className="size-3" /> Aktif
+                  {categories.map(c => {
+                    const activeHex = c.colorHex || "#0284c7"
+                    const roles = c.target_roles && c.target_roles.length > 0 ? c.target_roles : ["admin", "pengurus", "aktivis", "umat"]
+                    return (
+                      <tr key={c.id} className="hover:bg-sekkha-surface/60 transition-colors">
+                        <td className="py-3 px-4 font-bold text-sekkha-ink">
+                          <span
+                            className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-micro-bold capitalize border font-extrabold shadow-2xs"
+                            style={{
+                              backgroundColor: `${activeHex}1a`,
+                              color: activeHex,
+                              borderColor: `${activeHex}40`,
+                            }}
+                          >
+                            <span className="h-1.5 w-1.5 rounded-full shrink-0" style={{ backgroundColor: activeHex }} />
+                            {c.name}
                           </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 border border-slate-300 px-2.5 py-0.5 text-micro-bold text-slate-500">
-                            Non-Aktif
-                          </span>
-                        )}
-                      </td>
-                      {isPengurusOrAdmin && (
-                        <td className="py-3 px-4 text-right">
-                          <div className="flex items-center justify-end gap-1.5">
-                            <button
-                              type="button"
-                              onClick={() => handleToggleActive(c.id)}
-                              className={`rounded-lg border px-2.5 py-1 text-micro-bold transition-all ${c.is_active !== false
-                                  ? "border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100"
-                                  : "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-                                }`}
-                              title={c.is_active !== false ? "Non-Aktifkan" : "Aktifkan"}
-                            >
-                              {c.is_active !== false ? "Non-Aktifkan" : "Aktifkan"}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => openEdit(c)}
-                              className="rounded-lg border border-sekkha-hairline bg-sekkha-canvas p-1.5 text-sekkha-ink hover:bg-blue-50 hover:text-sekkha-brand-blue transition-colors"
-                              title="Edit Kategori & Template Autofill"
-                            >
-                              <PencilIcon className="size-4" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleDelete(c.id)}
-                              className="rounded-lg border border-rose-200 bg-rose-50 p-1.5 text-rose-600 hover:bg-rose-100 transition-colors"
-                              title="Hapus Kategori"
-                            >
-                              <TrashIcon className="size-4" />
-                            </button>
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="flex flex-wrap items-center gap-1">
+                            {ALL_USER_ROLES.map(role => {
+                              const hasRole = roles.includes(role.id)
+                              if (!hasRole) return null
+                              return (
+                                <span key={role.id} className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold ${role.bg} ${role.text}`}>
+                                  {role.label}
+                                </span>
+                              )
+                            })}
                           </div>
                         </td>
-                      )}
-                    </tr>
-                  ))}
+                        <td className="py-3 px-4 text-sekkha-ink font-medium">
+                          <span className="flex items-center gap-1">
+                            <Wand2Icon className="size-3 text-sekkha-brand-blue shrink-0" />
+                            <span className="truncate max-w-xs">{c.autofillTitle || `Kegiatan ${c.name} Vihara`}</span>
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-center">
+                          {c.is_active !== false ? (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 border border-emerald-300 px-2.5 py-0.5 text-micro-bold text-emerald-800">
+                              <CheckIcon className="size-3" /> Aktif
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 border border-slate-300 px-2.5 py-0.5 text-micro-bold text-slate-500">
+                              Non-Aktif
+                            </span>
+                          )}
+                        </td>
+                        {isPengurusOrAdmin && (
+                          <td className="py-3 px-4 text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => handleToggleActive(c.id)}
+                                className={`rounded-lg border px-2.5 py-1 text-micro-bold transition-all ${c.is_active !== false
+                                    ? "border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100"
+                                    : "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                                  }`}
+                                title={c.is_active !== false ? "Non-Aktifkan" : "Aktifkan"}
+                              >
+                                {c.is_active !== false ? "Non-Aktifkan" : "Aktifkan"}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => openEdit(c)}
+                                className="rounded-lg border border-sekkha-hairline bg-sekkha-canvas p-1.5 text-sekkha-ink hover:bg-blue-50 hover:text-sekkha-brand-blue transition-colors"
+                                title="Edit Kategori, Warna, & Hak Akses"
+                              >
+                                <PencilIcon className="size-4" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDelete(c.id)}
+                                className="rounded-lg border border-rose-200 bg-rose-50 p-1.5 text-rose-600 hover:bg-rose-100 transition-colors"
+                                title="Hapus Kategori"
+                              >
+                                <TrashIcon className="size-4" />
+                              </button>
+                            </div>
+                          </td>
+                        )}
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>
           </div>
 
-          {/* Form Pop-Up Modal Sub-Dialog (Responsive Bottom Sheet on Mobile) */}
+          {/* Form Pop-Up Modal Sub-Dialog */}
           {showModal && (
             <div className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center bg-slate-900/60 backdrop-blur-md p-0 sm:p-4 animate-in fade-in-0">
               <div className="w-full sm:max-w-lg max-h-[92vh] sm:max-h-[90vh] rounded-t-[28px] sm:rounded-2xl border-t sm:border border-sekkha-hairline bg-white p-5 sm:p-6 shadow-2xl space-y-4 text-left font-sans overflow-y-auto animate-in slide-in-from-bottom-full sm:zoom-in-95 duration-200">
@@ -220,36 +254,71 @@ export function EventTypePage() {
                   <div className="flex items-center gap-2">
                     <SparklesIcon className="size-5 text-sekkha-brand-blue" />
                     <h3 className="text-body-base font-extrabold text-sekkha-ink">
-                      {editing ? "Edit Kategori & Autofill" : "Tambah Kategori Event Baru"}
+                      {editing ? "Edit Kategori & Hak Akses" : "Tambah Kategori Event Baru"}
                     </h3>
                   </div>
                   <button type="button" onClick={resetForm} className="text-sekkha-slate hover:text-sekkha-ink">✕</button>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-3.5">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <label className="text-caption font-bold text-sekkha-ink">Nama Kategori *</label>
-                      <input
-                        type="text"
-                        required
-                        value={name}
-                        onChange={e => setName(e.target.value)}
-                        placeholder="Misal: Youth / Sekolah Minggu"
-                        className="w-full h-11 rounded-xl border border-sekkha-hairline bg-sekkha-canvas px-3.5 text-caption font-bold text-sekkha-ink outline-none focus:border-sekkha-brand-blue"
-                      />
-                    </div>
+                  {/* Nama Kategori */}
+                  <div className="space-y-1">
+                    <label className="text-caption font-bold text-sekkha-ink">Nama Kategori *</label>
+                    <input
+                      type="text"
+                      required
+                      value={name}
+                      onChange={e => {
+                        const val = e.target.value
+                        setName(val)
+                        if (!editing) {
+                          setAutofillTitle(`Kegiatan ${val} Vihara`)
+                          setAutofillDesc(`Kegiatan ${val.toLowerCase()} bersama Umat Vihara Sekkha.`)
+                        }
+                      }}
+                      placeholder="Misal: Youth / Sekolah Minggu / Acara Pengurus"
+                      className="w-full h-11 rounded-xl border border-sekkha-hairline bg-sekkha-canvas px-3.5 text-caption font-bold text-sekkha-ink outline-none focus:border-sekkha-brand-blue"
+                    />
+                  </div>
 
-                    <div className="space-y-1">
-                      <label className="text-caption font-bold text-sekkha-ink">Kode Tag *</label>
-                      <input
-                        type="text"
-                        required
-                        value={tag}
-                        onChange={e => setTag(e.target.value)}
-                        placeholder="Misal: youth / sekolah_minggu"
-                        className="w-full h-11 rounded-xl border border-sekkha-hairline bg-sekkha-canvas px-3.5 text-caption font-bold text-sekkha-ink outline-none focus:border-sekkha-brand-blue"
-                      />
+                  {/* Color Wheel Picker Component */}
+                  <ColorWheelPicker
+                    color={colorHex}
+                    onChange={setColorHex}
+                    label="Warna Badge Kategori"
+                  />
+
+                  {/* Many-to-Many Target Roles Access Permissions */}
+                  <div className="p-3.5 rounded-2xl border border-purple-200 bg-purple-50/50 space-y-2">
+                    <p className="text-micro font-bold text-purple-900 uppercase tracking-wider flex items-center gap-1.5">
+                      <ShieldCheckIcon className="size-3.5 text-purple-700" />
+                      <span>Hak Akses Role Pengguna yang Boleh Melihat & Mengakses:</span>
+                    </p>
+                    <p className="text-micro text-purple-700">Jika role pengguna tidak dicentang, event kategori ini tidak akan muncul di kalender maupun daftar event mereka.</p>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+                      {ALL_USER_ROLES.map(role => {
+                        const isChecked = targetRoles.includes(role.id)
+                        return (
+                          <button
+                            key={role.id}
+                            type="button"
+                            onClick={() => toggleRolePermission(role.id)}
+                            className={`flex items-center justify-between px-3 py-2 rounded-xl text-caption-bold border transition-all ${
+                              isChecked
+                                ? "bg-white border-purple-400 text-purple-900 shadow-2xs font-extrabold ring-2 ring-purple-300/40"
+                                : "bg-slate-100/60 border-slate-200 text-slate-400"
+                            }`}
+                          >
+                            <span>{role.label}</span>
+                            <div className={`h-4 w-4 rounded-md flex items-center justify-center border ${
+                              isChecked ? "bg-purple-600 border-purple-600 text-white" : "border-slate-300 bg-white"
+                            }`}>
+                              {isChecked && <CheckIcon className="size-3 stroke-[3]" />}
+                            </div>
+                          </button>
+                        )
+                      })}
                     </div>
                   </div>
 
@@ -261,7 +330,7 @@ export function EventTypePage() {
                     </p>
 
                     <div className="space-y-1">
-                      <label className="text-micro-bold text-sekkha-ink">Template Judul Event Autofill:</label>
+                      <label className="text-micro-bold text-sekkha-ink">Judul Event:</label>
                       <input
                         type="text"
                         value={autofillTitle}
@@ -272,7 +341,7 @@ export function EventTypePage() {
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-micro-bold text-sekkha-ink">Template Lokasi Tempat Autofill:</label>
+                      <label className="text-micro-bold text-sekkha-ink">Lokasi Tempat:</label>
                       <input
                         type="text"
                         value={autofillLocation}
@@ -283,7 +352,7 @@ export function EventTypePage() {
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-micro-bold text-sekkha-ink">Template Deskripsi Event Autofill:</label>
+                      <label className="text-micro-bold text-sekkha-ink">Deskripsi Event:</label>
                       <input
                         type="text"
                         value={autofillDesc}
@@ -291,21 +360,6 @@ export function EventTypePage() {
                         placeholder="Misal: Sesi kebaktian pemuda, paritta, dan Dhammadesana."
                         className="w-full h-10 rounded-xl border border-sekkha-hairline bg-white px-3 text-caption font-semibold text-sekkha-ink outline-none focus:border-sekkha-brand-blue"
                       />
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="text-micro-bold text-sekkha-ink flex items-center gap-1">
-                        <span>⏰</span>
-                        <span>Template Jam Default Autofill:</span>
-                      </label>
-                      <div className="flex items-center gap-2">
-                        <WheelTimePickerTrigger
-                          value={autofillTime}
-                          onChange={setAutofillTime}
-                          label="Pilih Jam Default Autofill"
-                        />
-                      </div>
-                      <p className="text-micro text-sekkha-slate">Saat memilih kategori ini, jam event akan diisi otomatis sesuai waktu yang diatur.</p>
                     </div>
                   </div>
 

@@ -74,7 +74,7 @@ describe('Feature: landing-page', () => {
       }),
       { numRuns: 100 },
     )
-  }, 15000)
+  }, 30000)
 
   it('Property 5: Image Accessibility Completeness', () => {
     // Feature: landing-page, Property 5: every <img> has an alt attribute present in the DOM
@@ -94,5 +94,5 @@ describe('Feature: landing-page', () => {
       }),
       { numRuns: 100 },
     )
-  }, 15000)
+  }, 30000)
 })

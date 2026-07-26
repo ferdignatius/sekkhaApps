@@ -1,9 +1,9 @@
 // feature/events/components/EventCard
-// Event card in the list — glassmorphic style with rich visual indicators.
+// Event card in the list — dynamic category colors from Master Data.
 
 import { CalendarIcon, MapPinIcon, UsersIcon, ChevronRightIcon } from "lucide-react"
-import type { EventListItem, EventTag } from "../types"
-import { EVENT_TAG_COLORS } from "../types"
+import type { EventListItem } from "../types"
+import { getCategoryColor } from "../masterdata"
 
 interface EventCardProps {
   event: EventListItem
@@ -24,20 +24,21 @@ function formatDate(iso: string) {
 
 export function EventCard({ event, onClick }: EventCardProps) {
   const { day, time } = formatDate(event.event_date)
-  const tag = (event.tag ?? event.event_type) as EventTag
-  const tagColors = EVENT_TAG_COLORS[tag] ?? EVENT_TAG_COLORS.rutin
+  const tag = event.tag ?? event.event_type ?? "rutin"
+  const colorInfo = getCategoryColor(tag)
 
   return (
-    <div className="py-2.5 first:pt-0 last:pb-0 border-b border-sekkha-hairline-soft last:border-b-0">
+    <div className="py-2.5 first:pt-0 last:pb-0 border-b border-sekkha-hairline-soft last:border-b-0 text-left font-sans">
       <button
         type="button"
         onClick={onClick}
-        className="group relative w-full overflow-hidden rounded-xl bg-sekkha-canvas hover:bg-white p-3.5 sm:p-4 text-left transition-all hover:shadow-xs active:scale-[0.99] border border-sekkha-hairline hover:border-sekkha-brand-blue/40"
+        className="group relative w-full overflow-hidden rounded-xl bg-sekkha-canvas hover:bg-white p-3.5 sm:p-4 text-left transition-all hover:shadow-xs active:scale-[0.99] border border-sekkha-hairline hover:border-sekkha-brand-blue/40 cursor-pointer"
       >
         <div className="flex items-center gap-3.5">
-          {/* Pastel Color Accent Bar */}
+          {/* Dynamic Color Accent Bar */}
           <div
-            className={`h-11 w-1.5 shrink-0 rounded-full ${tagColors.dot}`}
+            className="h-11 w-1.5 shrink-0 rounded-full transition-all"
+            style={colorInfo.dotStyle}
             aria-hidden="true"
           />
 
@@ -46,9 +47,10 @@ export function EventCard({ event, onClick }: EventCardProps) {
             {/* Type tag */}
             <div className="flex flex-wrap items-center gap-2">
               <span
-                className={`rounded-full px-2.5 py-0.5 text-micro-bold capitalize ${tagColors.bg} ${tagColors.text}`}
+                className="rounded-full px-2.5 py-0.5 text-micro-bold capitalize border font-bold shadow-2xs"
+                style={colorInfo.bgStyle}
               >
-                {tag}
+                {colorInfo.name}
               </span>
             </div>
 

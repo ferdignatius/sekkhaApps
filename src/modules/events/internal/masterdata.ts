@@ -78,6 +78,7 @@ export interface EventTimePresetItem {
   day_of_week?: number // 0 = Minggu, 1 = Senin, ..., 6 = Sabtu, -1/undefined = Bebas/Semua Hari
   description?: string
   is_active?: boolean
+  target_category_tags?: string[] // Many-to-many: category tags this preset is applicable for (empty = all)
 }
 
 export const DAY_NAMES = [
@@ -91,10 +92,10 @@ export const DAY_NAMES = [
 ] as const
 
 export const DEFAULT_TIME_PRESETS: EventTimePresetItem[] = [
-  { id: "etp-1", label: "08:00 WIB (Puja Pagi)", time: "08:00", day_of_week: -1, description: "Jadwal Puja Bakti Pagi Umat & Pemuda", is_active: true },
-  { id: "etp-2", label: "14:00 WIB (Kebaktian Siang)", time: "14:00", day_of_week: 0, description: "Kebaktian Umum & Sekolah Minggu (Hari Minggu)", is_active: true },
-  { id: "etp-3", label: "18:30 WIB (Puja Malam)", time: "18:30", day_of_week: -1, description: "Puja Bakti Malam & Meditasi", is_active: true },
-  { id: "etp-4", label: "19:00 WIB (Diskusi Dhamma)", time: "19:00", day_of_week: 4, description: "Sesi Dhammasakaccha & Kelas Dhamma (Hari Kamis)", is_active: true },
+  { id: "etp-1", label: "08:00 WIB (Puja Pagi)", time: "08:00", day_of_week: -1, description: "Jadwal Puja Bakti Pagi Umat & Pemuda", is_active: true, target_category_tags: [] },
+  { id: "etp-2", label: "14:00 WIB (Kebaktian Siang)", time: "14:00", day_of_week: 0, description: "Kebaktian Umum & Sekolah Minggu (Hari Minggu)", is_active: true, target_category_tags: [] },
+  { id: "etp-3", label: "18:30 WIB (Puja Malam)", time: "18:30", day_of_week: -1, description: "Puja Bakti Malam & Meditasi", is_active: true, target_category_tags: [] },
+  { id: "etp-4", label: "19:00 WIB (Diskusi Dhamma)", time: "19:00", day_of_week: 4, description: "Sesi Dhammasakaccha & Kelas Dhamma (Hari Kamis)", is_active: true, target_category_tags: [] },
 ]
 
 export function getNextDateForDayOfWeek(
@@ -204,6 +205,17 @@ export function getMasterTimePresets(activeOnly = false): EventTimePresetItem[] 
   } catch {}
   if (activeOnly) return res.filter(t => t.is_active !== false)
   return res
+}
+
+/** Get time presets filtered by event category tag (empty target_category_tags = applicable to all) */
+export function getTimePresetsForCategory(categoryTag?: string | null, activeOnly = true): EventTimePresetItem[] {
+  const all = getMasterTimePresets(activeOnly)
+  if (!categoryTag) return all
+  const tag = categoryTag.toLowerCase()
+  return all.filter(t => {
+    if (!t.target_category_tags || t.target_category_tags.length === 0) return true
+    return t.target_category_tags.some(ct => ct.toLowerCase() === tag)
+  })
 }
 
 export function saveMasterTimePresets(items: EventTimePresetItem[]): void {

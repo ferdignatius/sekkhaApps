@@ -205,6 +205,7 @@ export function EventForm({
           </label>
           <DateTimePickerPopover
             value={eventDate}
+            categoryTag={tag}
             onChange={val => {
               setEventDate(val)
               if (errors.event_date) {

@@ -8,6 +8,7 @@ import { useAuth } from "@/modules/auth"
 import { getMasterCategories, ALL_USER_ROLES } from "@/modules/events/internal/masterdata"
 import type { EventCategoryItem, UserRoleName } from "@/modules/events/internal/masterdata"
 import { ColorWheelPicker } from "@/components/ui/ColorWheelPicker"
+import { MultiSelectDropdown } from "@/components/ui/MultiSelectDropdown"
 
 export function EventTypePage() {
   const { authState } = useAuth()
@@ -58,14 +59,6 @@ export function EventTypePage() {
     setShowModal(true)
   }
 
-  function toggleRolePermission(roleId: UserRoleName) {
-    if (targetRoles.includes(roleId)) {
-      if (targetRoles.length === 1) return // Keep at least 1 role selected
-      setTargetRoles(targetRoles.filter(r => r !== roleId))
-    } else {
-      setTargetRoles([...targetRoles, roleId])
-    }
-  }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -289,37 +282,20 @@ export function EventTypePage() {
                   />
 
                   {/* Many-to-Many Target Roles Access Permissions */}
-                  <div className="p-3.5 rounded-2xl border border-purple-200 bg-purple-50/50 space-y-2">
-                    <p className="text-micro font-bold text-purple-900 uppercase tracking-wider flex items-center gap-1.5">
-                      <ShieldCheckIcon className="size-3.5 text-purple-700" />
-                      <span>Hak Akses Role Pengguna yang Boleh Melihat & Mengakses:</span>
-                    </p>
-                    <p className="text-micro text-purple-700">Jika role pengguna tidak dicentang, event kategori ini tidak akan muncul di kalender maupun daftar event mereka.</p>
-
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
-                      {ALL_USER_ROLES.map(role => {
-                        const isChecked = targetRoles.includes(role.id)
-                        return (
-                          <button
-                            key={role.id}
-                            type="button"
-                            onClick={() => toggleRolePermission(role.id)}
-                            className={`flex items-center justify-between px-3 py-2 rounded-xl text-caption-bold border transition-all ${
-                              isChecked
-                                ? "bg-white border-purple-400 text-purple-900 shadow-2xs font-extrabold ring-2 ring-purple-300/40"
-                                : "bg-slate-100/60 border-slate-200 text-slate-400"
-                            }`}
-                          >
-                            <span>{role.label}</span>
-                            <div className={`h-4 w-4 rounded-md flex items-center justify-center border ${
-                              isChecked ? "bg-purple-600 border-purple-600 text-white" : "border-slate-300 bg-white"
-                            }`}>
-                              {isChecked && <CheckIcon className="size-3 stroke-[3]" />}
-                            </div>
-                          </button>
-                        )
-                      })}
-                    </div>
+                  <div className="space-y-1.5">
+                    <label className="text-caption font-bold text-sekkha-ink flex items-center gap-1.5">
+                      <ShieldCheckIcon className="size-4 text-purple-600" />
+                      <span>Hak Akses Role Pengguna</span>
+                    </label>
+                    <p className="text-micro text-sekkha-slate">Hanya role yang dipilih yang bisa melihat kategori ini di kalender event.</p>
+                    <MultiSelectDropdown
+                      options={ALL_USER_ROLES.map(r => ({ value: r.id, label: r.label }))}
+                      value={targetRoles}
+                      onChange={v => setTargetRoles(v as UserRoleName[])}
+                      placeholder="Pilih role yang boleh akses..."
+                      defaultValue={["admin", "pengurus", "aktivis", "umat"]}
+                      allowEmpty={false}
+                    />
                   </div>
 
                   {/* Autofill Template Configuration */}

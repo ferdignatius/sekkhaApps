@@ -2,14 +2,16 @@
 // Master Data: Preset Jam Umum Vihara management — CRUD preset jam & label kegiatan Vihara.
 
 import { useState } from "react"
-import { PlusIcon, PencilIcon, TrashIcon, ClockIcon, CheckIcon, CalendarIcon, SparklesIcon } from "lucide-react"
+import { PlusIcon, PencilIcon, TrashIcon, ClockIcon, CheckIcon, CalendarIcon, SparklesIcon, TagIcon } from "lucide-react"
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
 import { useAuth } from "@/modules/auth"
 import { WheelTimePickerTrigger } from "@/components/ui/WheelTimePicker"
+import { MultiSelectDropdown } from "@/components/ui/MultiSelectDropdown"
 import {
   type EventTimePresetItem,
   DAY_NAMES,
   getMasterTimePresets,
+  getMasterCategories,
   saveMasterTimePresets,
 } from "@/modules/events/internal/masterdata"
 
@@ -20,11 +22,13 @@ export function EventTimePage() {
   const [presets, setPresets] = useState<EventTimePresetItem[]>(() => getMasterTimePresets())
   const [editing, setEditing] = useState<EventTimePresetItem | null>(null)
   const [showForm, setShowForm] = useState(false)
+  const allCategories = getMasterCategories(true)
 
   const [label, setLabel] = useState("")
   const [time, setTime] = useState("08:00")
   const [dayOfWeek, setDayOfWeek] = useState<number>(-1)
   const [description, setDescription] = useState("")
+  const [targetCategoryTags, setTargetCategoryTags] = useState<string[]>([])
 
   function updateAndPersistPresets(newPresets: EventTimePresetItem[]) {
     setPresets(newPresets)
@@ -36,6 +40,7 @@ export function EventTimePage() {
     setTime("08:00")
     setDayOfWeek(-1)
     setDescription("")
+    setTargetCategoryTags([])
     setEditing(null)
     setShowForm(false)
   }
@@ -50,6 +55,7 @@ export function EventTimePage() {
     setTime(item.time)
     setDayOfWeek(item.day_of_week ?? -1)
     setDescription(item.description ?? "")
+    setTargetCategoryTags(item.target_category_tags ?? [])
     setEditing(item)
     setShowForm(true)
   }
@@ -60,7 +66,7 @@ export function EventTimePage() {
 
     if (editing) {
       updateAndPersistPresets(
-        presets.map(p => (p.id === editing.id ? { ...p, label, time, day_of_week: dayOfWeek, description } : p))
+        presets.map(p => (p.id === editing.id ? { ...p, label, time, day_of_week: dayOfWeek, description, target_category_tags: targetCategoryTags } : p))
       )
     } else {
       const newPreset: EventTimePresetItem = {
@@ -70,6 +76,7 @@ export function EventTimePage() {
         day_of_week: dayOfWeek,
         description,
         is_active: true,
+        target_category_tags: targetCategoryTags,
       }
       updateAndPersistPresets([...presets, newPreset])
     }
@@ -125,7 +132,8 @@ export function EventTimePage() {
                     <th className="py-3 px-4">Label Preset Waktu</th>
                     <th className="py-3 px-4">Target Hari</th>
                     <th className="py-3 px-4">Jam WIB</th>
-                    <th className="py-3 px-4">Keterangan Kegiatan</th>
+                    <th className="py-3 px-4">Kategori Event</th>
+                    <th className="py-3 px-4">Keterangan</th>
                     <th className="py-3 px-4 text-center">Status</th>
                     {isPengurusOrAdmin && <th className="py-3 px-4 text-right">Aksi</th>}
                   </tr>
@@ -133,9 +141,11 @@ export function EventTimePage() {
                 <tbody className="divide-y divide-sekkha-hairline-soft font-sans">
                   {presets.map(p => (
                     <tr key={p.id} className="hover:bg-sekkha-surface/60 transition-colors">
-                      <td className="py-3 px-4 font-bold text-sekkha-ink flex items-center gap-2">
-                        <ClockIcon className="size-4 text-sekkha-brand-blue shrink-0" />
-                        <span>{p.label}</span>
+                      <td className="py-3 px-4 font-bold text-sekkha-ink">
+                        <div className="flex items-center gap-2">
+                          <ClockIcon className="size-4 text-sekkha-brand-blue shrink-0" />
+                          <span>{p.label}</span>
+                        </div>
                       </td>
                       <td className="py-3 px-4">
                         {p.day_of_week !== undefined && p.day_of_week >= 0 ? (
@@ -153,6 +163,20 @@ export function EventTimePage() {
                         <span className="inline-flex items-center gap-1 rounded-xl bg-sky-50 border border-sky-200 px-2.5 py-0.5 text-micro-bold text-sky-800">
                           {p.time} WIB
                         </span>
+                      </td>
+                      {/* Kategori Event column */}
+                      <td className="py-3 px-4">
+                        {!p.target_category_tags || p.target_category_tags.length === 0 ? (
+                          <span className="text-micro text-sekkha-slate font-medium">Semua Kategori</span>
+                        ) : (
+                          <div className="flex flex-wrap gap-1">
+                            {p.target_category_tags.map(tag => (
+                              <span key={tag} className="inline-flex items-center gap-0.5 rounded-full bg-indigo-50 border border-indigo-200 px-2 py-0.5 text-[10px] font-bold text-indigo-800 capitalize">
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </td>
                       <td className="py-3 px-4 text-sekkha-slate">
                         {p.description || "-"}
@@ -211,7 +235,7 @@ export function EventTimePage() {
           {/* Form Modal Sub-Dialog (Responsive Bottom Sheet on Mobile) */}
           {showForm && (
             <div className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center bg-slate-900/60 backdrop-blur-md p-0 sm:p-4 animate-in fade-in-0">
-              <div className="w-full sm:max-w-md max-h-[92vh] sm:max-h-[90vh] rounded-t-[28px] sm:rounded-2xl border-t sm:border border-sekkha-hairline bg-white p-5 shadow-2xl space-y-4 text-left font-sans overflow-y-auto animate-in slide-in-from-bottom-full sm:zoom-in-95 duration-200">
+              <div className="w-full sm:max-w-xl max-h-[93vh] sm:max-h-[90vh] rounded-t-[28px] sm:rounded-2xl border-t sm:border border-sekkha-hairline bg-white p-5 shadow-2xl text-left font-sans overflow-y-auto animate-in slide-in-from-bottom-full sm:zoom-in-95 duration-200">
 
                 {/* Mobile Drag Handle */}
                 <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto -mt-2 mb-1 sm:hidden shrink-0" />
@@ -321,6 +345,30 @@ export function EventTimePage() {
                       onChange={e => setDescription(e.target.value)}
                       placeholder="Misal: Sesi Kebaktian Minggu"
                       className="w-full h-11 rounded-xl border border-sekkha-hairline bg-sekkha-canvas px-3.5 text-caption font-bold text-sekkha-ink outline-none focus:border-sekkha-brand-blue"
+                    />
+                  </div>
+
+                  {/* Kategori Event Multi-Select Dropdown */}
+                  <div className="space-y-1.5">
+                    <label className="text-caption font-bold text-sekkha-ink flex items-center gap-1.5">
+                      <TagIcon className="size-4 text-indigo-600" />
+                      <span>Kategori Event yang Bisa Pakai</span>
+                    </label>
+                    <p className="text-micro text-sekkha-slate flex items-center gap-1">
+                      <SparklesIcon className="size-3 text-amber-500 shrink-0" />
+                      <span>Kosong = tampil di semua kategori event.</span>
+                    </p>
+                    <MultiSelectDropdown
+                      options={allCategories.map(cat => ({
+                        value: cat.tag,
+                        label: cat.name,
+                        colorHex: cat.colorHex,
+                      }))}
+                      value={targetCategoryTags}
+                      onChange={setTargetCategoryTags}
+                      placeholder="Semua kategori (kosong = tidak dibatasi)"
+                      defaultValue={[]}
+                      allowEmpty={true}
                     />
                   </div>
 

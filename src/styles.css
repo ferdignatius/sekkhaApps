@@ -322,8 +322,6 @@
     letter-spacing: 0.5px;
     text-transform: uppercase;
   }
-}
-
 
   /* ─── Custom Glassmorphism & Animations ─── */
   .glass-panel {
@@ -383,4 +381,5 @@
     display: none;               /* Chrome / Safari / WebKit */
   }
 }
+
 

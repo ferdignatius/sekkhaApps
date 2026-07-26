@@ -59,10 +59,10 @@ export function HeroSection({ headline, subheadline }: HeroSectionProps) {
           transition={{ duration: 0.7, ease: EASE, delay: 0.35 }}
         >
           <Button variant="primary" className="w-full md:w-auto shadow-md hover:shadow-lg transition-all" asChild>
-            <a href="/sign-up" role="button">Bergabung Sekarang</a>
+            <a href="/sign-up" role="button" className="!text-white font-semibold">Bergabung Sekarang</a>
           </Button>
-          <Button variant="secondary" className="w-full md:w-auto glass-pill hover:bg-white/80 transition-all" asChild>
-            <a href="#events" role="button">Lihat Kegiatan</a>
+          <Button variant="secondary" className="w-full md:w-auto shadow-sm hover:shadow transition-all" asChild>
+            <a href="#events" role="button" className="!text-sekkha-ink font-semibold">Lihat Kegiatan</a>
           </Button>
         </motion.div>
 

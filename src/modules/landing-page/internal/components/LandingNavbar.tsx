@@ -58,10 +58,10 @@ function DesktopCTA({ authState }: { authState: AuthState }) {
   return (
     <div className="hidden md:flex items-center gap-3">
       <Button variant="secondary" asChild>
-        <a href="/login">Masuk</a>
+        <a href="/login" className="!text-sekkha-ink font-semibold">Masuk</a>
       </Button>
       <Button variant="primary" asChild>
-        <a href="/sign-up">Bergabung Gratis</a>
+        <a href="/sign-up" className="!text-white font-semibold">Bergabung Gratis</a>
       </Button>
     </div>
   )

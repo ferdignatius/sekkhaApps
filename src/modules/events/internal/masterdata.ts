@@ -6,6 +6,34 @@ import type { AttendanceBadge } from "./types"
 
 // ─── 1. Kategori Event Master Data ────────────────────────────────────────────
 
+export type UserRoleName = "admin" | "pengurus" | "aktivis" | "umat"
+
+export const ALL_USER_ROLES: { id: UserRoleName; label: string; bg: string; text: string }[] = [
+  { id: "admin", label: "Admin", bg: "bg-purple-100", text: "text-purple-800" },
+  { id: "pengurus", label: "Pengurus", bg: "bg-blue-100", text: "text-blue-800" },
+  { id: "aktivis", label: "Aktivis", bg: "bg-amber-100", text: "text-amber-800" },
+  { id: "umat", label: "Umat", bg: "bg-emerald-100", text: "text-emerald-800" },
+]
+
+export interface ColorSchemeOption {
+  id: string
+  label: string
+  bg: string
+  text: string
+  dot: string
+}
+
+export const CATEGORY_COLOR_SCHEMES: ColorSchemeOption[] = [
+  { id: "sky", label: "Biru Langit", bg: "bg-sky-100/90", text: "text-sky-800", dot: "bg-sky-500" },
+  { id: "amber", label: "Amber Gold", bg: "bg-amber-100/90", text: "text-amber-800", dot: "bg-amber-500" },
+  { id: "purple", label: "Ungu", bg: "bg-purple-100/90", text: "text-purple-800", dot: "bg-purple-500" },
+  { id: "emerald", label: "Hijau Emerald", bg: "bg-emerald-100/90", text: "text-emerald-800", dot: "bg-emerald-500" },
+  { id: "rose", label: "Merah Rose", bg: "bg-rose-100/90", text: "text-rose-800", dot: "bg-rose-500" },
+  { id: "indigo", label: "Indigo", bg: "bg-indigo-100/90", text: "text-indigo-800", dot: "bg-indigo-500" },
+  { id: "teal", label: "Teal", bg: "bg-teal-100/90", text: "text-teal-800", dot: "bg-teal-500" },
+  { id: "slate", label: "Abu Slate", bg: "bg-slate-100/90", text: "text-slate-800", dot: "bg-slate-500" },
+]
+
 export interface EventCategoryItem {
   id: string
   tag: string
@@ -15,16 +43,20 @@ export interface EventCategoryItem {
   dot: string
   points: number
   is_active?: boolean
-  autofillTime?: string  // "HH:mm" — preset jam default ketika kategori dipilih
+  autofillTitle?: string
+  autofillLocation?: string
+  autofillDesc?: string
+  colorHex?: string
+  target_roles?: string[] // Many-to-many allowed user roles (e.g. ["admin", "pengurus", "aktivis", "umat"])
 }
 
 export const DEFAULT_CATEGORIES: EventCategoryItem[] = [
-  { id: "cat-1", tag: "rutin", name: "Rutin", bg: "bg-sky-100/90", text: "text-sky-800", dot: "bg-sky-500", points: 50, is_active: true, autofillTime: "08:00" },
-  { id: "cat-2", tag: "special", name: "Special", bg: "bg-amber-100/90", text: "text-amber-800", dot: "bg-amber-500", points: 100, is_active: true, autofillTime: "18:30" },
-  { id: "cat-3", tag: "retreat", name: "Retreat", bg: "bg-purple-100/90", text: "text-purple-800", dot: "bg-purple-500", points: 150, is_active: true, autofillTime: "08:00" },
-  { id: "cat-4", tag: "meditasi", name: "Meditasi", bg: "bg-emerald-100/90", text: "text-emerald-800", dot: "bg-emerald-500", points: 60, is_active: true, autofillTime: "19:00" },
-  { id: "cat-5", tag: "sosial", name: "Sosial", bg: "bg-rose-100/90", text: "text-rose-800", dot: "bg-rose-500", points: 40, is_active: true, autofillTime: "14:00" },
-  { id: "cat-6", tag: "basic", name: "Basic", bg: "bg-blue-100/90", text: "text-blue-800", dot: "bg-blue-500", points: 30, is_active: true, autofillTime: "08:00" },
+  { id: "cat-1", tag: "rutin", name: "Rutin", bg: "bg-sky-100/90", text: "text-sky-800", dot: "bg-sky-500", points: 50, is_active: true, colorHex: "#0284c7", autofillTitle: "Kebaktian Rutin Vihara", autofillLocation: "Dhammasala Utama Vihara Sekkha", autofillDesc: "Kegiatan kebaktian rutin bersama Umat Vihara Sekkha.", target_roles: ["admin", "pengurus", "aktivis", "umat"] },
+  { id: "cat-2", tag: "special", name: "Special", bg: "bg-amber-100/90", text: "text-amber-800", dot: "bg-amber-500", points: 100, is_active: true, colorHex: "#d97706", autofillTitle: "Kebaktian Hari Raya Special", autofillLocation: "Vihara Sekkha", autofillDesc: "Perayaan hari besar dan puja bhakti khusus.", target_roles: ["admin", "pengurus", "aktivis", "umat"] },
+  { id: "cat-3", tag: "retreat", name: "Retreat", bg: "bg-purple-100/90", text: "text-purple-800", dot: "bg-purple-500", points: 150, is_active: true, colorHex: "#9333ea", autofillTitle: "Retreat Pembinaan Karakter", autofillLocation: "Pondok Meditasi Vihara", autofillDesc: "Retreat intensif dan pembinaan mental spiritual.", target_roles: ["admin", "pengurus", "aktivis", "umat"] },
+  { id: "cat-4", tag: "meditasi", name: "Meditasi", bg: "bg-emerald-100/90", text: "text-emerald-800", dot: "bg-emerald-500", points: 60, is_active: true, colorHex: "#059669", autofillTitle: "Sesi Meditasi Bersama", autofillLocation: "Ruang Meditasi Vihara", autofillDesc: "Latihan bhavana dan ketenangan pikiran.", target_roles: ["admin", "pengurus", "aktivis", "umat"] },
+  { id: "cat-5", tag: "sosial", name: "Sosial", bg: "bg-rose-100/90", text: "text-rose-800", dot: "bg-rose-500", points: 40, is_active: true, colorHex: "#e11d48", autofillTitle: "Bakti Sosial & Sharing", autofillLocation: "Vihara Sekkha", autofillDesc: "Kegiatan berbagi kasih dan pelayanan masyarakat.", target_roles: ["admin", "pengurus", "aktivis", "umat"] },
+  { id: "cat-6", tag: "basic", name: "Basic", bg: "bg-blue-100/90", text: "text-blue-800", dot: "bg-blue-500", points: 30, is_active: true, colorHex: "#4f46e5", autofillTitle: "Kegiatan Umum Vihara", autofillLocation: "Vihara Sekkha", autofillDesc: "Kegiatan umum vihara.", target_roles: ["admin", "pengurus", "aktivis", "umat"] },
 ]
 
 // ─── 2. Badge Presensi Master Data ───────────────────────────────────────────
@@ -65,13 +97,6 @@ export const DEFAULT_TIME_PRESETS: EventTimePresetItem[] = [
   { id: "etp-4", label: "19:00 WIB (Diskusi Dhamma)", time: "19:00", day_of_week: 4, description: "Sesi Dhammasakaccha & Kelas Dhamma (Hari Kamis)", is_active: true },
 ]
 
-/**
- * Calculates the next target date string ("YYYY-MM-DD") for a given day_of_week (0=Minggu..6=Sabtu).
- * If day_of_week is -1 or undefined, returns the date part of fromDate.
- * If today IS the target day:
- *  - If targetTime has NOT passed yet -> returns today.
- *  - If targetTime HAS passed -> returns target day next week (+7 days).
- */
 export function getNextDateForDayOfWeek(
   dayOfWeek?: number,
   targetTimeStr: string = "08:00",
@@ -121,6 +146,44 @@ export function getMasterCategories(activeOnly = false): EventCategoryItem[] {
   } catch {}
   if (activeOnly) return res.filter(c => c.is_active !== false)
   return res
+}
+
+export function getAccessibleCategories(userRole?: string | null, activeOnly = true): EventCategoryItem[] {
+  const cats = getMasterCategories(activeOnly)
+  const role = (userRole || "umat").toLowerCase()
+  return cats.filter(c => {
+    if (!c.target_roles || c.target_roles.length === 0) return true
+    return c.target_roles.some(r => r.toLowerCase() === role)
+  })
+}
+
+export function getCategoryByTag(tagOrName?: string | null): EventCategoryItem | undefined {
+  if (!tagOrName) return undefined
+  const cats = getMasterCategories(false)
+  const lower = tagOrName.toLowerCase().trim()
+  return cats.find(c => c.tag.toLowerCase() === lower || c.name.toLowerCase() === lower || c.id.toLowerCase() === lower)
+}
+
+export function getCategoryColor(tagOrName?: string | null): {
+  hex: string
+  bgStyle: React.CSSProperties
+  dotStyle: React.CSSProperties
+  name: string
+} {
+  const item = getCategoryByTag(tagOrName)
+  const hex = item?.colorHex || "#0284c7"
+  return {
+    hex,
+    bgStyle: {
+      backgroundColor: `${hex}1a`,
+      color: hex,
+      borderColor: `${hex}40`,
+    },
+    dotStyle: {
+      backgroundColor: hex,
+    },
+    name: item?.name ?? tagOrName ?? "Rutin",
+  }
 }
 
 export function getMasterBadges(activeOnly = false): AttendanceBadge[] {

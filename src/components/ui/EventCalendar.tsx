@@ -1,14 +1,19 @@
 // components/ui/EventCalendar
-// Custom month-grid calendar with colored event dots (max 3 per day).
+// Custom month-grid calendar with colored event dots (supports custom hex & dynamic master data colors).
 // Redesigned with Glassmorphism aesthetic and smooth day tiles.
 
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+export interface EventDotItem {
+  colorHex?: string
+  className?: string
+}
+
 export interface EventCalendarProps {
-  /** Map of ISO date string ("YYYY-MM-DD") → array of dot bg-color classes (max 3 shown) */
-  dots?: Record<string, string[]>
+  /** Map of ISO date string ("YYYY-MM-DD") → array of dot bg-color classes or hex items (max 3 shown) */
+  dots?: Record<string, (string | EventDotItem)[]>
   /** Selected day as "YYYY-MM-DD", or null for no selection */
   selected?: string | null
   onSelect?: (date: string | null) => void
@@ -195,15 +200,22 @@ export function EventCalendar({
                   className="mt-1 flex items-center gap-[3px]"
                   aria-hidden="true"
                 >
-                  {dayDots.map((color, di) => (
-                    <span
-                      key={di}
-                      className={[
-                        "h-1.5 w-1.5 rounded-full shadow-2xs",
-                        isSelected ? "bg-white/90" : color,
-                      ].join(" ")}
-                    />
-                  ))}
+                  {dayDots.map((dot, di) => {
+                    const isObj = typeof dot === "object" && dot !== null
+                    const hex = isObj ? (dot as EventDotItem).colorHex : undefined
+                    const cls = isObj ? (dot as EventDotItem).className : (typeof dot === "string" ? dot : undefined)
+
+                    return (
+                      <span
+                        key={di}
+                        className={[
+                          "h-1.5 w-1.5 rounded-full shadow-2xs",
+                          isSelected ? "bg-white/90" : (cls ?? ""),
+                        ].join(" ")}
+                        style={!isSelected && hex ? { backgroundColor: hex } : undefined}
+                      />
+                    )
+                  })}
                 </span>
               )}
             </button>

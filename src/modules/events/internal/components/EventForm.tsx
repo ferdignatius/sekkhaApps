@@ -3,13 +3,16 @@
 
 import { useState } from "react"
 import { CalendarIcon, MapPinIcon, SparklesIcon, TagIcon, FileTextIcon, AlertCircleIcon, CheckIcon, Wand2Icon } from "lucide-react"
+import { useAuth } from "@/modules/auth"
 import { DateTimePickerPopover } from "@/components/ui/DateTimePickerPopover"
 import type { CreateEventPayload, EventListItem, EventTag } from "../types"
-import { getMasterCategories } from "../masterdata"
+import { getAccessibleCategories } from "../masterdata"
 
 interface EventFormProps {
   /** If provided, pre-fill the form for editing */
   initial?: Partial<EventListItem>
+  /** Pre-fill the date field when creating a new event from calendar selection (YYYY-MM-DD) */
+  initialDate?: string
   onSubmit: (payload: CreateEventPayload) => void
   onCancel: () => void
   isSubmitting?: boolean
@@ -35,68 +38,63 @@ export interface CategoryOption {
   id: EventTag
   label: string
   bg: string
+  colorHex?: string
   autofill: {
     title: string
     location: string
     description: string
-    time?: string  // "HH:mm" preset jam default
   }
 }
-
-// Dynamic Master Data category options — hanya yang aktif
-const CATEGORY_OPTIONS: CategoryOption[] = getMasterCategories(true).map(cat => ({
-  id: cat.tag as EventTag,
-  label: cat.name,
-  bg: `${cat.bg} ${cat.text} border-current/30`,
-  autofill: {
-    title: `Kegiatan ${cat.name} Vihara`,
-    location: "Vihara Sekkha",
-    description: `Kegiatan ${cat.name.toLowerCase()} bersama Umat Vihara Sekkha.`,
-    time: cat.autofillTime,
-  },
-}))
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export function EventForm({
   initial,
+  initialDate,
   onSubmit,
   onCancel,
   isSubmitting = false,
 }: EventFormProps) {
+  const { authState } = useAuth()
+  const role = authState.status === "authenticated" ? authState.role : null
+
+  // Dynamic Accessible Master Data category options for logged-in user
+  const categoryOptions: CategoryOption[] = getAccessibleCategories(role, true).map(cat => ({
+    id: cat.tag as EventTag,
+    label: cat.name,
+    bg: `${cat.bg} ${cat.text} border-current/30`,
+    colorHex: cat.colorHex,
+    autofill: {
+      title: cat.autofillTitle ?? `Kegiatan ${cat.name} Vihara`,
+      location: cat.autofillLocation ?? "Vihara Sekkha",
+      description: cat.autofillDesc ?? `Kegiatan ${cat.name.toLowerCase()} bersama Umat Vihara Sekkha.`,
+    },
+  }))
+
   // Default category is 'basic' if not provided
   const [tag, setTag] = useState<EventTag>(initial?.tag ?? "basic")
   const [title, setTitle] = useState(initial?.title ?? "")
   const [description, setDescription] = useState(initial?.description ?? "")
   const [location, setLocation] = useState(initial?.location ?? "")
-  const [eventDate, setEventDate] = useState(
-    initial?.event_date ? isoToLocal(initial.event_date) : "",
-  )
+  // Pre-fill date: prefer existing event date (edit mode), then initialDate from calendar selection
+  const [eventDate, setEventDate] = useState(() => {
+    if (initial?.event_date) return isoToLocal(initial.event_date)
+    if (initialDate) return `${initialDate}T08:00`
+    return ""
+  })
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   // Handle Category Select with Masterdata Autofill (title, location, description, time)
   function handleSelectCategory(cat: CategoryOption) {
     setTag(cat.id)
-    if (!title.trim() || CATEGORY_OPTIONS.some(c => c.autofill.title === title)) {
+    if (!title.trim() || categoryOptions.some(c => c.autofill.title === title)) {
       setTitle(cat.autofill.title)
     }
-    if (!location.trim() || CATEGORY_OPTIONS.some(c => c.autofill.location === location)) {
+    if (!location.trim() || categoryOptions.some(c => c.autofill.location === location)) {
       setLocation(cat.autofill.location)
     }
-    if (!description.trim() || CATEGORY_OPTIONS.some(c => c.autofill.description === description)) {
+    if (!description.trim() || categoryOptions.some(c => c.autofill.description === description)) {
       setDescription(cat.autofill.description)
-    }
-    // Autofill jam — set jika field tanggal kosong atau hanya berisi tanggal tanpa jam
-    if (cat.autofill.time) {
-      const today = new Date()
-      const datePart = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`
-      if (!eventDate) {
-        setEventDate(`${datePart}T${cat.autofill.time}`)
-      } else {
-        // Update hanya bagian waktu jika tanggal sudah terisi
-        const existingDate = eventDate.split("T")[0]
-        setEventDate(`${existingDate}T${cat.autofill.time}`)
-      }
     }
   }
 
@@ -139,16 +137,24 @@ export function EventForm({
         </div>
 
         <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-          {CATEGORY_OPTIONS.map(cat => {
+          {categoryOptions.map(cat => {
             const isSelected = tag === cat.id
+            const hex = cat.colorHex
+            const customStyle = isSelected && hex ? {
+              backgroundColor: `${hex}25`,
+              color: hex,
+              borderColor: `${hex}60`,
+            } : undefined
+
             return (
               <button
                 key={cat.id}
                 type="button"
                 onClick={() => handleSelectCategory(cat)}
+                style={customStyle}
                 className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-caption-bold transition-all border ${
                   isSelected
-                    ? `${cat.bg} shadow-xs ring-2 ring-sekkha-brand-blue/20`
+                    ? hex ? "shadow-xs ring-2 ring-sekkha-brand-blue/20" : `${cat.bg} shadow-xs ring-2 ring-sekkha-brand-blue/20`
                     : "bg-sekkha-canvas border-sekkha-hairline text-sekkha-slate hover:bg-white"
                 }`}
               >

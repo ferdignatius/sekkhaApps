@@ -1,21 +1,20 @@
 // feature/events/components/EventsPage
 // Events page: month calendar with colored dots + event list below.
-// - Default: show all events in the visible month
-// - Tap a date: show events on that date only (tap again to deselect)
-// - Pengurus+: "Buat Event" button, edit from detail view
+// Role-based Category Filtering (Many-to-Many Access Control) & Dynamic Master Data Colors.
 
 import { useState, useMemo, useEffect } from "react"
-import { PlusIcon, CalendarDaysIcon, SearchIcon, FilterIcon } from "lucide-react"
+import { PlusIcon, CalendarDaysIcon, SearchIcon } from "lucide-react"
 import { useAuth } from "@/modules/auth"
 import { api } from "@/lib/api"
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
 import { ResponsiveFormModal } from "@/components/common/ResponsiveFormModal"
 import { EventCalendar } from "@/components/ui/EventCalendar"
+import type { EventDotItem } from "@/components/ui/EventCalendar"
 import { EventCard } from "./EventCard"
 import { EventDetailSheet } from "./EventDetailSheet"
 import { EventForm } from "./EventForm"
-import { EVENT_TAG_COLORS } from "../types"
-import type { EventListItem, CreateEventPayload, EventTag, AttendanceRecord } from "../types"
+import { getAccessibleCategories, getCategoryColor } from "../masterdata"
+import type { EventListItem, CreateEventPayload, AttendanceRecord } from "../types"
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -62,7 +61,16 @@ export function EventsPage() {
   const [activeMonth, setActiveMonth] = useState<Date>(new Date())
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
-  const [tagFilter, setTagFilter] = useState<EventTag | "all">("all")
+  const [selectedCategoryTag, setSelectedCategoryTag] = useState<string>("all")
+
+  // Dynamic Accessible Categories for logged in User Role
+  const accessibleCategories = useMemo(() => {
+    return getAccessibleCategories(role, true)
+  }, [role])
+
+  const accessibleTagsSet = useMemo(() => {
+    return new Set(accessibleCategories.map(c => c.tag.toLowerCase()))
+  }, [accessibleCategories])
 
   // Load events from backend API
   useEffect(() => {
@@ -89,23 +97,31 @@ export function EventsPage() {
     }))
   }
 
-  // ── Build dot map for the calendar ──────────────────────────────────────────
-  const dotMap = useMemo<Record<string, string[]>>(() => {
-    const map: Record<string, string[]> = {}
+  // ── Build dot map for calendar (Filtered by Role Permission & Master Data Colors) ──
+  const dotMap = useMemo<Record<string, EventDotItem[]>>(() => {
+    const map: Record<string, EventDotItem[]> = {}
     for (const ev of events) {
+      const tagKey = (ev.tag ?? ev.event_type ?? "").toLowerCase()
+      // Skip events whose category is not accessible by current user role
+      if (!accessibleTagsSet.has(tagKey)) continue
+
       const key = toDateKey(ev.event_date)
-      const tag = (ev.tag ?? ev.event_type) as EventTag
-      const color = EVENT_TAG_COLORS[tag]?.dot ?? "bg-sekkha-muted"
+      const colorInfo = getCategoryColor(tagKey)
       if (!map[key]) map[key] = []
-      if (map[key].length < 3) map[key].push(color)
+      if (map[key].length < 3) {
+        map[key].push({ colorHex: colorInfo.hex })
+      }
     }
     return map
-  }, [events])
+  }, [events, accessibleTagsSet])
 
-  // ── Events to display in the list below the calendar ────────────────────────
+  // ── Events to display in list (Filtered by Role Permission, Month, Date, Search, Category) ──
   const listedEvents = useMemo(() => {
     let base = events
-      .filter(ev => isSameMonth(ev.event_date, activeMonth))
+      .filter(ev => {
+        const tagKey = (ev.tag ?? ev.event_type ?? "").toLowerCase()
+        return accessibleTagsSet.has(tagKey) && isSameMonth(ev.event_date, activeMonth)
+      })
       .sort((a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime())
 
     if (selectedDate) {
@@ -121,13 +137,13 @@ export function EventsPage() {
       )
     }
 
-    // Tag filter
-    if (tagFilter !== "all") {
-      base = base.filter(ev => (ev.tag ?? ev.event_type) === tagFilter)
+    // Category Tag filter
+    if (selectedCategoryTag !== "all") {
+      base = base.filter(ev => (ev.tag ?? ev.event_type ?? "").toLowerCase() === selectedCategoryTag.toLowerCase())
     }
 
     return base
-  }, [events, activeMonth, selectedDate, searchQuery, tagFilter])
+  }, [events, accessibleTagsSet, activeMonth, selectedDate, searchQuery, selectedCategoryTag])
 
   async function handleFormSubmit(payload: CreateEventPayload) {
     try {
@@ -145,11 +161,10 @@ export function EventsPage() {
     }
   }
 
-  // ────────────────────────────────────────────────────────────────────────────
-  // Detail view
+  // ── Detail View ──
   if (view === "detail" && selected) {
     return (
-      <main>
+      <main className="font-sans text-left">
         <PageBreadcrumb
           items={[
             {
@@ -169,19 +184,35 @@ export function EventsPage() {
                 role={role}
                 onClose={() => { setSelected(null); setView("calendar") }}
                 onEdit={isPengurus ? ev => { setEditTarget(ev); setFormOpen(true) } : undefined}
-                onDelete={isPengurus ? ev => {
-                  setEvents(prev => prev.filter(e => e.id !== ev.id))
-                  setSelected(null)
-                  setView("calendar")
-                } : undefined}
-                onDuplicate={isPengurus ? ev => {
-                  const dup: EventListItem = {
-                    ...ev,
-                    id: `event-${Date.now()}`,
-                    title: `${ev.title} (Salinan)`,
+                onDelete={isPengurus ? async ev => {
+                  if (!window.confirm(`Apakah Anda yakin ingin menghapus event "${ev.title}"?`)) return
+                  try {
+                    await api.delete(`/events/${ev.id}`)
+                    setEvents(prev => prev.filter(e => e.id !== ev.id))
+                    setSelected(null)
+                    setView("calendar")
+                  } catch (err) {
+                    console.error("Gagal menghapus event dari server:", err)
+                    alert("Gagal menghapus event dari server.")
                   }
-                  setEvents(prev => [dup, ...prev])
-                  setSelected(dup)
+                } : undefined}
+                onDuplicate={isPengurus ? async ev => {
+                  try {
+                    const payload: CreateEventPayload = {
+                      title: `${ev.title} (Salinan)`,
+                      description: ev.description ?? "",
+                      location: ev.location ?? "",
+                      event_date: ev.event_date,
+                      event_type: ev.event_type,
+                      tag: ev.tag,
+                    }
+                    const dup = await api.post<EventListItem>("/events", payload)
+                    setEvents(prev => [dup, ...prev])
+                    setSelected(dup)
+                  } catch (err) {
+                    console.error("Gagal menduplikasi event:", err)
+                    alert("Gagal menduplikasi event ke server.")
+                  }
                 } : undefined}
                 onStatusChange={isPengurus ? (eventId, newStatus) => {
                   setEvents(prev => prev.map(e => e.id === eventId ? { ...e, status: newStatus } : e))
@@ -206,6 +237,7 @@ export function EventsPage() {
         >
           <EventForm
             initial={editTarget ?? undefined}
+            initialDate={!editTarget && selectedDate ? selectedDate : undefined}
             onSubmit={handleFormSubmit}
             onCancel={() => { setEditTarget(null); setFormOpen(false) }}
           />
@@ -214,9 +246,9 @@ export function EventsPage() {
     )
   }
 
-  // Calendar + list view
+  // ── Calendar + List View ──
   return (
-    <main className="min-h-screen bg-sekkha-surface pb-32 md:pb-12">
+    <main className="min-h-screen bg-sekkha-surface pb-32 md:pb-12 font-sans text-left">
       <PageBreadcrumb items={[{ label: "Events" }]} />
 
       <div className="px-3.5 py-4 sm:px-6 sm:py-6 md:px-8 lg:px-12">
@@ -247,7 +279,7 @@ export function EventsPage() {
             </div>
           </div>
           
-          {/* ── Search Bar + Filter Button + Create Button Row (Inline 1 Baris di Mobile) ── */}
+          {/* ── Search Bar + Category Filter + Create Button Row ── */}
           <div className="relative flex flex-row items-center gap-2 w-full z-20">
             
             {/* Search Input */}
@@ -262,25 +294,28 @@ export function EventsPage() {
               />
             </div>
 
-            {/* Single Filter Button (Icon-only di mobile, Icon + Text di sm+) */}
-            <button
-              type="button"
-              onClick={() => setTagFilter(prev => prev === "all" ? "retreat" : prev === "retreat" ? "meditasi" : prev === "meditasi" ? "rutin" : prev === "rutin" ? "sosial" : prev === "sosial" ? "special" : "all")}
-              className="flex h-10 items-center justify-center gap-2 rounded-xl border border-sekkha-hairline bg-sekkha-canvas/95 backdrop-blur-md px-3 sm:px-4 text-caption-bold text-sekkha-ink shadow-2xs hover:bg-sekkha-surface transition-all shrink-0 active:scale-95"
-              title={tagFilter === "all" ? "Semua Filter" : `Kategori: ${tagFilter}`}
-            >
-              <FilterIcon className="size-4 text-sekkha-brand-blue" />
-              <span className="hidden sm:inline capitalize">
-                {tagFilter === "all" ? "Semua Filter" : `Kategori: ${tagFilter}`}
-              </span>
-            </button>
+            {/* Dynamic Role-Based Category Filter Dropdown / Toggle */}
+            <div className="relative shrink-0">
+              <select
+                value={selectedCategoryTag}
+                onChange={e => setSelectedCategoryTag(e.target.value)}
+                className="h-10 rounded-xl border border-sekkha-hairline bg-sekkha-canvas/95 backdrop-blur-md px-3 text-caption-bold text-sekkha-ink outline-none shadow-2xs focus:border-sekkha-brand-blue transition-all cursor-pointer capitalize"
+              >
+                <option value="all">Semua Kategori</option>
+                {accessibleCategories.map(cat => (
+                  <option key={cat.id} value={cat.tag}>
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-            {/* Create button for Pengurus (Icon-only di mobile, Icon + Text di sm+) */}
+            {/* Create button for Pengurus */}
             {isPengurus && (
               <button
                 type="button"
                 onClick={() => { setEditTarget(null); setFormOpen(true) }}
-                className="flex h-10 items-center justify-center gap-1.5 rounded-xl bg-sekkha-brand-blue px-3 sm:px-4 text-caption-bold text-white shadow-2xs hover:bg-blue-700 transition-all shrink-0 active:scale-95"
+                className="flex h-10 items-center justify-center gap-1.5 rounded-xl bg-sekkha-brand-blue px-3 sm:px-4 text-caption-bold text-white shadow-2xs hover:bg-blue-700 transition-all shrink-0 active:scale-95 cursor-pointer"
                 title="Buat Event Baru"
               >
                 <PlusIcon className="size-4" aria-hidden="true" />
@@ -290,10 +325,10 @@ export function EventsPage() {
 
           </div>
 
-          {/* ── Two-column layout: Single Integrated Event Card (2/3) | Calendar Mini (1/3 Desktop) ──────── */}
+          {/* ── Two-column layout: Integrated Event List (2/3) | Calendar Mini (1/3 Desktop) ── */}
           <div className="flex flex-col gap-4 sm:gap-5 lg:flex-row items-start">
 
-            {/* ── Left: Single Integrated Glassmorphism Event Card (2/3 on desktop) ──────────────────────── */}
+            {/* ── Left: Event List Container ── */}
             <div className="flex-1 w-full lg:min-w-0">
               <div className="relative rounded-2xl border border-sekkha-hairline bg-sekkha-canvas/95 backdrop-blur-md p-4 sm:p-5 shadow-xs">
                 
@@ -325,7 +360,7 @@ export function EventsPage() {
                   <div className="flex flex-col items-center justify-center gap-2.5 py-12 text-center">
                     <CalendarDaysIcon className="size-10 text-sekkha-slate/40" aria-hidden="true" />
                     <p className="text-caption font-medium text-sekkha-slate">
-                      {selectedDate ? "Tidak ada event di tanggal ini." : "Tidak ada event bulan ini."}
+                      {selectedDate ? "Tidak ada event di tanggal ini." : "Tidak ada event yang dapat diakses bulan ini."}
                     </p>
                   </div>
                 ) : (
@@ -343,7 +378,7 @@ export function EventsPage() {
               </div>
             </div>
 
-            {/* ── Right: Mini Calendar Card (Desktop Only lg+) ───────────────────────── */}
+            {/* ── Right: Mini Calendar Card (Desktop Only lg+) ── */}
             <aside className="hidden lg:block w-full shrink-0 lg:w-80 xl:w-96">
               <div className="sticky top-16 relative rounded-2xl border border-sekkha-hairline bg-sekkha-canvas/95 backdrop-blur-md p-4 shadow-xs">
                 
@@ -355,16 +390,17 @@ export function EventsPage() {
                   onMonthChange={month => { setActiveMonth(month); setSelectedDate(null) }}
                 />
 
-                {/* Tag Legend */}
+                {/* Dynamic Master Data Category Legend */}
                 <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1.5 border-t border-sekkha-hairline-soft pt-3 text-micro">
-                  {(Object.entries(EVENT_TAG_COLORS) as [EventTag, typeof EVENT_TAG_COLORS[EventTag]][]).map(
-                    ([tag, colors]) => (
-                      <div key={tag} className="flex items-center gap-1.5">
-                        <span className={`h-2 w-2 rounded-full ${colors.dot}`} aria-hidden="true" />
-                        <span className="capitalize font-medium text-sekkha-slate">{tag}</span>
+                  {accessibleCategories.map(cat => {
+                    const colorHex = cat.colorHex || "#0284c7"
+                    return (
+                      <div key={cat.id} className="flex items-center gap-1.5">
+                        <span className="h-2 w-2 rounded-full shrink-0 shadow-2xs" style={{ backgroundColor: colorHex }} />
+                        <span className="capitalize font-medium text-sekkha-slate">{cat.name}</span>
                       </div>
-                    ),
-                  )}
+                    )
+                  })}
                 </div>
 
               </div>
@@ -374,7 +410,7 @@ export function EventsPage() {
         </div>
       </div>
 
-      {/* Create / Edit event modal (drawer on mobile, modal on desktop) */}
+      {/* Create / Edit event modal */}
       <ResponsiveFormModal
         open={formOpen}
         onOpenChange={(open) => {
@@ -386,6 +422,7 @@ export function EventsPage() {
       >
         <EventForm
           initial={editTarget ?? undefined}
+          initialDate={!editTarget && selectedDate ? selectedDate : undefined}
           onSubmit={handleFormSubmit}
           onCancel={() => { setEditTarget(null); setFormOpen(false) }}
         />

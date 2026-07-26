@@ -4,9 +4,10 @@
 // - Tap a date: show events on that date only (tap again to deselect)
 // - Pengurus+: "Buat Event" button, edit from detail view
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { PlusIcon, CalendarDaysIcon, SearchIcon, FilterIcon } from "lucide-react"
 import { useAuth } from "@/modules/auth"
+import { api } from "@/lib/api"
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
 import { ResponsiveFormModal } from "@/components/common/ResponsiveFormModal"
 import { EventCalendar } from "@/components/ui/EventCalendar"
@@ -16,121 +17,22 @@ import { EventForm } from "./EventForm"
 import { EVENT_TAG_COLORS } from "../types"
 import type { EventListItem, CreateEventPayload, EventTag, AttendanceRecord } from "../types"
 
-// ─── Dummy data ───────────────────────────────────────────────────────────────
-
-function generateQrCode(eventId: string) {
-  return {
-    code: `EVT-${eventId.toUpperCase().slice(-6)}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`,
-    expires_at: null,
-  }
-}
-
-const INITIAL_EVENTS: EventListItem[] = [
-  {
-    id: "evt-1",
-    title: "Kebaktian Minggu",
-    description: "Kebaktian rutin setiap Minggu pagi. Terbuka untuk semua umat.",
-    location: "Vihara Dharma Bhakti",
-    event_date: "2025-07-06T08:00:00+07:00",
-    event_type: "rutin",
-    tag: "rutin",
-    status: "published",
-    rsvp_count: 23,
-    my_rsvp: null,
-    qr_code: { code: "EVT-RUTIN-7A2B", expires_at: null },
-  },
-  {
-    id: "evt-2",
-    title: "Retreat Tahunan 2025",
-    description: "Retreat tahunan selama 2 hari. Daftar sebelum 10 Juli.",
-    location: "Pondok Meditasi Bogor",
-    event_date: "2025-07-12T07:00:00+07:00",
-    event_type: "special",
-    tag: "retreat",
-    status: "published",
-    rsvp_count: 14,
-    my_rsvp: "hadir",
-    qr_code: { code: "EVT-RET25-C3D4", expires_at: null },
-  },
-  {
-    id: "evt-3",
-    title: "Sesi Meditasi Bersama",
-    description: "Meditasi pagi bersama komunitas.",
-    location: "Vihara Dharma Bhakti",
-    event_date: "2025-07-12T06:00:00+07:00",
-    event_type: "rutin",
-    tag: "meditasi",
-    status: "published",
-    rsvp_count: 9,
-    my_rsvp: null,
-    qr_code: { code: "EVT-MED-E5F6", expires_at: null },
-  },
-  {
-    id: "evt-4",
-    title: "Kebaktian Minggu",
-    description: "Kebaktian rutin.",
-    location: "Vihara Dharma Bhakti",
-    event_date: "2025-07-13T08:00:00+07:00",
-    event_type: "rutin",
-    tag: "rutin",
-    status: "published",
-    rsvp_count: 18,
-    my_rsvp: null,
-    qr_code: { code: "EVT-KBK-G7H8", expires_at: null },
-  },
-  {
-    id: "evt-5",
-    title: "Bakti Sosial",
-    description: "Kegiatan sosial bulanan.",
-    location: "Panti Asuhan Harapan",
-    event_date: "2025-07-19T09:00:00+07:00",
-    event_type: "special",
-    tag: "sosial",
-    status: "published",
-    rsvp_count: 31,
-    my_rsvp: null,
-    qr_code: { code: "EVT-SOS-I9J0", expires_at: null },
-  },
-  {
-    id: "evt-6",
-    title: "Kebaktian Minggu",
-    description: "Kebaktian rutin.",
-    location: "Vihara Dharma Bhakti",
-    event_date: "2025-07-20T08:00:00+07:00",
-    event_type: "rutin",
-    tag: "rutin",
-    status: "published",
-    rsvp_count: 20,
-    my_rsvp: null,
-    qr_code: { code: "EVT-KBK-K1L2", expires_at: null },
-  },
-  {
-    id: "evt-7",
-    title: "Retreat Tahunan (hari 2)",
-    description: "Lanjutan retreat.",
-    location: "Pondok Meditasi Bogor",
-    event_date: "2025-07-26T07:00:00+07:00",
-    event_type: "special",
-    tag: "retreat",
-    status: "published",
-    rsvp_count: 12,
-    my_rsvp: null,
-    qr_code: { code: "EVT-RET2-M3N4", expires_at: null },
-  },
-]
-
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function toDateKey(iso: string): string {
+function toDateKey(iso?: string): string {
+  if (!iso) return ""
   const d = new Date(iso)
+  if (isNaN(d.getTime())) return ""
   const y = d.getFullYear()
   const m = String(d.getMonth() + 1).padStart(2, "0")
   const day = String(d.getDate()).padStart(2, "0")
   return `${y}-${m}-${day}`
 }
 
-function isSameMonth(iso: string, month: Date): boolean {
+function isSameMonth(iso?: string, month?: Date): boolean {
+  if (!iso || !month) return false
   const d = new Date(iso)
+  if (isNaN(d.getTime())) return false
   return d.getFullYear() === month.getFullYear() && d.getMonth() === month.getMonth()
 }
 
@@ -152,15 +54,30 @@ export function EventsPage() {
   const role = authState.status === "authenticated" ? authState.role : null
   const isPengurus = role === "pengurus" || role === "admin"
 
-  const [events, setEvents] = useState<EventListItem[]>(INITIAL_EVENTS)
+  const [events, setEvents] = useState<EventListItem[]>([])
   const [view, setView] = useState<View>("calendar")
   const [selected, setSelected] = useState<EventListItem | null>(null)
   const [editTarget, setEditTarget] = useState<EventListItem | null>(null)
   const [formOpen, setFormOpen] = useState(false)
-  const [activeMonth, setActiveMonth] = useState<Date>(new Date(2025, 6, 1))
+  const [activeMonth, setActiveMonth] = useState<Date>(new Date())
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [tagFilter, setTagFilter] = useState<EventTag | "all">("all")
+
+  // Load events from backend API
+  useEffect(() => {
+    loadEvents()
+  }, [])
+
+  async function loadEvents() {
+    try {
+      const data = await api.get<EventListItem[]>("/events")
+      setEvents(data)
+    } catch (err) {
+      console.error("Gagal memuat event dari server:", err)
+      setEvents([])
+    }
+  }
 
   // Attendance records keyed by event id
   const [attendances, setAttendances] = useState<Record<string, AttendanceRecord[]>>({})
@@ -212,28 +129,20 @@ export function EventsPage() {
     return base
   }, [events, activeMonth, selectedDate, searchQuery, tagFilter])
 
-  function handleFormSubmit(payload: CreateEventPayload) {
-    if (editTarget) {
-      setEvents(prev =>
-        prev.map(ev => ev.id === editTarget.id ? { ...ev, ...payload } : ev),
-      )
-    } else {
-      const newId = `evt-${Date.now()}`
-      setEvents(prev => [
-        ...prev,
-        {
-          id: newId,
-          ...payload,
-          tag: payload.event_type as EventTag,
-          status: "published",
-          rsvp_count: 0,
-          my_rsvp: null,
-          qr_code: generateQrCode(newId),  // ← auto-generate QR on creation
-        },
-      ])
+  async function handleFormSubmit(payload: CreateEventPayload) {
+    try {
+      if (editTarget) {
+        await api.put(`/events/${editTarget.id}`, payload)
+      } else {
+        await api.post("/events", payload)
+      }
+      await loadEvents()
+    } catch (err) {
+      console.error("Gagal menyimpan event:", err)
+    } finally {
+      setEditTarget(null)
+      setFormOpen(false)
     }
-    setEditTarget(null)
-    setFormOpen(false)
   }
 
   // ────────────────────────────────────────────────────────────────────────────

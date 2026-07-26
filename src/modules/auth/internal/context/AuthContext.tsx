@@ -76,24 +76,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         return
       }
 
-      // Token exists → verify with backend (requirement 4.3)
-      // Dummy token bypass — skip network call for development credentials
-      if (token === "dummy.admin.token") {
-        dispatch({
-          type: "AUTH_SUCCESS",
-          payload: { accessToken: token, userId: "admin-user-1", role: "pengurus" },
-        })
-        return
-      }
-
-      if (token === "dummy.superadmin.token") {
-        dispatch({
-          type: "AUTH_SUCCESS",
-          payload: { accessToken: token, userId: "admin-user-1", role: "admin" },
-        })
-        return
-      }
-
+      // Token exists → verify with backend
       try {
         // authService.verifyToken handles the 3000ms timeout internally
         await authService.verifyToken(token)

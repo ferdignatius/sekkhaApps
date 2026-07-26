@@ -50,7 +50,11 @@ export async function routeGuardBeforeLoad(
   if (context.authState.status === "loading") {
     await waitForAuthResolution(context, 3000)
   }
-  if (context.authState.status !== "authenticated") {
+  const token = typeof window !== "undefined" ? localStorage.getItem("sekkha_access_token") : null
+  const isAuthenticated =
+    context.authState.status === "authenticated" || (token !== null && token !== "")
+
+  if (!isAuthenticated) {
     throw redirect({ to: "/login", search: { redirectTo: locationHref } })
   }
 }

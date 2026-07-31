@@ -7,7 +7,9 @@ export interface MemberDto {
   role: "umat" | "aktivis" | "pengurus" | "admin"
   school?: string | null
   avatarUrl?: string | null
-  createdAt: string
+  user_number?: string | null
+  created_at?: string
+  createdAt?: string
 }
 
 export interface InvitationDto {

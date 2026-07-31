@@ -90,11 +90,23 @@ export function EventsPage() {
   // Attendance records keyed by event id
   const [attendances, setAttendances] = useState<Record<string, AttendanceRecord[]>>({})
 
-  function handleRecordAttendance(eventId: string, record: AttendanceRecord) {
-    setAttendances(prev => ({
-      ...prev,
-      [eventId]: [...(prev[eventId] ?? []), record],
-    }))
+  useEffect(() => {
+    if (selected?.id) {
+      loadEventAttendances(selected.id)
+    }
+  }, [selected?.id])
+
+  async function loadEventAttendances(eventId: string) {
+    try {
+      const data = await api.get<AttendanceRecord[]>(`/events/${eventId}/attendances`)
+      setAttendances(prev => ({ ...prev, [eventId]: data }))
+    } catch (err) {
+      console.error("Gagal memuat presensi event:", err)
+    }
+  }
+
+  function handleRecordAttendance(eventId: string, _record: AttendanceRecord) {
+    loadEventAttendances(eventId)
   }
 
   // ── Build dot map for calendar (Filtered by Role Permission & Master Data Colors) ──

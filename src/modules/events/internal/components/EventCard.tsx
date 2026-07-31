@@ -20,12 +20,24 @@ function formatDate(iso: string) {
   }
 }
 
+function isTodayEvent(iso: string): boolean {
+  if (!iso) return false
+  const evDate = new Date(iso)
+  const today = new Date()
+  return (
+    evDate.getFullYear() === today.getFullYear() &&
+    evDate.getMonth() === today.getMonth() &&
+    evDate.getDate() === today.getDate()
+  )
+}
+
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export function EventCard({ event, onClick }: EventCardProps) {
   const { day, time } = formatDate(event.event_date)
   const tag = event.tag ?? event.event_type ?? "rutin"
   const colorInfo = getCategoryColor(tag)
+  const isLive = isTodayEvent(event.event_date)
 
   return (
     <div className="py-2.5 first:pt-0 last:pb-0 border-b border-sekkha-hairline-soft last:border-b-0 text-left font-sans">
@@ -44,7 +56,7 @@ export function EventCard({ event, onClick }: EventCardProps) {
 
           {/* Content — left */}
           <div className="min-w-0 flex-1">
-            {/* Type tag */}
+            {/* Type tag & Live badge */}
             <div className="flex flex-wrap items-center gap-2">
               <span
                 className="rounded-full px-2.5 py-0.5 text-micro-bold capitalize border font-bold shadow-2xs"
@@ -52,6 +64,16 @@ export function EventCard({ event, onClick }: EventCardProps) {
               >
                 {colorInfo.name}
               </span>
+
+              {isLive && (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-300/80 px-2.5 py-0.5 text-micro-bold text-emerald-800 shadow-2xs">
+                  <span className="relative flex size-2">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex size-2 rounded-full bg-emerald-500" />
+                  </span>
+                  <span>Sedang Berlangsung Hari Ini</span>
+                </span>
+              )}
             </div>
 
             {/* Title */}

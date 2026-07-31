@@ -1,10 +1,10 @@
 // feature/events/components/AttendanceScanModal
 // Hybrid Attendance System supporting:
 // 1. Pengurus: Camera scanning of Umat's physical/digital Member QR Card
-// 2. Pengurus: Quick name search / manual entry for elders or members without cards
+// 2. Pengurus: Quick name / userNumber search restricted strictly to registered People users
 // 3. Umat: Self-scanning of Vihara Event QR Code
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   ScanLineIcon,
   UserPlusIcon,
@@ -13,7 +13,11 @@ import {
   CameraIcon,
   SearchIcon,
   QrCodeIcon,
+  AlertCircleIcon,
 } from "lucide-react"
+import { api } from "@/lib/api"
+import { teamsApi } from "@/modules/teams/internal/api/teamsApi"
+import type { MemberDto } from "@/modules/teams/internal/api/teamsApi"
 import type { AttendanceMethod, UserRole } from "../types"
 
 interface ScanResult {
@@ -23,22 +27,15 @@ interface ScanResult {
 }
 
 interface AttendanceScanModalProps {
+  eventId?: string
   role: UserRole | null
   eventCode: string
   onRecord: (result: ScanResult) => void
   onClose: () => void
 }
 
-// Preset dummy members for quick search autofill by Pengurus
-const MEMBER_DATABASE = [
-  { id: "user-1", name: "Dewi Lestari", cardCode: "SKH-8821" },
-  { id: "user-2", name: "Rudi Wijaya", cardCode: "SKH-4492" },
-  { id: "user-3", name: "Budi Santoso", cardCode: "SKH-1039" },
-  { id: "user-4", name: "Siti Rahmawati", cardCode: "SKH-7712" },
-  { id: "user-5", name: "Hendra Tan", cardCode: "SKH-9920" },
-]
-
 export function AttendanceScanModal({
+  eventId,
   role,
   eventCode,
   onRecord,
@@ -49,6 +46,10 @@ export function AttendanceScanModal({
   // Mode for Pengurus: 'camera' | 'search'
   const [pengurusMode, setPengurusMode] = useState<"camera" | "search">("camera")
 
+  // Real People database loaded from backend
+  const [peopleList, setPeopleList] = useState<MemberDto[]>([])
+  const [loadingPeople, setLoadingPeople] = useState(false)
+
   // Umat state (Self Scan)
   const [codeInput, setCodeInput] = useState("")
   const [codeError, setCodeError] = useState("")
@@ -58,68 +59,161 @@ export function AttendanceScanModal({
 
   // Pengurus Search state
   const [searchQuery, setSearchQuery] = useState("")
-  const [manualName, setManualName] = useState("")
+  const [selectedMember, setSelectedMember] = useState<MemberDto | null>(null)
   const [manualError, setManualError] = useState("")
+  const [submitting, setSubmitting] = useState(false)
 
   // Success feedback
   const [success, setSuccess] = useState<ScanResult | null>(null)
 
+  // Load People list for Pengurus manual presensi
+  useEffect(() => {
+    if (isPengurus) {
+      setLoadingPeople(true)
+      teamsApi.listMembers()
+        .then(data => setPeopleList(data))
+        .catch(err => console.error("Gagal memuat data People untuk presensi:", err))
+        .finally(() => setLoadingPeople(false))
+    }
+  }, [isPengurus])
+
   // Umat Self Scan Event QR
-  function handleUmatScan(e: React.FormEvent) {
+  async function handleUmatScan(e: React.FormEvent) {
     e.preventDefault()
     if (!codeInput.trim()) { setCodeError("Masukkan kode terlebih dahulu"); return }
     if (codeInput.trim().toUpperCase() !== eventCode.toUpperCase()) {
       setCodeError("Kode tidak valid atau tidak sesuai event ini")
       return
     }
-    const result: ScanResult = {
-      name: "Kamu (Presensi Mandiri)",
-      method: "qr",
-      scanned_at: new Date().toISOString(),
+
+    try {
+      setSubmitting(true)
+      if (eventId) {
+        await api.post(`/events/${eventId}/attendance`, { method: "qr" })
+      }
+      const result: ScanResult = {
+        name: "Kamu (Presensi Mandiri)",
+        method: "qr",
+        scanned_at: new Date().toISOString(),
+      }
+      setSuccess(result)
+      onRecord(result)
+    } catch (err: any) {
+      setCodeError(err.message || "Gagal mencatat presensi mandiri")
+    } finally {
+      setSubmitting(false)
     }
-    setSuccess(result)
-    onRecord(result)
   }
 
-  // Pengurus Camera Scan Umat's Member Card QR
-  function handlePengurusCameraScan(e: React.FormEvent) {
+  // Pengurus Camera Scan Umat's Member Card QR / User Number
+  async function handlePengurusCameraScan(e: React.FormEvent) {
     e.preventDefault()
-    if (!scannedCardCode.trim()) return
+    const query = scannedCardCode.trim().toLowerCase()
+    if (!query) return
 
-    // Find in database or fallback
-    const matched = MEMBER_DATABASE.find(
-      m => m.cardCode.toLowerCase() === scannedCardCode.trim().toLowerCase(),
+    // Find in real People database by user_number or id or email
+    const matched = peopleList.find(
+      m =>
+        (m.user_number && m.user_number.toLowerCase() === query) ||
+        m.id.toLowerCase() === query ||
+        m.email.toLowerCase() === query
     )
-    const attendeeName = matched ? matched.name : `Umat (${scannedCardCode.toUpperCase()})`
 
-    const result: ScanResult = {
-      name: attendeeName,
-      method: "qr",
-      scanned_at: new Date().toISOString(),
+    if (!matched) {
+      setCodeError(`Pengguna dengan kode "${scannedCardCode.toUpperCase()}" tidak ditemukan di data People.`)
+      return
     }
-    setSuccess(result)
-    onRecord(result)
-    setScannedCardCode("")
+
+    try {
+      setSubmitting(true)
+      if (eventId) {
+        await api.post(`/events/${eventId}/attendance`, {
+          method: "qr",
+          user_id: matched.id,
+        })
+      }
+
+      const result: ScanResult = {
+        name: matched.name,
+        method: "qr",
+        scanned_at: new Date().toISOString(),
+      }
+      setSuccess(result)
+      onRecord(result)
+      setScannedCardCode("")
+      setCodeError("")
+    } catch (err: any) {
+      setCodeError(err.message || "Gagal mencatat presensi QR")
+    } finally {
+      setSubmitting(false)
+    }
   }
 
-  // Pengurus Manual Search / Entry
-  function handleManualSubmit(e: React.FormEvent) {
+  // Pengurus Manual Search / Entry (Strictly restricted to People)
+  async function handleManualSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!manualName.trim()) { setManualError("Masukkan nama atau pilih dari pencarian"); return }
-    const result: ScanResult = {
-      name: manualName.trim(),
-      method: "manual",
-      scanned_at: new Date().toISOString(),
-    }
-    setSuccess(result)
-    onRecord(result)
-    setManualName("")
-    setSearchQuery("")
     setManualError("")
+
+    let target = selectedMember
+
+    if (!target) {
+      const q = searchQuery.trim().toLowerCase()
+      if (!q) {
+        setManualError("Masukkan nama, email, atau No. Unik pengguna")
+        return
+      }
+      // Try to find exact or single match in People list
+      const matches = peopleList.filter(
+        m =>
+          m.name.toLowerCase().includes(q) ||
+          m.email.toLowerCase().includes(q) ||
+          (m.user_number && m.user_number.toLowerCase().includes(q))
+      )
+
+      if (matches.length === 0) {
+        setManualError("Pengguna tidak terdaftar dalam People. Hanya pengguna terdaftar yang bisa dicatat presensinya.")
+        return
+      } else if (matches.length === 1) {
+        target = matches[0]!
+      } else {
+        setManualError("Ditemukan beberapa pengguna. Silakan klik salah satu opsi dari daftar pencarian.")
+        return
+      }
+    }
+
+    try {
+      setSubmitting(true)
+      if (eventId) {
+        await api.post(`/events/${eventId}/attendance`, {
+          method: "manual",
+          user_id: target.id,
+        })
+      }
+
+      const result: ScanResult = {
+        name: target.name,
+        method: "manual",
+        scanned_at: new Date().toISOString(),
+      }
+      setSuccess(result)
+      onRecord(result)
+      setSelectedMember(null)
+      setSearchQuery("")
+      setManualError("")
+    } catch (err: any) {
+      setManualError(err.message || "Gagal mencatat presensi manual")
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   const filteredMembers = searchQuery.trim()
-    ? MEMBER_DATABASE.filter(m => m.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    ? peopleList.filter(
+        m =>
+          m.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          m.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (m.user_number && m.user_number.toLowerCase().includes(searchQuery.toLowerCase()))
+      )
     : []
 
   return (
@@ -137,7 +231,7 @@ export function AttendanceScanModal({
           </h3>
           <p className="text-micro text-sekkha-slate">
             {isPengurus
-              ? "Scan Kartu QR Umat atau cari nama untuk mencatat kehadiran"
+              ? "Scan Kartu QR Umat atau cari nama pengguna terdaftar (People)"
               : "Masukkan kode QR event untuk klaim presensi"}
           </p>
         </div>
@@ -160,7 +254,7 @@ export function AttendanceScanModal({
               Presensi Berhasil Dicatat!
             </p>
             <p className="text-micro font-medium text-emerald-700">
-              {success.name} · {success.method === "qr" ? "QR Card Scan" : "Input Manual"}
+              {success.name} · {success.method === "qr" ? "QR Card Scan" : "Input Manual (People)"}
             </p>
           </div>
         </div>
@@ -188,9 +282,10 @@ export function AttendanceScanModal({
           </div>
           <button
             type="submit"
-            className="w-full rounded-xl bg-sekkha-brand-blue py-2.5 text-caption-bold text-white shadow-xs hover:bg-blue-700 transition-all active:scale-[0.99]"
+            disabled={submitting}
+            className="w-full rounded-xl bg-sekkha-brand-blue py-2.5 text-caption-bold text-white shadow-xs hover:bg-blue-700 transition-all active:scale-[0.99] disabled:opacity-50"
           >
-            Konfirmasi Presensi Mandiri
+            {submitting ? "Memproses..." : "Konfirmasi Presensi Mandiri"}
           </button>
         </form>
       )}
@@ -202,7 +297,7 @@ export function AttendanceScanModal({
           <div className="flex items-center gap-1.5 rounded-xl border border-sekkha-hairline bg-sekkha-surface p-1">
             <button
               type="button"
-              onClick={() => setPengurusMode("camera")}
+              onClick={() => { setPengurusMode("camera"); setCodeError("") }}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-micro-bold transition-all ${
                 pengurusMode === "camera"
                   ? "bg-sekkha-brand-blue text-white shadow-xs"
@@ -215,7 +310,7 @@ export function AttendanceScanModal({
 
             <button
               type="button"
-              onClick={() => setPengurusMode("search")}
+              onClick={() => { setPengurusMode("search"); setManualError("") }}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-micro-bold transition-all ${
                 pengurusMode === "search"
                   ? "bg-sekkha-brand-blue text-white shadow-xs"
@@ -223,7 +318,7 @@ export function AttendanceScanModal({
               }`}
             >
               <SearchIcon className="size-3.5" />
-              <span>✍️ Cari / Input Nama Umat</span>
+              <span>✍️ Cari Umat dari People</span>
             </button>
           </div>
 
@@ -236,81 +331,118 @@ export function AttendanceScanModal({
                 </div>
                 <div>
                   <p className="text-caption-bold text-sekkha-ink">Arahkan Kamera HP ke Kartu QR Umat</p>
-                  <p className="text-micro text-sekkha-slate mt-0.5">Mendukung Kartu Fisik Cetak atau QR Aplikasi Umat</p>
+                  <p className="text-micro text-sekkha-slate mt-0.5">Atau masukkan No. Unik (misal: 26082101)</p>
                 </div>
               </div>
 
               {/* Quick Simulator Bar for testing */}
-              <form onSubmit={handlePengurusCameraScan} className="flex gap-2">
-                <input
-                  type="text"
-                  value={scannedCardCode}
-                  onChange={e => setScannedCardCode(e.target.value)}
-                  placeholder="Kode Kartu (misal: SKH-8821 atau SKH-4492)"
-                  className="flex-1 rounded-xl border border-sekkha-hairline bg-white px-3 py-2 text-micro text-sekkha-ink outline-none focus:border-sekkha-brand-blue shadow-2xs"
-                />
-                <button
-                  type="submit"
-                  className="rounded-xl bg-sekkha-brand-blue px-3.5 py-2 text-micro-bold text-white hover:bg-blue-700 transition-all shadow-2xs"
-                >
-                  Scan QR
-                </button>
+              <form onSubmit={handlePengurusCameraScan} className="space-y-1.5">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={scannedCardCode}
+                    onChange={e => { setScannedCardCode(e.target.value); setCodeError("") }}
+                    placeholder="Masukkan No. Unik (misal: 26082101)"
+                    className="flex-1 rounded-xl border border-sekkha-hairline bg-white px-3 py-2 text-micro font-mono text-sekkha-ink outline-none focus:border-sekkha-brand-blue shadow-2xs"
+                  />
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="rounded-xl bg-sekkha-brand-blue px-3.5 py-2 text-micro-bold text-white hover:bg-blue-700 transition-all shadow-2xs disabled:opacity-50"
+                  >
+                    {submitting ? "..." : "Scan QR"}
+                  </button>
+                </div>
+                {codeError && (
+                  <p className="flex items-center gap-1 text-micro-bold text-rose-600 bg-rose-50 p-2 rounded-lg border border-rose-200">
+                    <AlertCircleIcon className="size-3.5 shrink-0" />
+                    <span>{codeError}</span>
+                  </p>
+                )}
               </form>
             </div>
           )}
 
-          {/* Option B: Search / Manual Entry for Elders without phones */}
+          {/* Option B: Search / Manual Entry (Strictly from People) */}
           {pengurusMode === "search" && (
             <form onSubmit={handleManualSubmit} className="space-y-3">
               <div className="flex flex-col gap-1.5">
                 <label htmlFor="manual-name" className="flex items-center gap-1.5 text-caption font-semibold text-sekkha-ink">
                   <UserPlusIcon className="size-4 text-sekkha-brand-blue" aria-hidden="true" />
-                  <span>Cari Nama Umat dari Master Data / Ketik Manual</span>
+                  <span>Cari Nama / No. Unik Umat dari People</span>
                 </label>
                 
                 <input
                   id="manual-name"
                   type="text"
-                  value={manualName || searchQuery}
+                  value={selectedMember ? selectedMember.name : searchQuery}
                   onChange={e => {
-                    setManualName(e.target.value)
+                    setSelectedMember(null)
                     setSearchQuery(e.target.value)
                     setManualError("")
                   }}
-                  placeholder="Ketik Nama Umat (misal: Dewi Lestari, Rudi Wijaya)"
+                  placeholder={loadingPeople ? "Memuat data People..." : "Ketik Nama / Email / No. Unik (misal: 26082101)"}
                   className="rounded-xl border border-sekkha-hairline bg-white px-3.5 py-2.5 text-caption text-sekkha-ink outline-none focus:border-sekkha-brand-blue shadow-2xs"
                 />
-                {manualError && <p className="text-micro text-rose-500 font-semibold">{manualError}</p>}
+                {manualError && (
+                  <p className="flex items-center gap-1 text-micro-bold text-rose-600 bg-rose-50 p-2 rounded-lg border border-rose-200">
+                    <AlertCircleIcon className="size-3.5 shrink-0" />
+                    <span>{manualError}</span>
+                  </p>
+                )}
               </div>
 
-              {/* Autofill Search Results Dropdown */}
-              {filteredMembers.length > 0 && (
-                <div className="rounded-xl border border-sekkha-hairline bg-white p-1.5 shadow-md space-y-1">
+              {/* Search Results Dropdown from People Database */}
+              {filteredMembers.length > 0 && !selectedMember && (
+                <div className="rounded-xl border border-sekkha-hairline bg-white p-1.5 shadow-md space-y-1 max-h-48 overflow-y-auto">
                   <p className="text-micro-bold text-sekkha-slate px-2 py-1 border-b border-sekkha-hairline-soft">
-                    Hasil Pencarian Master Data Umat:
+                    Hasil Pencarian Pengguna People ({filteredMembers.length}):
                   </p>
                   {filteredMembers.map(m => (
                     <button
                       key={m.id}
                       type="button"
                       onClick={() => {
-                        setManualName(m.name)
-                        setSearchQuery("")
+                        setSelectedMember(m)
+                        setSearchQuery(m.name)
+                        setManualError("")
                       }}
-                      className="flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-caption text-sekkha-ink hover:bg-blue-50 transition-colors"
+                      className="flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-caption text-sekkha-ink hover:bg-blue-50 transition-colors text-left"
                     >
-                      <span className="font-bold">{m.name}</span>
-                      <span className="text-micro font-mono text-sekkha-brand-blue font-semibold">{m.cardCode}</span>
+                      <div className="min-w-0">
+                        <p className="font-bold truncate">{m.name}</p>
+                        <p className="text-micro text-sekkha-slate truncate">{m.email}</p>
+                      </div>
+                      <span className="text-micro font-mono text-sekkha-brand-blue font-bold shrink-0 ml-2">
+                        {m.user_number || "—"}
+                      </span>
                     </button>
                   ))}
                 </div>
               )}
 
+              {selectedMember && (
+                <div className="flex items-center justify-between rounded-xl bg-blue-50 border border-blue-200 p-2.5">
+                  <div>
+                    <p className="text-caption-bold text-sekkha-brand-blue">{selectedMember.name}</p>
+                    <p className="text-micro text-sekkha-slate">{selectedMember.email} · No. Unik: {selectedMember.user_number}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => { setSelectedMember(null); setSearchQuery("") }}
+                    className="text-micro-bold text-slate-500 hover:text-slate-800"
+                  >
+                    Ganti
+                  </button>
+                </div>
+              )}
+
               <button
                 type="submit"
-                className="w-full rounded-xl bg-sekkha-brand-blue py-2.5 text-caption-bold text-white shadow-xs hover:bg-blue-700 transition-all active:scale-[0.99]"
+                disabled={submitting}
+                className="w-full rounded-xl bg-sekkha-brand-blue py-2.5 text-caption-bold text-white shadow-xs hover:bg-blue-700 transition-all active:scale-[0.99] disabled:opacity-50 font-extrabold"
               >
-                Tandai Umat Hadir
+                {submitting ? "Memproses..." : "Tandai Umat Hadir"}
               </button>
             </form>
           )}

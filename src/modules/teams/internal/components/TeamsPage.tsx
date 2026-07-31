@@ -65,7 +65,8 @@ export function TeamsPage() {
   const filteredMembers = members.filter(m =>
     m.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     m.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    m.role.toLowerCase().includes(searchQuery.toLowerCase())
+    m.role.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (m.user_number && m.user_number.toLowerCase().includes(searchQuery.toLowerCase()))
   )
 
   const roleBadgeStyle = {
@@ -77,7 +78,7 @@ export function TeamsPage() {
 
   return (
     <main>
-      <PageBreadcrumb items={[{ label: "Teams" }]} />
+      <PageBreadcrumb items={[{ label: "People" }]} />
       <div className="px-4 py-6 pb-24 md:px-8 md:pb-8 lg:px-12">
         <div className="mx-auto max-w-7xl space-y-6">
           
@@ -85,7 +86,10 @@ export function TeamsPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <UsersIcon className="size-5 text-sekkha-brand-blue" />
-              <h1 className="text-heading-5 text-sekkha-ink">Anggota Tim</h1>
+              <div>
+                <h1 className="text-heading-5 text-sekkha-ink">People (Pengguna Terdaftar)</h1>
+                <p className="text-micro text-sekkha-slate">Daftar seluruh pengguna & umat terdaftar di Vihara Sekkha</p>
+              </div>
             </div>
             {isAdmin && (
               <button
@@ -155,7 +159,7 @@ export function TeamsPage() {
           <div className="grid gap-6 lg:grid-cols-3">
             
             {/* Members List */}
-            <div className="lg:col-span-2 space-y-4">
+            <div className={`${isAdmin ? "lg:col-span-2" : "lg:col-span-3"} space-y-4`}>
               <div className="flex items-center justify-between gap-2">
                 <h2 className="text-body-sm-medium text-sekkha-ink">Daftar Pengguna ({filteredMembers.length})</h2>
                 
@@ -166,7 +170,7 @@ export function TeamsPage() {
                     type="text"
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
-                    placeholder="Cari anggota..."
+                    placeholder="Cari nama, email, no unik..."
                     className="w-full rounded-full border border-sekkha-hairline-strong bg-sekkha-canvas pl-9 pr-4 py-1.5 text-caption text-sekkha-ink outline-none focus:border-sekkha-brand-blue"
                   />
                 </div>
@@ -174,11 +178,11 @@ export function TeamsPage() {
 
               {loading ? (
                 <div className="h-64 flex items-center justify-center rounded-xl border border-sekkha-hairline-soft bg-sekkha-canvas">
-                  <span className="text-body-sm text-sekkha-muted">Memuat data...</span>
+                  <span className="text-body-sm text-sekkha-muted">Memuat data pengguna...</span>
                 </div>
               ) : filteredMembers.length === 0 ? (
                 <div className="h-64 flex items-center justify-center rounded-xl border border-sekkha-hairline-soft bg-sekkha-canvas">
-                  <span className="text-body-sm text-sekkha-muted">Anggota tidak ditemukan.</span>
+                  <span className="text-body-sm text-sekkha-muted">Pengguna tidak ditemukan.</span>
                 </div>
               ) : (
                 <div className="overflow-hidden rounded-xl border border-sekkha-hairline-soft bg-sekkha-canvas">
@@ -186,6 +190,7 @@ export function TeamsPage() {
                     <table className="w-full text-left text-body-sm">
                       <thead>
                         <tr className="border-b border-sekkha-hairline-soft bg-sekkha-surface">
+                          <th className="px-4 py-3 font-medium text-sekkha-slate">No. Unik</th>
                           <th className="px-4 py-3 font-medium text-sekkha-slate">Nama</th>
                           <th className="px-4 py-3 font-medium text-sekkha-slate">Email</th>
                           <th className="px-4 py-3 font-medium text-sekkha-slate">Role</th>
@@ -195,6 +200,9 @@ export function TeamsPage() {
                       <tbody>
                         {filteredMembers.map(m => (
                           <tr key={m.id} className="border-b border-sekkha-hairline-soft last:border-0 hover:bg-sekkha-surface/40">
+                            <td className="px-4 py-3 font-mono font-bold text-sekkha-brand-blue text-xs">
+                              {m.user_number || "—"}
+                            </td>
                             <td className="px-4 py-3 font-medium text-sekkha-ink">{m.name}</td>
                             <td className="px-4 py-3 text-sekkha-slate">{m.email}</td>
                             <td className="px-4 py-3">
@@ -212,55 +220,57 @@ export function TeamsPage() {
               )}
             </div>
 
-            {/* Invitations List */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-body-sm-medium text-sekkha-ink">Riwayat Undangan</h2>
-                <ClockIcon className="size-4 text-sekkha-slate" />
+            {/* Invitations List (Admin Only) */}
+            {isAdmin && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-body-sm-medium text-sekkha-ink">Riwayat Undangan</h2>
+                  <ClockIcon className="size-4 text-sekkha-slate" />
+                </div>
+
+                {loading ? (
+                  <div className="h-64 flex items-center justify-center rounded-xl border border-sekkha-hairline-soft bg-sekkha-canvas">
+                    <span className="text-body-sm text-sekkha-muted">Memuat data...</span>
+                  </div>
+                ) : invitations.length === 0 ? (
+                  <div className="h-48 flex flex-col items-center justify-center rounded-xl border border-sekkha-hairline-soft bg-sekkha-canvas text-center p-4">
+                    <MailIcon className="size-6 text-sekkha-slate mb-1" />
+                    <span className="text-caption text-sekkha-muted">Belum ada undangan dikirim.</span>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {invitations.map(inv => {
+                      const statusStyles = {
+                        pending: "bg-yellow-50 text-yellow-700 border-yellow-200",
+                        accepted: "bg-emerald-50 text-emerald-700 border-emerald-200",
+                        rejected: "bg-red-50 text-red-700 border-red-200",
+                      }
+
+                      return (
+                        <div key={inv.id} className="rounded-xl border border-sekkha-hairline-soft bg-sekkha-canvas p-3.5 space-y-1 hover:shadow-sm transition-shadow">
+                          <div className="flex justify-between items-center">
+                            <p className="text-caption-bold text-sekkha-ink truncate max-w-[150px]">{inv.email}</p>
+                            <span className={`rounded-full border px-1.5 py-0.5 text-[10px] font-bold capitalize ${statusStyles[inv.status]}`}>
+                              {inv.status}
+                            </span>
+                          </div>
+                          <p className="text-caption text-sekkha-slate capitalize">Undangan: <span className="font-semibold">{inv.role}</span></p>
+                          <div className="flex justify-between text-[9px] text-sekkha-muted pt-1 border-t border-sekkha-hairline-soft mt-1">
+                            <span>Pengundang: {inv.invited_by.name}</span>
+                            <span>
+                              {new Date(inv.created_at).toLocaleDateString("id-ID", {
+                                day: "numeric",
+                                month: "short",
+                              })}
+                            </span>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
               </div>
-
-              {loading ? (
-                <div className="h-64 flex items-center justify-center rounded-xl border border-sekkha-hairline-soft bg-sekkha-canvas">
-                  <span className="text-body-sm text-sekkha-muted">Memuat data...</span>
-                </div>
-              ) : invitations.length === 0 ? (
-                <div className="h-48 flex flex-col items-center justify-center rounded-xl border border-sekkha-hairline-soft bg-sekkha-canvas text-center p-4">
-                  <MailIcon className="size-6 text-sekkha-slate mb-1" />
-                  <span className="text-caption text-sekkha-muted">Belum ada undangan dikirim.</span>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {invitations.map(inv => {
-                    const statusStyles = {
-                      pending: "bg-yellow-50 text-yellow-700 border-yellow-200",
-                      accepted: "bg-emerald-50 text-emerald-700 border-emerald-200",
-                      rejected: "bg-red-50 text-red-700 border-red-200",
-                    }
-
-                    return (
-                      <div key={inv.id} className="rounded-xl border border-sekkha-hairline-soft bg-sekkha-canvas p-3.5 space-y-1 hover:shadow-sm transition-shadow">
-                        <div className="flex justify-between items-center">
-                          <p className="text-caption-bold text-sekkha-ink truncate max-w-[150px]">{inv.email}</p>
-                          <span className={`rounded-full border px-1.5 py-0.5 text-[10px] font-bold capitalize ${statusStyles[inv.status]}`}>
-                            {inv.status}
-                          </span>
-                        </div>
-                        <p className="text-caption text-sekkha-slate capitalize">Undangan: <span className="font-semibold">{inv.role}</span></p>
-                        <div className="flex justify-between text-[9px] text-sekkha-muted pt-1 border-t border-sekkha-hairline-soft mt-1">
-                          <span>Pengundang: {inv.invited_by.name}</span>
-                          <span>
-                            {new Date(inv.created_at).toLocaleDateString("id-ID", {
-                              day: "numeric",
-                              month: "short",
-                            })}
-                          </span>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-            </div>
+            )}
 
           </div>
 

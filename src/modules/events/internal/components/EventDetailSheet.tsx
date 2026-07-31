@@ -360,6 +360,7 @@ export function EventDetailSheet({
         {showScan && isActive && (
           <div className="rounded-2xl border border-sekkha-hairline bg-sekkha-canvas p-3.5 shadow-xs">
             <AttendanceScanModal
+              eventId={event.id}
               role={role}
               eventCode={event.qr_code?.code ?? "SKH-EVENT"}
               onRecord={handleRecord}

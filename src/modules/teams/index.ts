@@ -4,8 +4,8 @@ export { TeamsPage } from "./internal/components/TeamsPage"
 
 export const teamsModule: ModuleDefinition = {
   name: "teams",
-  navItems: [],
-  pengurusNavItems: [
-    { label: "Teams", to: "/teams", icon: "Users" },
+  navItems: [
+    { label: "People", to: "/teams", icon: "Users" },
   ],
+  pengurusNavItems: [],
 }

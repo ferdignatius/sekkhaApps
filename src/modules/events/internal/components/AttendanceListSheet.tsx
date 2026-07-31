@@ -148,13 +148,20 @@ export function AttendanceListSheet({
                 return (
                   <tr key={`${rec.user_id}-${i}`} className="hover:bg-blue-50/30 transition-colors">
                     
-                    {/* Col 1: Name */}
-                    <td className="py-2.5 px-3 font-medium min-w-[130px]">
+                    {/* Col 1: Name & No. Unik */}
+                    <td className="py-2.5 px-3 font-medium min-w-[150px]">
                       <div className="flex items-center gap-2">
                         <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-sekkha-surface text-sekkha-slate">
                           <UserIcon className="size-3" />
                         </span>
-                        <span className="truncate">{rec.name}</span>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate font-bold leading-tight">{rec.name}</p>
+                          {rec.user_number && (
+                            <p className="text-[10px] font-mono text-sekkha-brand-blue font-semibold">
+                              {rec.user_number}
+                            </p>
+                          )}
+                        </div>
                       </div>
                     </td>
 

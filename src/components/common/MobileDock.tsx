@@ -341,7 +341,7 @@ export function MobileDock() {
           }`}
         >
           <UsersIcon className={`size-5 transition-transform ${pathname.startsWith("/teams") ? "scale-110 text-sekkha-brand-blue" : ""}`} />
-          <span className="text-[10px] font-bold">Tim</span>
+          <span className="text-[10px] font-bold">People</span>
         </Link>
 
         {/* 4. Top (Leaderboard) */}

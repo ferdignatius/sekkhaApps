@@ -78,6 +78,7 @@ export interface AttendanceBadge {
 export interface AttendanceRecord {
   user_id: string
   name: string
+  user_number?: string | null
   method: AttendanceMethod
   scanned_at: string
   base_points?: number

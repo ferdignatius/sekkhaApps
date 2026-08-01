@@ -1,0 +1,182 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Auth ────────────────────────────────────────────────────────────────────
+
+enum Role {
+  umat
+  aktivis
+  pengurus
+  admin
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  school    String?
+  avatarUrl String?  @map("avatar_url")
+  role      Role     @default(umat)
+  lastActivityAt DateTime? @map("last_activity_at")
+  consecutiveMissed Int    @default(0) @map("consecutive_missed")
+  userNumber String?  @unique @map("user_number")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  attendances Attendance[]
+  rsvps       Rsvp[]
+  badges      UserBadge[]
+  notifications   Notification[]
+  sentInvitations RoleInvitation[] @relation("SentInvitations")
+
+  @@map("users")
+}
+
+// ─── Events ──────────────────────────────────────────────────────────────────
+
+enum EventStatus {
+  draft
+  published
+  cancelled
+}
+
+model Event {
+  id          String      @id @default(cuid())
+  title       String
+  description String?
+  location    String
+  eventDate   DateTime    @map("event_date")
+  eventType   String      @map("event_type") // "rutin" | "special"
+  tag         String?     // "rutin" | "retreat" | "meditasi" | "sosial"
+  status      EventStatus @default(published)
+  qrCode      String?     @map("qr_code")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  // Relations
+  attendances Attendance[]
+  rsvps       Rsvp[]
+
+  @@map("events")
+}
+
+model Rsvp {
+  id      String @id @default(cuid())
+  userId  String @map("user_id")
+  eventId String @map("event_id")
+  status  String // "hadir" | "tidak_hadir"
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, eventId])
+  @@map("rsvps")
+}
+
+model Attendance {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  eventId   String   @map("event_id")
+  method    String   // "qr" | "manual"
+  scannedAt DateTime @default(now()) @map("scanned_at")
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, eventId])
+  @@map("attendances")
+}
+
+// ─── Gamification ────────────────────────────────────────────────────────────
+
+model Badge {
+  id             String @id @default(cuid())
+  name           String
+  description    String
+  iconUrl        String @map("icon_url") // emoji or URL
+  conditionType  String @map("condition_type") // "streak" | "attendance" | "points" | "event_count" | "manual"
+  conditionValue Int    @map("condition_value")
+  isActive       Boolean @default(true) @map("is_active")
+
+  // Relations
+  users UserBadge[]
+
+  @@map("badges")
+}
+
+model UserBadge {
+  id       String   @id @default(cuid())
+  userId   String   @map("user_id")
+  badgeId  String   @map("badge_id")
+  earnedAt DateTime @default(now()) @map("earned_at")
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge Badge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, badgeId])
+  @@map("user_badges")
+}
+
+model Level {
+  id        String @id @default(cuid())
+  level     Int    @unique
+  label     String
+  minPoints Int    @map("min_points")
+
+  @@map("levels")
+}
+
+model EventType {
+  id        String  @id @default(cuid())
+  code      String  @unique
+  label     String
+  color     String
+  isDefault Boolean @default(false) @map("is_default")
+
+  @@map("event_types")
+}
+
+// ─── Teams & Notifications ───────────────────────────────────────────────────
+
+enum InvitationStatus {
+  pending
+  accepted
+  rejected
+}
+
+model RoleInvitation {
+  id          String           @id @default(cuid())
+  email       String           // Email user yang diundang
+  role        Role             // Target role: aktivis atau pengurus
+  status      InvitationStatus @default(pending)
+  invitedById String           @map("invited_by_id")
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+
+  invitedBy   User             @relation("SentInvitations", fields: [invitedById], references: [id], onDelete: Cascade)
+
+  @@map("role_invitations")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  title     String
+  message   String
+  type      String   // e.g. "role_invitation", "general"
+  status    String   @default("unread") // "unread" | "read"
+  data      Json?    // metadata pendukung (misal: { invitationId: "..." })
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}

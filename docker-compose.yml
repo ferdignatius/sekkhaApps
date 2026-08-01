@@ -1,0 +1,61 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sekkha-api
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DATABASE_URL: postgresql://sekkha:sekkha_secret@postgres:5432/sekkha_db?schema=public
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: sekkha-production-super-secret-key-2026
+      DUMMY_UMAT_EMAIL: umat@sekkha.com
+      DUMMY_UMAT_PASSWORD: password123
+      DUMMY_AKTIVIS_EMAIL: aktivis@sekkha.com
+      DUMMY_AKTIVIS_PASSWORD: password123
+      DUMMY_PENGURUS_EMAIL: pengurus@sekkha.com
+      DUMMY_PENGURUS_PASSWORD: password123
+      DUMMY_ADMIN_EMAIL: admin@sekkha.com
+      DUMMY_ADMIN_PASSWORD: password123
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  postgres:
+    image: postgres:18-alpine
+    container_name: sekkha-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: sekkha
+      POSTGRES_PASSWORD: sekkha_secret
+      POSTGRES_DB: sekkha_db
+    volumes:
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sekkha -d sekkha_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  redis:
+    image: redis:7-alpine
+    container_name: sekkha-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redisdata:/data
+
+volumes:
+  pgdata:
+  redisdata:

@@ -8,11 +8,11 @@ import { useEffect, useState } from 'react'
  * Requirements: 2.6, 2.7
  */
 export function useScrollPosition(): { scrollY: number } {
-  const [scrollY, setScrollY] = useState<number>(
-    typeof window !== 'undefined' ? window.scrollY : 0,
-  )
+  const [scrollY, setScrollY] = useState<number>(0)
 
   useEffect(() => {
+    setScrollY(window.scrollY)
+
     const handleScroll = () => {
       setScrollY(window.scrollY)
     }

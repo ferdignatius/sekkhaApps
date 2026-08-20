@@ -9,31 +9,35 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as SignUpRouteImport } from './routes/sign-up'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AuthenticatedTeamsRouteImport } from './routes/_authenticated/teams'
-import { Route as AuthenticatedRecencyAlertsRouteImport } from './routes/_authenticated/recency-alerts'
-import { Route as AuthenticatedPengurusContributionRouteImport } from './routes/_authenticated/pengurus-contribution'
-import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated/notifications'
+import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as SignUpRouteImport } from './routes/sign-up'
 import { Route as AuthenticatedInsightRouteImport } from './routes/_authenticated/insight'
-import { Route as AuthenticatedLeaderboardIndexRouteImport } from './routes/_authenticated/leaderboard/index'
-import { Route as AuthenticatedHomeIndexRouteImport } from './routes/_authenticated/home/index'
+import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated/notifications'
+import { Route as AuthenticatedPengurusContributionRouteImport } from './routes/_authenticated/pengurus-contribution'
+import { Route as AuthenticatedRecencyAlertsRouteImport } from './routes/_authenticated/recency-alerts'
+import { Route as AuthenticatedTeamsRouteImport } from './routes/_authenticated/teams'
 import { Route as AuthenticatedEventsIndexRouteImport } from './routes/_authenticated/events/index'
-import { Route as AuthenticatedHomeProfileRouteImport } from './routes/_authenticated/home/profile'
+import { Route as AuthenticatedHomeIndexRouteImport } from './routes/_authenticated/home/index'
 import { Route as AuthenticatedHomeAchievementsRouteImport } from './routes/_authenticated/home/achievements'
-import { Route as AuthenticatedConfigureMasterLevelRouteImport } from './routes/_authenticated/configure/master/level'
-import { Route as AuthenticatedConfigureMasterEventTypeRouteImport } from './routes/_authenticated/configure/master/event-type'
-import { Route as AuthenticatedConfigureMasterEventTimeRouteImport } from './routes/_authenticated/configure/master/event-time'
-import { Route as AuthenticatedConfigureMasterBadgeRouteImport } from './routes/_authenticated/configure/master/badge'
-import { Route as AuthenticatedConfigureMasterAttendanceBadgeRouteImport } from './routes/_authenticated/configure/master/attendance-badge'
-import { Route as AuthenticatedConfigureMasterAchievementRouteImport } from './routes/_authenticated/configure/master/achievement'
+import { Route as AuthenticatedHomeProfileRouteImport } from './routes/_authenticated/home/profile'
+import { Route as AuthenticatedLeaderboardIndexRouteImport } from './routes/_authenticated/leaderboard/index'
 import { Route as AuthenticatedConfigureEarlyWarningThresholdRouteImport } from './routes/_authenticated/configure/early-warning/threshold'
+import { Route as AuthenticatedConfigureMasterAchievementRouteImport } from './routes/_authenticated/configure/master/achievement'
+import { Route as AuthenticatedConfigureMasterAttendanceBadgeRouteImport } from './routes/_authenticated/configure/master/attendance-badge'
+import { Route as AuthenticatedConfigureMasterBadgeRouteImport } from './routes/_authenticated/configure/master/badge'
+import { Route as AuthenticatedConfigureMasterEventTimeRouteImport } from './routes/_authenticated/configure/master/event-time'
+import { Route as AuthenticatedConfigureMasterEventTypeRouteImport } from './routes/_authenticated/configure/master/event-type'
+import { Route as AuthenticatedConfigureMasterLevelRouteImport } from './routes/_authenticated/configure/master/level'
 
-const SignUpRoute = SignUpRouteImport.update({
-  id: '/sign-up',
-  path: '/sign-up',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedRoute = AuthenticatedRouteImport.update({
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -41,24 +45,20 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedRoute = AuthenticatedRouteImport.update({
-  id: '/_authenticated',
+const SignUpRoute = SignUpRouteImport.update({
+  id: '/sign-up',
+  path: '/sign-up',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthenticatedTeamsRoute = AuthenticatedTeamsRouteImport.update({
-  id: '/teams',
-  path: '/teams',
+const AuthenticatedInsightRoute = AuthenticatedInsightRouteImport.update({
+  id: '/insight',
+  path: '/insight',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedRecencyAlertsRoute =
-  AuthenticatedRecencyAlertsRouteImport.update({
-    id: '/recency-alerts',
-    path: '/recency-alerts',
+const AuthenticatedNotificationsRoute =
+  AuthenticatedNotificationsRouteImport.update({
+    id: '/notifications',
+    path: '/notifications',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedPengurusContributionRoute =
@@ -67,26 +67,15 @@ const AuthenticatedPengurusContributionRoute =
     path: '/pengurus-contribution',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
-const AuthenticatedNotificationsRoute =
-  AuthenticatedNotificationsRouteImport.update({
-    id: '/notifications',
-    path: '/notifications',
+const AuthenticatedRecencyAlertsRoute =
+  AuthenticatedRecencyAlertsRouteImport.update({
+    id: '/recency-alerts',
+    path: '/recency-alerts',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
-const AuthenticatedInsightRoute = AuthenticatedInsightRouteImport.update({
-  id: '/insight',
-  path: '/insight',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
-const AuthenticatedLeaderboardIndexRoute =
-  AuthenticatedLeaderboardIndexRouteImport.update({
-    id: '/leaderboard/',
-    path: '/leaderboard/',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
-const AuthenticatedHomeIndexRoute = AuthenticatedHomeIndexRouteImport.update({
-  id: '/home/',
-  path: '/home/',
+const AuthenticatedTeamsRoute = AuthenticatedTeamsRouteImport.update({
+  id: '/teams',
+  path: '/teams',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedEventsIndexRoute =
@@ -95,46 +84,33 @@ const AuthenticatedEventsIndexRoute =
     path: '/events/',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
-const AuthenticatedHomeProfileRoute =
-  AuthenticatedHomeProfileRouteImport.update({
-    id: '/home/profile',
-    path: '/home/profile',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
+const AuthenticatedHomeIndexRoute = AuthenticatedHomeIndexRouteImport.update({
+  id: '/home/',
+  path: '/home/',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedHomeAchievementsRoute =
   AuthenticatedHomeAchievementsRouteImport.update({
     id: '/home/achievements',
     path: '/home/achievements',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
-const AuthenticatedConfigureMasterLevelRoute =
-  AuthenticatedConfigureMasterLevelRouteImport.update({
-    id: '/configure/master/level',
-    path: '/configure/master/level',
+const AuthenticatedHomeProfileRoute =
+  AuthenticatedHomeProfileRouteImport.update({
+    id: '/home/profile',
+    path: '/home/profile',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
-const AuthenticatedConfigureMasterEventTypeRoute =
-  AuthenticatedConfigureMasterEventTypeRouteImport.update({
-    id: '/configure/master/event-type',
-    path: '/configure/master/event-type',
+const AuthenticatedLeaderboardIndexRoute =
+  AuthenticatedLeaderboardIndexRouteImport.update({
+    id: '/leaderboard/',
+    path: '/leaderboard/',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
-const AuthenticatedConfigureMasterEventTimeRoute =
-  AuthenticatedConfigureMasterEventTimeRouteImport.update({
-    id: '/configure/master/event-time',
-    path: '/configure/master/event-time',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
-const AuthenticatedConfigureMasterBadgeRoute =
-  AuthenticatedConfigureMasterBadgeRouteImport.update({
-    id: '/configure/master/badge',
-    path: '/configure/master/badge',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
-const AuthenticatedConfigureMasterAttendanceBadgeRoute =
-  AuthenticatedConfigureMasterAttendanceBadgeRouteImport.update({
-    id: '/configure/master/attendance-badge',
-    path: '/configure/master/attendance-badge',
+const AuthenticatedConfigureEarlyWarningThresholdRoute =
+  AuthenticatedConfigureEarlyWarningThresholdRouteImport.update({
+    id: '/configure/early-warning/threshold',
+    path: '/configure/early-warning/threshold',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedConfigureMasterAchievementRoute =
@@ -143,10 +119,34 @@ const AuthenticatedConfigureMasterAchievementRoute =
     path: '/configure/master/achievement',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
-const AuthenticatedConfigureEarlyWarningThresholdRoute =
-  AuthenticatedConfigureEarlyWarningThresholdRouteImport.update({
-    id: '/configure/early-warning/threshold',
-    path: '/configure/early-warning/threshold',
+const AuthenticatedConfigureMasterAttendanceBadgeRoute =
+  AuthenticatedConfigureMasterAttendanceBadgeRouteImport.update({
+    id: '/configure/master/attendance-badge',
+    path: '/configure/master/attendance-badge',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedConfigureMasterBadgeRoute =
+  AuthenticatedConfigureMasterBadgeRouteImport.update({
+    id: '/configure/master/badge',
+    path: '/configure/master/badge',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedConfigureMasterEventTimeRoute =
+  AuthenticatedConfigureMasterEventTimeRouteImport.update({
+    id: '/configure/master/event-time',
+    path: '/configure/master/event-time',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedConfigureMasterEventTypeRoute =
+  AuthenticatedConfigureMasterEventTypeRouteImport.update({
+    id: '/configure/master/event-type',
+    path: '/configure/master/event-type',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedConfigureMasterLevelRoute =
+  AuthenticatedConfigureMasterLevelRouteImport.update({
+    id: '/configure/master/level',
+    path: '/configure/master/level',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
 
@@ -297,18 +297,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/sign-up': {
-      id: '/sign-up'
-      path: '/sign-up'
-      fullPath: '/sign-up'
-      preLoaderRoute: typeof SignUpRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated': {
@@ -318,32 +311,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/teams': {
-      id: '/_authenticated/teams'
-      path: '/teams'
-      fullPath: '/teams'
-      preLoaderRoute: typeof AuthenticatedTeamsRouteImport
-      parentRoute: typeof AuthenticatedRoute
+    '/sign-up': {
+      id: '/sign-up'
+      path: '/sign-up'
+      fullPath: '/sign-up'
+      preLoaderRoute: typeof SignUpRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/recency-alerts': {
-      id: '/_authenticated/recency-alerts'
-      path: '/recency-alerts'
-      fullPath: '/recency-alerts'
-      preLoaderRoute: typeof AuthenticatedRecencyAlertsRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/pengurus-contribution': {
-      id: '/_authenticated/pengurus-contribution'
-      path: '/pengurus-contribution'
-      fullPath: '/pengurus-contribution'
-      preLoaderRoute: typeof AuthenticatedPengurusContributionRouteImport
+    '/_authenticated/insight': {
+      id: '/_authenticated/insight'
+      path: '/insight'
+      fullPath: '/insight'
+      preLoaderRoute: typeof AuthenticatedInsightRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/notifications': {
@@ -353,25 +339,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedNotificationsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/insight': {
-      id: '/_authenticated/insight'
-      path: '/insight'
-      fullPath: '/insight'
-      preLoaderRoute: typeof AuthenticatedInsightRouteImport
+    '/_authenticated/pengurus-contribution': {
+      id: '/_authenticated/pengurus-contribution'
+      path: '/pengurus-contribution'
+      fullPath: '/pengurus-contribution'
+      preLoaderRoute: typeof AuthenticatedPengurusContributionRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/leaderboard/': {
-      id: '/_authenticated/leaderboard/'
-      path: '/leaderboard'
-      fullPath: '/leaderboard/'
-      preLoaderRoute: typeof AuthenticatedLeaderboardIndexRouteImport
+    '/_authenticated/recency-alerts': {
+      id: '/_authenticated/recency-alerts'
+      path: '/recency-alerts'
+      fullPath: '/recency-alerts'
+      preLoaderRoute: typeof AuthenticatedRecencyAlertsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/home/': {
-      id: '/_authenticated/home/'
-      path: '/home'
-      fullPath: '/home/'
-      preLoaderRoute: typeof AuthenticatedHomeIndexRouteImport
+    '/_authenticated/teams': {
+      id: '/_authenticated/teams'
+      path: '/teams'
+      fullPath: '/teams'
+      preLoaderRoute: typeof AuthenticatedTeamsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/events/': {
@@ -381,11 +367,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEventsIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/home/profile': {
-      id: '/_authenticated/home/profile'
-      path: '/home/profile'
-      fullPath: '/home/profile'
-      preLoaderRoute: typeof AuthenticatedHomeProfileRouteImport
+    '/_authenticated/home/': {
+      id: '/_authenticated/home/'
+      path: '/home'
+      fullPath: '/home/'
+      preLoaderRoute: typeof AuthenticatedHomeIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/home/achievements': {
@@ -395,39 +381,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedHomeAchievementsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/configure/master/level': {
-      id: '/_authenticated/configure/master/level'
-      path: '/configure/master/level'
-      fullPath: '/configure/master/level'
-      preLoaderRoute: typeof AuthenticatedConfigureMasterLevelRouteImport
+    '/_authenticated/home/profile': {
+      id: '/_authenticated/home/profile'
+      path: '/home/profile'
+      fullPath: '/home/profile'
+      preLoaderRoute: typeof AuthenticatedHomeProfileRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/configure/master/event-type': {
-      id: '/_authenticated/configure/master/event-type'
-      path: '/configure/master/event-type'
-      fullPath: '/configure/master/event-type'
-      preLoaderRoute: typeof AuthenticatedConfigureMasterEventTypeRouteImport
+    '/_authenticated/leaderboard/': {
+      id: '/_authenticated/leaderboard/'
+      path: '/leaderboard'
+      fullPath: '/leaderboard/'
+      preLoaderRoute: typeof AuthenticatedLeaderboardIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/configure/master/event-time': {
-      id: '/_authenticated/configure/master/event-time'
-      path: '/configure/master/event-time'
-      fullPath: '/configure/master/event-time'
-      preLoaderRoute: typeof AuthenticatedConfigureMasterEventTimeRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/configure/master/badge': {
-      id: '/_authenticated/configure/master/badge'
-      path: '/configure/master/badge'
-      fullPath: '/configure/master/badge'
-      preLoaderRoute: typeof AuthenticatedConfigureMasterBadgeRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/configure/master/attendance-badge': {
-      id: '/_authenticated/configure/master/attendance-badge'
-      path: '/configure/master/attendance-badge'
-      fullPath: '/configure/master/attendance-badge'
-      preLoaderRoute: typeof AuthenticatedConfigureMasterAttendanceBadgeRouteImport
+    '/_authenticated/configure/early-warning/threshold': {
+      id: '/_authenticated/configure/early-warning/threshold'
+      path: '/configure/early-warning/threshold'
+      fullPath: '/configure/early-warning/threshold'
+      preLoaderRoute: typeof AuthenticatedConfigureEarlyWarningThresholdRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/configure/master/achievement': {
@@ -437,11 +409,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedConfigureMasterAchievementRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/configure/early-warning/threshold': {
-      id: '/_authenticated/configure/early-warning/threshold'
-      path: '/configure/early-warning/threshold'
-      fullPath: '/configure/early-warning/threshold'
-      preLoaderRoute: typeof AuthenticatedConfigureEarlyWarningThresholdRouteImport
+    '/_authenticated/configure/master/attendance-badge': {
+      id: '/_authenticated/configure/master/attendance-badge'
+      path: '/configure/master/attendance-badge'
+      fullPath: '/configure/master/attendance-badge'
+      preLoaderRoute: typeof AuthenticatedConfigureMasterAttendanceBadgeRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/configure/master/badge': {
+      id: '/_authenticated/configure/master/badge'
+      path: '/configure/master/badge'
+      fullPath: '/configure/master/badge'
+      preLoaderRoute: typeof AuthenticatedConfigureMasterBadgeRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/configure/master/event-time': {
+      id: '/_authenticated/configure/master/event-time'
+      path: '/configure/master/event-time'
+      fullPath: '/configure/master/event-time'
+      preLoaderRoute: typeof AuthenticatedConfigureMasterEventTimeRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/configure/master/event-type': {
+      id: '/_authenticated/configure/master/event-type'
+      path: '/configure/master/event-type'
+      fullPath: '/configure/master/event-type'
+      preLoaderRoute: typeof AuthenticatedConfigureMasterEventTypeRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/configure/master/level': {
+      id: '/_authenticated/configure/master/level'
+      path: '/configure/master/level'
+      fullPath: '/configure/master/level'
+      preLoaderRoute: typeof AuthenticatedConfigureMasterLevelRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
   }

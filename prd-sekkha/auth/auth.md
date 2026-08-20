@@ -1,25 +1,25 @@
-# PRD: Authentication & Onboarding System — Sekkha Apps
+# PRD: Authentication System — Sekkha Apps
 
 | Metadata | Detail |
 | --- | --- |
 | **Dokumen** | Product Requirement Document (PRD) |
-| **Fitur** | Authentication (Manual Auth, Google OAuth 2.0) & Post-Signup Onboarding Flow (Data Sekolah & Kelas + Product Tour) |
+| **Fitur** | Authentication (Manual Auth, Google OAuth 2.0) |
 | **Aplikasi** | Sekkha Apps (Frontend & Backend) |
-| **Versi** | 1.3.0 |
+| **Versi** | 1.4.0 |
 | **Status** | Approved / Ready for Development |
 
 ---
 
 ## 1. Ringkasan Eksekutif & Tujuan
 
-**Authentication & Onboarding System** merupakan alur autentikasi komprehensif yang mendukung registrasi & login **Manual (Email & Password)**, **Autentikasi Sosial (Google OAuth 2.0)**, serta **Alur Onboarding Interaktif (Pengisian Data Sekolah & Kelas + Product Tour)** untuk pengguna baru di aplikasi Sekkha.
+**Authentication System** merupakan alur autentikasi yang mendukung registrasi & login **Manual (Email & Password)** serta **Autentikasi Sosial (Google OAuth 2.0)** untuk pengguna aplikasi Sekkha.
 
-Proses **registrasi** dirancang sesederhana mungkin — hanya membutuhkan nama lengkap, email, password, dan konfirmasi password. Setelah registrasi berhasil, pengguna akan diarahkan ke alur **onboarding** untuk melengkapi data akademik (sekolah dan kelas). Seluruh langkah onboarding bersifat **opsional (dapat dilewati / skip)** dan data yang belum diisi dapat dilengkapi kapan saja melalui halaman **Profil**.
+Proses **registrasi & login** dirancang sesederhana dan secepat mungkin — setelah berhasil login/daftar, pengguna langsung diarahkan ke halaman utama (**Dashboard / Home**). Pengisian data tambahan (sekolah, kelas, no HP, dll.) dapat dilengkapi kapan saja secara mandiri melalui halaman **Profil**.
 
 ### 🎯 Tujuan Utama
 1. **Keamanan & Privasi**: Enkripsi password yang aman di backend (Bcrypt/Argon2), integrasi Google OAuth 2.0 Authorization Code Flow, serta pengelolaan sesi berbasis **JSON Web Token (JWT)**.
 2. **Fleksibilitas Log In**: Memberikan pilihan registrasi/login cepat 1-klik menggunakan akun Google atau login manual berbasis email & password.
-3. **Onboarding Ramah Pengguna (Pengayaan Data & Product Tour)**: Memandu pengguna baru melengkapi data diri serta mengenali fitur utama aplikasi dengan opsi **Lewati (Skip)** agar tidak menghambat aksesibilitas.
+3. **Akses Cepat & Tanpa Hambatan**: Langsung masuk ke fitur utama tanpa terhalang alur onboarding bertahap.
 4. **Integrasi Seamless**: Terhubung erat dengan TanStack Router (`_authenticated` layout) di frontend dan API Contract terstandarisasi di backend.
 
 ---
@@ -67,10 +67,10 @@ Sistem Sekkha mendukung 4 (empat) tingkatan role pengguna:
 
 #### Alur & Response Server:
 * **Status 201 (Created)**:
-  * Server membuat user baru dengan `role: "umat"`, `status: "active"`, dan `onboarding_completed: false`.
+  * Server membuat user baru dengan `role: "umat"`, `status: "active"`.
   * Mengembalikan token JWT (`accessToken`) dan data user.
   * Frontend menyimpan token di `localStorage` (`key: sekkha_access_token`), memperbarui `AuthState` menjadi `authenticated`.
-  * **Redirect**: Pengguna diarahkan ke **Alur Onboarding (`/onboarding`)** untuk melengkapi data sekolah & kelas.
+  * **Redirect**: Pengguna langsung diarahkan ke halaman utama / Dashboard (`/home` atau `/dashboard`).
 * **Status 409 (Conflict)**:
   * Email sudah terdaftar. Frontend menampilkan Auth Error Banner: `"Email sudah digunakan. Silakan gunakan email lain atau masuk ke akun Anda."`
 
@@ -100,9 +100,8 @@ Halaman Login menyediakan **dua metode autentikasi**:
   * Mengembalikan user object dan JWT `token`.
   * Frontend menyimpan token di `localStorage` (`key: sekkha_access_token`), memperbarui `AuthState` menjadi `authenticated`.
   * **Redirect Logic**:
-    * Jika `user.onboarding_completed === false` → arahkan ke Alur Onboarding (`/onboarding`).
     * Jika terdapat query param `redirectTo` yang valid (misal `/login?redirectTo=/insight`) → navigasi ke path tersebut.
-    * Default → navigasi ke `/dashboard`.
+    * Default → navigasi ke `/home` atau `/dashboard`.
 * **Status 401 (Unauthorized)**:
   * Kredensial tidak cocok. Tampilkan Auth Error Banner: `"Email atau password salah. Silakan coba lagi."`
 
@@ -110,7 +109,7 @@ Halaman Login menyediakan **dua metode autentikasi**:
 
 * **Tombol**: `"Lanjutkan dengan Google"` — tersedia di halaman `/login` dan `/sign-up`.
 * **Alur lengkap** → lihat §3.3 (Autentikasi Sosial Google OAuth 2.0).
-* Pengguna yang belum punya akun Sekkha dan login via Google untuk **pertama kali** akan otomatis dibuatkan akun baru dan diarahkan ke Alur Onboarding.
+* Pengguna yang belum punya akun Sekkha dan login via Google untuk **pertama kali** akan otomatis dibuatkan akun baru dan langsung diarahkan ke Dashboard.
 
 #### Komponen UI Halaman Login:
 * **Tombol Google OAuth** berada di **atas** form (primary CTA visual).
@@ -141,67 +140,20 @@ Halaman Login menyediakan **dua metode autentikasi**:
    * Google meredirect kembali ke backend callback (`/v1/auth/google/callback?code=...`).
    * Backend menukar `code` dengan OAuth Token ke Google, mengambil profil pengguna (`email`, `name`, `photo_url`, `google_id`).
    * Backend mencari user berdasarkan email/google_id:
-     * Jika **belum ada**: Buat user baru (`role: "umat"`, `status: "active"`, `onboarding_completed: false`, `is_new_user: true`).
+     * Jika **belum ada**: Buat user baru (`role: "umat"`, `status: "active"`, `is_new_user: true`).
      * Jika **sudah ada**: Hubungkan akun (`is_new_user: false`).
-   * Backend menerbitkan JWT `accessToken` Sekkha dan meredirect browser kembali ke frontend: `/login?token=<JWT_TOKEN>&is_new_user=true`.
+   * Backend menerbitkan JWT `accessToken` Sekkha dan meredirect browser kembali ke frontend: `/login?token=<JWT_TOKEN>`.
 4. **Handling Frontend**:
    * Aplikasi frontend mendeteksi parameter `token` di URL query string.
    * Simpan token ke `localStorage["sekkha_access_token"]`.
    * Bersihkan parameter URL tanpa refresh (`window.history.replaceState`).
-   * Set `AuthState = authenticated`. Jika `is_new_user === true` atau `onboarding_completed === false`, arahkan ke **Alur Onboarding**; jika tidak, arahkan ke `/dashboard`.
+   * Set `AuthState = authenticated`, arahkan ke `/home` atau `/dashboard` (atau path `redirectTo`).
 
 ---
 
-### 3.4. Alur Onboarding Pasca-Registrasi (`/onboarding` & Product Tour)
+### 3.4. Kelengkapan Data Diri di Halaman Profil
 
-Alur ini otomatis terpicu setelah pendaftaran akun baru (baik Manual Sign-Up maupun Google OAuth pertama kali). Alur terdiri dari **2 (dua) tahap** yang dapat **dilewati (skip) kapan saja**. Data yang dilewati dapat dilengkapi kemudian melalui halaman **Profil**.
-
-#### Tahap 1: Lengkapi Data Akademik (`/onboarding/profile`)
-
-* **Tujuan**: Mengajak pengguna baru mengisi informasi akademik untuk personalisasi konten dan pengalaman di dalam aplikasi Sekkha.
-* **Informasi Penting untuk Pengguna**: Ditampilkan teks informatif — *"Data ini membantu kami mempersonalisasi pengalaman belajarmu. Kamu bisa mengisi ini nanti di halaman Profil."*
-* **Form Field**:
-
-  | Field | Label UI | Tipe Input | Keterangan |
-  |---|---|---|---|
-  | `school_name` | Nama Sekolah | Text input (dengan autocomplete/search) | Opsional |
-  | `school_level` | Jenjang Sekolah | Dropdown / Select | `SD`, `SMP`, `SMA/SMK`, `Universitas`, `Lainnya` |
-  | `class_grade` | Kelas / Semester | Dropdown / Select (dinamis berdasarkan `school_level`) | Opsional |
-
-  > **Contoh nilai `class_grade` berdasarkan `school_level`**:
-  > - `SD`: Kelas 1–6
-  > - `SMP`: Kelas 7–9
-  > - `SMA/SMK`: Kelas 10–12
-  > - `Universitas`: Semester 1–12
-  > - `Lainnya`: input teks bebas
-
-* **Opsi Aksi**:
-  * Tombol **"Simpan & Lanjutkan"**: Mengirim request `PATCH /v1/users/me` dengan data yang diisi, lalu masuk ke Tahap 2.
-  * Tombol **"Lewati untuk Sekarang" / "Skip"**: Langsung beralih ke Tahap 2 **tanpa menyimpan** data akademik. Data dapat diisi kapan saja di halaman **Profil (`/profile/edit`)**.
-
-#### Tahap 2: Interactive Product Onboarding Tour
-
-* **Tujuan**: Mengenalkan navigasi dan fitur-fitur kunci aplikasi Sekkha kepada pengguna baru.
-* **Komponen Tour**: Modul tour berbasis popover/tooltip overlay yang menyoroti elemen UI secara bertahap:
-  1. **Spotlight 1: Dashboard Overview** — Menjelaskan poin kontribusi, level pengguna, dan status aktivitas.
-  2. **Spotlight 2: Event & Jadwal Kegiatan** — Menjelaskan cara melihat jadwal dan mendaftar kegiatan/baktisala.
-  3. **Spotlight 3: Reward & Achievement** — Menjelaskan perolehan lencana (*badges*) dan papan peringkat (*leaderboard*).
-  4. **Spotlight 4: Profil & Pengaturan** — Menjelaskan cara memperbarui akun, data sekolah, dan pengaturan notifikasi.
-* **Opsi Aksi**:
-  * Tombol **"Lanjut"** & **"Kembali"** di setiap langkah tur.
-  * Tombol **"Lewati Tour" / "Skip Tour"**: Selalu tersedia di sudut setiap popover tour untuk mengakhiri tur seketika.
-  * Tombol **"Mulai Jelajahi Sekkha"**: Ditampilkan pada langkah terakhir tur.
-
-#### Penyimpanan Status Onboarding (`onboarding_completed`):
-* Ketika pengguna menekan **"Selesai"**, **"Mulai Jelajahi Sekkha"**, atau **"Lewati (Skip)"** pada tahap mana pun:
-  * Frontend mengirimkan request `PATCH /v1/users/me` dengan payload `{ "onboarding_completed": true }`.
-  * Backend memperbarui status user menjadi `onboarding_completed: true`.
-  * Status ini memastikan Onboarding **tidak akan muncul kembali** saat login berikutnya.
-  * Router menavigasi pengguna ke `/dashboard` (atau path `redirectTo`).
-
-#### Skip & Lengkapi Data di Profil:
-* Jika pengguna meng-skip Tahap 1, field `school_name`, `school_level`, dan `class_grade` tetap `null` di database.
-* Pengguna dapat mengisi / mengubah data tersebut kapan saja melalui **Profil → Edit Profil (`/profile/edit`)** → bagian *"Data Akademik"*.
+Pengisian data sekunder (nama sekolah, jenjang kelas, nomor HP, tanggal lahir, dll.) dilakukan langsung secara fleksibel melalui menu **Profil → Edit Profil (`/home/profile` atau `/profile/edit`)** kapan saja pengguna menginginkannya tanpa mengganggu alur masuk awal.
 
 ---
 
@@ -241,6 +193,18 @@ Alur ini otomatis terpicu setelah pendaftaran akun baru (baik Manual Sign-Up mau
 
 ---
 
+### 3.5. Format Standar User ID & Nomor Unik (`YYYYMMDDuniqNum`)
+
+Setiap user yang terdaftar (baik via manual registrasi, Google OAuth, maupun pre-provisioned oleh pengurus) memiliki format identitas terstandarisasi:
+* **Format**: `YYYYMMDDuniqNum`
+  * `YYYY`: 4 digit tahun pendaftaran (contoh: `2026`)
+  * `MM`: 2 digit bulan (contoh: `08`)
+  * `DD`: 2 digit tanggal (contoh: `20`)
+  * `uniqNum`: Nomor urut sekuensial unik harian / prefix counter (contoh: `0001`, `0002` dst.)
+* **Contoh Hasil**: `202608200001`
+
+---
+
 ## 4. Spesifikasi API Contract
 
 ### 4.1. `POST /v1/auth/register`
@@ -262,12 +226,11 @@ Alur ini otomatis terpicu setelah pendaftaran akun baru (baik Manual Sign-Up mau
   "status": "success",
   "data": {
     "user": {
-      "id": "usr_9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+      "id": "202608200001",
       "name": "Budi Santoso",
       "email": "budi@example.com",
       "role": "umat",
       "status": "active",
-      "onboarding_completed": false,
       "school_name": null,
       "school_level": null,
       "class_grade": null
@@ -281,7 +244,7 @@ Alur ini otomatis terpicu setelah pendaftaran akun baru (baik Manual Sign-Up mau
 
 ---
 
-### 4.2. `PATCH /v1/users/me` (Update Profil & Status Onboarding)
+### 4.2. `PATCH /v1/users/me` (Update Profil)
 **Headers**: `Authorization: Bearer <token>`
 
 **Request Payload** *(semua field optional — kirim hanya field yang ingin diupdate)*:
@@ -291,11 +254,7 @@ Alur ini otomatis terpicu setelah pendaftaran akun baru (baik Manual Sign-Up mau
   "school_level": "SMA/SMK",
   "class_grade": "Kelas 11",
   "phone": "081234567890",
-  "birth_date": "2000-05-12",
-  "gender": "pria",
-  "vihara_origin": "Vihara Vimala Chanda",
-  "photo_url": "https://cdn.sekkha.app/photos/usr_9b1d.jpg",
-  "onboarding_completed": true
+  "birth_date": "2000-05-12"
 }
 ```
 
@@ -304,7 +263,7 @@ Alur ini otomatis terpicu setelah pendaftaran akun baru (baik Manual Sign-Up mau
 {
   "status": "success",
   "data": {
-    "id": "usr_9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+    "id": "202608200001",
     "name": "Budi Santoso",
     "email": "budi@example.com",
     "school_name": "SMA Dharma Widya",
@@ -312,12 +271,8 @@ Alur ini otomatis terpicu setelah pendaftaran akun baru (baik Manual Sign-Up mau
     "class_grade": "Kelas 11",
     "phone": "081234567890",
     "birth_date": "2000-05-12",
-    "gender": "pria",
-    "vihara_origin": "Vihara Vimala Chanda",
-    "photo_url": "https://cdn.sekkha.app/photos/usr_9b1d.jpg",
     "role": "umat",
-    "status": "active",
-    "onboarding_completed": true
+    "status": "active"
   },
   "message": "Profile updated successfully",
   "meta": null

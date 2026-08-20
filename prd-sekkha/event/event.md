@@ -1,23 +1,23 @@
-﻿# PRD: Event Management System — Sekkha Apps
+# PRD: Event Management System — Sekkha Apps
 
 | Metadata | Detail |
 | --- | --- |
 | **Dokumen** | Product Requirement Document (PRD) |
-| **Fitur** | Event Management (Buat Event, Planning, RSVP, Absensi QR, Visibility Berbasis Role) |
+| **Fitur** | Event Management (Buat Event, Planning, Absensi QR, Visibility Berbasis Role) |
 | **Aplikasi** | Sekkha Apps (Frontend & Backend) |
-| **Versi** | 1.0.0 |
+| **Versi** | 1.1.0 |
 | **Status** | Draft / Ready for Review |
 
 ---
 
 ## 1. Ringkasan Eksekutif & Tujuan
 
-**Event Management System** adalah fitur inti Sekkha Apps yang memungkinkan **pengurus** mengelola kegiatan komunitas vihara — mulai dari membuat event pasti (*confirmed*), hingga menyusun **rencana/planning** kegiatan yang masih tentative. Fitur ini mendukung visibilitas berbasis role sehingga konten yang relevan ditampilkan kepada audiens yang tepat.
+**Event Management System** adalah fitur inti Sekkha Apps yang memungkinkan **pengurus** mengelola kegiatan komunitas vihara — mulai dari membuat event pasti (*confirmed*), hingga menyusun **rencana/planning** kegiatan yang masih tentative. Fitur ini mendukung visibilitas berbasis role sehingga konten yang relevan ditampilkan kepada audiens yang tepat tanpa memerlukan proses RSVP pra-kegiatan.
 
 Alur utama:
-1. **Pengurus / Admin** membuat event atau planning kegiatan, memilih **target audiens** (siapa yang boleh melihat & mendaftar).
-2. **Umat / Aktivis** (sesuai target audiens) melihat, RSVP, dan hadir di event.
-3. **Absensi** dicatat melalui **QR Code** (digunakan oleh aktivis/pengurus sebagai scanner) atau secara manual.
+1. **Pengurus / Admin** membuat event atau planning kegiatan, memilih **target audiens** (siapa yang boleh melihat jadwal kegiatan).
+2. **Umat / Aktivis** (sesuai target audiens) melihat jadwal dan informasi detail event, lalu langsung hadir pada waktu kegiatan.
+3. **Absensi** dicatat langsung di lokasi melalui **QR Code** (di-scan oleh aktivis/pengurus) atau secara manual.
 4. Kehadiran terintegrasi dengan sistem **poin & gamifikasi** (badge, level, streak).
 
 ---
@@ -26,12 +26,12 @@ Alur utama:
 
 Mengikuti role system dari PRD Auth (lihat `prd/auth/auth.md`):
 
-| Role | Lihat Event | RSVP | Buat / Edit / Hapus Event | Scan Absensi | Lihat Insight Event |
-| --- | :---: | :---: | :---: | :---: | :---: |
-| `umat` | (sesuai target audiens) | v | x | x | x |
-| `aktivis` | (sesuai target audiens) | v | x | v | x |
-| `pengurus` | (semua, termasuk internal) | v | v | v | v |
-| `admin` | (semua) | v | v | v | v |
+| Role | Lihat Event | Buat / Edit / Hapus Event | Scan Absensi | Lihat Rekap Kehadiran |
+| --- | :---: | :---: | :---: | :---: |
+| `umat` | v (sesuai target audiens) | x | x | x |
+| `aktivis` | v (sesuai target audiens) | x | v | x |
+| `pengurus` | v (semua, termasuk internal) | v | v | v |
+| `admin` | v (semua) | v | v | v |
 
 ---
 
@@ -51,13 +51,13 @@ Mengikuti role system dari PRD Auth (lihat `prd/auth/auth.md`):
 
 ### 3.2. Status Event (`event_status`)
 
-| Status | Label UI | Deskripsi | Bisa RSVP? |
-| --- | --- | --- | :---: |
-| `planning` | Planning | Rencana kegiatan — masih tentative, belum pasti | Tidak |
-| `upcoming` | Akan Datang | Event sudah terkonfirmasi & terjadwal | Ya |
-| `ongoing` | Berlangsung | Event sedang berlangsung | Tidak |
-| `completed` | Selesai | Event sudah selesai dilaksanakan | Tidak |
-| `cancelled` | Dibatalkan | Event dibatalkan | Tidak |
+| Status | Label UI | Deskripsi |
+| --- | --- | --- |
+| `planning` | Planning | Rencana kegiatan — masih tentative, belum pasti |
+| `upcoming` | Akan Datang | Event sudah terkonfirmasi & terjadwal |
+| `ongoing` | Berlangsung | Event sedang berlangsung |
+| `completed` | Selesai | Event sudah selesai dilaksanakan |
+| `cancelled` | Dibatalkan | Event dibatalkan |
 
 > **Catatan Planning**: Event berstatus `planning` bersifat *draft publik* (atau internal, tergantung target audiens). Pengurus dapat mempromosikan status dari `planning` ke `upcoming` saat sudah terkonfirmasi.
 
@@ -65,7 +65,7 @@ Mengikuti role system dari PRD Auth (lihat `prd/auth/auth.md`):
 
 ## 4. Konsep: Target Audiens (`visibility`)
 
-Setiap event memiliki pengaturan **target audiens** yang menentukan siapa yang dapat melihat dan mendaftar event tersebut.
+Setiap event memiliki pengaturan **target audiens** yang menentukan siapa yang dapat melihat jadwal event tersebut.
 
 | Nilai `visibility` | Label UI | Siapa yang bisa melihat |
 | --- | --- | --- |
@@ -109,8 +109,7 @@ Setiap event card menampilkan:
 * Lokasi (singkat)
 * Badge status (Planning, Akan Datang, dll.)
 * Badge audiens (hanya terlihat oleh pengurus: Internal, Semua, dll.)
-* Jumlah RSVP / kapasitas (jika ada kapasitas)
-* Tombol **RSVP** (jika `upcoming` & belum RSVP) atau **Sudah RSVP** (jika sudah)
+* Reward Poin (jika ada)
 
 ---
 
@@ -122,16 +121,13 @@ Setiap event card menampilkan:
   * Deskripsi lengkap event (support rich text / markdown)
   * Status badge + badge audiens (khusus pengurus)
   * Catatan planning (jika status `planning`): *"Kegiatan ini masih dalam tahap perencanaan. Detail dapat berubah."*
-  * Daftar RSVP: jumlah hadir / total kapasitas
+  * Poin reward & badge yang bisa diperoleh
   * Tombol aksi sesuai role & status:
 
 | Kondisi | Tombol Tersedia |
 | --- | --- |
-| `upcoming` + belum RSVP (umat/aktivis) | **RSVP Hadir** |
-| `upcoming` + sudah RSVP (umat/aktivis) | **Batalkan RSVP** |
-| `planning` | (tidak ada tombol RSVP) |
 | `ongoing` (aktivis/pengurus) | **Buka Scanner Absensi** |
-| `completed` | **Lihat Rekap Kehadiran** |
+| `completed` (pengurus/admin) | **Lihat Rekap Kehadiran** |
 | Pengurus/Admin (semua status) | **Edit Event** dan **Hapus Event** |
 
 ---
@@ -154,7 +150,7 @@ Setiap event card menampilkan:
 | `end_datetime` | Tanggal & Waktu Selesai | DateTime picker | Tidak | Opsional |
 | `location_name` | Lokasi | Text input | Tidak | Nama tempat |
 | `location_url` | Link Maps | URL input | Tidak | Google Maps / Waze link |
-| `capacity` | Kapasitas Peserta | Number input | Tidak | Kosong = tidak terbatas |
+| `capacity` | Kapasitas Peserta | Number input | Tidak | Estimasi kapasitas / batas kuota (opsional) |
 | `planning_notes` | Catatan Planning | Textarea | Tidak | Khusus status `planning`. Hanya terlihat oleh pengurus |
 | `point_reward` | Poin Kehadiran | Number input | Tidak | Poin yang diberikan saat hadir. Default: 0 |
 | `badge_id` | Badge Reward | Select (dari master data) | Tidak | Badge yang unlock otomatis saat hadir |
@@ -181,26 +177,14 @@ Di halaman edit event berstatus `planning`, tersedia **banner/callout** dengan t
 * **Behavior**:
   * Event dengan status `upcoming` / `planning` dapat dihapus langsung.
   * Event dengan status `completed` / `ongoing` memerlukan konfirmasi dengan dialog modal.
-  * Jika event dihapus, semua RSVP & data absensi terkait ikut dihapus (cascade delete).
+  * Jika event dihapus, data absensi terkait ikut terhapus (cascade delete).
 * **UX**: Setelah hapus, redirect ke `/events` dengan toast success.
 
 ---
 
-### 5.5. RSVP Event
+### 5.5. Absensi via QR Code
 
-* **Endpoint Backend**: `POST /v1/events/:id/rsvp`
-* **Akses**: Semua role yang dapat melihat event tersebut
-* **Behavior**:
-  * Satu user hanya bisa punya satu RSVP per event (toggle hadir/tidak hadir).
-  * Jika `capacity` sudah penuh, tombol RSVP menjadi disabled dengan label "Kuota Penuh".
-  * RSVP hanya tersedia untuk event berstatus `upcoming`.
-* **Batalkan RSVP**: `DELETE /v1/events/:id/rsvp` — tersedia selama event belum `ongoing` / `completed`.
-
----
-
-### 5.6. Absensi via QR Code
-
-Sistem absensi menggunakan QR Code yang di-scan oleh **aktivis** atau **pengurus** saat event berlangsung.
+Sistem absensi menggunakan QR Code yang di-scan oleh **aktivis** atau **pengurus** saat event berlangsung di lokasi.
 
 #### Alur Absensi:
 
@@ -226,29 +210,28 @@ Dashboard module: tambah poin, cek badge/level
 * QR Code menampilkan nama & foto profil user untuk verifikasi visual.
 
 #### Halaman Scanner (`/events/:id/scan`):
-* **Akses**: Hanya `aktivis` & `pengurus`
+* **Akses**: Hanya `aktivis`, `pengurus`, `admin`
 * **Fitur**:
   * Live camera feed dengan overlay frame QR scanner
   * Feedback sukses / duplikat / error secara real-time (toast + suara beep opsional)
-  * Counter real-time: X dari Y orang sudah hadir
+  * Counter real-time: total orang yang sudah hadir
   * Daftar absensi (nama + waktu scan) scrollable di bawah kamera
   * Tombol **Absensi Manual** untuk fallback tanpa QR
 
 #### Absensi Manual (Fallback):
 * **Endpoint**: `POST /v1/events/:id/attendance/manual`
-* Field: `user_id` (search/autocomplete dari daftar RSVP atau semua user)
+* Field: `user_id` (search/autocomplete dari data umat/pengguna)
 * Hanya `pengurus` & `admin` yang dapat melakukan absensi manual
 
 ---
 
-### 5.7. Rekap Kehadiran Event (Pengurus & Admin)
+### 5.6. Rekap Kehadiran Event (Pengurus & Admin)
 
 * **Halaman**: `/events/:id/attendances`
 * **Akses**: Hanya `pengurus` & `admin`
 * **Konten**:
-  * Ringkasan: total RSVP vs total yang hadir, persentase kehadiran
+  * Ringkasan: total peserta hadir & kapasitas (jika diisi)
   * Tabel: Nama, Foto, Waktu Hadir, Via (QR / Manual)
-  * Filter: Hadir / Tidak Hadir (dari daftar RSVP)
   * Export ke CSV (future feature)
 
 ---
@@ -305,8 +288,6 @@ Pengurus dapat membuat **rencana kegiatan** yang belum dikonfirmasi sebagai even
       "location_name": "Vihara Vimala Chanda",
       "location_url": "https://maps.app.goo.gl/example",
       "capacity": 100,
-      "rsvp_count": 42,
-      "is_user_rsvp": true,
       "point_reward": 50,
       "planning_notes": null
     }
@@ -338,9 +319,7 @@ Pengurus dapat membuat **rencana kegiatan** yang belum dikonfirmasi sebagai even
     "location_name": "Vihara Vimala Chanda",
     "location_url": "https://maps.app.goo.gl/example",
     "capacity": 100,
-    "rsvp_count": 42,
-    "attendance_count": 0,
-    "is_user_rsvp": true,
+    "attendance_count": 38,
     "is_user_attended": false,
     "point_reward": 50,
     "badge_id": null,
@@ -435,39 +414,7 @@ Partial update didukung — kirim hanya field yang ingin diubah.
 
 ---
 
-### 7.6. `POST /v1/events/:id/rsvp`
-
-**Response 200:**
-```json
-{
-  "status": "success",
-  "data": {
-    "rsvp_id": "rsvp_abc123",
-    "event_id": "evt_xyz789",
-    "user_id": "usr_9b1deb4d",
-    "status": "attending",
-    "created_at": "2026-08-01T08:00:00Z"
-  },
-  "message": "RSVP berhasil dicatat"
-}
-```
-
----
-
-### 7.7. `DELETE /v1/events/:id/rsvp`
-
-**Response 200:**
-```json
-{
-  "status": "success",
-  "data": null,
-  "message": "RSVP berhasil dibatalkan"
-}
-```
-
----
-
-### 7.8. `POST /v1/events/:id/attendance`
+### 7.6. `POST /v1/events/:id/attendance`
 
 **Headers:** `Authorization: Bearer <token>` (role: `aktivis` / `pengurus` / `admin`)
 
@@ -508,7 +455,7 @@ Partial update didukung — kirim hanya field yang ingin diubah.
 
 ---
 
-### 7.9. `GET /v1/events/:id/attendances`
+### 7.7. `GET /v1/events/:id/attendances`
 
 **Headers:** `Authorization: Bearer <token>` (role: `pengurus` / `admin`)
 
@@ -518,9 +465,7 @@ Partial update didukung — kirim hanya field yang ingin diubah.
   "status": "success",
   "data": {
     "event_id": "evt_xyz789",
-    "total_rsvp": 42,
     "total_attended": 38,
-    "attendance_rate": 90.5,
     "attendances": [
       {
         "user": {
@@ -546,7 +491,7 @@ Partial update didukung — kirim hanya field yang ingin diubah.
 | `event.created` | Events module | (future: notif) | `{ event_id, title, visibility }` | Trigger notifikasi ke audiens |
 | `event.status_changed` | Events module | (future: notif) | `{ event_id, old_status, new_status }` | Notif saat planning ke upcoming |
 | `attendance.recorded` | Events module | Dashboard/Gamification | `{ event_id, user_id, point_reward, badge_id }` | Trigger poin + badge |
-| `event.cancelled` | Events module | (future: notif) | `{ event_id, title }` | Notif ke semua RSVP |
+| `event.cancelled` | Events module | (future: notif) | `{ event_id, title }` | Notif pembatalan kegiatan ke audiens |
 
 ---
 
@@ -599,24 +544,10 @@ model Event {
 
   created_by  User         @relation(fields: [created_by_id], references: [id])
   badge       Badge?       @relation(fields: [badge_id], references: [id])
-  rsvps       Rsvp[]
   attendances Attendance[]
 
   @@index([event_status, visibility])
   @@index([start_datetime])
-}
-
-model Rsvp {
-  id         String   @id @default(cuid())
-  event_id   String
-  user_id    String
-  status     String   @default("attending")
-  created_at DateTime @default(now())
-
-  event Event @relation(fields: [event_id], references: [id], onDelete: Cascade)
-  user  User  @relation(fields: [user_id], references: [id], onDelete: Cascade)
-
-  @@unique([event_id, user_id])
 }
 
 model Attendance {
@@ -676,13 +607,11 @@ model Attendance {
 | **AC-03** | Pengurus membuat event berstatus `planning` tanpa `start_datetime` | Event tersimpan, muncul di section "Rencana Kegiatan" halaman pengurus |
 | **AC-04** | Pengurus mengklik "Jadwalkan" pada event planning & mengisi tanggal | Status berubah ke `upcoming`, event muncul di kalender semua audiens yang sesuai |
 | **AC-05** | Event planning dengan `visibility: 'all'` dibuat oleh pengurus | Event **tidak muncul** di list umat, hanya terlihat di section planning pengurus |
-| **AC-06** | User mengklik RSVP pada event `upcoming` | RSVP tercatat, tombol berubah jadi "Sudah RSVP" + opsi batalkan |
-| **AC-07** | User mencoba RSVP saat kapasitas sudah penuh | Tombol RSVP disabled dengan label "Kuota Penuh" |
-| **AC-08** | Aktivis membuka scanner, scan QR user yang belum hadir | Kehadiran tercatat, toast sukses, counter hadir bertambah |
-| **AC-09** | Aktivis scan QR user yang sudah hadir | Muncul pesan "Sudah tercatat hadir", absensi tidak diduplikasi |
-| **AC-10** | Absensi berhasil dicatat | EventBus publish `attendance.recorded`, poin user bertambah sesuai `point_reward` |
-| **AC-11** | Pengurus membuka rekap kehadiran event selesai | Menampilkan daftar hadir + ringkasan persentase kehadiran |
-| **AC-12** | `umat` mencoba `POST /v1/events` | Mengembalikan `403 Forbidden` |
-| **AC-13** | `umat` mencoba `GET /v1/events/:id` untuk event `pengurus_only` | Mengembalikan `404 Not Found` |
-| **AC-14** | Pengurus menghapus event yang sudah `completed` | Dialog konfirmasi muncul. Setelah konfirmasi, event + RSVP + absensi terhapus |
-| **AC-15** | Event diubah statusnya ke `cancelled` | Tombol RSVP hilang, badge "Dibatalkan" muncul di card & detail |
+| **AC-06** | Aktivis membuka scanner, scan QR user yang belum hadir | Kehadiran tercatat, toast sukses, counter hadir bertambah |
+| **AC-07** | Aktivis scan QR user yang sudah hadir | Muncul pesan "Sudah tercatat hadir", absensi tidak diduplikasi |
+| **AC-08** | Absensi berhasil dicatat | EventBus publish `attendance.recorded`, poin user bertambah sesuai `point_reward` |
+| **AC-09** | Pengurus membuka rekap kehadiran event selesai | Menampilkan daftar hadir + total kehadiran |
+| **AC-10** | `umat` mencoba `POST /v1/events` | Mengembalikan `403 Forbidden` |
+| **AC-11** | `umat` mencoba `GET /v1/events/:id` untuk event `pengurus_only` | Mengembalikan `404 Not Found` |
+| **AC-12** | Pengurus menghapus event yang sudah `completed` | Dialog konfirmasi muncul. Setelah konfirmasi, event + absensi terhapus |
+| **AC-13** | Event diubah statusnya ke `cancelled` | Badge "Dibatalkan" muncul di card & detail |

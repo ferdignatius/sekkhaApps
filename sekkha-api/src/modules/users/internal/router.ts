@@ -297,7 +297,7 @@ usersRouter.post("/link-legacy-account", requireAuth, async (req, res, next) => 
       return
     }
 
-    // 3. Data Merging
+    // 3. Data Merging & Transfer
     let mergedAttendances = 0
     for (const att of targetUser.attendances) {
       const exists = await prisma.attendance.findUnique({
@@ -354,21 +354,34 @@ usersRouter.post("/link-legacy-account", requireAuth, async (req, res, next) => 
     })
     const calculatedPoints = allAttendances.reduce((acc, a) => acc + (a.pointsEarned || 50), 0)
 
+    const legacyUserNumber = targetUser.userNumber
+    const legacyPhone = targetUser.phone
+    const legacySchool = targetUser.school
+    const legacyBirthDate = targetUser.birthDate
+    const legacyGender = targetUser.gender
+
+    // Clean up old placeholder user record so NO duplicate exists in People
+    await prisma.attendance.deleteMany({ where: { userId: targetUser.id } }).catch(() => {})
+    await prisma.userBadge.deleteMany({ where: { userId: targetUser.id } }).catch(() => {})
+    await prisma.pointTransaction.deleteMany({ where: { userId: targetUser.id } }).catch(() => {})
+    await prisma.rsvp.deleteMany({ where: { userId: targetUser.id } }).catch(() => {})
+    await (prisma.user as any).delete({ where: { id: targetUser.id } })
+
+    const currentUser = await (prisma.user as any).findUnique({ where: { id: currentUserId } })
+
+    // Update active user with the official legacy userNumber and missing profile details
     await (prisma.user as any).update({
       where: { id: currentUserId },
       data: {
         points: calculatedPoints,
-        lastActivityAt: new Date(),
-      },
-    })
-
-    // Mark target user as claimed
-    await (prisma.user as any).update({
-      where: { id: targetUser.id },
-      data: {
+        userNumber: legacyUserNumber || currentUser.userNumber,
+        phone: currentUser.phone || legacyPhone,
+        school: currentUser.school || legacySchool,
+        birthDate: currentUser.birthDate || legacyBirthDate,
+        gender: currentUser.gender || legacyGender,
         isClaimed: true,
         claimedAt: new Date(),
-        name: `${targetUser.name} (Terklaim)`,
+        lastActivityAt: new Date(),
       },
     })
 

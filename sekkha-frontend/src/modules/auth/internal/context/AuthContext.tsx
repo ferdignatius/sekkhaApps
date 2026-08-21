@@ -26,8 +26,8 @@ export interface AuthContextValue {
   authState: AuthState
   /** Signs the user in with email + password. */
   login: (email: string, password: string) => Promise<void>
-  /** Creates a new account with email + password. */
-  register: (email: string, password: string) => Promise<void>
+  /** Creates a new account with email + password + optional name. */
+  register: (email: string, password: string, name?: string) => Promise<void>
   /** Clears the session and sets auth state to unauthenticated. */
   logout: () => void
   /** Initiates the Google OAuth flow by redirecting to the backend OAuth entry point. */

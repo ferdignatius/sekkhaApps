@@ -47,11 +47,6 @@ export function LoginPage() {
   return (
     <main>
       <AuthLayout>
-        {/* App heading above the card (req 2.10) */}
-        <h1 className="mb-6 text-center text-heading-5 text-sekkha-ink">
-          Sekkha
-        </h1>
-
         <AuthForm
           mode="login"
           onSubmit={handleSubmit}

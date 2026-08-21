@@ -1,32 +1,49 @@
-// Feature: auth-flow
-// AuthLayout — responsive card-centered layout for auth pages.
-// Requirements: 1.9, 2.9, 9.1, 9.2, 9.3, 9.4, 9.6
+import React from "react"
+import { SparklesIcon } from "lucide-react"
 
 interface AuthLayoutProps {
   children: React.ReactNode
 }
 
 /**
- * Responsive layout wrapper for Sign Up and Login pages.
- *
- * Desktop/Tablet (≥ 768px):
- *   - Full-viewport height, vertically + horizontally centered
- *   - Background: sekkha-surface
- *   - Card: max-w-[480px] w-full, card-base token
- *     (bg-sekkha-canvas, rounded-xl, p-6, border border-sekkha-hairline-soft)
- *
- * Mobile (< 768px):
- *   - No card wrapper, full width
- *   - Horizontal padding: spacing.md (16px)
+ * Premium glassmorphic responsive layout wrapper for Sign Up and Login pages.
+ * Features an ambient background glow mesh and refined card styling.
  */
 export function AuthLayout({ children }: AuthLayoutProps) {
   return (
-    /* Outer wrapper — provides the surface bg and full-viewport centering on md+ */
-    <div className="min-h-screen bg-sekkha-surface px-4 py-10 md:flex md:items-center md:justify-center md:px-0">
-      {/* Card — only visible on md+ */}
-      <div className="w-full max-w-[480px] md:rounded-xl md:border md:border-sekkha-hairline-soft md:bg-sekkha-canvas md:p-6">
-        {children}
+    <div className="relative min-h-screen flex flex-col justify-between overflow-hidden bg-gradient-to-br from-slate-50 via-sky-50/40 to-blue-100/50 px-4 py-8 sm:py-12">
+      {/* Ambient background blur circles */}
+      <div className="pointer-events-none absolute -top-40 -left-40 size-96 rounded-full bg-blue-400/20 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-40 -right-40 size-96 rounded-full bg-indigo-400/20 blur-3xl" />
+
+      {/* Main Centered Container */}
+      <div className="relative z-10 mx-auto w-full max-w-[460px] my-auto space-y-6">
+        
+        {/* Brand Header */}
+        <div className="text-center space-y-2">
+          <div className="mx-auto flex size-13 w-13 h-13 items-center justify-center rounded-2xl bg-gradient-to-br from-sekkha-brand-blue to-indigo-600 text-white shadow-lg shadow-blue-500/25">
+            <SparklesIcon className="size-6" />
+          </div>
+          <div>
+            <h1 className="text-heading-4 font-black tracking-tight text-sekkha-ink">
+              Sekkha
+            </h1>
+            <p className="text-caption text-sekkha-slate mt-0.5">
+              Portal Komunitas & Presensi Vihara
+            </p>
+          </div>
+        </div>
+
+        {/* Card Container with glassmorphism */}
+        <div className="rounded-3xl border border-white/80 bg-white/90 p-6 sm:p-8 shadow-2xl shadow-blue-900/5 backdrop-blur-xl transition-all">
+          {children}
+        </div>
       </div>
+
+      {/* Subtle Footer */}
+      <footer className="relative z-10 text-center text-micro text-sekkha-slate py-4">
+        &copy; {new Date().getFullYear()} Sekkha Apps. Seluruh hak cipta dilindungi.
+      </footer>
     </div>
   )
 }

@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useNavigate } from "@tanstack/react-router"
 import {
   SparklesIcon,
@@ -25,6 +25,16 @@ export function OnboardingPage() {
   const [step, setStep] = useState<OnboardingStep>("choice")
   const [submitting, setSubmitting] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
+
+  useEffect(() => {
+    api.get<{ name?: string; phone?: string; school?: string }>("/users/me")
+      .then((u) => {
+        if (u.name) setProfileForm((prev) => ({ ...prev, name: u.name || "" }))
+        if (u.phone) setProfileForm((prev) => ({ ...prev, phone: u.phone || "" }))
+        if (u.school) setProfileForm((prev) => ({ ...prev, school: u.school || "" }))
+      })
+      .catch(() => {})
+  }, [])
 
   // Step 2A: Claim Form
   const [claimForm, setClaimForm] = useState({

@@ -143,15 +143,42 @@ export function InsightPage() {
   const loadMetrics = async () => {
     setIsLoading(true)
     try {
+      const primaryPeriod = selectedPeriods[0] || (timeUnit === "year" ? "2026" : "Juli 2026")
+      let primaryYear = 2026
+      let primaryMonth = 7
+      if (timeUnit === "year") {
+        primaryYear = parseInt(primaryPeriod, 10) || 2026
+      } else {
+        const parts = primaryPeriod.split(" ")
+        primaryYear = parseInt(parts[1], 10) || 2026
+        const mIdx = MASTER_EVENT_CATEGORIES ? MONTH_NAMES.findIndex((mn) => mn.toLowerCase() === (parts[0] || "").toLowerCase()) : -1
+        primaryMonth = mIdx >= 0 ? mIdx + 1 : 7
+      }
+
+      let compareYear = primaryYear - 1
+      let compareMonth = primaryMonth === 1 ? 12 : primaryMonth - 1
+      if (selectedPeriods.length > 1) {
+        const comparePeriod = selectedPeriods[1]
+        if (timeUnit === "year") {
+          compareYear = parseInt(comparePeriod, 10) || primaryYear - 1
+        } else {
+          const parts = comparePeriod.split(" ")
+          compareYear = parseInt(parts[1], 10) || primaryYear
+          const mIdx = MONTH_NAMES.findIndex((mn) => mn.toLowerCase() === (parts[0] || "").toLowerCase())
+          compareMonth = mIdx >= 0 ? mIdx + 1 : compareMonth
+        }
+      }
+
       const res = await fetchInsightMetricsParams({
         timeUnit,
-        primaryYear: 2026,
-        primaryMonth: 7,
+        primaryYear,
+        primaryMonth,
         isComparisonEnabled: selectedPeriods.length > 1,
-        compareYear: 2025,
-        compareMonth: 3,
+        compareYear,
+        compareMonth,
         segmentFilter,
         selectedCategories,
+        selectedPeriods,
       })
       setData(res)
     } catch (err) {

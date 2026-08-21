@@ -6,6 +6,8 @@ export interface MemberRecency {
   userId: string
   name: string
   email: string
+  phone?: string | null
+  userNumber?: string | null
   avatarUrl: string | null
   role: string
   createdAt: string

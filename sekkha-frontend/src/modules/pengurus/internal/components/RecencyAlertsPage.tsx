@@ -221,6 +221,13 @@ export function RecencyAlertsPage() {
     }, 2500)
   }
 
+  const getWhatsAppUrl = (name: string, phone?: string | null) => {
+    const cleanPhone = (phone || "").replace(/\D/g, "")
+    const formattedPhone = cleanPhone.startsWith("0") ? `62${cleanPhone.slice(1)}` : cleanPhone
+    const msg = `Halo Kak ${name}, semoga sehat selalu! Kapan-kapan kalau sempat, yuk kumpul lagi di Vihara 😊`
+    return formattedPhone ? `https://wa.me/${formattedPhone}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`
+  }
+
   const handleDirectWA = (userId: string) => {
     // Set draft action to sapa_wa
     setDraftActionId("sapa_wa")
@@ -546,9 +553,7 @@ export function RecencyAlertsPage() {
 
                       <div className="flex items-center gap-2">
                         <a
-                          href={`https://wa.me/?text=${encodeURIComponent(
-                            `Halo Kak ${m.name}, semoga sehat selalu! Kapan-kapan kalau sempat, yuk kumpul lagi di Vihara 😊`
-                          )}`}
+                          href={getWhatsAppUrl(m.name, m.phone)}
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={(e) => {
@@ -681,9 +686,7 @@ export function RecencyAlertsPage() {
                         <td className="px-4 py-3 text-right">
                           <div className="flex items-center justify-end gap-2">
                             <a
-                              href={`https://wa.me/?text=${encodeURIComponent(
-                                `Halo Kak ${m.name}, semoga sehat selalu! Kapan-kapan kalau sempat, yuk kumpul lagi di Vihara 😊`
-                              )}`}
+                              href={getWhatsAppUrl(m.name, m.phone)}
                               target="_blank"
                               rel="noopener noreferrer"
                               onClick={(e) => {
@@ -955,9 +958,7 @@ export function RecencyAlertsPage() {
                   {/* Actions Footer: Direct WA Button + SIMPAN PERUBAHAN BUTTON */}
                   <div className="pt-3 border-t border-sekkha-brand-blue/20 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <a
-                      href={`https://wa.me/?text=${encodeURIComponent(
-                        `Halo Kak ${memberDetail.member.name}, semoga sehat selalu! Kapan-kapan kalau sempat, yuk kumpul lagi di Vihara 😊`
-                      )}`}
+                      href={getWhatsAppUrl(memberDetail.member.name, memberDetail.member.phone)}
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={() => setDraftActionId("sapa_wa")}

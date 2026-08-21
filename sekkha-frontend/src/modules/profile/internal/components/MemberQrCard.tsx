@@ -3,7 +3,8 @@
 // Supports digital view for smartphone display and printable physical Vihara card mode.
 
 import { useState } from "react"
-import { QrCodeIcon, PrinterIcon, DownloadIcon, SparklesIcon, CheckIcon } from "lucide-react"
+import QRCode from "react-qr-code"
+import { PrinterIcon, DownloadIcon, SparklesIcon, CheckIcon } from "lucide-react"
 
 interface MemberQrCardProps {
   memberName?: string
@@ -50,11 +51,15 @@ export function MemberQrCard({
 
       {/* QR Code & Member Info Body */}
       <div className="flex flex-col sm:flex-row items-center gap-4 py-2">
-        {/* QR Visual */}
+        {/* Dynamic QR Visual */}
         <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-sekkha-brand-blue/30 bg-white p-3 shadow-2xs shrink-0">
-          <div className="flex h-32 w-32 items-center justify-center rounded-xl bg-slate-900 text-white p-2">
-            {/* SVG QR Code representation */}
-            <QrCodeIcon className="size-24 text-white" />
+          <div className="flex h-32 w-32 items-center justify-center rounded-xl bg-white p-1.5 border border-slate-100 shadow-2xs">
+            <QRCode
+              value={memberId || "UNKNOWN"}
+              size={112}
+              style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+              viewBox="0 0 256 256"
+            />
           </div>
           <button
             type="button"

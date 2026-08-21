@@ -2,7 +2,9 @@
 // Modern, clean & youth-friendly dashboard tailored for Remaja Vihara (SMP/SMA).
 // Strictly using Sekkha Design System color tokens & clean layout.
 
+import { useState, useEffect } from "react"
 import { useAuth } from "@/modules/auth"
+import QRCode from "react-qr-code"
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
 import {
   FlameIcon,
@@ -17,7 +19,6 @@ import {
   UserCheckIcon,
   SettingsIcon,
 } from "lucide-react"
-import { useState, useEffect } from "react"
 import { api } from "@/lib/api"
 import { AnnouncementCard } from "./AnnouncementCard"
 import { DhammaWidget } from "./DhammaWidget"
@@ -38,25 +39,34 @@ function formatEventDate(iso: string): string {
 export function DashboardPage() {
   const { authState } = useAuth()
   const [showQrModal, setShowQrModal] = useState(false)
+  const [userProfile, setUserProfile] = useState<any>(null)
 
   const [events, setEvents] = useState<any[]>([])
   const [announcements] = useState<any[]>([])
   const [missions] = useState<any[]>([])
 
   useEffect(() => {
-    async function loadDashboardEvents() {
+    async function loadDashboardData() {
       try {
         const data = await api.get<any[]>("/events")
         setEvents(data)
       } catch {
         setEvents([])
       }
+
+      if (authState.status === "authenticated") {
+        try {
+          const profile = await api.get<any>("/users/me")
+          setUserProfile(profile)
+        } catch {}
+      }
     }
-    loadDashboardEvents()
-  }, [])
+    loadDashboardData()
+  }, [authState.status])
 
   const role = authState.status === "authenticated" ? (authState.role ?? "umat") : "umat"
-  const displayName = role.charAt(0).toUpperCase() + role.slice(1)
+  const displayName = userProfile?.name || (role.charAt(0).toUpperCase() + role.slice(1))
+  const memberId = userProfile?.user_number || userProfile?.userNumber || userProfile?.id || (authState.userId ? `SKH-${authState.userId.slice(-4)}` : "SKH-8821")
   const activeEvent = events.length > 0 ? events[0] : null
 
   return (
@@ -80,7 +90,7 @@ export function DashboardPage() {
                 {/* Profile Picture & Level Badge */}
               <div className="flex flex-col items-center shrink-0 gap-1.5">
                   <div className="flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-2xl bg-sekkha-brand-yellow text-heading-5 sm:text-heading-4 font-extrabold text-sekkha-ink ring-4 ring-white/90 shadow-xs">
-                    {displayName.split(" ").slice(0, 2).map((w) => w[0]).join("")}
+                    {displayName.split(" ").slice(0, 2).map((w: string) => w[0]).join("")}
                   </div>
                   <span className="rounded-full bg-sekkha-brand-yellow/25 border border-sekkha-brand-yellow/50 px-2.5 py-0.5 text-xs font-bold text-sekkha-yellow-dark shadow-2xs">
                     Lv. 1
@@ -341,11 +351,20 @@ export function DashboardPage() {
               Tunjukkan QR Code ini kepada Pengurus Vihara untuk presensi kehadiran pada acara aktif.
             </p>
 
-            {/* Simulated QR Code Graphic */}
-            <div className="my-4 sm:my-5 mx-auto flex h-44 w-44 sm:h-48 sm:w-48 items-center justify-center rounded-xl bg-sekkha-surface border-2 border-dashed border-sekkha-brand-blue p-4">
-              <div className="text-center">
-                <QrCodeIcon className="size-28 sm:size-32 text-sekkha-ink mx-auto" />
-                <span className="text-micro font-mono text-sekkha-slate mt-1 block">ID: {displayName}</span>
+            {/* Dynamic QR Code Graphic */}
+            <div className="my-4 sm:my-5 mx-auto flex h-52 w-52 items-center justify-center rounded-2xl bg-white border-2 border-sekkha-brand-blue/30 p-3 shadow-xs">
+              <div className="text-center w-full">
+                <div className="flex items-center justify-center p-1 bg-white">
+                  <QRCode
+                    value={memberId || "UNKNOWN"}
+                    size={140}
+                    style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+                    viewBox="0 0 256 256"
+                  />
+                </div>
+                <span className="text-micro font-mono text-sekkha-brand-blue font-bold mt-2 block">
+                  ID: {memberId}
+                </span>
               </div>
             </div>
 

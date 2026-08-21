@@ -3,7 +3,6 @@
 
 export type EventType = "rutin" | "special"
 export type EventStatus = "draft" | "published" | "active" | "closed" | "done" | "cancelled"
-export type RsvpStatus = "hadir" | "tidak_hadir"
 export type AttendanceMethod = "qr" | "manual"
 export type UserRole = "umat" | "aktivis" | "pengurus" | "admin"
 
@@ -53,8 +52,6 @@ export interface EventListItem {
   event_type: EventType
   tag?: EventTag
   status: EventStatus
-  rsvp_count: number
-  my_rsvp?: RsvpStatus | null
   qr_code?: QrCode | null
 }
 

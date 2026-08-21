@@ -232,6 +232,14 @@ export function EventsPage() {
                 } : undefined}
                 attendances={attendances[selected.id] ?? []}
                 onRecordAttendance={handleRecordAttendance}
+                onDeleteAttendance={isPengurus ? async (userId) => {
+                  try {
+                    await api.delete(`/events/${selected.id}/attendances/${userId}`)
+                    await loadEventAttendances(selected.id)
+                  } catch (err) {
+                    console.error("Gagal menghapus presensi:", err)
+                  }
+                } : undefined}
               />
             </div>
           </div>

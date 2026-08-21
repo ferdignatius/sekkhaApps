@@ -1,7 +1,7 @@
 // feature/dashboard/components/NextEventCard
 // Shows the next upcoming event with direct RSVP buttons (Hadir / Tidak Hadir).
 
-import { CalendarIcon, MapPinIcon, UsersIcon } from "lucide-react"
+import { CalendarIcon, MapPinIcon } from "lucide-react"
 import { Link } from "@tanstack/react-router"
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -12,8 +12,6 @@ export interface UpcomingEvent {
   location: string
   event_date: string // ISO 8601
   event_type: "rutin" | "special"
-  rsvp_count: number
-  my_rsvp: "hadir" | "tidak_hadir" | null
 }
 
 interface NextEventCardProps {
@@ -91,14 +89,6 @@ export function NextEventCard({ event }: NextEventCardProps) {
           <div className="mt-1.5 flex items-center gap-1.5">
             <MapPinIcon className="size-3.5 text-sekkha-muted" aria-hidden="true" />
             <span className="text-caption text-sekkha-slate">{event.location}</span>
-          </div>
-
-          {/* RSVP count */}
-          <div className="mt-1.5 flex items-center gap-1.5">
-            <UsersIcon className="size-3.5 text-sekkha-brand-blue" aria-hidden="true" />
-            <span className="text-caption font-semibold text-sekkha-slate">
-              {event.rsvp_count} Peserta Hadir
-            </span>
           </div>
 
           {/* Action button */}

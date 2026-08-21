@@ -30,6 +30,8 @@ model User {
   googleId  String?  @unique @map("google_id")
   isClaimed Boolean  @default(true) @map("is_claimed")
   claimedAt DateTime? @map("claimed_at")
+  claimPin  String?  @map("claim_pin")
+  claimPinExpiresAt DateTime? @map("claim_pin_expires_at")
   lastActivityAt DateTime? @map("last_activity_at")
   consecutiveMissed Int    @default(0) @map("consecutive_missed")
   userNumber String?  @unique @map("user_number")

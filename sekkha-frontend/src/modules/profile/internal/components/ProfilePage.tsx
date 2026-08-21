@@ -32,6 +32,7 @@ import {
   PencilIcon,
   DownloadIcon,
   Loader2Icon,
+  KeyIcon,
 } from "lucide-react"
 import QRCode from "react-qr-code"
 import { useAuth } from "@/modules/auth"
@@ -116,8 +117,8 @@ export function ProfilePage() {
 
   // Account Linking Modal state
   const [showLinkModal, setShowLinkModal] = useState(false)
+  const [claimPin, setClaimPin] = useState("")
   const [targetUserId, setTargetUserId] = useState("")
-  const [verificationValue, setVerificationValue] = useState("")
   const [linking, setLinking] = useState(false)
   const [linkResult, setLinkResult] = useState<{
     success: boolean
@@ -232,14 +233,18 @@ export function ProfilePage() {
 
   async function handleLinkAccount(e: React.FormEvent) {
     e.preventDefault()
-    if (!targetUserId.trim() || !verificationValue.trim()) return
+    const cleanPin = claimPin.replace(/[^0-9]/g, "").trim()
+    if (!cleanPin || cleanPin.length < 6) {
+      showToast("Harap masukkan 6 digit PIN Aktivasi", "error")
+      return
+    }
 
     try {
       setLinking(true)
       setLinkResult(null)
       const res = await teamsApi.linkLegacyAccount({
-        target_user_id: targetUserId.trim(),
-        verification_value: verificationValue.trim(),
+        claim_pin: cleanPin,
+        target_user_id: targetUserId.trim() || undefined,
       })
       setLinkResult({
         success: true,
@@ -255,7 +260,7 @@ export function ProfilePage() {
     } catch (err: any) {
       setLinkResult({
         success: false,
-        message: err.message || "Gagal menautkan akun lama. Silakan periksa kembali data Anda.",
+        message: err.message || "Gagal menautkan akun lama. Pastikan 6 digit PIN sesuai.",
       })
     } finally {
       setLinking(false)
@@ -1189,18 +1194,23 @@ export function ProfilePage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in">
           <div className="relative w-full max-w-md rounded-3xl border border-sekkha-hairline bg-white p-6 shadow-2xl space-y-5 text-left font-sans">
             <div className="flex items-center justify-between border-b border-sekkha-hairline-soft pb-3">
-              <div className="flex items-center gap-2">
-                <div className="flex size-9 items-center justify-center rounded-xl bg-sekkha-brand-blue text-white shadow-xs">
-                  <SparklesIcon className="size-5 text-amber-300" />
+              <div className="flex items-center gap-2.5">
+                <div className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-tr from-amber-500 to-amber-600 text-white shadow-xs">
+                  <KeyIcon className="size-5" />
                 </div>
                 <div>
-                  <h3 className="text-heading-6 font-extrabold text-sekkha-ink">Tautkan Akun Lama</h3>
+                  <h3 className="text-heading-6 font-extrabold text-sekkha-ink">Tautkan Akun / Kartu Lama</h3>
                   <p className="text-micro text-sekkha-slate">Gabungkan riwayat kehadiran & poin Anda</p>
                 </div>
               </div>
               <button
                 type="button"
-                onClick={() => setShowLinkModal(false)}
+                onClick={() => {
+                  setShowLinkModal(false)
+                  setLinkResult(null)
+                  setClaimPin("")
+                  setTargetUserId("")
+                }}
                 className="rounded-full p-1.5 text-sekkha-slate hover:bg-slate-100 cursor-pointer"
               >
                 <XIcon className="size-5" />
@@ -1230,7 +1240,10 @@ export function ProfilePage() {
                 )}
                 <button
                   type="button"
-                  onClick={() => setShowLinkModal(false)}
+                  onClick={() => {
+                    setShowLinkModal(false)
+                    setLinkResult(null)
+                  }}
                   className="w-full rounded-xl bg-sekkha-brand-blue py-2.5 text-body-sm font-bold text-white shadow-sm hover:bg-blue-700 transition-all cursor-pointer"
                 >
                   Tutup
@@ -1245,48 +1258,59 @@ export function ProfilePage() {
                   </div>
                 )}
 
-                <div className="space-y-1">
+                <div className="rounded-2xl bg-amber-50/70 border border-amber-200/80 p-3.5 space-y-1">
+                  <div className="flex items-center gap-1.5 text-amber-900 font-bold text-caption">
+                    <SparklesIcon className="size-4 text-amber-600" />
+                    <span>Gunakan 6-Digit PIN Aktivasi</span>
+                  </div>
+                  <p className="text-micro text-amber-800/90 leading-relaxed">
+                    Minta 6 digit kode PIN kepada pengurus vihara atau periksa pesan WhatsApp pendaftaran Anda.
+                  </p>
+                </div>
+
+                <div className="space-y-1.5">
                   <label className="text-caption font-bold text-sekkha-ink">
-                    Nomor Unik Anggota (User ID) <span className="text-red-500">*</span>
+                    Kode PIN Aktivasi (6 Digit) <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     required
-                    placeholder="Contoh: 202608210001"
+                    maxLength={8}
+                    placeholder="Contoh: 749102"
+                    value={claimPin}
+                    onChange={(e) => setClaimPin(e.target.value.replace(/[^0-9]/g, ""))}
+                    className="w-full rounded-2xl border-2 border-amber-300 bg-amber-50/30 px-4 py-3 font-mono text-heading-4 font-black tracking-[0.25em] text-center text-amber-950 outline-none focus:border-amber-500 focus:bg-white transition-all placeholder:font-sans placeholder:text-body-sm placeholder:tracking-normal placeholder:font-normal placeholder:text-slate-400"
+                  />
+                </div>
+
+                <div className="space-y-1 pt-1">
+                  <label className="text-caption font-semibold text-sekkha-slate">
+                    Nomor Unik Anggota (Opsional)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Contoh: 202608210001 (kosongkan jika tidak tahu)"
                     value={targetUserId}
                     onChange={(e) => setTargetUserId(e.target.value)}
                     className="w-full rounded-xl border border-sekkha-hairline-strong px-3.5 py-2 font-mono text-body-sm text-sekkha-ink outline-none focus:border-sekkha-brand-blue"
                   />
-                  <p className="text-micro text-sekkha-slate">Nomor unik yang diberikan pengurus saat pendaftaran awal.</p>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-caption font-bold text-sekkha-ink">
-                    Verifikasi Keamanan (Nama Lengkap / 4 Digit Terakhir No HP) <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Nama lengkap atau 4 digit akhir HP Anda"
-                    value={verificationValue}
-                    onChange={(e) => setVerificationValue(e.target.value)}
-                    className="w-full rounded-xl border border-sekkha-hairline-strong px-3.5 py-2 text-body-sm text-sekkha-ink outline-none focus:border-sekkha-brand-blue"
-                  />
-                  <p className="text-micro text-sekkha-slate">Digunakan untuk memastikan Anda adalah pemilik data tersebut.</p>
                 </div>
 
                 <div className="flex gap-2.5 pt-2">
                   <button
                     type="button"
-                    onClick={() => setShowLinkModal(false)}
+                    onClick={() => {
+                      setShowLinkModal(false)
+                      setLinkResult(null)
+                    }}
                     className="flex-1 rounded-xl border border-sekkha-hairline-strong py-2.5 text-body-sm font-semibold text-sekkha-ink hover:bg-slate-100 transition-colors cursor-pointer"
                   >
                     Batal
                   </button>
                   <button
                     type="submit"
-                    disabled={linking}
-                    className="flex-1 rounded-xl bg-sekkha-brand-blue py-2.5 text-body-sm font-bold text-white shadow-sm hover:bg-blue-700 transition-all disabled:opacity-50 cursor-pointer"
+                    disabled={linking || claimPin.length < 6}
+                    className="flex-1 rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 py-2.5 text-body-sm font-bold text-white shadow-sm hover:from-amber-700 hover:to-amber-800 transition-all disabled:opacity-50 cursor-pointer"
                   >
                     {linking ? "Memverifikasi..." : "Verifikasi & Tautkan"}
                   </button>

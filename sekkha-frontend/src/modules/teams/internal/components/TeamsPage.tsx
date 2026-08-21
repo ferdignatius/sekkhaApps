@@ -17,6 +17,8 @@ import {
   CheckIcon,
   SparklesIcon,
   ShieldCheckIcon,
+  KeyIcon,
+  Share2Icon,
 } from "lucide-react"
 import QRCode from "react-qr-code"
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
@@ -45,6 +47,8 @@ export function TeamsPage() {
   const [deletingMember, setDeletingMember] = useState<MemberDto | null>(null)
   const [qrMember, setQrMember] = useState<MemberDto | null>(null)
   const [detailMember, setDetailMember] = useState<MemberDto | null>(null)
+  const [pinModalData, setPinModalData] = useState<{ member: MemberDto; pin: string; expires_at?: string } | null>(null)
+  const [generatingPin, setGeneratingPin] = useState(false)
 
   // Form states
   const [createForm, setCreateForm] = useState<CreateMemberPayload>({
@@ -187,6 +191,36 @@ export function TeamsPage() {
     setCopiedId(true)
     setTimeout(() => setCopiedId(false), 2000)
     showToast("Nomor Unik berhasil disalin ke clipboard!")
+  }
+
+  // Handle Generate 6-Digit Claim PIN
+  async function handleGeneratePin(m: MemberDto) {
+    try {
+      setGeneratingPin(true)
+      const res = await teamsApi.generateClaimPin(m.id)
+      setPinModalData({
+        member: m,
+        pin: res.claim_pin,
+        expires_at: res.expires_at,
+      })
+      showToast(`PIN Aktivasi 6-digit untuk ${m.name} berhasil dibuat! ✨`)
+      await loadData()
+    } catch (err: any) {
+      showToast(err.message || "Gagal generate PIN klaim", "error")
+    } finally {
+      setGeneratingPin(false)
+    }
+  }
+
+  function handleOpenExistingPin(m: MemberDto) {
+    if (m.claim_pin) {
+      setPinModalData({
+        member: m,
+        pin: m.claim_pin,
+      })
+    } else {
+      handleGeneratePin(m)
+    }
   }
 
   // Stats calculation
@@ -497,6 +531,18 @@ export function TeamsPage() {
                                 <span>QR & Kartu</span>
                               </button>
 
+                              {!m.is_claimed && isPengurusOrAdmin && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenExistingPin(m)}
+                                  disabled={generatingPin}
+                                  className="flex size-9 items-center justify-center rounded-xl border border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100 transition-colors cursor-pointer shadow-2xs"
+                                  title="Buat / Lihat PIN Aktivasi Akun (6-Digit)"
+                                >
+                                  <KeyIcon className="size-4 text-amber-700" />
+                                </button>
+                              )}
+
                               {isPengurusOrAdmin && (
                                 <>
                                   <button
@@ -592,9 +638,16 @@ export function TeamsPage() {
                                       <span>Sudah Aktif</span>
                                     </span>
                                   ) : (
-                                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200 px-2.5 py-0.5 text-micro-bold text-amber-800">
-                                      <AlertTriangleIcon className="size-3 text-amber-600" />
-                                      <span>Belum Diklaim</span>
+                                    <span className="inline-flex items-center gap-1.5">
+                                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200 px-2.5 py-0.5 text-micro-bold text-amber-800">
+                                        <AlertTriangleIcon className="size-3 text-amber-600" />
+                                        <span>Belum Klaim</span>
+                                      </span>
+                                      {m.claim_pin && (
+                                        <span className="font-mono text-[11px] font-black text-amber-900 bg-amber-100/80 px-2 py-0.5 rounded border border-amber-300 shadow-2xs">
+                                          PIN: {m.claim_pin}
+                                        </span>
+                                      )}
                                     </span>
                                   )}
                                 </td>
@@ -626,6 +679,18 @@ export function TeamsPage() {
                                     >
                                       <QrCodeIcon className="size-4" />
                                     </button>
+
+                                    {!m.is_claimed && isPengurusOrAdmin && (
+                                      <button
+                                        type="button"
+                                        onClick={() => handleOpenExistingPin(m)}
+                                        disabled={generatingPin}
+                                        className="flex size-8 items-center justify-center rounded-lg border border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100 transition-colors cursor-pointer"
+                                        title="Buat / Lihat PIN Aktivasi Akun (6-Digit)"
+                                      >
+                                        <KeyIcon className="size-4 text-amber-700" />
+                                      </button>
+                                    )}
 
                                     {isPengurusOrAdmin && (
                                       <>
@@ -1151,6 +1216,123 @@ export function TeamsPage() {
         </div>
       )}
 
+      {/* ───────────────────────────────────────────────────────────────────────── */}
+      {/* MODAL 6: Claim PIN Modal (Pengurus / Admin)                               */}
+      {/* ───────────────────────────────────────────────────────────────────────── */}
+      {pinModalData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-3.5 sm:p-4 animate-in fade-in">
+          <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-3xl border border-amber-200 bg-white p-5 sm:p-6 shadow-2xl space-y-4 sm:space-y-5">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-sekkha-hairline-soft pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="flex size-9 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
+                  <KeyIcon className="size-5" />
+                </div>
+                <div>
+                  <h3 className="text-body-base font-extrabold text-sekkha-ink">PIN Aktivasi Akun Umat</h3>
+                  <p className="text-micro text-sekkha-slate">Berikan PIN 6-digit ini ke umat terkait</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPinModalData(null)}
+                className="rounded-full p-1.5 text-sekkha-slate hover:bg-slate-100"
+              >
+                <XIcon className="size-5" />
+              </button>
+            </div>
+
+            {/* Member Info Card */}
+            <div className="rounded-2xl bg-slate-50 border border-sekkha-hairline p-3.5 flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-micro font-bold text-sekkha-muted uppercase tracking-wider">Nama Umat</p>
+                <p className="text-body-sm font-extrabold text-sekkha-ink truncate">{pinModalData.member.name}</p>
+                {pinModalData.member.phone && (
+                  <p className="text-micro text-sekkha-slate">📞 {pinModalData.member.phone}</p>
+                )}
+              </div>
+              <div className="text-right shrink-0">
+                <p className="text-micro font-bold text-sekkha-muted uppercase tracking-wider">No. Unik</p>
+                <span className="font-mono text-caption-bold text-sekkha-brand-blue bg-blue-50 px-2 py-1 rounded-lg border border-blue-200">
+                  {pinModalData.member.user_number || "—"}
+                </span>
+              </div>
+            </div>
+
+            {/* Big PIN Display */}
+            <div className="space-y-2 text-center">
+              <div className="rounded-2xl bg-gradient-to-b from-amber-50 to-amber-100/60 border-2 border-dashed border-amber-300/80 p-5 shadow-xs">
+                <p className="text-micro-bold text-amber-800 uppercase tracking-widest mb-1.5">KODE PIN 6-DIGIT</p>
+                <p className="font-mono text-heading-2 font-black tracking-[0.25em] text-amber-950 select-all">
+                  {pinModalData.pin}
+                </p>
+                <p className="text-micro text-amber-700 mt-1 font-medium">
+                  {pinModalData.expires_at
+                    ? `Berlaku hingga: ${new Date(pinModalData.expires_at).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}`
+                    : "Berlaku 30 hari untuk klaim mandiri"}
+                </p>
+              </div>
+
+              <p className="text-micro text-sekkha-slate leading-relaxed px-2">
+                Umat dapat memasukkan 6 digit PIN ini di menu <strong>Profil &gt; Tautkan Akun Lama</strong> untuk menggabungkan seluruh poin dan riwayat kehadiran secara instan.
+              </p>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="space-y-2 pt-2 border-t border-sekkha-hairline-soft">
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(pinModalData.pin)
+                    showToast(`PIN ${pinModalData.pin} berhasil disalin!`)
+                  }}
+                  className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-sekkha-ink py-2.5 text-body-sm font-bold text-white shadow-xs hover:bg-slate-800 transition-all cursor-pointer"
+                >
+                  <CopyIcon className="size-4" />
+                  <span>Salin PIN</span>
+                </button>
+
+                {pinModalData.member.phone && (
+                  <a
+                    href={`https://api.whatsapp.com/send?phone=${pinModalData.member.phone.replace(/[^0-9]/g, "")}&text=${encodeURIComponent(
+                      `Namo Buddhaya ${pinModalData.member.name},\n\nBerikut kode PIN Aktivasi akun Sekkha Vihara Anda:\n🔑 PIN: *${pinModalData.pin}*\nNomor Anggota: *${pinModalData.member.user_number || "-"}*\n\nSilakan buka aplikasi Sekkha di menu *Profil > Tautkan Akun Lama*, lalu masukkan 6-digit PIN di atas untuk menggabungkan riwayat presensi & poin Anda.\n\nTerima kasih!`
+                    )}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-body-sm font-bold text-white shadow-xs hover:bg-emerald-700 transition-all cursor-pointer"
+                    title="Kirim ke WhatsApp Umat"
+                  >
+                    <Share2Icon className="size-4" />
+                    <span className="hidden sm:inline">Kirim WhatsApp</span>
+                  </a>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between pt-1">
+                <button
+                  type="button"
+                  onClick={() => handleGeneratePin(pinModalData.member)}
+                  disabled={generatingPin}
+                  className="text-micro font-bold text-amber-800 hover:text-amber-950 underline underline-offset-2 cursor-pointer disabled:opacity-50"
+                >
+                  {generatingPin ? "Membuat PIN Baru..." : "🔄 Regenerate PIN Baru"}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setPinModalData(null)}
+                  className="text-micro font-semibold text-sekkha-slate hover:text-sekkha-ink cursor-pointer"
+                >
+                  Tutup
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
     </main>
   )
 }
+

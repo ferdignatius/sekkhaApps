@@ -270,24 +270,29 @@ usersRouter.get("/me/point-transactions", requireAuth, async (req, res, next) =>
   }
 })
 
-// POST /api/users/link-legacy-account — Claim pre-provisioned data from Profil
+// POST /api/users/link-legacy-account — Claim pre-provisioned data using 6-digit PIN
 usersRouter.post("/link-legacy-account", requireAuth, async (req, res, next) => {
   try {
     const { z } = await import("zod")
-    const { target_user_id, verification_value } = z.object({
-      target_user_id: z.string().min(1, "Nomor Unik Anggota wajib diisi"),
-      verification_value: z.string().min(1, "Nilai verifikasi (Nama atau No HP) wajib diisi"),
+    const { claim_pin, target_user_id } = z.object({
+      claim_pin: z.string().min(6, "PIN aktivasi harus 6 digit").max(8),
+      target_user_id: z.string().optional(),
     }).parse(req.body)
 
+    const cleanPin = claim_pin.replace(/[^0-9]/g, "").trim()
     const currentUserId = req.user!.userId
 
-    // 1. Find target pre-provisioned user
+    // 1. Find target pre-provisioned user by 6-digit PIN
     const targetUser = await (prisma.user as any).findFirst({
       where: {
-        OR: [
-          { userNumber: target_user_id },
-          { id: target_user_id },
-        ],
+        claimPin: cleanPin,
+        isClaimed: false,
+        ...(target_user_id ? {
+          OR: [
+            { userNumber: target_user_id },
+            { id: target_user_id },
+          ],
+        } : {}),
       },
       include: {
         attendances: true,
@@ -298,7 +303,9 @@ usersRouter.post("/link-legacy-account", requireAuth, async (req, res, next) => 
     })
 
     if (!targetUser) {
-      res.status(404).json({ error: "Nomor Anggota tidak ditemukan dalam data umat." })
+      res.status(404).json({
+        error: "PIN aktivasi tidak valid atau sudah pernah digunakan. Pastikan 6-digit PIN sesuai dengan yang diberikan pengurus.",
+      })
       return
     }
 
@@ -307,27 +314,12 @@ usersRouter.post("/link-legacy-account", requireAuth, async (req, res, next) => 
       return
     }
 
-    if (targetUser.isClaimed) {
-      res.status(400).json({ error: "Data anggota tersebut sudah diklaim atau ditautkan oleh pengguna lain." })
+    if (targetUser.claimPinExpiresAt && new Date(targetUser.claimPinExpiresAt) < new Date()) {
+      res.status(400).json({ error: "PIN aktivasi sudah kedaluwarsa. Silakan minta PIN baru ke pengurus." })
       return
     }
 
-    // 2. Verification Security Check
-    const cleanVerif = verification_value.trim().toLowerCase().replace(/[^a-z0-9]/g, "")
-    const targetNameClean = targetUser.name.toLowerCase().replace(/[^a-z0-9]/g, "")
-    const targetPhoneClean = (targetUser.phone || "").replace(/[^0-9]/g, "")
-
-    const nameMatches = targetNameClean.includes(cleanVerif) || cleanVerif.includes(targetNameClean)
-    const phoneMatches = targetPhoneClean.length >= 4 && targetPhoneClean.endsWith(cleanVerif)
-
-    if (!nameMatches && !phoneMatches) {
-      res.status(400).json({
-        error: "Verifikasi gagal. Pastikan nama lengkap atau 4 digit nomor HP sesuai dengan data pendaftaran pengurus.",
-      })
-      return
-    }
-
-    // 3. Data Merging & Transfer
+    // 2. Data Merging & Transfer
     let mergedAttendances = 0
     for (const att of targetUser.attendances) {
       const exists = await prisma.attendance.findUnique({

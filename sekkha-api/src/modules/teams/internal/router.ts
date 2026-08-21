@@ -92,6 +92,7 @@ teamsRouter.get("/members", requireAuth, async (req, res, next) => {
           user_number: uNum,
           is_claimed: m.isClaimed ?? true,
           claimed_at: m.claimedAt ? new Date(m.claimedAt).toISOString() : null,
+          claim_pin: m.claimPin || null,
           total_attendance: m._count?.attendances ?? 0,
           points: m.points ?? 0,
           created_at: new Date(m.createdAt).toISOString(),
@@ -541,3 +542,198 @@ teamsRouter.post("/invitations/:id/reject", requireAuth, async (req, res, next) 
     next(err)
   }
 })
+
+// 10. POST /api/teams/members/:id/generate-claim-pin — Generate 6-digit PIN for pre-provisioned member (requires pengurus or admin)
+teamsRouter.post("/members/:id/generate-claim-pin", requireAuth, requireRole("pengurus", "admin"), async (req, res, next) => {
+  try {
+    const id = req.params.id as string
+    const targetUser = await (prisma.user as any).findUnique({
+      where: { id },
+    })
+
+    if (!targetUser) {
+      res.status(404).json({ error: "Anggota tidak ditemukan." })
+      return
+    }
+
+    if (targetUser.isClaimed) {
+      res.status(400).json({ error: "Akun anggota ini sudah diklaim / tertaut dengan email aktif." })
+      return
+    }
+
+    // Generate secure random 6-digit numeric PIN
+    const generatedPin = Math.floor(100000 + Math.random() * 900000).toString()
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // Valid for 30 days
+
+    await (prisma.user as any).update({
+      where: { id },
+      data: {
+        claimPin: generatedPin,
+        claimPinExpiresAt: expiresAt,
+      },
+    })
+
+    const { invalidate, CacheKeys } = await import("../../../lib/cache")
+    await invalidate(CacheKeys.userProfile(id))
+
+    res.json({
+      success: true,
+      claim_pin: generatedPin,
+      user_number: targetUser.userNumber,
+      name: targetUser.name,
+      phone: targetUser.phone,
+      expires_at: expiresAt.toISOString(),
+      message: `PIN Aktivasi 6-digit untuk ${targetUser.name} berhasil dibuat: ${generatedPin}`,
+    })
+  } catch (err) {
+    next(err)
+  }
+})
+
+// 11. POST /api/teams/link-legacy-account — Link pre-provisioned account using 6-digit PIN
+teamsRouter.post("/link-legacy-account", requireAuth, async (req, res, next) => {
+  try {
+    const { z } = await import("zod")
+    const { claim_pin, target_user_id } = z.object({
+      claim_pin: z.string().min(6, "PIN aktivasi harus 6 digit").max(8),
+      target_user_id: z.string().optional(),
+    }).parse(req.body)
+
+    const cleanPin = claim_pin.replace(/[^0-9]/g, "").trim()
+    const currentUserId = req.user!.userId
+
+    // Find pre-provisioned member by PIN
+    const targetUser = await (prisma.user as any).findFirst({
+      where: {
+        claimPin: cleanPin,
+        isClaimed: false,
+        ...(target_user_id ? {
+          OR: [
+            { userNumber: target_user_id },
+            { id: target_user_id },
+          ],
+        } : {}),
+      },
+      include: {
+        attendances: true,
+        badges: true,
+        rsvps: true,
+        pointTransactions: true,
+      },
+    })
+
+    if (!targetUser) {
+      res.status(404).json({
+        error: "PIN aktivasi tidak valid atau sudah pernah digunakan. Silakan periksa kembali PIN 6-digit Anda.",
+      })
+      return
+    }
+
+    if (targetUser.id === currentUserId) {
+      res.status(400).json({ error: "Tidak dapat menautkan akun ke akun yang sedang Anda gunakan." })
+      return
+    }
+
+    if (targetUser.claimPinExpiresAt && new Date(targetUser.claimPinExpiresAt) < new Date()) {
+      res.status(400).json({ error: "PIN aktivasi sudah kedaluwarsa. Silakan minta PIN baru ke pengurus." })
+      return
+    }
+
+    // Merge attendances
+    let mergedAttendances = 0
+    for (const att of targetUser.attendances) {
+      const exists = await prisma.attendance.findUnique({
+        where: { userId_eventId: { userId: currentUserId, eventId: att.eventId } },
+      })
+      if (!exists) {
+        await prisma.attendance.create({
+          data: {
+            userId: currentUserId,
+            eventId: att.eventId,
+            method: att.method,
+            pointsEarned: att.pointsEarned,
+            scannedAt: att.scannedAt,
+          },
+        })
+        mergedAttendances++
+      }
+    }
+
+    // Merge badges
+    let mergedBadges = 0
+    for (const b of targetUser.badges) {
+      const exists = await prisma.userBadge.findUnique({
+        where: { userId_badgeId: { userId: currentUserId, badgeId: b.badgeId } },
+      })
+      if (!exists) {
+        await prisma.userBadge.create({
+          data: {
+            userId: currentUserId,
+            badgeId: b.badgeId,
+            earnedAt: b.earnedAt,
+          },
+        })
+        mergedBadges++
+      }
+    }
+
+    // Merge points
+    const legacyPoints = targetUser.points || (targetUser.attendances.length * 50)
+    const currentUser = await prisma.user.findUnique({ where: { id: currentUserId } })
+    const newTotalPoints = (currentUser?.points || 0) + legacyPoints
+
+    await (prisma.user as any).update({
+      where: { id: currentUserId },
+      data: {
+        points: newTotalPoints,
+        ...(targetUser.phone && !currentUser?.phone ? { phone: targetUser.phone } : {}),
+        ...(targetUser.school && !currentUser?.school ? { school: targetUser.school } : {}),
+        ...(targetUser.birthDate && !currentUser?.birthDate ? { birthDate: targetUser.birthDate } : {}),
+        ...(targetUser.gender && !currentUser?.gender ? { gender: targetUser.gender } : {}),
+      },
+    })
+
+    if (legacyPoints > 0) {
+      await prisma.pointTransaction.create({
+        data: {
+          userId: currentUserId,
+          amount: legacyPoints,
+          type: "manual",
+          description: `Penggabungan data kartu lama (${targetUser.userNumber || targetUser.name}) via PIN Aktivasi`,
+        },
+      })
+    }
+
+    // Mark pre-provisioned user as claimed & clear PIN
+    await (prisma.user as any).update({
+      where: { id: targetUser.id },
+      data: {
+        isClaimed: true,
+        claimedAt: new Date(),
+        claimPin: null,
+        claimPinExpiresAt: null,
+      },
+    })
+
+    const { invalidate, CacheKeys } = await import("../../../lib/cache")
+    await invalidate(CacheKeys.userProfile(currentUserId))
+    await invalidate(CacheKeys.userAttendances(currentUserId))
+    await invalidate(CacheKeys.userBadges(currentUserId))
+    await invalidate(CacheKeys.userProfile(targetUser.id))
+
+    res.json({
+      success: true,
+      message: `Akun data lama (${targetUser.name}) berhasil ditautkan!`,
+      data: {
+        merged_user_name: targetUser.name,
+        merged_user_number: targetUser.userNumber,
+        merged_attendances_count: mergedAttendances,
+        merged_badges_count: mergedBadges,
+        new_total_points: newTotalPoints,
+      },
+    })
+  } catch (err) {
+    next(err)
+  }
+})
+

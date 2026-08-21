@@ -141,7 +141,11 @@ export function AttendanceScanModal({
       setScannedCardCode("")
       setCodeError("")
     } catch (err: any) {
-      setCodeError(err.message || "Gagal mencatat presensi QR")
+      if (err.message?.includes("sudah tercatat hadir") || err.error === "DUPLICATE_ATTENDANCE") {
+        setCodeError(`⚠️ ${matched.name} sudah tercatat hadir dalam kegiatan ini (tidak bisa scan ulang).`)
+      } else {
+        setCodeError(err.message || "Gagal mencatat presensi QR.")
+      }
     } finally {
       setSubmitting(false)
     }
@@ -256,7 +260,11 @@ export function AttendanceScanModal({
       setSearchQuery("")
       setManualError("")
     } catch (err: any) {
-      setManualError(err.message || "Gagal mencatat presensi manual")
+      if (err.message?.includes("sudah tercatat hadir") || err.error === "DUPLICATE_ATTENDANCE") {
+        setManualError(`⚠️ ${target.name} sudah tercatat hadir dalam kegiatan ini.`)
+      } else {
+        setManualError(err.message || "Gagal mencatat presensi manual.")
+      }
     } finally {
       setSubmitting(false)
     }

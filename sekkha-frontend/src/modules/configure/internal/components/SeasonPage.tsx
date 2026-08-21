@@ -1,43 +1,56 @@
-// feature/configure/components/SeasonPage
-// Master Data: Season Management for Leaderboard
-// Allows pengurus/admin to configure seasons, start/end dates, community target, and active status.
-
 import { useState, useEffect } from "react"
 import {
-  PlusIcon,
-  PencilIcon,
-  TrashIcon,
   TrophyIcon,
-  CalendarIcon,
+  PencilIcon,
   CheckCircleIcon,
+  CalendarIcon,
   SparklesIcon,
   UsersIcon,
-  XIcon,
+  ShieldCheckIcon,
+  InfoIcon,
+  AlertCircleIcon,
+  FlameIcon,
+  LayersIcon,
 } from "lucide-react"
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
+import { ResponsiveFormModal } from "@/components/common/ResponsiveFormModal"
 import { seasonsApi, type SeasonDto } from "../api/configureApi"
 
-interface SeasonFormData {
-  name: string
+interface SeasonSectionConfig {
   code: string
-  start_date: string
-  end_date: string
-  is_active: boolean
-  target_attendance: number
-  bonus_points: number
-  description: string
+  label: string
+  subtitle: string
+  badge: string
+  icon: React.ReactNode
+  accentColor: string
 }
 
-const DEFAULT_FORM: SeasonFormData = {
-  name: "",
-  code: "",
-  start_date: new Date().toISOString().slice(0, 10),
-  end_date: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
-  is_active: false,
-  target_attendance: 500,
-  bonus_points: 100,
-  description: "",
-}
+const HARDCODED_SEASONS: SeasonSectionConfig[] = [
+  {
+    code: "semester",
+    label: "Season Semester (6 Bulan)",
+    subtitle: "Format periode kompetisi 6 bulanan resmi vihara untuk peringkat klasemen dan target komunitas.",
+    badge: "Default Utama",
+    icon: <SparklesIcon className="size-5 text-amber-600" />,
+    accentColor: "from-amber-500/10 to-amber-500/5 border-amber-300/60",
+  },
+  {
+    code: "quarterly",
+    label: "Season Kuartal (3 Bulan)",
+    subtitle: "Format periode intensif 3 bulanan per kuartal (Q1, Q2, Q3, Q4) untuk evaluasi dinamis.",
+    badge: "3 Bulanan",
+    icon: <LayersIcon className="size-5 text-blue-600" />,
+    accentColor: "from-blue-500/10 to-blue-500/5 border-blue-300/60",
+  },
+  {
+    code: "annual",
+    label: "Season Tahunan (1 Tahun Penuh)",
+    subtitle: "Format periode akbar satu tahun kalender penuh untuk rekapitulasi poin dan apresiasi tahunan.",
+    badge: "1 Tahun",
+    icon: <TrophyIcon className="size-5 text-purple-600" />,
+    accentColor: "from-purple-500/10 to-purple-500/5 border-purple-300/60",
+  },
+]
 
 function formatDateDisplay(iso: string) {
   try {
@@ -53,10 +66,20 @@ export function SeasonPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  // Edit Modal State
   const [modalOpen, setModalOpen] = useState(false)
   const [editingSeason, setEditingSeason] = useState<SeasonDto | null>(null)
-  const [formData, setFormData] = useState<SeasonFormData>(DEFAULT_FORM)
+  const [formData, setFormData] = useState({
+    name: "",
+    start_date: "",
+    end_date: "",
+    target_attendance: 500,
+    bonus_points: 100,
+    description: "",
+  })
   const [submitting, setSubmitting] = useState(false)
+  const [formError, setFormError] = useState<string | null>(null)
+  const [activatingId, setActivatingId] = useState<string | null>(null)
 
   useEffect(() => {
     loadSeasons()
@@ -76,423 +99,347 @@ export function SeasonPage() {
     }
   }
 
-  function handleOpenCreate() {
-    setEditingSeason(null)
-    setFormData(DEFAULT_FORM)
-    setModalOpen(true)
-  }
-
   function handleOpenEdit(s: SeasonDto) {
     setEditingSeason(s)
     setFormData({
       name: s.name,
-      code: s.code || "",
       start_date: s.start_date.slice(0, 10),
       end_date: s.end_date.slice(0, 10),
-      is_active: s.is_active,
       target_attendance: s.target_attendance,
       bonus_points: s.bonus_points,
       description: s.description || "",
     })
+    setFormError(null)
     setModalOpen(true)
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (!editingSeason) return
+
     if (!formData.name.trim() || !formData.start_date || !formData.end_date) {
-      alert("Mohon lengkapi nama dan rentang tanggal season.")
+      setFormError("Mohon lengkapi nama dan rentang tanggal season.")
       return
     }
 
     try {
       setSubmitting(true)
-      if (editingSeason) {
-        await seasonsApi.update(editingSeason.id, {
-          name: formData.name.trim(),
-          code: formData.code.trim() || undefined,
-          start_date: new Date(formData.start_date).toISOString(),
-          end_date: new Date(formData.end_date + "T23:59:59").toISOString(),
-          is_active: formData.is_active,
-          target_attendance: Number(formData.target_attendance) || 500,
-          bonus_points: Number(formData.bonus_points) || 100,
-          description: formData.description.trim() || undefined,
-        })
-      } else {
-        await seasonsApi.create({
-          name: formData.name.trim(),
-          code: formData.code.trim() || undefined,
-          start_date: new Date(formData.start_date).toISOString(),
-          end_date: new Date(formData.end_date + "T23:59:59").toISOString(),
-          is_active: formData.is_active,
-          target_attendance: Number(formData.target_attendance) || 500,
-          bonus_points: Number(formData.bonus_points) || 100,
-          description: formData.description.trim() || undefined,
-        })
-      }
-      setModalOpen(false)
+      setFormError(null)
+      await seasonsApi.update(editingSeason.id, {
+        name: formData.name.trim(),
+        start_date: new Date(formData.start_date).toISOString(),
+        end_date: new Date(formData.end_date + "T23:59:59").toISOString(),
+        target_attendance: Number(formData.target_attendance) || 500,
+        bonus_points: Number(formData.bonus_points) || 100,
+        description: formData.description.trim() || null,
+      })
       await loadSeasons()
+      setModalOpen(false)
     } catch (err: any) {
       console.error("Gagal menyimpan season:", err)
-      alert(err.message || "Gagal menyimpan data season.")
+      setFormError(err.message || "Gagal menyimpan perubahan season.")
     } finally {
       setSubmitting(false)
     }
   }
 
-  async function handleDelete(s: SeasonDto) {
-    if (!confirm(`Hapus season "${s.name}"?`)) return
-    try {
-      await seasonsApi.remove(s.id)
-      await loadSeasons()
-    } catch (err: any) {
-      console.error("Gagal menghapus season:", err)
-      alert(err.message || "Gagal menghapus season.")
-    }
-  }
-
   async function handleActivate(s: SeasonDto) {
     try {
+      setActivatingId(s.id)
       await seasonsApi.activate(s.id)
       await loadSeasons()
     } catch (err: any) {
       console.error("Gagal mengaktifkan season:", err)
       alert(err.message || "Gagal mengaktifkan season.")
+    } finally {
+      setActivatingId(null)
     }
   }
 
+  function getSeasonByCode(code: string): SeasonDto | undefined {
+    return seasons.find((s) => s.code === code)
+  }
+
   return (
-    <main className="relative font-sans overflow-hidden">
+    <main className="min-h-screen bg-sekkha-surface pb-32 md:pb-12 font-sans">
       <PageBreadcrumb
         items={[
           { label: "Konfigurasi" },
-          { label: "Master Data" },
+          { label: "Rules" },
           { label: "Season Leaderboard" },
         ]}
       />
 
-      <div className="px-3.5 py-4 pb-24 md:pb-8 lg:pb-10 sm:px-6 md:px-8 lg:px-12">
-        <div className="mx-auto max-w-7xl space-y-5">
-          {/* Header Row */}
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-500/15 text-amber-600">
-                  <TrophyIcon className="size-4.5" />
-                </span>
-                <h1 className="text-body-lg sm:text-heading-5 font-black text-sekkha-ink">
-                  Manajemen Season Leaderboard
-                </h1>
+      <div className="px-4 py-6 sm:px-6 md:px-8 max-w-6xl mx-auto space-y-7">
+        
+        {/* Header Section */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-sekkha-hairline-soft pb-5">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <div className="flex size-9 items-center justify-center rounded-xl bg-amber-500/15 text-amber-700">
+                <TrophyIcon className="size-5" />
               </div>
-              <p className="mt-1 text-caption text-sekkha-slate">
-                Atur periode aktif season dan rentang tanggal absensi yang masuk ke kalkulasi peringkat leaderboard.
-              </p>
+              <h1 className="text-heading-5 font-black text-sekkha-ink">
+                Aturan Periode Season Leaderboard
+              </h1>
             </div>
-
-            <button
-              type="button"
-              onClick={handleOpenCreate}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-sekkha-brand-blue px-4 py-2.5 text-caption-bold text-white shadow-md hover:bg-blue-700 transition-all cursor-pointer shrink-0 active:scale-98"
-            >
-              <PlusIcon className="size-4" />
-              <span>Tambah Season Baru</span>
-            </button>
+            <p className="text-body-sm text-sekkha-slate">
+              Struktur 3 periode season tetap: <strong>Semester</strong> (Default), <strong>Kuartal</strong>, dan <strong>Tahunan</strong>.
+            </p>
           </div>
 
-          {error && (
-            <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-caption font-bold text-rose-700">
-              {error}
-            </div>
-          )}
+          <div className="flex items-center gap-2 rounded-xl bg-slate-100/90 border border-slate-200/80 px-3.5 py-2 text-micro font-bold text-sekkha-slate shrink-0">
+            <ShieldCheckIcon className="size-4 text-sekkha-brand-blue" />
+            <span>Format Inti (3 Opsi Tetap, Data Dapat Diedit)</span>
+          </div>
+        </div>
 
-          {/* Season Cards Grid */}
-          {loading ? (
-            <div className="py-12 text-center text-caption text-sekkha-slate">
-              Memuat data season...
-            </div>
-          ) : seasons.length === 0 ? (
-            <div className="rounded-3xl border border-sekkha-hairline bg-white/70 backdrop-blur-md p-10 text-center space-y-3">
-              <TrophyIcon className="size-10 text-sekkha-slate/40 mx-auto" />
-              <p className="text-body-sm-medium font-bold text-sekkha-slate">Belum ada season terdaftar.</p>
-              <button
-                type="button"
-                onClick={handleOpenCreate}
-                className="text-caption font-bold text-sekkha-brand-blue hover:underline"
-              >
-                Buat Season Pertama
-              </button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {seasons.map((s) => {
-                const isOngoing = new Date(s.start_date) <= new Date() && new Date(s.end_date) >= new Date()
-                const isFinished = new Date(s.end_date) < new Date()
+        {/* Info Banner */}
+        <div className="flex items-start gap-3 rounded-2xl bg-amber-50/70 border border-amber-200/80 p-4 text-body-sm text-amber-950 shadow-2xs">
+          <InfoIcon className="size-5 shrink-0 text-amber-600 mt-0.5" />
+          <div className="space-y-0.5">
+            <p className="font-bold text-caption text-amber-950">Mekanisme Season Aktif</p>
+            <p className="text-micro text-amber-800 leading-relaxed">
+              Hanya ada <strong>satu season yang aktif</strong> dalam satu waktu. Poin peringkat dan target komunitas di Leaderboard akan difilter sesuai rentang tanggal season yang sedang aktif.
+            </p>
+          </div>
+        </div>
 
-                return (
-                  <div
-                    key={s.id}
-                    className={`relative flex flex-col justify-between overflow-hidden rounded-3xl border bg-white/90 backdrop-blur-2xl p-5 shadow-lg transition-all ${
-                      s.is_active
-                        ? "border-amber-400/80 ring-2 ring-amber-300/40 shadow-amber-500/5"
-                        : "border-sekkha-hairline hover:border-sekkha-brand-blue/30"
-                    }`}
-                  >
-                    {/* Top Status Badges */}
-                    <div>
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          {s.is_active ? (
-                            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 border border-emerald-300 px-2.5 py-0.5 text-micro-bold text-emerald-800 animate-pulse shadow-2xs">
-                              <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
-                              Season Aktif
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 border border-slate-200 px-2.5 py-0.5 text-micro-bold text-slate-600">
-                              Tidak Aktif
-                            </span>
-                          )}
+        {/* Error Alert */}
+        {error && (
+          <div className="flex items-center gap-2 rounded-xl bg-red-50 p-4 border border-red-200 text-body-sm text-red-800">
+            <AlertCircleIcon className="size-5 text-red-600 shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
 
-                          {isOngoing && !s.is_active && (
-                            <span className="rounded-full bg-blue-50 border border-blue-200 px-2 py-0.5 text-[10px] font-bold text-blue-700">
-                              Dalam Periode
-                            </span>
-                          )}
-                          {isFinished && (
-                            <span className="rounded-full bg-slate-100 border border-slate-200 px-2 py-0.5 text-[10px] font-bold text-slate-500">
-                              Selesai
-                            </span>
-                          )}
+        {/* Hardcoded 3 Season Sections */}
+        {loading ? (
+          <div className="space-y-6">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-52 rounded-3xl bg-white border border-sekkha-hairline animate-pulse p-6" />
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {HARDCODED_SEASONS.map((cfg) => {
+              const season = getSeasonByCode(cfg.code)
+              if (!season) return null
+
+              const isActive = season.is_active
+
+              return (
+                <div
+                  key={cfg.code}
+                  className={`rounded-3xl border bg-white p-5 sm:p-7 shadow-xs space-y-5 transition-all relative overflow-hidden ${
+                    isActive
+                      ? "border-amber-400/80 ring-2 ring-amber-400/20 shadow-md"
+                      : "border-sekkha-hairline hover:border-slate-300"
+                  }`}
+                >
+                  {/* Active Header Badge */}
+                  {isActive && (
+                    <div className="absolute top-0 right-0 rounded-bl-2xl bg-gradient-to-r from-amber-500 to-amber-600 px-4 py-1.5 text-micro-bold text-white shadow-xs flex items-center gap-1.5">
+                      <CheckCircleIcon className="size-3.5" />
+                      <span>SEDANG AKTIF DI LEADERBOARD</span>
+                    </div>
+                  )}
+
+                  {/* Section Title & Subtitle */}
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 border-b border-sekkha-hairline-soft pb-4">
+                    <div className="space-y-1.5 max-w-2xl">
+                      <div className="flex items-center gap-2.5">
+                        <div className="p-2 rounded-xl bg-slate-50 border border-slate-200/60">
+                          {cfg.icon}
                         </div>
-
-                        {s.code && (
-                          <span className="text-[10px] font-mono font-bold uppercase text-sekkha-slate/70 bg-sekkha-surface px-2 py-0.5 rounded-lg border border-sekkha-hairline-soft">
-                            {s.code}
-                          </span>
-                        )}
+                        <h2 className="text-heading-6 font-black text-sekkha-ink">
+                          {season.name}
+                        </h2>
+                        <span className="rounded-full bg-slate-100 border border-slate-200 px-2.5 py-0.5 text-micro-bold text-sekkha-slate">
+                          {cfg.badge}
+                        </span>
                       </div>
-
-                      {/* Title & Description */}
-                      <h3 className="mt-3 text-body-base font-black text-sekkha-ink">{s.name}</h3>
-                      {s.description && (
-                        <p className="mt-1 text-caption text-sekkha-slate line-clamp-2">{s.description}</p>
-                      )}
-
-                      {/* Date Range Box */}
-                      <div className="mt-3 rounded-2xl bg-sekkha-canvas/80 border border-sekkha-hairline-soft p-3 space-y-1.5">
-                        <div className="flex items-center gap-2 text-caption font-bold text-sekkha-ink">
-                          <CalendarIcon className="size-3.5 text-sekkha-brand-blue shrink-0" />
-                          <span>
-                            {formatDateDisplay(s.start_date)} — {formatDateDisplay(s.end_date)}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between text-micro text-sekkha-slate pt-1 border-t border-sekkha-hairline-soft font-medium">
-                          <span className="flex items-center gap-1">
-                            <UsersIcon className="size-3 text-sekkha-brand-blue" />
-                            Absensi Masuk: <strong>{s.total_attendances ?? 0}</strong>
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <SparklesIcon className="size-3 text-amber-500" />
-                            Target: <strong>{s.target_attendance}</strong>
-                          </span>
-                        </div>
-                      </div>
+                      <p className="text-caption text-sekkha-slate leading-relaxed">
+                        {season.description || cfg.subtitle}
+                      </p>
                     </div>
 
-                    {/* Bottom Actions */}
-                    <div className="mt-4 flex items-center justify-between gap-2 border-t border-sekkha-hairline-soft pt-3">
-                      {!s.is_active ? (
+                    <div className="shrink-0 flex items-center gap-2 pt-2 sm:pt-0">
+                      {isActive ? (
+                        <span className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-50 border border-emerald-200 px-3 py-1.5 text-caption font-bold text-emerald-700">
+                          <CheckCircleIcon className="size-4 text-emerald-600" />
+                          <span>Status: Aktif</span>
+                        </span>
+                      ) : (
                         <button
                           type="button"
-                          onClick={() => handleActivate(s)}
-                          className="inline-flex items-center gap-1 rounded-xl bg-amber-50 border border-amber-300/80 px-2.5 py-1.5 text-micro-bold text-amber-900 hover:bg-amber-100 transition-all cursor-pointer active:scale-95"
+                          disabled={activatingId === season.id}
+                          onClick={() => handleActivate(season)}
+                          className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-3.5 py-2 text-caption font-bold text-white shadow-xs hover:bg-black transition-colors disabled:opacity-50"
                         >
-                          <CheckCircleIcon className="size-3.5 text-amber-600" />
-                          <span>Aktifkan Season</span>
+                          <SparklesIcon className="size-3.5 text-amber-300" />
+                          <span>{activatingId === season.id ? "Mengaktifkan..." : "Jadikan Season Aktif"}</span>
                         </button>
-                      ) : (
-                        <span className="text-micro-bold text-emerald-700 flex items-center gap-1">
-                          <CheckCircleIcon className="size-3.5 text-emerald-600" />
-                          Sedang Aktif
-                        </span>
                       )}
 
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => handleOpenEdit(s)}
-                          className="flex h-8 w-8 items-center justify-center rounded-xl bg-sekkha-surface border border-sekkha-hairline text-sekkha-slate hover:bg-white hover:text-sekkha-brand-blue transition-all cursor-pointer"
-                          title="Edit Season"
-                        >
-                          <PencilIcon className="size-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(s)}
-                          className="flex h-8 w-8 items-center justify-center rounded-xl bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 transition-all cursor-pointer"
-                          title="Hapus Season"
-                        >
-                          <TrashIcon className="size-3.5" />
-                        </button>
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEdit(season)}
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-sekkha-hairline-strong bg-white px-3 py-2 text-caption font-bold text-sekkha-ink shadow-2xs hover:bg-slate-50 hover:border-sekkha-brand-blue hover:text-sekkha-brand-blue transition-colors"
+                      >
+                        <PencilIcon className="size-3.5" />
+                        <span>Edit Konfigurasi</span>
+                      </button>
                     </div>
                   </div>
-                )
-              })}
-            </div>
-          )}
-        </div>
+
+                  {/* Season Metrics Grid */}
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    {/* Period Date Range */}
+                    <div className="rounded-2xl border border-slate-100 bg-slate-50/60 p-4 space-y-1">
+                      <div className="flex items-center gap-2 text-micro font-bold text-sekkha-slate uppercase tracking-wider">
+                        <CalendarIcon className="size-3.5 text-blue-600" />
+                        <span>Rentang Periode</span>
+                      </div>
+                      <p className="text-body-sm font-extrabold text-sekkha-ink">
+                        {formatDateDisplay(season.start_date)} – {formatDateDisplay(season.end_date)}
+                      </p>
+                    </div>
+
+                    {/* Community Target */}
+                    <div className="rounded-2xl border border-slate-100 bg-slate-50/60 p-4 space-y-1">
+                      <div className="flex items-center gap-2 text-micro font-bold text-sekkha-slate uppercase tracking-wider">
+                        <UsersIcon className="size-3.5 text-emerald-600" />
+                        <span>Target Kehadiran</span>
+                      </div>
+                      <p className="text-body-sm font-extrabold text-sekkha-ink flex items-baseline gap-1.5">
+                        <span>{season.target_attendance}</span>
+                        <span className="text-micro font-medium text-sekkha-slate">
+                          (Tercatat: {season.total_attendances || 0} hadir)
+                        </span>
+                      </p>
+                    </div>
+
+                    {/* Bonus Points */}
+                    <div className="rounded-2xl border border-slate-100 bg-slate-50/60 p-4 space-y-1">
+                      <div className="flex items-center gap-2 text-micro font-bold text-sekkha-slate uppercase tracking-wider">
+                        <FlameIcon className="size-3.5 text-orange-600" />
+                        <span>Bonus Akhir Season</span>
+                      </div>
+                      <p className="text-body-sm font-extrabold text-sekkha-ink">
+                        +{season.bonus_points} Poin Komunitas
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+
       </div>
 
-      {/* Modal Create / Edit */}
-      {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
-          <div className="relative w-full max-w-lg overflow-hidden rounded-3xl border border-white/80 bg-white p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between pb-3 border-b border-sekkha-hairline-soft">
-              <h2 className="text-body-base font-black text-sekkha-ink">
-                {editingSeason ? "Edit Season Leaderboard" : "Tambah Season Baru"}
-              </h2>
-              <button
-                type="button"
-                onClick={() => setModalOpen(false)}
-                className="rounded-xl p-1 text-sekkha-slate hover:bg-sekkha-surface hover:text-sekkha-ink cursor-pointer"
-              >
-                <XIcon className="size-5" />
-              </button>
+      {/* Edit Season Modal */}
+      <ResponsiveFormModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        title="Edit Konfigurasi Season"
+        description={`Perbarui rentang tanggal dan target untuk ${editingSeason?.name || "season ini"}.`}
+      >
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {formError && (
+            <div className="flex items-center gap-2 rounded-xl bg-red-50 p-3 border border-red-200 text-caption text-red-800">
+              <AlertCircleIcon className="size-4 text-red-600 shrink-0" />
+              <span>{formError}</span>
             </div>
+          )}
 
-            <form onSubmit={handleSubmit} className="mt-4 space-y-4">
-              {/* Nama Season */}
-              <div>
-                <label className="block text-caption-bold font-extrabold text-sekkha-ink">
-                  Nama Season <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Contoh: Season 1 · Q1 2026"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="mt-1 w-full rounded-xl border border-sekkha-hairline bg-sekkha-canvas/60 px-3.5 py-2.5 text-caption font-medium text-sekkha-ink focus:border-sekkha-brand-blue focus:outline-hidden"
-                />
-              </div>
-
-              {/* Kode Season */}
-              <div>
-                <label className="block text-caption-bold font-extrabold text-sekkha-ink">
-                  Kode Identitas Season (Opsional)
-                </label>
-                <input
-                  type="text"
-                  placeholder="Contoh: S2026-Q1"
-                  value={formData.code}
-                  onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                  className="mt-1 w-full rounded-xl border border-sekkha-hairline bg-sekkha-canvas/60 px-3.5 py-2.5 text-caption font-medium text-sekkha-ink focus:border-sekkha-brand-blue focus:outline-hidden"
-                />
-              </div>
-
-              {/* Date Range: Start & End */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-caption-bold font-extrabold text-sekkha-ink">
-                    Tanggal Mulai <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    value={formData.start_date}
-                    onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                    className="mt-1 w-full rounded-xl border border-sekkha-hairline bg-sekkha-canvas/60 px-3 py-2 text-caption font-medium text-sekkha-ink focus:border-sekkha-brand-blue focus:outline-hidden"
-                  />
-                </div>
-                <div>
-                  <label className="block text-caption-bold font-extrabold text-sekkha-ink">
-                    Tanggal Selesai <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    value={formData.end_date}
-                    onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                    className="mt-1 w-full rounded-xl border border-sekkha-hairline bg-sekkha-canvas/60 px-3 py-2 text-caption font-medium text-sekkha-ink focus:border-sekkha-brand-blue focus:outline-hidden"
-                  />
-                </div>
-              </div>
-
-              {/* Targets: Target Attendance & Bonus Points */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-caption-bold font-extrabold text-sekkha-ink">
-                    Target Absensi Komunitas
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={formData.target_attendance}
-                    onChange={(e) => setFormData({ ...formData, target_attendance: Number(e.target.value) })}
-                    className="mt-1 w-full rounded-xl border border-sekkha-hairline bg-sekkha-canvas/60 px-3 py-2 text-caption font-medium text-sekkha-ink focus:border-sekkha-brand-blue focus:outline-hidden"
-                  />
-                </div>
-                <div>
-                  <label className="block text-caption-bold font-extrabold text-sekkha-ink">
-                    Bonus Poin Tercapai
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={formData.bonus_points}
-                    onChange={(e) => setFormData({ ...formData, bonus_points: Number(e.target.value) })}
-                    className="mt-1 w-full rounded-xl border border-sekkha-hairline bg-sekkha-canvas/60 px-3 py-2 text-caption font-medium text-sekkha-ink focus:border-sekkha-brand-blue focus:outline-hidden"
-                  />
-                </div>
-              </div>
-
-              {/* Deskripsi */}
-              <div>
-                <label className="block text-caption-bold font-extrabold text-sekkha-ink">
-                  Deskripsi / Catatan Season
-                </label>
-                <textarea
-                  rows={2}
-                  placeholder="Keterangan tema atau periode season..."
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="mt-1 w-full rounded-xl border border-sekkha-hairline bg-sekkha-canvas/60 px-3.5 py-2 text-caption font-medium text-sekkha-ink focus:border-sekkha-brand-blue focus:outline-hidden"
-                />
-              </div>
-
-              {/* Is Active Switch */}
-              <label className="flex items-center gap-2.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 p-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData.is_active}
-                  onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                  className="size-4 rounded-md accent-amber-600"
-                />
-                <span className="text-caption font-extrabold text-amber-950">
-                  Jadikan sebagai Season Aktif saat ini
-                </span>
-              </label>
-
-              {/* Form Buttons */}
-              <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-sekkha-hairline-soft">
-                <button
-                  type="button"
-                  onClick={() => setModalOpen(false)}
-                  className="rounded-xl border border-sekkha-hairline px-4 py-2 text-caption font-bold text-sekkha-slate hover:bg-sekkha-surface cursor-pointer"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="rounded-xl bg-sekkha-brand-blue px-5 py-2 text-caption-bold text-white shadow-md hover:bg-blue-700 cursor-pointer disabled:opacity-50"
-                >
-                  {submitting ? "Menyimpan..." : editingSeason ? "Simpan Perubahan" : "Buat Season"}
-                </button>
-              </div>
-            </form>
+          <div className="space-y-1">
+            <label className="text-caption font-bold text-sekkha-ink">Nama Season</label>
+            <input
+              type="text"
+              required
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              className="w-full rounded-xl border border-sekkha-hairline-strong px-3.5 py-2.5 text-body-sm text-sekkha-ink outline-none focus:border-sekkha-brand-blue"
+            />
           </div>
-        </div>
-      )}
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="text-caption font-bold text-sekkha-ink">Tanggal Mulai</label>
+              <input
+                type="date"
+                required
+                value={formData.start_date}
+                onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+                className="w-full rounded-xl border border-sekkha-hairline-strong px-3.5 py-2.5 text-body-sm text-sekkha-ink outline-none focus:border-sekkha-brand-blue"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-caption font-bold text-sekkha-ink">Tanggal Selesai</label>
+              <input
+                type="date"
+                required
+                value={formData.end_date}
+                onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+                className="w-full rounded-xl border border-sekkha-hairline-strong px-3.5 py-2.5 text-body-sm text-sekkha-ink outline-none focus:border-sekkha-brand-blue"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="text-caption font-bold text-sekkha-ink">Target Kehadiran</label>
+              <input
+                type="number"
+                min={1}
+                value={formData.target_attendance}
+                onChange={(e) => setFormData({ ...formData, target_attendance: Number(e.target.value) })}
+                className="w-full rounded-xl border border-sekkha-hairline-strong px-3.5 py-2.5 text-body-sm text-sekkha-ink outline-none focus:border-sekkha-brand-blue"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-caption font-bold text-sekkha-ink">Bonus Poin Selesai</label>
+              <input
+                type="number"
+                min={0}
+                value={formData.bonus_points}
+                onChange={(e) => setFormData({ ...formData, bonus_points: Number(e.target.value) })}
+                className="w-full rounded-xl border border-sekkha-hairline-strong px-3.5 py-2.5 text-body-sm text-sekkha-ink outline-none focus:border-sekkha-brand-blue"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-caption font-bold text-sekkha-ink">Deskripsi / Tema Musim</label>
+            <textarea
+              rows={3}
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              placeholder="Jelaskan fokus tema season kali ini..."
+              className="w-full rounded-xl border border-sekkha-hairline-strong px-3.5 py-2 text-body-sm text-sekkha-ink outline-none focus:border-sekkha-brand-blue"
+            />
+          </div>
+
+          <div className="flex items-center justify-end gap-2 pt-3 border-t border-sekkha-hairline-soft">
+            <button
+              type="button"
+              onClick={() => setModalOpen(false)}
+              className="rounded-xl border border-sekkha-hairline-strong px-4 py-2.5 text-body-sm font-bold text-sekkha-slate hover:bg-slate-100 transition-colors"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              disabled={submitting}
+              className="rounded-xl bg-sekkha-brand-blue px-5 py-2.5 text-body-sm font-bold text-white shadow-xs hover:bg-blue-700 transition-colors disabled:opacity-50"
+            >
+              {submitting ? "Menyimpan..." : "Simpan Perubahan"}
+            </button>
+          </div>
+        </form>
+      </ResponsiveFormModal>
     </main>
   )
 }

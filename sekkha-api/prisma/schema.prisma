@@ -223,3 +223,18 @@ model Season {
 
   @@map("seasons")
 }
+
+// ─── Rules: Points Configuration ─────────────────────────────────────────────
+
+model PointRule {
+  id          String   @id @default(cuid())
+  code        String   @unique // e.g. "attendance_rutin", "attendance_special", "streak_bonus", "minimum_gap"
+  label       String
+  points      Int      @default(50)
+  description String?
+  category    String   @default("attendance") // "attendance" | "streak" | "general"
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("point_rules")
+}
+

@@ -124,12 +124,61 @@ eventsRouter.patch("/:id/status", requireAuth, requireRole("pengurus", "admin"),
       data: { status },
     })
 
+    // When closing the event, finalize all attendances and credit points to attendees
+    if (status === "closed") {
+      const attendees = await prisma.attendance.findMany({
+        where: { eventId: id },
+        include: { user: true },
+      })
+
+      const pointRuleModel = (prisma as any).pointRule
+      const ruleCode = event.eventType === "special" ? "attendance_special" : "attendance_rutin"
+      const activeRule = await pointRuleModel.findUnique({ where: { code: ruleCode } }).catch(() => null)
+      const defaultPoints = activeRule?.points ?? (event.eventType === "special" ? 100 : 50)
+
+      for (const att of attendees) {
+        // Check if points were already awarded for this attendance
+        const existingTx = await prisma.pointTransaction.findFirst({
+          where: { referenceId: att.id },
+        })
+
+        if (!existingTx) {
+          const points = att.pointsEarned || defaultPoints
+
+          await prisma.user.update({
+            where: { id: att.userId },
+            data: {
+              points: { increment: points },
+              lastActivityAt: att.scannedAt,
+            },
+          }).catch(() => {})
+
+          await prisma.pointTransaction.create({
+            data: {
+              userId: att.userId,
+              amount: points,
+              type: "attendance",
+              description: `Presensi Event: ${event.title}`,
+              referenceId: att.id,
+            },
+          }).catch(() => {})
+
+          await invalidate(CacheKeys.userAttendances(att.userId))
+          await invalidate(CacheKeys.userProfile(att.userId))
+        }
+      }
+
+      // Refresh leaderboard snapshots
+      const { computeAndCacheLeaderboard } = await import("../../leaderboard/internal/service")
+      await computeAndCacheLeaderboard().catch(() => {})
+    }
+
     await invalidatePattern("events:*")
     res.json({ id: event.id, status: event.status })
   } catch (err) { next(err) }
 })
 
-// POST /api/events/:id/attendance — record attendance
+// POST /api/events/:id/attendance — record attendance (Staged in DB with strict idempotency)
 eventsRouter.post("/:id/attendance", requireAuth, async (req, res, next) => {
   try {
     const id = req.params.id as string
@@ -140,6 +189,22 @@ eventsRouter.post("/:id/attendance", requireAuth, async (req, res, next) => {
 
     const targetUserId = user_id ?? req.user!.userId
 
+    // Verify event exists and is not closed
+    const event = await prisma.event.findUnique({
+      where: { id },
+      select: { id: true, title: true, eventType: true, status: true },
+    })
+
+    if (!event) {
+      res.status(404).json({ error: "Kegiatan tidak ditemukan." })
+      return
+    }
+
+    if (event.status === "closed" || event.status === "cancelled") {
+      res.status(400).json({ error: "Sesi presensi untuk kegiatan ini telah ditutup." })
+      return
+    }
+
     // Verify target user exists in People database
     const targetUser = await prisma.user.findUnique({
       where: { id: targetUserId },
@@ -147,53 +212,48 @@ eventsRouter.post("/:id/attendance", requireAuth, async (req, res, next) => {
     })
 
     if (!targetUser) {
-      res.status(404).json({ error: "Pengguna tidak ditemukan dalam data People." })
+      res.status(404).json({ error: "Pengguna tidak ditemukan dalam basis data People." })
       return
     }
 
-    // Check if user already attended
+    // Strict Idempotency Check: Reject duplicate scans
     const existing = await prisma.attendance.findUnique({
       where: { userId_eventId: { userId: targetUserId, eventId: id } },
     })
 
-    const isNew = !existing
-    const pointsAwarded = 50
-
-    // Upsert attendance record so duplicate scan/manual entry doesn't crash
-    const attendance = await prisma.attendance.upsert({
-      where: { userId_eventId: { userId: targetUserId, eventId: id } },
-      update: { method, scannedAt: new Date() },
-      create: { userId: targetUserId, eventId: id, method, pointsEarned: pointsAwarded },
-    })
-
-    // Award points and log transaction for new attendance
-    if (isNew) {
-      await prisma.user.update({
-        where: { id: targetUserId },
+    if (existing) {
+      res.status(409).json({
+        error: "DUPLICATE_ATTENDANCE",
+        message: `Umat ${targetUser.name} (${targetUser.userNumber || "ID Terdaftar"}) sudah tercatat hadir sebelumnya.`,
         data: {
-          points: { increment: pointsAwarded },
-          lastActivityAt: attendance.scannedAt,
+          id: existing.id,
+          user_id: targetUserId,
+          name: targetUser.name,
+          scanned_at: existing.scannedAt.toISOString(),
         },
-      }).catch(() => {})
-
-      await prisma.pointTransaction.create({
-        data: {
-          userId: targetUserId,
-          amount: pointsAwarded,
-          type: "attendance",
-          description: "Presensi Event",
-          referenceId: attendance.id,
-        },
-      }).catch(() => {})
-    } else {
-      await prisma.user.update({
-        where: { id: targetUserId },
-        data: { lastActivityAt: attendance.scannedAt },
-      }).catch(() => {})
+      })
+      return
     }
 
+    // Dynamically retrieve configured points rule (non-hardcoded)
+    const pointRuleModel = (prisma as any).pointRule
+    const ruleCode = event.eventType === "special" ? "attendance_special" : "attendance_rutin"
+    const activeRule = await pointRuleModel.findUnique({ where: { code: ruleCode } }).catch(() => null)
+    const pointsAwarded = activeRule?.points ?? (event.eventType === "special" ? 100 : 50)
+
+    // Persist attendance immediately in DB (Staged — preserved across reloads / navigation)
+    const attendance = await prisma.attendance.create({
+      data: {
+        userId: targetUserId,
+        eventId: id,
+        method,
+        pointsEarned: pointsAwarded,
+        scannedAt: new Date(),
+      },
+    })
+
     await invalidate(CacheKeys.userAttendances(targetUserId))
-    await invalidate(CacheKeys.userProfile(targetUserId))
+    await invalidatePattern("events:*")
 
     res.status(201).json({
       id: attendance.id,
@@ -204,6 +264,7 @@ eventsRouter.post("/:id/attendance", requireAuth, async (req, res, next) => {
       method: attendance.method,
       points_earned: pointsAwarded,
       scanned_at: attendance.scannedAt.toISOString(),
+      status: "staged",
     })
   } catch (err) { next(err) }
 })

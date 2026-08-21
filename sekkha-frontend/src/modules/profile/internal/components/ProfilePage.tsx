@@ -3,7 +3,7 @@
 // Real points, real leaderboard rank, real attendance history,
 // real streak calculation, real badge unlock status, and editable profile.
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import {
   SparklesIcon,
   CheckCircleIcon,
@@ -34,6 +34,15 @@ import {
   Loader2Icon,
   KeyIcon,
 } from "lucide-react"
+import {
+  ResponsiveContainer,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Radar,
+  Tooltip as RechartsTooltip,
+} from "recharts"
 import QRCode from "react-qr-code"
 import { useAuth } from "@/modules/auth"
 import { api } from "@/lib/api"
@@ -292,6 +301,49 @@ export function ProfilePage() {
     aktivis: "bg-blue-50 text-blue-700 border-blue-200/80 shadow-blue-100",
     umat: "bg-emerald-50 text-emerald-700 border-emerald-200/80 shadow-emerald-100",
   }
+
+  // Dynamic Radar Chart Analytics based on attendance, streak, badges, and points
+  const { radarData, overallIndexScore, strongestArea } = useMemo(() => {
+    // 1. Presensi Rutin: Scale based on attendance count (target 10 for 100%)
+    const attendanceScore = Math.min(100, Math.round((totalAttended / 10) * 100))
+
+    // 2. Streak Mingguan: Scale based on max streak achieved (target 5 for 100%)
+    const streakScore = Math.min(100, Math.round((Math.max(currentStreak, longestStreak) / 5) * 100))
+
+    // 3. Akumulasi Poin: Scale based on points (target 500 for 100%)
+    const pointsScore = Math.min(100, Math.round((totalPoints / 500) * 100))
+
+    // 4. Lencana & Tugas: Percentage of unlocked badges
+    const earnedBadgesCount = badges.filter((b) => Boolean(b.earned_at)).length
+    const totalBadgesCount = Math.max(1, badges.length)
+    const badgeScore = Math.min(100, Math.round((earnedBadgesCount / totalBadgesCount) * 100))
+
+    // 5. Partisipasi Khusus: Event non-rutin atau event berbobot poin tinggi
+    const specialAttCount = attendances.filter((a) => (a.points_earned && a.points_earned > 50) || a.method === "manual").length
+    const specialScore = totalAttended > 0 ? Math.min(100, Math.max(25, Math.round((specialAttCount / 2) * 100))) : 0
+
+    // 6. Dedikasi & Konsistensi
+    const baseAvg = Math.round((attendanceScore + streakScore + pointsScore + badgeScore + specialScore) / 5)
+    const dedicationScore = currentStreak > 0 ? Math.min(100, baseAvg + 15) : baseAvg
+
+    const data = [
+      { subject: "Presensi", fullSubject: "Presensi Rutin", score: attendanceScore, raw: `${totalAttended} Event`, icon: "📅", color: "#3b82f6" },
+      { subject: "Streak", fullSubject: "Konsistensi Streak", score: streakScore, raw: `${currentStreak}x Aktif`, icon: "🔥", color: "#f97316" },
+      { subject: "Poin", fullSubject: "Akumulasi Poin", score: pointsScore, raw: `${totalPoints} Pts`, icon: "⭐", color: "#eab308" },
+      { subject: "Lencana", fullSubject: "Lencana Dibuka", score: badgeScore, raw: `${earnedBadgesCount}/${totalBadgesCount}`, icon: "🏆", color: "#8b5cf6" },
+      { subject: "Khusus", fullSubject: "Partisipasi Khusus", score: specialScore, raw: `${specialAttCount} Khusus`, icon: "✨", color: "#06b6d4" },
+      { subject: "Dedikasi", fullSubject: "Indeks Dedikasi", score: dedicationScore, raw: `${dedicationScore}%`, icon: "🛡️", color: "#10b981" },
+    ]
+
+    const overall = Math.round(data.reduce((acc, curr) => acc + curr.score, 0) / data.length)
+    const best = [...data].sort((a, b) => b.score - a.score)[0]
+
+    return {
+      radarData: data,
+      overallIndexScore: overall,
+      strongestArea: best,
+    }
+  }, [totalAttended, currentStreak, longestStreak, totalPoints, badges, attendances])
 
 
 
@@ -589,6 +641,157 @@ export function ProfilePage() {
                 }`}>
                   {currentStreak > 0 ? "✓ Aktif Minggu Ini" : "Perlu Presensi Minggu Ini"}
                 </span>
+              </div>
+            </div>
+
+            {/* ── Analitik Karakter & Tugas Presensi (Dynamic Radar Chart) ── */}
+            <div className="rounded-3xl border border-white/80 bg-white/90 p-6 sm:p-7 shadow-2xs space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-sekkha-hairline-soft pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex size-10 items-center justify-center rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20">
+                    <SparklesIcon className="size-5 text-amber-300" />
+                  </div>
+                  <div>
+                    <h3 className="text-body-base sm:text-heading-6 font-extrabold text-sekkha-ink">
+                      Analitik Karakter & Presensi
+                    </h3>
+                    <p className="text-micro sm:text-caption text-sekkha-slate">
+                      Visualisasi performa keaktifan, streak, lencana & dedikasi umat
+                    </p>
+                  </div>
+                </div>
+
+                {/* Overall Dedication Index Pill */}
+                <div className="flex items-center gap-2.5 self-start sm:self-auto rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200/80 px-4 py-2 shadow-2xs">
+                  <div className="text-right">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-sekkha-slate">Indeks Keaktifan</p>
+                    <p className="text-body-base font-black text-sekkha-brand-blue">{overallIndexScore} <span className="text-micro font-medium text-sekkha-slate">/ 100</span></p>
+                  </div>
+                  <div className="flex size-9 items-center justify-center rounded-xl bg-blue-600 text-white font-black text-caption shadow-xs">
+                    {overallIndexScore >= 80 ? "A+" : overallIndexScore >= 60 ? "B" : overallIndexScore >= 40 ? "C" : "D"}
+                  </div>
+                </div>
+              </div>
+
+              {/* Main 2-Column Grid: Radar Chart Visualizer (Left) + Breakdown Metrics (Right) */}
+              <div className="grid gap-6 lg:grid-cols-12 items-center">
+                
+                {/* Left: Recharts Radar Chart (Col Span 6) */}
+                <div className="lg:col-span-6 flex flex-col items-center justify-center relative min-h-[300px]">
+                  <div className="w-full h-72 sm:h-80 relative">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RadarChart cx="50%" cy="50%" outerRadius="75%" data={radarData}>
+                        <PolarGrid stroke="#e2e8f0" strokeDasharray="3 3" />
+                        <PolarAngleAxis
+                          dataKey="subject"
+                          tick={({ payload, x, y, cx, cy, ...rest }: any) => (
+                            <text
+                              x={x}
+                              y={y}
+                              cx={cx}
+                              cy={cy}
+                              {...rest}
+                              className="fill-slate-600 text-[11px] sm:text-xs font-bold"
+                              textAnchor="middle"
+                            >
+                              {payload.value}
+                            </text>
+                          )}
+                        />
+                        <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
+                        <Radar
+                          name="Skor Umat"
+                          dataKey="score"
+                          stroke="#3b82f6"
+                          strokeWidth={2.5}
+                          fill="#3b82f6"
+                          fillOpacity={0.4}
+                          dot={{ r: 3.5, fill: "#1d4ed8", strokeWidth: 1 }}
+                        />
+                        <RechartsTooltip
+                          content={({ active, payload }: any) => {
+                            if (active && payload && payload.length) {
+                              const data = payload[0].payload
+                              return (
+                                <div className="rounded-2xl border border-slate-700 bg-slate-900/95 p-3 text-white shadow-xl backdrop-blur-md space-y-1 text-left">
+                                  <div className="flex items-center gap-1.5 font-bold text-caption">
+                                    <span>{data.icon}</span>
+                                    <span>{data.fullSubject}</span>
+                                  </div>
+                                  <div className="flex items-center justify-between gap-4 text-micro pt-1 border-t border-slate-700">
+                                    <span className="text-slate-300">Skor Indeks:</span>
+                                    <span className="font-mono font-bold text-amber-300">{data.score} / 100</span>
+                                  </div>
+                                  <div className="flex items-center justify-between gap-4 text-micro">
+                                    <span className="text-slate-300">Data Real:</span>
+                                    <span className="font-semibold text-blue-300">{data.raw}</span>
+                                  </div>
+                                </div>
+                              )
+                            }
+                            return null
+                          }}
+                        />
+                      </RadarChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  <p className="text-[11px] text-sekkha-slate text-center mt-1">
+                    Grafik radar menghitung persentase keaktifan real berdasarkan presensi, streak mingguan & lencana.
+                  </p>
+                </div>
+
+                {/* Right: Dimension Bars & Highlights (Col Span 6) */}
+                <div className="lg:col-span-6 space-y-4">
+                  {/* Dynamic Highlight Card */}
+                  <div className="rounded-2xl bg-gradient-to-br from-blue-50/70 via-indigo-50/40 to-slate-50 border border-blue-200/70 p-4 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">{strongestArea?.icon || "🌟"}</span>
+                        <span className="text-caption font-bold text-sekkha-ink">Area Terkuat Anda</span>
+                      </div>
+                      <span className="rounded-full bg-blue-600 px-2.5 py-0.5 text-micro-bold text-white shadow-2xs">
+                        {strongestArea?.fullSubject || "Presensi"}
+                      </span>
+                    </div>
+                    <p className="text-micro text-sekkha-slate leading-relaxed">
+                      {currentStreak > 0
+                        ? `Pertahankan streak kehadiran mingguan untuk meningkatkan lencana prestasi dan poin keaktifan Anda!`
+                        : `Hadir pada kebaktian minggu ini untuk menyalakan kembali api streak dan membuka lencana baru.`}
+                    </p>
+                  </div>
+
+                  {/* Progress Bars for Each Dimension */}
+                  <div className="space-y-2.5">
+                    {radarData.map((item, idx) => (
+                      <div key={idx} className="rounded-xl border border-slate-100 bg-slate-50/70 p-2.5 hover:bg-slate-50 transition-colors">
+                        <div className="flex items-center justify-between text-caption font-semibold text-sekkha-ink mb-1.5">
+                          <div className="flex items-center gap-2">
+                            <span>{item.icon}</span>
+                            <span className="text-micro sm:text-caption font-bold">{item.fullSubject}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-micro text-sekkha-slate font-medium">{item.raw}</span>
+                            <span className="font-mono text-micro-bold text-sekkha-brand-blue bg-blue-50 px-1.5 py-0.2 rounded border border-blue-100">
+                              {item.score}%
+                            </span>
+                          </div>
+                        </div>
+                        {/* Progress Track */}
+                        <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200/80">
+                          <div
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{
+                              width: `${Math.max(4, item.score)}%`,
+                              backgroundColor: item.color,
+                            }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
               </div>
             </div>
 

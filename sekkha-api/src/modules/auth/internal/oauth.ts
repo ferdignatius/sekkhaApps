@@ -57,8 +57,8 @@ export async function handleGoogleRedirect(req: Request, res: Response, next: Ne
 
     <!-- Account List -->
     <div class="space-y-1 mb-6 max-h-[250px] overflow-y-auto pr-1">
-      ${users.map(u => `
-        <a href="/api/auth/google/callback-mock?email=${encodeURIComponent(u.email)}" 
+      ${users.filter(u => !!u.email).map(u => `
+        <a href="/api/auth/google/callback-mock?email=${encodeURIComponent(u.email || "")}" 
            class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[#F8FAFC] transition-colors border border-transparent hover:border-gray-100">
           <div class="w-8 h-8 rounded-full bg-[#E0E2EC] flex items-center justify-center font-bold text-[#1F1F1F] text-sm uppercase">
             ${u.name.charAt(0)}

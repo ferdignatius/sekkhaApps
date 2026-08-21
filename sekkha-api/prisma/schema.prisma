@@ -18,12 +18,18 @@ enum Role {
 
 model User {
   id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
+  email     String?  @unique
+  password  String?
   name      String
+  phone     String?  @map("phone")
   school    String?
+  birthDate DateTime? @map("birth_date")
+  gender    String?  @map("gender")
   avatarUrl String?  @map("avatar_url")
   role      Role     @default(umat)
+  googleId  String?  @unique @map("google_id")
+  isClaimed Boolean  @default(true) @map("is_claimed")
+  claimedAt DateTime? @map("claimed_at")
   lastActivityAt DateTime? @map("last_activity_at")
   consecutiveMissed Int    @default(0) @map("consecutive_missed")
   userNumber String?  @unique @map("user_number")

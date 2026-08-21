@@ -17,6 +17,9 @@ usersRouter.get("/me", requireAuth, async (req, res, next) => {
           email: true,
           name: true,
           school: true,
+          phone: true,
+          birthDate: true,
+          gender: true,
           avatarUrl: true,
           role: true,
           userNumber: true,
@@ -44,6 +47,7 @@ usersRouter.get("/me", requireAuth, async (req, res, next) => {
 
     res.json({
       ...user,
+      birth_date: user.birthDate ? new Date(user.birthDate).toISOString() : null,
       user_number: uNum,
     })
   } catch (err) {

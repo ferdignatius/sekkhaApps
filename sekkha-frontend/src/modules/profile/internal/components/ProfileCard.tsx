@@ -1,76 +1,103 @@
 // feature/profile/components/ProfileCard
 // Profile header card — left-aligned layout with avatar (camera overlay),
-// name, school, join date, and an "Edit Profil" button.
+// name, school, user number, role badge, and working "Edit Profil" trigger.
 
-import { CameraIcon, PencilIcon, CalendarIcon } from "lucide-react"
-
-// ─── Types ───────────────────────────────────────────────────────────────────
+import { useState } from "react"
+import { CameraIcon, PencilIcon, CalendarIcon, ShieldCheckIcon, CopyIcon, CheckIcon, PhoneIcon, MailIcon } from "lucide-react"
 
 interface ProfileCardProps {
   name: string
-  school: string
+  school?: string | null
+  phone?: string | null
+  email?: string | null
+  role?: string
+  userNumber?: string | null
   avatarUrl?: string
   joinedAt?: string // ISO date
   equippedBadge?: { name: string; icon: string } | null
   onEditProfile?: () => void
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
 function getInitials(name: string): string {
   return name
     .split(" ")
+    .filter(Boolean)
     .slice(0, 2)
     .map((w) => w[0]?.toUpperCase() ?? "")
-    .join("")
+    .join("") || "UM"
 }
 
-function formatJoinDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("id-ID", {
-    month: "long",
-    year: "numeric",
-  })
+function formatJoinDate(iso?: string): string {
+  if (!iso) return "Juli 2025"
+  try {
+    return new Date(iso).toLocaleDateString("id-ID", {
+      month: "long",
+      year: "numeric",
+    })
+  } catch {
+    return "Juli 2025"
+  }
 }
-
-// ─── Component ───────────────────────────────────────────────────────────────
 
 export function ProfileCard({
   name,
   school,
+  phone,
+  email,
+  role = "umat",
+  userNumber,
   avatarUrl,
   joinedAt = "2025-07-01",
   equippedBadge = { name: "Loyal", icon: "❤️" },
   onEditProfile,
 }: ProfileCardProps) {
+  const [copied, setCopied] = useState(false)
+
+  function handleCopyNumber() {
+    if (!userNumber) return
+    navigator.clipboard.writeText(userNumber)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  const roleLabel = role === "admin" ? "Admin Vihara" : role === "pengurus" ? "Pengurus" : role === "aktivis" ? "Aktivis" : "Umat"
+  const roleBadgeStyle: Record<string, string> = {
+    admin: "bg-red-50 text-red-700 border-red-200",
+    pengurus: "bg-purple-50 text-purple-700 border-purple-200",
+    aktivis: "bg-blue-50 text-blue-700 border-blue-200",
+    umat: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  }
+
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-white/80 bg-gradient-to-br from-sekkha-canvas/95 via-white/90 to-amber-50/50 backdrop-blur-md p-5 shadow-xs transition-all hover:shadow-md">
+    <div className="relative overflow-hidden rounded-3xl border border-white/80 bg-gradient-to-br from-white via-white/95 to-blue-50/40 backdrop-blur-md p-5 sm:p-6 shadow-xs transition-all hover:shadow-md">
       {/* Decorative Glow */}
-      <div className="absolute -top-10 -right-10 size-32 rounded-full bg-sekkha-brand-yellow/20 blur-2xl pointer-events-none" />
+      <div className="absolute -top-10 -right-10 size-36 rounded-full bg-sekkha-brand-blue/10 blur-2xl pointer-events-none" />
+
       {/* Edit button — top right */}
       <button
         type="button"
         onClick={onEditProfile}
-        className="absolute right-4 top-4 flex items-center gap-1.5 rounded-full border border-sekkha-hairline-strong px-3 py-1.5 text-button-md text-sekkha-ink transition-colors hover:bg-sekkha-surface active:bg-sekkha-hairline-soft"
+        className="absolute right-4 top-4 flex items-center gap-1.5 rounded-xl border border-sekkha-hairline-strong bg-white/90 px-3.5 py-1.5 text-caption-bold text-sekkha-ink shadow-2xs transition-all hover:bg-sekkha-brand-blue hover:text-white hover:border-sekkha-brand-blue active:scale-95 cursor-pointer"
         aria-label="Edit profil"
       >
         <PencilIcon className="size-3.5" aria-hidden="true" />
-        <span className="hidden sm:inline">Edit Profil</span>
+        <span>Edit Profil</span>
       </button>
 
-      {/* Content: left-aligned row */}
-      <div className="flex items-center gap-5">
+      {/* Content: responsive column on mobile, row on tablet/desktop */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 pt-1 sm:pt-0">
         {/* Avatar with camera overlay */}
         <div className="relative shrink-0">
           {avatarUrl ? (
             <img
               src={avatarUrl}
               alt={`Foto profil ${name}`}
-              className="h-20 w-20 rounded-full object-cover ring-4 ring-sekkha-hairline-soft"
+              className="size-20 sm:size-24 rounded-2xl object-cover ring-4 ring-sekkha-hairline-soft shadow-xs"
             />
           ) : (
             <div
               aria-label={`Inisial ${name}`}
-              className="flex h-20 w-20 items-center justify-center rounded-full bg-sekkha-brand-yellow text-heading-3 font-semibold text-sekkha-ink ring-4 ring-sekkha-hairline-soft"
+              className="flex size-20 sm:size-24 items-center justify-center rounded-2xl bg-gradient-to-br from-sekkha-brand-blue via-blue-600 to-indigo-700 text-heading-3 font-extrabold text-white ring-4 ring-blue-100 shadow-md uppercase"
             >
               {getInitials(name)}
             </div>
@@ -78,36 +105,67 @@ export function ProfileCard({
           {/* Camera overlay indicator */}
           <button
             type="button"
-            className="absolute -bottom-0.5 -right-0.5 flex h-7 w-7 items-center justify-center rounded-full border-2 border-sekkha-canvas bg-sekkha-brand-blue text-white shadow-sm"
-            aria-label="Unggah foto profil"
+            onClick={onEditProfile}
+            className="absolute -bottom-1 -right-1 flex size-7 items-center justify-center rounded-xl border-2 border-white bg-sekkha-brand-blue text-white shadow-sm hover:bg-blue-700 transition-colors cursor-pointer"
+            aria-label="Ubah foto profil"
+            title="Ubah profil & foto"
           >
             <CameraIcon className="size-3.5" aria-hidden="true" />
           </button>
         </div>
 
         {/* Info */}
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-heading-5 text-sekkha-ink">{name}</p>
-          <p className="mt-0.5 text-body-sm text-sekkha-slate">{school}</p>
+        <div className="min-w-0 flex-1 space-y-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="truncate text-heading-5 font-black text-sekkha-ink">{name}</h2>
+            <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-micro-bold capitalize ${roleBadgeStyle[role] || roleBadgeStyle.umat}`}>
+              <ShieldCheckIcon className="size-3" />
+              <span>{roleLabel}</span>
+            </span>
+          </div>
 
-          {/* Meta row: join date + equipped badge */}
-          <div className="mt-2 flex flex-wrap items-center gap-3">
-            {/* Join date */}
-            <div className="flex items-center gap-1 text-caption text-sekkha-muted">
-              <CalendarIcon className="size-3" aria-hidden="true" />
-              <span>Anggota sejak {formatJoinDate(joinedAt)}</span>
-            </div>
+          {/* User Number + School */}
+          <div className="flex flex-wrap items-center gap-3 text-caption text-sekkha-slate">
+            {userNumber && (
+              <div className="flex items-center gap-1 font-mono text-caption-bold text-sekkha-brand-blue bg-blue-50/80 px-2.5 py-0.5 rounded-lg border border-blue-200/60">
+                <span>{userNumber}</span>
+                <button
+                  type="button"
+                  onClick={handleCopyNumber}
+                  className="text-slate-400 hover:text-sekkha-brand-blue p-0.5 cursor-pointer ml-1"
+                  title="Salin Nomor Unik"
+                >
+                  {copied ? <CheckIcon className="size-3 text-emerald-600" /> : <CopyIcon className="size-3" />}
+                </button>
+              </div>
+            )}
+            {school && (
+              <span className="truncate font-medium">🏫 {school}</span>
+            )}
+          </div>
 
-            {/* Equipped badge */}
-            {equippedBadge && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-sekkha-surface-yellow px-2 py-0.5 text-caption-bold text-sekkha-yellow-dark">
-                <span aria-hidden="true">{equippedBadge.icon}</span>
-                {equippedBadge.name}
+          {/* Contact Details (Phone & Email) */}
+          <div className="flex flex-wrap items-center gap-3 text-micro text-sekkha-slate pt-0.5">
+            {phone && (
+              <span className="flex items-center gap-1">
+                <PhoneIcon className="size-3 text-sekkha-slate" />
+                <span>{phone}</span>
               </span>
             )}
+            {email && (
+              <span className="flex items-center gap-1">
+                <MailIcon className="size-3 text-sekkha-slate" />
+                <span>{email}</span>
+              </span>
+            )}
+            <div className="flex items-center gap-1 text-sekkha-muted">
+              <CalendarIcon className="size-3" aria-hidden="true" />
+              <span>Bergabung sejak {formatJoinDate(joinedAt)}</span>
+            </div>
           </div>
         </div>
       </div>
     </div>
   )
 }
+

@@ -12,7 +12,6 @@ import { ProfileCard } from "./ProfileCard"
 import { MemberQrCard } from "./MemberQrCard"
 import { StatsHero } from "./StatsHero"
 import { AttendanceTracker } from "./AttendanceTracker"
-import { AchievementsCard, DUMMY_BADGES } from "./AchievementsCard"
 
 interface UserProfile {
   id: string
@@ -84,13 +83,6 @@ export function ProfilePage() {
             longestStreak={8}
             monthlyCheckins={[true, true, true, false]}
             monthLabel="Juli 2025"
-          />
-
-          {/* Achievements */}
-          <AchievementsCard
-            badges={DUMMY_BADGES}
-            totalPoints={1240}
-            rank={5}
           />
         </div>
       </div>

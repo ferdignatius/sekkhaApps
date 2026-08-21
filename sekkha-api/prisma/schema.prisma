@@ -27,11 +27,13 @@ model User {
   lastActivityAt DateTime? @map("last_activity_at")
   consecutiveMissed Int    @default(0) @map("consecutive_missed")
   userNumber String?  @unique @map("user_number")
+  points     Int      @default(0)
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
   attendances Attendance[]
+  pointTransactions PointTransaction[]
   rsvps       Rsvp[]
   badges      UserBadge[]
   notifications   Notification[]
@@ -84,17 +86,32 @@ model Rsvp {
 }
 
 model Attendance {
-  id        String   @id @default(cuid())
-  userId    String   @map("user_id")
-  eventId   String   @map("event_id")
-  method    String   // "qr" | "manual"
-  scannedAt DateTime @default(now()) @map("scanned_at")
+  id           String   @id @default(cuid())
+  userId       String   @map("user_id")
+  eventId      String   @map("event_id")
+  method       String   // "qr" | "manual"
+  pointsEarned Int      @default(50) @map("points_earned")
+  scannedAt    DateTime @default(now()) @map("scanned_at")
 
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
   event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
   @@unique([userId, eventId])
   @@map("attendances")
+}
+
+model PointTransaction {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
+  amount      Int      // e.g. +50, +100, -50
+  type        String   // "attendance" | "season_bonus" | "manual" | "reward"
+  description String?
+  referenceId String?  @map("reference_id") // e.g. attendanceId or eventId
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("point_transactions")
 }
 
 // ─── Gamification ────────────────────────────────────────────────────────────
@@ -181,4 +198,22 @@ model Notification {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("notifications")
+}
+
+// ─── Gamifikasi: Season Management ───────────────────────────────────────────
+
+model Season {
+  id               String    @id @default(cuid())
+  name             String    // e.g. "Season 1 - Q1 2026", "Season Vassa 2026"
+  code             String?   @unique // e.g. "S2026-Q1"
+  startDate        DateTime  @map("start_date")
+  endDate          DateTime  @map("end_date")
+  isActive         Boolean   @default(false) @map("is_active")
+  targetAttendance Int       @default(500) @map("target_attendance")
+  bonusPoints      Int       @default(100) @map("bonus_points")
+  description      String?
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  @@map("seasons")
 }

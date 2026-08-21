@@ -1,22 +1,14 @@
-// Master data CRUD: badges, levels, event-types, achievements
 import { Router } from "express"
 import { z } from "zod"
 import { prisma } from "../../../lib/prisma"
 import { requireAuth, requireRole } from "../../../middleware/auth"
+import { computeAndCacheLeaderboard } from "../../leaderboard/internal/service"
 
 export const configureRouter = Router()
 
-// All configure routes require auth
+// All configure routes require auth and pengurus/admin role
 configureRouter.use(requireAuth)
-
-// GET allows pengurus & admin, other methods (POST, PUT, DELETE) only allow admin
-configureRouter.use((req, res, next) => {
-  if (req.method === "GET") {
-    requireRole("pengurus", "admin")(req, res, next)
-  } else {
-    requireRole("admin")(req, res, next)
-  }
-})
+configureRouter.use(requireRole("pengurus", "admin"))
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // BADGES
@@ -252,5 +244,136 @@ configureRouter.get("/threshold", async (_req, res) => {
 configureRouter.put("/threshold", async (req, res) => {
   defaultThresholds = { ...defaultThresholds, ...req.body }
   res.json({ success: true, thresholds: defaultThresholds })
+})
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SEASONS (LEADERBOARD SEASON MANAGEMENT)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const SeasonSchema = z.object({
+  name: z.string().min(1),
+  code: z.string().optional(),
+  start_date: z.string(),
+  end_date: z.string(),
+  is_active: z.boolean().optional(),
+  target_attendance: z.number().int().min(1).optional(),
+  bonus_points: z.number().int().min(0).optional(),
+  description: z.string().optional(),
+})
+
+configureRouter.get("/seasons", async (_req, res, next) => {
+  try {
+    const seasons = await prisma.season.findMany({
+      orderBy: { startDate: "desc" },
+    })
+
+    const results = await Promise.all(
+      seasons.map(async (s) => {
+        const count = await prisma.attendance.count({
+          where: {
+            scannedAt: {
+              gte: s.startDate,
+              lte: s.endDate,
+            },
+          },
+        })
+        return {
+          id: s.id,
+          name: s.name,
+          code: s.code,
+          start_date: s.startDate.toISOString(),
+          end_date: s.endDate.toISOString(),
+          is_active: s.isActive,
+          target_attendance: s.targetAttendance,
+          bonus_points: s.bonusPoints,
+          description: s.description,
+          total_attendances: count,
+          created_at: s.createdAt.toISOString(),
+        }
+      })
+    )
+
+    res.json(results)
+  } catch (err) { next(err) }
+})
+
+configureRouter.post("/seasons", async (req, res, next) => {
+  try {
+    const body = SeasonSchema.parse(req.body)
+    const startDate = new Date(body.start_date)
+    const endDate = new Date(body.end_date)
+
+    if (body.is_active) {
+      await prisma.season.updateMany({ data: { isActive: false } })
+    }
+
+    const season = await prisma.season.create({
+      data: {
+        name: body.name,
+        code: body.code || `S-${Date.now().toString(36).toUpperCase()}`,
+        startDate,
+        endDate,
+        isActive: body.is_active ?? false,
+        targetAttendance: body.target_attendance ?? 500,
+        bonusPoints: body.bonus_points ?? 100,
+        description: body.description,
+      },
+    })
+
+    computeAndCacheLeaderboard().catch(() => {})
+
+    res.status(201).json(season)
+  } catch (err) { next(err) }
+})
+
+configureRouter.put("/seasons/:id", async (req, res, next) => {
+  try {
+    const body = SeasonSchema.partial().parse(req.body)
+
+    if (body.is_active) {
+      await prisma.season.updateMany({
+        where: { id: { not: req.params.id } },
+        data: { isActive: false },
+      })
+    }
+
+    const season = await prisma.season.update({
+      where: { id: req.params.id },
+      data: {
+        ...(body.name && { name: body.name }),
+        ...(body.code !== undefined && { code: body.code }),
+        ...(body.start_date && { startDate: new Date(body.start_date) }),
+        ...(body.end_date && { endDate: new Date(body.end_date) }),
+        ...(body.is_active !== undefined && { isActive: body.is_active }),
+        ...(body.target_attendance !== undefined && { targetAttendance: body.target_attendance }),
+        ...(body.bonus_points !== undefined && { bonusPoints: body.bonus_points }),
+        ...(body.description !== undefined && { description: body.description }),
+      },
+    })
+
+    computeAndCacheLeaderboard().catch(() => {})
+
+    res.json(season)
+  } catch (err) { next(err) }
+})
+
+configureRouter.delete("/seasons/:id", async (req, res, next) => {
+  try {
+    await prisma.season.delete({ where: { id: req.params.id } })
+    computeAndCacheLeaderboard().catch(() => {})
+    res.json({ success: true })
+  } catch (err) { next(err) }
+})
+
+configureRouter.post("/seasons/:id/activate", async (req, res, next) => {
+  try {
+    await prisma.season.updateMany({ data: { isActive: false } })
+    const season = await prisma.season.update({
+      where: { id: req.params.id },
+      data: { isActive: true },
+    })
+    await computeAndCacheLeaderboard()
+    res.json({ success: true, season })
+  } catch (err) { next(err) }
 })
 

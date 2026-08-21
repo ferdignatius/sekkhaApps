@@ -8,6 +8,7 @@ export { AchievementPage } from "./internal/components/AchievementPage"
 export { EventTimePage } from "./internal/components/EventTimePage"
 export { AttendanceBadgePage } from "./internal/components/AttendanceBadgePage"
 export { ThresholdPage } from "./internal/components/ThresholdPage"
+export { SeasonPage } from "./internal/components/SeasonPage"
 
 export const configureModule: ModuleDefinition = {
   name: "configure",
@@ -18,6 +19,7 @@ export const configureModule: ModuleDefinition = {
       label: "Master Data",
       icon: "Layers",
       items: [
+        { label: "Season Leaderboard", to: "/configure/master/season", icon: "Trophy", hasRoute: true },
         { label: "Kategori Event", to: "/configure/master/event-type", icon: "Tag", hasRoute: true },
         { label: "Badge Tugas Presensi", to: "/configure/master/attendance-badge", icon: "Award", hasRoute: true },
         { label: "Preset Waktu Vihara", to: "/configure/master/event-time", icon: "Clock", hasRoute: true },

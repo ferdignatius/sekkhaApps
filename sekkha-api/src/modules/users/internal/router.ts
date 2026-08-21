@@ -20,6 +20,7 @@ usersRouter.get("/me", requireAuth, async (req, res, next) => {
           avatarUrl: true,
           role: true,
           userNumber: true,
+          points: true,
           createdAt: true,
         },
       })
@@ -167,8 +168,12 @@ usersRouter.get("/me/streak", requireAuth, async (req, res, next) => {
 usersRouter.get("/me/level", requireAuth, async (req, res, next) => {
   try {
     const userId = req.user!.userId
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { points: true },
+    })
     const attendanceCount = await prisma.attendance.count({ where: { userId } })
-    const totalPoints = attendanceCount * 50 // 50 poin per attendance
+    const totalPoints = user?.points ?? (attendanceCount * 50)
 
     const levels = await prisma.level.findMany({ orderBy: { minPoints: "desc" } })
     const currentLevel = levels.find(l => totalPoints >= l.minPoints) ?? { level: 1, label: "Pemula", minPoints: 0 }
@@ -178,6 +183,21 @@ usersRouter.get("/me/level", requireAuth, async (req, res, next) => {
       level_label: currentLevel.label,
       total_points: totalPoints,
     })
+  } catch (err) {
+    next(err)
+  }
+})
+
+// GET /api/users/me/point-transactions — list recent point mutation transactions
+usersRouter.get("/me/point-transactions", requireAuth, async (req, res, next) => {
+  try {
+    const userId = req.user!.userId
+    const transactions = await prisma.pointTransaction.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+      take: 20,
+    })
+    res.json(transactions)
   } catch (err) {
     next(err)
   }

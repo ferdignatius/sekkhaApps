@@ -37,9 +37,10 @@ leaderboardRouter.get("/", requireAuth, async (req, res, next) => {
     res.json({
       entries: safeEntries,
       my_rank: myRank,
+      season: snapshot.season,
       community_goal: {
         current: snapshot.community_total ?? 0,
-        target: 500,
+        target: snapshot.season?.target_attendance ?? 500,
         label: "Target Absensi Komunitas Vihara",
       },
       calculated_at: snapshot.calculated_at,

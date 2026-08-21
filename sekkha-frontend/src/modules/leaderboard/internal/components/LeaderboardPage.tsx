@@ -12,13 +12,10 @@ import {
   FlameIcon,
   CheckSquareIcon,
   CrownIcon,
-  AwardIcon,
-  ShieldIcon,
   UsersIcon,
   TimerIcon,
   SparklesIcon,
   ZapIcon,
-  ChevronRightIcon,
 } from "lucide-react"
 import { useAuth } from "@/modules/auth"
 import { api } from "@/lib/api"
@@ -80,23 +77,6 @@ const PODIUM_CONFIG: Record<1 | 2 | 3, {
     medalEmoji: "🥉",
   },
 }
-
-// Community goal
-const COMMUNITY_GOAL = { target: 500, current: 0, label: "Target Absensi Komunitas Vihara" }
-
-// Streak shield
-const STREAK_SHIELD = { owned: 0, cost: 200 }
-
-// Gamification Sidebar badges
-interface SidebarBadge { icon: string; name: string; earned: boolean; hint?: string }
-const SIDEBAR_BADGES: SidebarBadge[] = [
-  { icon: "🔥", name: "Streak 5x", earned: false },
-  { icon: "⭐", name: "100 Poin", earned: false },
-  { icon: "🎯", name: "Hadir Setia", earned: false },
-  { icon: "💎", name: "Streak 20x", earned: false, hint: "Hadir 20 minggu berturut-turut" },
-  { icon: "🏆", name: "500 Poin", earned: false, hint: "Kumpulkan 500 poin total" },
-  { icon: "🎖️", name: "Top 3 Vihara", earned: false, hint: "Masuk peringkat 3 besar season" },
-]
 
 // Season countdown
 const SEASON_DAYS_LEFT = 12
@@ -212,6 +192,11 @@ export function LeaderboardPage() {
   const [metric, setMetric] = useState<LeaderboardMetric>("points")
   const [entries, setEntries] = useState<LeaderboardEntry[]>([])
   const [myRankData, setMyRankData] = useState<any>(null)
+  const [communityGoal, setCommunityGoal] = useState({
+    current: 0,
+    target: 500,
+    label: "Target Absensi Komunitas Vihara",
+  })
 
   useEffect(() => {
     loadLeaderboard()
@@ -219,9 +204,16 @@ export function LeaderboardPage() {
 
   async function loadLeaderboard() {
     try {
-      const res = await api.get<{ entries: LeaderboardEntry[]; my_rank: any }>(`/leaderboard?metric=${metric}`)
+      const res = await api.get<{
+        entries: LeaderboardEntry[]
+        my_rank: any
+        community_goal?: { current: number; target: number; label: string }
+      }>(`/leaderboard?metric=${metric}`)
       setEntries(res.entries ?? [])
       setMyRankData(res.my_rank ?? null)
+      if (res.community_goal) {
+        setCommunityGoal(res.community_goal)
+      }
     } catch (err) {
       console.error("Gagal memuat leaderboard:", err)
       setEntries([])
@@ -238,7 +230,7 @@ export function LeaderboardPage() {
   const myValue = myEntry?.value ?? 0
   const metricUnit = metric === "points" ? "poin" : metric === "streak" ? "minggu" : "kehadiran"
 
-  const communityPct = Math.round((COMMUNITY_GOAL.current / COMMUNITY_GOAL.target) * 100)
+  const communityPct = Math.min(100, Math.round(((communityGoal.current || 0) / (communityGoal.target || 500)) * 100))
 
   return (
     <main className="relative font-sans overflow-hidden">
@@ -462,12 +454,14 @@ export function LeaderboardPage() {
               <div className="hidden lg:block rounded-3xl border border-sekkha-brand-blue/30 bg-gradient-to-br from-sekkha-brand-blue/10 via-white/80 to-blue-50/50 backdrop-blur-2xl p-4 sm:p-5 shadow-xl shadow-sekkha-brand-blue/5 ring-1 ring-sekkha-brand-blue/20 space-y-3">
                 <div className="flex items-center gap-3">
                   <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-sekkha-brand-blue text-caption-bold font-black text-white shadow-md">
-                    AS
+                    {myEntry?.initials || "AS"}
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-caption-bold font-extrabold text-sekkha-ink">Admin Sekkha</span>
-                      <span className="rounded-md bg-sekkha-brand-blue text-white px-1.5 py-0.5 text-[9px] font-black uppercase">
+                      <span className="text-caption-bold font-extrabold text-sekkha-ink truncate">
+                        {myEntry?.name || "Anggota Sekkha"}
+                      </span>
+                      <span className="rounded-md bg-sekkha-brand-blue text-white px-1.5 py-0.5 text-[9px] font-black uppercase shrink-0">
                         Kamu
                       </span>
                     </div>
@@ -495,7 +489,7 @@ export function LeaderboardPage() {
                     <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-sekkha-brand-blue/10 text-sekkha-brand-blue">
                       <UsersIcon className="size-4" aria-hidden="true" />
                     </div>
-                    <h3 className="text-caption-bold font-extrabold text-sekkha-ink">{COMMUNITY_GOAL.label}</h3>
+                    <h3 className="text-caption-bold font-extrabold text-sekkha-ink">{communityGoal.label}</h3>
                   </div>
                   <span className="text-micro-bold font-black text-sekkha-brand-blue bg-sekkha-brand-blue/10 px-2 py-0.5 rounded-lg">
                     {communityPct}%
@@ -505,12 +499,12 @@ export function LeaderboardPage() {
                 {/* Progress bar */}
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between text-micro font-bold text-sekkha-slate">
-                    <span>Tercapai: {COMMUNITY_GOAL.current}</span>
-                    <span>Target: {COMMUNITY_GOAL.target} Absensi</span>
+                    <span>Tercapai: {communityGoal.current}</span>
+                    <span>Target: {communityGoal.target} Absensi</span>
                   </div>
                   <div className="h-3 w-full overflow-hidden rounded-full bg-sekkha-surface border border-sekkha-hairline-soft">
                     <div
-                      className="h-full rounded-full bg-gradient-to-r from-sekkha-brand-blue via-indigo500 to-amber-400 transition-all duration-500 shadow-xs"
+                      className="h-full rounded-full bg-gradient-to-r from-sekkha-brand-blue via-indigo-500 to-amber-400 transition-all duration-500 shadow-xs"
                       style={{ width: `${communityPct}%` }}
                     />
                   </div>
@@ -519,62 +513,6 @@ export function LeaderboardPage() {
                 <div className="rounded-2xl bg-amber-500/10 border border-amber-500/20 p-3 text-micro font-bold text-amber-900 flex items-start gap-2">
                   <SparklesIcon className="size-4 text-amber-600 shrink-0 mt-0.5" />
                   <span>Jika target 500 absensi tercapai, seluruh umat Vihara akan mendapat bonus <strong className="text-amber-950">+100 Poin ekstra</strong>!</span>
-                </div>
-              </div>
-
-              {/* Glassmorphic Streak Shield Widget Card */}
-              <div className="rounded-3xl border border-blue-200/80 bg-gradient-to-br from-blue-50/90 via-white/80 to-indigo-50/70 backdrop-blur-2xl p-4 sm:p-5 shadow-xl shadow-blue-500/5 ring-1 ring-blue-500/10 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-2xl bg-sekkha-brand-blue text-white shadow-xs">
-                      <ShieldIcon className="size-4 sm:size-5" aria-hidden="true" />
-                    </div>
-                    <div>
-                      <h3 className="text-caption-bold font-extrabold text-sekkha-ink">Streak Shield</h3>
-                      <p className="text-micro font-bold text-sekkha-brand-blue">Tersedia: {STREAK_SHIELD.owned}x Item Shield</p>
-                    </div>
-                  </div>
-                </div>
-
-                <p className="text-micro text-sekkha-slate font-medium leading-relaxed">
-                  🛡️ Lindungi rekor weekly streak kamu jika terlewat 1 minggu kebaktian.
-                </p>
-
-                <button
-                  type="button"
-                  className="flex w-full items-center justify-center gap-2 rounded-2xl bg-sekkha-brand-blue py-2.5 text-caption-bold text-white shadow-md hover:bg-blue-700 transition-all cursor-pointer active:scale-98"
-                >
-                  <span>Tukar {STREAK_SHIELD.cost} Poin → 1 Shield</span>
-                  <ChevronRightIcon className="size-4" />
-                </button>
-              </div>
-
-              {/* Glassmorphic Gamification Badges Widget */}
-              <div className="rounded-3xl border border-white/70 bg-white/85 backdrop-blur-2xl p-4 sm:p-5 shadow-xl shadow-slate-200/50 ring-1 ring-black/5 space-y-3">
-                <div className="flex items-center gap-2">
-                  <AwardIcon className="size-5 text-amber-500" aria-hidden="true" />
-                  <h3 className="text-caption-bold font-extrabold text-sekkha-ink">Koleksi Badge Gamifikasi</h3>
-                </div>
-
-                <div className="grid grid-cols-3 gap-2.5 pt-1">
-                  {SIDEBAR_BADGES.map(b => (
-                    <div
-                      key={b.name}
-                      className={`flex flex-col items-center gap-1.5 rounded-2xl p-2.5 border transition-all ${
-                        b.earned
-                          ? "bg-amber-500/15 backdrop-blur-md border-amber-300 shadow-2xs hover:scale-105"
-                          : "bg-sekkha-surface/60 border-sekkha-hairline-soft opacity-50 grayscale"
-                      }`}
-                      title={b.earned ? b.name : (b.hint ?? "Belum terbuka")}
-                    >
-                      <div className="text-2xl">{b.earned ? b.icon : "🔒"}</div>
-                      <span className={`text-[10px] font-extrabold text-center truncate w-full ${
-                        b.earned ? "text-sekkha-ink" : "text-sekkha-slate"
-                      }`}>
-                        {b.name}
-                      </span>
-                    </div>
-                  ))}
                 </div>
               </div>
 

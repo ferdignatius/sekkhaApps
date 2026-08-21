@@ -64,14 +64,14 @@ export async function registerUser(input: RegisterInput): Promise<AuthResult> {
   })
 
   const token = generateToken(user.id, user.role)
-  const userData = { id: user.id, email: user.email, name: user.name, role: user.role }
+  const userData = { id: user.id, email: user.email || "", name: user.name, role: user.role }
 
   await cacheUserSession(token, userData)
 
   // ── Publish domain event ──────────────────────────────────────────────
   eventbus.publish<UserRegisteredPayload>(DomainEvents.USER_REGISTERED, {
     userId: user.id,
-    email: user.email,
+    email: user.email || "",
     name: user.name,
   })
 
@@ -86,7 +86,7 @@ export async function registerUser(input: RegisterInput): Promise<AuthResult> {
  */
 export async function loginUser(input: LoginInput): Promise<AuthResult> {
   const user = await repo.findUserByEmail(input.email)
-  if (!user) {
+  if (!user || !user.password) {
     const err = new Error("Email atau password salah") as Error & { status: number }
     err.status = 401
     throw err
@@ -100,7 +100,7 @@ export async function loginUser(input: LoginInput): Promise<AuthResult> {
   }
 
   const token = generateToken(user.id, user.role)
-  const userData = { id: user.id, email: user.email, name: user.name, role: user.role }
+  const userData = { id: user.id, email: user.email || "", name: user.name, role: user.role }
 
   await cacheUserSession(token, userData)
 

@@ -202,3 +202,156 @@ usersRouter.get("/me/point-transactions", requireAuth, async (req, res, next) =>
     next(err)
   }
 })
+
+// POST /api/users/link-legacy-account — Claim pre-provisioned data from Profil
+usersRouter.post("/link-legacy-account", requireAuth, async (req, res, next) => {
+  try {
+    const { z } = await import("zod")
+    const { target_user_id, verification_value } = z.object({
+      target_user_id: z.string().min(1, "Nomor Unik Anggota wajib diisi"),
+      verification_value: z.string().min(1, "Nilai verifikasi (Nama atau No HP) wajib diisi"),
+    }).parse(req.body)
+
+    const currentUserId = req.user!.userId
+
+    // 1. Find target pre-provisioned user
+    const targetUser = await (prisma.user as any).findFirst({
+      where: {
+        OR: [
+          { userNumber: target_user_id },
+          { id: target_user_id },
+        ],
+      },
+      include: {
+        attendances: true,
+        badges: true,
+        rsvps: true,
+        pointTransactions: true,
+      },
+    })
+
+    if (!targetUser) {
+      res.status(404).json({ error: "Nomor Anggota tidak ditemukan dalam data umat." })
+      return
+    }
+
+    if (targetUser.id === currentUserId) {
+      res.status(400).json({ error: "Tidak dapat menautkan akun ke akun yang sedang Anda gunakan." })
+      return
+    }
+
+    if (targetUser.isClaimed) {
+      res.status(400).json({ error: "Data anggota tersebut sudah diklaim atau ditautkan oleh pengguna lain." })
+      return
+    }
+
+    // 2. Verification Security Check
+    const cleanVerif = verification_value.trim().toLowerCase().replace(/[^a-z0-9]/g, "")
+    const targetNameClean = targetUser.name.toLowerCase().replace(/[^a-z0-9]/g, "")
+    const targetPhoneClean = (targetUser.phone || "").replace(/[^0-9]/g, "")
+
+    const nameMatches = targetNameClean.includes(cleanVerif) || cleanVerif.includes(targetNameClean)
+    const phoneMatches = targetPhoneClean.length >= 4 && targetPhoneClean.endsWith(cleanVerif)
+
+    if (!nameMatches && !phoneMatches) {
+      res.status(400).json({
+        error: "Verifikasi gagal. Pastikan nama lengkap atau 4 digit nomor HP sesuai dengan data pendaftaran pengurus.",
+      })
+      return
+    }
+
+    // 3. Data Merging
+    let mergedAttendances = 0
+    for (const att of targetUser.attendances) {
+      const exists = await prisma.attendance.findUnique({
+        where: { userId_eventId: { userId: currentUserId, eventId: att.eventId } },
+      })
+      if (!exists) {
+        await prisma.attendance.create({
+          data: {
+            userId: currentUserId,
+            eventId: att.eventId,
+            method: att.method,
+            pointsEarned: att.pointsEarned,
+            scannedAt: att.scannedAt,
+          },
+        })
+        mergedAttendances++
+      }
+    }
+
+    let mergedBadges = 0
+    for (const bg of targetUser.badges) {
+      const exists = await prisma.userBadge.findUnique({
+        where: { userId_badgeId: { userId: currentUserId, badgeId: bg.badgeId } },
+      })
+      if (!exists) {
+        await prisma.userBadge.create({
+          data: {
+            userId: currentUserId,
+            badgeId: bg.badgeId,
+            earnedAt: bg.earnedAt,
+          },
+        })
+        mergedBadges++
+      }
+    }
+
+    for (const pt of targetUser.pointTransactions) {
+      await prisma.pointTransaction.create({
+        data: {
+          userId: currentUserId,
+          amount: pt.amount,
+          type: pt.type,
+          description: `[Transfer Data Lama] ${pt.description || "Poin Historis"}`,
+          referenceId: pt.referenceId,
+          createdAt: pt.createdAt,
+        },
+      })
+    }
+
+    // Recalculate total points for current user
+    const allAttendances = await prisma.attendance.findMany({
+      where: { userId: currentUserId },
+      select: { pointsEarned: true },
+    })
+    const calculatedPoints = allAttendances.reduce((acc, a) => acc + (a.pointsEarned || 50), 0)
+
+    await (prisma.user as any).update({
+      where: { id: currentUserId },
+      data: {
+        points: calculatedPoints,
+        lastActivityAt: new Date(),
+      },
+    })
+
+    // Mark target user as claimed
+    await (prisma.user as any).update({
+      where: { id: targetUser.id },
+      data: {
+        isClaimed: true,
+        claimedAt: new Date(),
+        name: `${targetUser.name} (Terklaim)`,
+      },
+    })
+
+    // Invalidate caches
+    const { invalidate, CacheKeys } = await import("../../../lib/cache")
+    await invalidate(CacheKeys.userProfile(currentUserId))
+    await invalidate(CacheKeys.userAttendances(currentUserId))
+    await invalidate(CacheKeys.userBadges(currentUserId))
+
+    res.json({
+      status: "success",
+      data: {
+        merged_attendances_count: mergedAttendances,
+        merged_badges_count: mergedBadges,
+        new_total_points: calculatedPoints,
+        claimed_user_number: targetUser.userNumber,
+      },
+      message: `Selamat! ${mergedAttendances} riwayat kehadiran dan ${mergedBadges} lencana berhasil digabungkan ke akun Anda.`,
+    })
+  } catch (err) {
+    next(err)
+  }
+})

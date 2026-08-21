@@ -12,7 +12,7 @@ export type AlertLevel = "normal" | "mulai_jarang" | "at_risk" | "kemungkinan_hi
 export interface MemberRecency {
   userId: string
   name: string
-  email: string
+  email: string | null
   avatarUrl: string | null
   role: string
   createdAt: string
@@ -205,7 +205,7 @@ pengurusRouter.get(
       }
       if (searchQuery) {
         filteredMembers = filteredMembers.filter(
-          (m) => m.name.toLowerCase().includes(searchQuery) || m.email.toLowerCase().includes(searchQuery)
+          (m) => m.name.toLowerCase().includes(searchQuery) || (m.email && m.email.toLowerCase().includes(searchQuery))
         )
       }
 

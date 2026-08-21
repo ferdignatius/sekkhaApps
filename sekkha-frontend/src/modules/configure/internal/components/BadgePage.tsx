@@ -140,14 +140,14 @@ export function BadgePage() {
 
   return (
     <main>
-      <PageBreadcrumb items={[{ label: "Configure" }, { label: "Badge" }]} />
+      <PageBreadcrumb items={[{ label: "Configure" }, { label: "Gamifikasi" }, { label: "Badge Pencapaian" }]} />
       <div className="px-4 py-6 pb-32 sm:pb-36 md:px-8 md:pb-12 lg:px-12">
         <div className="mx-auto max-w-8xl space-y-5">
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
               <AwardIcon className="size-5 text-sekkha-brand-blue shrink-0" />
-              <h1 className="text-body-base sm:text-heading-5 font-extrabold text-sekkha-ink">Badge</h1>
+              <h1 className="text-body-base sm:text-heading-5 font-extrabold text-sekkha-ink">Badge Pencapaian Umat</h1>
             </div>
             {isAdmin && (
               <button

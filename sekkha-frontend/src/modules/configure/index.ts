@@ -21,11 +21,17 @@ export const configureModule: ModuleDefinition = {
       icon: "Layers",
       items: [
         { label: "Kategori Event", to: "/configure/master/event-type", icon: "Tag", hasRoute: true },
-        { label: "Badge Tugas Presensi", to: "/configure/master/attendance-badge", icon: "Award", hasRoute: true },
         { label: "Preset Waktu Vihara", to: "/configure/master/event-time", icon: "Clock", hasRoute: true },
-        { label: "Badge Pencapaian Umat", to: "/configure/master/badge", icon: "Award", hasRoute: true },
-        { label: "Level Umat", to: "/configure/master/level", icon: "Zap", hasRoute: true },
-        { label: "Achievement", to: "/configure/master/achievement", icon: "Trophy", hasRoute: true },
+        { label: "Badge Tugas Presensi", to: "/configure/master/attendance-badge", icon: "Award", hasRoute: true },
+      ],
+    },
+    {
+      label: "Gamifikasi",
+      icon: "Sparkles",
+      items: [
+        { label: "Level Umat", to: "/configure/gamifikasi/level", icon: "Zap", hasRoute: true },
+        { label: "Badge Pencapaian Umat", to: "/configure/gamifikasi/badge", icon: "Award", hasRoute: true },
+        { label: "Achievement", to: "/configure/gamifikasi/achievement", icon: "Trophy", hasRoute: true },
       ],
     },
     {
@@ -41,14 +47,6 @@ export const configureModule: ModuleDefinition = {
       icon: "Bell",
       items: [
         { label: "Threshold", to: "/configure/early-warning/threshold", icon: "Bell", hasRoute: true },
-      ],
-    },
-    {
-      label: "Organisasi",
-      icon: "Building",
-      items: [
-        { label: "Profil Vihara", to: "/configure/organisasi/profil", icon: "Building", hasRoute: false },
-        { label: "Pengurus", to: "/configure/organisasi/pengurus", icon: "Users", hasRoute: false },
       ],
     },
   ],

@@ -113,6 +113,8 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
           accessToken: data.accessToken,
           userId: data.user?.id ?? (data as any).userId ?? "user-1",
           role: (data.user?.role as UserRole) ?? ((data as any).role as UserRole) ?? "umat",
+          name: data.user?.name ?? null,
+          email: data.user?.email ?? null,
         },
       })
       return
@@ -171,6 +173,8 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
           accessToken: data.accessToken,
           userId: data.user?.id ?? (data as any).userId ?? "user-1",
           role: (data.user?.role as UserRole) ?? ((data as any).role as UserRole) ?? "umat",
+          name: data.user?.name ?? null,
+          email: data.user?.email ?? null,
         },
       })
       return

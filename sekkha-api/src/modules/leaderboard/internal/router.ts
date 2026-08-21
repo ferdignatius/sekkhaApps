@@ -1,19 +1,46 @@
 import { Router } from "express"
 import { z } from "zod"
+import { prisma } from "../../../lib/prisma"
 import { requireAuth } from "../../../middleware/auth"
 import { getLeaderboardSnapshot, MetricType } from "./service"
 
 export const leaderboardRouter = Router()
 
+// GET /api/leaderboard/debug — Debug DB users and cache
+leaderboardRouter.get("/debug", requireAuth, async (req, res, next) => {
+  try {
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        points: true,
+        isClaimed: true,
+        userNumber: true,
+      },
+    })
+    const snapshot = await getLeaderboardSnapshot("points", true)
+    res.json({
+      db_users_count: users.length,
+      db_users: users,
+      computed_snapshot_entries: snapshot.entries,
+    })
+  } catch (err) { next(err) }
+})
+
 // GET /api/leaderboard?metric=points|streak|attendance — serves pre-calculated weekly snapshot
 leaderboardRouter.get("/", requireAuth, async (req, res, next) => {
   try {
-    const { metric = "points" } = z.object({
+    const { metric = "points", refresh } = z.object({
       metric: z.enum(["points", "streak", "attendance"]).optional(),
+      refresh: z.enum(["true", "false", "1", "0"]).optional(),
     }).parse(req.query)
 
     const userId = req.user!.userId
-    const snapshot = await getLeaderboardSnapshot(metric as MetricType)
+    // Always compute live or force refresh if requested
+    const forceRefresh = refresh === "true" || refresh === "1"
+    const snapshot = await getLeaderboardSnapshot(metric as MetricType, forceRefresh)
     const safeEntries = snapshot.entries || []
 
     const myIdx = safeEntries.findIndex((e) => e.user_id === userId)

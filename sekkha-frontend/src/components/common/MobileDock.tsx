@@ -45,7 +45,15 @@ export function MobileDock() {
   const pengurusNavItems = activeModules.flatMap((m) => m.pengurusNavItems ?? [])
   const configureSections = activeModules.flatMap((m) => m.configureSections ?? [])
 
-  const roleLabel = role === "admin" ? "Admin Vihara" : role === "pengurus" ? "Pengurus" : "Umat"
+  const roleLabel = role === "admin" ? "Admin Vihara" : role === "pengurus" ? "Pengurus" : role === "aktivis" ? "Aktivis" : "Umat"
+  const userName = authState.status === "authenticated" && authState.name ? authState.name : roleLabel
+  const userInitials =
+    userName
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((w) => w[0].toUpperCase())
+      .join("") || roleLabel.slice(0, 2)
 
   const toggleConfigureSection = (sectionLabel: string) => {
     setOpenConfigureSections((prev) => {
@@ -116,11 +124,11 @@ export function MobileDock() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sekkha-brand-blue text-caption-bold text-white font-extrabold shadow-xs uppercase">
-                      {roleLabel.slice(0, 2)}
+                      {userInitials}
                     </div>
                     <div className="min-w-0">
-                      <p className="truncate text-caption-bold font-extrabold text-sekkha-ink">{roleLabel}</p>
-                      <p className="truncate text-micro text-sekkha-slate font-medium">ID: {userId.slice(0, 10)}</p>
+                      <p className="truncate text-caption-bold font-extrabold text-sekkha-ink">{userName}</p>
+                      <p className="truncate text-micro text-sekkha-brand-blue font-semibold">{roleLabel}</p>
                     </div>
                   </div>
 
@@ -189,7 +197,7 @@ export function MobileDock() {
               </div>
             )}
 
-            {/* 2. Master Data Configure Sections (Expandable / Collapsible) */}
+            {/* 2. Configure Sections (Expandable / Collapsible) */}
             {isPengurus && configureSections.length > 0 && (
               <div className="space-y-2 pt-2 border-t border-sekkha-hairline-soft">
                 {/* Main Header Accordion Toggle */}
@@ -199,7 +207,7 @@ export function MobileDock() {
                   className="flex w-full items-center justify-between px-1 py-1 cursor-pointer group rounded-lg hover:bg-sekkha-surface/60 transition-colors"
                 >
                   <p className="text-[10px] font-extrabold uppercase tracking-widest text-sekkha-slate/70">
-                    Konfigurasi Master Data
+                    Konfigurasi Sistem
                   </p>
                   <div className="flex items-center gap-1">
                     <span className="text-[10px] text-sekkha-slate font-medium">

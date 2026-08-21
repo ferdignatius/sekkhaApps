@@ -226,9 +226,16 @@ export function EventsPage() {
                     alert("Gagal menduplikasi event ke server.")
                   }
                 } : undefined}
-                onStatusChange={isPengurus ? (eventId, newStatus) => {
-                  setEvents(prev => prev.map(e => e.id === eventId ? { ...e, status: newStatus } : e))
-                  setSelected(prev => prev && prev.id === eventId ? { ...prev, status: newStatus } : prev)
+                onStatusChange={isPengurus ? async (eventId, newStatus) => {
+                  try {
+                    setEvents(prev => prev.map(e => e.id === eventId ? { ...e, status: newStatus } : e))
+                    setSelected(prev => prev && prev.id === eventId ? { ...prev, status: newStatus } : prev)
+                    await api.patch(`/events/${eventId}/status`, { status: newStatus })
+                    await loadEvents()
+                  } catch (err) {
+                    console.error("Gagal memperbarui status event ke server:", err)
+                    await loadEvents()
+                  }
                 } : undefined}
                 attendances={attendances[selected.id] ?? []}
                 onRecordAttendance={handleRecordAttendance}

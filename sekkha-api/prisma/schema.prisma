@@ -45,6 +45,8 @@ model User {
 enum EventStatus {
   draft
   published
+  active
+  closed
   cancelled
 }
 

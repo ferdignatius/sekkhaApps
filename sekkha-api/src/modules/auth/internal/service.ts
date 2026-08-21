@@ -36,9 +36,9 @@ async function getCachedUserSession(token: string) {
   return null
 }
 
-function generateToken(userId: string, role: string): string {
+function generateToken(userId: string, role: string, name?: string): string {
   return jwt.sign(
-    { userId, role },
+    { userId, role, name },
     process.env.JWT_SECRET!,
     { expiresIn: "7d" }
   )
@@ -63,7 +63,7 @@ export async function registerUser(input: RegisterInput): Promise<AuthResult> {
     password: hashedPassword,
   })
 
-  const token = generateToken(user.id, user.role)
+  const token = generateToken(user.id, user.role, user.name)
   const userData = { id: user.id, email: user.email || "", name: user.name, role: user.role }
 
   await cacheUserSession(token, userData)
@@ -99,7 +99,7 @@ export async function loginUser(input: LoginInput): Promise<AuthResult> {
     throw err
   }
 
-  const token = generateToken(user.id, user.role)
+  const token = generateToken(user.id, user.role, user.name)
   const userData = { id: user.id, email: user.email || "", name: user.name, role: user.role }
 
   await cacheUserSession(token, userData)

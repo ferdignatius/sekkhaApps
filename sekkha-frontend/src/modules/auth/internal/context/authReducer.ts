@@ -13,6 +13,8 @@ export interface AuthState {
   accessToken: string | null
   userId: string | null
   role: UserRole | null
+  name: string | null
+  email: string | null
 }
 
 export const initialAuthState: AuthState = {
@@ -20,13 +22,24 @@ export const initialAuthState: AuthState = {
   accessToken: null,
   userId: null,
   role: null,
+  name: null,
+  email: null,
 }
 
 // ─── Actions ───────────────────────────────────────────────────────────────────
 
 export type AuthAction =
   | { type: "AUTH_LOADING" }
-  | { type: "AUTH_SUCCESS"; payload: { accessToken: string; userId: string; role: UserRole } }
+  | {
+      type: "AUTH_SUCCESS"
+      payload: {
+        accessToken: string
+        userId: string
+        role: UserRole
+        name?: string | null
+        email?: string | null
+      }
+    }
   | { type: "AUTH_LOGOUT" }
   | { type: "AUTH_VERIFY_FAILED" }
 
@@ -46,6 +59,8 @@ export function authReducer(state: AuthState, action: AuthAction): AuthState {
         accessToken: action.payload.accessToken,
         userId: action.payload.userId,
         role: action.payload.role,
+        name: action.payload.name ?? state.name,
+        email: action.payload.email ?? state.email,
       }
 
     case "AUTH_LOGOUT":
@@ -54,6 +69,8 @@ export function authReducer(state: AuthState, action: AuthAction): AuthState {
         accessToken: null,
         userId: null,
         role: null,
+        name: null,
+        email: null,
       }
 
     case "AUTH_VERIFY_FAILED":

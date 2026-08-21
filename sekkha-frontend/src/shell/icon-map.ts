@@ -19,6 +19,10 @@ import {
   BellIcon,
   BuildingIcon,
   UsersIcon,
+  SparklesIcon,
+  AlertTriangleIcon,
+  ClockIcon,
+  ShieldCheckIcon,
 } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 
@@ -38,4 +42,8 @@ export const iconMap: Record<string, LucideIcon> = {
   Bell: BellIcon,
   Building: BuildingIcon,
   Users: UsersIcon,
+  Sparkles: SparklesIcon,
+  AlertTriangle: AlertTriangleIcon,
+  Clock: ClockIcon,
+  ShieldCheck: ShieldCheckIcon,
 }

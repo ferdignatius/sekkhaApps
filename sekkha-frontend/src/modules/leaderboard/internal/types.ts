@@ -17,6 +17,7 @@ export interface LeaderboardEntry {
   photo_url?: string | null
   value: number
   label: string
+  role?: "umat" | "pengurus" | "admin" | "aktivis" | string
 }
 
 export interface LeaderboardResponse {

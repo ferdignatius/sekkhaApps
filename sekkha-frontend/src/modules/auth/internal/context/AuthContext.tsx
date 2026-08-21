@@ -88,6 +88,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         // we decode userId and role from the JWT payload as a fallback.
         let userId: string = "unknown"
         let role: string = "umat"
+        let name: string | null = null
+        let email: string | null = null
         try {
           // Attempt lightweight JWT decode (no signature verification needed here)
           const parts = token.split(".")
@@ -97,9 +99,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
               userId?: string
               id?: string
               role?: string
+              name?: string
+              email?: string
             }
             userId = payload.sub ?? payload.userId ?? payload.id ?? "unknown"
             role = payload.role ?? "umat"
+            name = payload.name ?? null
+            email = payload.email ?? null
           }
         } catch {
           // JWT decode failed
@@ -107,7 +113,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
         dispatch({
           type: "AUTH_SUCCESS",
-          payload: { accessToken: token, userId, role: role as UserRole },
+          payload: { accessToken: token, userId, role: role as UserRole, name, email },
         })
       } catch {
         if (cancelled) return

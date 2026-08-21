@@ -16,6 +16,10 @@ import {
   TimerIcon,
   SparklesIcon,
   ZapIcon,
+  UserIcon,
+  ShieldCheckIcon,
+  AwardIcon,
+  CheckIcon,
 } from "lucide-react"
 import { useAuth } from "@/modules/auth"
 import { api } from "@/lib/api"
@@ -29,6 +33,19 @@ const METRIC_OPTIONS: { value: LeaderboardMetric; label: string; icon: React.Rea
   { value: "points",     label: "Total Poin",  icon: <StarIcon className="size-3.5 sm:size-4 text-amber-400" /> },
   { value: "streak",     label: "Streak",       icon: <FlameIcon className="size-3.5 sm:size-4 text-orange-500" /> },
   { value: "attendance", label: "Hadir",        icon: <CheckSquareIcon className="size-3.5 sm:size-4 text-emerald-500" /> },
+]
+
+export type RoleCheckboxKey = "umat" | "aktivis" | "pengurus"
+
+const PENGURUS_ROLE_CHECKBOXES: { id: RoleCheckboxKey; label: string; icon: React.ReactNode }[] = [
+  { id: "umat", label: "Umat", icon: <UserIcon className="size-3.5" /> },
+  { id: "aktivis", label: "Aktivis", icon: <AwardIcon className="size-3.5 text-amber-600" /> },
+  { id: "pengurus", label: "Pengurus", icon: <ShieldCheckIcon className="size-3.5 text-blue-600" /> },
+]
+
+const AKTIVIS_ROLE_CHECKBOXES: { id: RoleCheckboxKey; label: string; icon: React.ReactNode }[] = [
+  { id: "umat", label: "Umat", icon: <UserIcon className="size-3.5" /> },
+  { id: "aktivis", label: "Aktivis", icon: <AwardIcon className="size-3.5 text-amber-600" /> },
 ]
 
 // Solid & Gradient Medal Colors for Podium
@@ -184,9 +201,30 @@ function ListAvatar({ initials, isMe }: { initials: string; isMe?: boolean }) {
 export function LeaderboardPage() {
   const { authState } = useAuth()
   const myId = authState.status === "authenticated" ? authState.userId ?? "" : ""
+  const userRole = authState.status === "authenticated" ? authState.role : "umat"
+  const isPengurusOrAdmin = userRole === "admin" || userRole === "pengurus"
+  const isAktivis = userRole === "aktivis"
+  const isUmatOnly = !isPengurusOrAdmin && !isAktivis
 
   const season = getCurrentSeason()
   const [metric, setMetric] = useState<LeaderboardMetric>("points")
+  
+  // Multi-select role checkboxes (default: all checked for pengurus/admin)
+  const [selectedRoles, setSelectedRoles] = useState<RoleCheckboxKey[]>(["umat", "aktivis", "pengurus"])
+
+  function toggleRole(role: RoleCheckboxKey) {
+    setSelectedRoles((prev) => {
+      if (prev.includes(role)) {
+        if (prev.length === 1) return prev // keep at least 1 checked
+        return prev.filter((r) => r !== role)
+      } else {
+        return [...prev, role]
+      }
+    })
+  }
+
+  const activeRoles: RoleCheckboxKey[] = isUmatOnly ? ["umat"] : selectedRoles
+
   const [entries, setEntries] = useState<LeaderboardEntry[]>([])
   const [myRankData, setMyRankData] = useState<any>(null)
   const [seasonData, setSeasonData] = useState<{
@@ -216,7 +254,7 @@ export function LeaderboardPage() {
         my_rank: any
         season?: any
         community_goal?: { current: number; target: number; label: string }
-      }>(`/leaderboard?metric=${metric}`)
+      }>(`/leaderboard?metric=${metric}&refresh=true`)
       setEntries(res.entries ?? [])
       setMyRankData(res.my_rank ?? null)
       if (res.season) {
@@ -234,12 +272,37 @@ export function LeaderboardPage() {
   const validEntries = (Array.isArray(entries) ? entries : []).filter(
     (e): e is LeaderboardEntry => Boolean(e) && typeof e === "object" && typeof e.value === "number"
   )
-  const podium = validEntries.slice(0, 3)
-  const rest = validEntries.slice(3)
-  const myEntry = myRankData
-  const myRank = myEntry?.rank ?? "-"
-  const myValue = myEntry?.value ?? 0
+
+  // Dynamic filter by role with recalculation of ranks
+  const filteredEntries = validEntries
+    .filter((entry) => {
+      const rawRole = (entry.role || "umat").toLowerCase()
+      const normalizedRole: RoleCheckboxKey =
+        rawRole === "admin" || rawRole === "pengurus"
+          ? "pengurus"
+          : rawRole === "aktivis"
+          ? "aktivis"
+          : "umat"
+      return activeRoles.includes(normalizedRole)
+    })
+    .map((entry, idx) => ({
+      ...entry,
+      rank: idx + 1,
+    }))
+
+  const podium = filteredEntries.slice(0, 3)
+  const rest = filteredEntries.slice(3)
+
+  const myFilteredIdx = filteredEntries.findIndex(e => e.user_id === myId)
+  const myRank = myFilteredIdx >= 0 ? myFilteredIdx + 1 : "-"
+  const myValue = myFilteredIdx >= 0 ? filteredEntries[myFilteredIdx]?.value ?? 0 : myRankData?.value ?? 0
   const metricUnit = metric === "points" ? "poin" : metric === "streak" ? "minggu" : "kehadiran"
+  const roleGroupLabel =
+    activeRoles.length === 3
+      ? "Semua Anggota"
+      : activeRoles
+          .map((r) => (r === "umat" ? "Umat" : r === "aktivis" ? "Aktivis" : "Pengurus"))
+          .join(" & ")
 
   const communityPct = Math.min(100, Math.round(((communityGoal.current || 0) / (communityGoal.target || 500)) * 100))
 
@@ -250,7 +313,7 @@ export function LeaderboardPage() {
       <div className="pointer-events-none absolute top-40 right-10 h-80 w-80 rounded-full bg-amber-400/15 blur-3xl" />
       <div className="pointer-events-none absolute bottom-40 left-10 h-96 w-96 rounded-full bg-indigo-500/10 blur-3xl" />
 
-      {/* ── Page Breadcrumb (No redundant H1 header below as per user request) ── */}
+      {/* ── Page Breadcrumb ── */}
       <PageBreadcrumb items={[{ label: "Leaderboard" }]} />
 
       <div className="relative px-3.5 py-4 pb-24 md:pb-8 lg:pb-10 sm:px-6 md:px-8 lg:px-12">
@@ -287,22 +350,24 @@ export function LeaderboardPage() {
             </div>
           </div>
 
-          {/* ── Glassmorphic My Rank Status Indicator Hero Card (Mobile & Tablet only to avoid desktop sidebar redundancy) ── */}
+          {/* ── Glassmorphic My Rank Status Indicator Hero Card (Mobile & Tablet) ── */}
           <div className="lg:hidden rounded-2xl border border-sekkha-brand-blue/30 bg-gradient-to-r from-sekkha-brand-blue/15 via-blue-50/60 to-amber-500/10 backdrop-blur-xl p-3.5 sm:p-4 shadow-md shadow-sekkha-brand-blue/10 flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-sekkha-brand-blue text-caption-bold font-black text-white shadow-xs">
-                AS
+                {myRankData?.initials || "AS"}
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-caption-bold font-extrabold text-sekkha-ink">Anggota Sekkha</span>
+                  <span className="text-caption-bold font-extrabold text-sekkha-ink truncate">
+                    {myRankData?.name || "Anggota Sekkha"}
+                  </span>
                   <span className="rounded-md bg-sekkha-brand-blue text-white px-1.5 py-0.5 text-[9px] font-black uppercase shadow-2xs">
                     Kamu
                   </span>
                 </div>
                 <p className="text-micro font-extrabold text-sekkha-brand-blue mt-0.5 flex items-center gap-1">
                   <TrophyIcon className="size-3.5 text-amber-500 fill-amber-400" />
-                  <span>Peringkat #{myRank} dari {entries.length} Anggota</span>
+                  <span>Peringkat #{myRank} dari {filteredEntries.length} {roleGroupLabel}</span>
                 </p>
               </div>
             </div>
@@ -314,26 +379,97 @@ export function LeaderboardPage() {
             </div>
           </div>
 
-          {/* ── Glassmorphic Metric Filter Segmented Tabs ── */}
-          <div className="grid grid-cols-3 gap-1.5 p-1 bg-white/60 backdrop-blur-lg rounded-2xl border border-white/80 shadow-xs sm:flex sm:bg-transparent sm:p-0 sm:border-none sm:gap-2.5">
-            {METRIC_OPTIONS.map(m => {
-              const isActive = metric === m.value
-              return (
-                <button
-                  key={m.value}
-                  type="button"
-                  onClick={() => setMetric(m.value)}
-                  className={`flex items-center justify-center gap-1.5 sm:gap-2.5 rounded-xl sm:rounded-2xl px-2 sm:px-5 py-2 sm:py-2.5 text-micro sm:text-caption font-bold transition-all cursor-pointer ${
-                    isActive
-                      ? "bg-sekkha-brand-blue text-white shadow-md shadow-sekkha-brand-blue/20 ring-2 ring-sekkha-brand-blue/30 scale-102"
-                      : "bg-white/80 sm:bg-white/80 backdrop-blur-md text-sekkha-slate border border-white/70 hover:bg-white hover:text-sekkha-ink"
-                  }`}
-                >
-                  {m.icon}
-                  <span className="truncate">{m.label}</span>
-                </button>
-              )
-            })}
+          {/* ── Filters Bar: Metric & Role Filters ── */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+            {/* Metric Filter Tabs */}
+            <div className="grid grid-cols-3 gap-1.5 p-1 bg-white/70 backdrop-blur-lg rounded-2xl border border-white/80 shadow-xs sm:flex sm:gap-2">
+              {METRIC_OPTIONS.map(m => {
+                const isActive = metric === m.value
+                return (
+                  <button
+                    key={m.value}
+                    type="button"
+                    onClick={() => setMetric(m.value)}
+                    className={`flex items-center justify-center gap-1.5 sm:gap-2 rounded-xl sm:rounded-2xl px-2.5 sm:px-4.5 py-2 text-micro sm:text-caption font-bold transition-all cursor-pointer ${
+                      isActive
+                        ? "bg-sekkha-brand-blue text-white shadow-md shadow-sekkha-brand-blue/20 ring-2 ring-sekkha-brand-blue/30 scale-102"
+                        : "bg-white/80 backdrop-blur-md text-sekkha-slate border border-white/70 hover:bg-white hover:text-sekkha-ink"
+                    }`}
+                  >
+                    {m.icon}
+                    <span className="truncate">{m.label}</span>
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* Role Filter Checkboxes based on viewer's permission */}
+            {isPengurusOrAdmin && (
+              <div className="flex items-center p-1.5 bg-slate-100/90 backdrop-blur-md rounded-2xl border border-slate-200/80 shadow-2xs gap-1.5 self-start md:self-auto flex-wrap">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-sekkha-slate/70 px-1 hidden sm:inline">
+                  Tampilkan:
+                </span>
+                {PENGURUS_ROLE_CHECKBOXES.map(r => {
+                  const isChecked = selectedRoles.includes(r.id)
+                  return (
+                    <button
+                      key={r.id}
+                      type="button"
+                      onClick={() => toggleRole(r.id)}
+                      className={`flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-micro font-bold cursor-pointer transition-all border select-none ${
+                        isChecked
+                          ? "bg-white text-sekkha-brand-blue border-sekkha-brand-blue/30 shadow-xs font-extrabold"
+                          : "bg-transparent border-transparent text-sekkha-slate hover:text-sekkha-ink hover:bg-white/50"
+                      }`}
+                    >
+                      <div className={`size-3.5 rounded flex items-center justify-center border transition-all ${
+                        isChecked ? "bg-sekkha-brand-blue border-sekkha-brand-blue text-white" : "border-slate-300 bg-white/90"
+                      }`}>
+                        {isChecked && <CheckIcon className="size-2.5 stroke-[3]" />}
+                      </div>
+                      <span>{r.label}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+
+            {isAktivis && (
+              <div className="flex items-center p-1.5 bg-slate-100/90 backdrop-blur-md rounded-2xl border border-slate-200/80 shadow-2xs gap-1.5 self-start md:self-auto flex-wrap">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-sekkha-slate/70 px-1 hidden sm:inline">
+                  Tampilkan:
+                </span>
+                {AKTIVIS_ROLE_CHECKBOXES.map(r => {
+                  const isChecked = selectedRoles.includes(r.id)
+                  return (
+                    <button
+                      key={r.id}
+                      type="button"
+                      onClick={() => toggleRole(r.id)}
+                      className={`flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-micro font-bold cursor-pointer transition-all border select-none ${
+                        isChecked
+                          ? "bg-white text-sekkha-brand-blue border-sekkha-brand-blue/30 shadow-xs font-extrabold"
+                          : "bg-transparent border-transparent text-sekkha-slate hover:text-sekkha-ink hover:bg-white/50"
+                      }`}
+                    >
+                      <div className={`size-3.5 rounded flex items-center justify-center border transition-all ${
+                        isChecked ? "bg-sekkha-brand-blue border-sekkha-brand-blue text-white" : "border-slate-300 bg-white/90"
+                      }`}>
+                        {isChecked && <CheckIcon className="size-2.5 stroke-[3]" />}
+                      </div>
+                      <span>{r.label}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+
+            {isUmatOnly && (
+              <div className="flex items-center gap-1.5 rounded-2xl bg-white/80 border border-white/90 px-3.5 py-1.5 text-micro-bold text-sekkha-slate backdrop-blur-md shadow-2xs self-start md:self-auto">
+                <UserIcon className="size-3.5 text-sekkha-brand-blue" />
+                <span>Klasemen: <strong className="text-sekkha-ink">Sesama Umat</strong></span>
+              </div>
+            )}
           </div>
 
           {/* ── Two-Column Responsive Layout ── */}
@@ -346,7 +482,7 @@ export function LeaderboardPage() {
               <div className="rounded-3xl border border-white/70 bg-white/85 backdrop-blur-2xl p-4 sm:p-6 shadow-xl shadow-slate-200/50 ring-1 ring-black/5 space-y-5 sm:space-y-6">
 
                 {/* Empty State when no entries found */}
-                {validEntries.length === 0 ? (
+                {filteredEntries.length === 0 ? (
                   <div className="py-12 px-4 text-center space-y-3">
                     <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-500 shadow-sm">
                       <TrophyIcon className="size-7" />
@@ -354,7 +490,7 @@ export function LeaderboardPage() {
                     <div>
                       <h3 className="text-body-base font-bold text-sekkha-ink">Data Peringkat Tidak Ditemukan</h3>
                       <p className="text-caption text-sekkha-slate mt-1 max-w-sm mx-auto">
-                        Belum ada data presensi atau poin anggota untuk season ini. Presensi kegiatan Vihara akan otomatis memperbarui leaderboard.
+                        Tidak ada anggota dalam kategori <strong>{roleGroupLabel}</strong> untuk season ini.
                       </p>
                     </div>
                   </div>
@@ -391,12 +527,12 @@ export function LeaderboardPage() {
                     {rest.length > 0 && (
                       <div className="space-y-2">
                         <p className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-widest text-sekkha-slate/70 px-1">
-                          Peringkat Anggota (4+)
+                          Peringkat {roleGroupLabel} (4+)
                         </p>
                         <ul role="list" className="space-y-2">
                           {rest.map(entry => {
                             const isMe = entry.user_id === myId
-                            const hint = isMe ? getCompetitionHint(entry, validEntries, metricUnit) : null
+                            const hint = isMe ? getCompetitionHint(entry, filteredEntries, metricUnit) : null
 
                             return (
                               <li
@@ -417,9 +553,9 @@ export function LeaderboardPage() {
                                 {/* Avatar */}
                                 <ListAvatar initials={entry.initials} isMe={isMe} />
 
-                                {/* Name & Motivational Hint */}
+                                {/* Name, Role Badge & Motivational Hint */}
                                 <div className="min-w-0 flex-1">
-                                  <div className="flex items-center gap-1.5">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
                                     <p className={`truncate text-caption-bold font-extrabold ${
                                       isMe ? "text-sekkha-brand-blue" : "text-sekkha-ink"
                                     }`}>
@@ -428,6 +564,11 @@ export function LeaderboardPage() {
                                     {isMe && (
                                       <span className="rounded-md bg-sekkha-brand-blue text-white px-1.5 py-0.5 text-[9px] font-black uppercase shrink-0 shadow-2xs">
                                         Kamu
+                                      </span>
+                                    )}
+                                    {entry.role && entry.role !== "umat" && (
+                                      <span className="rounded-md bg-purple-50 text-purple-700 border border-purple-200/80 px-1.5 py-0.2 text-[9px] font-bold capitalize shrink-0">
+                                        {entry.role === "admin" ? "Admin" : entry.role === "pengurus" ? "Pengurus" : "Aktivis"}
                                       </span>
                                     )}
                                   </div>
@@ -466,16 +607,16 @@ export function LeaderboardPage() {
             {/* Right Sidebar Glassmorphic Widgets (Right 4 Cols on Desktop) */}
             <aside className="lg:col-span-4 space-y-4 sm:space-y-5">
               
-              {/* Glassmorphic My Rank Sidebar Widget (Desktop only to prevent mobile duplication with top Hero Card) */}
+              {/* Glassmorphic My Rank Sidebar Widget (Desktop) */}
               <div className="hidden lg:block rounded-3xl border border-sekkha-brand-blue/30 bg-gradient-to-br from-sekkha-brand-blue/10 via-white/80 to-blue-50/50 backdrop-blur-2xl p-4 sm:p-5 shadow-xl shadow-sekkha-brand-blue/5 ring-1 ring-sekkha-brand-blue/20 space-y-3">
                 <div className="flex items-center gap-3">
                   <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-sekkha-brand-blue text-caption-bold font-black text-white shadow-md">
-                    {myEntry?.initials || "AS"}
+                    {myRankData?.initials || "AS"}
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
                       <span className="text-caption-bold font-extrabold text-sekkha-ink truncate">
-                        {myEntry?.name || "Anggota Sekkha"}
+                        {myRankData?.name || "Anggota Sekkha"}
                       </span>
                       <span className="rounded-md bg-sekkha-brand-blue text-white px-1.5 py-0.5 text-[9px] font-black uppercase shrink-0">
                         Kamu
@@ -488,7 +629,7 @@ export function LeaderboardPage() {
                 <div className="flex items-center justify-center gap-4 rounded-2xl bg-white/90 backdrop-blur-md p-3 border border-white/80 shadow-2xs">
                   <div className="text-center flex-1">
                     <p className="text-body-lg font-black text-sekkha-brand-blue">#{myRank}</p>
-                    <p className="text-[10px] font-bold text-sekkha-slate">Peringkat</p>
+                    <p className="text-[10px] font-bold text-sekkha-slate">Peringkat ({roleGroupLabel})</p>
                   </div>
                   <div className="h-7 w-px bg-sekkha-hairline" />
                   <div className="text-center flex-1">

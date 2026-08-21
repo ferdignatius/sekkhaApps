@@ -10,6 +10,7 @@ export interface LeaderboardUserEntry {
   value: number
   attendances_count: number
   avatar_url?: string | null
+  role: string
 }
 
 export interface SeasonInfo {
@@ -90,6 +91,7 @@ export async function computeAndCacheLeaderboard(): Promise<void> {
         select: {
           id: true,
           name: true,
+          role: true,
           points: true,
           avatarUrl: true,
           userNumber: true,
@@ -148,6 +150,7 @@ export async function computeAndCacheLeaderboard(): Promise<void> {
             value: val,
             attendances_count: attendanceCount,
             avatar_url: u.avatarUrl,
+            role: u.role || "umat",
           }
         })
         .sort((a, b) => b.value - a.value)
@@ -173,20 +176,27 @@ export async function computeAndCacheLeaderboard(): Promise<void> {
 }
 
 /**
- * Gets the pre-computed snapshot for a given metric. If missing, computes immediately.
+ * Gets the pre-computed snapshot for a given metric. If missing or stale, computes immediately.
  */
-export async function getLeaderboardSnapshot(metric: MetricType): Promise<LeaderboardSnapshot> {
+export async function getLeaderboardSnapshot(metric: MetricType, forceRefresh = false): Promise<LeaderboardSnapshot> {
   const cacheKey = CacheKeys.leaderboard(metric, "weekly_snapshot")
-  try {
-    const raw = await redis.get(cacheKey)
-    if (raw) {
-      return JSON.parse(raw) as LeaderboardSnapshot
+  if (!forceRefresh) {
+    try {
+      const raw = await redis.get(cacheKey)
+      if (raw) {
+        const parsed = JSON.parse(raw) as LeaderboardSnapshot
+        // If cached entries have the role property populated on at least entries, use cache
+        const isStale = parsed.entries?.some((e) => !e.role)
+        if (!isStale) {
+          return parsed
+        }
+      }
+    } catch (err) {
+      console.warn("⚠️ Redis cache read error:", err)
     }
-  } catch (err) {
-    console.warn("⚠️ Redis cache read error:", err)
   }
 
-  // Cold start fallback: compute and cache now
+  // Cold start or stale cache fallback: compute and cache now
   await computeAndCacheLeaderboard()
   const raw = await redis.get(cacheKey).catch(() => null)
   if (raw) {

@@ -61,7 +61,15 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const pengurusNavItems = activeModules.flatMap((m) => m.pengurusNavItems ?? [])
   const configureSections = activeModules.flatMap((m) => m.configureSections ?? [])
 
-  const roleLabel = role === "admin" ? "Admin Vihara" : role === "pengurus" ? "Pengurus" : "Umat"
+  const roleLabel = role === "admin" ? "Admin Vihara" : role === "pengurus" ? "Pengurus" : role === "aktivis" ? "Aktivis" : "Umat"
+  const userName = authState.status === "authenticated" && authState.name ? authState.name : roleLabel
+  const userInitials =
+    userName
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((w) => w[0].toUpperCase())
+      .join("") || roleLabel.slice(0, 2)
 
   // Close profile menu when clicking outside
   useEffect(() => {
@@ -96,7 +104,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
             </div>
             <div className="flex flex-col min-w-0 group-data-[collapsible=icon]:hidden">
               <span className="truncate text-caption-bold font-extrabold text-sekkha-ink tracking-tight">
-                Sekkha Vihara
+                Sekkha Apps
               </span>
               <span className="truncate text-micro font-bold text-sekkha-brand-blue flex items-center gap-1">
                 <ShieldCheckIcon className="size-3 text-sekkha-brand-blue" />
@@ -182,11 +190,11 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
           </SidebarGroup>
         )}
 
-        {/* Configure / Master Data — dari Registry */}
+        {/* Configure Sections — dari Registry */}
         {isPengurus && configureSections.length > 0 && (
           <SidebarGroup className="pt-2 border-t border-sekkha-hairline-soft p-0">
             <SidebarGroupLabel className="text-[10px] font-extrabold uppercase tracking-widest text-sekkha-slate/60 px-2 py-1 group-data-[collapsible=icon]:hidden">
-              Konfigurasi Master Data
+              Konfigurasi Sistem
             </SidebarGroupLabel>
             <SidebarMenu className="space-y-0.5">
               {configureSections.map((section) => {
@@ -315,11 +323,11 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
             }`}
           >
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-sekkha-brand-blue text-caption-bold text-white font-extrabold shadow-xs uppercase transition-transform active:scale-95">
-              {roleLabel.slice(0, 2)}
+              {userInitials}
             </div>
             <div className="flex flex-col min-w-0 flex-1 group-data-[collapsible=icon]:hidden text-left">
-              <span className="truncate text-micro-bold text-sekkha-ink font-extrabold">{roleLabel}</span>
-              <span className="truncate text-[10px] text-sekkha-slate font-medium">ID: {userId.slice(0, 8)}</span>
+              <span className="truncate text-micro-bold text-sekkha-ink font-extrabold">{userName}</span>
+              <span className="truncate text-[11px] text-sekkha-brand-blue font-semibold">{roleLabel}</span>
             </div>
             <ChevronUpIcon className={`size-4 text-sekkha-slate transition-transform duration-200 group-data-[collapsible=icon]:hidden ${showProfileMenu ? "rotate-180 text-sekkha-brand-blue" : ""}`} />
           </button>

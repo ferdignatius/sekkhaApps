@@ -141,7 +141,7 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
    *
    * Requirements: 4.1, 7.2, 7.3, 7.4
    */
-  async function register(email: string, password: string): Promise<void> {
+  async function register(email: string, password: string, name?: string): Promise<void> {
     let response: Response
 
     try {
@@ -150,7 +150,7 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password, name: email.split("@")[0] }),
+          body: JSON.stringify({ email, password, name: name?.trim() || email.split("@")[0] }),
         },
         10_000,
       )

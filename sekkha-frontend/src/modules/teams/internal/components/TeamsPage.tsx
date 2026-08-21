@@ -16,6 +16,7 @@ import {
   CopyIcon,
   CheckIcon,
   SparklesIcon,
+  ShieldCheckIcon,
 } from "lucide-react"
 import QRCode from "react-qr-code"
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
@@ -124,19 +125,19 @@ export function TeamsPage() {
     }
   }
 
-  // Handle Update Member
+  // Handle Update Member Role
   async function handleUpdateMember(e: React.FormEvent) {
     e.preventDefault()
     if (!editingMember) return
 
     try {
       setSubmitting(true)
-      await teamsApi.updateMember(editingMember.id, updateForm)
-      showToast(`Data anggota "${editingMember.name}" berhasil diperbarui`)
+      await teamsApi.updateMember(editingMember.id, { role: updateForm.role })
+      showToast(`Peran "${editingMember.name}" berhasil diubah menjadi ${updateForm.role?.toUpperCase()}`)
       setEditingMember(null)
       await loadData()
     } catch (err: any) {
-      showToast(err.message || "Gagal memperbarui data anggota", "error")
+      showToast(err.message || "Gagal mengubah peran anggota", "error")
     } finally {
       setSubmitting(false)
     }
@@ -266,11 +267,11 @@ export function TeamsPage() {
 
             {/* Action Buttons */}
             {isPengurusOrAdmin && (
-              <div className="flex flex-wrap items-center gap-2.5">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-2.5 w-full sm:w-auto">
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(true)}
-                  className="flex items-center gap-2 rounded-xl bg-sekkha-brand-blue px-4 py-2.5 text-body-sm-medium text-white shadow-sm hover:bg-blue-700 transition-all active:scale-[0.98]"
+                  className="flex items-center justify-center gap-2 rounded-xl bg-sekkha-brand-blue px-4 py-2.5 text-body-sm-medium text-white shadow-sm hover:bg-blue-700 transition-all active:scale-[0.98] cursor-pointer"
                 >
                   <PlusIcon className="size-4" />
                   <span>Tambah Umat Baru</span>
@@ -280,7 +281,7 @@ export function TeamsPage() {
                   <button
                     type="button"
                     onClick={() => setShowInviteModal(true)}
-                    className="flex items-center gap-2 rounded-xl border border-sekkha-hairline-strong bg-white px-4 py-2.5 text-body-sm-medium text-sekkha-ink shadow-2xs hover:bg-sekkha-surface transition-all active:scale-[0.98]"
+                    className="flex items-center justify-center gap-2 rounded-xl border border-sekkha-hairline-strong bg-white px-4 py-2.5 text-body-sm-medium text-sekkha-ink shadow-2xs hover:bg-sekkha-surface transition-all active:scale-[0.98] cursor-pointer"
                   >
                     <UserPlusIcon className="size-4 text-sekkha-brand-blue" />
                     <span>Undang Staff</span>
@@ -326,70 +327,72 @@ export function TeamsPage() {
           </div>
 
           {/* Search, Filter Tabs & Controls */}
-          <div className="flex flex-col gap-3 rounded-2xl border border-sekkha-hairline bg-white p-3.5 shadow-2xs sm:flex-row sm:items-center sm:justify-between">
-            {/* Status Filter Tabs */}
-            <div className="flex items-center gap-1 overflow-x-auto rounded-xl bg-slate-100/80 p-1">
-              <button
-                type="button"
-                onClick={() => setStatusFilter("all")}
-                className={`rounded-lg px-3 py-1.5 text-caption font-semibold transition-all ${
-                  statusFilter === "all" ? "bg-white text-sekkha-ink shadow-xs" : "text-sekkha-slate hover:text-sekkha-ink"
-                }`}
-              >
-                Semua ({stats.total})
-              </button>
-              <button
-                type="button"
-                onClick={() => setStatusFilter("unclaimed")}
-                className={`rounded-lg px-3 py-1.5 text-caption font-semibold transition-all ${
-                  statusFilter === "unclaimed"
-                    ? "bg-amber-500 text-white shadow-xs"
-                    : "text-amber-800 hover:text-amber-900"
-                }`}
-              >
-                Belum Diklaim ({stats.unclaimed})
-              </button>
-              <button
-                type="button"
-                onClick={() => setStatusFilter("claimed")}
-                className={`rounded-lg px-3 py-1.5 text-caption font-semibold transition-all ${
-                  statusFilter === "claimed"
-                    ? "bg-emerald-600 text-white shadow-xs"
-                    : "text-emerald-800 hover:text-emerald-900"
-                }`}
-              >
-                Sudah Aktif ({stats.claimed})
-              </button>
-            </div>
+          <div className="flex flex-col gap-3 rounded-2xl border border-sekkha-hairline bg-white p-3 sm:p-3.5 shadow-2xs">
+            {/* Top row: Status Tabs on mobile/desktop */}
+            <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-1 overflow-x-auto no-scrollbar rounded-xl bg-slate-100/90 p-1 w-full sm:w-auto">
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter("all")}
+                  className={`flex-1 sm:flex-none text-center whitespace-nowrap rounded-lg px-2.5 sm:px-3 py-1.5 text-caption font-semibold transition-all cursor-pointer ${
+                    statusFilter === "all" ? "bg-white text-sekkha-ink shadow-xs" : "text-sekkha-slate hover:text-sekkha-ink"
+                  }`}
+                >
+                  Semua ({stats.total})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter("unclaimed")}
+                  className={`flex-1 sm:flex-none text-center whitespace-nowrap rounded-lg px-2.5 sm:px-3 py-1.5 text-caption font-semibold transition-all cursor-pointer ${
+                    statusFilter === "unclaimed"
+                      ? "bg-amber-500 text-white shadow-xs"
+                      : "text-amber-800 hover:text-amber-900"
+                  }`}
+                >
+                  Belum Klaim ({stats.unclaimed})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter("claimed")}
+                  className={`flex-1 sm:flex-none text-center whitespace-nowrap rounded-lg px-2.5 sm:px-3 py-1.5 text-caption font-semibold transition-all cursor-pointer ${
+                    statusFilter === "claimed"
+                      ? "bg-emerald-600 text-white shadow-xs"
+                      : "text-emerald-800 hover:text-emerald-900"
+                  }`}
+                >
+                  Aktif ({stats.claimed})
+                </button>
+              </div>
 
-            {/* Right side: Role filter & Search box */}
-            <div className="flex flex-wrap items-center gap-2">
-              <select
-                value={roleFilter}
-                onChange={(e) => setRoleFilter(e.target.value)}
-                className="rounded-xl border border-sekkha-hairline-strong bg-white px-3 py-1.5 text-caption text-sekkha-ink outline-none focus:border-sekkha-brand-blue"
-              >
-                <option value="all">Semua Peran</option>
-                <option value="umat">Umat</option>
-                <option value="aktivis">Aktivis</option>
-                <option value="pengurus">Pengurus</option>
-                <option value="admin">Admin</option>
-              </select>
+              {/* Right side: Role filter & Search box */}
+              <div className="flex flex-col xs:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+                <select
+                  value={roleFilter}
+                  onChange={(e) => setRoleFilter(e.target.value)}
+                  className="rounded-xl border border-sekkha-hairline-strong bg-white px-3 py-2 sm:py-1.5 text-caption text-sekkha-ink outline-none focus:border-sekkha-brand-blue"
+                >
+                  <option value="all">Semua Peran</option>
+                  <option value="umat">Umat</option>
+                  <option value="aktivis">Aktivis</option>
+                  <option value="pengurus">Pengurus</option>
+                  <option value="admin">Admin</option>
+                </select>
 
-              <div className="relative flex-1 sm:w-64">
-                <SearchIcon className="absolute left-3 top-2.5 size-4 text-sekkha-slate" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Cari nama, no unik, sekolah, hp..."
-                  className="w-full rounded-xl border border-sekkha-hairline-strong bg-white pl-9 pr-4 py-1.5 text-caption text-sekkha-ink outline-none focus:border-sekkha-brand-blue"
-                />
+                <div className="relative flex-1 sm:w-64">
+                  <SearchIcon className="absolute left-3 top-2.5 sm:top-2 size-4 text-sekkha-slate" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Cari nama, ID, kontak..."
+                    className="w-full rounded-xl border border-sekkha-hairline-strong bg-white pl-9 pr-4 py-2 sm:py-1.5 text-caption text-sekkha-ink outline-none focus:border-sekkha-brand-blue"
+                  />
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Main Grid: Directory Table & Invitations (if Admin) */}
+          {/* Main Grid: Directory & Invitations (if Admin) */}
           <div className="grid gap-6 lg:grid-cols-3">
             
             {/* Members Directory (Col Span 2 or 3) */}
@@ -412,145 +415,252 @@ export function TeamsPage() {
                   <p className="text-micro text-sekkha-muted mt-1">Coba sesuaikan kata kunci pencarian atau filter status.</p>
                 </div>
               ) : (
-                <div className="overflow-hidden rounded-2xl border border-sekkha-hairline bg-white shadow-2xs">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left text-body-sm">
-                      <thead>
-                        <tr className="border-b border-sekkha-hairline-soft bg-slate-50/70 text-micro-bold uppercase tracking-wider text-sekkha-slate">
-                          <th className="px-4 py-3">No. Unik</th>
-                          <th className="px-4 py-3">Nama Lengkap</th>
-                          <th className="px-4 py-3">Status Klaim</th>
-                          <th className="px-4 py-3">Peran</th>
-                          <th className="hidden sm:table-cell px-4 py-3">Sekolah / Kontak</th>
-                          <th className="px-4 py-3 text-center">Aksi</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-sekkha-hairline-soft">
-                        {filteredMembers.map((m) => {
-                          const initials = m.name
-                            .split(" ")
-                            .slice(0, 2)
-                            .map((w) => (w[0] ? w[0].toUpperCase() : ""))
-                            .join("") || "UM"
+                <>
+                  {/* 📱 MOBILE VIEW: Touch-optimized Card List (< md) */}
+                  <div className="md:hidden space-y-3">
+                    {filteredMembers.map((m) => {
+                      const initials =
+                        m.name
+                          .split(" ")
+                          .slice(0, 2)
+                          .map((w) => (w[0] ? w[0].toUpperCase() : ""))
+                          .join("") || "UM"
 
-                          return (
-                            <tr key={m.id} className="group hover:bg-slate-50/60 transition-colors">
-                              {/* No. Unik */}
-                              <td className="px-4 py-3 font-mono text-caption-bold text-sekkha-brand-blue">
-                                <div className="flex items-center gap-1.5">
-                                  <span>{m.user_number || "—"}</span>
+                      return (
+                        <div
+                          key={m.id}
+                          className="rounded-2xl border border-sekkha-hairline bg-white p-4 shadow-2xs space-y-3 transition-shadow hover:shadow-xs"
+                        >
+                          {/* Card Header: Avatar, Name, Status & Role */}
+                          <div className="flex items-start justify-between gap-2.5">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-caption-bold text-white shadow-2xs">
+                                {initials}
+                              </div>
+                              <div className="min-w-0">
+                                <p className="font-extrabold text-body-sm text-sekkha-ink truncate">{m.name}</p>
+                                <div className="flex items-center gap-1.5 mt-0.5">
+                                  <span className="font-mono text-micro font-bold text-sekkha-brand-blue">
+                                    {m.user_number || "—"}
+                                  </span>
                                   {m.user_number && (
                                     <button
                                       type="button"
                                       onClick={() => handleCopy(m.user_number)}
-                                      className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-sekkha-brand-blue transition-opacity"
+                                      className="text-slate-400 hover:text-sekkha-brand-blue p-0.5 cursor-pointer"
                                       title="Salin No. Unik"
                                     >
                                       <CopyIcon className="size-3" />
                                     </button>
                                   )}
                                 </div>
-                              </td>
+                              </div>
+                            </div>
 
-                              {/* Nama */}
-                              <td className="px-4 py-3">
-                                <div className="flex items-center gap-2.5">
-                                  <div className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-micro-bold text-white shadow-2xs">
-                                    {initials}
-                                  </div>
-                                  <div className="min-w-0">
-                                    <p className="font-bold text-sekkha-ink truncate">{m.name}</p>
-                                    <p className="text-micro text-sekkha-slate truncate">
-                                      {m.email || (m.phone ? `HP: ${m.phone}` : "Tanpa kontak email")}
-                                    </p>
-                                  </div>
-                                </div>
-                              </td>
-
-                              {/* Status Klaim */}
-                              <td className="px-4 py-3">
-                                {m.is_claimed ? (
-                                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-micro-bold text-emerald-800">
-                                    <CheckCircleIcon className="size-3 text-emerald-600" />
-                                    <span>Sudah Aktif</span>
-                                  </span>
-                                ) : (
-                                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200 px-2.5 py-0.5 text-micro-bold text-amber-800">
-                                    <AlertTriangleIcon className="size-3 text-amber-600" />
-                                    <span>Belum Diklaim</span>
-                                  </span>
-                                )}
-                              </td>
-
-                              {/* Role */}
-                              <td className="px-4 py-3">
-                                <span className={`inline-block rounded-full border px-2 py-0.5 text-micro-bold capitalize ${roleBadgeStyle[m.role] || roleBadgeStyle.umat}`}>
-                                  {m.role}
+                            <div className="flex flex-col items-end gap-1 shrink-0">
+                              <span className={`inline-block rounded-full border px-2 py-0.5 text-[10px] font-extrabold capitalize ${roleBadgeStyle[m.role] || roleBadgeStyle.umat}`}>
+                                {m.role}
+                              </span>
+                              {m.is_claimed ? (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[9px] font-bold text-emerald-800">
+                                  <CheckCircleIcon className="size-2.5 text-emerald-600" />
+                                  <span>Aktif</span>
                                 </span>
-                              </td>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-[9px] font-bold text-amber-800">
+                                  <AlertTriangleIcon className="size-2.5 text-amber-600" />
+                                  <span>Pre-created</span>
+                                </span>
+                              )}
+                            </div>
+                          </div>
 
-                              {/* Sekolah / Kontak */}
-                              <td className="hidden sm:table-cell px-4 py-3 text-caption text-sekkha-slate">
-                                <div className="space-y-0.5">
-                                  {m.school && <p className="truncate max-w-[140px]">🏫 {m.school}</p>}
-                                  {m.phone && <p className="text-micro text-sekkha-muted">📞 {m.phone}</p>}
-                                  {!m.school && !m.phone && <span className="text-sekkha-muted">—</span>}
-                                </div>
-                              </td>
+                          {/* Card Details: Contact & School info */}
+                          <div className="grid grid-cols-2 gap-2 text-micro text-sekkha-slate pt-2 border-t border-sekkha-hairline-soft bg-slate-50/50 -mx-4 -mb-3 p-3 rounded-b-2xl">
+                            <div className="truncate">
+                              <span className="font-semibold text-sekkha-muted block text-[10px] uppercase">Sekolah / Kampus</span>
+                              <span className="font-medium text-sekkha-ink truncate block">{m.school || "—"}</span>
+                            </div>
+                            <div className="truncate">
+                              <span className="font-semibold text-sekkha-muted block text-[10px] uppercase">Kontak</span>
+                              <span className="font-medium text-sekkha-ink truncate block">{m.phone || m.email || "—"}</span>
+                            </div>
 
-                              {/* Actions */}
-                              <td className="px-4 py-3 text-center">
-                                <div className="flex items-center justify-center gap-1">
+                            {/* Card Action Buttons */}
+                            <div className="col-span-2 flex items-center justify-end gap-2 pt-2 border-t border-sekkha-hairline-soft/80 mt-1">
+                              <button
+                                type="button"
+                                onClick={() => setQrMember(m)}
+                                className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-sekkha-brand-blue/10 border border-sekkha-brand-blue/20 py-2 text-caption-bold text-sekkha-brand-blue hover:bg-sekkha-brand-blue/20 transition-colors cursor-pointer"
+                              >
+                                <QrCodeIcon className="size-4" />
+                                <span>QR & Kartu</span>
+                              </button>
+
+                              {isPengurusOrAdmin && (
+                                <>
                                   <button
                                     type="button"
-                                    onClick={() => setQrMember(m)}
-                                    className="flex size-8 items-center justify-center rounded-lg border border-sekkha-hairline text-sekkha-brand-blue hover:bg-blue-50 transition-colors"
-                                    title="Lihat Kartu Anggota & QR"
+                                    onClick={() => {
+                                      setEditingMember(m)
+                                      setUpdateForm({ role: m.role })
+                                    }}
+                                    className="flex size-9 items-center justify-center rounded-xl border border-sekkha-hairline bg-white text-sekkha-slate hover:bg-slate-100 hover:text-sekkha-ink transition-colors cursor-pointer shadow-2xs"
+                                    title="Ubah Peran Pengguna"
                                   >
-                                    <QrCodeIcon className="size-4" />
+                                    <Edit2Icon className="size-4" />
                                   </button>
 
-                                  {isPengurusOrAdmin && (
-                                    <>
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          setEditingMember(m)
-                                          setUpdateForm({
-                                            name: m.name,
-                                            email: m.email || "",
-                                            phone: m.phone || "",
-                                            school: m.school || "",
-                                            birth_date: m.birth_date ? m.birth_date.slice(0, 10) : "",
-                                            gender: m.gender || "L",
-                                            role: m.role,
-                                          })
-                                        }}
-                                        className="flex size-8 items-center justify-center rounded-lg border border-sekkha-hairline text-sekkha-slate hover:bg-slate-100 hover:text-sekkha-ink transition-colors"
-                                        title="Edit Data Anggota"
-                                      >
-                                        <Edit2Icon className="size-4" />
-                                      </button>
-
-                                      <button
-                                        type="button"
-                                        onClick={() => setDeletingMember(m)}
-                                        className="flex size-8 items-center justify-center rounded-lg border border-sekkha-hairline text-red-500 hover:bg-red-50 hover:text-red-700 transition-colors"
-                                        title="Hapus Data Anggota"
-                                      >
-                                        <Trash2Icon className="size-4" />
-                                      </button>
-                                    </>
-                                  )}
-                                </div>
-                              </td>
-                            </tr>
-                          )
-                        })}
-                      </tbody>
-                    </table>
+                                  <button
+                                    type="button"
+                                    onClick={() => setDeletingMember(m)}
+                                    className="flex size-9 items-center justify-center rounded-xl border border-red-200 bg-white text-red-500 hover:bg-red-50 hover:text-red-700 transition-colors cursor-pointer shadow-2xs"
+                                    title="Hapus Data Anggota"
+                                  >
+                                    <Trash2Icon className="size-4" />
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
                   </div>
-                </div>
+
+                  {/* 🖥️ DESKTOP VIEW: Structured Table (hidden on mobile, visible md+) */}
+                  <div className="hidden md:block overflow-hidden rounded-2xl border border-sekkha-hairline bg-white shadow-2xs">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-body-sm">
+                        <thead>
+                          <tr className="border-b border-sekkha-hairline-soft bg-slate-50/70 text-micro-bold uppercase tracking-wider text-sekkha-slate">
+                            <th className="px-4 py-3">No. Unik</th>
+                            <th className="px-4 py-3">Nama Lengkap</th>
+                            <th className="px-4 py-3">Status Klaim</th>
+                            <th className="px-4 py-3">Peran</th>
+                            <th className="px-4 py-3">Sekolah / Kontak</th>
+                            <th className="px-4 py-3 text-center">Aksi</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-sekkha-hairline-soft">
+                          {filteredMembers.map((m) => {
+                            const initials = m.name
+                              .split(" ")
+                              .slice(0, 2)
+                              .map((w) => (w[0] ? w[0].toUpperCase() : ""))
+                              .join("") || "UM"
+
+                            return (
+                              <tr key={m.id} className="group hover:bg-slate-50/60 transition-colors">
+                                {/* No. Unik */}
+                                <td className="px-4 py-3 font-mono text-caption-bold text-sekkha-brand-blue">
+                                  <div className="flex items-center gap-1.5">
+                                    <span>{m.user_number || "—"}</span>
+                                    {m.user_number && (
+                                      <button
+                                        type="button"
+                                        onClick={() => handleCopy(m.user_number)}
+                                        className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-sekkha-brand-blue transition-opacity cursor-pointer"
+                                        title="Salin No. Unik"
+                                      >
+                                        <CopyIcon className="size-3" />
+                                      </button>
+                                    )}
+                                  </div>
+                                </td>
+
+                                {/* Nama */}
+                                <td className="px-4 py-3">
+                                  <div className="flex items-center gap-2.5">
+                                    <div className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-micro-bold text-white shadow-2xs">
+                                      {initials}
+                                    </div>
+                                    <div className="min-w-0">
+                                      <p className="font-bold text-sekkha-ink truncate">{m.name}</p>
+                                      <p className="text-micro text-sekkha-slate truncate">
+                                        {m.email || (m.phone ? `HP: ${m.phone}` : "Tanpa kontak email")}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </td>
+
+                                {/* Status Klaim */}
+                                <td className="px-4 py-3">
+                                  {m.is_claimed ? (
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-micro-bold text-emerald-800">
+                                      <CheckCircleIcon className="size-3 text-emerald-600" />
+                                      <span>Sudah Aktif</span>
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200 px-2.5 py-0.5 text-micro-bold text-amber-800">
+                                      <AlertTriangleIcon className="size-3 text-amber-600" />
+                                      <span>Belum Diklaim</span>
+                                    </span>
+                                  )}
+                                </td>
+
+                                {/* Role */}
+                                <td className="px-4 py-3">
+                                  <span className={`inline-block rounded-full border px-2 py-0.5 text-micro-bold capitalize ${roleBadgeStyle[m.role] || roleBadgeStyle.umat}`}>
+                                    {m.role}
+                                  </span>
+                                </td>
+
+                                {/* Sekolah / Kontak */}
+                                <td className="px-4 py-3 text-caption text-sekkha-slate">
+                                  <div className="space-y-0.5">
+                                    {m.school && <p className="truncate max-w-[160px]">🏫 {m.school}</p>}
+                                    {m.phone && <p className="text-micro text-sekkha-muted">📞 {m.phone}</p>}
+                                    {!m.school && !m.phone && <span className="text-sekkha-muted">—</span>}
+                                  </div>
+                                </td>
+
+                                {/* Actions */}
+                                <td className="px-4 py-3 text-center">
+                                  <div className="flex items-center justify-center gap-1">
+                                    <button
+                                      type="button"
+                                      onClick={() => setQrMember(m)}
+                                      className="flex size-8 items-center justify-center rounded-lg border border-sekkha-hairline text-sekkha-brand-blue hover:bg-blue-50 transition-colors cursor-pointer"
+                                      title="Lihat Kartu Anggota & QR"
+                                    >
+                                      <QrCodeIcon className="size-4" />
+                                    </button>
+
+                                    {isPengurusOrAdmin && (
+                                      <>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setEditingMember(m)
+                                            setUpdateForm({ role: m.role })
+                                          }}
+                                          className="flex size-8 items-center justify-center rounded-lg border border-sekkha-hairline text-sekkha-slate hover:bg-slate-100 hover:text-sekkha-ink transition-colors cursor-pointer"
+                                          title="Ubah Peran Pengguna"
+                                        >
+                                          <Edit2Icon className="size-4" />
+                                        </button>
+
+                                        <button
+                                          type="button"
+                                          onClick={() => setDeletingMember(m)}
+                                          className="flex size-8 items-center justify-center rounded-lg border border-sekkha-hairline text-red-500 hover:bg-red-50 hover:text-red-700 transition-colors cursor-pointer"
+                                          title="Hapus Data Anggota"
+                                        >
+                                          <Trash2Icon className="size-4" />
+                                        </button>
+                                      </>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </>
               )}
             </div>
 
@@ -621,22 +731,22 @@ export function TeamsPage() {
       {/* MODAL 1: Create Pre-provisioned Member                                    */}
       {/* ───────────────────────────────────────────────────────────────────────── */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 animate-in fade-in">
-          <div className="relative w-full max-w-lg rounded-3xl border border-sekkha-hairline bg-white p-6 shadow-2xl space-y-5">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-3.5 sm:p-4 animate-in fade-in">
+          <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl sm:rounded-3xl border border-sekkha-hairline bg-white p-4 sm:p-6 shadow-2xl space-y-4 sm:space-y-5">
             <div className="flex items-center justify-between border-b border-sekkha-hairline-soft pb-3">
               <div className="flex items-center gap-2">
                 <div className="flex size-9 items-center justify-center rounded-xl bg-sekkha-brand-blue text-white shadow-xs">
                   <UserPlusIcon className="size-5" />
                 </div>
                 <div>
-                  <h3 className="text-heading-6 font-extrabold text-sekkha-ink">Tambah Anggota Umat Baru</h3>
-                  <p className="text-micro text-sekkha-slate">Pendaftaran awal / pre-provisioning oleh Pengurus</p>
+                  <h3 className="text-body-base sm:text-heading-6 font-extrabold text-sekkha-ink">Tambah Anggota Umat Baru</h3>
+                  <p className="text-[11px] sm:text-micro text-sekkha-slate">Pendaftaran awal / pre-provisioning oleh Pengurus</p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setShowCreateModal(false)}
-                className="rounded-full p-1.5 text-sekkha-slate hover:bg-slate-100"
+                className="rounded-full p-1.5 text-sekkha-slate hover:bg-slate-100 cursor-pointer"
               >
                 <XIcon className="size-5" />
               </button>
@@ -739,14 +849,14 @@ export function TeamsPage() {
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
-                  className="flex-1 rounded-xl border border-sekkha-hairline-strong py-2.5 text-body-sm font-semibold text-sekkha-ink hover:bg-slate-100 transition-colors"
+                  className="flex-1 rounded-xl border border-sekkha-hairline-strong py-2.5 text-body-sm font-semibold text-sekkha-ink hover:bg-slate-100 transition-colors cursor-pointer"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="flex-1 rounded-xl bg-sekkha-brand-blue py-2.5 text-body-sm font-bold text-white shadow-sm hover:bg-blue-700 transition-all disabled:opacity-50"
+                  className="flex-1 rounded-xl bg-sekkha-brand-blue py-2.5 text-body-sm font-bold text-white shadow-sm hover:bg-blue-700 transition-all disabled:opacity-50 cursor-pointer"
                 >
                   {submitting ? "Menyimpan..." : "Simpan Umat"}
                 </button>
@@ -757,99 +867,97 @@ export function TeamsPage() {
       )}
 
       {/* ───────────────────────────────────────────────────────────────────────── */}
-      {/* MODAL 2: Edit Member Data                                                 */}
+      {/* MODAL 2: Change Member Role (Pengurus/Admin only can change role)          */}
       {/* ───────────────────────────────────────────────────────────────────────── */}
       {editingMember && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 animate-in fade-in">
-          <div className="relative w-full max-w-lg rounded-3xl border border-sekkha-hairline bg-white p-6 shadow-2xl space-y-5">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-3.5 sm:p-4 animate-in fade-in">
+          <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl sm:rounded-3xl border border-sekkha-hairline bg-white p-4 sm:p-6 shadow-2xl space-y-4 sm:space-y-5">
             <div className="flex items-center justify-between border-b border-sekkha-hairline-soft pb-3">
-              <div>
-                <h3 className="text-heading-6 font-extrabold text-sekkha-ink">Edit Data Anggota</h3>
-                <p className="text-micro text-sekkha-slate">Nomor Unik: <span className="font-mono font-bold text-sekkha-brand-blue">{editingMember.user_number}</span></p>
+              <div className="flex items-center gap-2.5">
+                <div className="flex size-9 items-center justify-center rounded-xl bg-purple-100 text-purple-700 shadow-2xs">
+                  <ShieldCheckIcon className="size-5" />
+                </div>
+                <div>
+                  <h3 className="text-body-base sm:text-heading-6 font-extrabold text-sekkha-ink">Ubah Peran Pengguna</h3>
+                  <p className="text-[11px] sm:text-micro text-sekkha-slate">Kelola hak akses & otorisasi akun</p>
+                </div>
               </div>
               <button
                 type="button"
                 onClick={() => setEditingMember(null)}
-                className="rounded-full p-1.5 text-sekkha-slate hover:bg-slate-100"
+                className="rounded-full p-1.5 text-sekkha-slate hover:bg-slate-100 cursor-pointer"
               >
                 <XIcon className="size-5" />
               </button>
             </div>
 
+            {/* Read-Only User Info Card */}
+            <div className="rounded-2xl border border-sekkha-hairline bg-slate-50/70 p-3.5 space-y-2.5">
+              <div className="flex items-center gap-3">
+                <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-caption-bold text-white font-bold shadow-2xs uppercase">
+                  {editingMember.name
+                    .split(" ")
+                    .slice(0, 2)
+                    .map((w) => (w[0] ? w[0].toUpperCase() : ""))
+                    .join("") || "UM"}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="font-extrabold text-body-sm text-sekkha-ink truncate">{editingMember.name}</p>
+                  <p className="font-mono text-micro font-bold text-sekkha-brand-blue">{editingMember.user_number || "—"}</p>
+                </div>
+                <span className={`rounded-full border px-2 py-0.5 text-[10px] font-extrabold capitalize ${roleBadgeStyle[editingMember.role]}`}>
+                  {editingMember.role}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 text-micro text-sekkha-slate pt-2 border-t border-sekkha-hairline-soft/80">
+                <div className="truncate">
+                  <span className="text-[10px] text-sekkha-muted block uppercase font-bold">Kontak</span>
+                  <span className="font-medium text-sekkha-ink truncate block">{editingMember.phone || editingMember.email || "—"}</span>
+                </div>
+                <div className="truncate">
+                  <span className="text-[10px] text-sekkha-muted block uppercase font-bold">Sekolah/Kampus</span>
+                  <span className="font-medium text-sekkha-ink truncate block">{editingMember.school || "—"}</span>
+                </div>
+              </div>
+            </div>
+
             <form onSubmit={handleUpdateMember} className="space-y-4">
-              <div className="space-y-1">
-                <label className="text-caption font-bold text-sekkha-ink">Nama Lengkap</label>
-                <input
-                  type="text"
-                  required
-                  value={updateForm.name || ""}
-                  onChange={(e) => setUpdateForm({ ...updateForm, name: e.target.value })}
-                  className="w-full rounded-xl border border-sekkha-hairline-strong px-3.5 py-2 text-body-sm text-sekkha-ink outline-none focus:border-sekkha-brand-blue"
-                />
+              <div className="space-y-1.5">
+                <label className="text-caption font-bold text-sekkha-ink flex items-center justify-between">
+                  <span>Pilih Peran Baru (Role)</span>
+                  <span className="text-micro font-normal text-sekkha-muted">Hanya peran yang dapat diubah</span>
+                </label>
+                <select
+                  value={updateForm.role || "umat"}
+                  onChange={(e) => setUpdateForm({ role: e.target.value as any })}
+                  className="w-full rounded-xl border border-sekkha-hairline-strong bg-white px-3.5 py-2.5 text-body-sm text-sekkha-ink outline-none focus:border-sekkha-brand-blue font-semibold"
+                >
+                  <option value="umat">Umat (Akses: Beranda, Acara, Leaderboard, Profil)</option>
+                  <option value="aktivis">Aktivis (Akses: Scan Presensi & Tugas Kegiatan)</option>
+                  <option value="pengurus">Pengurus (Akses Penuh: Manajemen & Acara)</option>
+                  {isAdmin && <option value="admin">Admin (Master Administrator Sistem)</option>}
+                </select>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="text-caption font-semibold text-sekkha-slate">Nomor HP</label>
-                  <input
-                    type="tel"
-                    value={updateForm.phone || ""}
-                    onChange={(e) => setUpdateForm({ ...updateForm, phone: e.target.value })}
-                    className="w-full rounded-xl border border-sekkha-hairline-strong px-3.5 py-2 text-body-sm text-sekkha-ink outline-none focus:border-sekkha-brand-blue"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-caption font-semibold text-sekkha-slate">Email</label>
-                  <input
-                    type="email"
-                    value={updateForm.email || ""}
-                    onChange={(e) => setUpdateForm({ ...updateForm, email: e.target.value })}
-                    className="w-full rounded-xl border border-sekkha-hairline-strong px-3.5 py-2 text-body-sm text-sekkha-ink outline-none focus:border-sekkha-brand-blue"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="text-caption font-semibold text-sekkha-slate">Asal Sekolah</label>
-                  <input
-                    type="text"
-                    value={updateForm.school || ""}
-                    onChange={(e) => setUpdateForm({ ...updateForm, school: e.target.value })}
-                    className="w-full rounded-xl border border-sekkha-hairline-strong px-3.5 py-2 text-body-sm text-sekkha-ink outline-none focus:border-sekkha-brand-blue"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-caption font-semibold text-sekkha-slate">Peran</label>
-                  <select
-                    value={updateForm.role || "umat"}
-                    onChange={(e) => setUpdateForm({ ...updateForm, role: e.target.value as any })}
-                    className="w-full rounded-xl border border-sekkha-hairline-strong px-3.5 py-2 text-body-sm text-sekkha-ink outline-none focus:border-sekkha-brand-blue"
-                  >
-                    <option value="umat">Umat</option>
-                    <option value="aktivis">Aktivis</option>
-                    <option value="pengurus">Pengurus</option>
-                    {isAdmin && <option value="admin">Admin</option>}
-                  </select>
-                </div>
+              <div className="rounded-xl bg-purple-50/70 p-3 text-micro text-purple-950 border border-purple-200/60 leading-relaxed">
+                ℹ️ <strong>Informasi:</strong> Perubahan peran akan langsung berdampak pada hak akses dan menu pengguna di aplikasi.
               </div>
 
               <div className="flex gap-2.5 pt-2">
                 <button
                   type="button"
                   onClick={() => setEditingMember(null)}
-                  className="flex-1 rounded-xl border border-sekkha-hairline-strong py-2.5 text-body-sm font-semibold text-sekkha-ink hover:bg-slate-100 transition-colors"
+                  className="flex-1 rounded-xl border border-sekkha-hairline-strong py-2.5 text-body-sm font-semibold text-sekkha-ink hover:bg-slate-100 transition-colors cursor-pointer"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="flex-1 rounded-xl bg-sekkha-brand-blue py-2.5 text-body-sm font-bold text-white shadow-sm hover:bg-blue-700 transition-all disabled:opacity-50"
+                  className="flex-1 rounded-xl bg-sekkha-brand-blue py-2.5 text-body-sm font-bold text-white shadow-sm hover:bg-blue-700 transition-all disabled:opacity-50 cursor-pointer"
                 >
-                  {submitting ? "Menyimpan..." : "Simpan Perubahan"}
+                  {submitting ? "Menyimpan..." : "Simpan Peran"}
                 </button>
               </div>
             </form>
@@ -861,24 +969,24 @@ export function TeamsPage() {
       {/* MODAL 3: Member QR Card & Printable Physical ID                           */}
       {/* ───────────────────────────────────────────────────────────────────────── */}
       {qrMember && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in">
-          <div className="relative w-full max-w-md rounded-3xl border border-sekkha-hairline bg-white p-6 shadow-2xl space-y-5">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-3.5 sm:p-4 animate-in fade-in">
+          <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl sm:rounded-3xl border border-sekkha-hairline bg-white p-4 sm:p-6 shadow-2xl space-y-4 sm:space-y-5">
             <div className="flex items-center justify-between border-b border-sekkha-hairline-soft pb-3">
               <div className="flex items-center gap-2">
                 <SparklesIcon className="size-5 text-sekkha-brand-blue" />
-                <h3 className="text-heading-6 font-extrabold text-sekkha-ink">Kartu Anggota & QR Code</h3>
+                <h3 className="text-body-base sm:text-heading-6 font-extrabold text-sekkha-ink">Kartu Anggota & QR Code</h3>
               </div>
               <button
                 type="button"
                 onClick={() => setQrMember(null)}
-                className="rounded-full p-1.5 text-sekkha-slate hover:bg-slate-100"
+                className="rounded-full p-1.5 text-sekkha-slate hover:bg-slate-100 cursor-pointer"
               >
                 <XIcon className="size-5" />
               </button>
             </div>
 
             {/* The ID Card Preview */}
-            <div className="rounded-2xl border-2 border-sekkha-brand-blue/30 bg-gradient-to-br from-blue-50/50 via-white to-indigo-50/40 p-5 shadow-sm space-y-4">
+            <div className="rounded-2xl border-2 border-sekkha-brand-blue/30 bg-gradient-to-br from-blue-50/50 via-white to-indigo-50/40 p-4 sm:p-5 shadow-sm space-y-4">
               <div className="flex items-center justify-between border-b border-sekkha-hairline-soft pb-2.5">
                 <div>
                   <p className="text-caption-bold text-sekkha-ink">Vihara Sekkha Jakarta</p>
@@ -900,7 +1008,7 @@ export function TeamsPage() {
                 </div>
 
                 <div className="text-center space-y-0.5">
-                  <p className="text-heading-6 font-extrabold text-sekkha-ink">{qrMember.name}</p>
+                  <p className="text-body-base sm:text-heading-6 font-extrabold text-sekkha-ink">{qrMember.name}</p>
                   <p className="font-mono text-caption-bold text-sekkha-brand-blue">{qrMember.user_number || "—"}</p>
                   {qrMember.school && <p className="text-micro text-sekkha-slate">🏫 {qrMember.school}</p>}
                 </div>
@@ -917,7 +1025,7 @@ export function TeamsPage() {
               <button
                 type="button"
                 onClick={() => handleCopy(qrMember.user_number)}
-                className="flex-1 flex items-center justify-center gap-1.5 rounded-xl border border-sekkha-hairline-strong py-2.5 text-body-sm font-semibold text-sekkha-ink hover:bg-slate-50 transition-colors"
+                className="flex-1 flex items-center justify-center gap-1.5 rounded-xl border border-sekkha-hairline-strong py-2.5 text-body-sm font-semibold text-sekkha-ink hover:bg-slate-50 transition-colors cursor-pointer"
               >
                 {copiedId ? <CheckIcon className="size-4 text-emerald-600" /> : <CopyIcon className="size-4 text-sekkha-slate" />}
                 <span>{copiedId ? "Tersalin!" : "Salin No. Unik"}</span>
@@ -926,7 +1034,7 @@ export function TeamsPage() {
               <button
                 type="button"
                 onClick={() => window.print()}
-                className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-sekkha-brand-blue py-2.5 text-body-sm font-bold text-white shadow-sm hover:bg-blue-700 transition-all"
+                className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-sekkha-brand-blue py-2.5 text-body-sm font-bold text-white shadow-sm hover:bg-blue-700 transition-all cursor-pointer"
               >
                 <PrinterIcon className="size-4" />
                 <span>Cetak Kartu</span>
@@ -940,8 +1048,8 @@ export function TeamsPage() {
       {/* MODAL 4: Delete Confirmation                                              */}
       {/* ───────────────────────────────────────────────────────────────────────── */}
       {deletingMember && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 animate-in fade-in">
-          <div className="relative w-full max-w-sm rounded-3xl border border-sekkha-hairline bg-white p-6 shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-3.5 sm:p-4 animate-in fade-in">
+          <div className="relative w-full max-w-sm max-h-[90vh] overflow-y-auto rounded-2xl sm:rounded-3xl border border-sekkha-hairline bg-white p-4 sm:p-6 shadow-2xl space-y-4">
             <div className="flex items-center gap-3">
               <div className="flex size-10 items-center justify-center rounded-2xl bg-red-100 text-red-600">
                 <Trash2Icon className="size-5" />
@@ -960,7 +1068,7 @@ export function TeamsPage() {
               <button
                 type="button"
                 onClick={() => setDeletingMember(null)}
-                className="flex-1 rounded-xl border border-sekkha-hairline-strong py-2 text-body-sm font-semibold text-sekkha-ink hover:bg-slate-100 transition-colors"
+                className="flex-1 rounded-xl border border-sekkha-hairline-strong py-2 text-body-sm font-semibold text-sekkha-ink hover:bg-slate-100 transition-colors cursor-pointer"
               >
                 Batal
               </button>
@@ -968,7 +1076,7 @@ export function TeamsPage() {
                 type="button"
                 onClick={handleDeleteMember}
                 disabled={submitting}
-                className="flex-1 rounded-xl bg-red-600 py-2 text-body-sm font-bold text-white shadow-sm hover:bg-red-700 transition-all disabled:opacity-50"
+                className="flex-1 rounded-xl bg-red-600 py-2 text-body-sm font-bold text-white shadow-sm hover:bg-red-700 transition-all disabled:opacity-50 cursor-pointer"
               >
                 {submitting ? "Menghapus..." : "Hapus"}
               </button>
@@ -981,8 +1089,8 @@ export function TeamsPage() {
       {/* MODAL 5: Invite Staff (Admin only)                                        */}
       {/* ───────────────────────────────────────────────────────────────────────── */}
       {showInviteModal && isAdmin && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 animate-in fade-in">
-          <div className="relative w-full max-w-md rounded-3xl border border-sekkha-hairline bg-white p-6 shadow-2xl space-y-5">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-3.5 sm:p-4 animate-in fade-in">
+          <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl sm:rounded-3xl border border-sekkha-hairline bg-white p-4 sm:p-6 shadow-2xl space-y-4 sm:space-y-5">
             <div className="flex items-center justify-between border-b border-sekkha-hairline-soft pb-3">
               <div className="flex items-center gap-2">
                 <UserPlusIcon className="size-5 text-sekkha-brand-blue" />

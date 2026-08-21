@@ -15,6 +15,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as SignUpRouteImport } from './routes/sign-up'
 import { Route as AuthenticatedInsightRouteImport } from './routes/_authenticated/insight'
 import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated/notifications'
+import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
 import { Route as AuthenticatedPengurusContributionRouteImport } from './routes/_authenticated/pengurus-contribution'
 import { Route as AuthenticatedRecencyAlertsRouteImport } from './routes/_authenticated/recency-alerts'
 import { Route as AuthenticatedTeamsRouteImport } from './routes/_authenticated/teams'
@@ -62,6 +63,11 @@ const AuthenticatedNotificationsRoute =
     path: '/notifications',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedOnboardingRoute = AuthenticatedOnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedPengurusContributionRoute =
   AuthenticatedPengurusContributionRouteImport.update({
     id: '/pengurus-contribution',
@@ -163,6 +169,7 @@ export interface FileRoutesByFullPath {
   '/sign-up': typeof SignUpRoute
   '/insight': typeof AuthenticatedInsightRoute
   '/notifications': typeof AuthenticatedNotificationsRoute
+  '/onboarding': typeof AuthenticatedOnboardingRoute
   '/pengurus-contribution': typeof AuthenticatedPengurusContributionRoute
   '/recency-alerts': typeof AuthenticatedRecencyAlertsRoute
   '/teams': typeof AuthenticatedTeamsRoute
@@ -186,6 +193,7 @@ export interface FileRoutesByTo {
   '/sign-up': typeof SignUpRoute
   '/insight': typeof AuthenticatedInsightRoute
   '/notifications': typeof AuthenticatedNotificationsRoute
+  '/onboarding': typeof AuthenticatedOnboardingRoute
   '/pengurus-contribution': typeof AuthenticatedPengurusContributionRoute
   '/recency-alerts': typeof AuthenticatedRecencyAlertsRoute
   '/teams': typeof AuthenticatedTeamsRoute
@@ -211,6 +219,7 @@ export interface FileRoutesById {
   '/sign-up': typeof SignUpRoute
   '/_authenticated/insight': typeof AuthenticatedInsightRoute
   '/_authenticated/notifications': typeof AuthenticatedNotificationsRoute
+  '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
   '/_authenticated/pengurus-contribution': typeof AuthenticatedPengurusContributionRoute
   '/_authenticated/recency-alerts': typeof AuthenticatedRecencyAlertsRoute
   '/_authenticated/teams': typeof AuthenticatedTeamsRoute
@@ -236,6 +245,7 @@ export interface FileRouteTypes {
     | '/sign-up'
     | '/insight'
     | '/notifications'
+    | '/onboarding'
     | '/pengurus-contribution'
     | '/recency-alerts'
     | '/teams'
@@ -259,6 +269,7 @@ export interface FileRouteTypes {
     | '/sign-up'
     | '/insight'
     | '/notifications'
+    | '/onboarding'
     | '/pengurus-contribution'
     | '/recency-alerts'
     | '/teams'
@@ -283,6 +294,7 @@ export interface FileRouteTypes {
     | '/sign-up'
     | '/_authenticated/insight'
     | '/_authenticated/notifications'
+    | '/_authenticated/onboarding'
     | '/_authenticated/pengurus-contribution'
     | '/_authenticated/recency-alerts'
     | '/_authenticated/teams'
@@ -350,6 +362,13 @@ declare module '@tanstack/react-router' {
       path: '/notifications'
       fullPath: '/notifications'
       preLoaderRoute: typeof AuthenticatedNotificationsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/onboarding': {
+      id: '/_authenticated/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof AuthenticatedOnboardingRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/pengurus-contribution': {
@@ -470,6 +489,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteChildren {
   AuthenticatedInsightRoute: typeof AuthenticatedInsightRoute
   AuthenticatedNotificationsRoute: typeof AuthenticatedNotificationsRoute
+  AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
   AuthenticatedPengurusContributionRoute: typeof AuthenticatedPengurusContributionRoute
   AuthenticatedRecencyAlertsRoute: typeof AuthenticatedRecencyAlertsRoute
   AuthenticatedTeamsRoute: typeof AuthenticatedTeamsRoute
@@ -491,6 +511,7 @@ interface AuthenticatedRouteChildren {
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedInsightRoute: AuthenticatedInsightRoute,
   AuthenticatedNotificationsRoute: AuthenticatedNotificationsRoute,
+  AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,
   AuthenticatedPengurusContributionRoute:
     AuthenticatedPengurusContributionRoute,
   AuthenticatedRecencyAlertsRoute: AuthenticatedRecencyAlertsRoute,

@@ -106,26 +106,63 @@ usersRouter.patch("/me", requireAuth, async (req, res, next) => {
     const { z } = await import("zod")
     const body = z.object({
       name: z.string().min(1).optional(),
-      school: z.string().optional(),
-      avatar_url: z.string().url().optional(),
+      school: z.string().optional().nullable(),
+      phone: z.string().optional().nullable(),
+      birth_date: z.string().optional().nullable(),
+      gender: z.string().optional().nullable(),
+      avatar_url: z.string().url().optional().nullable(),
     }).parse(req.body)
 
     const userId = req.user!.userId
-    const user = await prisma.user.update({
+
+    const existing = await (prisma.user as any).findUnique({ where: { id: userId } })
+    let userNumber = existing?.userNumber
+    if (!userNumber) {
+      const now = new Date()
+      const yy = now.getFullYear().toString()
+      const mm = String(now.getMonth() + 1).padStart(2, "0")
+      const dd = String(now.getDate()).padStart(2, "0")
+      const prefix = `${yy}${mm}${dd}`
+      const count = await prisma.user.count({ where: { userNumber: { startsWith: prefix } } })
+      userNumber = `${prefix}${String(count + 1).padStart(4, "0")}`
+    }
+
+    const user = await (prisma.user as any).update({
       where: { id: userId },
       data: {
-        ...(body.name && { name: body.name }),
-        ...(body.school !== undefined && { school: body.school }),
+        ...(body.name && { name: body.name.trim() }),
+        ...(body.school !== undefined && { school: body.school ? body.school.trim() : null }),
+        ...(body.phone !== undefined && { phone: body.phone ? body.phone.trim() : null }),
+        ...(body.birth_date !== undefined && {
+          birthDate: body.birth_date ? new Date(body.birth_date) : null,
+        }),
+        ...(body.gender !== undefined && { gender: body.gender ? body.gender.trim() : null }),
         ...(body.avatar_url !== undefined && { avatarUrl: body.avatar_url }),
+        userNumber,
       },
-      select: { id: true, name: true, school: true, avatarUrl: true },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        school: true,
+        phone: true,
+        birthDate: true,
+        gender: true,
+        avatarUrl: true,
+        userNumber: true,
+        role: true,
+      },
     })
 
     // Invalidate profile cache
     const { invalidate, CacheKeys } = await import("../../../lib/cache")
     await invalidate(CacheKeys.userProfile(userId))
 
-    res.json(user)
+    res.json({
+      ...user,
+      birth_date: user.birthDate ? new Date(user.birthDate).toISOString() : null,
+      user_number: user.userNumber,
+    })
   } catch (err) {
     next(err)
   }

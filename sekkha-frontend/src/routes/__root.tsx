@@ -19,15 +19,12 @@ export const Route = createRootRoute({
       {
         title: "Sekkha Vihara Community App",
       },
+      {
+        name: "description",
+        content: "Sekkha Vihara Community App — Platform presensi kebaktian, gamifikasi poin, streak keaktifan, dan manajemen umat terpadu.",
+      },
     ],
     links: [
-      {
-        rel: "preload",
-        href: "/fonts/roobert-pro-medium.woff2",
-        as: "font",
-        type: "font/woff2",
-        crossOrigin: "anonymous",
-      },
       {
         rel: "stylesheet",
         href: appCss,
@@ -68,23 +65,25 @@ function RootComponent() {
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="id">
       <head>
         <HeadContent />
       </head>
       <body>
         {children}
-        <TanStackDevtools
-          config={{
-            position: "bottom-right",
-          }}
-          plugins={[
-            {
-              name: "Tanstack Router",
-              render: <TanStackRouterDevtoolsPanel />,
-            },
-          ]}
-        />
+        {import.meta.env.DEV && (
+          <TanStackDevtools
+            config={{
+              position: "bottom-right",
+            }}
+            plugins={[
+              {
+                name: "Tanstack Router",
+                render: <TanStackRouterDevtoolsPanel />,
+              },
+            ]}
+          />
+        )}
         <Scripts />
       </body>
     </html>

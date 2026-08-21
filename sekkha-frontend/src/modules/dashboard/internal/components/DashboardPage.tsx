@@ -41,32 +41,44 @@ export function DashboardPage() {
   const [showQrModal, setShowQrModal] = useState(false)
   const [userProfile, setUserProfile] = useState<any>(null)
 
+  const [streakData, setStreakData] = useState<any>(null)
   const [events, setEvents] = useState<any[]>([])
   const [announcements] = useState<any[]>([])
   const [missions] = useState<any[]>([])
 
   useEffect(() => {
+    let isMounted = true
     async function loadDashboardData() {
-      try {
-        const data = await api.get<any[]>("/events")
-        setEvents(data)
-      } catch {
-        setEvents([])
+      const promises: Promise<any>[] = [api.get<any[]>("/events")]
+      if (authState.status === "authenticated") {
+        promises.push(api.get<any>("/users/me"))
+        promises.push(api.get<any>("/users/me/streak"))
       }
 
-      if (authState.status === "authenticated") {
-        try {
-          const profile = await api.get<any>("/users/me")
-          setUserProfile(profile)
-        } catch {}
+      const results = await Promise.allSettled(promises)
+      if (!isMounted) return
+
+      if (results[0]?.status === "fulfilled") {
+        setEvents(results[0].value || [])
+      }
+      if (results[1]?.status === "fulfilled") {
+        setUserProfile(results[1].value)
+      }
+      if (results[2]?.status === "fulfilled") {
+        setStreakData(results[2].value)
       }
     }
     loadDashboardData()
+    return () => {
+      isMounted = false
+    }
   }, [authState.status])
 
   const role = authState.status === "authenticated" ? (authState.role ?? "umat") : "umat"
   const displayName = userProfile?.name || (role.charAt(0).toUpperCase() + role.slice(1))
   const memberId = userProfile?.user_number || userProfile?.userNumber || userProfile?.id || (authState.userId ? `SKH-${authState.userId.slice(-4)}` : "SKH-8821")
+  const totalPoints = userProfile?.points ?? 0
+  const currentStreak = streakData?.current_streak ?? 0
   const activeEvent = events.length > 0 ? events[0] : null
 
   return (
@@ -87,35 +99,24 @@ export function DashboardPage() {
               
               {/* Profile Info Section */}
               <div className="flex flex-col items-center sm:flex-row sm:items-center gap-3 sm:gap-4 min-w-0 w-full sm:w-auto">
-                {/* Profile Picture & Level Badge */}
-              <div className="flex flex-col items-center shrink-0 gap-1.5">
-                  <div className="flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-2xl bg-sekkha-brand-yellow text-heading-5 sm:text-heading-4 font-extrabold text-sekkha-ink ring-4 ring-white/90 shadow-xs">
+                {/* Profile Picture */}
+                <div className="flex flex-col items-center shrink-0">
+                  <div className="flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-2xl bg-gradient-to-tr from-amber-400 to-amber-300 text-heading-5 sm:text-heading-4 font-extrabold text-sekkha-ink ring-4 ring-white/90 shadow-xs">
                     {displayName.split(" ").slice(0, 2).map((w: string) => w[0]).join("")}
                   </div>
-                  <span className="rounded-full bg-sekkha-brand-yellow/25 border border-sekkha-brand-yellow/50 px-2.5 py-0.5 text-xs font-bold text-sekkha-yellow-dark shadow-2xs">
-                    Lv. 1
-                  </span>
                 </div>
 
-                {/* Text Info: Name -> Status Title -> XP Progress Bar */}
+                {/* Text Info: Name -> Role & Points */}
                 <div className="min-w-0 flex-1 flex flex-col items-center sm:items-start text-center sm:text-left">
                   <h1 className="text-body-base sm:text-body-lg font-bold text-sekkha-ink truncate">
                     Namo Buddhaya, {displayName}! 👋
                   </h1>
-                  <p className="text-micro sm:text-caption font-medium text-sekkha-slate mt-0.5 truncate">
-                    Remaja Sekkha
-                  </p>
-
-                  {/* Level Progress Bar */}
-                  <div className="mt-2 flex items-center gap-2 w-full max-w-[200px] sm:max-w-[220px] justify-center sm:justify-start">
-                    <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-sekkha-surface/90 border border-slate-200/60">
-                      <div
-                        className="h-full rounded-full bg-sekkha-brand-yellow transition-all duration-500"
-                        style={{ width: `0%` }}
-                      />
-                    </div>
-                    <span className="text-micro font-medium text-sekkha-slate shrink-0">
-                      0/100 XP
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="rounded-full bg-blue-50 border border-blue-200/80 px-2.5 py-0.5 text-micro-bold text-sekkha-brand-blue capitalize">
+                      {role}
+                    </span>
+                    <span className="text-micro font-medium text-sekkha-slate font-mono">
+                      ID: {memberId}
                     </span>
                   </div>
                 </div>
@@ -127,19 +128,19 @@ export function DashboardPage() {
                 
                 {/* Stats pills: Streak & Poin */}
                 <div className="flex items-center justify-center gap-2 w-full sm:w-auto shrink-0">
-                  <div className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 rounded-xl bg-sekkha-coral-light/40 border border-sekkha-brand-red/30 px-3.5 py-1.5 backdrop-blur-xs">
-                    <FlameIcon className="size-4 text-sekkha-ink shrink-0 animate-pulse" />
+                  <div className="flex-1 sm:flex-initial flex items-center justify-center gap-2 rounded-xl bg-orange-50 border border-orange-200/80 px-3.5 py-1.5 shadow-2xs">
+                    <FlameIcon className="size-4 text-orange-500 shrink-0 animate-pulse" />
                     <div className="text-left">
-                      <p className="text-[10px] text-sekkha-slate uppercase font-semibold leading-none">Streak</p>
-                      <p className="text-caption-bold font-bold text-sekkha-ink leading-tight">0 Minggu 🔥</p>
+                      <p className="text-[10px] text-orange-700 uppercase font-bold leading-none">Streak</p>
+                      <p className="text-caption-bold font-black text-orange-950 leading-tight">{currentStreak}x Aktif</p>
                     </div>
                   </div>
 
-                  <div className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 rounded-xl bg-sekkha-surface-yellow/80 border border-sekkha-brand-yellow/50 px-3.5 py-1.5 backdrop-blur-xs">
-                    <AwardIcon className="size-4 text-sekkha-ink shrink-0" />
+                  <div className="flex-1 sm:flex-initial flex items-center justify-center gap-2 rounded-xl bg-amber-50 border border-amber-200/80 px-3.5 py-1.5 shadow-2xs">
+                    <AwardIcon className="size-4 text-amber-600 shrink-0" />
                     <div className="text-left">
-                      <p className="text-[10px] text-sekkha-slate uppercase font-semibold leading-none">Poin</p>
-                      <p className="text-caption-bold font-bold text-sekkha-ink leading-tight">0 ⭐</p>
+                      <p className="text-[10px] text-amber-700 uppercase font-bold leading-none">Poin</p>
+                      <p className="text-caption-bold font-black text-amber-950 leading-tight">{totalPoints.toLocaleString("id-ID")} Pts</p>
                     </div>
                   </div>
                 </div>

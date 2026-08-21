@@ -21,7 +21,6 @@ import { getMasterBadges } from "../masterdata"
 interface AttendanceListSheetProps {
   records: AttendanceRecord[]
   role: UserRole | null
-  totalRsvp?: number
   isClosed?: boolean
   onUpdateBadges?: (userId: string, badges: AttendanceBadge[]) => void
   onDeleteRecord?: (userId: string) => void

@@ -1,7 +1,7 @@
 // feature/events/components/EventCard
 // Event card in the list — dynamic category colors from Master Data.
 
-import { CalendarIcon, MapPinIcon, UsersIcon, ChevronRightIcon } from "lucide-react"
+import { CalendarIcon, MapPinIcon, ChevronRightIcon } from "lucide-react"
 import type { EventListItem } from "../types"
 import { getCategoryColor } from "../masterdata"
 
@@ -90,10 +90,6 @@ export function EventCard({ event, onClick }: EventCardProps) {
               <div className="flex items-center gap-1.5 font-medium">
                 <MapPinIcon className="size-3.5 shrink-0 text-sekkha-brand-blue" aria-hidden="true" />
                 <span className="truncate">{event.location}</span>
-              </div>
-              <div className="flex items-center gap-1.5 text-micro-bold text-sekkha-slate/80">
-                <UsersIcon className="size-3.5 shrink-0 text-amber-500" aria-hidden="true" />
-                <span>{event.rsvp_count} Peserta Hadir</span>
               </div>
             </div>
           </div>

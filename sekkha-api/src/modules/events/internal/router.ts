@@ -24,15 +24,8 @@ eventsRouter.get("/", requireAuth, async (req, res, next) => {
       return prisma.event.findMany({
         where: { status: "published" },
         orderBy: { eventDate: "asc" },
-        include: { _count: { select: { rsvps: { where: { status: "hadir" } } } } },
       })
     })
-
-    const userId = req.user!.userId
-    const myRsvps = await prisma.rsvp.findMany({
-      where: { userId, eventId: { in: events.map(e => e.id) } },
-    })
-    const rsvpMap = Object.fromEntries(myRsvps.map(r => [r.eventId, r.status]))
 
     res.json(events.map(e => ({
       id: e.id,
@@ -45,8 +38,6 @@ eventsRouter.get("/", requireAuth, async (req, res, next) => {
       event_type: e.eventType || "kebaktian",
       tag: e.tag || "Umum",
       status: e.status || "published",
-      rsvp_count: e._count?.rsvps ?? 0,
-      my_rsvp: rsvpMap[e.id] ?? null,
       qr_code: e.qrCode ? { code: e.qrCode, expires_at: null } : null,
     })))
   } catch (err) { next(err) }
@@ -58,18 +49,18 @@ eventsRouter.get("/:id", requireAuth, async (req, res, next) => {
     const id = req.params.id as string
     const event = await prisma.event.findUnique({
       where: { id },
-      include: { _count: { select: { rsvps: { where: { status: "hadir" } } } } },
     })
     if (!event) { res.status(404).json({ error: "Event tidak ditemukan" }); return }
 
-    const myRsvp = await prisma.rsvp.findUnique({
-      where: { userId_eventId: { userId: req.user!.userId, eventId: event.id } },
-    })
-
     res.json({
-      id: event.id, title: event.title, description: event.description, location: event.location,
-      event_date: typeof event.eventDate === "string" ? event.eventDate : new Date(event.eventDate).toISOString(), event_type: event.eventType, tag: event.tag,
-      status: event.status, rsvp_count: event._count.rsvps, my_rsvp: myRsvp?.status ?? null,
+      id: event.id,
+      title: event.title,
+      description: event.description,
+      location: event.location,
+      event_date: typeof event.eventDate === "string" ? event.eventDate : new Date(event.eventDate).toISOString(),
+      event_type: event.eventType,
+      tag: event.tag,
+      status: event.status,
       qr_code: event.qrCode ? { code: event.qrCode, expires_at: null } : null,
     })
   } catch (err) { next(err) }
@@ -107,30 +98,6 @@ eventsRouter.put("/:id", requireAuth, requireRole("pengurus", "admin"), async (r
     })
     await invalidatePattern("events:*")
     res.json({ id: event.id, title: event.title })
-  } catch (err) { next(err) }
-})
-
-// DELETE /api/events/:id (pengurus/admin)
-eventsRouter.delete("/:id", requireAuth, requireRole("pengurus", "admin"), async (req, res, next) => {
-  try {
-    const id = req.params.id as string
-    await prisma.event.delete({ where: { id } })
-    await invalidatePattern("events:*")
-    res.json({ success: true })
-  } catch (err) { next(err) }
-})
-
-// POST /api/events/:id/rsvp
-eventsRouter.post("/:id/rsvp", requireAuth, async (req, res, next) => {
-  try {
-    const id = req.params.id as string
-    const { status } = z.object({ status: z.enum(["hadir", "tidak_hadir"]) }).parse(req.body)
-    await prisma.rsvp.upsert({
-      where: { userId_eventId: { userId: req.user!.userId, eventId: id } },
-      update: { status }, create: { userId: req.user!.userId, eventId: id, status },
-    })
-    await invalidatePattern("events:*")
-    res.json({ success: true, status })
   } catch (err) { next(err) }
 })
 
@@ -228,6 +195,7 @@ eventsRouter.delete("/:id", requireAuth, requireRole("pengurus", "admin"), async
     await prisma.rsvp.deleteMany({ where: { eventId: id } })
     await prisma.attendance.deleteMany({ where: { eventId: id } })
     await prisma.event.delete({ where: { id } })
+    await invalidatePattern("events:*")
     await invalidate(CacheKeys.events())
     res.json({ message: "Event berhasil dihapus" })
   } catch (err) { next(err) }

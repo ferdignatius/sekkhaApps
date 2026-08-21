@@ -21,20 +21,20 @@ import {
 } from "lucide-react"
 import { AttendanceScanModal } from "./AttendanceScanModal"
 import { AttendanceListSheet } from "./AttendanceListSheet"
-import type { EventListItem, RsvpStatus, UserRole, AttendanceRecord, EventStatus } from "../types"
+import type { EventListItem, UserRole, AttendanceRecord, EventStatus } from "../types"
 import { getCategoryColor } from "../masterdata"
 
 interface EventDetailSheetProps {
   event: EventListItem
   role: UserRole | null
   onClose?: () => void
-  onRsvp?: (eventId: string, status: RsvpStatus) => void
   onEdit?: (event: EventListItem) => void
   onDelete?: (event: EventListItem) => void
   onDuplicate?: (event: EventListItem) => void
   onStatusChange?: (eventId: string, status: EventStatus) => void
   attendances?: AttendanceRecord[]
   onRecordAttendance?: (eventId: string, record: AttendanceRecord) => void
+  onDeleteAttendance?: (userId: string) => void
 }
 
 function formatFullDate(iso: string) {
@@ -63,6 +63,7 @@ export function EventDetailSheet({
   onStatusChange,
   attendances = [],
   onRecordAttendance,
+  onDeleteAttendance,
 }: EventDetailSheetProps) {
   const isPengurus = role === "pengurus" || role === "admin"
   const [showScan, setShowScan] = useState(false)
@@ -268,7 +269,7 @@ export function EventDetailSheet({
           <div className="min-w-0 flex-1">
             <p className="text-micro font-bold uppercase tracking-wider text-sekkha-slate">Total Yang Datang</p>
             <p className="text-caption-bold text-sekkha-ink mt-0.5">
-              {attendances.length > 0 ? attendances.length : event.rsvp_count} Orang
+              {attendances.length} Orang
             </p>
             <p className="text-micro font-medium text-emerald-600 mt-0.5">Tercatat Presensi</p>
           </div>
@@ -373,8 +374,8 @@ export function EventDetailSheet({
         <AttendanceListSheet
           records={attendances}
           role={role}
-          totalRsvp={event.rsvp_count}
           isClosed={isClosed}
+          onDeleteRecord={onDeleteAttendance}
         />
       </div>
 

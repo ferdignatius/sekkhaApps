@@ -4,7 +4,9 @@
 // - Streak + attendance calendar
 // - Settings hidden behind gear button (modal/drawer)
 
+import { useState, useEffect } from "react"
 import { useAuth } from "@/modules/auth"
+import { api } from "@/lib/api"
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
 import { ProfileCard } from "./ProfileCard"
 import { MemberQrCard } from "./MemberQrCard"
@@ -12,13 +14,34 @@ import { StatsHero } from "./StatsHero"
 import { AttendanceTracker } from "./AttendanceTracker"
 import { AchievementsCard, DUMMY_BADGES } from "./AchievementsCard"
 
+interface UserProfile {
+  id: string
+  name: string
+  email: string
+  school?: string | null
+  role: string
+  user_number?: string | null
+  userNumber?: string | null
+  avatarUrl?: string | null
+  createdAt?: string
+}
+
 export function ProfilePage() {
   const { authState } = useAuth()
+  const [profile, setProfile] = useState<UserProfile | null>(null)
 
-  const isAdmin =
-    authState.status === "authenticated" && authState.userId === "admin-user-1"
-  const displayName = isAdmin ? "Admin Sekkha" : "Pengguna"
-  const school = isAdmin ? "SMA Negeri 1 Sekkha" : "—"
+  useEffect(() => {
+    if (authState.status === "authenticated") {
+      api.get<UserProfile>("/users/me")
+        .then((data) => setProfile(data))
+        .catch(() => {})
+    }
+  }, [authState.status])
+
+  const displayName = profile?.name || (authState.role ? authState.role.charAt(0).toUpperCase() + authState.role.slice(1) : "Pengguna Sekkha")
+  const school = profile?.school || "—"
+  const memberId = profile?.user_number || profile?.userNumber || profile?.id || (authState.userId ? `SKH-${authState.userId.slice(-4)}` : "SKH-8821")
+  const joinedAt = profile?.createdAt || "2025-07-01"
 
   return (
     <main>
@@ -35,13 +58,14 @@ export function ProfilePage() {
           <ProfileCard
             name={displayName}
             school={school}
-            joinedAt="2025-07-01"
+            joinedAt={joinedAt}
+            avatarUrl={profile?.avatarUrl || undefined}
           />
 
           {/* Member QR Card (Digital & Printable Physical Vihara Card) */}
           <MemberQrCard
             memberName={displayName}
-            memberId={isAdmin ? "SKH-0001" : "SKH-8821"}
+            memberId={memberId}
           />
 
           {/* Stats hero — rank & points prominent (fix #1) */}

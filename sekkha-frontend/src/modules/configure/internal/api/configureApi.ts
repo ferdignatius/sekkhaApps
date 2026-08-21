@@ -33,6 +33,32 @@ export interface EventTypeDto {
 
 export type AchievementDto = BadgeDto // same shape
 
+export interface SeasonDto {
+  id: string
+  name: string
+  code?: string | null
+  start_date: string
+  end_date: string
+  is_active: boolean
+  target_attendance: number
+  bonus_points: number
+  description?: string | null
+  total_attendances?: number
+  created_at?: string
+}
+
+// ─── Seasons ─────────────────────────────────────────────────────────────────
+
+export const seasonsApi = {
+  list: () => api.get<SeasonDto[]>("/configure/seasons"),
+  create: (data: Omit<SeasonDto, "id" | "total_attendances" | "created_at">) =>
+    api.post<SeasonDto>("/configure/seasons", data),
+  update: (id: string, data: Partial<SeasonDto>) =>
+    api.put<SeasonDto>(`/configure/seasons/${id}`, data),
+  remove: (id: string) => api.delete(`/configure/seasons/${id}`),
+  activate: (id: string) => api.post<{ success: boolean; season: SeasonDto }>(`/configure/seasons/${id}/activate`),
+}
+
 // ─── Badges ──────────────────────────────────────────────────────────────────
 
 export const badgesApi = {

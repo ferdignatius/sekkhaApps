@@ -78,9 +78,6 @@ const PODIUM_CONFIG: Record<1 | 2 | 3, {
   },
 }
 
-// Season countdown
-const SEASON_DAYS_LEFT = 12
-
 // ─── Helper Functions ─────────────────────────────────────────────────────────
 
 function getCompetitionHint(
@@ -192,6 +189,16 @@ export function LeaderboardPage() {
   const [metric, setMetric] = useState<LeaderboardMetric>("points")
   const [entries, setEntries] = useState<LeaderboardEntry[]>([])
   const [myRankData, setMyRankData] = useState<any>(null)
+  const [seasonData, setSeasonData] = useState<{
+    name: string
+    code?: string | null
+    start_date: string
+    end_date: string
+    days_left: number
+    target_attendance: number
+    bonus_points: number
+    description?: string | null
+  } | null>(null)
   const [communityGoal, setCommunityGoal] = useState({
     current: 0,
     target: 500,
@@ -207,10 +214,14 @@ export function LeaderboardPage() {
       const res = await api.get<{
         entries: LeaderboardEntry[]
         my_rank: any
+        season?: any
         community_goal?: { current: number; target: number; label: string }
       }>(`/leaderboard?metric=${metric}`)
       setEntries(res.entries ?? [])
       setMyRankData(res.my_rank ?? null)
+      if (res.season) {
+        setSeasonData(res.season)
+      }
       if (res.community_goal) {
         setCommunityGoal(res.community_goal)
       }
@@ -255,8 +266,13 @@ export function LeaderboardPage() {
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="rounded-full bg-amber-400/20 border border-amber-400/40 px-2.5 py-0.5 text-micro-bold text-amber-900 font-extrabold">
-                      {seasonLabel(season)}
+                      {seasonData?.name || seasonLabel(season)}
                     </span>
+                    {seasonData?.start_date && seasonData?.end_date && (
+                      <span className="hidden sm:inline text-micro text-sekkha-slate font-medium">
+                        ({new Date(seasonData.start_date).toLocaleDateString("id-ID", { day: "numeric", month: "short" })} — {new Date(seasonData.end_date).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })})
+                      </span>
+                    )}
                   </div>
                   <h1 className="text-body-base sm:text-heading-5 font-black text-sekkha-ink mt-0.5">
                     Papan Peringkat Komunitas
@@ -266,7 +282,7 @@ export function LeaderboardPage() {
 
               <div className="flex items-center gap-2 self-start sm:self-auto rounded-full bg-white/80 border border-white/90 px-3 py-1 text-micro-bold text-sekkha-slate shadow-xs backdrop-blur-md">
                 <TimerIcon className="size-3.5 text-sekkha-brand-blue shrink-0 animate-pulse" />
-                <span>Berakhir dalam <strong>{SEASON_DAYS_LEFT} hari</strong></span>
+                <span>Berakhir dalam <strong>{seasonData?.days_left ?? 14} hari</strong></span>
               </div>
             </div>
           </div>
@@ -465,7 +481,7 @@ export function LeaderboardPage() {
                         Kamu
                       </span>
                     </div>
-                    <p className="text-micro text-sekkha-slate font-medium">{seasonLabel(season)}</p>
+                    <p className="text-micro text-sekkha-slate font-medium">{seasonData?.name || seasonLabel(season)}</p>
                   </div>
                 </div>
 
@@ -512,7 +528,7 @@ export function LeaderboardPage() {
 
                 <div className="rounded-2xl bg-amber-500/10 border border-amber-500/20 p-3 text-micro font-bold text-amber-900 flex items-start gap-2">
                   <SparklesIcon className="size-4 text-amber-600 shrink-0 mt-0.5" />
-                  <span>Jika target 500 absensi tercapai, seluruh umat Vihara akan mendapat bonus <strong className="text-amber-950">+100 Poin ekstra</strong>!</span>
+                  <span>Jika target {seasonData?.target_attendance ?? communityGoal.target} absensi tercapai, seluruh umat Vihara akan mendapat bonus <strong className="text-amber-950">+{seasonData?.bonus_points ?? 100} Poin ekstra</strong>!</span>
                 </div>
               </div>
 

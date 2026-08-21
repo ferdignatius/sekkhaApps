@@ -30,6 +30,7 @@ import { Route as AuthenticatedConfigureMasterBadgeRouteImport } from './routes/
 import { Route as AuthenticatedConfigureMasterEventTimeRouteImport } from './routes/_authenticated/configure/master/event-time'
 import { Route as AuthenticatedConfigureMasterEventTypeRouteImport } from './routes/_authenticated/configure/master/event-type'
 import { Route as AuthenticatedConfigureMasterLevelRouteImport } from './routes/_authenticated/configure/master/level'
+import { Route as AuthenticatedConfigureMasterSeasonRouteImport } from './routes/_authenticated/configure/master/season'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -149,6 +150,12 @@ const AuthenticatedConfigureMasterLevelRoute =
     path: '/configure/master/level',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedConfigureMasterSeasonRoute =
+  AuthenticatedConfigureMasterSeasonRouteImport.update({
+    id: '/configure/master/season',
+    path: '/configure/master/season',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -171,6 +178,7 @@ export interface FileRoutesByFullPath {
   '/configure/master/event-time': typeof AuthenticatedConfigureMasterEventTimeRoute
   '/configure/master/event-type': typeof AuthenticatedConfigureMasterEventTypeRoute
   '/configure/master/level': typeof AuthenticatedConfigureMasterLevelRoute
+  '/configure/master/season': typeof AuthenticatedConfigureMasterSeasonRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -193,6 +201,7 @@ export interface FileRoutesByTo {
   '/configure/master/event-time': typeof AuthenticatedConfigureMasterEventTimeRoute
   '/configure/master/event-type': typeof AuthenticatedConfigureMasterEventTypeRoute
   '/configure/master/level': typeof AuthenticatedConfigureMasterLevelRoute
+  '/configure/master/season': typeof AuthenticatedConfigureMasterSeasonRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -217,6 +226,7 @@ export interface FileRoutesById {
   '/_authenticated/configure/master/event-time': typeof AuthenticatedConfigureMasterEventTimeRoute
   '/_authenticated/configure/master/event-type': typeof AuthenticatedConfigureMasterEventTypeRoute
   '/_authenticated/configure/master/level': typeof AuthenticatedConfigureMasterLevelRoute
+  '/_authenticated/configure/master/season': typeof AuthenticatedConfigureMasterSeasonRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -241,6 +251,7 @@ export interface FileRouteTypes {
     | '/configure/master/event-time'
     | '/configure/master/event-type'
     | '/configure/master/level'
+    | '/configure/master/season'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -263,6 +274,7 @@ export interface FileRouteTypes {
     | '/configure/master/event-time'
     | '/configure/master/event-type'
     | '/configure/master/level'
+    | '/configure/master/season'
   id:
     | '__root__'
     | '/'
@@ -286,6 +298,7 @@ export interface FileRouteTypes {
     | '/_authenticated/configure/master/event-time'
     | '/_authenticated/configure/master/event-type'
     | '/_authenticated/configure/master/level'
+    | '/_authenticated/configure/master/season'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -444,6 +457,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedConfigureMasterLevelRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/configure/master/season': {
+      id: '/_authenticated/configure/master/season'
+      path: '/configure/master/season'
+      fullPath: '/configure/master/season'
+      preLoaderRoute: typeof AuthenticatedConfigureMasterSeasonRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
   }
 }
 
@@ -465,6 +485,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedConfigureMasterEventTimeRoute: typeof AuthenticatedConfigureMasterEventTimeRoute
   AuthenticatedConfigureMasterEventTypeRoute: typeof AuthenticatedConfigureMasterEventTypeRoute
   AuthenticatedConfigureMasterLevelRoute: typeof AuthenticatedConfigureMasterLevelRoute
+  AuthenticatedConfigureMasterSeasonRoute: typeof AuthenticatedConfigureMasterSeasonRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
@@ -493,6 +514,8 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
     AuthenticatedConfigureMasterEventTypeRoute,
   AuthenticatedConfigureMasterLevelRoute:
     AuthenticatedConfigureMasterLevelRoute,
+  AuthenticatedConfigureMasterSeasonRoute:
+    AuthenticatedConfigureMasterSeasonRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(

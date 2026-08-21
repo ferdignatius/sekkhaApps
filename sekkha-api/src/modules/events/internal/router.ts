@@ -151,20 +151,49 @@ eventsRouter.post("/:id/attendance", requireAuth, async (req, res, next) => {
       return
     }
 
+    // Check if user already attended
+    const existing = await prisma.attendance.findUnique({
+      where: { userId_eventId: { userId: targetUserId, eventId: id } },
+    })
+
+    const isNew = !existing
+    const pointsAwarded = 50
+
     // Upsert attendance record so duplicate scan/manual entry doesn't crash
     const attendance = await prisma.attendance.upsert({
       where: { userId_eventId: { userId: targetUserId, eventId: id } },
       update: { method, scannedAt: new Date() },
-      create: { userId: targetUserId, eventId: id, method },
+      create: { userId: targetUserId, eventId: id, method, pointsEarned: pointsAwarded },
     })
 
-    // Update DB last_activity_at on User
-    await prisma.user.update({
-      where: { id: targetUserId },
-      data: { lastActivityAt: attendance.scannedAt },
-    }).catch(() => {})
+    // Award points and log transaction for new attendance
+    if (isNew) {
+      await prisma.user.update({
+        where: { id: targetUserId },
+        data: {
+          points: { increment: pointsAwarded },
+          lastActivityAt: attendance.scannedAt,
+        },
+      }).catch(() => {})
+
+      await prisma.pointTransaction.create({
+        data: {
+          userId: targetUserId,
+          amount: pointsAwarded,
+          type: "attendance",
+          description: "Presensi Event",
+          referenceId: attendance.id,
+        },
+      }).catch(() => {})
+    } else {
+      await prisma.user.update({
+        where: { id: targetUserId },
+        data: { lastActivityAt: attendance.scannedAt },
+      }).catch(() => {})
+    }
 
     await invalidate(CacheKeys.userAttendances(targetUserId))
+    await invalidate(CacheKeys.userProfile(targetUserId))
 
     res.status(201).json({
       id: attendance.id,
@@ -173,6 +202,7 @@ eventsRouter.post("/:id/attendance", requireAuth, async (req, res, next) => {
       role: targetUser.role,
       user_number: targetUser.userNumber,
       method: attendance.method,
+      points_earned: pointsAwarded,
       scanned_at: attendance.scannedAt.toISOString(),
     })
   } catch (err) { next(err) }

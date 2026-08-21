@@ -96,3 +96,22 @@ export const achievementsApi = {
     api.put<{ id: string }>(`/configure/achievements/${id}`, data),
   remove: (id: string) => api.delete(`/configure/achievements/${id}`),
 }
+
+// ─── Point Rules (Rules: Non-deletable, Editable) ────────────────────────────
+
+export interface PointRuleDto {
+  id: string
+  code: string
+  label: string
+  points: number
+  description?: string | null
+  category: "attendance" | "streak" | "general"
+  updated_at?: string
+}
+
+export const pointRulesApi = {
+  list: () => api.get<PointRuleDto[]>("/configure/point-rules"),
+  update: (id: string, data: { label?: string; points: number; description?: string | null }) =>
+    api.put<PointRuleDto>(`/configure/point-rules/${id}`, data),
+}
+

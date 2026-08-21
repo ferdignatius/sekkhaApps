@@ -263,9 +263,50 @@ const SeasonSchema = z.object({
 
 configureRouter.get("/seasons", async (_req, res, next) => {
   try {
-    const seasons = await prisma.season.findMany({
-      orderBy: { startDate: "desc" },
-    })
+    let seasons = await prisma.season.findMany({ orderBy: { createdAt: "asc" } })
+
+    // Auto-seed the 3 standard season types if empty or missing standard codes
+    const standardSeasons = [
+      {
+        code: "semester",
+        name: "Season Semester (6 Bulan)",
+        startDate: new Date("2026-01-01T00:00:00Z"),
+        endDate: new Date("2026-06-30T23:59:59Z"),
+        isActive: true, // Default active
+        targetAttendance: 500,
+        bonusPoints: 100,
+        description: "Season resmi semesteran 6 bulan untuk akumulasi poin & persaingan klasemen leaderboard.",
+      },
+      {
+        code: "quarterly",
+        name: "Season Kuartal (3 Bulan)",
+        startDate: new Date("2026-01-01T00:00:00Z"),
+        endDate: new Date("2026-03-31T23:59:59Z"),
+        isActive: false,
+        targetAttendance: 250,
+        bonusPoints: 50,
+        description: "Season 3 bulanan per kuartal (Q1, Q2, Q3, Q4) untuk evaluasi berkala.",
+      },
+      {
+        code: "annual",
+        name: "Season Tahunan (1 Tahun Penuh)",
+        startDate: new Date("2026-01-01T00:00:00Z"),
+        endDate: new Date("2026-12-31T23:59:59Z"),
+        isActive: false,
+        targetAttendance: 1000,
+        bonusPoints: 250,
+        description: "Season akbar tahunan selama 1 tahun kalender vihara penuh.",
+      },
+    ]
+
+    for (const def of standardSeasons) {
+      const exists = await prisma.season.findFirst({ where: { code: def.code } })
+      if (!exists) {
+        await prisma.season.create({ data: def })
+      }
+    }
+
+    seasons = await prisma.season.findMany({ orderBy: { createdAt: "asc" } })
 
     const results = await Promise.all(
       seasons.map(async (s) => {
@@ -376,4 +417,85 @@ configureRouter.post("/seasons/:id/activate", async (req, res, next) => {
     res.json({ success: true, season })
   } catch (err) { next(err) }
 })
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// RULES: POINTS CONFIGURATION (Non-deletable, Editable)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const DEFAULT_POINT_RULES = [
+  {
+    code: "attendance_rutin",
+    label: "Poin Presensi Kegiatan Rutin",
+    points: 50,
+    category: "attendance",
+    description: "Poin standar yang didapatkan umat saat melakukan presensi pada kebaktian rutin mingguan.",
+  },
+  {
+    code: "attendance_special",
+    label: "Poin Presensi Kegiatan Khusus",
+    points: 100,
+    category: "attendance",
+    description: "Poin untuk kehadiran pada acara spesial seperti perayaan hari besar (Waisak, Kathina, Asadha) atau retreat.",
+  },
+  {
+    code: "streak_weekly_bonus",
+    label: "Bonus Konsistensi (Streak Mingguan)",
+    points: 30,
+    category: "streak",
+    description: "Bonus poin tambahan yang diberikan saat umat mempertahankan kehadiran berturut-turut tanpa terputus.",
+  },
+  {
+    code: "first_attendance_bonus",
+    label: "Bonus Presensi Pertama Kali",
+    points: 25,
+    category: "general",
+    description: "Poin sambutan perdana bagi umat baru yang baru pertama kali mencatatkan presensi di vihara.",
+  },
+]
+
+configureRouter.get("/point-rules", async (_req, res, next) => {
+  try {
+    const pointRuleModel = (prisma as any).pointRule
+    let rules = await pointRuleModel.findMany({ orderBy: { category: "asc" } })
+
+    // Auto-seed default rules if database is empty
+    if (rules.length === 0) {
+      for (const def of DEFAULT_POINT_RULES) {
+        await pointRuleModel.upsert({
+          where: { code: def.code },
+          update: {},
+          create: def,
+        })
+      }
+      rules = await pointRuleModel.findMany({ orderBy: { category: "asc" } })
+    }
+
+    res.json(rules)
+  } catch (err) { next(err) }
+})
+
+const PointRuleUpdateSchema = z.object({
+  label: z.string().min(1).optional(),
+  points: z.number().int().min(0),
+  description: z.string().optional().nullable(),
+})
+
+configureRouter.put("/point-rules/:id", async (req, res, next) => {
+  try {
+    const body = PointRuleUpdateSchema.parse(req.body)
+    const pointRuleModel = (prisma as any).pointRule
+
+    const updated = await pointRuleModel.update({
+      where: { id: req.params.id },
+      data: {
+        ...(body.label && { label: body.label }),
+        points: body.points,
+        ...(body.description !== undefined && { description: body.description }),
+      },
+    })
+
+    res.json(updated)
+  } catch (err) { next(err) }
+})
+
 

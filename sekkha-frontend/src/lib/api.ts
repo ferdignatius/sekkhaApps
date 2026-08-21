@@ -20,7 +20,7 @@ function authHeaders(): HeadersInit {
     "Content-Type": "application/json",
   }
   const token = getToken()
-  if (token && token !== "dummy.admin.token") {
+  if (token) {
     headers["Authorization"] = `Bearer ${token}`
   }
   return headers
@@ -43,8 +43,18 @@ export async function apiFetch<T = unknown>(
   })
 
   if (!response.ok) {
-    const body = await response.json().catch(() => ({ error: "Request failed" }))
-    const error = new Error(body.error || `HTTP ${response.status}`)
+    let errorMsg = `HTTP ${response.status}`
+    let body: any = null
+    try {
+      const text = await response.text()
+      try {
+        body = JSON.parse(text)
+        errorMsg = body.error || body.message || errorMsg
+      } catch {
+        errorMsg = text || errorMsg
+      }
+    } catch {}
+    const error = new Error(errorMsg)
     ;(error as any).status = response.status
     ;(error as any).body = body
     throw error

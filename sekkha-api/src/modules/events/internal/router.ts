@@ -13,6 +13,7 @@ const CreateEventSchema = z.object({
   event_date: z.string(),
   event_type: z.enum(["rutin", "special"]),
   tag: z.string().optional(),
+  status: z.enum(["draft", "published", "active", "closed", "cancelled"]).optional(),
 })
 
 const UpdateEventSchema = CreateEventSchema.partial()
@@ -22,7 +23,7 @@ eventsRouter.get("/", requireAuth, async (req, res, next) => {
   try {
     const events = await cached(CacheKeys.events(), 60, async () => {
       return prisma.event.findMany({
-        where: { status: "published" },
+        where: { status: { in: ["published", "active", "closed"] } },
         orderBy: { eventDate: "asc" },
       })
     })
@@ -72,11 +73,19 @@ eventsRouter.post("/", requireAuth, requireRole("pengurus", "admin"), async (req
     const body = CreateEventSchema.parse(req.body)
     const qrCode = `EVT-${Date.now().toString(36).toUpperCase()}`
     const event = await prisma.event.create({
-      data: { title: body.title, description: body.description, location: body.location,
-        eventDate: new Date(body.event_date), eventType: body.event_type, tag: body.tag, qrCode },
+      data: {
+        title: body.title,
+        description: body.description,
+        location: body.location,
+        eventDate: new Date(body.event_date),
+        eventType: body.event_type,
+        tag: body.tag,
+        status: body.status ?? "published",
+        qrCode,
+      },
     })
     await invalidatePattern("events:*")
-    res.status(201).json({ id: event.id, title: event.title, qr_code: { code: qrCode, expires_at: null } })
+    res.status(201).json({ id: event.id, title: event.title, status: event.status, qr_code: { code: qrCode, expires_at: null } })
   } catch (err) { next(err) }
 })
 
@@ -94,10 +103,29 @@ eventsRouter.put("/:id", requireAuth, requireRole("pengurus", "admin"), async (r
         ...(body.event_date && { eventDate: new Date(body.event_date) }),
         ...(body.event_type && { eventType: body.event_type }),
         ...(body.tag !== undefined && { tag: body.tag }),
+        ...(body.status && { status: body.status }),
       },
     })
     await invalidatePattern("events:*")
-    res.json({ id: event.id, title: event.title })
+    res.json({ id: event.id, title: event.title, status: event.status })
+  } catch (err) { next(err) }
+})
+
+// PATCH /api/events/:id/status — update event lifecycle status (pengurus/admin)
+eventsRouter.patch("/:id/status", requireAuth, requireRole("pengurus", "admin"), async (req, res, next) => {
+  try {
+    const id = req.params.id as string
+    const { status } = z.object({
+      status: z.enum(["draft", "published", "active", "closed", "cancelled"]),
+    }).parse(req.body)
+
+    const event = await prisma.event.update({
+      where: { id },
+      data: { status },
+    })
+
+    await invalidatePattern("events:*")
+    res.json({ id: event.id, status: event.status })
   } catch (err) { next(err) }
 })
 

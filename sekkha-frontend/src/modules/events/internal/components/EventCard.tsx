@@ -1,7 +1,7 @@
 // feature/events/components/EventCard
 // Event card in the list — dynamic category colors from Master Data.
 
-import { CalendarIcon, MapPinIcon, ChevronRightIcon } from "lucide-react"
+import { CalendarIcon, MapPinIcon, ChevronRightIcon, LockIcon } from "lucide-react"
 import type { EventListItem } from "../types"
 import { getCategoryColor } from "../masterdata"
 
@@ -38,6 +38,7 @@ export function EventCard({ event, onClick }: EventCardProps) {
   const tag = event.tag ?? event.event_type ?? "rutin"
   const colorInfo = getCategoryColor(tag)
   const isLive = isTodayEvent(event.event_date)
+  const status = event.status ?? "published"
 
   return (
     <div className="py-2.5 first:pt-0 last:pb-0 border-b border-sekkha-hairline-soft last:border-b-0 text-left font-sans">
@@ -56,7 +57,7 @@ export function EventCard({ event, onClick }: EventCardProps) {
 
           {/* Content — left */}
           <div className="min-w-0 flex-1">
-            {/* Type tag & Live badge */}
+            {/* Type tag & Status Badges */}
             <div className="flex flex-wrap items-center gap-2">
               <span
                 className="rounded-full px-2.5 py-0.5 text-micro-bold capitalize border font-bold shadow-2xs"
@@ -65,13 +66,48 @@ export function EventCard({ event, onClick }: EventCardProps) {
                 {colorInfo.name}
               </span>
 
-              {isLive && (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-300/80 px-2.5 py-0.5 text-micro-bold text-emerald-800 shadow-2xs">
-                  <span className="relative flex size-2">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                    <span className="relative inline-flex size-2 rounded-full bg-emerald-500" />
-                  </span>
-                  <span>Sedang Berlangsung Hari Ini</span>
+              {/* Status: Active */}
+              {status === "active" && (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 border border-emerald-300 px-2.5 py-0.5 text-micro-bold text-emerald-800 animate-pulse shadow-2xs">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
+                  Presensi Aktif
+                </span>
+              )}
+
+              {/* Status: Closed */}
+              {(status === "closed" || status === "done") && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 border border-slate-300 px-2.5 py-0.5 text-micro-bold text-slate-700 shadow-2xs">
+                  <LockIcon className="size-3 text-slate-500" />
+                  Selesai
+                </span>
+              )}
+
+              {/* Status: Cancelled */}
+              {status === "cancelled" && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 border border-rose-300 px-2.5 py-0.5 text-micro-bold text-rose-800 shadow-2xs">
+                  Dibatalkan
+                </span>
+              )}
+
+              {/* Status: Draft */}
+              {status === "draft" && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 border border-amber-300 px-2.5 py-0.5 text-micro-bold text-amber-800 shadow-2xs">
+                  Draft
+                </span>
+              )}
+
+              {/* Status: Published / Upcoming */}
+              {status === "published" && !isLive && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 border border-blue-200 px-2.5 py-0.5 text-micro-bold text-blue-700 shadow-2xs">
+                  Terjadwal
+                </span>
+              )}
+
+              {/* Live today indicator */}
+              {status === "published" && isLive && (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 border border-blue-200 px-2.5 py-0.5 text-micro-bold text-blue-700 shadow-2xs">
+                  <span className="h-1.5 w-1.5 rounded-full bg-blue-600" />
+                  Hari Ini
                 </span>
               )}
             </div>

@@ -1,8 +1,8 @@
-import { HeadContent, Scripts, createRootRoute } from "@tanstack/react-router"
+import { useEffect } from "react"
+import { HeadContent, Scripts, createRootRoute, Outlet, useRouter } from "@tanstack/react-router"
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools"
 import { TanStackDevtools } from "@tanstack/react-devtools"
-import { AuthProvider } from "@/modules/auth"
-import { RouterAuthSync } from "@/router"
+import { AuthProvider, useAuth } from "@/modules/auth"
 
 import appCss from "../styles.css?url"
 
@@ -17,7 +17,7 @@ export const Route = createRootRoute({
         content: "width=device-width, initial-scale=1",
       },
       {
-        title: "TanStack Start Starter",
+        title: "Sekkha Vihara Community App",
       },
     ],
     links: [
@@ -34,6 +34,7 @@ export const Route = createRootRoute({
       },
     ],
   }),
+  component: RootComponent,
   notFoundComponent: () => (
     <main className="container mx-auto p-4 pt-16">
       <h1>404</h1>
@@ -43,6 +44,28 @@ export const Route = createRootRoute({
   shellComponent: RootDocument,
 })
 
+function RouterAuthSync() {
+  const router = useRouter()
+  const { authState } = useAuth()
+
+  useEffect(() => {
+    router.update({
+      context: { authState },
+    })
+  }, [router, authState])
+
+  return null
+}
+
+function RootComponent() {
+  return (
+    <AuthProvider>
+      <RouterAuthSync />
+      <Outlet />
+    </AuthProvider>
+  )
+}
+
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
@@ -50,10 +73,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body>
-        <AuthProvider>
-          <RouterAuthSync />
-          {children}
-        </AuthProvider>
+        {children}
         <TanStackDevtools
           config={{
             position: "bottom-right",

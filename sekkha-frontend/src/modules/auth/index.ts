@@ -9,6 +9,7 @@ export { AuthProvider } from "./internal/context/AuthContext"
 export { useAuth } from "./internal/hooks/useAuth"
 export { SignUpPage } from "./internal/components/SignUpPage"
 export { LoginPage } from "./internal/components/LoginPage"
+export { OnboardingPage } from "./internal/components/OnboardingPage"
 
 // ── Type exports ────────────────────────────────────────────────────────────
 export type { AuthState, AuthStatus, UserRole } from "./internal/context/authReducer"

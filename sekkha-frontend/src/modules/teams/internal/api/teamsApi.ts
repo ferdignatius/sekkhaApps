@@ -13,6 +13,7 @@ export interface MemberDto {
   user_number?: string | null
   is_claimed: boolean
   claimed_at?: string | null
+  claim_pin?: string | null
   total_attendance?: number
   points?: number
   created_at: string
@@ -69,17 +70,19 @@ export interface InvitationDto {
 }
 
 export interface LinkLegacyAccountPayload {
-  target_user_id: string
-  verification_value: string
+  claim_pin: string
+  target_user_id?: string
 }
 
 export interface LinkLegacyAccountResponse {
-  status: string
+  status?: string
+  success?: boolean
   data: {
     merged_attendances_count: number
     merged_badges_count: number
     new_total_points: number
-    claimed_user_number: string
+    claimed_user_number?: string
+    merged_user_name?: string
   }
   message: string
 }
@@ -102,6 +105,17 @@ export const teamsApi = {
 
   deleteMember: (id: string) => api.delete<{ success: boolean; message: string }>(`/teams/members/${id}`),
 
+  generateClaimPin: (id: string) =>
+    api.post<{
+      success: boolean
+      claim_pin: string
+      user_number: string
+      name: string
+      phone?: string
+      expires_at: string
+      message: string
+    }>(`/teams/members/${id}/generate-claim-pin`),
+
   listInvitations: () => api.get<InvitationDto[]>("/teams/invitations"),
 
   sendInvitation: (data: { email: string; role: "pengurus" | "aktivis" }) =>
@@ -110,3 +124,4 @@ export const teamsApi = {
   linkLegacyAccount: (data: LinkLegacyAccountPayload) =>
     api.post<LinkLegacyAccountResponse>("/users/link-legacy-account", data),
 }
+

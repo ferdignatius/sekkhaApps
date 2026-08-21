@@ -57,7 +57,11 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   // ── Build nav items dari Registry (Exclude notifications & profile as it's in user dropdown) ─────
   const mainNavItems = activeModules
     .flatMap((m) => m.navItems)
-    .filter((item) => item.to !== "/notifications" && item.to !== "/home/profile")
+    .filter((item) => {
+      if (item.to === "/notifications" || item.to === "/home/profile") return false
+      if (role === "umat" && item.to === "/teams") return false
+      return true
+    })
   const pengurusNavItems = activeModules.flatMap((m) => m.pengurusNavItems ?? [])
   const configureSections = activeModules.flatMap((m) => m.configureSections ?? [])
 

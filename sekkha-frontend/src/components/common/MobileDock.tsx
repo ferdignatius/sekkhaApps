@@ -337,20 +337,22 @@ export function MobileDock() {
           <span className="text-[10px] font-bold">Events</span>
         </Link>
 
-        {/* 3. Tim */}
-        <Link
-          to="/teams"
-          onClick={() => setShowMoreMenu(false)}
-          aria-current={pathname.startsWith("/teams") ? "page" : undefined}
-          className={`flex flex-col items-center gap-0.5 rounded-xl px-2.5 py-1.5 text-micro transition-all ${
-            pathname.startsWith("/teams")
-              ? "bg-sekkha-brand-blue/10 text-sekkha-brand-blue font-bold"
-              : "text-sekkha-slate hover:text-sekkha-ink"
-          }`}
-        >
-          <UsersIcon className={`size-5 transition-transform ${pathname.startsWith("/teams") ? "scale-110 text-sekkha-brand-blue" : ""}`} />
-          <span className="text-[10px] font-bold">People</span>
-        </Link>
+        {/* 3. People (Hidden for Umat) */}
+        {role !== "umat" && (
+          <Link
+            to="/teams"
+            onClick={() => setShowMoreMenu(false)}
+            aria-current={pathname.startsWith("/teams") ? "page" : undefined}
+            className={`flex flex-col items-center gap-0.5 rounded-xl px-2.5 py-1.5 text-micro transition-all ${
+              pathname.startsWith("/teams")
+                ? "bg-sekkha-brand-blue/10 text-sekkha-brand-blue font-bold"
+                : "text-sekkha-slate hover:text-sekkha-ink"
+            }`}
+          >
+            <UsersIcon className={`size-5 transition-transform ${pathname.startsWith("/teams") ? "scale-110 text-sekkha-brand-blue" : ""}`} />
+            <span className="text-[10px] font-bold">People</span>
+          </Link>
+        )}
 
         {/* 4. Top (Leaderboard) */}
         <Link

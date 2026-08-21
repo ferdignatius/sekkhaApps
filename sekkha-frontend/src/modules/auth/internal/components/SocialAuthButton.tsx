@@ -1,39 +1,23 @@
-// Feature: auth-flow
-// SocialAuthButton — Google OAuth initiation button.
-// Requirements: 8.1, 8.2, 8.4, 8.5, 8.6, 8.7
-
+import { useState } from "react"
 import { AuthError } from "../context/authReducer"
 import { useAuth } from "../hooks/useAuth"
 
 interface SocialAuthButtonProps {
   provider: "google"
+  mode?: "login" | "sign-up"
   onError?: (message: string) => void
 }
 
-/**
- * Renders a full-width secondary button (`button-secondary` token) that
- * initiates the Google OAuth flow via `authService.initiateGoogleOAuth()`.
- *
- * Props:
- * - `provider` — currently only "google" is supported
- * - `onError?`  — called with a human-readable message if the OAuth flow fails
- *
- * On click, delegates to `authService` (via `useAuth`) so the OAuth redirect
- * logic lives in one place rather than in the component (req 8.4).
- * Any `AuthError` is mapped to the appropriate message and surfaced via
- * `onError` (req 8.6, 8.7).
- *
- * Styling follows the `button-secondary` design token:
- *   background transparent · border sekkha-hairline-strong · text sekkha-ink
- *   rounded-full · width 100%
- */
-export function SocialAuthButton({ provider: _provider, onError }: SocialAuthButtonProps) {
+export function SocialAuthButton({ provider: _provider, mode = "login", onError }: SocialAuthButtonProps) {
   const { initiateGoogleOAuth } = useAuth()
+  const [isRedirecting, setIsRedirecting] = useState(false)
 
   function handleClick() {
     try {
+      setIsRedirecting(true)
       initiateGoogleOAuth()
     } catch (error) {
+      setIsRedirecting(false)
       if (error instanceof AuthError) {
         switch (error.code) {
           case "OAUTH_CANCELLED":
@@ -52,23 +36,25 @@ export function SocialAuthButton({ provider: _provider, onError }: SocialAuthBut
     <button
       type="button"
       onClick={handleClick}
+      disabled={isRedirecting}
       className="
         inline-flex w-full items-center justify-center gap-3
-        rounded-full border border-sekkha-hairline-strong bg-transparent
-        px-6 py-3
-        text-body-sm-medium text-sekkha-ink
-        transition-colors hover:bg-sekkha-surface
-        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sekkha-primary focus-visible:ring-offset-2
+        rounded-2xl border border-sekkha-hairline-strong bg-white
+        px-5 py-3
+        text-body-sm font-semibold text-sekkha-ink shadow-sm
+        transition-all duration-200 hover:bg-slate-50 hover:border-slate-300 hover:shadow active:scale-[0.99]
+        disabled:opacity-60 disabled:pointer-events-none
+        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2
       "
     >
-      {/* Google "G" SVG icon — 20×20 (req 8.1, 8.2) */}
+      {/* Google "G" SVG Icon */}
       <svg
         aria-hidden="true"
         focusable="false"
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 24 24"
-        width="20"
-        height="20"
+        width="18"
+        height="18"
       >
         <path
           d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09Z"
@@ -88,7 +74,7 @@ export function SocialAuthButton({ provider: _provider, onError }: SocialAuthBut
         />
       </svg>
 
-      Lanjutkan dengan Google
+      <span>{mode === "sign-up" ? "Daftar dengan Google" : "Masuk dengan Google"}</span>
     </button>
   )
 }

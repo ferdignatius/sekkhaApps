@@ -1,8 +1,5 @@
-// Feature: auth-flow
-// AuthFormField — labeled input field with inline error and ARIA integration.
-// Requirements: 1.3–1.6, 3.1–3.8, 10.2–10.4, 10.6
-
 import { useState } from "react"
+import { EyeIcon, EyeOffIcon, MailIcon, LockIcon, UserIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface AuthFormFieldProps {
@@ -10,79 +7,108 @@ interface AuthFormFieldProps {
   label: string
   type: "email" | "password" | "text"
   value: string
+  placeholder?: string
   onChange: (value: string) => void
   onBlur?: () => void
   error?: string | null
 }
 
-/**
- * A single labeled form field with:
- * - Explicit label → input linkage via htmlFor / id (req 10.2)
- * - Dynamic border states: default, focused, error, focused+error
- * - aria-invalid + aria-describedby wired to the inline error element (req 10.3)
- * - Minimum 44px touch target height (req 9.5)
- * - Visible focus ring (req 10.4)
- */
 export function AuthFormField({
   id,
   label,
   type,
   value,
+  placeholder,
   onChange,
   onBlur,
   error,
 }: AuthFormFieldProps) {
+  const [showPassword, setShowPassword] = useState(false)
   const [isFocused, setIsFocused] = useState(false)
   const hasError = Boolean(error)
   const errorId = `${id}-error`
 
+  const isPasswordType = type === "password"
+  const resolvedType = isPasswordType ? (showPassword ? "text" : "password") : type
+
   return (
     <div className="flex flex-col gap-1.5">
-      {/* Label — body-sm-medium typography (14px/500), sekkha-ink color */}
-      <label
-        htmlFor={id}
-        className="text-body-sm-medium text-sekkha-ink"
-      >
+      {/* Label */}
+      <label htmlFor={id} className="text-caption font-bold text-sekkha-ink">
         {label}
       </label>
 
-      {/* Input — text-input token: canvas bg, min-height 44px, rounded-md */}
-      <input
-        id={id}
-        type={type}
-        value={value}
-        autoComplete={type === "email" ? "email" : type === "password" ? "current-password" : "off"}
-        aria-invalid={hasError ? "true" : "false"}
-        aria-describedby={hasError ? errorId : undefined}
-        onFocus={() => setIsFocused(true)}
-        onBlur={() => {
-          setIsFocused(false)
-          onBlur?.()
-        }}
-        onChange={(e) => onChange(e.target.value)}
-        className={cn(
-          // Base — text-input token
-          "w-full rounded-md bg-sekkha-canvas px-4 py-3 text-sekkha-ink",
-          "text-body-sm-medium min-h-[44px]",
-          "outline-none transition-all duration-100",
-          "focus-visible:ring-2 focus-visible:ring-offset-2",
-          // Border state: default (no error, no focus)
-          !hasError && !isFocused && "border border-sekkha-hairline-strong",
-          // Border state: focused without error → brand-blue 2px
-          !hasError && isFocused && "border-2 border-sekkha-brand-blue focus-visible:ring-sekkha-brand-blue",
-          // Border state: error without focus → brand-red-dark 1px
-          hasError && !isFocused && "border border-sekkha-brand-red-dark",
-          // Border state: focused with error → brand-red-dark 2px
-          hasError && isFocused && "border-2 border-sekkha-brand-red-dark focus-visible:ring-sekkha-brand-red-dark",
-        )}
-      />
+      {/* Input container with leading icon and optional toggle */}
+      <div className="relative flex items-center">
+        {/* Leading Icon */}
+        <div className="pointer-events-none absolute left-3.5 flex items-center text-sekkha-slate">
+          {type === "email" && <MailIcon className="size-4.5" />}
+          {type === "password" && <LockIcon className="size-4.5" />}
+          {type === "text" && <UserIcon className="size-4.5" />}
+        </div>
 
-      {/* Inline error message — caption typography (13px/400), sekkha-brand-red-dark */}
+        <input
+          id={id}
+          type={resolvedType}
+          value={value}
+          placeholder={
+            placeholder ||
+            (type === "email"
+              ? "nama@email.com"
+              : type === "password"
+              ? "••••••••"
+              : "")
+          }
+          autoComplete={
+            type === "email"
+              ? "email"
+              : type === "password"
+              ? id === "confirmPassword"
+                ? "new-password"
+                : "current-password"
+              : "off"
+          }
+          aria-invalid={hasError ? "true" : "false"}
+          aria-describedby={hasError ? errorId : undefined}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => {
+            setIsFocused(false)
+            onBlur?.()
+          }}
+          onChange={(e) => onChange(e.target.value)}
+          className={cn(
+            "w-full rounded-2xl bg-slate-50/80 pl-11 pr-11 py-3 text-body-sm text-sekkha-ink outline-none transition-all duration-200 placeholder:text-slate-400",
+            "border",
+            // State: Default
+            !hasError && !isFocused && "border-sekkha-hairline-strong hover:border-slate-400 bg-slate-50/60",
+            // State: Focused
+            !hasError && isFocused && "border-sekkha-brand-blue bg-white shadow-sm ring-2 ring-blue-500/10",
+            // State: Error
+            hasError && "border-red-400 bg-red-50/30 text-red-900 focus:border-red-500 focus:ring-2 focus:ring-red-500/10",
+          )}
+        />
+
+        {/* Trailing Show/Hide Password Toggle */}
+        {isPasswordType && (
+          <button
+            type="button"
+            tabIndex={-1}
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-3.5 flex items-center justify-center text-sekkha-slate hover:text-sekkha-ink focus:outline-none transition-colors p-1 rounded-lg"
+            title={showPassword ? "Sembunyikan password" : "Tampilkan password"}
+          >
+            {showPassword ? (
+              <EyeOffIcon className="size-4" />
+            ) : (
+              <EyeIcon className="size-4" />
+            )}
+          </button>
+        )}
+      </div>
+
+      {/* Inline Error Message */}
       {hasError && (
-        <p
-          id={errorId}
-          className="text-caption text-sekkha-brand-red-dark"
-        >
+        <p id={errorId} className="text-micro font-medium text-red-600 animate-in fade-in">
           {error}
         </p>
       )}

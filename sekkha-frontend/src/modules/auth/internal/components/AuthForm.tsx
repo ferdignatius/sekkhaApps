@@ -1,13 +1,8 @@
-// Feature: auth-flow
-// AuthForm — shared form component for Sign Up and Login modes.
-// Requirements: 1.2–1.6, 2.2–2.6, 3.9, 7.5, 7.7, 8.1–8.3, 9.5, 9.6, 10.1, 10.5, 10.6
-
 import { Link } from "@tanstack/react-router"
+import { ArrowRightIcon } from "lucide-react"
 import { AuthErrorBanner } from "./AuthErrorBanner"
 import { AuthFormField } from "./AuthFormField"
 import { SocialAuthButton } from "./SocialAuthButton"
-
-// ─── Types ─────────────────────────────────────────────────────────────────────
 
 type AuthFormMode = "sign-up" | "login"
 
@@ -16,9 +11,7 @@ interface AuthFormProps {
   onSubmit: () => Promise<void>
   isLoading: boolean
   apiError: string | null
-  /** Called when the user types in any field — used to dismiss the error banner */
   onInputChange?: () => void
-  /** Called when Google OAuth encounters an error — used to show the error banner */
   onOAuthError?: (message: string) => void
   fields: {
     email: string
@@ -34,20 +27,6 @@ interface AuthFormProps {
   onFieldBlur: (field: string) => void
 }
 
-// ─── Component ─────────────────────────────────────────────────────────────────
-
-/**
- * Shared form component rendered by SignUpPage (mode="sign-up") and
- * LoginPage (mode="login").
- *
- * Composition:
- *   AuthErrorBanner (API error)
- *   SocialAuthButton (Google)
- *   "atau" divider
- *   Field(s): email, password, [confirmPassword]
- *   Submit button (disabled + spinner while loading)
- *   Navigation links
- */
 export function AuthForm({
   mode,
   onSubmit,
@@ -76,131 +55,150 @@ export function AuthForm({
     <form
       onSubmit={handleSubmit}
       noValidate
-      className="flex flex-col gap-4"
+      className="flex flex-col gap-5"
       aria-label={isSignUp ? "Formulir pendaftaran" : "Formulir masuk"}
     >
-      {/* API error banner — above all fields (req 7.6) */}
+      {/* Mode Switcher Tabs */}
+      <div className="flex rounded-2xl bg-slate-100/90 p-1 border border-slate-200/60">
+        <Link
+          to="/login"
+          search={{ redirectTo: undefined }}
+          className={`flex-1 rounded-xl py-2 text-center text-caption font-bold transition-all ${
+            !isSignUp
+              ? "bg-white text-sekkha-ink shadow-sm"
+              : "text-sekkha-slate hover:text-sekkha-ink"
+          }`}
+        >
+          Masuk
+        </Link>
+        <Link
+          to="/sign-up"
+          className={`flex-1 rounded-xl py-2 text-center text-caption font-bold transition-all ${
+            isSignUp
+              ? "bg-white text-sekkha-ink shadow-sm"
+              : "text-sekkha-slate hover:text-sekkha-ink"
+          }`}
+        >
+          Daftar Akun
+        </Link>
+      </div>
+
+      {/* API error banner */}
       <AuthErrorBanner message={apiError} />
 
       {/* Google OAuth button */}
-      <SocialAuthButton provider="google" onError={onOAuthError} />
+      <SocialAuthButton
+        provider="google"
+        mode={mode}
+        onError={onOAuthError}
+      />
 
-      {/* Divider "atau" */}
-      <div className="flex items-center gap-3">
-        <div className="h-px flex-1 bg-sekkha-hairline" />
-        <span className="text-[13px] leading-[1.4] text-sekkha-muted">atau</span>
-        <div className="h-px flex-1 bg-sekkha-hairline" />
+      {/* Divider */}
+      <div className="relative flex items-center justify-center">
+        <div className="w-full border-t border-sekkha-hairline" />
+        <span className="absolute bg-white px-3 text-micro font-medium uppercase tracking-wider text-sekkha-slate">
+          atau email
+        </span>
       </div>
 
-      {/* Email field */}
-      <AuthFormField
-        id="email"
-        label="Email"
-        type="email"
-        value={fields.email}
-        onChange={(val) => handleChange("email", val)}
-        onBlur={() => onFieldBlur("email")}
-        error={errors.email}
-      />
-
-      {/* Password field */}
-      <AuthFormField
-        id="password"
-        label="Password"
-        type="password"
-        value={fields.password}
-        onChange={(val) => handleChange("password", val)}
-        onBlur={() => onFieldBlur("password")}
-        error={errors.password}
-      />
-
-      {/* Confirm password — Sign Up only */}
-      {isSignUp && (
+      {/* Fields */}
+      <div className="space-y-4">
+        {/* Email field */}
         <AuthFormField
-          id="confirmPassword"
-          label="Konfirmasi password"
-          type="password"
-          value={fields.confirmPassword ?? ""}
-          onChange={(val) => handleChange("confirmPassword", val)}
-          onBlur={() => onFieldBlur("confirmPassword")}
-          error={errors.confirmPassword}
+          id="email"
+          label="Email"
+          type="email"
+          placeholder="nama@email.com"
+          value={fields.email}
+          onChange={(val) => handleChange("email", val)}
+          onBlur={() => onFieldBlur("email")}
+          error={errors.email}
         />
-      )}
+
+        {/* Password field */}
+        <AuthFormField
+          id="password"
+          label="Password"
+          type="password"
+          placeholder="Minimal 6 karakter"
+          value={fields.password}
+          onChange={(val) => handleChange("password", val)}
+          onBlur={() => onFieldBlur("password")}
+          error={errors.password}
+        />
+
+        {/* Confirm password — Sign Up only */}
+        {isSignUp && (
+          <AuthFormField
+            id="confirmPassword"
+            label="Konfirmasi Password"
+            type="password"
+            placeholder="Ulangi password Anda"
+            value={fields.confirmPassword ?? ""}
+            onChange={(val) => handleChange("confirmPassword", val)}
+            onBlur={() => onFieldBlur("confirmPassword")}
+            error={errors.confirmPassword}
+          />
+        )}
+      </div>
 
       {/* "Lupa password?" link — Login only */}
       {!isSignUp && (
-        <div className="flex justify-end">
+        <div className="flex justify-end -mt-1">
           <a
             href="/forgot-password"
-            className="text-body-sm-medium text-sekkha-brand-blue hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sekkha-primary focus-visible:ring-offset-2"
+            className="text-micro-bold text-sekkha-brand-blue hover:underline"
           >
             Lupa password?
           </a>
         </div>
       )}
 
-      {/* Submit button — full width, disabled while loading (req 3.9, 9.6) */}
+      {/* Submit Button */}
       <button
         type="submit"
         disabled={isLoading}
         className="
-          mt-1 flex w-full items-center justify-center gap-2
-          rounded-full bg-sekkha-primary px-6 py-3
-          text-body-sm-medium text-sekkha-on-primary
-          transition-opacity disabled:pointer-events-none disabled:opacity-50
-          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sekkha-primary focus-visible:ring-offset-2
+          flex w-full items-center justify-center gap-2
+          rounded-2xl bg-gradient-to-r from-sekkha-brand-blue to-blue-600 px-6 py-3.5
+          text-body-sm font-bold text-white shadow-lg shadow-blue-500/20
+          transition-all duration-200 hover:from-blue-600 hover:to-blue-700 hover:shadow-blue-500/30 active:scale-[0.99]
+          disabled:pointer-events-none disabled:opacity-50
+          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2
         "
       >
-        {isLoading && (
-          /* Spinner */
-          <svg
-            aria-hidden="true"
-            className="h-4 w-4 animate-spin"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <circle
-              className="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              strokeWidth="4"
-            />
-            <path
-              className="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4Z"
-            />
-          </svg>
+        {isLoading ? (
+          <>
+            <svg
+              aria-hidden="true"
+              className="size-4 animate-spin"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4Z"
+              />
+            </svg>
+            <span>{isSignUp ? "Mendaftarkan..." : "Memproses Masuk..."}</span>
+          </>
+        ) : (
+          <>
+            <span>{isSignUp ? "Daftar Akun Baru" : "Masuk ke Akun"}</span>
+            <ArrowRightIcon className="size-4" />
+          </>
         )}
-        {isSignUp ? "Daftar" : "Masuk"}
       </button>
-
-      {/* Navigation links */}
-      {isSignUp ? (
-        <p className="text-center text-[13px] leading-[1.4] text-sekkha-slate">
-          Sudah punya akun?{" "}
-          <Link
-            to="/login"
-            search={{ redirectTo: undefined }}
-            className="text-sekkha-brand-blue hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sekkha-primary focus-visible:ring-offset-2"
-          >
-            Masuk
-          </Link>
-        </p>
-      ) : (
-        <p className="text-center text-[13px] leading-[1.4] text-sekkha-slate">
-          Belum punya akun?{" "}
-          <Link
-            to="/sign-up"
-            className="text-sekkha-brand-blue hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sekkha-primary focus-visible:ring-offset-2"
-          >
-            Daftar
-          </Link>
-        </p>
-      )}
     </form>
   )
 }

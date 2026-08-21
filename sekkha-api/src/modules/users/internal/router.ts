@@ -55,22 +55,25 @@ usersRouter.get("/me", requireAuth, async (req, res, next) => {
   }
 })
 
-// GET /api/users/me/badges (cached 300s)
+// GET /api/users/me/badges (cached 60s)
 usersRouter.get("/me/badges", requireAuth, async (req, res, next) => {
   try {
     const userId = req.user!.userId
-    const badges = await cached(CacheKeys.userBadges(userId), 300, async () => {
-      const result = await prisma.userBadge.findMany({
-        where: { userId },
-        include: { badge: true },
-        orderBy: { earnedAt: "desc" },
+    const badges = await cached(CacheKeys.userBadges(userId), 60, async () => {
+      const allBadges = await prisma.badge.findMany({
+        where: { isActive: true },
+        orderBy: { conditionValue: "asc" },
       })
-      return result.map(ub => ({
-        badge_id: ub.badge.id,
-        name: ub.badge.name,
-        icon_url: ub.badge.iconUrl,
-        description: ub.badge.description,
-        earned_at: ub.earnedAt.toISOString(),
+      const userBadges = await prisma.userBadge.findMany({
+        where: { userId },
+      })
+      const userBadgeMap = new Map(userBadges.map(ub => [ub.badgeId, ub.earnedAt.toISOString()]))
+      return allBadges.map(b => ({
+        badge_id: b.id,
+        name: b.name,
+        icon_url: b.iconUrl,
+        description: b.description,
+        earned_at: userBadgeMap.get(b.id) || null,
       }))
     })
     res.json(badges)
@@ -172,32 +175,55 @@ usersRouter.patch("/me", requireAuth, async (req, res, next) => {
   }
 })
 
-// GET /api/users/me/streak
+// GET /api/users/me/streak — true consecutive weekly streak
 usersRouter.get("/me/streak", requireAuth, async (req, res, next) => {
   try {
     const userId = req.user!.userId
-    // Simple streak calculation: count consecutive weeks with attendance
     const attendances = await prisma.attendance.findMany({
       where: { userId },
       orderBy: { scannedAt: "desc" },
       select: { scannedAt: true },
     })
 
-    let currentStreak = 0
-    let longestStreak = 0
-    let streak = 0
-    const now = new Date()
-
-    // Group by week number
-    const weeks = new Set<string>()
-    for (const a of attendances) {
-      const d = new Date(a.scannedAt)
-      const weekKey = `${d.getFullYear()}-W${Math.ceil((d.getDate() + new Date(d.getFullYear(), d.getMonth(), 1).getDay()) / 7)}-${d.getMonth()}`
-      weeks.add(weekKey)
+    if (attendances.length === 0) {
+      return res.json({ current_streak: 0, longest_streak: 0 })
     }
 
-    currentStreak = weeks.size // simplified for MVP
-    longestStreak = currentStreak
+    // Convert dates into ISO week strings "YYYY-WXX"
+    function toWeekKey(date: Date): string {
+      const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()))
+      const dayNum = d.getUTCDay() || 7
+      d.setUTCDate(d.getUTCDate() + 4 - dayNum)
+      const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1))
+      const weekNo = Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7)
+      return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, "0")}`
+    }
+
+    const attendedWeeks = new Set<string>()
+    for (const a of attendances) {
+      attendedWeeks.add(toWeekKey(new Date(a.scannedAt)))
+    }
+
+    const now = new Date()
+    let currentStreak = 0
+
+    // Check consecutive weeks backwards from now
+    let checkDate = new Date(now)
+    let currentWeekKey = toWeekKey(checkDate)
+
+    // If user hasn't checked in this week yet, check if last week was attended
+    if (!attendedWeeks.has(currentWeekKey)) {
+      checkDate.setUTCDate(checkDate.getUTCDate() - 7)
+      currentWeekKey = toWeekKey(checkDate)
+    }
+
+    while (attendedWeeks.has(currentWeekKey)) {
+      currentStreak++
+      checkDate.setUTCDate(checkDate.getUTCDate() - 7)
+      currentWeekKey = toWeekKey(checkDate)
+    }
+
+    const longestStreak = Math.max(currentStreak, attendances.length > 0 ? currentStreak : 0)
 
     res.json({ current_streak: currentStreak, longest_streak: longestStreak })
   } catch (err) {

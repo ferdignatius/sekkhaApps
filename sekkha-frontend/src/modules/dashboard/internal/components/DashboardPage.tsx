@@ -233,53 +233,9 @@ export function DashboardPage() {
                 </div>
               </div>
 
-              {/* ── Integrated Target Kehadiran & Misi Minggu Ini (Glassmorphism Styled) ── */}
+              {/* ── Misi Minggu Ini (Glassmorphism Styled) ── */}
               <div className="relative overflow-hidden rounded-2xl border border-white/80 bg-gradient-to-br from-sekkha-canvas/95 via-white/90 to-teal-50/30 backdrop-blur-md p-4 sm:p-5 shadow-xs transition-all hover:shadow-md">
-                
-                {/* Section 1: Target Kehadiran Bulanan */}
-                <div>
-                  <div className="flex items-center justify-between gap-2 mb-2">
-                    <div className="flex items-center gap-2">
-                      <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-sekkha-brand-blue text-white shadow-xs">
-                        <TargetIcon className="size-4" />
-                      </span>
-                      <h2 className="text-body-sm-medium font-bold text-sekkha-ink">Target Kehadiran Bulan Ini</h2>
-                    </div>
-                    <Link
-                      to="/home/profile"
-                      className="flex items-center gap-1 text-xs font-bold text-sekkha-brand-blue hover:underline shrink-0"
-                      title="Atur target di menu Profil"
-                    >
-                      <SettingsIcon className="size-3" />
-                      <span>Ubah di Profil</span>
-                    </Link>
-                  </div>
-
-                  {/* Target Progress Box */}
-                  <div className="rounded-xl border border-sekkha-brand-blue/20 bg-sekkha-teal-light/20 backdrop-blur-xs p-3.5 space-y-2">
-                    <div className="flex items-center justify-between text-caption font-medium">
-                      <span className="text-sekkha-slate">
-                        Hadir <strong className="text-sekkha-ink font-semibold">0 dari 4</strong> kali (0%)
-                      </span>
-                      <span className="text-sekkha-brand-blue font-semibold flex items-center gap-1">
-                        <TrendingUpIcon className="size-3.5" />
-                        Sisa 4x lagi
-                      </span>
-                    </div>
-
-                    <div className="h-2 w-full overflow-hidden rounded-full bg-sekkha-canvas border border-sekkha-hairline-soft">
-                      <div
-                        className="h-full rounded-full bg-sekkha-brand-blue transition-all duration-500"
-                        style={{ width: `0%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Divider */}
-                <div className="border-t border-sekkha-hairline-soft/80 my-4" />
-
-                {/* Section 2: Misi Minggu Ini */}
+                {/* Misi Minggu Ini */}
                 <div>
                   <div className="mb-2.5 flex items-center justify-between">
                     <div className="flex items-center gap-2">

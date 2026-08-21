@@ -29,9 +29,8 @@ export const configureModule: ModuleDefinition = {
       label: "Gamifikasi",
       icon: "Sparkles",
       items: [
-        { label: "Level Umat", to: "/configure/gamifikasi/level", icon: "Zap", hasRoute: true },
-        { label: "Badge Pencapaian Umat", to: "/configure/gamifikasi/badge", icon: "Award", hasRoute: true },
-        { label: "Achievement", to: "/configure/gamifikasi/achievement", icon: "Trophy", hasRoute: true },
+        { label: "Badge Pencapaian Umat", to: "/configure/master/badge", icon: "Award", hasRoute: true },
+        { label: "Achievement", to: "/configure/master/achievement", icon: "Trophy", hasRoute: true },
       ],
     },
     {

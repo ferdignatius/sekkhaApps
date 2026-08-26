@@ -4,7 +4,7 @@
 
 import { useState } from "react"
 import QRCode from "react-qr-code"
-import { PrinterIcon, DownloadIcon, SparklesIcon, CheckIcon, XIcon, ShieldCheckIcon } from "lucide-react"
+import { PrinterIcon, DownloadIcon, SparklesIcon, CheckIcon, XIcon } from "lucide-react"
 
 interface MemberQrCardProps {
   memberName?: string

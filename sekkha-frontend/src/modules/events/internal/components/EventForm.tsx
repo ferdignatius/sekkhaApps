@@ -5,7 +5,8 @@ import { useState } from "react"
 import { CalendarIcon, MapPinIcon, SparklesIcon, TagIcon, FileTextIcon, AlertCircleIcon, CheckIcon, Wand2Icon } from "lucide-react"
 import { useAuth } from "@/modules/auth"
 import { DateTimePickerPopover } from "@/components/ui/DateTimePickerPopover"
-import type { CreateEventPayload, EventListItem, EventTag } from "../types"
+import { Button, Input } from "@/components/base"
+import type { CreateEventPayload, EventListItem, EventTag, EventType } from "../types"
 import { getAccessibleCategories } from "../masterdata"
 
 interface EventFormProps {
@@ -98,53 +99,60 @@ export function EventForm({
     }
   }
 
-  function validate() {
-    const e: Record<string, string> = {}
-    if (!title.trim()) e.title = "Nama event wajib diisi"
-    if (!eventDate) e.event_date = "Tanggal & waktu wajib diisi"
-    return e
-  }
+  // Form Submission
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
 
-  function handleSubmit(ev: React.FormEvent) {
-    ev.preventDefault()
-    const e = validate()
-    if (Object.keys(e).length > 0) { setErrors(e); return }
+    const errs: Record<string, string> = {}
+    if (!title.trim()) {
+      errs.title = "Nama event wajib diisi"
+    }
+    if (!eventDate) {
+      errs.event_date = "Tanggal dan waktu event wajib diisi"
+    }
+
+    if (Object.keys(errs).length > 0) {
+      setErrors(errs)
+      return
+    }
+
     setErrors({})
     onSubmit({
       title: title.trim(),
-      description: description.trim(),
-      location: location.trim(),
+      description: description.trim() || "",
       event_date: localToIso(eventDate),
-      event_type: tag === "special" ? "special" : "rutin",
-      tag: tag,
+      location: location.trim() ? location.trim() : "Vihara Sekkha",
+      tag,
+      event_type: (tag === "special" ? "special" : "rutin") as EventType,
     })
   }
 
   return (
-    <form onSubmit={handleSubmit} noValidate className="space-y-4 pt-1">
-      
-      {/* 1. TOP POSITION: Unified Event Category Pills (Default: Basic + Masterdata Autofill) */}
-      <div className="space-y-1.5 rounded-2xl border border-sekkha-hairline bg-sekkha-surface/60 p-3">
+    <form onSubmit={handleSubmit} className="space-y-4 font-sans text-left">
+      {/* 1. Category Selection Pill Badges */}
+      <div className="space-y-1.5">
         <div className="flex items-center justify-between">
-          <label className="text-caption font-bold text-sekkha-ink flex items-center gap-1.5">
+          <label className="flex items-center gap-1.5 text-caption font-bold text-sekkha-ink">
             <TagIcon className="size-4 text-sekkha-brand-blue" />
             <span>Kategori Event</span>
           </label>
-          <span className="flex items-center gap-1 text-micro font-medium text-sekkha-slate">
-            <Wand2Icon className="size-3 text-amber-500" />
-            <span>Autofill dari Masterdata</span>
+          <span className="flex items-center gap-1 text-micro text-sekkha-slate">
+            <Wand2Icon className="size-3 text-sekkha-brand-blue" />
+            Auto-fill aktif
           </span>
         </div>
 
-        <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+        <div className="flex flex-wrap gap-2 pt-0.5">
           {categoryOptions.map(cat => {
             const isSelected = tag === cat.id
             const hex = cat.colorHex
-            const customStyle = isSelected && hex ? {
-              backgroundColor: `${hex}25`,
-              color: hex,
-              borderColor: `${hex}60`,
-            } : undefined
+            const customStyle = hex
+              ? {
+                  backgroundColor: isSelected ? `${hex}15` : undefined,
+                  borderColor: isSelected ? hex : undefined,
+                  color: isSelected ? hex : undefined,
+                }
+              : undefined
 
             return (
               <button
@@ -152,7 +160,7 @@ export function EventForm({
                 type="button"
                 onClick={() => handleSelectCategory(cat)}
                 style={customStyle}
-                className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-caption-bold transition-all border ${
+                className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-caption-bold transition-all border cursor-pointer ${
                   isSelected
                     ? hex ? "shadow-xs ring-2 ring-sekkha-brand-blue/20" : `${cat.bg} shadow-xs ring-2 ring-sekkha-brand-blue/20`
                     : "bg-sekkha-canvas border-sekkha-hairline text-sekkha-slate hover:bg-white"
@@ -167,30 +175,16 @@ export function EventForm({
       </div>
 
       {/* 2. Event Title Field */}
-      <div className="space-y-1.5">
-        <label htmlFor="ev-title" className="flex items-center justify-between text-caption font-bold text-sekkha-ink">
-          <span className="flex items-center gap-1.5">
-            <SparklesIcon className="size-4 text-sekkha-brand-blue" />
-            <span>Nama Event Vihara</span>
-          </span>
-          <span className="text-micro text-red-500 font-semibold">* Wajib</span>
-        </label>
-        <input
-          id="ev-title"
-          type="text"
-          value={title}
-          onChange={e => setTitle(e.target.value)}
-          placeholder="Contoh: Kebaktian Minggu Remaja"
-          className="w-full h-11 rounded-xl border border-sekkha-hairline bg-sekkha-canvas px-3.5 text-caption font-bold text-sekkha-ink placeholder:text-sekkha-slate/60 outline-none focus:border-sekkha-brand-blue focus:ring-2 focus:ring-sekkha-brand-blue/20 transition-all shadow-xs"
-          aria-invalid={!!errors.title}
-        />
-        {errors.title && (
-          <p className="flex items-center gap-1.5 text-micro-bold text-red-600 bg-red-50 p-2 rounded-lg border border-red-200">
-            <AlertCircleIcon className="size-3.5 shrink-0" />
-            <span>{errors.title}</span>
-          </p>
-        )}
-      </div>
+      <Input
+        id="ev-title"
+        label="Nama Event Vihara"
+        required
+        value={title}
+        onChange={e => setTitle(e.target.value)}
+        placeholder="Contoh: Kebaktian Minggu Remaja"
+        startIcon={<SparklesIcon className="size-4 text-sekkha-brand-blue" />}
+        error={errors.title}
+      />
 
       {/* 3. Date & Location Fields (Location is OPTIONAL) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -227,27 +221,18 @@ export function EventForm({
         </div>
 
         {/* Location Input (OPTIONAL) */}
-        <div className="space-y-1.5">
-          <label htmlFor="ev-loc" className="flex items-center justify-between text-caption font-bold text-sekkha-ink">
-            <span className="flex items-center gap-1.5">
-              <MapPinIcon className="size-4 text-sekkha-brand-blue" />
-              <span>Lokasi Tempat</span>
-            </span>
-            <span className="text-micro text-sekkha-slate font-medium">(Opsional)</span>
-          </label>
-          <input
-            id="ev-loc"
-            type="text"
-            value={location}
-            onChange={e => setLocation(e.target.value)}
-            placeholder="Misal: Dhammasala Utama (opsional)"
-            className="w-full h-11 rounded-xl border border-sekkha-hairline bg-sekkha-canvas px-3.5 text-caption font-bold text-sekkha-ink placeholder:text-sekkha-slate/60 outline-none focus:border-sekkha-brand-blue focus:ring-2 focus:ring-sekkha-brand-blue/20 transition-all shadow-xs"
-          />
-        </div>
+        <Input
+          id="ev-loc"
+          label="Lokasi Tempat (Opsional)"
+          value={location}
+          onChange={e => setLocation(e.target.value)}
+          placeholder="Misal: Dhammasala Utama"
+          startIcon={<MapPinIcon className="size-4 text-sekkha-brand-blue" />}
+        />
       </div>
 
       {/* 4. Description Field */}
-      <div className="space-y-1.5">
+      <div className="flex flex-col gap-1.5 w-full">
         <label htmlFor="ev-desc" className="flex items-center justify-between text-caption font-bold text-sekkha-ink">
           <span className="flex items-center gap-1.5">
             <FileTextIcon className="size-4 text-sekkha-slate" />
@@ -261,26 +246,27 @@ export function EventForm({
           value={description}
           onChange={e => setDescription(e.target.value)}
           placeholder="Tuliskan keterangan detail atau instruksi bagi peserta yang akan hadir..."
-          className="w-full resize-none rounded-xl border border-sekkha-hairline bg-sekkha-canvas px-3.5 py-2.5 text-caption font-medium text-sekkha-ink placeholder:text-sekkha-slate/60 outline-none focus:border-sekkha-brand-blue focus:ring-2 focus:ring-sekkha-brand-blue/20 transition-all shadow-xs"
+          className="w-full rounded-2xl bg-slate-50/70 border border-sekkha-hairline-strong px-3.5 py-2.5 text-caption font-medium text-sekkha-ink placeholder:text-slate-400 outline-none focus:border-sekkha-brand-blue focus:bg-white focus:ring-2 focus:ring-blue-500/10 transition-all"
         />
       </div>
 
       {/* 5. Action Form Buttons */}
       <div className="flex items-center gap-2.5 pt-2">
-        <button
+        <Button
           type="button"
+          variant="secondary"
           onClick={onCancel}
-          className="flex-1 rounded-xl border border-sekkha-hairline bg-sekkha-surface py-2.5 text-caption-bold text-sekkha-slate hover:bg-slate-200/60 hover:text-sekkha-ink transition-all active:scale-[0.99]"
+          className="flex-1"
         >
           Batal
-        </button>
-        <button
+        </Button>
+        <Button
           type="submit"
           disabled={isSubmitting}
-          className="flex-1 rounded-xl bg-sekkha-brand-blue py-2.5 text-caption-bold text-white shadow-xs hover:bg-blue-700 transition-all disabled:opacity-50 active:scale-[0.99]"
+          className="flex-1"
         >
           {isSubmitting ? "Menyimpan..." : initial?.id ? "Simpan Perubahan" : "Buat Event Sekarang"}
-        </button>
+        </Button>
       </div>
 
     </form>

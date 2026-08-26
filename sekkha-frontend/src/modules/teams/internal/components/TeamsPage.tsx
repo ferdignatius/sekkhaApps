@@ -46,7 +46,6 @@ export function TeamsPage() {
   const [editingMember, setEditingMember] = useState<MemberDto | null>(null)
   const [deletingMember, setDeletingMember] = useState<MemberDto | null>(null)
   const [qrMember, setQrMember] = useState<MemberDto | null>(null)
-  const [detailMember, setDetailMember] = useState<MemberDto | null>(null)
   const [pinModalData, setPinModalData] = useState<{ member: MemberDto; pin: string; expires_at?: string } | null>(null)
   const [generatingPin, setGeneratingPin] = useState(false)
 

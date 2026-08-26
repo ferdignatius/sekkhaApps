@@ -2,6 +2,7 @@
 // SignUpPage — /sign-up route component.
 // Clean sign-up form matching login page; redirects to /onboarding upon successful account creation.
 
+import { useEffect } from "react"
 import { useNavigate } from "@tanstack/react-router"
 import { useAuth } from "../hooks/useAuth"
 import { useSignUpForm } from "../hooks/useSignUpForm"
@@ -11,6 +12,12 @@ import { AuthForm } from "./AuthForm"
 export function SignUpPage() {
   const { authState } = useAuth()
   const navigate = useNavigate()
+
+  useEffect(() => {
+    if (authState.status === "authenticated") {
+      void navigate({ to: "/home" })
+    }
+  }, [authState.status, navigate])
 
   const {
     fields,

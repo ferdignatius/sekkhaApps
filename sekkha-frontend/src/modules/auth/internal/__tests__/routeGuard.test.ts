@@ -58,7 +58,7 @@ function makeContext(
   userId: string | null = null,
 ): RouterContext {
   return {
-    authState: { status, accessToken, userId, role: null },
+    authState: { status, accessToken, userId, role: null, name: null, email: null },
   }
 }
 

@@ -112,7 +112,7 @@ export function AttendanceScanModal({
       (m) =>
         (m.user_number && m.user_number.toLowerCase() === parsedQuery) ||
         m.id.toLowerCase() === parsedQuery ||
-        m.email.toLowerCase() === parsedQuery
+        (m.email && m.email.toLowerCase() === parsedQuery)
     )
 
     if (!matched) {
@@ -225,7 +225,7 @@ export function AttendanceScanModal({
       const matches = peopleList.filter(
         (m) =>
           m.name.toLowerCase().includes(q) ||
-          m.email.toLowerCase().includes(q) ||
+          (m.email && m.email.toLowerCase().includes(q)) ||
           (m.user_number && m.user_number.toLowerCase().includes(q))
       )
 
@@ -274,7 +274,7 @@ export function AttendanceScanModal({
     ? peopleList.filter(
         (m) =>
           m.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          m.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (m.email && m.email.toLowerCase().includes(searchQuery.toLowerCase())) ||
           (m.user_number && m.user_number.toLowerCase().includes(searchQuery.toLowerCase()))
       )
     : []

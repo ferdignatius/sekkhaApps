@@ -48,7 +48,6 @@ export function ProfileCard({
   userNumber,
   avatarUrl,
   joinedAt = "2025-07-01",
-  equippedBadge = { name: "Loyal", icon: "❤️" },
   onEditProfile,
 }: ProfileCardProps) {
   const [copied, setCopied] = useState(false)

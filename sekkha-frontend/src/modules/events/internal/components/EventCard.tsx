@@ -1,7 +1,8 @@
 // feature/events/components/EventCard
-// Event card in the list — dynamic category colors from Master Data.
+// Event card in the list — dynamic category colors from Master Data using Base components.
 
 import { CalendarIcon, MapPinIcon, ChevronRightIcon, LockIcon } from "lucide-react"
+import { Badge } from "@/components/base/Badge"
 import type { EventListItem } from "../types"
 import { getCategoryColor } from "../masterdata"
 
@@ -45,7 +46,7 @@ export function EventCard({ event, onClick }: EventCardProps) {
       <button
         type="button"
         onClick={onClick}
-        className="group relative w-full overflow-hidden rounded-xl bg-sekkha-canvas hover:bg-white p-3.5 sm:p-4 text-left transition-all hover:shadow-xs active:scale-[0.99] border border-sekkha-hairline hover:border-sekkha-brand-blue/40 cursor-pointer"
+        className="group relative w-full overflow-hidden rounded-2xl bg-sekkha-canvas hover:bg-white p-3.5 sm:p-4 text-left transition-all hover:shadow-xs active:scale-[0.99] border border-sekkha-hairline hover:border-sekkha-brand-blue/40 cursor-pointer"
       >
         <div className="flex items-center gap-3.5">
           {/* Dynamic Color Accent Bar */}
@@ -60,7 +61,7 @@ export function EventCard({ event, onClick }: EventCardProps) {
             {/* Type tag & Status Badges */}
             <div className="flex flex-wrap items-center gap-2">
               <span
-                className="rounded-full px-2.5 py-0.5 text-micro-bold capitalize border font-bold shadow-2xs"
+                className="rounded-full px-2.5 py-0.5 text-micro font-bold capitalize border shadow-2xs"
                 style={colorInfo.bgStyle}
               >
                 {colorInfo.name}
@@ -68,47 +69,47 @@ export function EventCard({ event, onClick }: EventCardProps) {
 
               {/* Status: Active */}
               {status === "active" && (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 border border-emerald-300 px-2.5 py-0.5 text-micro-bold text-emerald-800 animate-pulse shadow-2xs">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
+                <Badge variant="emerald" className="animate-pulse">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-600 mr-1" />
                   Presensi Aktif
-                </span>
+                </Badge>
               )}
 
               {/* Status: Closed */}
               {(status === "closed" || status === "done") && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 border border-slate-300 px-2.5 py-0.5 text-micro-bold text-slate-700 shadow-2xs">
-                  <LockIcon className="size-3 text-slate-500" />
+                <Badge variant="slate">
+                  <LockIcon className="size-3 text-slate-500 mr-1" />
                   Selesai
-                </span>
+                </Badge>
               )}
 
               {/* Status: Cancelled */}
               {status === "cancelled" && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 border border-rose-300 px-2.5 py-0.5 text-micro-bold text-rose-800 shadow-2xs">
+                <Badge variant="coral">
                   Dibatalkan
-                </span>
+                </Badge>
               )}
 
               {/* Status: Draft */}
               {status === "draft" && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 border border-amber-300 px-2.5 py-0.5 text-micro-bold text-amber-800 shadow-2xs">
+                <Badge variant="yellow">
                   Draft
-                </span>
+                </Badge>
               )}
 
               {/* Status: Published / Upcoming */}
               {status === "published" && !isLive && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 border border-blue-200 px-2.5 py-0.5 text-micro-bold text-blue-700 shadow-2xs">
+                <Badge variant="blue">
                   Terjadwal
-                </span>
+                </Badge>
               )}
 
               {/* Live today indicator */}
               {status === "published" && isLive && (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 border border-blue-200 px-2.5 py-0.5 text-micro-bold text-blue-700 shadow-2xs">
-                  <span className="h-1.5 w-1.5 rounded-full bg-blue-600" />
+                <Badge variant="blue">
+                  <span className="h-1.5 w-1.5 rounded-full bg-blue-600 mr-1" />
                   Hari Ini
-                </span>
+                </Badge>
               )}
             </div>
 

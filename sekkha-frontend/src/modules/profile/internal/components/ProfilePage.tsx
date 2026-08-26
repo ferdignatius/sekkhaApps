@@ -25,13 +25,9 @@ import {
   SettingsIcon,
   Link2Icon,
   LogOutIcon,
-  ClockIcon,
-  ChevronRightIcon,
   MailIcon,
   CameraIcon,
   PencilIcon,
-  DownloadIcon,
-  Loader2Icon,
   KeyIcon,
 } from "lucide-react"
 import {
@@ -102,7 +98,7 @@ export function ProfilePage() {
   const [badges, setBadges] = useState<UserBadge[]>([])
   const [attendances, setAttendances] = useState<UserAttendance[]>([])
   const [myRank, setMyRank] = useState<number | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [, setLoading] = useState(true)
 
   // Active Tab: "overview" | "badges" | "card" | "settings"
   const [activeTab, setActiveTab] = useState<"overview" | "badges" | "card" | "settings">("overview")
@@ -319,7 +315,7 @@ export function ProfilePage() {
     const badgeScore = Math.min(100, Math.round((earnedBadgesCount / totalBadgesCount) * 100))
 
     // 5. Partisipasi Khusus: Event non-rutin atau event berbobot poin tinggi
-    const specialAttCount = attendances.filter((a) => (a.points_earned && a.points_earned > 50) || a.method === "manual").length
+    const specialAttCount = attendances.filter((a) => ((a as any).points_earned && (a as any).points_earned > 50) || a.method === "manual").length
     const specialScore = totalAttended > 0 ? Math.min(100, Math.max(25, Math.round((specialAttCount / 2) * 100))) : 0
 
     // 6. Dedikasi & Konsistensi
@@ -1033,7 +1029,7 @@ export function ProfilePage() {
                   setShowLinkModal(true)
                   setLinkResult(null)
                   setTargetUserId("")
-                  setVerificationValue("")
+                  setClaimPin("")
                 }}
                 className="rounded-xl bg-sekkha-brand-blue px-4 py-2.5 text-caption-bold text-white shadow-xs hover:bg-blue-700 transition-all shrink-0 cursor-pointer"
               >

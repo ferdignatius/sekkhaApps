@@ -3,6 +3,7 @@ import { ArrowRightIcon } from "lucide-react"
 import { AuthErrorBanner } from "./AuthErrorBanner"
 import { AuthFormField } from "./AuthFormField"
 import { SocialAuthButton } from "./SocialAuthButton"
+import { Button } from "@/components/base/Button"
 
 type AuthFormMode = "sign-up" | "login"
 
@@ -155,17 +156,10 @@ export function AuthForm({
       )}
 
       {/* Submit Button */}
-      <button
+      <Button
         type="submit"
         disabled={isLoading}
-        className="
-          flex w-full items-center justify-center gap-2
-          rounded-2xl bg-gradient-to-r from-sekkha-brand-blue to-blue-600 px-6 py-3.5
-          text-body-sm font-bold text-white shadow-lg shadow-blue-500/20
-          transition-all duration-200 hover:from-blue-600 hover:to-blue-700 hover:shadow-blue-500/30 active:scale-[0.99]
-          disabled:pointer-events-none disabled:opacity-50
-          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2
-        "
+        className="w-full py-3.5 flex items-center justify-center gap-2"
       >
         {isLoading ? (
           <>
@@ -195,10 +189,10 @@ export function AuthForm({
         ) : (
           <>
             <span>{isSignUp ? "Daftar Akun Baru" : "Masuk ke Akun"}</span>
-            <ArrowRightIcon className="size-4" />
+            <ArrowRightIcon className="size-4 ml-1" />
           </>
         )}
-      </button>
+      </Button>
     </form>
   )
 }

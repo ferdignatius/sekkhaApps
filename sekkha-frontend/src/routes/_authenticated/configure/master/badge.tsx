@@ -1,5 +1,4 @@
-import { createFileRoute, lazyRouteComponent, redirect } from "@tanstack/react-router"
-import { ConfigureSkeleton } from "@/components/common/PageSkeletons"
+import { createFileRoute, redirect } from "@tanstack/react-router"
 
 export const Route = createFileRoute("/_authenticated/configure/master/badge")({
   beforeLoad: () => {

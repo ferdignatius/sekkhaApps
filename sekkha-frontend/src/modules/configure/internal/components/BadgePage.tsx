@@ -6,6 +6,20 @@ import { useState } from "react"
 import { PlusIcon, PencilIcon, TrashIcon, AwardIcon } from "lucide-react"
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
 import { useAuth } from "@/modules/auth"
+import {
+  Button,
+  Input,
+  Select,
+  Card,
+  TableContainer,
+  Table,
+  TableHeader,
+  TableRow,
+  TableHead,
+  TableBody,
+  TableCell,
+  Badge as BaseBadge,
+} from "@/components/base"
 import { badgesApi } from "../api/configureApi"
 import { useConfigureCrud } from "../hooks/useConfigureCrud"
 import type { BadgeDto } from "../api/configureApi"
@@ -61,6 +75,14 @@ const INITIAL_BADGES: Badge[] = [
     condition_value: 100,
     is_active: true,
   },
+]
+
+const CONDITION_OPTIONS = [
+  { value: "attendance", label: "Total Kehadiran" },
+  { value: "streak", label: "Streak (minggu)" },
+  { value: "points", label: "Total Poin" },
+  { value: "event_count", label: "Jumlah Event" },
+  { value: "manual", label: "Manual" },
 ]
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -139,120 +161,150 @@ export function BadgePage() {
   }
 
   return (
-    <main>
+    <main className="min-h-screen bg-sekkha-surface pb-32 md:pb-12 font-sans">
       <PageBreadcrumb items={[{ label: "Configure" }, { label: "Gamifikasi" }, { label: "Badge Pencapaian" }]} />
-      <div className="px-4 py-6 pb-32 sm:pb-36 md:px-8 md:pb-12 lg:px-12">
-        <div className="mx-auto max-w-8xl space-y-5">
-          {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5">
-              <AwardIcon className="size-5 text-sekkha-brand-blue shrink-0" />
-              <h1 className="text-body-base sm:text-heading-5 font-extrabold text-sekkha-ink">Badge Pencapaian Umat</h1>
+      <div className="px-4 py-6 sm:px-6 md:px-8 max-w-6xl mx-auto space-y-5">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-sekkha-hairline-soft pb-4">
+          <div className="flex items-center gap-2.5">
+            <div className="flex size-9 items-center justify-center rounded-xl bg-blue-50 text-sekkha-brand-blue border border-blue-200/60">
+              <AwardIcon className="size-5" />
             </div>
-            {isAdmin && (
-              <button
-                type="button"
-                onClick={openCreate}
-                className="w-full sm:w-auto shrink-0 flex items-center justify-center gap-1.5 rounded-full bg-sekkha-primary px-4 py-2.5 sm:py-2 text-body-sm-medium text-white transition-opacity hover:opacity-90 cursor-pointer"
-              >
-                <PlusIcon className="size-4" />
-                <span>Tambah Badge</span>
-              </button>
-            )}
+            <div>
+              <h1 className="text-body-base sm:text-heading-5 font-black text-sekkha-ink">Badge Pencapaian Umat</h1>
+              <p className="text-micro text-sekkha-slate">Kelola master badge dan kondisi trigger gamifikasi umat.</p>
+            </div>
           </div>
+          {isAdmin && (
+            <Button
+              type="button"
+              onClick={openCreate}
+              className="w-full sm:w-auto shrink-0"
+            >
+              <PlusIcon className="size-4 mr-1.5" />
+              <span>Tambah Badge</span>
+            </Button>
+          )}
+        </div>
 
-          {/* Form */}
-          {showForm && isAdmin && (
-            <div className="rounded-xl border border-sekkha-hairline-soft bg-sekkha-canvas p-5">
-              <h2 className="mb-4 text-body-sm-medium text-sekkha-ink">
-                {editing ? "Edit Badge" : "Badge Baru"}
-              </h2>
-              <form onSubmit={handleSubmit} className="space-y-3">
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="flex flex-col gap-1.5">
-                    <label htmlFor="badge-name" className="text-caption text-sekkha-slate">Nama</label>
-                    <input id="badge-name" type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Streak 5" className="rounded-lg border border-sekkha-hairline-strong px-3 py-2 text-body-sm text-sekkha-ink outline-none focus:border-sekkha-brand-blue" />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label htmlFor="badge-icon" className="text-caption text-sekkha-slate">Icon (emoji/URL)</label>
-                    <input id="badge-icon" type="text" value={iconUrl} onChange={(e) => setIconUrl(e.target.value)} placeholder="🔥" className="rounded-lg border border-sekkha-hairline-strong px-3 py-2 text-body-sm text-sekkha-ink outline-none focus:border-sekkha-brand-blue" />
-                  </div>
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label htmlFor="badge-desc" className="text-caption text-sekkha-slate">Deskripsi</label>
-                  <input id="badge-desc" type="text" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Hadir 5 minggu berturut-turut" className="rounded-lg border border-sekkha-hairline-strong px-3 py-2 text-body-sm text-sekkha-ink outline-none focus:border-sekkha-brand-blue" />
-                </div>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="flex flex-col gap-1.5">
-                    <label htmlFor="badge-cond-type" className="text-caption text-sekkha-slate">Kondisi</label>
-                    <select id="badge-cond-type" value={conditionType} onChange={(e) => setConditionType(e.target.value as Badge["condition_type"])} className="rounded-lg border border-sekkha-hairline-strong px-3 py-2 text-body-sm text-sekkha-ink outline-none focus:border-sekkha-brand-blue">
-                      <option value="attendance">Total Kehadiran</option>
-                      <option value="streak">Streak (minggu)</option>
-                      <option value="points">Total Poin</option>
-                      <option value="event_count">Jumlah Event</option>
-                      <option value="manual">Manual</option>
-                    </select>
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label htmlFor="badge-cond-val" className="text-caption text-sekkha-slate">Nilai</label>
-                    <input id="badge-cond-val" type="number" value={conditionValue} onChange={(e) => setConditionValue(e.target.value)} placeholder="5" className="rounded-lg border border-sekkha-hairline-strong px-3 py-2 text-body-sm text-sekkha-ink outline-none focus:border-sekkha-brand-blue" />
-                  </div>
-                </div>
-                <div className="flex gap-2 pt-2">
-                  <button type="button" onClick={resetForm} className="flex-1 rounded-full border border-sekkha-hairline-strong py-2 text-body-sm-medium text-sekkha-ink">Batal</button>
-                  <button type="submit" className="flex-1 rounded-full bg-sekkha-primary py-2 text-body-sm-medium text-white">{editing ? "Simpan" : "Buat"}</button>
-                </div>
-              </form>
+        {/* Form Card */}
+        {showForm && isAdmin && (
+          <Card className="p-5 sm:p-6 space-y-4">
+            <h2 className="text-body-sm font-bold text-sekkha-ink">
+              {editing ? "Edit Badge" : "Badge Baru"}
+            </h2>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Input
+                  id="badge-name"
+                  label="Nama"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Contoh: Streak 5"
+                />
+                <Input
+                  id="badge-icon"
+                  label="Icon (emoji/URL)"
+                  value={iconUrl}
+                  onChange={(e) => setIconUrl(e.target.value)}
+                  placeholder="🔥"
+                />
+              </div>
+              <Input
+                id="badge-desc"
+                label="Deskripsi"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Hadir 5 minggu berturut-turut"
+              />
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Select
+                  id="badge-cond-type"
+                  label="Kondisi Trigger"
+                  value={conditionType}
+                  options={CONDITION_OPTIONS}
+                  onChange={(val) => setConditionType(val as Badge["condition_type"])}
+                />
+                <Input
+                  id="badge-cond-val"
+                  label="Nilai Target"
+                  type="number"
+                  value={conditionValue}
+                  onChange={(e) => setConditionValue(e.target.value)}
+                  placeholder="5"
+                />
+              </div>
+              <div className="flex gap-2 pt-2 justify-end border-t border-sekkha-hairline-soft">
+                <Button type="button" variant="secondary" onClick={resetForm}>
+                  Batal
+                </Button>
+                <Button type="submit">
+                  {editing ? "Simpan" : "Buat Badge"}
+                </Button>
+              </div>
+            </form>
+          </Card>
+        )}
+
+        {/* Table */}
+        <TableContainer>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-16">Icon</TableHead>
+                <TableHead>Nama & Deskripsi</TableHead>
+                <TableHead className="hidden sm:table-cell">Kondisi</TableHead>
+                <TableHead className="hidden sm:table-cell">Nilai</TableHead>
+                {isAdmin && <TableHead className="w-24 text-right">Aksi</TableHead>}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {badges.map((badge) => (
+                <TableRow key={badge.id}>
+                  <TableCell className="text-2xl">{badge.icon_url}</TableCell>
+                  <TableCell>
+                    <p className="font-bold text-sekkha-ink">{badge.name}</p>
+                    <p className="text-caption text-sekkha-slate">{badge.description}</p>
+                  </TableCell>
+                  <TableCell className="hidden sm:table-cell">
+                    <BaseBadge variant="slate">{conditionLabel[badge.condition_type]}</BaseBadge>
+                  </TableCell>
+                  <TableCell className="hidden sm:table-cell font-mono font-bold text-sekkha-ink">
+                    {badge.condition_value}
+                  </TableCell>
+                  {isAdmin && (
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          type="button"
+                          onClick={() => openEdit(badge)}
+                          className="rounded-lg p-1.5 text-sekkha-slate hover:bg-slate-100 hover:text-sekkha-ink transition-colors"
+                          aria-label="Edit"
+                        >
+                          <PencilIcon className="size-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(badge.id)}
+                          className="rounded-lg p-1.5 text-sekkha-slate hover:bg-red-50 hover:text-red-500 transition-colors"
+                          aria-label="Hapus"
+                        >
+                          <TrashIcon className="size-4" />
+                        </button>
+                      </div>
+                    </TableCell>
+                  )}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          {badges.length === 0 && (
+            <div className="py-12 text-center">
+              <p className="text-body-sm text-sekkha-muted">Belum ada badge tersimpan.</p>
             </div>
           )}
-
-          {/* Table */}
-          <div className="overflow-hidden rounded-xl border border-sekkha-hairline-soft bg-sekkha-canvas">
-            <div className="overflow-x-auto scrollbar-none">
-              <table className="w-full min-w-[500px] text-left text-body-sm">
-                <thead>
-                  <tr className="border-b border-sekkha-hairline-soft bg-sekkha-surface">
-                    <th className="px-4 py-3 font-medium text-sekkha-slate">Icon</th>
-                    <th className="px-4 py-3 font-medium text-sekkha-slate">Nama</th>
-                    <th className="hidden px-4 py-3 font-medium text-sekkha-slate sm:table-cell">Kondisi</th>
-                    <th className="hidden px-4 py-3 font-medium text-sekkha-slate sm:table-cell">Nilai</th>
-                    {isAdmin && <th className="px-4 py-3 font-medium text-sekkha-slate">Aksi</th>}
-                  </tr>
-                </thead>
-                <tbody>
-                  {badges.map((badge) => (
-                    <tr key={badge.id} className="border-b border-sekkha-hairline-soft last:border-0">
-                      <td className="px-4 py-3 text-lg">{badge.icon_url}</td>
-                      <td className="px-4 py-3">
-                        <p className="font-medium text-sekkha-ink">{badge.name}</p>
-                        <p className="text-caption text-sekkha-muted">{badge.description}</p>
-                      </td>
-                      <td className="hidden px-4 py-3 text-sekkha-slate sm:table-cell">{conditionLabel[badge.condition_type]}</td>
-                      <td className="hidden px-4 py-3 text-sekkha-ink sm:table-cell">{badge.condition_value}</td>
-                      {isAdmin && (
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-1">
-                            <button type="button" onClick={() => openEdit(badge)} className="rounded-md p-1.5 text-sekkha-slate hover:bg-sekkha-surface hover:text-sekkha-ink" aria-label="Edit">
-                              <PencilIcon className="size-3.5" />
-                            </button>
-                            <button type="button" onClick={() => handleDelete(badge.id)} className="rounded-md p-1.5 text-sekkha-slate hover:bg-red-50 hover:text-red-500" aria-label="Hapus">
-                              <TrashIcon className="size-3.5" />
-                            </button>
-                          </div>
-                        </td>
-                      )}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            {badges.length === 0 && (
-              <div className="py-10 text-center">
-                <p className="text-body-sm text-sekkha-muted">Belum ada badge.</p>
-              </div>
-            )}
-          </div>
-        </div>
+        </TableContainer>
       </div>
     </main>
   )

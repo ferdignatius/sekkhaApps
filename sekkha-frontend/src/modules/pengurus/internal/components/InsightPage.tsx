@@ -40,6 +40,10 @@ import {
 } from "../api/insightApi"
 
 const SERIES_COLORS = ["#1F75FE", "#94A3B8", "#F59E0B", "#10B981", "#8B5CF6"]
+const MONTH_NAMES = [
+  "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+  "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+]
 
 export function InsightPage() {
   // Period & Category Controls

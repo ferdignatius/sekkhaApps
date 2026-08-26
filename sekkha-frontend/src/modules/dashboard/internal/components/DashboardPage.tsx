@@ -12,12 +12,9 @@ import {
   MapPinIcon,
   GiftIcon,
   QrCodeIcon,
-  TargetIcon,
-  TrendingUpIcon,
   AwardIcon,
   ArrowRightIcon,
   UserCheckIcon,
-  SettingsIcon,
 } from "lucide-react"
 import { api } from "@/lib/api"
 import { AnnouncementCard } from "./AnnouncementCard"

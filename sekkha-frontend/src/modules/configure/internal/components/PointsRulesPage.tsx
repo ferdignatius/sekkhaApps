@@ -4,15 +4,12 @@ import {
   PencilIcon,
   ShieldCheckIcon,
   FlameIcon,
-  CalendarCheckIcon,
-  SparklesIcon,
-  InfoIcon,
-  AlertCircleIcon,
   CalendarDaysIcon,
   AwardIcon,
 } from "lucide-react"
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
 import { ResponsiveFormModal } from "@/components/common/ResponsiveFormModal"
+import { Button, Badge, Alert, Card, Input } from "@/components/base"
 import { pointRulesApi, type PointRuleDto } from "../api/configureApi"
 
 // Hardcoded structured rule sections
@@ -22,6 +19,7 @@ interface RuleSectionConfig {
   subtitle: string
   icon: React.ReactNode
   badge: string
+  badgeVariant: "blue" | "coral" | "emerald"
   ruleCodes: string[]
 }
 
@@ -32,6 +30,7 @@ const RULE_SECTIONS: RuleSectionConfig[] = [
     subtitle: "Poin yang langsung diperoleh umat saat mencatatkan kehadiran di sesi kebaktian.",
     icon: <CalendarDaysIcon className="size-5 text-blue-600" />,
     badge: "Presensi Event",
+    badgeVariant: "blue",
     ruleCodes: ["attendance_rutin", "attendance_special"],
   },
   {
@@ -40,6 +39,7 @@ const RULE_SECTIONS: RuleSectionConfig[] = [
     subtitle: "Poin apresiasi bagi umat yang mempertahankan konsistensi kehadiran berturut-turut.",
     icon: <FlameIcon className="size-5 text-orange-600" />,
     badge: "Gamifikasi Streak",
+    badgeVariant: "coral",
     ruleCodes: ["streak_weekly_bonus"],
   },
   {
@@ -48,6 +48,7 @@ const RULE_SECTIONS: RuleSectionConfig[] = [
     subtitle: "Poin bonus motivasi bagi umat yang baru pertama kali bergabung dan hadir di vihara.",
     icon: <AwardIcon className="size-5 text-emerald-600" />,
     badge: "Engagement",
+    badgeVariant: "emerald",
     ruleCodes: ["first_attendance_bonus"],
   },
 ]
@@ -156,29 +157,25 @@ export function PointsRulesPage() {
             </p>
           </div>
 
-          <div className="flex items-center gap-2 rounded-xl bg-slate-100/90 border border-slate-200/80 px-3.5 py-2 text-micro font-bold text-sekkha-slate shrink-0">
-            <ShieldCheckIcon className="size-4 text-sekkha-brand-blue" />
-            <span>Aturan Inti (Dapat diedit, Tidak dapat dihapus)</span>
-          </div>
+          <Badge variant="slate" size="lg" icon={<ShieldCheckIcon className="size-4 text-sekkha-brand-blue" />}>
+            Aturan Inti (Dapat diedit, Tidak dapat dihapus)
+          </Badge>
         </div>
 
         {/* Info Banner */}
-        <div className="flex items-start gap-3 rounded-2xl bg-blue-50/70 border border-blue-200/80 p-4 text-body-sm text-blue-900 shadow-2xs">
-          <InfoIcon className="size-5 shrink-0 text-blue-600 mt-0.5" />
-          <div className="space-y-0.5">
-            <p className="font-bold text-caption text-blue-950">Mekanisme Kalkulasi Otomatis</p>
-            <p className="text-micro text-blue-800 leading-relaxed">
-              Nilai poin yang tersimpan di bawah akan otomatis dipakai saat pengurus menutup sesi presensi event, mencatat streak mingguan, atau menyambut kehadiran umat baru.
-            </p>
-          </div>
-        </div>
+        <Alert
+          variant="info"
+          title="Mekanisme Kalkulasi Otomatis"
+          description="Nilai poin yang tersimpan di bawah akan otomatis dipakai saat pengurus menutup sesi presensi event, mencatat streak mingguan, atau menyambut kehadiran umat baru."
+        />
 
         {/* Error Alert */}
         {error && (
-          <div className="flex items-center gap-2 rounded-xl bg-red-50 p-4 border border-red-200 text-body-sm text-red-800">
-            <AlertCircleIcon className="size-5 text-red-600 shrink-0" />
-            <span>{error}</span>
-          </div>
+          <Alert
+            variant="destructive"
+            title="Terjadi Kesalahan"
+            description={error}
+          />
         )}
 
         {/* Hardcoded Sections Container */}
@@ -191,9 +188,9 @@ export function PointsRulesPage() {
         ) : (
           <div className="space-y-7">
             {RULE_SECTIONS.map((section) => (
-              <div
+              <Card
                 key={section.id}
-                className="rounded-3xl border border-sekkha-hairline bg-white/95 p-5 sm:p-7 shadow-xs space-y-4 transition-all"
+                className="p-5 sm:p-7 space-y-4"
               >
                 {/* Section Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-sekkha-hairline-soft pb-3.5">
@@ -210,9 +207,9 @@ export function PointsRulesPage() {
                       </p>
                     </div>
                   </div>
-                  <span className="self-start sm:self-center rounded-full bg-slate-100 border border-slate-200/80 px-2.5 py-0.5 text-micro-bold text-sekkha-slate">
+                  <Badge variant={section.badgeVariant}>
                     {section.badge}
-                  </span>
+                  </Badge>
                 </div>
 
                 {/* Section Rules Cards */}
@@ -251,20 +248,21 @@ export function PointsRulesPage() {
                           <span className="text-micro text-sekkha-muted">
                             Sistem Inti
                           </span>
-                          <button
+                          <Button
                             type="button"
+                            variant="secondary"
                             onClick={() => handleOpenEdit(rule)}
-                            className="flex items-center gap-1.5 rounded-xl border border-sekkha-hairline-strong bg-white px-3 py-1.5 text-micro font-bold text-sekkha-ink shadow-2xs hover:bg-slate-50 hover:border-sekkha-brand-blue hover:text-sekkha-brand-blue transition-colors"
+                            className="h-8 px-3 text-caption font-bold"
                           >
-                            <PencilIcon className="size-3" />
+                            <PencilIcon className="size-3 mr-1" />
                             <span>Ubah Nilai</span>
-                          </button>
+                          </Button>
                         </div>
                       </div>
                     )
                   })}
                 </div>
-              </div>
+              </Card>
             ))}
           </div>
         )}
@@ -280,72 +278,64 @@ export function PointsRulesPage() {
       >
         <form onSubmit={handleSubmit} className="space-y-4">
           {formError && (
-            <div className="flex items-center gap-2 rounded-xl bg-red-50 p-3 border border-red-200 text-caption text-red-800">
-              <AlertCircleIcon className="size-4 text-red-600 shrink-0" />
-              <span>{formError}</span>
-            </div>
+            <Alert
+              variant="destructive"
+              title="Gagal Menyimpan"
+              description={formError}
+            />
           )}
 
+          <Input
+            id="rule-label"
+            label="Nama Aturan"
+            required
+            value={editForm.label}
+            onChange={(e) => setEditForm({ ...editForm, label: e.target.value })}
+          />
+
           <div className="space-y-1">
-            <label className="text-caption font-bold text-sekkha-ink">Nama Aturan</label>
-            <input
-              type="text"
+            <Input
+              id="rule-points"
+              label="Jumlah Poin Diberikan (+Poin)"
+              type="number"
               required
-              value={editForm.label}
-              onChange={(e) => setEditForm({ ...editForm, label: e.target.value })}
-              className="w-full rounded-xl border border-sekkha-hairline-strong px-3.5 py-2.5 text-body-sm text-sekkha-ink outline-none focus:border-sekkha-brand-blue"
+              min={0}
+              max={10000}
+              value={editForm.points}
+              onChange={(e) => setEditForm({ ...editForm, points: Number(e.target.value) })}
+              endIcon={<span className="text-caption font-bold text-sekkha-slate">Poin</span>}
+              helperText="Poin ini akan otomatis diberikan ke akun umat saat trigger kondisi terpenuhi."
             />
           </div>
 
-          <div className="space-y-1">
-            <label className="text-caption font-bold text-sekkha-ink">
-              Jumlah Poin Diberikan (+Poin) <span className="text-red-500">*</span>
+          <div className="flex flex-col gap-1.5 w-full">
+            <label htmlFor="rule-desc" className="text-caption font-bold text-sekkha-ink">
+              Keterangan / Fungsi
             </label>
-            <div className="relative">
-              <input
-                type="number"
-                required
-                min={0}
-                max={10000}
-                value={editForm.points}
-                onChange={(e) => setEditForm({ ...editForm, points: Number(e.target.value) })}
-                className="w-full rounded-xl border border-sekkha-hairline-strong px-3.5 py-2.5 font-mono text-heading-6 font-black text-sekkha-ink outline-none focus:border-sekkha-brand-blue"
-              />
-              <span className="absolute right-3.5 top-3 text-caption font-bold text-sekkha-slate">
-                Poin
-              </span>
-            </div>
-            <p className="text-micro text-sekkha-slate">
-              Poin ini akan otomatis diberikan ke akun umat saat trigger kondisi terpenuhi.
-            </p>
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-caption font-bold text-sekkha-ink">Keterangan / Fungsi</label>
             <textarea
+              id="rule-desc"
               rows={3}
               value={editForm.description}
               onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
               placeholder="Jelaskan kondisi kapan poin ini didapatkan..."
-              className="w-full rounded-xl border border-sekkha-hairline-strong px-3.5 py-2 text-body-sm text-sekkha-ink outline-none focus:border-sekkha-brand-blue"
+              className="w-full rounded-2xl bg-slate-50/70 border border-sekkha-hairline-strong px-3.5 py-2.5 text-body-sm text-sekkha-ink outline-none transition-all duration-200 placeholder:text-slate-400 focus:border-sekkha-brand-blue focus:bg-white focus:ring-2 focus:ring-blue-500/10"
             />
           </div>
 
           <div className="flex items-center justify-end gap-2 pt-3 border-t border-sekkha-hairline-soft">
-            <button
+            <Button
               type="button"
+              variant="secondary"
               onClick={() => setModalOpen(false)}
-              className="rounded-xl border border-sekkha-hairline-strong px-4 py-2.5 text-body-sm font-bold text-sekkha-slate hover:bg-slate-100 transition-colors"
             >
               Batal
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
               disabled={submitting}
-              className="rounded-xl bg-sekkha-brand-blue px-5 py-2.5 text-body-sm font-bold text-white shadow-xs hover:bg-blue-700 transition-colors disabled:opacity-50"
             >
               {submitting ? "Menyimpan..." : "Simpan Perubahan"}
-            </button>
+            </Button>
           </div>
         </form>
       </ResponsiveFormModal>

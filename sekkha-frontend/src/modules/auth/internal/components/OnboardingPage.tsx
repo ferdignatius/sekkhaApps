@@ -73,12 +73,12 @@ export function OnboardingPage() {
       setErrorMsg(null)
       const res = await teamsApi.linkLegacyAccount({
         target_user_id: claimForm.target_user_id.trim(),
-        verification_value: claimForm.verification_value.trim(),
+        claim_pin: claimForm.verification_value.trim(),
       })
 
       setSuccessData({
         mode: "claimed",
-        userNumber: res.data.claimed_user_number,
+        userNumber: res.data.claimed_user_number || "USR-000",
         name: authState.status === "authenticated" ? (authState as any).name || "Umat Sekkha" : "Umat Sekkha",
         attendancesCount: res.data.merged_attendances_count,
         badgesCount: res.data.merged_badges_count,

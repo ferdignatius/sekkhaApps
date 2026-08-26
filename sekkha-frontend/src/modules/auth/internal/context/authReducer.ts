@@ -79,6 +79,8 @@ export function authReducer(state: AuthState, action: AuthAction): AuthState {
         accessToken: null,
         userId: null,
         role: null,
+        name: null,
+        email: null,
       }
 
     default: {

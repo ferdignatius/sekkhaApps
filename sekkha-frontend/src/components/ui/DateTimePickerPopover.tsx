@@ -90,12 +90,12 @@ export function DateTimePickerPopover({
       <button
         type="button"
         onClick={handleOpenModal}
-        className={`flex h-11 w-full items-center justify-between rounded-xl border bg-sekkha-canvas px-3.5 text-caption font-bold text-sekkha-ink transition-all shadow-xs ${
+        className={`flex h-11 w-full items-center justify-between rounded-2xl border bg-slate-50/70 px-3.5 text-body-sm text-sekkha-ink transition-all duration-200 outline-none cursor-pointer ${
           error
-            ? "border-rose-300 ring-2 ring-rose-100"
+            ? "border-red-400 bg-red-50/30 text-red-900"
             : open
-              ? "border-sekkha-brand-blue ring-2 ring-sekkha-brand-blue/20 bg-white"
-              : "border-sekkha-hairline hover:border-sekkha-hairline-strong hover:bg-white"
+              ? "border-sekkha-brand-blue bg-white shadow-xs ring-2 ring-blue-500/10"
+              : "border-sekkha-hairline-strong hover:border-slate-400 hover:bg-white"
         }`}
       >
         <div className="flex items-center gap-2.5 min-w-0">

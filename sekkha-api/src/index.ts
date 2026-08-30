@@ -22,7 +22,23 @@ const PORT = process.env.PORT || 4000
 
 // ─── Middleware ──────────────────────────────────────────────────────────────
 
-app.use(cors({ origin: "http://localhost:3000", credentials: true }))
+const allowedOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(",").map((origin) => origin.trim())
+  : ["http://localhost:3000", "http://localhost:5173"]
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps, curl, or Postman)
+      if (!origin) return callback(null, true)
+      if (allowedOrigins.includes("*") || allowedOrigins.includes(origin)) {
+        return callback(null, true)
+      }
+      return callback(new Error(`CORS error: Origin ${origin} not allowed`))
+    },
+    credentials: true,
+  })
+)
 app.use(express.json())
 
 // ─── Health Check ────────────────────────────────────────────────────────────

@@ -2,7 +2,7 @@
 // Create / edit event form for pengurus+ with unified categories, masterdata autofill, & optional location.
 
 import { useState } from "react"
-import { CalendarIcon, MapPinIcon, SparklesIcon, TagIcon, FileTextIcon, AlertCircleIcon, CheckIcon, Wand2Icon } from "lucide-react"
+import { MapPinIcon, SparklesIcon, TagIcon, CheckIcon, Wand2Icon } from "lucide-react"
 import { useAuth } from "@/modules/auth"
 import { DateTimePickerPopover } from "@/components/ui/DateTimePickerPopover"
 import { Button, Input } from "@/components/base"
@@ -187,15 +187,11 @@ export function EventForm({
       />
 
       {/* 3. Date & Location Fields (Location is OPTIONAL) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-start">
         {/* Date & Time Input (Mandatory) */}
-        <div className="space-y-1.5">
-          <label htmlFor="ev-date" className="flex items-center justify-between text-caption font-bold text-sekkha-ink">
-            <span className="flex items-center gap-1.5">
-              <CalendarIcon className="size-4 text-sekkha-brand-blue" />
-              <span>Tanggal & Waktu</span>
-            </span>
-            <span className="text-micro text-red-500 font-semibold">* Wajib</span>
+        <div className="flex flex-col gap-1.5 w-full">
+          <label htmlFor="ev-date" className="text-caption font-bold text-sekkha-ink">
+            Tanggal & Waktu Event <span className="text-red-500 font-semibold">*</span>
           </label>
           <DateTimePickerPopover
             value={eventDate}
@@ -213,9 +209,8 @@ export function EventForm({
             error={errors.event_date}
           />
           {errors.event_date && (
-            <p className="flex items-center gap-1.5 text-micro-bold text-red-600 bg-red-50 p-2 rounded-lg border border-red-200">
-              <AlertCircleIcon className="size-3.5 shrink-0" />
-              <span>{errors.event_date}</span>
+            <p className="text-micro font-medium text-red-600 animate-in fade-in">
+              {errors.event_date}
             </p>
           )}
         </div>
@@ -233,12 +228,8 @@ export function EventForm({
 
       {/* 4. Description Field */}
       <div className="flex flex-col gap-1.5 w-full">
-        <label htmlFor="ev-desc" className="flex items-center justify-between text-caption font-bold text-sekkha-ink">
-          <span className="flex items-center gap-1.5">
-            <FileTextIcon className="size-4 text-sekkha-slate" />
-            <span>Deskripsi Keterangan Event</span>
-          </span>
-          <span className="text-micro text-sekkha-slate font-medium">(Opsional)</span>
+        <label htmlFor="ev-desc" className="text-caption font-bold text-sekkha-ink">
+          Deskripsi Keterangan Event <span className="text-micro text-sekkha-slate font-normal">(Opsional)</span>
         </label>
         <textarea
           id="ev-desc"
@@ -246,7 +237,7 @@ export function EventForm({
           value={description}
           onChange={e => setDescription(e.target.value)}
           placeholder="Tuliskan keterangan detail atau instruksi bagi peserta yang akan hadir..."
-          className="w-full rounded-2xl bg-slate-50/70 border border-sekkha-hairline-strong px-3.5 py-2.5 text-caption font-medium text-sekkha-ink placeholder:text-slate-400 outline-none focus:border-sekkha-brand-blue focus:bg-white focus:ring-2 focus:ring-blue-500/10 transition-all"
+          className="w-full rounded-2xl bg-slate-50/70 border border-sekkha-hairline-strong px-3.5 py-2.5 text-body-sm text-sekkha-ink placeholder:text-slate-400 outline-none focus:border-sekkha-brand-blue focus:bg-white focus:ring-2 focus:ring-blue-500/10 transition-all"
         />
       </div>
 

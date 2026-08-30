@@ -153,7 +153,8 @@ export async function handleGoogleMockCallback(req: Request, res: Response, next
     const token = generateToken(user.id, user.role)
 
     // Redirect to frontend app
-    res.redirect(`http://localhost:3000/login?token=${token}`)
+    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000"
+    res.redirect(`${frontendUrl}/login?token=${token}`)
   } catch (err) {
     next(err)
   }

@@ -1,61 +1,63 @@
+version: "3.8"
+
 services:
-  api:
+  sekkha-api:
     build:
       context: .
       dockerfile: Dockerfile
+    image: sekkha-api:latest
     container_name: sekkha-api
     restart: unless-stopped
-    ports:
-      - "4000:4000"
+
+    # ❌ Tanpa port mapping ke host (Zero host exposure)
+
     environment:
       NODE_ENV: production
       PORT: 4000
-      DATABASE_URL: postgresql://sekkha:sekkha_secret@postgres:5432/sekkha_db?schema=public
-      REDIS_URL: redis://redis:6379
-      JWT_SECRET: sekkha-production-super-secret-key-2026
-      DUMMY_UMAT_EMAIL: umat@sekkha.com
-      DUMMY_UMAT_PASSWORD: password123
-      DUMMY_AKTIVIS_EMAIL: aktivis@sekkha.com
-      DUMMY_AKTIVIS_PASSWORD: password123
-      DUMMY_PENGURUS_EMAIL: pengurus@sekkha.com
-      DUMMY_PENGURUS_PASSWORD: password123
-      DUMMY_ADMIN_EMAIL: admin@sekkha.com
-      DUMMY_ADMIN_PASSWORD: password123
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_started
 
-  postgres:
-    image: postgres:18-alpine
-    container_name: sekkha-postgres
-    restart: unless-stopped
-    ports:
-      - "5432:5432"
-    environment:
-      POSTGRES_USER: sekkha
-      POSTGRES_PASSWORD: sekkha_secret
-      POSTGRES_DB: sekkha_db
-    volumes:
-      - pgdata:/var/lib/postgresql
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U sekkha -d sekkha_db"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-      start_period: 10s
+      # Koneksi ke STACK 4 (CORE) via data-tier
+      DATABASE_URL: ${DATABASE_URL:-postgresql://sekkha:sekkha_secure_pass_2026@postgres-master:5432/sekkha_db?schema=public}
+      REDIS_URL: ${REDIS_URL:-redis://redis-queue:6379}
 
-  redis:
-    image: redis:7-alpine
-    container_name: sekkha-redis
-    restart: unless-stopped
-    ports:
-      - "6379:6379"
-    command: redis-server --appendonly yes
-    volumes:
-      - redisdata:/data
+      # Security & JWT
+      JWT_SECRET: ${JWT_SECRET:-sekkha_jwt_super_secret_production_key_2026_xyz}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
 
-volumes:
-  pgdata:
-  redisdata:
+      # Integrasi Frontend Vercel
+      CORS_ORIGIN: ${CORS_ORIGIN:-https://sekkha.vercel.app,http://localhost:3000}
+      FRONTEND_URL: ${FRONTEND_URL:-https://sekkha.vercel.app}
+
+      # Akun Master / Dummy untuk Seed Awal
+      DUMMY_UMAT_EMAIL: ${DUMMY_UMAT_EMAIL:-umat@sekkha.com}
+      DUMMY_UMAT_PASSWORD: ${DUMMY_UMAT_PASSWORD:-password123}
+      DUMMY_AKTIVIS_EMAIL: ${DUMMY_AKTIVIS_EMAIL:-aktivis@sekkha.com}
+      DUMMY_AKTIVIS_PASSWORD: ${DUMMY_AKTIVIS_PASSWORD:-password123}
+      DUMMY_PENGURUS_EMAIL: ${DUMMY_PENGURUS_EMAIL:-pengurus@sekkha.com}
+      DUMMY_PENGURUS_PASSWORD: ${DUMMY_PENGURUS_PASSWORD:-password123}
+      DUMMY_ADMIN_EMAIL: ${DUMMY_ADMIN_EMAIL:-admin@sekkha.com}
+      DUMMY_ADMIN_PASSWORD: ${DUMMY_ADMIN_PASSWORD:-password123}
+
+    networks:
+      - proxy-tier
+      - data-tier
+
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 512M
+        reservations:
+          memory: 128M
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  proxy-tier:
+    external: true
+  data-tier:
+    external: true
+

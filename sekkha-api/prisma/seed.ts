@@ -179,7 +179,7 @@ async function main() {
   // ── 5. Role Invitation & Notifications ──────────────────────────────────────
   const inviteHendra = await prisma.roleInvitation.create({
     data: {
-      email: legacyHendra.email,
+      email: legacyHendra.email!,
       role: "pengurus",
       status: "pending",
       invitedById: adminUser.id,

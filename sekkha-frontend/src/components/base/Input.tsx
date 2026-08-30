@@ -26,7 +26,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
         )}
         <div className="relative flex items-center w-full">
           {startIcon && (
-            <div className="pointer-events-none absolute left-3.5 flex items-center text-sekkha-slate">
+            <div className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 flex items-center justify-center text-sekkha-slate shrink-0 z-10">
               {startIcon}
             </div>
           )}
@@ -38,16 +38,16 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
               hasError ? errorId : helperText ? helperId : undefined
             }
             className={cn(
-              "w-full rounded-2xl bg-slate-50/70 py-2.5 text-body-sm text-sekkha-ink outline-none transition-all duration-200 placeholder:text-slate-400 border border-sekkha-hairline-strong focus:border-sekkha-brand-blue focus:bg-white focus:shadow-xs focus:ring-2 focus:ring-blue-500/10 disabled:cursor-not-allowed disabled:opacity-50",
-              startIcon ? "pl-11" : "px-3.5",
-              endIcon ? "pr-11" : "px-3.5",
+              "w-full h-11 rounded-2xl bg-slate-50/70 py-2.5 text-body-sm text-sekkha-ink outline-none transition-all duration-200 placeholder:text-slate-400 border border-sekkha-hairline-strong focus:border-sekkha-brand-blue focus:bg-white focus:shadow-xs focus:ring-2 focus:ring-blue-500/10 disabled:cursor-not-allowed disabled:opacity-50",
+              startIcon ? "pl-11" : "pl-3.5",
+              endIcon ? "pr-11" : "pr-3.5",
               hasError && "border-red-400 bg-red-50/30 text-red-900 focus:border-red-500 focus:ring-red-500/10",
               className
             )}
             {...props}
           />
           {endIcon && (
-            <div className="absolute right-3.5 flex items-center text-sekkha-slate">
+            <div className="absolute right-3.5 top-1/2 -translate-y-1/2 flex items-center justify-center text-sekkha-slate shrink-0 z-10">
               {endIcon}
             </div>
           )}

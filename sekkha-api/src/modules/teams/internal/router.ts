@@ -1,7 +1,9 @@
 import { Router } from "express"
 import { z } from "zod"
+import bcrypt from "bcryptjs"
 import { prisma } from "../../../lib/prisma"
 import { requireAuth, requireRole } from "../../../middleware/auth"
+import { generateUniqueUsername } from "../../auth/internal/repository"
 
 export const teamsRouter = Router()
 
@@ -39,6 +41,7 @@ teamsRouter.get("/members", requireAuth, async (req, res, next) => {
     if (searchQuery) {
       where.OR = [
         { name: { contains: searchQuery, mode: "insensitive" } },
+        { username: { contains: searchQuery, mode: "insensitive" } },
         { email: { contains: searchQuery, mode: "insensitive" } },
         { userNumber: { contains: searchQuery, mode: "insensitive" } },
         { school: { contains: searchQuery, mode: "insensitive" } },
@@ -48,40 +51,27 @@ teamsRouter.get("/members", requireAuth, async (req, res, next) => {
 
     const rawMembers = await (prisma.user as any).findMany({
       where,
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        phone: true,
-        school: true,
-        birthDate: true,
-        gender: true,
-        role: true,
-        avatarUrl: true,
-        userNumber: true,
-        isClaimed: true,
-        claimedAt: true,
-        points: true,
-        createdAt: true,
+      orderBy: { createdAt: "desc" },
+      include: {
         _count: {
           select: {
             attendances: true,
           },
         },
       },
-      orderBy: [{ isClaimed: "asc" }, { createdAt: "desc" }],
     })
 
     const members = await Promise.all(
       rawMembers.map(async (m: any) => {
         let uNum = m.userNumber
         if (!uNum) {
-          uNum = await generateUserNumber(m.createdAt)
+          uNum = await generateUserNumber(m.createdAt ? new Date(m.createdAt) : new Date())
           await (prisma.user as any).update({ where: { id: m.id }, data: { userNumber: uNum } }).catch(() => {})
         }
         return {
           id: m.id,
           name: m.name,
+          username: m.username || null,
           email: m.email,
           phone: m.phone,
           school: m.school,
@@ -189,15 +179,23 @@ teamsRouter.get("/members/:id", requireAuth, async (req, res, next) => {
   }
 })
 
-// 3. POST /api/teams/members — Pengurus/Admin adds a new pre-provisioned member
+// 3. POST /api/teams/members — Pengurus/Admin adds a new member with auto-generated username & password
 const CreateMemberSchema = z.object({
   name: z.string().min(1, "Nama wajib diisi"),
+  username: z
+    .string()
+    .min(3, "Username minimal 3 karakter")
+    .max(30)
+    .regex(/^[a-zA-Z0-9_.]+$/, "Username hanya boleh huruf, angka, titik, underscore")
+    .optional()
+    .or(z.literal("")),
   email: z.string().email("Email tidak valid").optional().or(z.literal("")),
   phone: z.string().optional().or(z.literal("")),
   school: z.string().optional().or(z.literal("")),
   birth_date: z.string().optional().or(z.literal("")),
   gender: z.string().optional().or(z.literal("")),
   role: z.enum(["umat", "aktivis", "pengurus", "admin"]).default("umat"),
+  default_password: z.string().min(6).optional(),
 })
 
 teamsRouter.post("/members", requireAuth, requireRole("pengurus", "admin"), async (req, res, next) => {
@@ -206,7 +204,7 @@ teamsRouter.post("/members", requireAuth, requireRole("pengurus", "admin"), asyn
 
     if (data.email) {
       const existingEmail = await prisma.user.findUnique({
-        where: { email: data.email },
+        where: { email: data.email.toLowerCase().trim() },
       })
       if (existingEmail) {
         res.status(400).json({ error: "Email sudah terdaftar pada pengguna lain." })
@@ -214,19 +212,32 @@ teamsRouter.post("/members", requireAuth, requireRole("pengurus", "admin"), asyn
       }
     }
 
+    const username = data.username ? data.username.toLowerCase().trim() : await generateUniqueUsername(data.name)
+    const existingUsername = await prisma.user.findUnique({
+      where: { username },
+    })
+    if (existingUsername) {
+      res.status(400).json({ error: `Username @${username} sudah digunakan. Silakan pilih username lain.` })
+      return
+    }
+
+    const defaultPassword = data.default_password || "sekkha123"
+    const hashedPassword = await bcrypt.hash(defaultPassword, 10)
     const userNumber = await generateUserNumber()
 
     const newMember = await (prisma.user as any).create({
       data: {
         name: data.name.trim(),
-        email: data.email ? data.email.trim() : null,
+        username,
+        password: hashedPassword,
+        email: data.email ? data.email.toLowerCase().trim() : null,
         phone: data.phone ? data.phone.trim() : null,
         school: data.school ? data.school.trim() : null,
         birthDate: data.birth_date ? new Date(data.birth_date) : null,
         gender: data.gender ? data.gender.trim() : null,
         role: data.role,
         userNumber,
-        isClaimed: false,
+        isClaimed: true,
         points: 0,
       },
     })
@@ -234,6 +245,7 @@ teamsRouter.post("/members", requireAuth, requireRole("pengurus", "admin"), asyn
     res.status(201).json({
       id: newMember.id,
       name: newMember.name,
+      username: newMember.username,
       email: newMember.email,
       phone: newMember.phone,
       school: newMember.school,
@@ -241,7 +253,8 @@ teamsRouter.post("/members", requireAuth, requireRole("pengurus", "admin"), asyn
       gender: newMember.gender,
       role: newMember.role,
       user_number: newMember.userNumber,
-      is_claimed: false,
+      default_password: defaultPassword,
+      is_claimed: true,
       created_at: new Date(newMember.createdAt).toISOString(),
       message: "Data umat berhasil ditambahkan",
     })
@@ -253,6 +266,14 @@ teamsRouter.post("/members", requireAuth, requireRole("pengurus", "admin"), asyn
 // 4. PUT /api/teams/members/:id — Edit member data
 const UpdateMemberSchema = z.object({
   name: z.string().min(1).optional(),
+  username: z
+    .string()
+    .min(3, "Username minimal 3 karakter")
+    .max(30)
+    .regex(/^[a-zA-Z0-9_.]+$/, "Username hanya boleh huruf, angka, titik, underscore")
+    .optional()
+    .nullable()
+    .or(z.literal("")),
   email: z.string().email().optional().nullable().or(z.literal("")),
   phone: z.string().optional().nullable(),
   school: z.string().optional().nullable(),
@@ -273,9 +294,17 @@ teamsRouter.put("/members/:id", requireAuth, requireRole("pengurus", "admin"), a
     }
 
     if (data.email && data.email !== existing.email) {
-      const emailInUse = await (prisma.user as any).findUnique({ where: { email: data.email } })
+      const emailInUse = await (prisma.user as any).findUnique({ where: { email: data.email.toLowerCase().trim() } })
       if (emailInUse) {
         res.status(400).json({ error: "Email sudah digunakan oleh anggota lain." })
+        return
+      }
+    }
+
+    if (data.username && data.username !== existing.username) {
+      const usernameInUse = await (prisma.user as any).findUnique({ where: { username: data.username.toLowerCase().trim() } })
+      if (usernameInUse) {
+        res.status(400).json({ error: "Username sudah digunakan oleh anggota lain." })
         return
       }
     }
@@ -284,7 +313,8 @@ teamsRouter.put("/members/:id", requireAuth, requireRole("pengurus", "admin"), a
       where: { id },
       data: {
         ...(data.name && { name: data.name.trim() }),
-        ...(data.email !== undefined && { email: data.email ? data.email.trim() : null }),
+        ...(data.username !== undefined && { username: data.username ? data.username.toLowerCase().trim() : null }),
+        ...(data.email !== undefined && { email: data.email ? data.email.toLowerCase().trim() : null }),
         ...(data.phone !== undefined && { phone: data.phone ? data.phone.trim() : null }),
         ...(data.school !== undefined && { school: data.school ? data.school.trim() : null }),
         ...(data.birth_date !== undefined && {
@@ -301,6 +331,7 @@ teamsRouter.put("/members/:id", requireAuth, requireRole("pengurus", "admin"), a
     res.json({
       id: updated.id,
       name: updated.name,
+      username: updated.username,
       email: updated.email,
       phone: updated.phone,
       school: updated.school,
@@ -543,8 +574,8 @@ teamsRouter.post("/invitations/:id/reject", requireAuth, async (req, res, next) 
   }
 })
 
-// 10. POST /api/teams/members/:id/generate-claim-pin — Generate 6-digit PIN for pre-provisioned member (requires pengurus or admin)
-teamsRouter.post("/members/:id/generate-claim-pin", requireAuth, requireRole("pengurus", "admin"), async (req, res, next) => {
+// 10. POST /api/teams/members/:id/reset-password — Pengurus/Admin resets a member's password to default
+teamsRouter.post("/members/:id/reset-password", requireAuth, requireRole("pengurus", "admin"), async (req, res, next) => {
   try {
     const id = req.params.id as string
     const targetUser = await (prisma.user as any).findUnique({
@@ -556,20 +587,13 @@ teamsRouter.post("/members/:id/generate-claim-pin", requireAuth, requireRole("pe
       return
     }
 
-    if (targetUser.isClaimed) {
-      res.status(400).json({ error: "Akun anggota ini sudah diklaim / tertaut dengan email aktif." })
-      return
-    }
-
-    // Generate secure random 6-digit numeric PIN
-    const generatedPin = Math.floor(100000 + Math.random() * 900000).toString()
-    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // Valid for 30 days
+    const defaultPassword = "sekkha123"
+    const hashedPassword = await bcrypt.hash(defaultPassword, 10)
 
     await (prisma.user as any).update({
       where: { id },
       data: {
-        claimPin: generatedPin,
-        claimPinExpiresAt: expiresAt,
+        password: hashedPassword,
       },
     })
 
@@ -578,162 +602,15 @@ teamsRouter.post("/members/:id/generate-claim-pin", requireAuth, requireRole("pe
 
     res.json({
       success: true,
-      claim_pin: generatedPin,
       user_number: targetUser.userNumber,
+      username: targetUser.username,
       name: targetUser.name,
-      phone: targetUser.phone,
-      expires_at: expiresAt.toISOString(),
-      message: `PIN Aktivasi 6-digit untuk ${targetUser.name} berhasil dibuat: ${generatedPin}`,
+      default_password: defaultPassword,
+      message: `Password untuk ${targetUser.name} (${targetUser.username ? `@${targetUser.username}` : "umat"}) berhasil di-reset ke: ${defaultPassword}`,
     })
   } catch (err) {
     next(err)
   }
 })
 
-// 11. POST /api/teams/link-legacy-account — Link pre-provisioned account using 6-digit PIN
-teamsRouter.post("/link-legacy-account", requireAuth, async (req, res, next) => {
-  try {
-    const { z } = await import("zod")
-    const { claim_pin, target_user_id } = z.object({
-      claim_pin: z.string().min(6, "PIN aktivasi harus 6 digit").max(8),
-      target_user_id: z.string().optional(),
-    }).parse(req.body)
-
-    const cleanPin = claim_pin.replace(/[^0-9]/g, "").trim()
-    const currentUserId = req.user!.userId
-
-    // Find pre-provisioned member by PIN
-    const targetUser = await (prisma.user as any).findFirst({
-      where: {
-        claimPin: cleanPin,
-        isClaimed: false,
-        ...(target_user_id ? {
-          OR: [
-            { userNumber: target_user_id },
-            { id: target_user_id },
-          ],
-        } : {}),
-      },
-      include: {
-        attendances: true,
-        badges: true,
-        rsvps: true,
-        pointTransactions: true,
-      },
-    })
-
-    if (!targetUser) {
-      res.status(404).json({
-        error: "PIN aktivasi tidak valid atau sudah pernah digunakan. Silakan periksa kembali PIN 6-digit Anda.",
-      })
-      return
-    }
-
-    if (targetUser.id === currentUserId) {
-      res.status(400).json({ error: "Tidak dapat menautkan akun ke akun yang sedang Anda gunakan." })
-      return
-    }
-
-    if (targetUser.claimPinExpiresAt && new Date(targetUser.claimPinExpiresAt) < new Date()) {
-      res.status(400).json({ error: "PIN aktivasi sudah kedaluwarsa. Silakan minta PIN baru ke pengurus." })
-      return
-    }
-
-    // Merge attendances
-    let mergedAttendances = 0
-    for (const att of targetUser.attendances) {
-      const exists = await prisma.attendance.findUnique({
-        where: { userId_eventId: { userId: currentUserId, eventId: att.eventId } },
-      })
-      if (!exists) {
-        await prisma.attendance.create({
-          data: {
-            userId: currentUserId,
-            eventId: att.eventId,
-            method: att.method,
-            pointsEarned: att.pointsEarned,
-            scannedAt: att.scannedAt,
-          },
-        })
-        mergedAttendances++
-      }
-    }
-
-    // Merge badges
-    let mergedBadges = 0
-    for (const b of targetUser.badges) {
-      const exists = await prisma.userBadge.findUnique({
-        where: { userId_badgeId: { userId: currentUserId, badgeId: b.badgeId } },
-      })
-      if (!exists) {
-        await prisma.userBadge.create({
-          data: {
-            userId: currentUserId,
-            badgeId: b.badgeId,
-            earnedAt: b.earnedAt,
-          },
-        })
-        mergedBadges++
-      }
-    }
-
-    // Merge points
-    const legacyPoints = targetUser.points || (targetUser.attendances.length * 50)
-    const currentUser = await prisma.user.findUnique({ where: { id: currentUserId } })
-    const newTotalPoints = (currentUser?.points || 0) + legacyPoints
-
-    await (prisma.user as any).update({
-      where: { id: currentUserId },
-      data: {
-        points: newTotalPoints,
-        ...(targetUser.phone && !currentUser?.phone ? { phone: targetUser.phone } : {}),
-        ...(targetUser.school && !currentUser?.school ? { school: targetUser.school } : {}),
-        ...(targetUser.birthDate && !currentUser?.birthDate ? { birthDate: targetUser.birthDate } : {}),
-        ...(targetUser.gender && !currentUser?.gender ? { gender: targetUser.gender } : {}),
-      },
-    })
-
-    if (legacyPoints > 0) {
-      await prisma.pointTransaction.create({
-        data: {
-          userId: currentUserId,
-          amount: legacyPoints,
-          type: "manual",
-          description: `Penggabungan data kartu lama (${targetUser.userNumber || targetUser.name}) via PIN Aktivasi`,
-        },
-      })
-    }
-
-    // Mark pre-provisioned user as claimed & clear PIN
-    await (prisma.user as any).update({
-      where: { id: targetUser.id },
-      data: {
-        isClaimed: true,
-        claimedAt: new Date(),
-        claimPin: null,
-        claimPinExpiresAt: null,
-      },
-    })
-
-    const { invalidate, CacheKeys } = await import("../../../lib/cache")
-    await invalidate(CacheKeys.userProfile(currentUserId))
-    await invalidate(CacheKeys.userAttendances(currentUserId))
-    await invalidate(CacheKeys.userBadges(currentUserId))
-    await invalidate(CacheKeys.userProfile(targetUser.id))
-
-    res.json({
-      success: true,
-      message: `Akun data lama (${targetUser.name}) berhasil ditautkan!`,
-      data: {
-        merged_user_name: targetUser.name,
-        merged_user_number: targetUser.userNumber,
-        merged_attendances_count: mergedAttendances,
-        merged_badges_count: mergedBadges,
-        new_total_points: newTotalPoints,
-      },
-    })
-  } catch (err) {
-    next(err)
-  }
-})
 

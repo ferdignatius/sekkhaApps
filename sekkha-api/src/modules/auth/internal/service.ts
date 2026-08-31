@@ -11,7 +11,7 @@ import type { RegisterInput, LoginInput } from "./validation"
 
 export interface AuthResult {
   accessToken: string
-  user: { id: string; email: string; name: string; role: string }
+  user: { id: string; email: string; username?: string | null; name: string; role: string }
 }
 
 const SESSION_TTL_SECONDS = 7 * 24 * 60 * 60 // 7 days matching JWT expiration
@@ -49,22 +49,38 @@ function generateToken(userId: string, role: string, name?: string): string {
  * After successful registration, publishes USER_REGISTERED event.
  */
 export async function registerUser(input: RegisterInput): Promise<AuthResult> {
-  const exists = await repo.findUserByEmail(input.email)
-  if (exists) {
+  const emailExists = await repo.findUserByEmail(input.email)
+  if (emailExists) {
     const err = new Error("Email sudah terdaftar") as Error & { status: number }
     err.status = 409
     throw err
   }
 
+  if (input.username) {
+    const usernameExists = await repo.findUserByUsername(input.username)
+    if (usernameExists) {
+      const err = new Error("Username sudah digunakan") as Error & { status: number }
+      err.status = 409
+      throw err
+    }
+  }
+
   const hashedPassword = await bcrypt.hash(input.password, 10)
   const user = await repo.createUser({
     email: input.email,
+    username: input.username,
     name: input.name,
     password: hashedPassword,
   })
 
   const token = generateToken(user.id, user.role, user.name)
-  const userData = { id: user.id, email: user.email || "", name: user.name, role: user.role }
+  const userData = {
+    id: user.id,
+    email: user.email || "",
+    username: user.username,
+    name: user.name,
+    role: user.role,
+  }
 
   await cacheUserSession(token, userData)
 
@@ -82,25 +98,32 @@ export async function registerUser(input: RegisterInput): Promise<AuthResult> {
 }
 
 /**
- * Login an existing user.
+ * Login an existing user with email or username.
  */
 export async function loginUser(input: LoginInput): Promise<AuthResult> {
-  const user = await repo.findUserByEmail(input.email)
+  const identifier = input.identifier || input.email || input.username || ""
+  const user = await repo.findUserByIdentifier(identifier)
   if (!user || !user.password) {
-    const err = new Error("Email atau password salah") as Error & { status: number }
+    const err = new Error("Email/Username atau password salah") as Error & { status: number }
     err.status = 401
     throw err
   }
 
   const valid = await bcrypt.compare(input.password, user.password)
   if (!valid) {
-    const err = new Error("Email atau password salah") as Error & { status: number }
+    const err = new Error("Email/Username atau password salah") as Error & { status: number }
     err.status = 401
     throw err
   }
 
   const token = generateToken(user.id, user.role, user.name)
-  const userData = { id: user.id, email: user.email || "", name: user.name, role: user.role }
+  const userData = {
+    id: user.id,
+    email: user.email || "",
+    username: user.username,
+    name: user.name,
+    role: user.role,
+  }
 
   await cacheUserSession(token, userData)
 
@@ -130,11 +153,11 @@ export async function verifyToken(token: string) {
     throw err
   }
 
-  const userData = { id: user.id, email: user.email, name: user.name, role: user.role }
+  const userData = { id: user.id, email: user.email, username: user.username, name: user.name, role: user.role }
 
   // Populate cache for subsequent calls
   await cacheUserSession(token, userData)
 
-  return user
+  return userData
 }
 

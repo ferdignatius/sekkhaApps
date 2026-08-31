@@ -23,6 +23,8 @@ import {
 import QRCode from "react-qr-code"
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
 import { useAuth } from "@/modules/auth"
+import { useDebounce } from "@/hooks/useDebounce"
+import { SkeletonCard, SkeletonTableRow } from "@/components/ui/skeleton"
 import { teamsApi } from "../api/teamsApi"
 import type { MemberDto, InvitationDto, CreateMemberPayload, UpdateMemberPayload } from "../api/teamsApi"
 
@@ -232,10 +234,12 @@ export function TeamsPage() {
     return { total, umat, aktivis, pengurus }
   }, [members])
 
-  // Filtered members list
+  const debouncedSearchQuery = useDebounce(searchQuery, 250)
+
+  // Filtered members list with debounced query optimization
   const filteredMembers = useMemo(() => {
     return members.filter((m) => {
-      const q = searchQuery.toLowerCase()
+      const q = debouncedSearchQuery.toLowerCase()
       const matchesQuery =
         !q ||
         m.name.toLowerCase().includes(q) ||
@@ -249,7 +253,7 @@ export function TeamsPage() {
 
       return matchesQuery && matchesRole
     })
-  }, [members, searchQuery, roleFilter])
+  }, [members, debouncedSearchQuery, roleFilter])
 
   const roleBadgeStyle: Record<string, string> = {
     admin: "bg-red-50 text-red-700 border-red-200",
@@ -426,12 +430,34 @@ export function TeamsPage() {
               </div>
 
               {loading ? (
-                <div className="flex min-h-[300px] items-center justify-center rounded-2xl border border-sekkha-hairline bg-white p-8">
-                  <div className="flex flex-col items-center gap-3">
-                    <div className="size-8 animate-spin rounded-full border-3 border-sekkha-brand-blue border-t-transparent" />
-                    <p className="text-body-sm font-medium text-sekkha-slate">Memuat database pengguna...</p>
+                <>
+                  {/* Mobile Skeleton Cards */}
+                  <div className="md:hidden space-y-3">
+                    {Array.from({ length: 4 }).map((_, idx) => (
+                      <SkeletonCard key={idx} />
+                    ))}
                   </div>
-                </div>
+
+                  {/* Desktop Skeleton Table */}
+                  <div className="hidden md:block overflow-hidden rounded-2xl border border-sekkha-hairline bg-white shadow-2xs">
+                    <table className="w-full text-left">
+                      <thead>
+                        <tr className="border-b border-sekkha-hairline bg-slate-50/75">
+                          <th className="px-4 py-3 text-caption font-semibold text-sekkha-slate">Umat / Anggota</th>
+                          <th className="px-4 py-3 text-caption font-semibold text-sekkha-slate">Kontak & Info</th>
+                          <th className="px-4 py-3 text-caption font-semibold text-sekkha-slate">Role</th>
+                          <th className="px-4 py-3 text-caption font-semibold text-sekkha-slate">Poin & Hadir</th>
+                          <th className="px-4 py-3 text-right text-caption font-semibold text-sekkha-slate">Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {Array.from({ length: 5 }).map((_, idx) => (
+                          <SkeletonTableRow key={idx} columns={5} />
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
               ) : filteredMembers.length === 0 ? (
                 <div className="flex min-h-[260px] flex-col items-center justify-center rounded-2xl border border-dashed border-sekkha-hairline bg-white p-8 text-center">
                   <UsersIcon className="size-10 text-slate-300 mb-2" />

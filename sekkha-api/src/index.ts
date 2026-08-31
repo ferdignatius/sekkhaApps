@@ -1,5 +1,8 @@
 import express from "express"
 import cors from "cors"
+import helmet from "helmet"
+import compression from "compression"
+import rateLimit from "express-rate-limit"
 import dotenv from "dotenv"
 import { errorHandler } from "./middleware/errorHandler"
 import { redis } from "./lib/redis"
@@ -17,11 +20,54 @@ import { pengurusModule } from "./modules/pengurus/module"
 
 dotenv.config()
 
+// ─── Environment Sanity Check ────────────────────────────────────────────────
+if (!process.env.JWT_SECRET) {
+  console.warn("⚠️  WARNING: JWT_SECRET is not set in environment! Using a default secret in non-production.")
+  if (process.env.NODE_ENV === "production") {
+    console.error("❌ CRITICAL: JWT_SECRET must be defined in production. Exiting...")
+    process.exit(1)
+  }
+}
+
 const app = express()
 const PORT = process.env.PORT || 4000
 
-// ─── Middleware ──────────────────────────────────────────────────────────────
+// ─── Security & Core Middleware ──────────────────────────────────────────────
 
+// 1. High-Performance Gzip/Brotli Payload Compression (60-80% payload size reduction)
+app.use(compression())
+
+// 2. Security Headers (Helmet)
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    contentSecurityPolicy: false, // Disabled for pure REST API
+  })
+)
+
+// 3. Global Rate Limiter (300 requests per minute per IP)
+const globalLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Terlalu banyak permintaan dari IP ini. Silakan coba lagi nanti." },
+})
+app.use(globalLimiter)
+
+// 3. Sensitive Auth Rate Limiter (20 requests per 15 minutes per IP for login/register/reset)
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Terlalu banyak percobaan autentikasi. Silakan tunggu 15 menit." },
+})
+app.use("/api/auth/login", authLimiter)
+app.use("/api/auth/register", authLimiter)
+app.use("/api/users/change-password", authLimiter)
+
+// 4. CORS Configuration
 const allowedOrigins = process.env.CORS_ORIGIN
   ? process.env.CORS_ORIGIN.split(",").map((origin) => origin.trim())
   : ["http://localhost:3000", "http://localhost:5173"]
@@ -39,7 +85,10 @@ app.use(
     credentials: true,
   })
 )
-app.use(express.json())
+
+// 5. Body parser with strict payload size limit
+app.use(express.json({ limit: "1mb" }))
+app.use(express.urlencoded({ extended: true, limit: "1mb" }))
 
 // ─── Health Check ────────────────────────────────────────────────────────────
 
@@ -49,7 +98,6 @@ app.get("/health", (_req, res) => {
 
 // ─── Module Registration ─────────────────────────────────────────────────────
 // Shell pattern: loop over all modules → register routes → subscribe events.
-// Menambah modul baru = import + tambahkan ke array. Tidak perlu edit kode lain.
 
 const modules: AppModule[] = [
   authModule,
@@ -86,3 +134,4 @@ app.listen(PORT, async () => {
   console.log(`📋 Health check: http://localhost:${PORT}/health`)
   console.log(`📦 Modules loaded: ${modules.map((m) => m.name).join(", ")}`)
 })
+

@@ -22,17 +22,19 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
   }
 
   const token = header.slice(7)
-  if (token === "dummy.admin.token" || token === "dummy.pengurus.token") {
-    req.user = { userId: "admin-user-1", role: "pengurus" }
-    next()
+  const secret = process.env.JWT_SECRET
+  if (!secret) {
+    console.error("❌ JWT_SECRET is not configured in environment variables")
+    res.status(500).json({ error: "Konfigurasi keamanan server tidak lengkap" })
     return
   }
+
   try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET!) as AuthPayload
+    const payload = jwt.verify(token, secret) as AuthPayload
     req.user = payload
     next()
   } catch {
-    res.status(401).json({ error: "Token tidak valid" })
+    res.status(401).json({ error: "Token tidak valid atau telah kedaluwarsa" })
   }
 }
 

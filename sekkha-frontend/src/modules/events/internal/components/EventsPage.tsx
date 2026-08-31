@@ -10,6 +10,8 @@ import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
 import { ResponsiveFormModal } from "@/components/common/ResponsiveFormModal"
 import { EventCalendar } from "@/components/ui/EventCalendar"
 import type { EventDotItem } from "@/components/ui/EventCalendar"
+import { useDebounce } from "@/hooks/useDebounce"
+import { Skeleton } from "@/components/ui/skeleton"
 import { EventCard } from "./EventCard"
 import { EventDetailSheet } from "./EventDetailSheet"
 import { EventForm } from "./EventForm"
@@ -54,6 +56,7 @@ export function EventsPage() {
   const isPengurus = role === "pengurus" || role === "admin"
 
   const [events, setEvents] = useState<EventListItem[]>([])
+  const [loadingEvents, setLoadingEvents] = useState(true)
   const [view, setView] = useState<View>("calendar")
   const [selected, setSelected] = useState<EventListItem | null>(null)
   const [editTarget, setEditTarget] = useState<EventListItem | null>(null)
@@ -61,6 +64,7 @@ export function EventsPage() {
   const [activeMonth, setActiveMonth] = useState<Date>(new Date())
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
+  const debouncedSearchQuery = useDebounce(searchQuery, 250)
   const [selectedCategoryTag, setSelectedCategoryTag] = useState<string>("all")
 
   // Dynamic Accessible Categories for logged in User Role
@@ -79,11 +83,14 @@ export function EventsPage() {
 
   async function loadEvents() {
     try {
+      setLoadingEvents(true)
       const data = await api.get<EventListItem[]>("/events")
       setEvents(data)
     } catch (err) {
       console.error("Gagal memuat event dari server:", err)
       setEvents([])
+    } finally {
+      setLoadingEvents(false)
     }
   }
 
@@ -140,9 +147,9 @@ export function EventsPage() {
       base = base.filter(ev => toDateKey(ev.event_date) === selectedDate)
     }
 
-    // Search filter
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase()
+    // Search filter with debounced query
+    if (debouncedSearchQuery.trim()) {
+      const q = debouncedSearchQuery.toLowerCase()
       base = base.filter(ev =>
         ev.title.toLowerCase().includes(q) ||
         ev.location.toLowerCase().includes(q)
@@ -155,7 +162,7 @@ export function EventsPage() {
     }
 
     return base
-  }, [events, accessibleTagsSet, activeMonth, selectedDate, searchQuery, selectedCategoryTag])
+  }, [events, accessibleTagsSet, activeMonth, selectedDate, debouncedSearchQuery, selectedCategoryTag])
 
   async function handleFormSubmit(payload: CreateEventPayload) {
     try {
@@ -383,7 +390,20 @@ export function EventsPage() {
                   )}
                 </div>
 
-                {listedEvents.length === 0 ? (
+                {loadingEvents ? (
+                  <div className="space-y-3 py-2">
+                    {Array.from({ length: 4 }).map((_, idx) => (
+                      <div key={idx} className="flex items-center gap-3.5 p-3 rounded-xl border border-sekkha-hairline bg-white/70">
+                        <Skeleton className="size-11 rounded-xl shrink-0" />
+                        <div className="flex-1 space-y-1.5 min-w-0">
+                          <Skeleton className="h-4 w-40 rounded-md" />
+                          <Skeleton className="h-3 w-24 rounded-md" />
+                        </div>
+                        <Skeleton className="h-6 w-16 rounded-full shrink-0" />
+                      </div>
+                    ))}
+                  </div>
+                ) : listedEvents.length === 0 ? (
                   <div className="flex flex-col items-center justify-center gap-2.5 py-12 text-center">
                     <CalendarDaysIcon className="size-10 text-sekkha-slate/40" aria-hidden="true" />
                     <p className="text-caption font-medium text-sekkha-slate">

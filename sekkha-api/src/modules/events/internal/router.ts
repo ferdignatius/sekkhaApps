@@ -124,47 +124,55 @@ eventsRouter.patch("/:id/status", requireAuth, requireRole("pengurus", "admin"),
       data: { status },
     })
 
-    // When closing the event, finalize all attendances and credit points to attendees
+    // When closing the event, finalize all attendances and credit points to attendees in batch
     if (status === "closed") {
       const attendees = await prisma.attendance.findMany({
         where: { eventId: id },
-        include: { user: true },
       })
 
-      const pointRuleModel = (prisma as any).pointRule
-      const ruleCode = event.eventType === "special" ? "attendance_special" : "attendance_rutin"
-      const activeRule = await pointRuleModel.findUnique({ where: { code: ruleCode } }).catch(() => null)
-      const defaultPoints = activeRule?.points ?? (event.eventType === "special" ? 100 : 50)
+      if (attendees.length > 0) {
+        const pointRuleModel = (prisma as any).pointRule
+        const ruleCode = event.eventType === "special" ? "attendance_special" : "attendance_rutin"
+        const activeRule = await pointRuleModel.findUnique({ where: { code: ruleCode } }).catch(() => null)
+        const defaultPoints = activeRule?.points ?? (event.eventType === "special" ? 100 : 50)
 
-      for (const att of attendees) {
-        // Check if points were already awarded for this attendance
-        const existingTx = await prisma.pointTransaction.findFirst({
-          where: { referenceId: att.id },
+        const existingTxs = await prisma.pointTransaction.findMany({
+          where: { referenceId: { in: attendees.map((a) => a.id) } },
+          select: { referenceId: true },
         })
+        const processedAttIds = new Set(existingTxs.map((t) => t.referenceId))
+        const pendingAttendees = attendees.filter((a) => !processedAttIds.has(a.id))
 
-        if (!existingTx) {
-          const points = att.pointsEarned || defaultPoints
+        if (pendingAttendees.length > 0) {
+          const pointTxData = pendingAttendees.map((att) => ({
+            userId: att.userId,
+            amount: att.pointsEarned || defaultPoints,
+            type: "attendance",
+            description: `Presensi Event: ${event.title}`,
+            referenceId: att.id,
+          }))
 
-          await prisma.user.update({
-            where: { id: att.userId },
-            data: {
-              points: { increment: points },
-              lastActivityAt: att.scannedAt,
-            },
-          }).catch(() => {})
+          await prisma.$transaction([
+            prisma.pointTransaction.createMany({ data: pointTxData }),
+            ...pendingAttendees.map((att) =>
+              prisma.user.update({
+                where: { id: att.userId },
+                data: {
+                  points: { increment: att.pointsEarned || defaultPoints },
+                  lastActivityAt: att.scannedAt,
+                },
+              })
+            ),
+          ])
 
-          await prisma.pointTransaction.create({
-            data: {
-              userId: att.userId,
-              amount: points,
-              type: "attendance",
-              description: `Presensi Event: ${event.title}`,
-              referenceId: att.id,
-            },
-          }).catch(() => {})
-
-          await invalidate(CacheKeys.userAttendances(att.userId))
-          await invalidate(CacheKeys.userProfile(att.userId))
+          await Promise.all(
+            pendingAttendees.map((att) =>
+              Promise.all([
+                invalidate(CacheKeys.userAttendances(att.userId)),
+                invalidate(CacheKeys.userProfile(att.userId)),
+              ])
+            )
+          )
         }
       }
 
@@ -186,6 +194,14 @@ eventsRouter.post("/:id/attendance", requireAuth, async (req, res, next) => {
       method: z.enum(["qr", "manual"]),
       user_id: z.string().optional(),
     }).parse(req.body)
+
+    // Authorization Guard: Prevent normal users from recording attendance on behalf of others
+    if (user_id && user_id !== req.user!.userId) {
+      if (req.user!.role !== "pengurus" && req.user!.role !== "admin") {
+        res.status(403).json({ error: "Hanya Pengurus atau Admin yang dapat mencatatkan presensi untuk anggota lain." })
+        return
+      }
+    }
 
     const targetUserId = user_id ?? req.user!.userId
 

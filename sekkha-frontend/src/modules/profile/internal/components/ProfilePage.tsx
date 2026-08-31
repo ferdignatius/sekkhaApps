@@ -92,6 +92,8 @@ interface LeaderboardResponse {
   }
 }
 
+import { Skeleton } from "@/components/ui/skeleton"
+
 export function ProfilePage() {
   const { authState, logout } = useAuth()
   const [profile, setProfile] = useState<UserProfile | null>(null)
@@ -99,7 +101,7 @@ export function ProfilePage() {
   const [badges, setBadges] = useState<UserBadge[]>([])
   const [attendances, setAttendances] = useState<UserAttendance[]>([])
   const [myRank, setMyRank] = useState<number | null>(null)
-  const [, setLoading] = useState(true)
+  const [loading, setLoading] = useState(true)
 
   // Active Tab: "overview" | "badges" | "card" | "settings"
   const [activeTab, setActiveTab] = useState<"overview" | "badges" | "card" | "settings">("overview")
@@ -366,8 +368,45 @@ export function ProfilePage() {
 
       <div className="px-4 py-6 pb-28 md:px-8 md:pb-10 lg:px-12 max-w-6xl mx-auto space-y-6">
 
-        {/* ── 1. LUXURY GLASSMORPHIC IDENTITY HERO BANNER ── */}
-        <div className="relative overflow-hidden rounded-3xl border border-white/80 bg-gradient-to-br from-white/95 via-white/85 to-blue-50/40 p-6 sm:p-8 backdrop-blur-2xl shadow-sm transition-all">
+        {loading && !profile ? (
+          <div className="space-y-6">
+            {/* Skeleton Hero Banner */}
+            <div className="rounded-3xl border border-white/80 bg-white/80 p-6 sm:p-8 backdrop-blur-2xl shadow-sm space-y-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
+                <Skeleton className="size-24 sm:size-28 rounded-3xl" />
+                <div className="space-y-3 flex-1">
+                  <Skeleton className="h-8 w-48 rounded-xl" />
+                  <div className="flex gap-2">
+                    <Skeleton className="h-6 w-28 rounded-xl" />
+                    <Skeleton className="h-6 w-24 rounded-xl" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Skeleton Stats Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="rounded-2xl border border-sekkha-hairline bg-white/80 p-4 space-y-2 shadow-2xs">
+                  <Skeleton className="h-3.5 w-20 rounded-md" />
+                  <Skeleton className="h-8 w-16 rounded-md" />
+                </div>
+              ))}
+            </div>
+
+            {/* Skeleton Content Card */}
+            <div className="rounded-3xl border border-sekkha-hairline bg-white/80 p-6 space-y-4 shadow-2xs">
+              <Skeleton className="h-6 w-40 rounded-xl" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Skeleton className="h-64 rounded-2xl" />
+                <Skeleton className="h-64 rounded-2xl" />
+              </div>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* ── 1. LUXURY GLASSMORPHIC IDENTITY HERO BANNER ── */}
+            <div className="relative overflow-hidden rounded-3xl border border-white/80 bg-gradient-to-br from-white/95 via-white/85 to-blue-50/40 p-6 sm:p-8 backdrop-blur-2xl shadow-sm transition-all">
           {/* Ambient Glow Orbs */}
           <div className="absolute -top-16 -right-16 size-56 rounded-full bg-sekkha-brand-blue/15 blur-3xl pointer-events-none" />
           <div className="absolute -bottom-16 -left-16 size-48 rounded-full bg-amber-400/15 blur-3xl pointer-events-none" />
@@ -1080,6 +1119,8 @@ export function ProfilePage() {
             </div>
           </div>
         )}
+        </>
+      )}
 
       </div>
 

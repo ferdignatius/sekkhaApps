@@ -1,6 +1,8 @@
 import { Router } from "express"
+import { z } from "zod"
+import bcrypt from "bcryptjs"
 import { prisma } from "../../../lib/prisma"
-import { cached, CacheKeys } from "../../../lib/cache"
+import { cached, invalidate, CacheKeys } from "../../../lib/cache"
 import { requireAuth } from "../../../middleware/auth"
 
 export const usersRouter = Router()
@@ -109,25 +111,25 @@ usersRouter.get("/me/attendances", requireAuth, async (req, res, next) => {
 })
 
 // PATCH /api/users/me — update profile
+const UpdateProfileSchema = z.object({
+  name: z.string().min(1).optional(),
+  username: z
+    .string()
+    .min(3, "Username minimal 3 karakter")
+    .max(30, "Username maksimal 30 karakter")
+    .regex(/^[a-zA-Z0-9_.]+$/, "Username hanya boleh huruf, angka, titik, underscore")
+    .optional()
+    .nullable(),
+  school: z.string().optional().nullable(),
+  phone: z.string().optional().nullable(),
+  birth_date: z.string().optional().nullable(),
+  gender: z.string().optional().nullable(),
+  avatar_url: z.string().url().optional().nullable(),
+})
+
 usersRouter.patch("/me", requireAuth, async (req, res, next) => {
   try {
-    const { z } = await import("zod")
-    const body = z.object({
-      name: z.string().min(1).optional(),
-      username: z
-        .string()
-        .min(3, "Username minimal 3 karakter")
-        .max(30, "Username maksimal 30 karakter")
-        .regex(/^[a-zA-Z0-9_.]+$/, "Username hanya boleh huruf, angka, titik, underscore")
-        .optional()
-        .nullable(),
-      school: z.string().optional().nullable(),
-      phone: z.string().optional().nullable(),
-      birth_date: z.string().optional().nullable(),
-      gender: z.string().optional().nullable(),
-      avatar_url: z.string().url().optional().nullable(),
-    }).parse(req.body)
-
+    const body = UpdateProfileSchema.parse(req.body)
     const userId = req.user!.userId
 
     const existing = await (prisma.user as any).findUnique({ where: { id: userId } })
@@ -183,7 +185,6 @@ usersRouter.patch("/me", requireAuth, async (req, res, next) => {
     })
 
     // Invalidate profile cache
-    const { invalidate, CacheKeys } = await import("../../../lib/cache")
     await invalidate(CacheKeys.userProfile(userId))
 
     res.json({
@@ -291,18 +292,15 @@ usersRouter.get("/me/point-transactions", requireAuth, async (req, res, next) =>
   }
 })
 
+const ChangePasswordSchema = z.object({
+  current_password: z.string().min(1, "Password saat ini wajib diisi"),
+  new_password: z.string().min(6, "Password baru minimal 6 karakter"),
+})
+
 // POST /api/users/change-password — User updates their password
 usersRouter.post("/change-password", requireAuth, async (req, res, next) => {
   try {
-    const { z } = await import("zod")
-    const bcrypt = (await import("bcryptjs")).default
-    const body = z
-      .object({
-        current_password: z.string().min(1, "Password saat ini wajib diisi"),
-        new_password: z.string().min(6, "Password baru minimal 6 karakter"),
-      })
-      .parse(req.body)
-
+    const body = ChangePasswordSchema.parse(req.body)
     const userId = req.user!.userId
     const user = await prisma.user.findUnique({ where: { id: userId } })
 

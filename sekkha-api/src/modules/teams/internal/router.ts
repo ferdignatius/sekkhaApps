@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs"
 import { prisma } from "../../../lib/prisma"
 import { requireAuth, requireRole } from "../../../middleware/auth"
 import { generateUniqueUsername } from "../../auth/internal/repository"
+import { invalidate, CacheKeys } from "../../../lib/cache"
 
 export const teamsRouter = Router()
 
@@ -49,10 +50,32 @@ teamsRouter.get("/members", requireAuth, async (req, res, next) => {
       ]
     }
 
+    const limitParam = req.query.limit ? parseInt(req.query.limit as string, 10) : undefined
+    const pageParam = req.query.page ? parseInt(req.query.page as string, 10) : undefined
+    const skip = pageParam && limitParam ? (pageParam - 1) * limitParam : undefined
+
     const rawMembers = await (prisma.user as any).findMany({
       where,
       orderBy: { createdAt: "desc" },
-      include: {
+      take: limitParam,
+      skip,
+      select: {
+        id: true,
+        name: true,
+        username: true,
+        email: true,
+        phone: true,
+        school: true,
+        birthDate: true,
+        gender: true,
+        role: true,
+        avatarUrl: true,
+        userNumber: true,
+        isClaimed: true,
+        claimedAt: true,
+        claimPin: true,
+        points: true,
+        createdAt: true,
         _count: {
           select: {
             attendances: true,
@@ -61,34 +84,25 @@ teamsRouter.get("/members", requireAuth, async (req, res, next) => {
       },
     })
 
-    const members = await Promise.all(
-      rawMembers.map(async (m: any) => {
-        let uNum = m.userNumber
-        if (!uNum) {
-          uNum = await generateUserNumber(m.createdAt ? new Date(m.createdAt) : new Date())
-          await (prisma.user as any).update({ where: { id: m.id }, data: { userNumber: uNum } }).catch(() => {})
-        }
-        return {
-          id: m.id,
-          name: m.name,
-          username: m.username || null,
-          email: m.email,
-          phone: m.phone,
-          school: m.school,
-          birth_date: m.birthDate ? new Date(m.birthDate).toISOString() : null,
-          gender: m.gender,
-          role: m.role,
-          avatar_url: m.avatarUrl,
-          user_number: uNum,
-          is_claimed: m.isClaimed ?? true,
-          claimed_at: m.claimedAt ? new Date(m.claimedAt).toISOString() : null,
-          claim_pin: m.claimPin || null,
-          total_attendance: m._count?.attendances ?? 0,
-          points: m.points ?? 0,
-          created_at: new Date(m.createdAt).toISOString(),
-        }
-      })
-    )
+    const members = rawMembers.map((m: any) => ({
+      id: m.id,
+      name: m.name,
+      username: m.username || null,
+      email: m.email,
+      phone: m.phone,
+      school: m.school,
+      birth_date: m.birthDate ? new Date(m.birthDate).toISOString() : null,
+      gender: m.gender,
+      role: m.role,
+      avatar_url: m.avatarUrl,
+      user_number: m.userNumber || null,
+      is_claimed: m.isClaimed ?? true,
+      claimed_at: m.claimedAt ? new Date(m.claimedAt).toISOString() : null,
+      claim_pin: m.claimPin || null,
+      total_attendance: m._count?.attendances ?? 0,
+      points: m.points ?? 0,
+      created_at: new Date(m.createdAt).toISOString(),
+    }))
 
     res.json(members)
   } catch (err) {
@@ -325,7 +339,6 @@ teamsRouter.put("/members/:id", requireAuth, requireRole("pengurus", "admin"), a
       },
     })
 
-    const { invalidate, CacheKeys } = await import("../../../lib/cache")
     await invalidate(CacheKeys.userProfile(id))
 
     res.json({
@@ -372,7 +385,6 @@ teamsRouter.delete("/members/:id", requireAuth, requireRole("pengurus", "admin")
 
     await (prisma.user as any).delete({ where: { id } })
 
-    const { invalidate, CacheKeys } = await import("../../../lib/cache")
     await invalidate(CacheKeys.userProfile(id))
 
     res.json({ success: true, message: "Data anggota berhasil dihapus." })
@@ -513,7 +525,6 @@ teamsRouter.post("/invitations/:id/accept", requireAuth, async (req, res, next) 
       })
     }
 
-    const { invalidate, CacheKeys } = await import("../../../lib/cache")
     await invalidate(CacheKeys.userProfile(user.id))
 
     res.json({ success: true, role: invitation.role })
@@ -597,7 +608,6 @@ teamsRouter.post("/members/:id/reset-password", requireAuth, requireRole("pengur
       },
     })
 
-    const { invalidate, CacheKeys } = await import("../../../lib/cache")
     await invalidate(CacheKeys.userProfile(id))
 
     res.json({

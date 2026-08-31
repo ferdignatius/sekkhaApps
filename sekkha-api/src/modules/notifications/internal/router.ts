@@ -33,12 +33,12 @@ notificationsRouter.patch("/:id/read", requireAuth, async (req, res, next) => {
     })
 
     if (!notification) {
-      res.status(404).json({ error: "Notifikasi tidak ditemukan" })
+      res.status(404).json({ error: "Notification not found" })
       return
     }
 
     if (notification.userId !== req.user!.userId) {
-      res.status(403).json({ error: "Akses ditolak" })
+      res.status(403).json({ error: "Access denied" })
       return
     }
 

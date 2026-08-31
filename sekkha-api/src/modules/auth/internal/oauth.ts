@@ -119,7 +119,7 @@ export async function handleGoogleMockCallback(req: Request, res: Response, next
     const name = req.query.name as string
 
     if (!email) {
-      res.status(400).send("Parameter email diperlukan")
+      res.status(400).send("Email parameter is required")
       return
     }
 

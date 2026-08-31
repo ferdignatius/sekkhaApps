@@ -26,26 +26,26 @@ interface RuleSectionConfig {
 const RULE_SECTIONS: RuleSectionConfig[] = [
   {
     id: "attendance_section",
-    title: "1. Aturan Poin Presensi Kegiatan",
-    subtitle: "Poin yang langsung diperoleh umat saat mencatatkan kehadiran di sesi kebaktian.",
+    title: "1. Event Attendance Points Rules",
+    subtitle: "Points earned directly by members when logging attendance in service sessions.",
     icon: <CalendarDaysIcon className="size-5 text-blue-600" />,
-    badge: "Presensi Event",
+    badge: "Event Attendance",
     badgeVariant: "blue",
     ruleCodes: ["attendance_rutin", "attendance_special"],
   },
   {
     id: "streak_section",
-    title: "2. Aturan Streak & Retensi Mingguan",
-    subtitle: "Poin apresiasi bagi umat yang mempertahankan konsistensi kehadiran berturut-turut.",
+    title: "2. Weekly Streak & Retention Rules",
+    subtitle: "Appreciation points for members maintaining consecutive attendance consistency.",
     icon: <FlameIcon className="size-5 text-orange-600" />,
-    badge: "Gamifikasi Streak",
+    badge: "Streak Gamification",
     badgeVariant: "coral",
     ruleCodes: ["streak_weekly_bonus"],
   },
   {
     id: "engagement_section",
-    title: "3. Aturan Sambutan Umat Baru",
-    subtitle: "Poin bonus motivasi bagi umat yang baru pertama kali bergabung dan hadir di vihara.",
+    title: "3. New Member Welcome Rules",
+    subtitle: "Motivational bonus points for first-time attendees visiting the vihara.",
     icon: <AwardIcon className="size-5 text-emerald-600" />,
     badge: "Engagement",
     badgeVariant: "emerald",
@@ -80,8 +80,8 @@ export function PointsRulesPage() {
       setRules(data)
       setError(null)
     } catch (err: any) {
-      console.error("Gagal memuat aturan poin:", err)
-      setError("Gagal memuat aturan poin dari server.")
+      console.error("Failed to load point rules:", err)
+      setError("Failed to load point rules from server.")
     } finally {
       setLoading(false)
     }
@@ -103,7 +103,7 @@ export function PointsRulesPage() {
     if (!editingRule) return
 
     if (editForm.points < 0) {
-      setFormError("Nilai poin tidak boleh bernilai negatif.")
+      setFormError("Point value cannot be negative.")
       return
     }
 
@@ -118,7 +118,7 @@ export function PointsRulesPage() {
       await loadRules()
       setModalOpen(false)
     } catch (err: any) {
-      setFormError(err.message || "Gagal menyimpan perubahan aturan poin.")
+      setFormError(err.message || "Failed to save point rule changes.")
     } finally {
       setSubmitting(false)
     }
@@ -133,7 +133,7 @@ export function PointsRulesPage() {
     <main className="min-h-screen bg-sekkha-surface pb-32 md:pb-12 font-sans">
       <PageBreadcrumb
         items={[
-          { label: "Konfigurasi" },
+          { label: "Configure" },
           { label: "Rules" },
           { label: "Points Rules" },
         ]}
@@ -149,31 +149,31 @@ export function PointsRulesPage() {
                 <ZapIcon className="size-5" />
               </div>
               <h1 className="text-heading-5 font-black text-sekkha-ink">
-                Aturan Poin Sistem (Points Rules)
+                System Points Rules
               </h1>
             </div>
             <p className="text-body-sm text-sekkha-slate">
-              Struktur aturan poin inti yang terpasang pada sistem. Anda dapat menyesuaikan nilai poin dan keterangan kapan saja.
+              Core system point distribution rules. You can customize point values and descriptions anytime.
             </p>
           </div>
 
           <Badge variant="slate" size="lg" icon={<ShieldCheckIcon className="size-4 text-sekkha-brand-blue" />}>
-            Aturan Inti (Dapat diedit, Tidak dapat dihapus)
+            Core Rules (Editable, Cannot be deleted)
           </Badge>
         </div>
 
         {/* Info Banner */}
         <Alert
           variant="info"
-          title="Mekanisme Kalkulasi Otomatis"
-          description="Nilai poin yang tersimpan di bawah akan otomatis dipakai saat pengurus menutup sesi presensi event, mencatat streak mingguan, atau menyambut kehadiran umat baru."
+          title="Automatic Calculation Mechanism"
+          description="Point values below are automatically awarded when organizers conclude event attendance sessions, calculate streaks, or welcome new members."
         />
 
         {/* Error Alert */}
         {error && (
           <Alert
             variant="destructive"
-            title="Terjadi Kesalahan"
+            title="Error Occurred"
             description={error}
           />
         )}
@@ -230,7 +230,7 @@ export function PointsRulesPage() {
                             </code>
                             <div className="flex items-baseline gap-1 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 px-3 py-0.5 text-white shadow-2xs">
                               <span className="text-heading-6 font-black tracking-tight">+{rule.points}</span>
-                              <span className="text-micro-bold opacity-90">Poin</span>
+                              <span className="text-micro-bold opacity-90">Pts</span>
                             </div>
                           </div>
 
@@ -239,14 +239,14 @@ export function PointsRulesPage() {
                               {rule.label}
                             </h3>
                             <p className="text-micro text-sekkha-slate leading-relaxed">
-                              {rule.description || "Tidak ada keterangan tambahan."}
+                              {rule.description || "No additional description."}
                             </p>
                           </div>
                         </div>
 
                         <div className="mt-4 pt-3 border-t border-slate-200/60 flex items-center justify-between">
                           <span className="text-micro text-sekkha-muted">
-                            Sistem Inti
+                            Core System
                           </span>
                           <Button
                             type="button"
@@ -255,7 +255,7 @@ export function PointsRulesPage() {
                             className="h-8 px-3 text-caption font-bold"
                           >
                             <PencilIcon className="size-3 mr-1" />
-                            <span>Ubah Nilai</span>
+                            <span>Edit Value</span>
                           </Button>
                         </div>
                       </div>
@@ -273,21 +273,21 @@ export function PointsRulesPage() {
       <ResponsiveFormModal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
-        title="Ubah Nilai Aturan Poin"
-        description={`Perbarui besaran poin untuk ${editingRule?.label || "aturan ini"}.`}
+        title="Edit Point Rule Value"
+        description={`Update points value for ${editingRule?.label || "this rule"}.`}
       >
         <form onSubmit={handleSubmit} className="space-y-4">
           {formError && (
             <Alert
               variant="destructive"
-              title="Gagal Menyimpan"
+              title="Failed to Save"
               description={formError}
             />
           )}
 
           <Input
             id="rule-label"
-            label="Nama Aturan"
+            label="Rule Name"
             required
             value={editForm.label}
             onChange={(e) => setEditForm({ ...editForm, label: e.target.value })}
@@ -296,28 +296,28 @@ export function PointsRulesPage() {
           <div className="space-y-1">
             <Input
               id="rule-points"
-              label="Jumlah Poin Diberikan (+Poin)"
+              label="Points Awarded (+Points)"
               type="number"
               required
               min={0}
               max={10000}
               value={editForm.points}
               onChange={(e) => setEditForm({ ...editForm, points: Number(e.target.value) })}
-              endIcon={<span className="text-caption font-bold text-sekkha-slate">Poin</span>}
-              helperText="Poin ini akan otomatis diberikan ke akun umat saat trigger kondisi terpenuhi."
+              endIcon={<span className="text-caption font-bold text-sekkha-slate">Pts</span>}
+              helperText="Points will be automatically awarded to member accounts upon trigger fulfillment."
             />
           </div>
 
           <div className="flex flex-col gap-1.5 w-full">
             <label htmlFor="rule-desc" className="text-caption font-bold text-sekkha-ink">
-              Keterangan / Fungsi
+              Description / Details
             </label>
             <textarea
               id="rule-desc"
               rows={3}
               value={editForm.description}
               onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
-              placeholder="Jelaskan kondisi kapan poin ini didapatkan..."
+              placeholder="Describe when and how these points are awarded..."
               className="w-full rounded-2xl bg-slate-50/70 border border-sekkha-hairline-strong px-3.5 py-2.5 text-body-sm text-sekkha-ink outline-none transition-all duration-200 placeholder:text-slate-400 focus:border-sekkha-brand-blue focus:bg-white focus:ring-2 focus:ring-blue-500/10"
             />
           </div>
@@ -328,13 +328,13 @@ export function PointsRulesPage() {
               variant="secondary"
               onClick={() => setModalOpen(false)}
             >
-              Batal
+              Cancel
             </Button>
             <Button
               type="submit"
               disabled={submitting}
             >
-              {submitting ? "Menyimpan..." : "Simpan Perubahan"}
+              {submitting ? "Saving..." : "Save Changes"}
             </Button>
           </div>
         </form>

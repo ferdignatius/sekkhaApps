@@ -1,9 +1,9 @@
 // feature/events/components/EventsPage
 // Events page: month calendar with colored dots + event list below.
-// Role-based Category Filtering (Many-to-Many Access Control) & Dynamic Master Data Colors.
+// Strictly adhering to Clay Design System: consistent 12px control radius, warm cream canvas, custom dropdown, and full English localization.
 
-import { useState, useMemo, useEffect } from "react"
-import { PlusIcon, CalendarDaysIcon, SearchIcon } from "lucide-react"
+import { useState, useMemo, useEffect, useRef } from "react"
+import { PlusIcon, CalendarDaysIcon, SearchIcon, ChevronDownIcon, CheckIcon, FilterIcon, XIcon } from "lucide-react"
 import { useAuth } from "@/modules/auth"
 import { api } from "@/lib/api"
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
@@ -39,11 +39,11 @@ function isSameMonth(iso?: string, month?: Date): boolean {
 
 function formatSelectedDate(key: string): string {
   const d = new Date(key + "T00:00:00")
-  return d.toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" })
+  return d.toLocaleDateString("en-US", { weekday: "long", day: "numeric", month: "long", year: "numeric" })
 }
 
 function formatMonthLabel(month: Date): string {
-  return month.toLocaleDateString("id-ID", { month: "long", year: "numeric" })
+  return month.toLocaleDateString("en-US", { month: "long", year: "numeric" })
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -66,6 +66,8 @@ export function EventsPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const debouncedSearchQuery = useDebounce(searchQuery, 250)
   const [selectedCategoryTag, setSelectedCategoryTag] = useState<string>("all")
+  const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false)
+  const categoryDropdownRef = useRef<HTMLDivElement>(null)
 
   // Dynamic Accessible Categories for logged in User Role
   const accessibleCategories = useMemo(() => {
@@ -75,6 +77,17 @@ export function EventsPage() {
   const accessibleTagsSet = useMemo(() => {
     return new Set(accessibleCategories.map(c => c.tag.toLowerCase()))
   }, [accessibleCategories])
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (categoryDropdownRef.current && !categoryDropdownRef.current.contains(event.target as Node)) {
+        setCategoryDropdownOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [])
 
   // Load events from backend API
   useEffect(() => {
@@ -87,7 +100,7 @@ export function EventsPage() {
       const data = await api.get<EventListItem[]>("/events")
       setEvents(data)
     } catch (err) {
-      console.error("Gagal memuat event dari server:", err)
+      console.error("Failed to load events from server:", err)
       setEvents([])
     } finally {
       setLoadingEvents(false)
@@ -108,7 +121,7 @@ export function EventsPage() {
       const data = await api.get<AttendanceRecord[]>(`/events/${eventId}/attendances`)
       setAttendances(prev => ({ ...prev, [eventId]: data }))
     } catch (err) {
-      console.error("Gagal memuat presensi event:", err)
+      console.error("Failed to load event attendances:", err)
     }
   }
 
@@ -116,53 +129,61 @@ export function EventsPage() {
     loadEventAttendances(eventId)
   }
 
-  // ── Build dot map for calendar (Filtered by Role Permission & Master Data Colors) ──
+  // ── Build dot map for calendar ──
   const dotMap = useMemo<Record<string, EventDotItem[]>>(() => {
     const map: Record<string, EventDotItem[]> = {}
-    for (const ev of events) {
-      const tagKey = (ev.tag ?? ev.event_type ?? "").toLowerCase()
-      // Skip events whose category is not accessible by current user role
-      if (!accessibleTagsSet.has(tagKey)) continue
+    events.forEach(ev => {
+      const tag = (ev.tag ?? ev.event_type ?? "rutin").toLowerCase()
+      if (!accessibleTagsSet.has(tag)) return
 
       const key = toDateKey(ev.event_date)
-      const colorInfo = getCategoryColor(tagKey)
+      if (!key) return
       if (!map[key]) map[key] = []
-      if (map[key].length < 3) {
-        map[key].push({ colorHex: colorInfo.hex })
-      }
-    }
+      
+      const colorInfo = getCategoryColor(tag)
+      map[key].push({
+        colorHex: colorInfo.hex,
+        className: colorInfo.badgeClass,
+      })
+    })
     return map
   }, [events, accessibleTagsSet])
 
-  // ── Events to display in list (Filtered by Role Permission, Month, Date, Search, Category) ──
+  // Filtered Events
   const listedEvents = useMemo(() => {
-    let base = events
-      .filter(ev => {
-        const tagKey = (ev.tag ?? ev.event_type ?? "").toLowerCase()
-        return accessibleTagsSet.has(tagKey) && isSameMonth(ev.event_date, activeMonth)
+    let base = events.filter(ev => {
+      const tag = (ev.tag ?? ev.event_type ?? "rutin").toLowerCase()
+      return accessibleTagsSet.has(tag)
+    })
+
+    const isSearching = Boolean(debouncedSearchQuery.trim())
+
+    // If searching, search across all events globally (don't restrict to current month/selected date)
+    if (isSearching) {
+      const q = debouncedSearchQuery.toLowerCase().trim()
+      base = base.filter(ev => {
+        const titleMatch = (ev.title ?? "").toLowerCase().includes(q)
+        const locMatch = (ev.location ?? "").toLowerCase().includes(q)
+        const descMatch = (ev.description ?? "").toLowerCase().includes(q)
+        const tagMatch = (ev.tag ?? "").toLowerCase().includes(q)
+        const typeMatch = (ev.event_type ?? "").toLowerCase().includes(q)
+        return titleMatch || locMatch || descMatch || tagMatch || typeMatch
       })
-      .sort((a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime())
-
-    if (selectedDate) {
-      base = base.filter(ev => toDateKey(ev.event_date) === selectedDate)
+    } else {
+      if (selectedDate) {
+        base = base.filter(ev => toDateKey(ev.event_date) === selectedDate)
+      } else {
+        base = base.filter(ev => isSameMonth(ev.event_date, activeMonth))
+      }
     }
 
-    // Search filter with debounced query
-    if (debouncedSearchQuery.trim()) {
-      const q = debouncedSearchQuery.toLowerCase()
-      base = base.filter(ev =>
-        ev.title.toLowerCase().includes(q) ||
-        ev.location.toLowerCase().includes(q)
-      )
-    }
-
-    // Category Tag filter
     if (selectedCategoryTag !== "all") {
       base = base.filter(ev => (ev.tag ?? ev.event_type ?? "").toLowerCase() === selectedCategoryTag.toLowerCase())
     }
 
     return base
   }, [events, accessibleTagsSet, activeMonth, selectedDate, debouncedSearchQuery, selectedCategoryTag])
+
 
   async function handleFormSubmit(payload: CreateEventPayload) {
     try {
@@ -173,7 +194,7 @@ export function EventsPage() {
       }
       await loadEvents()
     } catch (err) {
-      console.error("Gagal menyimpan event:", err)
+      console.error("Failed to save event:", err)
     } finally {
       setEditTarget(null)
       setFormOpen(false)
@@ -183,7 +204,7 @@ export function EventsPage() {
   // ── Detail View ──
   if (view === "detail" && selected) {
     return (
-      <main className="font-sans text-left">
+      <main className="font-sans text-left min-h-screen bg-[#fffaf0]">
         <PageBreadcrumb
           items={[
             {
@@ -195,30 +216,30 @@ export function EventsPage() {
           ]}
           onBack={() => { setSelected(null); setView("calendar") }}
         />
-        <div className="px-3.5 py-4 sm:px-6 sm:py-6 md:px-8 lg:px-12 pb-24 md:pb-12">
-          <div className="mx-auto max-w-7xl">
-            <div className="rounded-xl border border-sekkha-hairline-soft bg-sekkha-canvas p-5">
+        <div className="px-3 py-4 sm:px-6 sm:py-6 md:px-8 lg:px-12 pb-28 md:pb-12">
+          <div className="mx-auto max-w-5xl">
+            <div className="rounded-[20px] sm:rounded-[24px] border border-[#e5e5e5] bg-[#fffaf0] p-3.5 sm:p-6 shadow-xs">
               <EventDetailSheet
                 event={selected}
                 role={role}
                 onClose={() => { setSelected(null); setView("calendar") }}
                 onEdit={isPengurus ? ev => { setEditTarget(ev); setFormOpen(true) } : undefined}
                 onDelete={isPengurus ? async ev => {
-                  if (!window.confirm(`Apakah Anda yakin ingin menghapus event "${ev.title}"?`)) return
+                  if (!window.confirm(`Are you sure you want to delete "${ev.title}"?`)) return
                   try {
                     await api.delete(`/events/${ev.id}`)
                     setEvents(prev => prev.filter(e => e.id !== ev.id))
                     setSelected(null)
                     setView("calendar")
                   } catch (err) {
-                    console.error("Gagal menghapus event dari server:", err)
-                    alert("Gagal menghapus event dari server.")
+                    console.error("Failed to delete event:", err)
+                    alert("Failed to delete event from server.")
                   }
                 } : undefined}
                 onDuplicate={isPengurus ? async ev => {
                   try {
                     const payload: CreateEventPayload = {
-                      title: `${ev.title} (Salinan)`,
+                      title: `${ev.title} (Copy)`,
                       description: ev.description ?? "",
                       location: ev.location ?? "",
                       event_date: ev.event_date,
@@ -229,8 +250,8 @@ export function EventsPage() {
                     setEvents(prev => [dup, ...prev])
                     setSelected(dup)
                   } catch (err) {
-                    console.error("Gagal menduplikasi event:", err)
-                    alert("Gagal menduplikasi event ke server.")
+                    console.error("Failed to duplicate event:", err)
+                    alert("Failed to duplicate event on server.")
                   }
                 } : undefined}
                 onStatusChange={isPengurus ? async (eventId, newStatus) => {
@@ -240,7 +261,7 @@ export function EventsPage() {
                     await api.patch(`/events/${eventId}/status`, { status: newStatus })
                     await loadEvents()
                   } catch (err) {
-                    console.error("Gagal memperbarui status event ke server:", err)
+                    console.error("Failed to update event status:", err)
                     await loadEvents()
                   }
                 } : undefined}
@@ -251,7 +272,7 @@ export function EventsPage() {
                     await api.delete(`/events/${selected.id}/attendances/${userId}`)
                     await loadEventAttendances(selected.id)
                   } catch (err) {
-                    console.error("Gagal menghapus presensi:", err)
+                    console.error("Failed to remove attendance record:", err)
                   }
                 } : undefined}
               />
@@ -266,8 +287,8 @@ export function EventsPage() {
             setFormOpen(open)
             if (!open) setEditTarget(null)
           }}
-          title={editTarget ? "Edit Event" : "Buat Event Baru"}
-          description={editTarget ? "Perbarui detail event." : "Isi form untuk membuat event baru."}
+          title={editTarget ? "Edit Event" : "Create New Event"}
+          description={editTarget ? "Update event details." : "Fill in the form to create a new event."}
         >
           <EventForm
             initial={editTarget ?? undefined}
@@ -280,9 +301,13 @@ export function EventsPage() {
     )
   }
 
+  // Selected Category Label
+  const currentCategoryObj = accessibleCategories.find(c => c.tag === selectedCategoryTag)
+  const currentCategoryLabel = selectedCategoryTag === "all" ? "All Categories" : (currentCategoryObj?.name ?? selectedCategoryTag)
+
   // ── Calendar + List View ──
   return (
-    <main className="min-h-screen bg-sekkha-surface pb-32 md:pb-12 font-sans text-left">
+    <main className="min-h-screen bg-[#fffaf0] pb-32 md:pb-12 font-sans text-left">
       <PageBreadcrumb items={[{ label: "Events" }]} />
 
       <div className="px-3.5 py-4 sm:px-6 sm:py-6 md:px-8 lg:px-12">
@@ -291,57 +316,108 @@ export function EventsPage() {
           {/* ── Month & Year Title Header ── */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
             <div>
-              <h1 className="text-body-base sm:text-heading-4 font-extrabold text-sekkha-ink tracking-tight">
+              <h1 className="text-lg sm:text-2xl font-bold text-[#0a0a0a] tracking-tight">
                 {selectedDate ? formatSelectedDate(selectedDate) : formatMonthLabel(activeMonth)}
               </h1>
-              <p className="text-micro sm:text-caption font-medium text-sekkha-slate">
-                Agenda kegiatan & kebaktian pemuda vihara
+              <p className="text-xs text-[#6a6a6a]">
+                Sekkha community schedules & activities
               </p>
             </div>
           </div>
 
           {/* ── Mobile-Only: Calendar Mini Top Section ── */}
           <div className="w-full lg:hidden">
-            <div className="relative rounded-2xl border border-sekkha-hairline bg-sekkha-canvas/95 backdrop-blur-md p-3.5 shadow-xs">
-              <EventCalendar
-                dots={dotMap}
-                selected={selectedDate}
-                onSelect={setSelectedDate}
-                month={activeMonth}
-                onMonthChange={month => { setActiveMonth(month); setSelectedDate(null) }}
-              />
-            </div>
+            <EventCalendar
+              dots={dotMap}
+              selected={selectedDate}
+              onSelect={setSelectedDate}
+              month={activeMonth}
+              onMonthChange={month => { setActiveMonth(month); setSelectedDate(null) }}
+            />
           </div>
           
-          {/* ── Search Bar + Category Filter + Create Button Row ── */}
-          <div className="relative flex flex-row items-center gap-2 w-full z-20">
+          {/* ── Search Bar + Category Filter + Create Button Controls Row ── */}
+          <div className="relative flex flex-row items-center gap-2.5 w-full z-20">
             
             {/* Search Input */}
             <div className="relative flex-1 min-w-0">
-              <SearchIcon className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-sekkha-brand-blue pointer-events-none z-10" aria-hidden="true" />
+              <SearchIcon className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-[#6a6a6a] pointer-events-none z-10" aria-hidden="true" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                placeholder="Cari event..."
-                className="w-full rounded-xl border border-sekkha-hairline bg-sekkha-canvas/95 backdrop-blur-md py-2.5 pl-9 pr-3 text-caption text-sekkha-ink placeholder:text-sekkha-slate/70 outline-none shadow-2xs focus:border-sekkha-brand-blue transition-all"
+                placeholder="Search events by title, location, category..."
+                className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] pl-10 pr-9 text-xs sm:text-sm text-[#0a0a0a] placeholder:text-[#6a6a6a] outline-none shadow-xs focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] transition-all"
               />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 flex h-5 w-5 items-center justify-center rounded-full bg-[#e5e5e5] text-[#6a6a6a] hover:bg-[#0a0a0a] hover:text-white transition-colors cursor-pointer"
+                  title="Clear search"
+                >
+                  <XIcon className="size-3" />
+                </button>
+              )}
             </div>
 
-            {/* Dynamic Role-Based Category Filter Dropdown / Toggle */}
-            <div className="relative shrink-0">
-              <select
-                value={selectedCategoryTag}
-                onChange={e => setSelectedCategoryTag(e.target.value)}
-                className="h-10 rounded-xl border border-sekkha-hairline bg-sekkha-canvas/95 backdrop-blur-md px-3 text-caption-bold text-sekkha-ink outline-none shadow-2xs focus:border-sekkha-brand-blue transition-all cursor-pointer capitalize"
+            {/* Custom Clay Category Filter Dropdown */}
+            <div className="relative shrink-0" ref={categoryDropdownRef}>
+              <button
+                type="button"
+                onClick={() => setCategoryDropdownOpen(!categoryDropdownOpen)}
+                className="h-11 rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] hover:bg-[#faf5e8] px-3 sm:px-3.5 flex items-center justify-between gap-2 text-xs sm:text-sm font-semibold text-[#0a0a0a] outline-none shadow-xs transition-all cursor-pointer"
+                title="Filter by category"
               >
-                <option value="all">Semua Kategori</option>
-                {accessibleCategories.map(cat => (
-                  <option key={cat.id} value={cat.tag}>
-                    {cat.name}
-                  </option>
-                ))}
-              </select>
+                <div className="flex items-center gap-1.5">
+                  <FilterIcon className="size-3.5 text-[#6a6a6a]" />
+                  <span className="capitalize truncate max-w-[110px] sm:max-w-[140px]">{currentCategoryLabel}</span>
+                </div>
+                <ChevronDownIcon className="size-3.5 text-[#6a6a6a] shrink-0" />
+              </button>
+
+              {/* Popover Menu */}
+              {categoryDropdownOpen && (
+                <div className="absolute right-0 top-12 z-40 w-52 rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0] p-1.5 shadow-xl text-left animate-in fade-in zoom-in-95 space-y-0.5">
+                  <button
+                    type="button"
+                    onClick={() => { setSelectedCategoryTag("all"); setCategoryDropdownOpen(false) }}
+                    className={`flex w-full items-center justify-between rounded-[8px] px-3 py-2 text-xs font-semibold transition-colors cursor-pointer ${
+                      selectedCategoryTag === "all"
+                        ? "bg-[#faf5e8] text-[#0a0a0a] font-bold"
+                        : "text-[#6a6a6a] hover:bg-[#faf5e8] hover:text-[#0a0a0a]"
+                    }`}
+                  >
+                    <span>All Categories</span>
+                    {selectedCategoryTag === "all" && <CheckIcon className="size-3.5 text-[#0a0a0a]" />}
+                  </button>
+
+                  <div className="h-px bg-[#e5e5e5] my-1" />
+
+                  {accessibleCategories.map(cat => {
+                    const isSelected = selectedCategoryTag.toLowerCase() === cat.tag.toLowerCase()
+                    const colorHex = cat.colorHex || "#1a3a3a"
+                    return (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() => { setSelectedCategoryTag(cat.tag); setCategoryDropdownOpen(false) }}
+                        className={`flex w-full items-center justify-between rounded-[8px] px-3 py-2 text-xs font-semibold transition-colors cursor-pointer ${
+                          isSelected
+                            ? "bg-[#faf5e8] text-[#0a0a0a] font-bold"
+                            : "text-[#6a6a6a] hover:bg-[#faf5e8] hover:text-[#0a0a0a]"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="h-2 w-2 rounded-full shrink-0 shadow-2xs" style={{ backgroundColor: colorHex }} />
+                          <span className="capitalize">{cat.name}</span>
+                        </div>
+                        {isSelected && <CheckIcon className="size-3.5 text-[#0a0a0a]" />}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
             </div>
 
             {/* Create button for Pengurus */}
@@ -349,11 +425,12 @@ export function EventsPage() {
               <button
                 type="button"
                 onClick={() => { setEditTarget(null); setFormOpen(true) }}
-                className="flex h-10 items-center justify-center gap-1.5 rounded-xl bg-sekkha-brand-blue px-3 sm:px-4 text-caption-bold text-white shadow-2xs hover:bg-blue-700 transition-all shrink-0 active:scale-95 cursor-pointer"
-                title="Buat Event Baru"
+                className="h-11 rounded-[12px] bg-[#0a0a0a] px-3.5 sm:px-4 text-xs sm:text-sm font-bold text-white shadow-xs hover:bg-[#1f1f1f] transition-all shrink-0 active:scale-[0.98] cursor-pointer flex items-center justify-center gap-1.5"
+                title="Create New Event"
               >
                 <PlusIcon className="size-4" aria-hidden="true" />
-                <span className="hidden sm:inline">Buat Event</span>
+                <span className="hidden sm:inline">Create Event</span>
+                <span className="sm:hidden">New</span>
               </button>
             )}
 
@@ -364,28 +441,28 @@ export function EventsPage() {
 
             {/* ── Left: Event List Container ── */}
             <div className="flex-1 w-full lg:min-w-0">
-              <div className="relative rounded-2xl border border-sekkha-hairline bg-sekkha-canvas/95 backdrop-blur-md p-4 sm:p-5 shadow-xs">
+              <div className="relative rounded-[20px] sm:rounded-[24px] border border-[#e5e5e5] bg-[#fffaf0] p-4 sm:p-5 shadow-xs">
                 
                 {/* Card Sub-header */}
-                <div className="mb-3 flex items-center justify-between border-b border-sekkha-hairline-soft pb-3">
-                  <div className="flex items-center gap-2">
-                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-sekkha-brand-blue text-white shadow-xs">
-                      <CalendarDaysIcon className="size-4" />
+                <div className="mb-3 flex items-center justify-between border-b border-[#e5e5e5] pb-3 flex-wrap gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-[8px] bg-[#0a0a0a] text-white shadow-xs">
+                      <CalendarDaysIcon className="size-4 text-[#e8b94a]" />
                     </span>
-                    <h2 className="text-body-sm-medium font-bold text-sekkha-ink">
-                      Daftar Kegiatan Vihara
+                    <h2 className="text-sm font-bold text-[#0a0a0a]">
+                      {searchQuery.trim() ? `Search: "${searchQuery}"` : "Community Events"}
                     </h2>
-                    <span className="rounded-full bg-sekkha-brand-blue/10 px-2 py-0.5 text-micro-bold text-sekkha-brand-blue">
-                      {listedEvents.length} Event
+                    <span className="rounded-full bg-[#f5f0e0] border border-[#e5e5e5] px-2.5 py-0.5 text-xs font-bold text-[#0a0a0a]">
+                      {listedEvents.length} {listedEvents.length === 1 ? "Event" : "Events"}
                     </span>
                   </div>
-                  {selectedDate && (
+                  {(selectedDate || searchQuery.trim()) && (
                     <button
                       type="button"
-                      onClick={() => setSelectedDate(null)}
-                      className="text-xs font-bold text-sekkha-brand-blue hover:underline"
+                      onClick={() => { setSelectedDate(null); setSearchQuery("") }}
+                      className="text-xs font-bold text-[#0a0a0a] hover:underline cursor-pointer"
                     >
-                      Tampilkan Semua
+                      {searchQuery.trim() ? "Clear Search" : "Show All"}
                     </button>
                   )}
                 </div>
@@ -393,8 +470,8 @@ export function EventsPage() {
                 {loadingEvents ? (
                   <div className="space-y-3 py-2">
                     {Array.from({ length: 4 }).map((_, idx) => (
-                      <div key={idx} className="flex items-center gap-3.5 p-3 rounded-xl border border-sekkha-hairline bg-white/70">
-                        <Skeleton className="size-11 rounded-xl shrink-0" />
+                      <div key={idx} className="flex items-center gap-3.5 p-3 rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8]">
+                        <Skeleton className="size-11 rounded-[12px] shrink-0" />
                         <div className="flex-1 space-y-1.5 min-w-0">
                           <Skeleton className="h-4 w-40 rounded-md" />
                           <Skeleton className="h-3 w-24 rounded-md" />
@@ -404,14 +481,27 @@ export function EventsPage() {
                     ))}
                   </div>
                 ) : listedEvents.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center gap-2.5 py-12 text-center">
-                    <CalendarDaysIcon className="size-10 text-sekkha-slate/40" aria-hidden="true" />
-                    <p className="text-caption font-medium text-sekkha-slate">
-                      {selectedDate ? "Tidak ada event di tanggal ini." : "Tidak ada event yang dapat diakses bulan ini."}
+                  <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
+                    <CalendarDaysIcon className="size-10 text-[#6a6a6a]/40" aria-hidden="true" />
+                    <p className="text-xs font-medium text-[#6a6a6a]">
+                      {searchQuery.trim()
+                        ? `No events found matching "${searchQuery}".`
+                        : selectedDate
+                          ? "No events on this date."
+                          : "No events available for this month."}
                     </p>
+                    {searchQuery.trim() && (
+                      <button
+                        type="button"
+                        onClick={() => setSearchQuery("")}
+                        className="rounded-[8px] border border-[#e5e5e5] bg-[#faf5e8] px-3 py-1.5 text-xs font-semibold text-[#0a0a0a] hover:bg-[#f5f0e0] transition-colors cursor-pointer"
+                      >
+                        Clear Search Filter
+                      </button>
+                    )}
                   </div>
                 ) : (
-                  <div className="divide-y divide-sekkha-hairline-soft">
+                  <div className="divide-y divide-[#f0f0f0]">
                     {listedEvents.map(ev => (
                       <EventCard
                         key={ev.id}
@@ -422,12 +512,13 @@ export function EventsPage() {
                   </div>
                 )}
 
+
               </div>
             </div>
 
             {/* ── Right: Mini Calendar Card (Desktop Only lg+) ── */}
             <aside className="hidden lg:block w-full shrink-0 lg:w-80 xl:w-96">
-              <div className="sticky top-16 relative rounded-2xl border border-sekkha-hairline bg-sekkha-canvas/95 backdrop-blur-md p-4 shadow-xs">
+              <div className="sticky top-16 relative rounded-[20px] sm:rounded-[24px] border border-[#e5e5e5] bg-[#fffaf0] p-4 shadow-xs space-y-3">
                 
                 <EventCalendar
                   dots={dotMap}
@@ -438,13 +529,13 @@ export function EventsPage() {
                 />
 
                 {/* Dynamic Master Data Category Legend */}
-                <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1.5 border-t border-sekkha-hairline-soft pt-3 text-micro">
+                <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1.5 border-t border-[#e5e5e5] pt-3 text-xs">
                   {accessibleCategories.map(cat => {
-                    const colorHex = cat.colorHex || "#0284c7"
+                    const colorHex = cat.colorHex || "#1a3a3a"
                     return (
                       <div key={cat.id} className="flex items-center gap-1.5">
                         <span className="h-2 w-2 rounded-full shrink-0 shadow-2xs" style={{ backgroundColor: colorHex }} />
-                        <span className="capitalize font-medium text-sekkha-slate">{cat.name}</span>
+                        <span className="capitalize font-medium text-[#6a6a6a]">{cat.name}</span>
                       </div>
                     )
                   })}
@@ -464,8 +555,8 @@ export function EventsPage() {
           setFormOpen(open)
           if (!open) setEditTarget(null)
         }}
-        title={editTarget ? "Edit Event" : "Buat Event Baru"}
-        description={editTarget ? "Perbarui detail event." : "Isi form untuk membuat event baru."}
+        title={editTarget ? "Edit Event" : "Create New Event"}
+        description={editTarget ? "Update event details." : "Fill in the form to create a new event."}
       >
         <EventForm
           initial={editTarget ?? undefined}

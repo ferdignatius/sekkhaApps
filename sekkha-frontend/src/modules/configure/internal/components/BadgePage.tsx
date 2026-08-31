@@ -41,8 +41,8 @@ interface Badge {
 const INITIAL_BADGES: Badge[] = [
   {
     id: "badge-1",
-    name: "Pertama Kali Hadir",
-    description: "Berhasil scan QR pertama kalinya",
+    name: "First Attendance",
+    description: "Successfully scanned QR code for the first time",
     icon_url: "🎯",
     condition_type: "attendance",
     condition_value: 1,
@@ -51,7 +51,7 @@ const INITIAL_BADGES: Badge[] = [
   {
     id: "badge-2",
     name: "Streak 5",
-    description: "Hadir 5 minggu berturut-turut",
+    description: "Attended 5 weeks consecutively",
     icon_url: "🔥",
     condition_type: "streak",
     condition_value: 5,
@@ -60,7 +60,7 @@ const INITIAL_BADGES: Badge[] = [
   {
     id: "badge-3",
     name: "Streak 10",
-    description: "Hadir 10 minggu berturut-turut",
+    description: "Attended 10 weeks consecutively",
     icon_url: "⚡",
     condition_type: "streak",
     condition_value: 10,
@@ -68,8 +68,8 @@ const INITIAL_BADGES: Badge[] = [
   },
   {
     id: "badge-4",
-    name: "Kolektor 100 Poin",
-    description: "Mengumpulkan 100 poin total",
+    name: "100 Points Collector",
+    description: "Accumulated 100 total points",
     icon_url: "⭐",
     condition_type: "points",
     condition_value: 100,
@@ -78,10 +78,10 @@ const INITIAL_BADGES: Badge[] = [
 ]
 
 const CONDITION_OPTIONS = [
-  { value: "attendance", label: "Total Kehadiran" },
-  { value: "streak", label: "Streak (minggu)" },
-  { value: "points", label: "Total Poin" },
-  { value: "event_count", label: "Jumlah Event" },
+  { value: "attendance", label: "Total Attendance" },
+  { value: "streak", label: "Streak (weeks)" },
+  { value: "points", label: "Total Points" },
+  { value: "event_count", label: "Event Count" },
   { value: "manual", label: "Manual" },
 ]
 
@@ -153,16 +153,16 @@ export function BadgePage() {
   }
 
   const conditionLabel: Record<Badge["condition_type"], string> = {
-    attendance: "Total Kehadiran",
-    streak: "Streak (minggu)",
-    points: "Total Poin",
-    event_count: "Jumlah Event",
+    attendance: "Total Attendance",
+    streak: "Streak (weeks)",
+    points: "Total Points",
+    event_count: "Event Count",
     manual: "Manual",
   }
 
   return (
     <main className="min-h-screen bg-sekkha-surface pb-32 md:pb-12 font-sans">
-      <PageBreadcrumb items={[{ label: "Configure" }, { label: "Gamifikasi" }, { label: "Badge Pencapaian" }]} />
+      <PageBreadcrumb items={[{ label: "Configure" }, { label: "Gamification" }, { label: "Achievement Badges" }]} />
       <div className="px-4 py-6 sm:px-6 md:px-8 max-w-6xl mx-auto space-y-5">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-sekkha-hairline-soft pb-4">
@@ -171,8 +171,8 @@ export function BadgePage() {
               <AwardIcon className="size-5" />
             </div>
             <div>
-              <h1 className="text-body-base sm:text-heading-5 font-black text-sekkha-ink">Badge Pencapaian Umat</h1>
-              <p className="text-micro text-sekkha-slate">Kelola master badge dan kondisi trigger gamifikasi umat.</p>
+              <h1 className="text-body-base sm:text-heading-5 font-black text-sekkha-ink">Member Achievement Badges</h1>
+              <p className="text-micro text-sekkha-slate">Manage master badges and member gamification trigger conditions.</p>
             </div>
           </div>
           {isAdmin && (
@@ -182,7 +182,7 @@ export function BadgePage() {
               className="w-full sm:w-auto shrink-0"
             >
               <PlusIcon className="size-4 mr-1.5" />
-              <span>Tambah Badge</span>
+              <span>Add Badge</span>
             </Button>
           )}
         </div>
@@ -191,17 +191,17 @@ export function BadgePage() {
         {showForm && isAdmin && (
           <Card className="p-5 sm:p-6 space-y-4">
             <h2 className="text-body-sm font-bold text-sekkha-ink">
-              {editing ? "Edit Badge" : "Badge Baru"}
+              {editing ? "Edit Badge" : "New Badge"}
             </h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid gap-3 sm:grid-cols-2">
                 <Input
                   id="badge-name"
-                  label="Nama"
+                  label="Name"
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Contoh: Streak 5"
+                  placeholder="e.g. Streak 5"
                 />
                 <Input
                   id="badge-icon"
@@ -213,22 +213,22 @@ export function BadgePage() {
               </div>
               <Input
                 id="badge-desc"
-                label="Deskripsi"
+                label="Description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Hadir 5 minggu berturut-turut"
+                placeholder="Attend 5 consecutive weeks"
               />
               <div className="grid gap-3 sm:grid-cols-2">
                 <Select
                   id="badge-cond-type"
-                  label="Kondisi Trigger"
+                  label="Trigger Condition"
                   value={conditionType}
                   options={CONDITION_OPTIONS}
                   onChange={(val) => setConditionType(val as Badge["condition_type"])}
                 />
                 <Input
                   id="badge-cond-val"
-                  label="Nilai Target"
+                  label="Target Value"
                   type="number"
                   value={conditionValue}
                   onChange={(e) => setConditionValue(e.target.value)}
@@ -237,10 +237,10 @@ export function BadgePage() {
               </div>
               <div className="flex gap-2 pt-2 justify-end border-t border-sekkha-hairline-soft">
                 <Button type="button" variant="secondary" onClick={resetForm}>
-                  Batal
+                  Cancel
                 </Button>
                 <Button type="submit">
-                  {editing ? "Simpan" : "Buat Badge"}
+                  {editing ? "Save" : "Create Badge"}
                 </Button>
               </div>
             </form>
@@ -253,10 +253,10 @@ export function BadgePage() {
             <TableHeader>
               <TableRow>
                 <TableHead className="w-16">Icon</TableHead>
-                <TableHead>Nama & Deskripsi</TableHead>
-                <TableHead className="hidden sm:table-cell">Kondisi</TableHead>
-                <TableHead className="hidden sm:table-cell">Nilai</TableHead>
-                {isAdmin && <TableHead className="w-24 text-right">Aksi</TableHead>}
+                <TableHead>Name & Description</TableHead>
+                <TableHead className="hidden sm:table-cell">Condition</TableHead>
+                <TableHead className="hidden sm:table-cell">Value</TableHead>
+                {isAdmin && <TableHead className="w-24 text-right">Actions</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -288,7 +288,7 @@ export function BadgePage() {
                           type="button"
                           onClick={() => handleDelete(badge.id)}
                           className="rounded-lg p-1.5 text-sekkha-slate hover:bg-red-50 hover:text-red-500 transition-colors"
-                          aria-label="Hapus"
+                          aria-label="Delete"
                         >
                           <TrashIcon className="size-4" />
                         </button>
@@ -301,7 +301,7 @@ export function BadgePage() {
           </Table>
           {badges.length === 0 && (
             <div className="py-12 text-center">
-              <p className="text-body-sm text-sekkha-muted">Belum ada badge tersimpan.</p>
+              <p className="text-body-sm text-sekkha-muted">No badges saved yet.</p>
             </div>
           )}
         </TableContainer>

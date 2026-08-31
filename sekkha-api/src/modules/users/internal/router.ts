@@ -32,7 +32,7 @@ usersRouter.get("/me", requireAuth, async (req, res, next) => {
       })
     })
     if (!user) {
-      res.status(404).json({ error: "User tidak ditemukan" })
+      res.status(404).json({ error: "User not found" })
       return
     }
 
@@ -115,9 +115,9 @@ const UpdateProfileSchema = z.object({
   name: z.string().min(1).optional(),
   username: z
     .string()
-    .min(3, "Username minimal 3 karakter")
-    .max(30, "Username maksimal 30 karakter")
-    .regex(/^[a-zA-Z0-9_.]+$/, "Username hanya boleh huruf, angka, titik, underscore")
+    .min(3, "Username must be at least 3 characters")
+    .max(30, "Username maximum 30 characters")
+    .regex(/^[a-zA-Z0-9_.]+$/, "Username may only contain letters, numbers, dots, or underscores")
     .optional()
     .nullable(),
   school: z.string().optional().nullable(),
@@ -150,7 +150,7 @@ usersRouter.patch("/me", requireAuth, async (req, res, next) => {
         where: { username: targetUsername },
       })
       if (usernameTaken && usernameTaken.id !== userId) {
-        res.status(409).json({ error: `Username @${targetUsername} sudah digunakan oleh akun lain.` })
+        res.status(409).json({ error: `Username @${targetUsername} is already taken by another account.` })
         return
       }
     }
@@ -265,7 +265,7 @@ usersRouter.get("/me/level", requireAuth, async (req, res, next) => {
     const totalPoints = user?.points ?? (attendanceCount * 50)
 
     const levels = await prisma.level.findMany({ orderBy: { minPoints: "desc" } })
-    const currentLevel = levels.find(l => totalPoints >= l.minPoints) ?? { level: 1, label: "Pemula", minPoints: 0 }
+    const currentLevel = levels.find(l => totalPoints >= l.minPoints) ?? { level: 1, label: "Beginner", minPoints: 0 }
 
     res.json({
       level: currentLevel.level,
@@ -293,8 +293,8 @@ usersRouter.get("/me/point-transactions", requireAuth, async (req, res, next) =>
 })
 
 const ChangePasswordSchema = z.object({
-  current_password: z.string().min(1, "Password saat ini wajib diisi"),
-  new_password: z.string().min(6, "Password baru minimal 6 karakter"),
+  current_password: z.string().min(1, "Current password is required"),
+  new_password: z.string().min(6, "New password must be at least 6 characters"),
 })
 
 // POST /api/users/change-password — User updates their password
@@ -305,13 +305,13 @@ usersRouter.post("/change-password", requireAuth, async (req, res, next) => {
     const user = await prisma.user.findUnique({ where: { id: userId } })
 
     if (!user || !user.password) {
-      res.status(400).json({ error: "Akun tidak memiliki password yang valid" })
+      res.status(400).json({ error: "Account does not have a valid password set" })
       return
     }
 
     const isValid = await bcrypt.compare(body.current_password, user.password)
     if (!isValid) {
-      res.status(400).json({ error: "Password saat ini tidak sesuai" })
+      res.status(400).json({ error: "Incorrect current password" })
       return
     }
 
@@ -321,7 +321,7 @@ usersRouter.post("/change-password", requireAuth, async (req, res, next) => {
       data: { password: hashedPassword },
     })
 
-    res.json({ success: true, message: "Password berhasil diperbarui" })
+    res.json({ success: true, message: "Password updated successfully" })
   } catch (err) {
     next(err)
   }

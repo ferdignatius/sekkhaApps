@@ -14,22 +14,22 @@ export { PointsRulesPage } from "./internal/components/PointsRulesPage"
 export const configureModule: ModuleDefinition = {
   name: "configure",
   navItems: [],
-  // Configure sections — pengurus/admin only, dengan sub-menu
+  // Configure sections — pengurus/admin only, with sub-menus
   configureSections: [
     {
       label: "Master Data",
       icon: "Layers",
       items: [
-        { label: "Kategori Event", to: "/configure/master/event-type", icon: "Tag", hasRoute: true },
-        { label: "Preset Waktu Vihara", to: "/configure/master/event-time", icon: "Clock", hasRoute: true },
-        { label: "Badge Tugas Presensi", to: "/configure/master/attendance-badge", icon: "Award", hasRoute: true },
+        { label: "Event Categories", to: "/configure/master/event-type", icon: "Tag", hasRoute: true },
+        { label: "Time Presets", to: "/configure/master/event-time", icon: "Clock", hasRoute: true },
+        { label: "Attendance Badges", to: "/configure/master/attendance-badge", icon: "Award", hasRoute: true },
       ],
     },
     {
-      label: "Gamifikasi",
+      label: "Gamification",
       icon: "Sparkles",
       items: [
-        { label: "Achievement", to: "/configure/master/achievement", icon: "Trophy", hasRoute: true },
+        { label: "Achievements", to: "/configure/master/achievement", icon: "Trophy", hasRoute: true },
       ],
     },
     {
@@ -37,14 +37,14 @@ export const configureModule: ModuleDefinition = {
       icon: "Activity",
       items: [
         { label: "Season Leaderboard", to: "/configure/rules/season", icon: "Trophy", hasRoute: true },
-        { label: "Points Rules", to: "/configure/rules/points", icon: "Zap", hasRoute: true },
+        { label: "Point Rules", to: "/configure/rules/points", icon: "Zap", hasRoute: true },
       ],
     },
     {
       label: "Early Warning",
       icon: "Bell",
       items: [
-        { label: "Threshold", to: "/configure/early-warning/threshold", icon: "Bell", hasRoute: true },
+        { label: "Threshold Settings", to: "/configure/early-warning/threshold", icon: "Bell", hasRoute: true },
       ],
     },
   ],

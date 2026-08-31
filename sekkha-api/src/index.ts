@@ -5,6 +5,7 @@ import compression from "compression"
 import rateLimit from "express-rate-limit"
 import dotenv from "dotenv"
 import { errorHandler } from "./middleware/errorHandler"
+import { requestLogger } from "./middleware/requestLogger"
 import { redis } from "./lib/redis"
 import type { AppModule } from "./core/types"
 
@@ -32,6 +33,9 @@ if (!process.env.JWT_SECRET) {
 const app = express()
 const PORT = process.env.PORT || 4000
 
+// ─── Request Logger (Live Real-Time Activity Feed) ───────────────────────────
+app.use(requestLogger)
+
 // ─── Security & Core Middleware ──────────────────────────────────────────────
 
 // 1. High-Performance Gzip/Brotli Payload Compression (60-80% payload size reduction)
@@ -51,7 +55,7 @@ const globalLimiter = rateLimit({
   max: 300,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: "Terlalu banyak permintaan dari IP ini. Silakan coba lagi nanti." },
+  message: { error: "Too many requests from this IP. Please try again later." },
 })
 app.use(globalLimiter)
 
@@ -61,7 +65,7 @@ const authLimiter = rateLimit({
   max: 30,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: "Terlalu banyak percobaan autentikasi. Silakan tunggu 15 menit." },
+  message: { error: "Too many authentication attempts. Please wait 15 minutes." },
 })
 app.use("/api/auth/login", authLimiter)
 app.use("/api/auth/register", authLimiter)

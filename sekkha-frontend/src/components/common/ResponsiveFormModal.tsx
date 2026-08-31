@@ -76,27 +76,27 @@ export function ResponsiveFormModal({
   if (!isModalOpen) return null
 
   if (isDesktop) {
-    // Desktop (≥768px): Centered Glassmorphic Modal with zero empty bottom space
+    // Desktop (≥768px): Centered Modal with DESIGN.md tokens
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 font-sans">
         {/* Backdrop Overlay */}
         <div
-          className="fixed inset-0 bg-slate-900/60 backdrop-blur-md transition-opacity animate-in fade-in-0"
+          className="fixed inset-0 bg-[#0a0a0a]/40 backdrop-blur-sm transition-opacity animate-in fade-in-0"
           onClick={handleClose}
         />
         {/* Centered Compact Card Container */}
-        <div className="relative z-50 w-full max-w-3xl max-h-[92vh] flex flex-col rounded-3xl border border-sekkha-hairline bg-sekkha-canvas p-5 sm:p-6 shadow-2xl transition-all animate-in zoom-in-95">
-          <div className="flex items-center justify-between pb-3 border-b border-sekkha-hairline-soft shrink-0">
+        <div className="relative z-50 w-full max-w-3xl max-h-[92vh] flex flex-col rounded-[24px] border border-[#e5e5e5] bg-[#fffaf0] p-5 sm:p-6 shadow-2xl transition-all animate-in zoom-in-95 text-[#0a0a0a]">
+          <div className="flex items-center justify-between pb-3 border-b border-[#e5e5e5] shrink-0">
             <div>
-              <h3 className="text-body-base font-bold text-sekkha-ink">{title}</h3>
+              <h3 className="text-base font-bold text-[#0a0a0a]">{title}</h3>
               {description && (
-                <p className="text-caption font-medium text-sekkha-slate mt-0.5">{description}</p>
+                <p className="text-xs font-medium text-[#6a6a6a] mt-0.5">{description}</p>
               )}
             </div>
             <button
               type="button"
               onClick={handleClose}
-              className="rounded-lg p-1.5 text-sekkha-slate hover:bg-sekkha-surface hover:text-sekkha-ink transition-colors cursor-pointer"
+              className="rounded-[8px] p-1.5 text-[#6a6a6a] hover:bg-[#faf5e8] hover:text-[#0a0a0a] transition-colors cursor-pointer"
             >
               <XIcon className="size-4" />
             </button>
@@ -109,21 +109,21 @@ export function ResponsiveFormModal({
     )
   }
 
-  // Mobile (<768px): Native Bottom Drawer Sheet with Sticky Blurred Drag Handle & Scroll Body
+  // Mobile (<768px): Native Bottom Drawer Sheet
   return (
     <Drawer open={isModalOpen} onOpenChange={handleOpenChange}>
-      <DrawerContent className="max-h-[88vh] flex flex-col p-0 overflow-hidden">
+      <DrawerContent className="max-h-[88vh] flex flex-col p-0 overflow-hidden bg-[#fffaf0] border-t border-[#e5e5e5] rounded-t-[24px] font-sans">
         {/* Sticky Drag Handle Header with Blur Background */}
-        <div className="sticky top-0 z-20 flex items-center justify-center py-3 bg-sekkha-canvas/80 backdrop-blur-md border-b border-sekkha-hairline-soft/40 shrink-0">
-          <div className="h-1.5 w-12 rounded-full bg-sekkha-slate/40" />
+        <div className="sticky top-0 z-20 flex items-center justify-center py-3 bg-[#fffaf0]/90 backdrop-blur-md border-b border-[#e5e5e5]/60 shrink-0">
+          <div className="h-1.5 w-12 rounded-full bg-[#6a6a6a]/30" />
         </div>
 
         {/* Scrollable Container */}
         <div className="flex-1 overflow-y-auto px-5 pt-3 pb-8">
-          <DrawerHeader className="px-0 pb-3 pt-0 text-left border-b border-sekkha-hairline-soft mb-3">
-            <DrawerTitle className="text-body-sm font-bold text-sekkha-ink">{title}</DrawerTitle>
+          <DrawerHeader className="px-0 pb-3 pt-0 text-left border-b border-[#e5e5e5] mb-3">
+            <DrawerTitle className="text-sm font-bold text-[#0a0a0a]">{title}</DrawerTitle>
             {description && (
-              <DrawerDescription className="text-caption font-medium text-sekkha-slate mt-0.5">
+              <DrawerDescription className="text-xs font-medium text-[#6a6a6a] mt-0.5">
                 {description}
               </DrawerDescription>
             )}

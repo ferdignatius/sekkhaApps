@@ -30,10 +30,13 @@ export interface SimpleSelectProps {
   children?: React.ReactNode
 }
 
+/**
+ * Sekkha base Select — aligned strictly with DESIGN.md specifications.
+ */
 export function Select({
   id,
   label,
-  placeholder = "Pilih opsi...",
+  placeholder = "Select an option...",
   value,
   defaultValue,
   options,
@@ -50,9 +53,9 @@ export function Select({
   // If children provided, render as primitive wrapper
   if (children && !options) {
     return (
-      <div className="flex flex-col gap-1.5 w-full">
+      <div className="flex flex-col gap-1.5 w-full text-left font-sans">
         {label && (
-          <label htmlFor={selectId} className="text-caption font-bold text-sekkha-ink">
+          <label htmlFor={selectId} className="text-xs font-semibold text-[#0a0a0a] tracking-tight">
             {label}
           </label>
         )}
@@ -65,7 +68,7 @@ export function Select({
           {children}
         </ShadcnSelect>
         {hasError && (
-          <p className="text-micro font-medium text-red-600 animate-in fade-in">
+          <p className="text-xs font-medium text-[#ef4444] animate-in fade-in">
             {error}
           </p>
         )}
@@ -74,9 +77,9 @@ export function Select({
   }
 
   return (
-    <div className="flex flex-col gap-1.5 w-full">
+    <div className="flex flex-col gap-1.5 w-full text-left font-sans">
       {label && (
-        <label htmlFor={selectId} className="text-caption font-bold text-sekkha-ink">
+        <label htmlFor={selectId} className="text-xs font-semibold text-[#0a0a0a] tracking-tight">
           {label}
         </label>
       )}
@@ -89,21 +92,21 @@ export function Select({
         <SelectTrigger
           id={selectId}
           className={cn(
-            "w-full rounded-2xl bg-slate-50/70 py-2.5 px-3.5 text-body-sm text-sekkha-ink border border-sekkha-hairline-strong focus:border-sekkha-brand-blue focus:bg-white focus:ring-2 focus:ring-blue-500/10",
-            hasError && "border-red-400 bg-red-50/30 text-red-900",
+            "w-full h-11 rounded-[12px] bg-[#fffaf0] px-4 py-2.5 text-sm text-[#0a0a0a] border border-[#e5e5e5] outline-none shadow-2xs hover:bg-[#faf5e8] focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a]",
+            hasError && "border-[#ef4444] bg-[#ef4444]/5 text-[#ef4444]",
             className
           )}
         >
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
-        <SelectContent className="rounded-2xl border border-sekkha-hairline bg-white shadow-lg">
+        <SelectContent className="rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] p-1 shadow-lg text-[#0a0a0a]">
           <SelectGroup>
             {options?.map((opt) => (
               <SelectItem
                 key={opt.value}
                 value={opt.value}
                 disabled={opt.disabled}
-                className="rounded-xl hover:bg-slate-50 text-body-sm py-2 px-3"
+                className="rounded-[8px] hover:bg-[#f5f0e0] text-sm py-2 px-3 text-[#0a0a0a] focus:bg-[#f5f0e0]"
               >
                 {opt.label}
               </SelectItem>
@@ -112,7 +115,7 @@ export function Select({
         </SelectContent>
       </ShadcnSelect>
       {hasError && (
-        <p className="text-micro font-medium text-red-600 animate-in fade-in">
+        <p className="text-xs font-medium text-[#ef4444] animate-in fade-in">
           {error}
         </p>
       )}
@@ -129,3 +132,4 @@ export {
   SelectTrigger,
   SelectValue,
 }
+

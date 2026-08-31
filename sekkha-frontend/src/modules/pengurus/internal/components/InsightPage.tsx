@@ -41,8 +41,8 @@ import {
 
 const SERIES_COLORS = ["#1F75FE", "#94A3B8", "#F59E0B", "#10B981", "#8B5CF6"]
 const MONTH_NAMES = [
-  "Januari", "Februari", "Maret", "April", "Mei", "Juni",
-  "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December"
 ]
 
 export function InsightPage() {
@@ -58,7 +58,7 @@ export function InsightPage() {
   const availablePeriodOptions =
     timeUnit === "year"
       ? ["2026", "2025", "2024"]
-      : ["Juli 2026", "Juni 2026", "Mei 2026", "Maret 2026"]
+      : ["July 2026", "June 2026", "May 2026", "March 2026"]
 
   const [selectedPeriods, setSelectedPeriods] = useState<string[]>(["2026"])
   const [isMultiSelectOpen, setIsMultiSelectOpen] = useState(false)
@@ -75,7 +75,7 @@ export function InsightPage() {
     if (timeUnit === "year") {
       setSelectedPeriods(["2026"])
     } else {
-      setSelectedPeriods(["Juli 2026"])
+      setSelectedPeriods(["July 2026"])
     }
   }, [timeUnit])
 
@@ -135,19 +135,19 @@ export function InsightPage() {
 
   const getCategoryDropdownLabel = (cats: EventCategoryFilter[]) => {
     if (cats.includes("all") || cats.length === 5) {
-      return "Semua Kategori"
+      return "All Categories"
     }
     if (cats.length === 1) {
       const found = MASTER_EVENT_CATEGORIES.find((c) => c.id === cats[0])
-      return found ? found.label : "1 Kategori"
+      return found ? found.label : "1 Category"
     }
-    return `${cats.length} Kategori`
+    return `${cats.length} Categories`
   }
 
   const loadMetrics = async () => {
     setIsLoading(true)
     try {
-      const primaryPeriod = selectedPeriods[0] || (timeUnit === "year" ? "2026" : "Juli 2026")
+      const primaryPeriod = selectedPeriods[0] || (timeUnit === "year" ? "2026" : "July 2026")
       let primaryYear = 2026
       let primaryMonth = 7
       if (timeUnit === "year") {
@@ -207,7 +207,7 @@ export function InsightPage() {
 
   return (
     <main className="min-h-screen pb-24 md:pb-12">
-      <PageBreadcrumb items={[{ label: "Pengurus" }, { label: "Insight" }]} />
+      <PageBreadcrumb items={[{ label: "Organizer" }, { label: "Analytics & Insights" }]} />
 
       <div className="px-3.5 py-4 sm:px-8 lg:px-12">
         <div className="mx-auto max-w-7xl space-y-4 sm:space-y-6">
@@ -218,10 +218,10 @@ export function InsightPage() {
                 <span className="flex size-8.5 sm:size-9 items-center justify-center rounded-xl bg-sekkha-brand-blue/10 text-sekkha-brand-blue shrink-0">
                   <BarChart3Icon className="size-4.5 sm:size-5" />
                 </span>
-                <h1 className="text-heading-5 sm:text-heading-4 font-bold text-sekkha-ink">Insight</h1>
+                <h1 className="text-heading-5 sm:text-heading-4 font-bold text-sekkha-ink">Community Insights</h1>
               </div>
               <p className="text-caption sm:text-body-sm text-sekkha-slate max-w-2xl leading-relaxed">
-                Dashboard analitis makro interaktif. Memantau tingkat presensi dan rata-rata absensi Umat, Aktivis, serta Pengurus Vihara per event.
+                Interactive macro analytics dashboard. Track attendance rates and absence patterns across Members, Activists, and Organizers.
               </p>
             </div>
 
@@ -252,8 +252,8 @@ export function InsightPage() {
                     onChange={(e) => setTimeUnit(e.target.value as TimeUnit)}
                     className="w-full bg-transparent font-bold text-sekkha-ink outline-none cursor-pointer text-caption sm:text-caption-bold"
                   >
-                    <option value="year">Basis: Per Tahun (12 Bulan)</option>
-                    <option value="month">Basis: Per Bulan (Per Minggu)</option>
+                    <option value="year">Scale: Yearly (12 Months)</option>
+                    <option value="month">Scale: Monthly (Weekly)</option>
                   </select>
                 </div>
 
@@ -271,7 +271,7 @@ export function InsightPage() {
                     <div className="flex items-center gap-2 min-w-0">
                       <TagIcon className="size-4 text-amber-500 shrink-0" />
                       <span className="truncate">
-                        Kategori:{" "}
+                        Category:{" "}
                         <strong className="font-extrabold">
                           {getCategoryDropdownLabel(selectedCategories)}
                         </strong>
@@ -291,7 +291,7 @@ export function InsightPage() {
                   {isCategorySelectOpen && (
                     <div className="absolute left-0 right-0 sm:right-auto top-full mt-2 w-full sm:w-72 rounded-2xl border border-sekkha-hairline-soft bg-white p-3 shadow-xl backdrop-blur-md z-30 space-y-1.5 animate-fadeIn">
                       <div className="text-micro-bold font-extrabold text-sekkha-slate uppercase tracking-wider px-2 pb-1 border-b border-sekkha-hairline-soft">
-                        Pilih Kategori Event:
+                        Select Event Categories:
                       </div>
                       {MASTER_EVENT_CATEGORIES.map((cat) => {
                         const isSelected =
@@ -342,7 +342,7 @@ export function InsightPage() {
                   <div className="flex items-center gap-2 min-w-0">
                     <ArrowRightLeftIcon className="size-4 shrink-0" />
                     <span className="truncate">
-                      Bandingkan:{" "}
+                      Compare:{" "}
                       <strong className="font-extrabold">
                         {selectedPeriods.join(", ")}
                       </strong>
@@ -362,7 +362,7 @@ export function InsightPage() {
                 {isMultiSelectOpen && (
                   <div className="absolute left-0 sm:left-auto right-0 top-full mt-2 w-full sm:w-64 rounded-2xl border border-sekkha-hairline-soft bg-white p-3 shadow-xl backdrop-blur-md z-30 space-y-1.5 animate-fadeIn">
                     <div className="text-micro-bold font-extrabold text-sekkha-slate uppercase tracking-wider px-2 pb-1 border-b border-sekkha-hairline-soft">
-                      Pilih Periode Aktif:
+                      Select Active Periods:
                     </div>
                     {availablePeriodOptions.map((periodKey) => {
                       const isSelected = selectedPeriods.includes(periodKey)
@@ -411,10 +411,10 @@ export function InsightPage() {
               <div className="text-micro text-sekkha-slate">
                 {selectedPeriods.length > 1 ? (
                   <span className="font-semibold text-sekkha-brand-blue">
-                    *Membandingkan grafik: <strong>{selectedPeriods.join(" vs ")}</strong> ({getCategoryDropdownLabel(selectedCategories)})
+                    *Comparing charts: <strong>{selectedPeriods.join(" vs ")}</strong> ({getCategoryDropdownLabel(selectedCategories)})
                   </span>
                 ) : (
-                  <span>*Buka dropdown untuk membandingkan beberapa periode & kategori event.</span>
+                  <span>*Use dropdowns above to compare multiple periods & event categories.</span>
                 )}
               </div>
 
@@ -422,10 +422,10 @@ export function InsightPage() {
               <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 scrollbar-none">
                 <span className="text-micro font-extrabold uppercase tracking-wider text-sekkha-slate mr-1 shrink-0">Role:</span>
                 {[
-                  { id: "all", label: "Semua (260)" },
-                  { id: "umat", label: "Umat (210)" },
-                  { id: "aktivis", label: "Aktivis (38)" },
-                  { id: "pengurus", label: "Pengurus (12)" },
+                  { id: "all", label: "All (260)" },
+                  { id: "umat", label: "Members (210)" },
+                  { id: "aktivis", label: "Activists (38)" },
+                  { id: "pengurus", label: "Organizers (12)" },
                 ].map((tab) => (
                   <button
                     key={tab.id}
@@ -448,7 +448,7 @@ export function InsightPage() {
             <div className="flex h-64 items-center justify-center rounded-3xl border border-sekkha-hairline-soft bg-sekkha-canvas">
               <div className="flex flex-col items-center gap-2 text-sekkha-muted">
                 <RefreshCwIcon className="size-7 animate-spin text-sekkha-brand-blue" />
-                <p className="text-body-sm font-semibold">Memuat data insight Umat & Pengurus...</p>
+                <p className="text-body-sm font-semibold">Loading Member & Organizer insights...</p>
               </div>
             </div>
           ) : (
@@ -459,7 +459,7 @@ export function InsightPage() {
                 <div className="flex flex-col justify-between rounded-2xl border border-sekkha-hairline-soft bg-sekkha-canvas p-4 sm:p-4.5 shadow-xs transition hover:shadow-md">
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <p className="text-caption text-sekkha-slate font-medium">Total Member Aktif</p>
+                      <p className="text-caption text-sekkha-slate font-medium">Total Active Members</p>
                       <h3 className="mt-1 text-heading-4 sm:text-heading-3 font-extrabold text-sekkha-ink">
                         {data.summary.totalActiveMembers.value}
                       </h3>
@@ -476,11 +476,11 @@ export function InsightPage() {
                   </div>
                 </div>
 
-                {/* Card 2: Rata-rata Kehadiran Bulan Ini */}
+                {/* Card 2: Average Attendance Rate */}
                 <div className="flex flex-col justify-between rounded-2xl border border-sekkha-hairline-soft bg-sekkha-canvas p-4 sm:p-4.5 shadow-xs transition hover:shadow-md">
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <p className="text-caption text-sekkha-slate font-medium">Rata-rata Kehadiran Bulan Ini</p>
+                      <p className="text-caption text-sekkha-slate font-medium">Avg Attendance Rate</p>
                       <h3 className="mt-1 text-heading-4 sm:text-heading-3 font-extrabold text-sekkha-ink">
                         {data.summary.avgAttendanceRate.value}
                       </h3>
@@ -497,11 +497,11 @@ export function InsightPage() {
                   </div>
                 </div>
 
-                {/* Card 3: Tingkat Keaktifan Rutin */}
+                {/* Card 3: Routine Retention Rate */}
                 <div className="flex flex-col justify-between rounded-2xl border border-sekkha-hairline-soft bg-sekkha-canvas p-4 sm:p-4.5 shadow-xs transition hover:shadow-md">
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <p className="text-caption text-sekkha-slate font-medium">Tingkat Keaktifan Rutin</p>
+                      <p className="text-caption text-sekkha-slate font-medium">Routine Retention Rate</p>
                       <h3 className="mt-1 text-heading-4 sm:text-heading-3 font-extrabold text-sekkha-ink">
                         {data.summary.retentionRate.value}
                       </h3>
@@ -522,9 +522,9 @@ export function InsightPage() {
                 <div className="flex flex-col justify-between rounded-2xl border border-rose-500/30 bg-rose-500/5 p-4 sm:p-4.5 shadow-xs transition hover:shadow-md">
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <p className="text-caption text-rose-700 dark:text-rose-400 font-semibold">Member Butuh Sapa (Risk)</p>
+                      <p className="text-caption text-rose-700 dark:text-rose-400 font-semibold">At-Risk Members (Churn)</p>
                       <h3 className="mt-1 text-heading-4 sm:text-heading-3 font-extrabold text-rose-700 dark:text-rose-400">
-                        {data.summary.atRiskMembersCount.value} <span className="text-caption font-normal text-rose-600">Orang</span>
+                        {data.summary.atRiskMembersCount.value} <span className="text-caption font-normal text-rose-600">Members</span>
                       </h3>
                     </div>
                     <span className="flex size-9 sm:size-10 items-center justify-center rounded-2xl bg-rose-500/20 text-rose-600 shrink-0">
@@ -545,7 +545,7 @@ export function InsightPage() {
                 <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 sm:p-6 pb-2">
                   <div className="space-y-1">
                     <CardTitle className="text-body-sm sm:text-body-sm-medium font-bold text-sekkha-ink flex items-center gap-2 flex-wrap">
-                      <span>Tren Presensi Komunitas</span>
+                      <span>Community Attendance Trend</span>
                       <span className="rounded-lg bg-amber-500/10 px-2 py-0.5 text-micro-bold font-bold text-amber-700 dark:text-amber-400">
                         {data.categoryLabel}
                       </span>
@@ -555,8 +555,8 @@ export function InsightPage() {
                     </CardTitle>
                     <CardDescription className="text-caption text-sekkha-slate">
                       {timeUnit === "year"
-                        ? `Tren presensi 12 bulan (Januari - Desember) per perbandingan periode aktif.`
-                        : `Tren presensi mingguan per perbandingan periode aktif.`}
+                        ? `12-month attendance trend (January - December) by active period comparison.`
+                        : `Weekly attendance trend by active period comparison.`}
                     </CardDescription>
                   </div>
 
@@ -587,7 +587,7 @@ export function InsightPage() {
                             ? "bg-white font-bold text-sekkha-ink shadow-2xs"
                             : "text-sekkha-slate hover:text-sekkha-ink"
                         }`}
-                        title="Tampilan Line Chart (Grafik Garis)"
+                        title="Line Chart View"
                       >
                         <LineChartIcon className="size-3.5 sm:size-4" />
                         <span className="text-micro font-bold">Line</span>
@@ -601,7 +601,7 @@ export function InsightPage() {
                             ? "bg-white font-bold text-sekkha-ink shadow-2xs"
                             : "text-sekkha-slate hover:text-sekkha-ink"
                         }`}
-                        title="Tampilan Bar Chart (Grafik Batang)"
+                        title="Bar Chart View"
                       >
                         <BarChart3Icon className="size-3.5 sm:size-4" />
                         <span className="text-micro font-bold">Bar</span>
@@ -728,11 +728,11 @@ export function InsightPage() {
                         <AlertTriangleIcon className="size-4" />
                       </span>
                       <h2 className="text-caption-bold sm:text-body-sm-medium font-bold text-sekkha-ink">
-                        Distribusi Kesehatan Komunitas (Silent-Churn Health)
+                        Community Engagement Health (Silent-Churn)
                       </h2>
                     </div>
                     <p className="text-micro sm:text-caption text-sekkha-slate max-w-xl">
-                      Integrasi data makro dengan <strong>Silent-Churn Alert</strong>. Memantau segmentasi keaktifan Umat untuk mencegah kepasifan berkepanjangan.
+                      Macro data integrated with <strong>Silent-Churn Alert</strong>. Track member activity segmentation to prevent long-term dropouts.
                     </p>
                   </div>
 
@@ -741,7 +741,7 @@ export function InsightPage() {
                     to="/recency-alerts"
                     className="inline-flex items-center justify-center gap-2 rounded-xl bg-sekkha-brand-blue px-3.5 py-2.5 text-caption-bold font-bold text-white shadow-xs transition hover:bg-blue-600 active:scale-95 shrink-0 cursor-pointer w-full sm:w-auto"
                   >
-                    <span>Kelola di Silent-Churn Alert</span>
+                    <span>Manage in Silent-Churn Alert</span>
                     <ChevronRightIcon className="size-4" />
                   </Link>
                 </div>
@@ -799,28 +799,28 @@ export function InsightPage() {
                 <div className="rounded-2xl sm:rounded-3xl border border-sekkha-hairline-soft bg-sekkha-canvas p-4 sm:p-5 shadow-xs space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="rounded-md bg-sekkha-brand-blue/10 px-2.5 py-1 text-caption-bold font-extrabold text-sekkha-brand-blue">
-                      ROLE UMAT
+                      ROLE MEMBERS
                     </span>
                     <span className="text-caption-bold font-extrabold text-sekkha-ink">
-                      {data.roleComparison.umat.totalCount} Orang
+                      {data.roleComparison.umat.totalCount} People
                     </span>
                   </div>
                   <div className="space-y-2 text-micro text-sekkha-slate pt-2 border-t border-sekkha-hairline-soft">
                     <div className="flex justify-between">
-                      <span>Rata-rata Presensi:</span>
+                      <span>Avg Attendance:</span>
                       <strong className="text-sekkha-ink">{data.roleComparison.umat.avgAttendancePercent}%</strong>
                     </div>
                     <div className="flex justify-between">
-                      <span>Rata-rata Absensi:</span>
+                      <span>Avg Absence:</span>
                       <strong className="text-amber-600 font-bold">{data.roleComparison.umat.avgAbsenceRate}</strong>
                     </div>
                     <div className="flex justify-between">
-                      <span>Event / Bulan:</span>
-                      <strong className="text-sekkha-ink">{data.roleComparison.umat.avgMonthlyEvents}x Event</strong>
+                      <span>Events / Month:</span>
+                      <strong className="text-sekkha-ink">{data.roleComparison.umat.avgMonthlyEvents}x Events</strong>
                     </div>
                     <div className="flex justify-between">
-                      <span>Streak Presensi:</span>
-                      <strong className="text-emerald-600 font-bold">{data.roleComparison.umat.topStreak}x Minggu</strong>
+                      <span>Attendance Streak:</span>
+                      <strong className="text-emerald-600 font-bold">{data.roleComparison.umat.topStreak}x Weeks</strong>
                     </div>
                   </div>
                 </div>
@@ -829,28 +829,28 @@ export function InsightPage() {
                 <div className="rounded-2xl sm:rounded-3xl border border-sekkha-hairline-soft bg-sekkha-canvas p-4 sm:p-5 shadow-xs space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="rounded-md bg-amber-500/10 px-2.5 py-1 text-caption-bold font-extrabold text-amber-600">
-                      ROLE AKTIVIS
+                      ROLE ACTIVISTS
                     </span>
                     <span className="text-caption-bold font-extrabold text-sekkha-ink">
-                      {data.roleComparison.aktivis.totalCount} Orang
+                      {data.roleComparison.aktivis.totalCount} People
                     </span>
                   </div>
                   <div className="space-y-2 text-micro text-sekkha-slate pt-2 border-t border-sekkha-hairline-soft">
                     <div className="flex justify-between">
-                      <span>Rata-rata Presensi:</span>
+                      <span>Avg Attendance:</span>
                       <strong className="text-sekkha-ink">{data.roleComparison.aktivis.avgAttendancePercent}%</strong>
                     </div>
                     <div className="flex justify-between">
-                      <span>Rata-rata Absensi:</span>
+                      <span>Avg Absence:</span>
                       <strong className="text-amber-600 font-bold">{data.roleComparison.aktivis.avgAbsenceRate}</strong>
                     </div>
                     <div className="flex justify-between">
-                      <span>Event / Bulan:</span>
-                      <strong className="text-sekkha-ink">{data.roleComparison.aktivis.avgMonthlyEvents}x Event</strong>
+                      <span>Events / Month:</span>
+                      <strong className="text-sekkha-ink">{data.roleComparison.aktivis.avgMonthlyEvents}x Events</strong>
                     </div>
                     <div className="flex justify-between">
-                      <span>Streak Presensi:</span>
-                      <strong className="text-emerald-600 font-bold">{data.roleComparison.aktivis.topStreak}x Minggu</strong>
+                      <span>Attendance Streak:</span>
+                      <strong className="text-emerald-600 font-bold">{data.roleComparison.aktivis.topStreak}x Weeks</strong>
                     </div>
                   </div>
                 </div>
@@ -859,28 +859,28 @@ export function InsightPage() {
                 <div className="rounded-2xl sm:rounded-3xl border border-purple-500/30 bg-purple-500/5 p-4 sm:p-5 shadow-xs space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="rounded-md bg-purple-500/20 px-2.5 py-1 text-caption-bold font-extrabold text-purple-700 dark:text-purple-400">
-                      ROLE PENGURUS
+                      ROLE ORGANIZERS
                     </span>
                     <span className="text-caption-bold font-extrabold text-sekkha-ink">
-                      {data.roleComparison.pengurus.totalCount} Orang
+                      {data.roleComparison.pengurus.totalCount} People
                     </span>
                   </div>
                   <div className="space-y-2 text-micro text-sekkha-slate pt-2 border-t border-purple-500/20">
                     <div className="flex justify-between">
-                      <span>Rata-rata Presensi:</span>
+                      <span>Avg Attendance:</span>
                       <strong className="text-sekkha-ink">{data.roleComparison.pengurus.avgAttendancePercent}%</strong>
                     </div>
                     <div className="flex justify-between">
-                      <span>Rata-rata Absensi:</span>
+                      <span>Avg Absence:</span>
                       <strong className="text-emerald-600 font-bold">{data.roleComparison.pengurus.avgAbsenceRate}</strong>
                     </div>
                     <div className="flex justify-between">
-                      <span>Event / Bulan:</span>
-                      <strong className="text-sekkha-ink">{data.roleComparison.pengurus.avgMonthlyEvents}x Event</strong>
+                      <span>Events / Month:</span>
+                      <strong className="text-sekkha-ink">{data.roleComparison.pengurus.avgMonthlyEvents}x Events</strong>
                     </div>
                     <div className="flex justify-between">
-                      <span>Streak Presensi:</span>
-                      <strong className="text-purple-700 dark:text-purple-400 font-bold">{data.roleComparison.pengurus.topStreak}x Minggu</strong>
+                      <span>Attendance Streak:</span>
+                      <strong className="text-purple-700 dark:text-purple-400 font-bold">{data.roleComparison.pengurus.topStreak}x Weeks</strong>
                     </div>
                   </div>
                 </div>
@@ -890,15 +890,15 @@ export function InsightPage() {
               <div className="rounded-2xl sm:rounded-3xl border border-sekkha-hairline-soft bg-sekkha-canvas p-4 sm:p-6 shadow-xs space-y-3.5 sm:space-y-4">
                 <h2 className="text-caption-bold sm:text-body-sm-medium font-bold text-sekkha-ink flex items-center gap-2">
                   <CalendarIcon className="size-4 text-sekkha-brand-blue" />
-                  <span>Tingkat Presensi & Absensi per Kategori Event</span>
+                  <span>Attendance & Absence Rate by Event Category</span>
                 </h2>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   {data.eventCategories.map((cat, i) => (
                     <div key={i} className="space-y-1.5 rounded-2xl border border-sekkha-hairline-soft bg-sekkha-surface p-3 sm:p-3.5">
                       <div className="flex items-center justify-between text-micro font-bold">
-                        <span className="text-sekkha-ink truncate max-w-[180px]">{cat.categoryName} ({cat.eventCount}x Event)</span>
-                        <span className="text-sekkha-slate shrink-0">Rata-rata {cat.avgAttendance} Hadir</span>
+                        <span className="text-sekkha-ink truncate max-w-[180px]">{cat.categoryName} ({cat.eventCount}x Events)</span>
+                        <span className="text-sekkha-slate shrink-0">Avg {cat.avgAttendance} Attended</span>
                       </div>
                       <div className="h-2.5 w-full rounded-full bg-sekkha-canvas overflow-hidden border border-sekkha-hairline-soft">
                         <div

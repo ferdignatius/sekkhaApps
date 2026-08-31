@@ -31,7 +31,7 @@ export async function handleLogin(req: Request, res: Response, next: NextFunctio
 export async function handleVerify(req: Request, res: Response) {
   const header = req.headers.authorization
   if (!header?.startsWith("Bearer ")) {
-    res.status(401).json({ error: "Token tidak ditemukan" })
+    res.status(401).json({ error: "Token not found" })
     return
   }
 
@@ -40,6 +40,6 @@ export async function handleVerify(req: Request, res: Response) {
     const user = await service.verifyToken(token)
     res.json({ valid: true, user })
   } catch {
-    res.status(401).json({ error: "Token tidak valid" })
+    res.status(401).json({ error: "Invalid token" })
   }
 }

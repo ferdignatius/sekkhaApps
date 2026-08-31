@@ -25,23 +25,23 @@ interface Achievement {
 // ─── Dummy data ──────────────────────────────────────────────────────────────
 
 const INITIAL_ACHIEVEMENTS: Achievement[] = [
-  { id: "ach-1", name: "Pertama Hadir", icon_url: "🎯", description: "Hadir di kebaktian pertama", condition_type: "attendance", condition_value: 1, is_active: true },
-  { id: "ach-2", name: "Streak 5", icon_url: "🔥", description: "Hadir 5 minggu berturut-turut", condition_type: "streak", condition_value: 5, is_active: true },
-  { id: "ach-3", name: "Streak 10", icon_url: "⚡", description: "Hadir 10 minggu berturut-turut", condition_type: "streak", condition_value: 10, is_active: true },
-  { id: "ach-4", name: "Streak 20", icon_url: "💎", description: "Hadir 20 minggu berturut-turut", condition_type: "streak", condition_value: 20, is_active: true },
-  { id: "ach-5", name: "Loyal", icon_url: "❤️", description: "Aktif selama 3 bulan tanpa putus", condition_type: "attendance", condition_value: 12, is_active: true },
-  { id: "ach-6", name: "Rajin", icon_url: "📚", description: "Hadir 4x berturut-turut di event rutin", condition_type: "event_count", condition_value: 4, is_active: true },
-  { id: "ach-7", name: "100 Poin", icon_url: "⭐", description: "Kumpulkan total 100 poin", condition_type: "points", condition_value: 100, is_active: true },
-  { id: "ach-8", name: "500 Poin", icon_url: "🏆", description: "Kumpulkan total 500 poin", condition_type: "points", condition_value: 500, is_active: true },
-  { id: "ach-9", name: "1000 Poin", icon_url: "👑", description: "Kumpulkan total 1000 poin", condition_type: "points", condition_value: 1000, is_active: false },
-  { id: "ach-10", name: "Sosial", icon_url: "🤝", description: "Ikut 3 kegiatan bakti sosial", condition_type: "event_count", condition_value: 3, is_active: true },
+  { id: "ach-1", name: "First Attendance", icon_url: "🎯", description: "Attended first service", condition_type: "attendance", condition_value: 1, is_active: true },
+  { id: "ach-2", name: "Streak 5", icon_url: "🔥", description: "Attended 5 weeks consecutively", condition_type: "streak", condition_value: 5, is_active: true },
+  { id: "ach-3", name: "Streak 10", icon_url: "⚡", description: "Attended 10 weeks consecutively", condition_type: "streak", condition_value: 10, is_active: true },
+  { id: "ach-4", name: "Streak 20", icon_url: "💎", description: "Attended 20 weeks consecutively", condition_type: "streak", condition_value: 20, is_active: true },
+  { id: "ach-5", name: "Loyal", icon_url: "❤️", description: "Active for 3 months unbroken", condition_type: "attendance", condition_value: 12, is_active: true },
+  { id: "ach-6", name: "Diligent", icon_url: "📚", description: "Attended 4 consecutive routine events", condition_type: "event_count", condition_value: 4, is_active: true },
+  { id: "ach-7", name: "100 Points", icon_url: "⭐", description: "Accumulate 100 points total", condition_type: "points", condition_value: 100, is_active: true },
+  { id: "ach-8", name: "500 Points", icon_url: "🏆", description: "Accumulate 500 points total", condition_type: "points", condition_value: 500, is_active: true },
+  { id: "ach-9", name: "1000 Points", icon_url: "👑", description: "Accumulate 1000 points total", condition_type: "points", condition_value: 1000, is_active: false },
+  { id: "ach-10", name: "Social Service", icon_url: "🤝", description: "Participated in 3 charity drives", condition_type: "event_count", condition_value: 3, is_active: true },
 ]
 
 const conditionLabel: Record<Achievement["condition_type"], string> = {
   streak: "Streak",
-  attendance: "Kehadiran",
-  points: "Poin",
-  event_count: "Jumlah Event",
+  attendance: "Attendance",
+  points: "Points",
+  event_count: "Event Count",
   manual: "Manual",
 }
 
@@ -114,7 +114,7 @@ export function AchievementPage() {
 
   return (
     <main>
-      <PageBreadcrumb items={[{ label: "Configure" }, { label: "Gamifikasi" }, { label: "Achievement" }]} />
+      <PageBreadcrumb items={[{ label: "Configure" }, { label: "Gamification" }, { label: "Achievements" }]} />
       <div className="px-4 py-6 pb-32 sm:pb-36 md:px-8 md:pb-12 lg:px-12">
         <div className="mx-auto max-w-8xl space-y-5">
 
@@ -122,7 +122,7 @@ export function AchievementPage() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
               <TrophyIcon className="size-5 text-sekkha-brand-yellow shrink-0" />
-              <h1 className="text-body-base sm:text-heading-5 font-extrabold text-sekkha-ink">Achievement</h1>
+              <h1 className="text-body-base sm:text-heading-5 font-extrabold text-sekkha-ink">Achievements</h1>
             </div>
             {isAdmin && (
               <button
@@ -131,7 +131,7 @@ export function AchievementPage() {
                 className="w-full sm:w-auto shrink-0 flex items-center justify-center gap-1.5 rounded-full bg-sekkha-primary px-4 py-2.5 sm:py-2 text-body-sm-medium text-white transition-opacity hover:opacity-90 cursor-pointer"
               >
                 <PlusIcon className="size-4" />
-                <span>Tambah Achievement</span>
+                <span>Add Achievement</span>
               </button>
             )}
           </div>
@@ -140,11 +140,11 @@ export function AchievementPage() {
           {formOpen && isAdmin && (
             <div className="rounded-xl border border-sekkha-hairline-soft bg-sekkha-canvas p-5">
               <h2 className="mb-4 text-body-sm-medium text-sekkha-ink">
-                {editTarget ? "Edit Achievement" : "Tambah Achievement Baru"}
+                {editTarget ? "Edit Achievement" : "Add New Achievement"}
               </h2>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <label className="mb-1 block text-caption text-sekkha-slate">Nama</label>
+                  <label className="mb-1 block text-caption text-sekkha-slate">Name</label>
                   <input type="text" value={name} onChange={e => setName(e.target.value)} className="w-full rounded-md border border-sekkha-hairline-strong bg-sekkha-canvas px-3 py-2 text-body-sm text-sekkha-ink outline-none focus:border-sekkha-brand-blue" placeholder="Streak 5" />
                 </div>
                 <div>
@@ -152,30 +152,30 @@ export function AchievementPage() {
                   <input type="text" value={icon} onChange={e => setIcon(e.target.value)} className="w-full rounded-md border border-sekkha-hairline-strong bg-sekkha-canvas px-3 py-2 text-body-sm text-sekkha-ink outline-none focus:border-sekkha-brand-blue" placeholder="🔥" />
                 </div>
                 <div className="sm:col-span-2">
-                  <label className="mb-1 block text-caption text-sekkha-slate">Deskripsi</label>
-                  <input type="text" value={description} onChange={e => setDescription(e.target.value)} className="w-full rounded-md border border-sekkha-hairline-strong bg-sekkha-canvas px-3 py-2 text-body-sm text-sekkha-ink outline-none focus:border-sekkha-brand-blue" placeholder="Hadir 5 minggu berturut-turut" />
+                  <label className="mb-1 block text-caption text-sekkha-slate">Description</label>
+                  <input type="text" value={description} onChange={e => setDescription(e.target.value)} className="w-full rounded-md border border-sekkha-hairline-strong bg-sekkha-canvas px-3 py-2 text-body-sm text-sekkha-ink outline-none focus:border-sekkha-brand-blue" placeholder="Attended 5 consecutive weeks" />
                 </div>
                 <div>
-                  <label className="mb-1 block text-caption text-sekkha-slate">Tipe Kondisi</label>
+                  <label className="mb-1 block text-caption text-sekkha-slate">Condition Type</label>
                   <select value={conditionType} onChange={e => setConditionType(e.target.value as Achievement["condition_type"])} className="w-full rounded-md border border-sekkha-hairline-strong bg-sekkha-canvas px-3 py-2 text-body-sm text-sekkha-ink outline-none focus:border-sekkha-brand-blue">
                     <option value="streak">Streak</option>
-                    <option value="attendance">Kehadiran</option>
-                    <option value="points">Poin</option>
-                    <option value="event_count">Jumlah Event</option>
+                    <option value="attendance">Attendance</option>
+                    <option value="points">Points</option>
+                    <option value="event_count">Event Count</option>
                     <option value="manual">Manual</option>
                   </select>
                 </div>
                 <div>
-                  <label className="mb-1 block text-caption text-sekkha-slate">Nilai Kondisi</label>
+                  <label className="mb-1 block text-caption text-sekkha-slate">Target Value</label>
                   <input type="number" value={conditionValue} onChange={e => setConditionValue(Number(e.target.value))} className="w-full rounded-md border border-sekkha-hairline-strong bg-sekkha-canvas px-3 py-2 text-body-sm text-sekkha-ink outline-none focus:border-sekkha-brand-blue" min={1} />
                 </div>
               </div>
               <div className="mt-4 flex items-center gap-2">
                 <button type="button" onClick={handleSave} className="rounded-full bg-sekkha-brand-blue px-5 py-2 text-body-sm-medium text-white transition-opacity hover:opacity-90">
-                  {editTarget ? "Simpan" : "Tambah"}
+                  {editTarget ? "Save" : "Add"}
                 </button>
                 <button type="button" onClick={() => setFormOpen(false)} className="rounded-full border border-sekkha-hairline-strong px-5 py-2 text-body-sm-medium text-sekkha-ink transition-colors hover:bg-sekkha-surface">
-                  Batal
+                  Cancel
                 </button>
               </div>
             </div>
@@ -188,11 +188,11 @@ export function AchievementPage() {
                 <thead>
                   <tr className="border-b border-sekkha-hairline-soft bg-sekkha-surface">
                     <th className="px-4 py-3 text-left font-medium text-sekkha-slate">Icon</th>
-                    <th className="px-4 py-3 text-left font-medium text-sekkha-slate">Nama</th>
-                    <th className="hidden px-4 py-3 text-left font-medium text-sekkha-slate sm:table-cell">Kondisi</th>
-                    <th className="hidden px-4 py-3 text-left font-medium text-sekkha-slate sm:table-cell">Nilai</th>
+                    <th className="px-4 py-3 text-left font-medium text-sekkha-slate">Name</th>
+                    <th className="hidden px-4 py-3 text-left font-medium text-sekkha-slate sm:table-cell">Condition</th>
+                    <th className="hidden px-4 py-3 text-left font-medium text-sekkha-slate sm:table-cell">Value</th>
                     <th className="px-4 py-3 text-left font-medium text-sekkha-slate">Status</th>
-                    {isAdmin && <th className="px-4 py-3 text-left font-medium text-sekkha-slate">Aksi</th>}
+                    {isAdmin && <th className="px-4 py-3 text-left font-medium text-sekkha-slate">Actions</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -216,7 +216,7 @@ export function AchievementPage() {
                               : "bg-sekkha-surface text-sekkha-muted"
                             }`}
                         >
-                          {ach.is_active ? "Aktif" : "Nonaktif"}
+                          {ach.is_active ? "Active" : "Inactive"}
                         </button>
                       </td>
                       {isAdmin && (
@@ -225,7 +225,7 @@ export function AchievementPage() {
                             <button type="button" onClick={() => openEdit(ach)} className="rounded-md p-1.5 text-sekkha-slate hover:bg-sekkha-surface hover:text-sekkha-ink" aria-label="Edit">
                               <PencilIcon className="size-3.5" />
                             </button>
-                            <button type="button" onClick={() => handleDelete(ach.id)} className="rounded-md p-1.5 text-sekkha-slate hover:bg-red-50 hover:text-red-500" aria-label="Hapus">
+                            <button type="button" onClick={() => handleDelete(ach.id)} className="rounded-md p-1.5 text-sekkha-slate hover:bg-red-50 hover:text-red-500" aria-label="Delete">
                               <TrashIcon className="size-3.5" />
                             </button>
                           </div>

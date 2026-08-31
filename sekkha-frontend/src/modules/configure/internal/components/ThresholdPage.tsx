@@ -62,11 +62,11 @@ export function ThresholdPage() {
                 <BellIcon className="size-5" />
               </div>
               <h1 className="text-body-base sm:text-heading-5 font-black text-sekkha-ink">
-                Konfigurasi Early Warning Threshold
+                Early Warning Threshold Configuration
               </h1>
             </div>
             <p className="text-body-sm text-sekkha-slate">
-              Atur kriteria dan batas toleransi (threshold) untuk klasifikasi Silent-Churn Alert pengurus.
+              Configure criteria and tolerance thresholds for organizer Silent-Churn Alerts.
             </p>
           </div>
 
@@ -84,7 +84,7 @@ export function ThresholdPage() {
                 onClick={handleSave}
               >
                 <SaveIcon className="size-4 mr-1.5" />
-                <span>Simpan Perubahan</span>
+                <span>Save Changes</span>
               </Button>
             </div>
           )}
@@ -94,8 +94,8 @@ export function ThresholdPage() {
         {savedSuccess && (
           <Alert
             variant="success"
-            title="Tersimpan"
-            description="Konfigurasi threshold berhasil disimpan ke sistem!"
+            title="Saved"
+            description="Threshold configuration saved to the system successfully!"
           />
         )}
 
@@ -109,7 +109,7 @@ export function ThresholdPage() {
 
             <div>
               <Input
-                label="Event Dilewati Berturut-turut (Missed)"
+                label="Consecutive Missed Events"
                 type="number"
                 min={1}
                 max={10}
@@ -117,7 +117,7 @@ export function ThresholdPage() {
                 onChange={(e) =>
                   setThresholds((p) => ({ ...p, warningConsecutiveMissed: parseInt(e.target.value) || 2 }))
                 }
-                endIcon={<span className="text-caption font-bold text-sekkha-slate">Event</span>}
+                endIcon={<span className="text-caption font-bold text-sekkha-slate">Events</span>}
               />
             </div>
           </Card>
@@ -130,7 +130,7 @@ export function ThresholdPage() {
 
             <div>
               <Input
-                label="Event Dilewati Berturut-turut (Missed)"
+                label="Consecutive Missed Events"
                 type="number"
                 min={1}
                 max={10}
@@ -138,7 +138,7 @@ export function ThresholdPage() {
                 onChange={(e) =>
                   setThresholds((p) => ({ ...p, atRiskConsecutiveMissed: parseInt(e.target.value) || 3 }))
                 }
-                endIcon={<span className="text-caption font-bold text-sekkha-slate">Event</span>}
+                endIcon={<span className="text-caption font-bold text-sekkha-slate">Events</span>}
               />
             </div>
           </Card>
@@ -151,7 +151,7 @@ export function ThresholdPage() {
 
             <div className="space-y-3">
               <Input
-                label="Minimal Event Dilewati (Lost)"
+                label="Minimum Missed Events (Lost)"
                 type="number"
                 min={1}
                 max={10}
@@ -159,11 +159,11 @@ export function ThresholdPage() {
                 onChange={(e) =>
                   setThresholds((p) => ({ ...p, lostConsecutiveMissed: parseInt(e.target.value) || 4 }))
                 }
-                endIcon={<span className="text-caption font-bold text-sekkha-slate">Event</span>}
+                endIcon={<span className="text-caption font-bold text-sekkha-slate">Events</span>}
               />
 
               <Input
-                label="Batas Absen Maksimal (Churned)"
+                label="Maximum Days Absent (Churned)"
                 type="number"
                 min={14}
                 max={365}
@@ -171,7 +171,7 @@ export function ThresholdPage() {
                 onChange={(e) =>
                   setThresholds((p) => ({ ...p, churnedDaysThreshold: parseInt(e.target.value) || 60 }))
                 }
-                endIcon={<span className="text-caption font-bold text-sekkha-slate">Hari</span>}
+                endIcon={<span className="text-caption font-bold text-sekkha-slate">Days</span>}
               />
             </div>
           </Card>
@@ -181,8 +181,8 @@ export function ThresholdPage() {
         <Alert
           variant="info"
           icon={<HelpCircleIcon className="size-5" />}
-          title="Catatan Pengaturan Threshold"
-          description="Klasifikasi status presensi member mengacu sepenuhnya pada threshold event dilewati & batas absen hari. Perubahan threshold langsung berlaku untuk klasifikasi status member di dashboard."
+          title="Threshold Configuration Notes"
+          description="Member attendance status classification directly references missed event counts & absent day limits. Changes take effect immediately across all dashboard metrics."
         />
       </div>
     </main>

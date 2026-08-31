@@ -153,7 +153,7 @@ teamsRouter.get("/members/:id", requireAuth, async (req, res, next) => {
     })
 
     if (!member) {
-      res.status(404).json({ error: "Anggota tidak ditemukan" })
+      res.status(404).json({ error: "Member not found" })
       return
     }
 
@@ -195,15 +195,15 @@ teamsRouter.get("/members/:id", requireAuth, async (req, res, next) => {
 
 // 3. POST /api/teams/members — Pengurus/Admin adds a new member with auto-generated username & password
 const CreateMemberSchema = z.object({
-  name: z.string().min(1, "Nama wajib diisi"),
+  name: z.string().min(1, "Name is required"),
   username: z
     .string()
-    .min(3, "Username minimal 3 karakter")
+    .min(3, "Username must be at least 3 characters")
     .max(30)
-    .regex(/^[a-zA-Z0-9_.]+$/, "Username hanya boleh huruf, angka, titik, underscore")
+    .regex(/^[a-zA-Z0-9_.]+$/, "Username may only contain letters, numbers, dots, or underscores")
     .optional()
     .or(z.literal("")),
-  email: z.string().email("Email tidak valid").optional().or(z.literal("")),
+  email: z.string().email("Invalid email format").optional().or(z.literal("")),
   phone: z.string().optional().or(z.literal("")),
   school: z.string().optional().or(z.literal("")),
   birth_date: z.string().optional().or(z.literal("")),
@@ -221,7 +221,7 @@ teamsRouter.post("/members", requireAuth, requireRole("pengurus", "admin"), asyn
         where: { email: data.email.toLowerCase().trim() },
       })
       if (existingEmail) {
-        res.status(400).json({ error: "Email sudah terdaftar pada pengguna lain." })
+        res.status(400).json({ error: "Email is already registered with another user." })
         return
       }
     }
@@ -231,7 +231,7 @@ teamsRouter.post("/members", requireAuth, requireRole("pengurus", "admin"), asyn
       where: { username },
     })
     if (existingUsername) {
-      res.status(400).json({ error: `Username @${username} sudah digunakan. Silakan pilih username lain.` })
+      res.status(400).json({ error: `Username @${username} is already taken. Please choose another username.` })
       return
     }
 
@@ -270,7 +270,7 @@ teamsRouter.post("/members", requireAuth, requireRole("pengurus", "admin"), asyn
       default_password: defaultPassword,
       is_claimed: true,
       created_at: new Date(newMember.createdAt).toISOString(),
-      message: "Data umat berhasil ditambahkan",
+      message: "Member added successfully",
     })
   } catch (err) {
     next(err)
@@ -282,9 +282,9 @@ const UpdateMemberSchema = z.object({
   name: z.string().min(1).optional(),
   username: z
     .string()
-    .min(3, "Username minimal 3 karakter")
+    .min(3, "Username must be at least 3 characters")
     .max(30)
-    .regex(/^[a-zA-Z0-9_.]+$/, "Username hanya boleh huruf, angka, titik, underscore")
+    .regex(/^[a-zA-Z0-9_.]+$/, "Username may only contain letters, numbers, dots, or underscores")
     .optional()
     .nullable()
     .or(z.literal("")),
@@ -303,14 +303,14 @@ teamsRouter.put("/members/:id", requireAuth, requireRole("pengurus", "admin"), a
 
     const existing = await (prisma.user as any).findUnique({ where: { id } })
     if (!existing) {
-      res.status(404).json({ error: "Anggota tidak ditemukan" })
+      res.status(404).json({ error: "Member not found" })
       return
     }
 
     if (data.email && data.email !== existing.email) {
       const emailInUse = await (prisma.user as any).findUnique({ where: { email: data.email.toLowerCase().trim() } })
       if (emailInUse) {
-        res.status(400).json({ error: "Email sudah digunakan oleh anggota lain." })
+        res.status(400).json({ error: "Email is already used by another member." })
         return
       }
     }
@@ -318,7 +318,7 @@ teamsRouter.put("/members/:id", requireAuth, requireRole("pengurus", "admin"), a
     if (data.username && data.username !== existing.username) {
       const usernameInUse = await (prisma.user as any).findUnique({ where: { username: data.username.toLowerCase().trim() } })
       if (usernameInUse) {
-        res.status(400).json({ error: "Username sudah digunakan oleh anggota lain." })
+        res.status(400).json({ error: "Username is already used by another member." })
         return
       }
     }
@@ -368,18 +368,18 @@ teamsRouter.delete("/members/:id", requireAuth, requireRole("pengurus", "admin")
     const currentUserId = req.user!.userId
 
     if (id === currentUserId) {
-      res.status(400).json({ error: "Tidak dapat menghapus akun Anda sendiri." })
+      res.status(400).json({ error: "You cannot delete your own account." })
       return
     }
 
     const member = await (prisma.user as any).findUnique({ where: { id } })
     if (!member) {
-      res.status(404).json({ error: "Anggota tidak ditemukan" })
+      res.status(404).json({ error: "Member not found" })
       return
     }
 
     if (member.role === "admin" && req.user!.role !== "admin") {
-      res.status(403).json({ error: "Hanya Admin yang dapat menghapus sesama Admin." })
+      res.status(403).json({ error: "Only Admins can delete another Admin." })
       return
     }
 
@@ -387,7 +387,7 @@ teamsRouter.delete("/members/:id", requireAuth, requireRole("pengurus", "admin")
 
     await invalidate(CacheKeys.userProfile(id))
 
-    res.json({ success: true, message: "Data anggota berhasil dihapus." })
+    res.json({ success: true, message: "Member deleted successfully." })
   } catch (err) {
     next(err)
   }
@@ -433,7 +433,7 @@ teamsRouter.post("/invitations", requireAuth, requireRole("admin"), async (req, 
       where: { email, role, status: "pending" },
     })
     if (existing) {
-      res.status(400).json({ error: "Undangan serupa masih pending untuk email ini." })
+      res.status(400).json({ error: "A similar invitation is already pending for this email." })
       return
     }
 
@@ -454,8 +454,8 @@ teamsRouter.post("/invitations", requireAuth, requireRole("admin"), async (req, 
       await prisma.notification.create({
         data: {
           userId: targetUser.id,
-          title: "Undangan Peran Baru",
-          message: `Anda diundang untuk bergabung sebagai ${role === "pengurus" ? "Pengurus" : "Aktivis"}.`,
+          title: "New Role Invitation",
+          message: `You have been invited to join as ${role === "pengurus" ? "Organizer" : "Activist"}.`,
           type: "role_invitation",
           status: "unread",
           data: { invitationId: invitation.id },
@@ -482,12 +482,12 @@ teamsRouter.post("/invitations/:id/accept", requireAuth, async (req, res, next) 
     })
 
     if (!invitation) {
-      res.status(404).json({ error: "Undangan tidak ditemukan" })
+      res.status(404).json({ error: "Invitation not found" })
       return
     }
 
     if (invitation.status !== "pending") {
-      res.status(400).json({ error: "Undangan sudah tidak aktif" })
+      res.status(400).json({ error: "Invitation is no longer active" })
       return
     }
 
@@ -496,7 +496,7 @@ teamsRouter.post("/invitations/:id/accept", requireAuth, async (req, res, next) 
     })
 
     if (!user || user.email !== invitation.email) {
-      res.status(403).json({ error: "Email Anda tidak cocok dengan undangan ini" })
+      res.status(403).json({ error: "Your email does not match this invitation" })
       return
     }
 
@@ -541,12 +541,12 @@ teamsRouter.post("/invitations/:id/reject", requireAuth, async (req, res, next) 
     })
 
     if (!invitation) {
-      res.status(404).json({ error: "Undangan tidak ditemukan" })
+      res.status(404).json({ error: "Invitation not found" })
       return
     }
 
     if (invitation.status !== "pending") {
-      res.status(400).json({ error: "Undangan sudah tidak aktif" })
+      res.status(400).json({ error: "Invitation is no longer active" })
       return
     }
 
@@ -555,7 +555,7 @@ teamsRouter.post("/invitations/:id/reject", requireAuth, async (req, res, next) 
     })
 
     if (!user || user.email !== invitation.email) {
-      res.status(403).json({ error: "Email Anda tidak cocok dengan undangan ini" })
+      res.status(403).json({ error: "Your email does not match this invitation" })
       return
     }
 
@@ -594,7 +594,7 @@ teamsRouter.post("/members/:id/reset-password", requireAuth, requireRole("pengur
     })
 
     if (!targetUser) {
-      res.status(404).json({ error: "Anggota tidak ditemukan." })
+      res.status(404).json({ error: "Member not found." })
       return
     }
 
@@ -616,7 +616,7 @@ teamsRouter.post("/members/:id/reset-password", requireAuth, requireRole("pengur
       username: targetUser.username,
       name: targetUser.name,
       default_password: defaultPassword,
-      message: `Password untuk ${targetUser.name} (${targetUser.username ? `@${targetUser.username}` : "umat"}) berhasil di-reset ke: ${defaultPassword}`,
+      message: `Password for ${targetUser.name} (${targetUser.username ? `@${targetUser.username}` : "member"}) successfully reset to: ${defaultPassword}`,
     })
   } catch (err) {
     next(err)

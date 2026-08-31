@@ -3,6 +3,7 @@ import { api } from "@/lib/api"
 export interface MemberDto {
   id: string
   name: string
+  username?: string | null
   email?: string | null
   phone?: string | null
   school?: string | null
@@ -13,7 +14,7 @@ export interface MemberDto {
   user_number?: string | null
   is_claimed: boolean
   claimed_at?: string | null
-  claim_pin?: string | null
+  default_password?: string
   total_attendance?: number
   points?: number
   created_at: string
@@ -39,16 +40,19 @@ export interface MemberDetailDto extends MemberDto {
 
 export interface CreateMemberPayload {
   name: string
+  username?: string
   email?: string
   phone?: string
   school?: string
   birth_date?: string
   gender?: string
   role?: "umat" | "aktivis" | "pengurus" | "admin"
+  default_password?: string
 }
 
 export interface UpdateMemberPayload {
   name?: string
+  username?: string | null
   email?: string | null
   phone?: string | null
   school?: string | null
@@ -69,24 +73,6 @@ export interface InvitationDto {
   }
 }
 
-export interface LinkLegacyAccountPayload {
-  claim_pin: string
-  target_user_id?: string
-}
-
-export interface LinkLegacyAccountResponse {
-  status?: string
-  success?: boolean
-  data: {
-    merged_attendances_count: number
-    merged_badges_count: number
-    new_total_points: number
-    claimed_user_number?: string
-    merged_user_name?: string
-  }
-  message: string
-}
-
 export const teamsApi = {
   listMembers: (params?: { search?: string; claimed_status?: string; role?: string }) => {
     const searchParams = new URLSearchParams()
@@ -105,23 +91,23 @@ export const teamsApi = {
 
   deleteMember: (id: string) => api.delete<{ success: boolean; message: string }>(`/teams/members/${id}`),
 
-  generateClaimPin: (id: string) =>
+  resetMemberPassword: (id: string) =>
     api.post<{
       success: boolean
-      claim_pin: string
       user_number: string
+      username?: string | null
       name: string
-      phone?: string
-      expires_at: string
+      default_password: string
       message: string
-    }>(`/teams/members/${id}/generate-claim-pin`),
+    }>(`/teams/members/${id}/reset-password`),
 
   listInvitations: () => api.get<InvitationDto[]>("/teams/invitations"),
 
   sendInvitation: (data: { email: string; role: "pengurus" | "aktivis" }) =>
     api.post<{ id: string; email: string; role: string; status: string }>("/teams/invitations", data),
 
-  linkLegacyAccount: (data: LinkLegacyAccountPayload) =>
-    api.post<LinkLegacyAccountResponse>("/users/link-legacy-account", data),
+  changePassword: (data: { current_password: string; new_password: string }) =>
+    api.post<{ success: boolean; message: string }>("/users/change-password", data),
 }
+
 

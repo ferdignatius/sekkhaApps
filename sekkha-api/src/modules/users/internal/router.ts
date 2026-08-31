@@ -14,6 +14,7 @@ usersRouter.get("/me", requireAuth, async (req, res, next) => {
         where: { id: userId },
         select: {
           id: true,
+          username: true,
           email: true,
           name: true,
           school: true,
@@ -67,8 +68,8 @@ usersRouter.get("/me/badges", requireAuth, async (req, res, next) => {
       const userBadges = await prisma.userBadge.findMany({
         where: { userId },
       })
-      const userBadgeMap = new Map(userBadges.map(ub => [ub.badgeId, ub.earnedAt.toISOString()]))
-      return allBadges.map(b => ({
+      const userBadgeMap = new Map(userBadges.map((ub) => [ub.badgeId, ub.earnedAt.toISOString()]))
+      return allBadges.map((b) => ({
         badge_id: b.id,
         name: b.name,
         icon_url: b.iconUrl,
@@ -93,7 +94,7 @@ usersRouter.get("/me/attendances", requireAuth, async (req, res, next) => {
         orderBy: { scannedAt: "desc" },
         take: 20,
       })
-      return result.map(a => ({
+      return result.map((a) => ({
         event_id: a.eventId,
         event_title: a.event.title,
         event_date: a.event.eventDate ? (typeof a.event.eventDate === "string" ? a.event.eventDate : new Date(a.event.eventDate).toISOString()) : new Date().toISOString(),
@@ -113,6 +114,13 @@ usersRouter.patch("/me", requireAuth, async (req, res, next) => {
     const { z } = await import("zod")
     const body = z.object({
       name: z.string().min(1).optional(),
+      username: z
+        .string()
+        .min(3, "Username minimal 3 karakter")
+        .max(30, "Username maksimal 30 karakter")
+        .regex(/^[a-zA-Z0-9_.]+$/, "Username hanya boleh huruf, angka, titik, underscore")
+        .optional()
+        .nullable(),
       school: z.string().optional().nullable(),
       phone: z.string().optional().nullable(),
       birth_date: z.string().optional().nullable(),
@@ -134,10 +142,22 @@ usersRouter.patch("/me", requireAuth, async (req, res, next) => {
       userNumber = `${prefix}${String(count + 1).padStart(4, "0")}`
     }
 
+    if (body.username && body.username.toLowerCase().trim() !== existing?.username) {
+      const targetUsername = body.username.toLowerCase().trim()
+      const usernameTaken = await prisma.user.findUnique({
+        where: { username: targetUsername },
+      })
+      if (usernameTaken && usernameTaken.id !== userId) {
+        res.status(409).json({ error: `Username @${targetUsername} sudah digunakan oleh akun lain.` })
+        return
+      }
+    }
+
     const user = await (prisma.user as any).update({
       where: { id: userId },
       data: {
         ...(body.name && { name: body.name.trim() }),
+        ...(body.username !== undefined && { username: body.username ? body.username.toLowerCase().trim() : null }),
         ...(body.school !== undefined && { school: body.school ? body.school.trim() : null }),
         ...(body.phone !== undefined && { phone: body.phone ? body.phone.trim() : null }),
         ...(body.birth_date !== undefined && {
@@ -149,6 +169,7 @@ usersRouter.patch("/me", requireAuth, async (req, res, next) => {
       },
       select: {
         id: true,
+        username: true,
         name: true,
         email: true,
         school: true,
@@ -270,160 +291,41 @@ usersRouter.get("/me/point-transactions", requireAuth, async (req, res, next) =>
   }
 })
 
-// POST /api/users/link-legacy-account — Claim pre-provisioned data using 6-digit PIN
-usersRouter.post("/link-legacy-account", requireAuth, async (req, res, next) => {
+// POST /api/users/change-password — User updates their password
+usersRouter.post("/change-password", requireAuth, async (req, res, next) => {
   try {
     const { z } = await import("zod")
-    const { claim_pin, target_user_id } = z.object({
-      claim_pin: z.string().min(6, "PIN aktivasi harus 6 digit").max(8),
-      target_user_id: z.string().optional(),
-    }).parse(req.body)
-
-    const cleanPin = claim_pin.replace(/[^0-9]/g, "").trim()
-    const currentUserId = req.user!.userId
-
-    // 1. Find target pre-provisioned user by 6-digit PIN
-    const targetUser = await (prisma.user as any).findFirst({
-      where: {
-        claimPin: cleanPin,
-        isClaimed: false,
-        ...(target_user_id ? {
-          OR: [
-            { userNumber: target_user_id },
-            { id: target_user_id },
-          ],
-        } : {}),
-      },
-      include: {
-        attendances: true,
-        badges: true,
-        rsvps: true,
-        pointTransactions: true,
-      },
-    })
-
-    if (!targetUser) {
-      res.status(404).json({
-        error: "PIN aktivasi tidak valid atau sudah pernah digunakan. Pastikan 6-digit PIN sesuai dengan yang diberikan pengurus.",
+    const bcrypt = (await import("bcryptjs")).default
+    const body = z
+      .object({
+        current_password: z.string().min(1, "Password saat ini wajib diisi"),
+        new_password: z.string().min(6, "Password baru minimal 6 karakter"),
       })
+      .parse(req.body)
+
+    const userId = req.user!.userId
+    const user = await prisma.user.findUnique({ where: { id: userId } })
+
+    if (!user || !user.password) {
+      res.status(400).json({ error: "Akun tidak memiliki password yang valid" })
       return
     }
 
-    if (targetUser.id === currentUserId) {
-      res.status(400).json({ error: "Tidak dapat menautkan akun ke akun yang sedang Anda gunakan." })
+    const isValid = await bcrypt.compare(body.current_password, user.password)
+    if (!isValid) {
+      res.status(400).json({ error: "Password saat ini tidak sesuai" })
       return
     }
 
-    if (targetUser.claimPinExpiresAt && new Date(targetUser.claimPinExpiresAt) < new Date()) {
-      res.status(400).json({ error: "PIN aktivasi sudah kedaluwarsa. Silakan minta PIN baru ke pengurus." })
-      return
-    }
-
-    // 2. Data Merging & Transfer
-    let mergedAttendances = 0
-    for (const att of targetUser.attendances) {
-      const exists = await prisma.attendance.findUnique({
-        where: { userId_eventId: { userId: currentUserId, eventId: att.eventId } },
-      })
-      if (!exists) {
-        await prisma.attendance.create({
-          data: {
-            userId: currentUserId,
-            eventId: att.eventId,
-            method: att.method,
-            pointsEarned: att.pointsEarned,
-            scannedAt: att.scannedAt,
-          },
-        })
-        mergedAttendances++
-      }
-    }
-
-    let mergedBadges = 0
-    for (const bg of targetUser.badges) {
-      const exists = await prisma.userBadge.findUnique({
-        where: { userId_badgeId: { userId: currentUserId, badgeId: bg.badgeId } },
-      })
-      if (!exists) {
-        await prisma.userBadge.create({
-          data: {
-            userId: currentUserId,
-            badgeId: bg.badgeId,
-            earnedAt: bg.earnedAt,
-          },
-        })
-        mergedBadges++
-      }
-    }
-
-    for (const pt of targetUser.pointTransactions) {
-      await prisma.pointTransaction.create({
-        data: {
-          userId: currentUserId,
-          amount: pt.amount,
-          type: pt.type,
-          description: `[Transfer Data Lama] ${pt.description || "Poin Historis"}`,
-          referenceId: pt.referenceId,
-          createdAt: pt.createdAt,
-        },
-      })
-    }
-
-    // Recalculate total points for current user
-    const allAttendances = await prisma.attendance.findMany({
-      where: { userId: currentUserId },
-      select: { pointsEarned: true },
-    })
-    const calculatedPoints = allAttendances.reduce((acc, a) => acc + (a.pointsEarned || 50), 0)
-
-    const legacyUserNumber = targetUser.userNumber
-    const legacyPhone = targetUser.phone
-    const legacySchool = targetUser.school
-    const legacyBirthDate = targetUser.birthDate
-    const legacyGender = targetUser.gender
-
-    // Clean up old placeholder user record so NO duplicate exists in People
-    await prisma.attendance.deleteMany({ where: { userId: targetUser.id } }).catch(() => {})
-    await prisma.userBadge.deleteMany({ where: { userId: targetUser.id } }).catch(() => {})
-    await prisma.pointTransaction.deleteMany({ where: { userId: targetUser.id } }).catch(() => {})
-    await prisma.rsvp.deleteMany({ where: { userId: targetUser.id } }).catch(() => {})
-    await (prisma.user as any).delete({ where: { id: targetUser.id } })
-
-    const currentUser = await (prisma.user as any).findUnique({ where: { id: currentUserId } })
-
-    // Update active user with the official legacy userNumber and missing profile details
-    await (prisma.user as any).update({
-      where: { id: currentUserId },
-      data: {
-        points: calculatedPoints,
-        userNumber: legacyUserNumber || currentUser.userNumber,
-        phone: currentUser.phone || legacyPhone,
-        school: currentUser.school || legacySchool,
-        birthDate: currentUser.birthDate || legacyBirthDate,
-        gender: currentUser.gender || legacyGender,
-        isClaimed: true,
-        claimedAt: new Date(),
-        lastActivityAt: new Date(),
-      },
+    const hashedPassword = await bcrypt.hash(body.new_password, 10)
+    await prisma.user.update({
+      where: { id: userId },
+      data: { password: hashedPassword },
     })
 
-    // Invalidate caches
-    const { invalidate, CacheKeys } = await import("../../../lib/cache")
-    await invalidate(CacheKeys.userProfile(currentUserId))
-    await invalidate(CacheKeys.userAttendances(currentUserId))
-    await invalidate(CacheKeys.userBadges(currentUserId))
-
-    res.json({
-      status: "success",
-      data: {
-        merged_attendances_count: mergedAttendances,
-        merged_badges_count: mergedBadges,
-        new_total_points: calculatedPoints,
-        claimed_user_number: targetUser.userNumber,
-      },
-      message: `Selamat! ${mergedAttendances} riwayat kehadiran dan ${mergedBadges} lencana berhasil digabungkan ke akun Anda.`,
-    })
+    res.json({ success: true, message: "Password berhasil diperbarui" })
   } catch (err) {
     next(err)
   }
 })
+

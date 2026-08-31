@@ -7,77 +7,77 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0 0);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0 0);
-    --primary: oklch(0.205 0 0);
-    --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.97 0 0);
-    --secondary-foreground: oklch(0.205 0 0);
-    --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
-    --accent: oklch(0.97 0 0);
-    --accent-foreground: oklch(0.205 0 0);
-    --destructive: oklch(0.577 0.245 27.325);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.708 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
-    --radius: 0.625rem;
-    --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: oklch(0.205 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.97 0 0);
-    --sidebar-accent-foreground: oklch(0.205 0 0);
-    --sidebar-border: oklch(0.922 0 0);
-    --sidebar-ring: oklch(0.708 0 0);
+    --background: #fffaf0;
+    --foreground: #0a0a0a;
+    --card: #f5f0e0;
+    --card-foreground: #0a0a0a;
+    --popover: #fffaf0;
+    --popover-foreground: #0a0a0a;
+    --primary: #0a0a0a;
+    --primary-foreground: #ffffff;
+    --secondary: #faf5e8;
+    --secondary-foreground: #0a0a0a;
+    --muted: #faf5e8;
+    --muted-foreground: #6a6a6a;
+    --accent: #f5f0e0;
+    --accent-foreground: #0a0a0a;
+    --destructive: #ef4444;
+    --border: #e5e5e5;
+    --input: #e5e5e5;
+    --ring: #0a0a0a;
+    --chart-1: #ff4d8b;
+    --chart-2: #1a3a3a;
+    --chart-3: #b8a4ed;
+    --chart-4: #ffb084;
+    --chart-5: #e8b94a;
+    --radius: 0.75rem; /* 12px default */
+    --sidebar: #faf5e8;
+    --sidebar-foreground: #0a0a0a;
+    --sidebar-primary: #0a0a0a;
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent: #f5f0e0;
+    --sidebar-accent-foreground: #0a0a0a;
+    --sidebar-border: #e5e5e5;
+    --sidebar-ring: #0a0a0a;
 }
 
 .dark {
-    --background: oklch(0.145 0 0);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.205 0 0);
-    --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.205 0 0);
-    --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.922 0 0);
-    --primary-foreground: oklch(0.205 0 0);
-    --secondary: oklch(0.269 0 0);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(0.269 0 0);
-    --accent-foreground: oklch(0.985 0 0);
-    --destructive: oklch(0.704 0.191 22.216);
-    --border: oklch(1 0 0 / 10%);
-    --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.556 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
-    --sidebar: oklch(0.205 0 0);
-    --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.488 0.243 264.376);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.269 0 0);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(1 0 0 / 10%);
-    --sidebar-ring: oklch(0.556 0 0);
+    --background: #0a1a1a;
+    --foreground: #ffffff;
+    --card: #1a2a2a;
+    --card-foreground: #ffffff;
+    --popover: #1a2a2a;
+    --popover-foreground: #ffffff;
+    --primary: #ffffff;
+    --primary-foreground: #0a0a0a;
+    --secondary: #1a2a2a;
+    --secondary-foreground: #ffffff;
+    --muted: #1a2a2a;
+    --muted-foreground: #a0a0a0;
+    --accent: #1a2a2a;
+    --accent-foreground: #ffffff;
+    --destructive: #ef4444;
+    --border: #1a2a2a;
+    --input: #1a2a2a;
+    --ring: #ffffff;
+    --chart-1: #ff4d8b;
+    --chart-2: #a4d4c5;
+    --chart-3: #b8a4ed;
+    --chart-4: #ffb084;
+    --chart-5: #e8b94a;
+    --sidebar: #0a1a1a;
+    --sidebar-foreground: #ffffff;
+    --sidebar-primary: #ffffff;
+    --sidebar-primary-foreground: #0a0a0a;
+    --sidebar-accent: #1a2a2a;
+    --sidebar-accent-foreground: #ffffff;
+    --sidebar-border: #1a2a2a;
+    --sidebar-ring: #ffffff;
 }
 
 @theme inline {
     --font-sans: 'Inter Variable', sans-serif;
-    --font-heading: 'Geist Variable', sans-serif;
+    --font-heading: 'Inter Variable', sans-serif;
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -109,85 +109,181 @@
     --color-card: var(--card);
     --color-foreground: var(--foreground);
     --color-background: var(--background);
-    --radius-sm: calc(var(--radius) * 0.6);
-    --radius-md: calc(var(--radius) * 0.8);
-    --radius-lg: var(--radius);
-    --radius-xl: calc(var(--radius) * 1.4);
-    --radius-2xl: calc(var(--radius) * 1.8);
-    --radius-3xl: calc(var(--radius) * 2.2);
-    --radius-4xl: calc(var(--radius) * 2.6);
 
-    /* ─── Sekkha Design Tokens ─── */
+    /* ─── Clay Design Tokens (DESIGN.md) ─── */
+    --color-canvas: #fffaf0;
+    --color-surface-soft: #faf5e8;
+    --color-surface-card: #f5f0e0;
+    --color-surface-strong: #ebe6d6;
+    --color-surface-dark: #0a1a1a;
+    --color-surface-dark-elevated: #1a2a2a;
 
-    /* Colors */
-    --color-sekkha-primary: #1c1c1e;
+    --color-clay-primary: #0a0a0a;
+    --color-clay-primary-active: #1f1f1f;
+    --color-clay-primary-disabled: #e5e5e5;
+    --color-ink: #0a0a0a;
+    --color-body: #3a3a3a;
+    --color-body-strong: #1a1a1a;
+    --color-text-muted: #6a6a6a;
+    --color-text-muted-soft: #9a9a9a;
+    --color-hairline: #e5e5e5;
+    --color-hairline-soft: #f0f0f0;
+
+    --color-clay-pink: #ff4d8b;
+    --color-clay-teal: #1a3a3a;
+    --color-clay-lavender: #b8a4ed;
+    --color-clay-peach: #ffb084;
+    --color-clay-ochre: #e8b94a;
+    --color-clay-mint: #a4d4c5;
+    --color-clay-coral: #ff6b5a;
+
+    --color-clay-success: #22c55e;
+    --color-clay-warning: #f59e0b;
+    --color-clay-error: #ef4444;
+
+    /* Border Radii (DESIGN.md) */
+    --radius-xs: 6px;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 24px;
+    --radius-pill: 9999px;
+    --radius-full: 9999px;
+
+    /* Sekkha Compatible Theme Aliases mapped to Clay */
+    --color-sekkha-primary: #0a0a0a;
     --color-sekkha-on-primary: #ffffff;
-    --color-sekkha-canvas: #ffffff;
-    --color-sekkha-surface: #f7f8fa;
-    --color-sekkha-ink: #1c1c1e;
-    --color-sekkha-slate: #555a6a;
-    --color-sekkha-hairline: #e0e2e8;
-    --color-sekkha-hairline-strong: #c7cad5;
+    --color-sekkha-canvas: #fffaf0;
+    --color-sekkha-surface: #faf5e8;
+    --color-sekkha-ink: #0a0a0a;
+    --color-sekkha-slate: #6a6a6a;
+    --color-sekkha-hairline: #e5e5e5;
+    --color-sekkha-hairline-strong: #d4d4d4;
+    --color-sekkha-hairline-soft: #f0f0f0;
     --color-sekkha-on-dark: #ffffff;
-    --color-sekkha-on-dark-muted: #a5a8b5;
-    --color-sekkha-footer-bg: #1c1c1e;
-    --color-sekkha-brand-blue: #4262ff;
-    --color-sekkha-brand-red: #fbd4d4;
-    --color-sekkha-brand-red-dark: #e3c5c5;
-    --color-sekkha-muted: #a5a8b5;
-    --color-sekkha-hairline-soft: #eef0f3;
-    --color-sekkha-brand-yellow: #ffd02f;
-    --color-sekkha-coral-light: #ffc6c6;
-    --color-sekkha-teal-light: #c3faf5;
-    --color-sekkha-rose-light: #fde0f0;
-
-    /* Ring offset for dark contexts (used by on-dark button focus ring) */
+    --color-sekkha-on-dark-muted: #a0a0a0;
+    --color-sekkha-footer-bg: #faf5e8; /* Warm cream footer per DESIGN.md */
+    --color-sekkha-brand-blue: #1a3a3a; /* Clay Deep Teal */
+    --color-sekkha-brand-yellow: #e8b94a; /* Clay Ochre */
+    --color-sekkha-coral-light: #ffb084; /* Clay Peach */
+    --color-sekkha-brand-red: #ff4d8b; /* Clay Pink */
+    --color-sekkha-brand-red-dark: #e63e79;
+    --color-sekkha-muted: #6a6a6a;
+    --color-sekkha-teal-light: #a4d4c5; /* Clay Mint */
+    --color-sekkha-rose-light: #b8a4ed; /* Clay Lavender */
     --color-sekkha-ring-on-dark: #ffffff;
 
-    /* Font */
-    --font-roobert: 'Roobert PRO', 'Noto Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-roobert: 'Inter Variable', sans-serif;
 
-    /* Spacing (section-level) */
-    --spacing-hero: 120px;
+    /* Spacing */
+    --spacing-hero: 96px;
     --spacing-section-lg: 96px;
-    --spacing-section: 64px;
-
-    /* Container max-width */
-    --max-width-8xl: 88rem;
+    --spacing-section: 96px;
+    --max-width-8xl: 1280px;
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
-    }
+  }
   body {
     @apply bg-background text-foreground;
-    }
+  }
   html {
     @apply font-sans;
-    }
+  }
 }
 
-/* ─── Sekkha Typography Utility Classes ─── */
+/* ─── Clay & Sekkha Typography Utility Classes ─── */
 @layer utilities {
-  .text-hero-display {
-    font-family: var(--font-roobert);
-    font-size: 80px;
+  /* Clay Display Typographies (DESIGN.md) */
+  .text-display-xl {
+    font-size: 72px;
+    font-weight: 500;
+    line-height: 1;
+    letter-spacing: -2.5px;
+  }
+
+  .text-display-lg {
+    font-size: 56px;
     font-weight: 500;
     line-height: 1.05;
     letter-spacing: -2px;
   }
 
-  .text-heading-1 {
-    font-family: var(--font-roobert);
-    font-size: 48px;
+  .text-display-md {
+    font-size: 40px;
     font-weight: 500;
-    line-height: 1.15;
+    line-height: 1.1;
     letter-spacing: -1px;
   }
 
+  .text-display-sm {
+    font-size: 32px;
+    font-weight: 500;
+    line-height: 1.15;
+    letter-spacing: -0.5px;
+  }
+
+  .text-title-lg {
+    font-size: 24px;
+    font-weight: 600;
+    line-height: 1.3;
+    letter-spacing: -0.3px;
+  }
+
+  .text-title-md {
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 1.4;
+    letter-spacing: 0;
+  }
+
+  .text-title-sm {
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.4;
+    letter-spacing: 0;
+  }
+
+  .text-button {
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: 0;
+  }
+
+  .text-nav-link {
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.4;
+    letter-spacing: 0;
+  }
+
+  .text-caption-uppercase {
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.4;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+  }
+
+  /* Sekkha Legacy Aliases */
+  .text-hero-display {
+    font-size: 72px;
+    font-weight: 500;
+    line-height: 1.05;
+    letter-spacing: -2.5px;
+  }
+
+  .text-heading-1 {
+    font-size: 56px;
+    font-weight: 500;
+    line-height: 1.15;
+    letter-spacing: -2px;
+  }
+
   .text-heading-2 {
-    font-family: var(--font-roobert);
     font-size: 36px;
     font-weight: 500;
     line-height: 1.20;
@@ -195,7 +291,6 @@
   }
 
   .text-heading-3 {
-    font-family: var(--font-roobert);
     font-size: 28px;
     font-weight: 500;
     line-height: 1.25;
@@ -203,7 +298,6 @@
   }
 
   .text-heading-4 {
-    font-family: var(--font-roobert);
     font-size: 22px;
     font-weight: 500;
     line-height: 1.30;
@@ -211,7 +305,6 @@
   }
 
   .text-heading-5 {
-    font-family: var(--font-roobert);
     font-size: 18px;
     font-weight: 500;
     line-height: 1.40;
@@ -219,7 +312,6 @@
   }
 
   .text-subtitle {
-    font-family: var(--font-roobert);
     font-size: 18px;
     font-weight: 400;
     line-height: 1.50;
@@ -227,39 +319,34 @@
   }
 
   .text-body-md {
-    font-family: var(--font-roobert);
     font-size: 16px;
     font-weight: 400;
-    line-height: 1.50;
+    line-height: 1.55;
     letter-spacing: 0;
   }
 
   .text-body-md-medium {
-    font-family: var(--font-roobert);
     font-size: 16px;
     font-weight: 500;
-    line-height: 1.50;
+    line-height: 1.55;
     letter-spacing: 0;
   }
 
   .text-body-sm {
-    font-family: var(--font-roobert);
     font-size: 14px;
     font-weight: 400;
-    line-height: 1.50;
+    line-height: 1.55;
     letter-spacing: 0;
   }
 
   .text-body-sm-medium {
-    font-family: var(--font-roobert);
     font-size: 14px;
     font-weight: 500;
-    line-height: 1.50;
+    line-height: 1.55;
     letter-spacing: 0;
   }
 
   .text-stat-display {
-    font-family: var(--font-roobert);
     font-size: 64px;
     font-weight: 500;
     line-height: 1.10;
@@ -267,7 +354,6 @@
   }
 
   .text-micro {
-    font-family: var(--font-roobert);
     font-size: 12px;
     font-weight: 500;
     line-height: 1.40;
@@ -275,7 +361,6 @@
   }
 
   .text-micro-bold {
-    font-family: var(--font-roobert);
     font-size: 12px;
     font-weight: 600;
     line-height: 1.40;
@@ -283,7 +368,6 @@
   }
 
   .text-button-md {
-    font-family: var(--font-roobert);
     font-size: 14px;
     font-weight: 500;
     line-height: 1.30;
@@ -291,7 +375,6 @@
   }
 
   .text-footer-link {
-    font-family: var(--font-roobert);
     font-size: 14px;
     font-weight: 400;
     line-height: 1.50;
@@ -299,7 +382,6 @@
   }
 
   .text-caption {
-    font-family: var(--font-roobert);
     font-size: 13px;
     font-weight: 400;
     line-height: 1.40;
@@ -307,7 +389,6 @@
   }
 
   .text-caption-bold {
-    font-family: var(--font-roobert);
     font-size: 13px;
     font-weight: 600;
     line-height: 1.40;
@@ -315,12 +396,49 @@
   }
 
   .text-micro-uppercase {
-    font-family: var(--font-roobert);
     font-size: 11px;
     font-weight: 600;
     line-height: 1.40;
     letter-spacing: 0.5px;
     text-transform: uppercase;
+  }
+
+  /* ─── Clay Saturated Feature Card Classes ─── */
+  .card-clay-pink {
+    background-color: var(--color-clay-pink);
+    color: var(--color-on-primary, #ffffff);
+    border-radius: var(--radius-xl);
+  }
+
+  .card-clay-teal {
+    background-color: var(--color-clay-teal);
+    color: var(--color-on-dark, #ffffff);
+    border-radius: var(--radius-xl);
+  }
+
+  .card-clay-lavender {
+    background-color: var(--color-clay-lavender);
+    color: var(--color-ink, #0a0a0a);
+    border-radius: var(--radius-xl);
+  }
+
+  .card-clay-peach {
+    background-color: var(--color-clay-peach);
+    color: var(--color-ink, #0a0a0a);
+    border-radius: var(--radius-xl);
+  }
+
+  .card-clay-ochre {
+    background-color: var(--color-clay-ochre);
+    color: var(--color-ink, #0a0a0a);
+    border-radius: var(--radius-xl);
+  }
+
+  .card-clay-cream {
+    background-color: var(--color-surface-card);
+    color: var(--color-ink, #0a0a0a);
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--color-hairline, #e5e5e5);
   }
 
   /* ─── Custom Glassmorphism & Animations ─── */

@@ -2,8 +2,7 @@ import { Link } from "@tanstack/react-router"
 import { ArrowRightIcon } from "lucide-react"
 import { AuthErrorBanner } from "./AuthErrorBanner"
 import { AuthFormField } from "./AuthFormField"
-import { SocialAuthButton } from "./SocialAuthButton"
-import { Button } from "@/components/base/Button"
+import { Button } from "@/components/ui/button"
 
 type AuthFormMode = "sign-up" | "login"
 
@@ -34,7 +33,6 @@ export function AuthForm({
   isLoading,
   apiError,
   onInputChange,
-  onOAuthError,
   fields,
   errors,
   onFieldChange,
@@ -60,24 +58,24 @@ export function AuthForm({
       aria-label={isSignUp ? "Formulir pendaftaran" : "Formulir masuk"}
     >
       {/* Mode Switcher Tabs */}
-      <div className="flex rounded-2xl bg-slate-100/90 p-1 border border-slate-200/60">
+      <div className="flex rounded-full bg-surface-soft p-1 border border-hairline/60">
         <Link
           to="/login"
           search={{ redirectTo: undefined }}
-          className={`flex-1 rounded-xl py-2 text-center text-caption font-bold transition-all ${
+          className={`flex-1 rounded-full py-2 text-center text-xs font-semibold transition-all ${
             !isSignUp
-              ? "bg-white text-sekkha-ink shadow-sm"
-              : "text-sekkha-slate hover:text-sekkha-ink"
+              ? "bg-surface-card text-ink shadow-xs"
+              : "text-text-muted hover:text-ink"
           }`}
         >
           Masuk
         </Link>
         <Link
           to="/sign-up"
-          className={`flex-1 rounded-xl py-2 text-center text-caption font-bold transition-all ${
+          className={`flex-1 rounded-full py-2 text-center text-xs font-semibold transition-all ${
             isSignUp
-              ? "bg-white text-sekkha-ink shadow-sm"
-              : "text-sekkha-slate hover:text-sekkha-ink"
+              ? "bg-surface-card text-ink shadow-xs"
+              : "text-text-muted hover:text-ink"
           }`}
         >
           Daftar Akun
@@ -87,29 +85,14 @@ export function AuthForm({
       {/* API error banner */}
       <AuthErrorBanner message={apiError} />
 
-      {/* Google OAuth button */}
-      <SocialAuthButton
-        provider="google"
-        mode={mode}
-        onError={onOAuthError}
-      />
-
-      {/* Divider */}
-      <div className="relative flex items-center justify-center">
-        <div className="w-full border-t border-sekkha-hairline" />
-        <span className="absolute bg-white px-3 text-micro font-medium uppercase tracking-wider text-sekkha-slate">
-          atau email
-        </span>
-      </div>
-
       {/* Fields */}
       <div className="space-y-4">
-        {/* Email field */}
+        {/* Email / Username field */}
         <AuthFormField
           id="email"
-          label="Email"
-          type="email"
-          placeholder="nama@email.com"
+          label={isSignUp ? "Email" : "Email atau Username"}
+          type={isSignUp ? "email" : "text"}
+          placeholder={isSignUp ? "nama@email.com" : "nama@email.com atau username"}
           value={fields.email}
           onChange={(val) => handleChange("email", val)}
           onBlur={() => onFieldBlur("email")}

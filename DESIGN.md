@@ -1,157 +1,126 @@
 ---
 version: alpha
-name: Miro-design-analysis
-description: Miro presents itself as the AI-powered visual workspace through a confident, almost playful brand voice — anchored by its signature canary yellow ({colors.brand-yellow}) wordmark over white canvas, broken open by colorful pastel feature tints (rose, teal, coral, orange, mint) that echo the actual sticky-note color palette used on the live whiteboard. Black-pill primary buttons dominate marketing, real Miro-board mockups serve as feature illustrations, and a 4-tier pricing grid leads into a dense comparison table. Roobert PRO carries display headlines; the system supports homepage, pricing, AI Workflows product page, agile vertical, and customer stories surfaces.
+name: Clay-design-analysis
+description: A vibrant claymation-meets-data interface for Clay.com (GTM data-orchestration platform). Anchors on white canvas with dark-navy primary CTAs, custom rounded display type, and saturated single-color feature cards — hot pink, deep teal, lavender, peach, ochre — that punctuate long-scroll explainer pages. Brand voltage comes from 3D-rendered claymation illustrations (mountains, characters, mascots) used as full-bleed hero artifacts and the bright multi-color card surfaces showing product UI fragments.
 
 colors:
-  primary: "#1c1c1e"
+  primary: "#0a0a0a"
+  primary-active: "#1f1f1f"
+  primary-disabled: "#e5e5e5"
+  ink: "#0a0a0a"
+  body: "#3a3a3a"
+  body-strong: "#1a1a1a"
+  muted: "#6a6a6a"
+  muted-soft: "#9a9a9a"
+  hairline: "#e5e5e5"
+  hairline-soft: "#f0f0f0"
+  canvas: "#fffaf0"
+  surface-soft: "#faf5e8"
+  surface-card: "#f5f0e0"
+  surface-strong: "#ebe6d6"
+  surface-dark: "#0a1a1a"
+  surface-dark-elevated: "#1a2a2a"
   on-primary: "#ffffff"
-  brand-yellow: "#ffd02f"
-  brand-yellow-deep: "#fcb900"
-  yellow-light: "#fff4c4"
-  yellow-dark: "#746019"
-  brand-blue: "#4262ff"
-  blue-450: "#5b76fe"
-  blue-pressed: "#2a41b6"
-  brand-coral: "#ff9999"
-  coral-light: "#ffc6c6"
-  coral-dark: "#600000"
-  brand-rose: "#ffd8f4"
-  rose-light: "#fde0f0"
-  brand-pink: "#fde0f0"
-  brand-teal: "#0fbcb0"
-  teal-light: "#c3faf5"
-  moss-dark: "#187574"
-  brand-orange-light: "#ffe6cd"
-  brand-red: "#fbd4d4"
-  brand-red-dark: "#e3c5c5"
-  success-accent: "#00b473"
-  canvas: "#ffffff"
-  surface: "#f7f8fa"
-  surface-soft: "#fafbfc"
-  surface-yellow: "#fff8e0"
-  surface-pricing-featured: "#f5f3ff"
-  hairline: "#e0e2e8"
-  hairline-soft: "#eef0f3"
-  hairline-strong: "#c7cad5"
-  ink-deep: "#050038"
-  ink: "#1c1c1e"
-  charcoal: "#2c2c34"
-  slate: "#555a6a"
-  steel: "#6b6f7e"
-  stone: "#8e91a0"
-  muted: "#a5a8b5"
   on-dark: "#ffffff"
-  on-dark-muted: "#a5a8b5"
-  footer-bg: "#1c1c1e"
+  on-dark-soft: "#a0a0a0"
+  brand-pink: "#ff4d8b"
+  brand-teal: "#1a3a3a"
+  brand-lavender: "#b8a4ed"
+  brand-peach: "#ffb084"
+  brand-ochre: "#e8b94a"
+  brand-mint: "#a4d4c5"
+  brand-coral: "#ff6b5a"
+  success: "#22c55e"
+  warning: "#f59e0b"
+  error: "#ef4444"
 
 typography:
-  hero-display:
-    fontFamily: Roobert PRO
-    fontSize: 80px
+  display-xl:
+    fontFamily: "Plain Black, Inter, sans-serif"
+    fontSize: 72px
+    fontWeight: 500
+    lineHeight: 1
+    letterSpacing: -2.5px
+  display-lg:
+    fontFamily: "Plain Black, Inter, sans-serif"
+    fontSize: 56px
     fontWeight: 500
     lineHeight: 1.05
     letterSpacing: -2px
-  display-lg:
-    fontFamily: Roobert PRO
-    fontSize: 60px
+  display-md:
+    fontFamily: "Plain Black, Inter, sans-serif"
+    fontSize: 40px
     fontWeight: 500
-    lineHeight: 1.10
-    letterSpacing: -1.5px
-  heading-1:
-    fontFamily: Roobert PRO
-    fontSize: 48px
+    lineHeight: 1.1
+    letterSpacing: -1px
+  display-sm:
+    fontFamily: "Plain Black, Inter, sans-serif"
+    fontSize: 32px
     fontWeight: 500
     lineHeight: 1.15
-    letterSpacing: -1px
-  heading-2:
-    fontFamily: Roobert PRO
-    fontSize: 36px
-    fontWeight: 500
-    lineHeight: 1.20
     letterSpacing: -0.5px
-  heading-3:
-    fontFamily: Roobert PRO
-    fontSize: 28px
-    fontWeight: 500
-    lineHeight: 1.25
-  heading-4:
-    fontFamily: Roobert PRO
-    fontSize: 22px
-    fontWeight: 500
-    lineHeight: 1.30
-  heading-5:
-    fontFamily: Roobert PRO
+  title-lg:
+    fontFamily: "Inter, sans-serif"
+    fontSize: 24px
+    fontWeight: 600
+    lineHeight: 1.3
+    letterSpacing: -0.3px
+  title-md:
+    fontFamily: "Inter, sans-serif"
     fontSize: 18px
-    fontWeight: 500
-    lineHeight: 1.40
-  subtitle:
-    fontFamily: Roobert PRO
-    fontSize: 18px
-    fontWeight: 400
-    lineHeight: 1.50
+    fontWeight: 600
+    lineHeight: 1.4
+    letterSpacing: 0
+  title-sm:
+    fontFamily: "Inter, sans-serif"
+    fontSize: 16px
+    fontWeight: 600
+    lineHeight: 1.4
+    letterSpacing: 0
   body-md:
-    fontFamily: Roobert PRO
+    fontFamily: "Inter, sans-serif"
     fontSize: 16px
     fontWeight: 400
-    lineHeight: 1.50
-  body-md-medium:
-    fontFamily: Roobert PRO
-    fontSize: 16px
-    fontWeight: 500
-    lineHeight: 1.50
+    lineHeight: 1.55
+    letterSpacing: 0
   body-sm:
-    fontFamily: Roobert PRO
+    fontFamily: "Inter, sans-serif"
     fontSize: 14px
     fontWeight: 400
-    lineHeight: 1.50
-  body-sm-medium:
-    fontFamily: Roobert PRO
-    fontSize: 14px
-    fontWeight: 500
-    lineHeight: 1.50
+    lineHeight: 1.55
+    letterSpacing: 0
   caption:
-    fontFamily: Roobert PRO
+    fontFamily: "Inter, sans-serif"
     fontSize: 13px
-    fontWeight: 400
-    lineHeight: 1.40
-  caption-bold:
-    fontFamily: Roobert PRO
-    fontSize: 13px
-    fontWeight: 600
-    lineHeight: 1.40
-  micro:
-    fontFamily: Roobert PRO
-    fontSize: 12px
     fontWeight: 500
-    lineHeight: 1.40
-  micro-uppercase:
-    fontFamily: Roobert PRO
-    fontSize: 11px
+    lineHeight: 1.4
+    letterSpacing: 0
+  caption-uppercase:
+    fontFamily: "Inter, sans-serif"
+    fontSize: 12px
     fontWeight: 600
-    lineHeight: 1.40
-    letterSpacing: 0.5px
-  button-md:
-    fontFamily: Roobert PRO
+    lineHeight: 1.4
+    letterSpacing: 1.5px
+  button:
+    fontFamily: "Inter, sans-serif"
+    fontSize: 14px
+    fontWeight: 600
+    lineHeight: 1
+    letterSpacing: 0
+  nav-link:
+    fontFamily: "Inter, sans-serif"
     fontSize: 14px
     fontWeight: 500
-    lineHeight: 1.30
-  stat-display:
-    fontFamily: Roobert PRO
-    fontSize: 64px
-    fontWeight: 500
-    lineHeight: 1.10
-    letterSpacing: -1.5px
+    lineHeight: 1.4
+    letterSpacing: 0
 
 rounded:
-  xs: 4px
-  sm: 6px
-  md: 8px
-  lg: 12px
-  xl: 16px
-  xxl: 20px
-  xxxl: 28px
-  feature: 32px
+  xs: 6px
+  sm: 8px
+  md: 12px
+  lg: 16px
+  xl: 24px
+  pill: 9999px
   full: 9999px
 
 spacing:
@@ -159,412 +128,286 @@ spacing:
   xs: 8px
   sm: 12px
   md: 16px
-  lg: 20px
-  xl: 24px
-  xxl: 32px
-  xxxl: 40px
-  section-sm: 48px
-  section: 64px
-  section-lg: 96px
-  hero: 120px
+  lg: 24px
+  xl: 32px
+  xxl: 48px
+  section: 96px
 
 components:
   button-primary:
     backgroundColor: "{colors.primary}"
     textColor: "{colors.on-primary}"
-    typography: "{typography.button-md}"
-    rounded: "{rounded.full}"
-    padding: "12px 24px"
-  button-primary-pressed:
-    backgroundColor: "{colors.charcoal}"
-    textColor: "{colors.on-primary}"
-  button-primary-disabled:
-    backgroundColor: "{colors.hairline}"
-    textColor: "{colors.muted}"
-  button-yellow:
-    backgroundColor: "{colors.brand-yellow}"
-    textColor: "{colors.primary}"
-    typography: "{typography.button-md}"
-    rounded: "{rounded.full}"
-    padding: "12px 24px"
-  button-blue:
-    backgroundColor: "{colors.brand-blue}"
-    textColor: "{colors.on-primary}"
-    typography: "{typography.button-md}"
-    rounded: "{rounded.full}"
-    padding: "12px 24px"
-  button-secondary:
-    backgroundColor: "transparent"
-    textColor: "{colors.ink}"
-    typography: "{typography.button-md}"
-    rounded: "{rounded.full}"
-    padding: "12px 24px"
-    border: "1px solid {colors.hairline-strong}"
-  button-on-dark:
-    backgroundColor: "{colors.on-dark}"
-    textColor: "{colors.primary}"
-    typography: "{typography.button-md}"
-    rounded: "{rounded.full}"
-    padding: "12px 24px"
-  button-ghost:
-    backgroundColor: "transparent"
-    textColor: "{colors.ink}"
-    typography: "{typography.button-md}"
+    typography: "{typography.button}"
     rounded: "{rounded.md}"
-    padding: "8px 12px"
-  button-link:
-    backgroundColor: "transparent"
-    textColor: "{colors.brand-blue}"
-    typography: "{typography.body-sm-medium}"
-    padding: "0"
-  button-icon-circular:
-    backgroundColor: "{colors.canvas}"
-    textColor: "{colors.ink}"
-    rounded: "{rounded.full}"
-    size: 36px
-    border: "1px solid {colors.hairline}"
-  card-base:
-    backgroundColor: "{colors.canvas}"
-    rounded: "{rounded.xl}"
-    padding: "{spacing.xl}"
-    border: "1px solid {colors.hairline-soft}"
-  card-feature:
-    backgroundColor: "{colors.canvas}"
-    rounded: "{rounded.xxxl}"
-    padding: "{spacing.xxl}"
-    border: "1px solid {colors.hairline-soft}"
-  card-feature-yellow:
-    backgroundColor: "{colors.brand-yellow}"
-    textColor: "{colors.primary}"
-    rounded: "{rounded.xxxl}"
-    padding: "{spacing.xxl}"
-  card-feature-coral:
-    backgroundColor: "{colors.coral-light}"
-    textColor: "{colors.primary}"
-    rounded: "{rounded.xxxl}"
-    padding: "{spacing.xxl}"
-  card-feature-teal:
-    backgroundColor: "{colors.teal-light}"
-    textColor: "{colors.primary}"
-    rounded: "{rounded.xxxl}"
-    padding: "{spacing.xxl}"
-  card-feature-rose:
-    backgroundColor: "{colors.rose-light}"
-    textColor: "{colors.primary}"
-    rounded: "{rounded.xxxl}"
-    padding: "{spacing.xxl}"
-  card-customer-story:
-    backgroundColor: "{colors.canvas}"
-    rounded: "{rounded.xxxl}"
-    padding: "0"
-    border: "1px solid {colors.hairline-soft}"
-  card-stat:
-    backgroundColor: "transparent"
-    textColor: "{colors.ink}"
-    typography: "{typography.stat-display}"
-    padding: "{spacing.lg}"
-  pricing-card:
-    backgroundColor: "{colors.canvas}"
-    rounded: "{rounded.xl}"
-    padding: "{spacing.xxl}"
-    border: "1px solid {colors.hairline}"
-  pricing-card-featured:
-    backgroundColor: "{colors.surface-pricing-featured}"
-    rounded: "{rounded.xl}"
-    padding: "{spacing.xxl}"
-    border: "2px solid {colors.brand-blue}"
-  pricing-card-enterprise:
-    backgroundColor: "{colors.primary}"
+    padding: 12px 20px
+    height: 44px
+  button-primary-active:
+    backgroundColor: "{colors.primary-active}"
     textColor: "{colors.on-primary}"
+    rounded: "{rounded.md}"
+  button-primary-disabled:
+    backgroundColor: "{colors.primary-disabled}"
+    textColor: "{colors.muted}"
+    rounded: "{rounded.md}"
+  button-secondary:
+    backgroundColor: "{colors.canvas}"
+    textColor: "{colors.ink}"
+    typography: "{typography.button}"
+    rounded: "{rounded.md}"
+    padding: 12px 20px
+    height: 44px
+  button-on-color:
+    backgroundColor: "{colors.canvas}"
+    textColor: "{colors.ink}"
+    typography: "{typography.button}"
+    rounded: "{rounded.md}"
+    padding: 12px 20px
+    height: 44px
+  button-text-link:
+    backgroundColor: transparent
+    textColor: "{colors.ink}"
+    typography: "{typography.button}"
+  text-link:
+    backgroundColor: transparent
+    textColor: "{colors.ink}"
+    typography: "{typography.body-md}"
+  top-nav:
+    backgroundColor: "{colors.canvas}"
+    textColor: "{colors.ink}"
+    typography: "{typography.nav-link}"
+    height: 64px
+  hero-band:
+    backgroundColor: "{colors.canvas}"
+    textColor: "{colors.ink}"
+    typography: "{typography.display-xl}"
+    padding: 96px
+  hero-illustration-card:
+    backgroundColor: "{colors.surface-soft}"
+    textColor: "{colors.ink}"
     rounded: "{rounded.xl}"
-    padding: "{spacing.xxl}"
+  feature-card-pink:
+    backgroundColor: "{colors.brand-pink}"
+    textColor: "{colors.on-primary}"
+    typography: "{typography.title-md}"
+    rounded: "{rounded.xl}"
+    padding: 32px
+  feature-card-teal:
+    backgroundColor: "{colors.brand-teal}"
+    textColor: "{colors.on-dark}"
+    typography: "{typography.title-md}"
+    rounded: "{rounded.xl}"
+    padding: 32px
+  feature-card-lavender:
+    backgroundColor: "{colors.brand-lavender}"
+    textColor: "{colors.ink}"
+    typography: "{typography.title-md}"
+    rounded: "{rounded.xl}"
+    padding: 32px
+  feature-card-peach:
+    backgroundColor: "{colors.brand-peach}"
+    textColor: "{colors.ink}"
+    typography: "{typography.title-md}"
+    rounded: "{rounded.xl}"
+    padding: 32px
+  feature-card-ochre:
+    backgroundColor: "{colors.brand-ochre}"
+    textColor: "{colors.ink}"
+    typography: "{typography.title-md}"
+    rounded: "{rounded.xl}"
+    padding: 32px
+  feature-card-cream:
+    backgroundColor: "{colors.surface-card}"
+    textColor: "{colors.ink}"
+    typography: "{typography.title-md}"
+    rounded: "{rounded.xl}"
+    padding: 32px
+  product-mockup-card:
+    backgroundColor: "{colors.canvas}"
+    textColor: "{colors.ink}"
+    typography: "{typography.title-md}"
+    rounded: "{rounded.lg}"
+    padding: 24px
+  testimonial-card:
+    backgroundColor: "{colors.surface-card}"
+    textColor: "{colors.ink}"
+    typography: "{typography.body-md}"
+    rounded: "{rounded.lg}"
+    padding: 24px
+  pricing-tier-card:
+    backgroundColor: "{colors.canvas}"
+    textColor: "{colors.ink}"
+    typography: "{typography.title-lg}"
+    rounded: "{rounded.lg}"
+    padding: 32px
+  pricing-tier-card-featured:
+    backgroundColor: "{colors.brand-teal}"
+    textColor: "{colors.on-dark}"
+    typography: "{typography.title-lg}"
+    rounded: "{rounded.lg}"
+    padding: 32px
   text-input:
     backgroundColor: "{colors.canvas}"
     textColor: "{colors.ink}"
     typography: "{typography.body-md}"
     rounded: "{rounded.md}"
-    padding: "{spacing.sm} {spacing.md}"
-    border: "1px solid {colors.hairline-strong}"
+    padding: 12px 16px
     height: 44px
   text-input-focused:
     backgroundColor: "{colors.canvas}"
     textColor: "{colors.ink}"
-    border: "2px solid {colors.brand-blue}"
-  search-pill:
-    backgroundColor: "{colors.surface}"
-    textColor: "{colors.steel}"
-    typography: "{typography.body-sm}"
     rounded: "{rounded.md}"
-    padding: "{spacing.xs} {spacing.md}"
-    height: 40px
-    border: "1px solid {colors.hairline}"
-  filter-dropdown:
-    backgroundColor: "{colors.canvas}"
+  category-tab:
+    backgroundColor: transparent
+    textColor: "{colors.muted}"
+    typography: "{typography.nav-link}"
+    rounded: "{rounded.pill}"
+    padding: 8px 16px
+  category-tab-active:
+    backgroundColor: "{colors.surface-card}"
     textColor: "{colors.ink}"
-    typography: "{typography.body-sm-medium}"
-    rounded: "{rounded.full}"
-    padding: "{spacing.xs} {spacing.md}"
-    border: "1px solid {colors.hairline-strong}"
-  pill-tab:
-    backgroundColor: "{colors.canvas}"
-    textColor: "{colors.steel}"
-    typography: "{typography.body-sm-medium}"
-    rounded: "{rounded.full}"
-    padding: "{spacing.xs} {spacing.md}"
-    border: "1px solid {colors.hairline}"
-  pill-tab-active:
-    backgroundColor: "{colors.primary}"
-    textColor: "{colors.on-primary}"
-    rounded: "{rounded.full}"
-    border: "1px solid {colors.primary}"
-  toggle-monthly-yearly:
-    backgroundColor: "{colors.surface}"
-    textColor: "{colors.ink}"
-    rounded: "{rounded.full}"
-    padding: "4px"
-  badge-promo:
-    backgroundColor: "{colors.brand-yellow}"
-    textColor: "{colors.primary}"
-    typography: "{typography.caption-bold}"
-    rounded: "{rounded.full}"
-    padding: "4px 10px"
-  badge-tag-yellow:
-    backgroundColor: "{colors.surface-yellow}"
-    textColor: "{colors.yellow-dark}"
-    typography: "{typography.caption-bold}"
-    rounded: "{rounded.full}"
-    padding: "4px 10px"
-  badge-tag-purple:
-    backgroundColor: "{colors.surface-pricing-featured}"
-    textColor: "{colors.brand-blue}"
-    typography: "{typography.caption-bold}"
-    rounded: "{rounded.full}"
-    padding: "4px 10px"
-  badge-tag-coral:
-    backgroundColor: "{colors.coral-light}"
-    textColor: "{colors.coral-dark}"
-    typography: "{typography.caption-bold}"
-    rounded: "{rounded.full}"
-    padding: "4px 10px"
-  badge-success:
-    backgroundColor: "{colors.success-accent}"
-    textColor: "{colors.on-primary}"
-    typography: "{typography.caption-bold}"
-    rounded: "{rounded.full}"
-    padding: "4px 10px"
-  badge-discount:
-    backgroundColor: "{colors.brand-yellow}"
-    textColor: "{colors.primary}"
-    typography: "{typography.caption-bold}"
-    rounded: "{rounded.sm}"
-    padding: "2px 6px"
-  promo-banner:
-    backgroundColor: "{colors.primary}"
-    textColor: "{colors.on-primary}"
-    typography: "{typography.body-sm-medium}"
-    padding: "{spacing.sm} {spacing.md}"
-  comparison-table:
-    backgroundColor: "{colors.canvas}"
-    textColor: "{colors.ink}"
-    typography: "{typography.body-sm}"
-    rounded: "{rounded.md}"
-    border: "1px solid {colors.hairline}"
-  comparison-row:
-    backgroundColor: "{colors.canvas}"
-    textColor: "{colors.ink}"
-    padding: "{spacing.md} {spacing.lg}"
-    border: "0 0 1px {colors.hairline-soft} solid"
-  template-card:
-    backgroundColor: "{colors.canvas}"
-    rounded: "{rounded.xl}"
-    padding: "{spacing.md}"
-    border: "1px solid {colors.hairline}"
-  whiteboard-mockup:
-    backgroundColor: "{colors.canvas}"
-    rounded: "{rounded.xl}"
-    padding: "0"
-    border: "1px solid {colors.hairline-soft}"
-    shadow: "rgba(5, 0, 56, 0.08) 0px 12px 32px -4px"
-  faq-accordion-item:
-    backgroundColor: "{colors.canvas}"
-    rounded: "{rounded.md}"
-    padding: "{spacing.xl}"
-    border: "0 0 1px {colors.hairline} solid"
-  logo-wall-item:
-    backgroundColor: "transparent"
-    textColor: "{colors.steel}"
-    typography: "{typography.body-md-medium}"
-    padding: "{spacing.lg}"
-  hero-band-marketing:
-    backgroundColor: "{colors.canvas}"
-    textColor: "{colors.ink}"
-    typography: "{typography.hero-display}"
-    rounded: "0"
-    padding: "{spacing.hero}"
-  cta-banner-dark:
-    backgroundColor: "{colors.primary}"
-    textColor: "{colors.on-primary}"
-    rounded: "{rounded.feature}"
-    padding: "{spacing.section}"
-  industry-tile:
-    backgroundColor: "{colors.canvas}"
-    rounded: "{rounded.xl}"
-    padding: "{spacing.xl}"
-    border: "1px solid {colors.hairline-soft}"
-  capterra-badge:
-    backgroundColor: "{colors.canvas}"
+    typography: "{typography.nav-link}"
+    rounded: "{rounded.pill}"
+  badge-pill:
+    backgroundColor: "{colors.surface-card}"
     textColor: "{colors.ink}"
     typography: "{typography.caption}"
-    rounded: "{rounded.md}"
-    padding: "{spacing.sm} {spacing.md}"
-    border: "1px solid {colors.hairline}"
-  footer-region:
-    backgroundColor: "{colors.footer-bg}"
-    textColor: "{colors.on-dark}"
-    typography: "{typography.body-sm}"
-    padding: "{spacing.section} {spacing.xxl}"
-  footer-link:
-    backgroundColor: "transparent"
-    textColor: "{colors.on-dark-muted}"
-    typography: "{typography.body-sm}"
-    padding: "{spacing.xxs} 0"
-  app-store-badge:
+    rounded: "{rounded.pill}"
+    padding: 4px 12px
+  expert-card:
     backgroundColor: "{colors.canvas}"
-    textColor: "{colors.primary}"
-    typography: "{typography.caption-bold}"
-    rounded: "{rounded.md}"
-    padding: "{spacing.sm} {spacing.md}"
+    textColor: "{colors.ink}"
+    typography: "{typography.title-md}"
+    rounded: "{rounded.lg}"
+    padding: 24px
+  cta-band-illustrated:
+    backgroundColor: "{colors.surface-soft}"
+    textColor: "{colors.ink}"
+    typography: "{typography.display-md}"
+    rounded: "{rounded.xl}"
+    padding: 80px
+  footer:
+    backgroundColor: "{colors.surface-soft}"
+    textColor: "{colors.body}"
+    typography: "{typography.body-sm}"
+    padding: 80px
 ---
 
 ## Overview
 
-Miro positions itself as the AI-powered visual workspace through a confident, slightly playful brand voice. The homepage opens with a stark white canvas anchored by a small canary-yellow Miro wordmark in the top-left, a black-pill primary CTA "Get started free" and a secondary "Book a demo" outline pill — then dramatic real-Miro-board mockup imagery (sticky notes, kanban, mind maps) carries the visual weight. Across deeper surfaces, the system breaks open: pastel feature cards (rose, teal, coral, yellow) echo the actual sticky-note color palette of the live whiteboard product, and customer story cards reuse those tints to differentiate brand vignettes.
+Clay.com is the most playful B2B SaaS interface in the GTM-data category. The base atmosphere is **cream-tinted white canvas** (`{colors.canvas}` — #fffaf0) holding dark-navy ink type and **3D-rendered claymation illustrations** (mountains, mascot characters, peach/ochre/lavender landscapes) as the dominant brand voltage. Where most data-platform brands play it cool with grids and gradients, Clay leans hard into hand-crafted-looking 3D illustrations and saturated single-color feature cards.
 
-Roobert PRO — Miro's custom display face — anchors every typographic surface, from the 80px hero display down to 11px micro labels. The face's slightly rounded, geometric character pairs naturally with the playful product photography and the friendly product positioning. Black-pill primary buttons (`{rounded.full}`) dominate marketing CTAs; the brand color, signature canary yellow ({colors.brand-yellow}), is reserved for the wordmark, top promo banners, and "yellow tag" feature pills — never as a primary CTA. The 4-tier pricing comparison (Free / Starter / Business / Enterprise) leads into the densest surface in the system: a feature comparison table that runs ~80 rows deep across multiple section dividers.
+Type voice runs **Plain Black** (or substituted with Inter weight 500-600) — a custom rounded display face used at very large sizes (72px hero) with negative letter-spacing. Body type uses Inter at standard weights. The display weight stays at 500, never bolder — the rounded character of the typeface gives it warmth without needing weight.
+
+Component voltage comes from **saturated single-color feature cards** in a 6-color palette: hot pink, deep teal, lavender, peach, ochre, and cream-card. Each card shows product UI fragments at small scale — Claygent agent runs, sequencer flows, CRM enrichment outputs. The colored card IS the primary visual element on every long-scroll page.
 
 **Key Characteristics:**
-- Stark white canvas + Miro wordmark in canary yellow ({colors.brand-yellow}) as the recognizable opening signature
-- Black-pill primary CTAs ({colors.primary} + `{rounded.full}`) as the dominant interactive element
-- Pastel feature cards (yellow, rose, coral, teal, mint) that echo the actual sticky-note palette
-- Roobert PRO across every UI surface; geometric, slightly rounded character
-- Real Miro-board mockup imagery used as feature illustrations
-- 4-tier pricing card grid + dense feature comparison table
-- Massive dark footer ({colors.footer-bg}) with multi-column links + app-store badges
+- Cream-tinted white canvas (`{colors.canvas}` — #fffaf0). The warmth differentiates Clay from cool-gray competitor sites.
+- Dark navy/black primary CTAs (`{colors.primary}` — #0a0a0a). Buttons rounded `{rounded.md}` (12px) — friendly modern but not pill.
+- 6-color saturated feature card palette: `{colors.brand-pink}`, `{colors.brand-teal}`, `{colors.brand-lavender}`, `{colors.brand-peach}`, `{colors.brand-ochre}`, `{colors.surface-card}` (cream).
+- 3D claymation illustrations (mountains, characters, abstract shapes) as full-bleed hero artifacts — the brand's most-recognized visual element.
+- Custom rounded Plain Black display typeface at 500 weight with -1 to -2.5px letter-spacing on display sizes.
+- Border radius is generous: `{rounded.md}` (12px) for buttons + inputs, `{rounded.lg}` (16px) for content cards, `{rounded.xl}` (24px) for feature cards. The bigger radius matches the rounded display type's character.
+- Product UI fragments embedded inside colored cards at small scale — agent run logs, sequencer flows, enrichment results.
+- Section rhythm `{spacing.section}` (96px) between major bands.
+- Footer is cream-tinted (`{colors.surface-soft}`) — Clay does NOT use a dark footer. Even the closing band stays warm-light.
 
 ## Colors
 
-> Source pages: miro.com/ (homepage), /pricing/ (4-tier comparison), /products/ai-workflows/ (AI product), /agile/ (vertical landing), /customers/ (story directory). Token coverage was identical across all five pages.
-
 ### Brand & Accent
-- **Miro Yellow** ({colors.brand-yellow}): The brand's recognizable canary yellow — wordmark color, top promo banner, "yellow tag" pills
-- **Yellow Deep** ({colors.brand-yellow-deep}): Darker variant for hover states and emphasis
-- **Yellow Light** ({colors.yellow-light}): Pale yellow background tint for tag chips
-- **Yellow Dark** ({colors.yellow-dark}): Yellow-tag text color (dark olive) for chip foreground
-- **Brand Blue** ({colors.brand-blue}): Action blue for inline links and featured-pricing-tier border
-- **Blue Pressed** ({colors.blue-pressed}): Pressed-state blue
-- **Brand Coral** ({colors.brand-coral}): Coral accent for warm callouts
-- **Coral Light** ({colors.coral-light}): Pale coral for feature card backgrounds
-- **Coral Dark** ({colors.coral-dark}): Coral-tag text color (deep wine)
-- **Brand Rose** ({colors.brand-rose}): Soft rose-pink for feature card variants
-- **Brand Teal** ({colors.brand-teal}): Brand teal
-- **Teal Light** ({colors.teal-light}): Pale teal for feature card backgrounds
-- **Moss Dark** ({colors.moss-dark}): Deep teal-green text color
-- **Brand Pink** ({colors.brand-pink}): Pale pink for soft callouts
-- **Brand Orange Light** ({colors.brand-orange-light}): Soft orange for feature card backgrounds
+- **Primary** (`{colors.primary}` — #0a0a0a): All primary CTAs, h1/h2 ink type. Near-black with slight warmth.
+- **Brand Pink** (`{colors.brand-pink}` — #ff4d8b): Hot-pink feature card surface. Sequencer / outbound feature pages.
+- **Brand Teal** (`{colors.brand-teal}` — #1a3a3a): Deep teal-green feature card. Often the featured pricing tier.
+- **Brand Lavender** (`{colors.brand-lavender}` — #b8a4ed): Soft lavender feature card.
+- **Brand Peach** (`{colors.brand-peach}` — #ffb084): Warm peach feature card.
+- **Brand Ochre** (`{colors.brand-ochre}` — #e8b94a): Mustard / ochre feature card and illustration accents.
+- **Brand Mint** (`{colors.brand-mint}` — #a4d4c5): Mint accent on illustrations and small badges.
+- **Brand Coral** (`{colors.brand-coral}` — #ff6b5a): Coral accent for highlights.
 
 ### Surface
-- **Canvas White** ({colors.canvas}): Page background and primary card surface
-- **Surface** ({colors.surface}): Subtle section backgrounds, search-pill rest
-- **Surface Soft** ({colors.surface-soft}): Quieter section divisions
-- **Surface Yellow** ({colors.surface-yellow}): Pale yellow-tinted surface for tag chip
-- **Surface Pricing Featured** ({colors.surface-pricing-featured}): Pale lavender for featured pricing tier
-- **Hairline** ({colors.hairline}): 1px borders and primary dividers
-- **Hairline Soft** ({colors.hairline-soft}): Quieter table-row dividers
-- **Hairline Strong** ({colors.hairline-strong}): Stronger 1px border for inputs
+- **Canvas** (`{colors.canvas}` — #fffaf0): The default page floor. Cream-tinted white.
+- **Surface Soft** (`{colors.surface-soft}` — #faf5e8): Footer and CTA-band background.
+- **Surface Card** (`{colors.surface-card}` — #f5f0e0): Cream feature cards, testimonial cards.
+- **Surface Strong** (`{colors.surface-strong}` — #ebe6d6): Stronger cream for emphasized bands.
+- **Surface Dark** (`{colors.surface-dark}` — #0a1a1a): Dark teal-tinted near-black for occasional dark cards (rare).
+- **Surface Dark Elevated** (`{colors.surface-dark-elevated}` — #1a2a2a): Elevated dark cards.
+- **Hairline** (`{colors.hairline}` — #e5e5e5): 1px borders on cards and inputs.
 
 ### Text
-- **Ink Deep** ({colors.ink-deep}): Headlines on lighter feature cards
-- **Ink** ({colors.ink}): Primary headlines and body text
-- **Charcoal** ({colors.charcoal}): Body emphasis text
-- **Slate** ({colors.slate}): Secondary text, metadata
-- **Steel** ({colors.steel}): Tertiary text, footer links
-- **Stone** ({colors.stone}): Captions, muted labels
-- **Muted** ({colors.muted}): Disabled labels, input placeholders
-- **On Dark** ({colors.on-dark}): White text on dark surfaces
-- **On Dark Muted** ({colors.on-dark-muted}): Reduced-opacity white on dark
+- **Ink** (`{colors.ink}` — #0a0a0a): Headlines and primary text.
+- **Body Strong** (`{colors.body-strong}` — #1a1a1a): Emphasized body, lead paragraphs.
+- **Body** (`{colors.body}` — #3a3a3a): Default running-text.
+- **Muted** (`{colors.muted}` — #6a6a6a): Sub-headings, breadcrumbs, footer body.
+- **Muted Soft** (`{colors.muted-soft}` — #9a9a9a): Captions, fine-print.
+- **On Primary / On Dark** (`{colors.on-primary}` — #ffffff): Text on primary buttons + dark feature cards (teal).
 
 ### Semantic
-- **Success Accent** ({colors.success-accent}): Confirmation/success indicator green
-- **Brand Red** ({colors.brand-red}): Soft red for error backgrounds
-- **Brand Red Dark** ({colors.brand-red-dark}): Stronger red for error borders
+- **Success** (`{colors.success}` — #22c55e): Success states.
+- **Warning** (`{colors.warning}` — #f59e0b): Warning callouts.
+- **Error** (`{colors.error}` — #ef4444): Validation errors.
 
 ## Typography
 
 ### Font Family
-**Roobert PRO** (primary): Miro's custom geometric sans-serif typeface. Used across every UI surface from oversized 80px hero displays to 11px micro labels. The face has a slightly rounded, friendly character that matches the brand's playful product positioning. Fallbacks: Noto Sans, -apple-system, BlinkMacSystemFont, sans-serif.
+The system runs **Plain Black** (a custom rounded display face) for headlines and **Inter** for body, navigation, and UI. Plain Black at weight 500 with negative letter-spacing handles every display headline; Inter handles the rest. The fallback stack walks `Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif` for both.
 
 ### Hierarchy
 
 | Token | Size | Weight | Line Height | Letter Spacing | Use |
 |---|---|---|---|---|---|
-| `{typography.hero-display}` | 80px | 500 | 1.05 | -2px | Marketing hero ("See how teams get great done with Miro") |
-| `{typography.display-lg}` | 60px | 500 | 1.10 | -1.5px | Major section openers |
-| `{typography.heading-1}` | 48px | 500 | 1.15 | -1px | Page-level headlines |
-| `{typography.heading-2}` | 36px | 500 | 1.20 | -0.5px | Subsection headlines |
-| `{typography.heading-3}` | 28px | 500 | 1.25 | 0 | Card titles |
-| `{typography.heading-4}` | 22px | 500 | 1.30 | 0 | Feature tile titles |
-| `{typography.heading-5}` | 18px | 500 | 1.40 | 0 | FAQ questions, smaller cards |
-| `{typography.subtitle}` | 18px | 400 | 1.50 | 0 | Hero subtitle |
-| `{typography.body-md}` | 16px | 400 | 1.50 | 0 | Primary body text |
-| `{typography.body-md-medium}` | 16px | 500 | 1.50 | 0 | Logo wall labels |
-| `{typography.body-sm}` | 14px | 400 | 1.50 | 0 | Secondary body, table cells |
-| `{typography.body-sm-medium}` | 14px | 500 | 1.50 | 0 | Filter dropdowns, button labels |
-| `{typography.caption}` | 13px | 400 | 1.40 | 0 | Helper text |
-| `{typography.caption-bold}` | 13px | 600 | 1.40 | 0 | Badge labels, tag chips |
-| `{typography.micro}` | 12px | 500 | 1.40 | 0 | Footer microcopy |
-| `{typography.micro-uppercase}` | 11px | 600 | 1.40 | 0.5px | Section dividers in tables |
-| `{typography.button-md}` | 14px | 500 | 1.30 | 0 | Pill button labels |
-| `{typography.stat-display}` | 64px | 500 | 1.10 | -1.5px | "100M+ users" stat callouts |
+| `{typography.display-xl}` | 72px | 500 | 1.0 | -2.5px | Homepage h1 ("Go to market with unique data") — Plain Black |
+| `{typography.display-lg}` | 56px | 500 | 1.05 | -2px | Section heads — Plain Black |
+| `{typography.display-md}` | 40px | 500 | 1.1 | -1px | Sub-section heads, product names |
+| `{typography.display-sm}` | 32px | 500 | 1.15 | -0.5px | CTA-band heads, feature card titles |
+| `{typography.title-lg}` | 24px | 600 | 1.3 | -0.3px | Pricing plan names, larger feature titles |
+| `{typography.title-md}` | 18px | 600 | 1.4 | 0 | Card titles, intro paragraphs |
+| `{typography.title-sm}` | 16px | 600 | 1.4 | 0 | Small card titles, list labels |
+| `{typography.body-md}` | 16px | 400 | 1.55 | 0 | Default running-text |
+| `{typography.body-sm}` | 14px | 400 | 1.55 | 0 | Footer body, fine-print |
+| `{typography.caption}` | 13px | 500 | 1.4 | 0 | Badge labels, captions |
+| `{typography.caption-uppercase}` | 12px | 600 | 1.4 | 1.5px | Section labels, "FEATURED" badges |
+| `{typography.button}` | 14px | 600 | 1.0 | 0 | Standard button labels |
+| `{typography.nav-link}` | 14px | 500 | 1.4 | 0 | Top-nav menu items |
 
 ### Principles
-- **Tight hero leading** (1.05) creates magazine-grade display headlines on the 80px hero
-- **Negative letter-spacing progression** — display sizes use -2px to -1.5px; smaller headings relax to 0
-- **Stat-display token** (64px / 500) for marketing stat callouts
-- **Single weight scale** — 400 (body), 500 (medium emphasis + headings), 600 (badges and uppercase). Roobert PRO does not use 700 in this system.
+Plain Black at weight 500 + negative letter-spacing IS the brand voice. Going to weight 700 reads as bombastic; the rounded character of the typeface adds warmth that bolder weight would flatten.
+
+The body-vs-display split is functional: Plain Black for Plain Black moments (headlines), Inter for everything else (running text, UI, buttons). Mixing them is a system violation.
+
+### Note on Font Substitutes
+If Plain Black is unavailable, **Inter** at weight 500 with -0.05em letter-spacing is a usable approximation. **Söhne Breit** at weight Buch is an alternative if licensed. **Recoleta** at weight 500 carries similar rounded-display warmth.
 
 ## Layout
 
 ### Spacing System
-- **Base unit**: 4px (8px primary increment)
-- **Tokens**: `{spacing.xxs}` (4px) · `{spacing.xs}` (8px) · `{spacing.sm}` (12px) · `{spacing.md}` (16px) · `{spacing.lg}` (20px) · `{spacing.xl}` (24px) · `{spacing.xxl}` (32px) · `{spacing.xxxl}` (40px) · `{spacing.section-sm}` (48px) · `{spacing.section}` (64px) · `{spacing.section-lg}` (96px) · `{spacing.hero}` (120px)
-- **Section rhythm**: Marketing pages use `{spacing.section-lg}` (96px); pricing comparison tightens to `{spacing.section}` (64px); customer story stack uses `{spacing.xxl}` (32px)
-- **Card internal padding**: `{spacing.xl}` (24px) for compact cards; `{spacing.xxl}` (32px) for feature panels
+- **Base unit:** 4px.
+- **Tokens:** `{spacing.xxs}` 4px · `{spacing.xs}` 8px · `{spacing.sm}` 12px · `{spacing.md}` 16px · `{spacing.lg}` 24px · `{spacing.xl}` 32px · `{spacing.xxl}` 48px · `{spacing.section}` 96px.
+- **Section padding:** `{spacing.section}` (96px) between major editorial bands.
+- **Card internal padding:** `{spacing.xl}` (32px) for feature cards and pricing tiers; `{spacing.lg}` (24px) for testimonial and product mockup cards.
 
 ### Grid & Container
-- Marketing pages use 1280px max-width with 32px gutters
-- Pricing page renders 4-tier card row at desktop (Free / Starter / Business / Enterprise)
-- Customer stories page uses 2-column grid with filter dropdowns
-- AI Workflows page uses 2-column hero, then 3-up feature grid
+- **Max content width:** ~1280px centered.
+- **Editorial body:** Single 12-column grid; hero often uses 7/5 split (h1 left, illustration right).
+- **Feature card grids:** 3-up at desktop, 2-up at tablet, 1-up at mobile.
+- **Pricing grid:** 3-4 up at desktop, 1-up at mobile.
 
 ### Whitespace Philosophy
-Marketing surfaces give content generous breathing room — `{spacing.hero}` (120px) hero padding gives the small wordmark room to breathe. Pricing surfaces tighten dramatically.
+Clay uses generous whitespace around big rounded display headlines and saturated feature cards. The cream canvas + colored cards + 3D illustrations create a playful warmth that competing data-platform sites lack.
 
 ## Elevation & Depth
 
-The system runs predominantly flat with strategic depth on hero mockups.
-
 | Level | Treatment | Use |
 |---|---|---|
-| 0 (flat) | No shadow; `{colors.hairline-soft}` border | Default cards, table rows, form inputs |
-| 1 (subtle) | `rgba(5, 0, 56, 0.04) 0px 1px 2px 0px` | Subtle hover-elevated tiles |
-| 2 (card) | `rgba(5, 0, 56, 0.06) 0px 4px 12px 0px` | Standard feature cards |
-| 3 (mockup) | `rgba(5, 0, 56, 0.08) 0px 12px 32px -4px` | Hero whiteboard mockup framing |
-| 4 (modal) | `rgba(5, 0, 56, 0.12) 0px 16px 48px -8px` | Modals, dropdowns |
+| Flat | No shadow, no border | Body sections, top nav, hero |
+| Soft hairline | 1px `{colors.hairline}` border | Inputs, small content cards |
+| Saturated card | Brand pink/teal/lavender/peach/ochre fill — no shadow | Feature cards |
+| Cream card | `{colors.surface-card}` background — no shadow | Testimonial, secondary cards |
+| Subtle drop shadow | Faint shadow at low alpha | Hover-elevated states (rare) |
+
+The system uses no heavy shadows. Depth comes from the saturated color contrast between cream canvas and bright feature cards.
 
 ### Decorative Depth
-- The atmospheric depth on Miro's hero comes from the live-product-board mockup illustrations — sticky notes layered at z-offsets, color-block tints behind whiteboard frames
-- Pastel feature cards carry their own visual weight via saturated background color
-- Customer-story cards layer dark photographic content with overlay scrims
+- **3D claymation illustrations** — mountains, characters, mascots rendered in a hand-crafted 3D style. The brand's most-recognized depth element. Not a token — these are illustrated assets.
+- **Mascot characters** appear as inline figures in feature cards and CTAs.
 
 ## Shapes
 
@@ -572,254 +415,127 @@ The system runs predominantly flat with strategic depth on hero mockups.
 
 | Token | Value | Use |
 |---|---|---|
-| `{rounded.xs}` | 4px | Small chips, micro-controls |
-| `{rounded.sm}` | 6px | Discount badges |
-| `{rounded.md}` | 8px | Inputs, search-pill |
-| `{rounded.lg}` | 12px | Standard cards, table containers |
-| `{rounded.xl}` | 16px | Pricing cards, feature panels |
-| `{rounded.xxl}` | 20px | Larger feature cards |
-| `{rounded.xxxl}` | 28px | Pastel feature cards (yellow, rose, coral, teal) |
-| `{rounded.feature}` | 32px | Hero CTA banner cards |
-| `{rounded.full}` | 9999px | All buttons, pill tabs, badges |
-
-### Photography Geometry
-- Real Miro board mockups render with `{rounded.xl}` (16px) corners and a subtle drop shadow
-- Customer story cards use `{rounded.xxxl}` (28px) corners with full-bleed photography
-- Template card thumbnails use `{rounded.xl}` (16px) with photographic content
-- Customer logos wall presents wordmarks inline at consistent 100px height
+| `{rounded.xs}` | 6px | Small badges, dropdown items |
+| `{rounded.sm}` | 8px | Small buttons, hairline-border accent |
+| `{rounded.md}` | 12px | Standard CTA buttons, text inputs |
+| `{rounded.lg}` | 16px | Content cards, testimonial cards, pricing tiers |
+| `{rounded.xl}` | 24px | Feature cards (the saturated brand-color cards) |
+| `{rounded.pill}` | 9999px | Category tabs, badge pills |
+| `{rounded.full}` | 9999px / 50% | Avatars, icon buttons |
 
 ## Components
 
-> Per the no-hover policy, hover states are NOT documented. Default and pressed/active states only.
+### Top Navigation
+
+**`top-nav`** — Cream nav bar pinned to top. 64px tall, `{colors.canvas}` background. Carries the Clay logo + wordmark at left, primary horizontal menu (Product, Solutions, Resources, Pricing, Customers) center, right-side cluster with "Sign in" + "Try free" `{component.button-primary}`. Menu items in `{typography.nav-link}` (Inter 14px / 500).
 
 ### Buttons
 
-**`button-primary`** — Black pill primary CTA, the dominant action ("Get started free").
-- Background `{colors.primary}`, text `{colors.on-primary}`, typography `{typography.button-md}`, padding `12px 24px`, rounded `{rounded.full}`.
-- Pressed state `button-primary-pressed` lifts to `{colors.charcoal}`.
-- Disabled state `button-primary-disabled` uses `{colors.hairline}` background and `{colors.muted}` text.
+**`button-primary`** — Background `{colors.primary}` (near-black), text `{colors.on-primary}` (white), type `{typography.button}` (Inter 14px / 600), padding 12px × 20px, height 44px, rounded `{rounded.md}` (12px).
 
-**`button-yellow`** — Brand-yellow pill for moments of brand emphasis.
-- Background `{colors.brand-yellow}`, text `{colors.primary}`, typography `{typography.button-md}`, padding `12px 24px`, rounded `{rounded.full}`.
+**`button-secondary`** — Cream button with hairline outline. Background `{colors.canvas}`, text `{colors.ink}`, 1px hairline border.
 
-**`button-blue`** — Brand-blue pill for inline action callouts.
-- Background `{colors.brand-blue}`, text `{colors.on-primary}`, typography `{typography.button-md}`, padding `12px 24px`, rounded `{rounded.full}`.
+**`button-on-color`** — White button used over saturated brand-color feature cards. Same shape as primary but inverted (white background, ink text).
 
-**`button-secondary`** — Outlined pill for secondary actions ("Book a demo").
-- Background transparent, text `{colors.ink}`, border `1px solid {colors.hairline-strong}`, typography `{typography.button-md}`, padding `12px 24px`, rounded `{rounded.full}`.
+**`button-text-link`** — Inline text button, no background. Used for "Sign in" and inline link CTAs.
 
-**`button-on-dark`** — White pill for dark CTA banners.
-- Background `{colors.on-dark}`, text `{colors.primary}`, typography `{typography.button-md}`, padding `12px 24px`, rounded `{rounded.full}`.
-
-**`button-ghost`** — Quieter rectangular ghost button.
-- Background transparent, text `{colors.ink}`, typography `{typography.button-md}`, padding `8px 12px`, rounded `{rounded.md}`.
-
-**`button-link`** — Inline text link.
-- Background transparent, text `{colors.brand-blue}`, typography `{typography.body-sm-medium}`, padding `0`.
-
-**`button-icon-circular`** — 36×36px circular utility button.
-- Background `{colors.canvas}`, text `{colors.ink}`, border `1px solid {colors.hairline}`, rounded `{rounded.full}`.
+**`text-link`** — Inline body links in `{colors.ink}` with underline.
 
 ### Cards & Containers
 
-**`card-base`** — Standard content card.
-- Background `{colors.canvas}`, rounded `{rounded.xl}`, padding `{spacing.xl}`, border `1px solid {colors.hairline-soft}`.
+**`hero-band`** — Cream-canvas hero with 7-5 grid: h1 + sub-headline + button row on the left, 3D claymation illustration on the right. Vertical padding `{spacing.section}` (96px).
 
-**`card-feature`** — White feature card with larger 28px corners.
-- Background `{colors.canvas}`, rounded `{rounded.xxxl}`, padding `{spacing.xxl}`, border `1px solid {colors.hairline-soft}`.
+**`hero-illustration-card`** — Right-side artifact holding 3D claymation illustration (mountains, mascot character, abstract shapes). Background `{colors.surface-soft}`, rounded `{rounded.xl}` (24px). The illustration IS the artifact.
 
-**`card-feature-yellow`** — Pastel-yellow feature card.
-- Background `{colors.brand-yellow}`, text `{colors.primary}`, rounded `{rounded.xxxl}`, padding `{spacing.xxl}`.
+**`feature-card-pink`** / **`feature-card-teal`** / **`feature-card-lavender`** / **`feature-card-peach`** / **`feature-card-ochre`** — Saturated single-color feature cards. Background varies per variant; rounded `{rounded.xl}` (24px); padding `{spacing.xl}` (32px). Each card carries an h3 in `{typography.title-md}`, a body description, and a product UI fragment or mascot illustration. Text color flips to `{colors.on-dark}` (white) on pink and teal cards, `{colors.ink}` (dark) on lavender/peach/ochre cards (the lighter saturations have enough contrast for dark text).
 
-**`card-feature-coral`** — Pastel-coral feature card variant.
-- Background `{colors.coral-light}`, text `{colors.primary}`, rounded `{rounded.xxxl}`, padding `{spacing.xxl}`.
+**`feature-card-cream`** — Lower-key feature card variant on `{colors.surface-card}`. Used for less-emphasized features that don't warrant a saturated color.
 
-**`card-feature-teal`** — Pastel-teal feature card variant.
-- Background `{colors.teal-light}`, text `{colors.primary}`, rounded `{rounded.xxxl}`, padding `{spacing.xxl}`.
+**`product-mockup-card`** — Card showing actual Clay product UI (Claygent agent runs, sequencer flows, CRM enrichment tables). Background `{colors.canvas}` with hairline border, rounded `{rounded.lg}`, padding `{spacing.lg}` (24px).
 
-**`card-feature-rose`** — Pastel-rose feature card variant.
-- Background `{colors.rose-light}`, text `{colors.primary}`, rounded `{rounded.xxxl}`, padding `{spacing.xxl}`.
+**`testimonial-card`** — Customer quote cards. Background `{colors.surface-card}` (cream), rounded `{rounded.lg}`, padding `{spacing.lg}` (24px). Top row has avatar + name + role; below sits the testimonial in `{typography.body-md}`.
 
-**`card-customer-story`** — Customer story card.
-- Background `{colors.canvas}`, rounded `{rounded.xxxl}`, padding `0` (image fills the card), border `1px solid {colors.hairline-soft}`.
+**`pricing-tier-card`** — Standard tier card. Background `{colors.canvas}` with hairline, rounded `{rounded.lg}`, padding `{spacing.xl}` (32px).
 
-**`card-stat`** — Stat-row cell for "100M+ users".
-- Background transparent, text `{colors.ink}`, typography `{typography.stat-display}`, padding `{spacing.lg}`.
+**`pricing-tier-card-featured`** — The featured tier flips to `{colors.brand-teal}` (deep teal-green). The teal surface IS the featured signal.
 
-**`pricing-card`** — Standard pricing tier card.
-- Background `{colors.canvas}`, rounded `{rounded.xl}`, padding `{spacing.xxl}`, border `1px solid {colors.hairline}`.
-
-**`pricing-card-featured`** — Featured pricing tier (Business — lavender background + blue border).
-- Background `{colors.surface-pricing-featured}`, rounded `{rounded.xl}`, padding `{spacing.xxl}`, border `2px solid {colors.brand-blue}`.
-
-**`pricing-card-enterprise`** — Dark-canvas enterprise tier card.
-- Background `{colors.primary}`, text `{colors.on-primary}`, rounded `{rounded.xl}`, padding `{spacing.xxl}`.
+**`expert-card`** — Used on /experts page. Background `{colors.canvas}` with hairline, rounded `{rounded.lg}`, padding `{spacing.lg}`. Carries an avatar at top, expert name, specialization, and a "Book session" link.
 
 ### Inputs & Forms
 
-**`text-input`** — Standard text field.
-- Background `{colors.canvas}`, text `{colors.ink}`, border `1px solid {colors.hairline-strong}`, rounded `{rounded.md}`, padding `{spacing.sm} {spacing.md}`, height 44px.
+**`text-input`** — Background `{colors.canvas}`, text `{colors.ink}`, type `{typography.body-md}`, rounded `{rounded.md}` (12px), padding 12px × 16px, height 44px. 1px hairline border.
 
-**`text-input-focused`** — Activated state.
-- Border switches to `2px solid {colors.brand-blue}`.
+**`text-input-focused`** — Border thickens to ink for emphasis.
 
-**`search-pill`** — Search bar.
-- Background `{colors.surface}`, text `{colors.steel}`, typography `{typography.body-sm}`, rounded `{rounded.md}`, height 40px, border `1px solid {colors.hairline}`.
+### Tabs / Badges
 
-**`filter-dropdown`** — Pill-shaped filter dropdown ("Company use" / "Industry" / "Use case").
-- Background `{colors.canvas}`, text `{colors.ink}`, typography `{typography.body-sm-medium}`, rounded `{rounded.full}`, padding `{spacing.xs} {spacing.md}`, border `1px solid {colors.hairline-strong}`.
+**`category-tab`** + **`category-tab-active`** — Pill-shaped tabs in sub-nav. Inactive: transparent + muted text. Active: cream-card background + ink text. Padding 8px × 16px.
 
-### Tabs
+**`badge-pill`** — Small cream-fill pill labels in `{typography.caption}` (13px / 500), rounded `{rounded.pill}`.
 
-**`pill-tab`** + **`pill-tab-active`** — Pill-style tab nav.
-- Inactive: background `{colors.canvas}`, text `{colors.steel}`, border `1px solid {colors.hairline}`, padding `{spacing.xs} {spacing.md}`, rounded `{rounded.full}`.
-- Active: background `{colors.primary}`, text `{colors.on-primary}`.
+### CTA / Footer
 
-**`toggle-monthly-yearly`** — Two-state pill toggle (Monthly / Annual on pricing).
-- Background `{colors.surface}`, rounded `{rounded.full}`, padding `4px`.
+**`cta-band-illustrated`** — Pre-footer "Turn your growth ideas into reality today" band. Background `{colors.surface-soft}`, rounded `{rounded.xl}`, padding 80px. Carries an h2 in `{typography.display-md}`, a sub-line, and a `{component.button-primary}` — usually paired with a 3D illustration of a mascot or scene.
 
-### Badges & Status
-
-**`badge-promo`** — Yellow promo banner badge.
-- Background `{colors.brand-yellow}`, text `{colors.primary}`, typography `{typography.caption-bold}`, rounded `{rounded.full}`, padding `4px 10px`.
-
-**`badge-tag-yellow`** — Soft-yellow feature tag chip ("Yellow" tag on AI Workflows page).
-- Background `{colors.surface-yellow}`, text `{colors.yellow-dark}`, typography `{typography.caption-bold}`, rounded `{rounded.full}`, padding `4px 10px`.
-
-**`badge-tag-purple`** — Lavender feature tag chip ("AI agent" tag).
-- Background `{colors.surface-pricing-featured}`, text `{colors.brand-blue}`, typography `{typography.caption-bold}`, rounded `{rounded.full}`, padding `4px 10px`.
-
-**`badge-tag-coral`** — Coral feature tag chip variant.
-- Background `{colors.coral-light}`, text `{colors.coral-dark}`, typography `{typography.caption-bold}`, rounded `{rounded.full}`, padding `4px 10px`.
-
-**`badge-success`** — Green success indicator.
-- Background `{colors.success-accent}`, text `{colors.on-primary}`, typography `{typography.caption-bold}`, rounded `{rounded.full}`, padding `4px 10px`.
-
-**`badge-discount`** — Yellow rectangular discount pill ("Save 15%").
-- Background `{colors.brand-yellow}`, text `{colors.primary}`, typography `{typography.caption-bold}`, rounded `{rounded.sm}`, padding `2px 6px`.
-
-**`promo-banner`** — Sticky black promo strip ABOVE the top nav.
-- Background `{colors.primary}`, text `{colors.on-primary}`, typography `{typography.body-sm-medium}`, padding `{spacing.sm} {spacing.md}`. Carries inline yellow "GET YOUR SPOT" pill.
-
-### Tables
-
-**`comparison-table`** — Pricing feature comparison table.
-- Background `{colors.canvas}`, text `{colors.ink}`, typography `{typography.body-sm}`, rounded `{rounded.md}`, border `1px solid {colors.hairline}`.
-
-**`comparison-row`** — Individual feature row.
-- Background `{colors.canvas}`, text `{colors.ink}`, padding `{spacing.md} {spacing.lg}`, bottom border `1px solid {colors.hairline-soft}`.
-
-### Documentation Components
-
-**`whiteboard-mockup`** — Real Miro-board UI rendered as feature illustration.
-- Background `{colors.canvas}`, rounded `{rounded.xl}`, border `1px solid {colors.hairline-soft}`, shadow `rgba(5, 0, 56, 0.08) 0px 12px 32px -4px`.
-
-**`template-card`** — Template thumbnail card.
-- Background `{colors.canvas}`, rounded `{rounded.xl}`, padding `{spacing.md}`, border `1px solid {colors.hairline}`.
-
-**`industry-tile`** — Industry-vertical tile.
-- Background `{colors.canvas}`, rounded `{rounded.xl}`, padding `{spacing.xl}`, border `1px solid {colors.hairline-soft}`.
-
-**`faq-accordion-item`** — FAQ panel item.
-- Background `{colors.canvas}`, rounded `{rounded.md}`, padding `{spacing.xl}`, bottom border `1px solid {colors.hairline}`.
-
-**`logo-wall-item`** — Customer logo wordmark cell.
-- Background transparent, text `{colors.steel}`, typography `{typography.body-md-medium}`, padding `{spacing.lg}`.
-
-**`capterra-badge`** — Review/rating badge in the footer.
-- Background `{colors.canvas}`, text `{colors.ink}`, typography `{typography.caption}`, rounded `{rounded.md}`, padding `{spacing.sm} {spacing.md}`, border `1px solid {colors.hairline}`.
-
-**`app-store-badge`** — App store / Google Play download pill.
-- Background `{colors.canvas}`, text `{colors.primary}`, typography `{typography.caption-bold}`, rounded `{rounded.md}`, padding `{spacing.sm} {spacing.md}`.
-
-### Navigation
-
-**Top Navigation (Marketing)** — Sticky white bar with yellow Miro wordmark + horizontal links + right-side CTAs.
-- Background `{colors.canvas}`, height ~64px.
-- Left: Yellow square Miro wordmark + horizontal link list (Product, Solutions, Resources).
-- Right: "Login / Pricing / Contact sales" links + black-pill "Get started free".
-
-### Signature Components
-
-**`hero-band-marketing`** — Marketing hero band.
-- Background `{colors.canvas}`, padding `{spacing.hero}`.
-- Layout: centered headline in `{typography.hero-display}`, centered subtitle, centered button row, then whiteboard mockup illustration below.
-
-**`cta-banner-dark`** — Dark CTA banner at the bottom of feature pages.
-- Background `{colors.primary}`, text `{colors.on-primary}`, rounded `{rounded.feature}`, padding `{spacing.section}`. Centered headline + subtitle + `button-on-dark` "Get started free".
-
-**`footer-region`** — Massive multi-column dark footer.
-- Background `{colors.footer-bg}`, padding `{spacing.section} {spacing.xxl}`.
-- 6-column link grid (Product / Solutions / Tools / Resources / Company / Plans & Pricing).
-- Section headings in `{typography.body-md-medium}` `{colors.on-dark}`.
-
-**`footer-link`** — Individual link in the footer.
-- Background transparent, text `{colors.on-dark-muted}`, typography `{typography.body-sm}`, padding `{spacing.xxs} 0`.
+**`footer`** — Cream-tinted footer (NOT dark navy unlike most SaaS sites). Background `{colors.surface-soft}`, text `{colors.body}`. 4-column link list. Vertical padding 80px. Often features a horizon-style 3D mountain illustration at the very bottom — Clay's signature footer mountain.
 
 ## Do's and Don'ts
 
 ### Do
-- Reserve `{colors.brand-yellow}` for the wordmark, top promo banner, and "yellow tag" chips
-- Use `{colors.primary}` (black) as the dominant CTA on all surfaces
-- Pair pastel feature cards (yellow, rose, coral, teal) with white feature cards in the same viewport
-- Apply `{rounded.full}` to every button, every pill tab, every status badge
-- Apply `{rounded.xxxl}` (28px) to pastel feature cards
-- Use real Miro-board mockups as feature illustrations
-- Maintain Roobert PRO across every UI surface
+- Anchor every page on the cream canvas (`{colors.canvas}` — #fffaf0). The warm tint differentiates Clay from cool-gray data sites.
+- Use 3D claymation illustrations as hero artifacts. Hand-crafted 3D characters and mountains ARE the brand.
+- Cycle saturated feature cards across the page — pink → teal → lavender → peach → ochre → cream. Repeating the same color twice in a row reads as off-rhythm.
+- Use Plain Black at weight 500 with negative letter-spacing on every display headline.
+- Show product UI fragments inside saturated feature cards. The brand voltage is product-driven, not abstract.
+- Use cream footer (NOT dark). Clay deliberately closes pages with warm cream rather than the standard dark-footer SaaS template.
+- Anchor every band with `{spacing.section}` (96px) vertical rhythm.
 
 ### Don't
-- Don't use `{colors.brand-yellow}` on standard CTAs or large background surfaces
-- Don't introduce additional accent colors beyond yellow + brand pastels
-- Don't soften corners on buttons; the pill is a brand signature
-- Don't reduce hero leading below 1.05
-- Don't apply heavy shadows on flat documentation cards; reserve elevation for whiteboard mockups
-- Don't use stock photography — show the live product board UI
+- Don't use cool grays for canvas. The cream tint is non-negotiable.
+- Don't use a 7th brand-color card. The 6-color palette is saturated enough.
+- Don't bold display weight beyond 500. Plain Black at 700 reads as bombastic.
+- Don't repeat the same brand-color card twice in a row.
+- Don't replace claymation illustrations with flat vector art. The hand-crafted 3D character IS the brand voice.
+- Don't use a dark footer. The cream footer is part of the system's warm-throughout pacing.
+- Don't add hover state styling beyond what the system already encodes.
 
 ## Responsive Behavior
 
 ### Breakpoints
+
 | Name | Width | Key Changes |
 |---|---|---|
-| Mobile (small) | < 480px | Single column. Hero scales to 36px. Pill nav collapses to hamburger. Pricing tiers stack 1-up. |
-| Mobile (large) | 480 – 767px | Feature tiles 2-up. Hero scales to 48px. |
-| Tablet | 768 – 1023px | 2-column feature grids. Pill-tab nav returns. |
-| Desktop | 1024 – 1279px | 4-tier pricing card row. Customer story grid 2-up. Hero at 64px. |
-| Wide Desktop | ≥ 1280px | Full hero presentation, 80px hero display. |
+| Mobile | < 768px | Hamburger nav; hero h1 72→36px; hero-illustration-card stacks below; feature grids 1-up; pricing 1-up |
+| Tablet | 768–1024px | Top nav tightens; feature cards 2-up; pricing 2-up |
+| Desktop | 1024–1440px | Full top-nav; 3-up feature cards; 3-up pricing tiers |
+| Wide | > 1440px | Same as desktop with more breathing room; max content 1280px |
 
 ### Touch Targets
-- Pill buttons render at 40–44px effective height — at WCAG AAA floor
-- Circular icon buttons: 36×36px desktop → 44×44px mobile
-- Form inputs render at 44px height
-- Filter dropdowns render at ~36px tall — bumps to 44px on mobile
+- `{component.button-primary}` at minimum 44 × 44px (matches WCAG AAA).
+- `{component.text-input}` height is 44px.
 
 ### Collapsing Strategy
-- **Promo banner** stays full-width; truncates at < 480px
-- **Top nav** below 1024px collapses to hamburger
-- **Hero band**: 2-column hero collapses to stacked at < 1024px
-- **Pricing comparison**: 4-column tiers → 2-column tablet → 1-column mobile; comparison table becomes horizontal-scroll
-- **Customer story grid**: 2-up → 1-up at < 768px
-- **Hero typography**: 80px → 60px tablet → 48px mobile-large → 36px mobile-small
-- **Footer**: 6-column desktop → 3-column tablet → 2-column mobile → accordion at small mobile
-
-### Image Behavior
-- Whiteboard mockups maintain aspect ratio; lazy-loaded below the fold
-- Customer story photography uses 16:9 ratio with full-bleed scaling
-- Logo wall presents wordmarks at consistent 100px height
+- Top nav collapses to hamburger at < 768px.
+- Hero 7-5 grid → single-column on mobile.
+- Feature card grids reduce columns rather than scaling.
+- Saturated feature cards retain their colored fill at every breakpoint.
+- Pricing tier cards collapse 4 → 2 → 1.
 
 ## Iteration Guide
 
-1. Focus on ONE component at a time
-2. Reference component names and tokens directly
-3. Run `npx @google/design.md lint DESIGN.md` after edits
-4. Add new variants as separate `components:` entries
-5. Default to `{typography.body-md}` for body and `{typography.subtitle}` for emphasis
-6. Keep `{colors.brand-yellow}` confined to wordmark, promo banner, and yellow-tag chips
-7. Pill-shaped buttons (`{rounded.full}`) always
-8. When showing the product, use a real Miro-board mockup with sticky-note color tints
+1. Focus on ONE component at a time. Reference its YAML key (`{component.feature-card-pink}`, `{component.pricing-tier-card-featured}`).
+2. Pick the right brand-color card for the feature: pink for outbound/sequencer, teal for enterprise/featured, lavender for AI-agent products, peach for general SaaS warmth, ochre for community / experts.
+3. Variants of an existing component (`-active`, `-disabled`) live as separate entries.
+4. Use `{token.refs}` everywhere — never inline hex.
+5. Never document hover.
+6. Display headlines stay Plain Black 500 with negative letter-spacing. Body stays Inter 400.
+7. The cream-throughout palette is a system contract — don't add a dark footer.
 
 ## Known Gaps
 
-- Specific dark-mode token values not surfaced
-- Animation/transition timings not extracted; recommend 150–200ms ease
-- Form validation success state not explicitly captured beyond defaults
-- Sticky note color tints inside the actual whiteboard product are richer than what marketing surfaces capture
+- Plain Black is licensed to Clay and not available as a public web font; Inter weight 500 with negative letter-spacing is the closest substitute.
+- 3D claymation illustrations are commissioned assets, not system tokens — they're rendered per-page.
+- The mascot characters (named characters that recur across the site) are illustrated assets; their exact lineage and naming are not formalized in tokens.
+- Animation and transition timings (3D illustration parallax on scroll, feature card entrance animations) are not in scope.
+- Form validation states beyond `{component.text-input-focused}` are not extracted.
+- The actual Clay product surface (in-app data tables, formula editor, agent builder) shares some tokens with the marketing site but adds many product-specific components that are out of scope.

@@ -96,11 +96,14 @@ export function validateLoginForm({
 }: LoginFormInput): ValidationResult {
   const errors: FieldError[] = []
 
-  // Email validation
-  if (!email) {
-    errors.push({ field: "email", message: "Email wajib diisi" })
-  } else if (!EMAIL_REGEX.test(email)) {
+  // Email or Username identifier validation
+  const trimmed = email.trim()
+  if (!trimmed) {
+    errors.push({ field: "email", message: "Email atau Username wajib diisi" })
+  } else if (trimmed.includes("@") && !EMAIL_REGEX.test(trimmed)) {
     errors.push({ field: "email", message: "Format email tidak valid" })
+  } else if (!trimmed.includes("@") && trimmed.length < 3) {
+    errors.push({ field: "email", message: "Username minimal 3 karakter" })
   }
 
   // Password validation

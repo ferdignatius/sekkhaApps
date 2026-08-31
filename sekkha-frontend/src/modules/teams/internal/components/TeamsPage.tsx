@@ -37,7 +37,6 @@ export function TeamsPage() {
 
   // Filters
   const [searchQuery, setSearchQuery] = useState("")
-  const [statusFilter, setStatusFilter] = useState<"all" | "unclaimed" | "claimed">("all")
   const [roleFilter, setRoleFilter] = useState<string>("all")
 
   // Modals
@@ -46,12 +45,18 @@ export function TeamsPage() {
   const [editingMember, setEditingMember] = useState<MemberDto | null>(null)
   const [deletingMember, setDeletingMember] = useState<MemberDto | null>(null)
   const [qrMember, setQrMember] = useState<MemberDto | null>(null)
-  const [pinModalData, setPinModalData] = useState<{ member: MemberDto; pin: string; expires_at?: string } | null>(null)
-  const [generatingPin, setGeneratingPin] = useState(false)
+  const [credentialModalData, setCredentialModalData] = useState<{
+    memberName: string
+    username: string
+    defaultPassword: string
+    userNumber?: string
+    phone?: string | null
+  } | null>(null)
 
   // Form states
   const [createForm, setCreateForm] = useState<CreateMemberPayload>({
     name: "",
+    username: "",
     email: "",
     phone: "",
     school: "",
@@ -92,7 +97,7 @@ export function TeamsPage() {
     }
   }
 
-  // Handle Create Pre-provisioned Member
+  // Handle Create Member with auto-generated credentials
   async function handleCreateMember(e: React.FormEvent) {
     e.preventDefault()
     if (!createForm.name.trim()) return
@@ -102,15 +107,17 @@ export function TeamsPage() {
       const created = await teamsApi.createMember({
         ...createForm,
         name: createForm.name.trim(),
+        username: createForm.username?.trim() || undefined,
         email: createForm.email?.trim() || undefined,
         phone: createForm.phone?.trim() || undefined,
         school: createForm.school?.trim() || undefined,
         birth_date: createForm.birth_date || undefined,
       })
-      showToast(`Berhasil mendaftarkan umat "${created.name}" (No. Unik: ${created.user_number})`)
+      showToast(`Berhasil mendaftarkan umat "${created.name}" (Username: @${created.username || "-"})`)
       setShowCreateModal(false)
       setCreateForm({
         name: "",
+        username: "",
         email: "",
         phone: "",
         school: "",
@@ -119,12 +126,36 @@ export function TeamsPage() {
         role: "umat",
       })
       await loadData()
-      // Open QR card modal for immediate printing/sharing
-      setQrMember(created)
+      // Open credentials modal so Pengurus can copy username & password or share to WA
+      setCredentialModalData({
+        memberName: created.name,
+        username: created.username || "-",
+        defaultPassword: created.default_password || "sekkha123",
+        userNumber: created.user_number || undefined,
+        phone: created.phone,
+      })
     } catch (err: any) {
       showToast(err.message || "Gagal menambahkan anggota", "error")
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  // Handle Reset Member Password
+  async function handleResetPassword(m: MemberDto) {
+    if (!confirm(`Reset password untuk "${m.name}" (@${m.username || "umat"}) ke password default (sekkha123)?`)) return
+    try {
+      const res = await teamsApi.resetMemberPassword(m.id)
+      setCredentialModalData({
+        memberName: res.name,
+        username: res.username || "-",
+        defaultPassword: res.default_password,
+        userNumber: res.user_number,
+        phone: m.phone,
+      })
+      showToast(res.message)
+    } catch (err: any) {
+      showToast(err.message || "Gagal reset password", "error")
     }
   }
 
@@ -189,46 +220,16 @@ export function TeamsPage() {
     navigator.clipboard.writeText(text)
     setCopiedId(true)
     setTimeout(() => setCopiedId(false), 2000)
-    showToast("Nomor Unik berhasil disalin ke clipboard!")
-  }
-
-  // Handle Generate 6-Digit Claim PIN
-  async function handleGeneratePin(m: MemberDto) {
-    try {
-      setGeneratingPin(true)
-      const res = await teamsApi.generateClaimPin(m.id)
-      setPinModalData({
-        member: m,
-        pin: res.claim_pin,
-        expires_at: res.expires_at,
-      })
-      showToast(`PIN Aktivasi 6-digit untuk ${m.name} berhasil dibuat! ✨`)
-      await loadData()
-    } catch (err: any) {
-      showToast(err.message || "Gagal generate PIN klaim", "error")
-    } finally {
-      setGeneratingPin(false)
-    }
-  }
-
-  function handleOpenExistingPin(m: MemberDto) {
-    if (m.claim_pin) {
-      setPinModalData({
-        member: m,
-        pin: m.claim_pin,
-      })
-    } else {
-      handleGeneratePin(m)
-    }
+    showToast("Berhasil disalin ke clipboard!")
   }
 
   // Stats calculation
   const stats = useMemo(() => {
     const total = members.length
-    const unclaimed = members.filter((m) => !m.is_claimed).length
-    const claimed = members.filter((m) => m.is_claimed).length
-    const staff = members.filter((m) => m.role === "pengurus" || m.role === "admin" || m.role === "aktivis").length
-    return { total, unclaimed, claimed, staff }
+    const umat = members.filter((m) => m.role === "umat").length
+    const aktivis = members.filter((m) => m.role === "aktivis").length
+    const pengurus = members.filter((m) => m.role === "pengurus" || m.role === "admin").length
+    return { total, umat, aktivis, pengurus }
   }, [members])
 
   // Filtered members list
@@ -238,23 +239,17 @@ export function TeamsPage() {
       const matchesQuery =
         !q ||
         m.name.toLowerCase().includes(q) ||
+        (m.username && m.username.toLowerCase().includes(q)) ||
         (m.email && m.email.toLowerCase().includes(q)) ||
         (m.user_number && m.user_number.toLowerCase().includes(q)) ||
         (m.school && m.school.toLowerCase().includes(q)) ||
         (m.phone && m.phone.toLowerCase().includes(q))
 
-      const matchesStatus =
-        statusFilter === "all"
-          ? true
-          : statusFilter === "unclaimed"
-          ? !m.is_claimed
-          : m.is_claimed
-
       const matchesRole = roleFilter === "all" ? true : m.role === roleFilter
 
-      return matchesQuery && matchesStatus && matchesRole
+      return matchesQuery && matchesRole
     })
-  }, [members, searchQuery, statusFilter, roleFilter])
+  }, [members, searchQuery, roleFilter])
 
   const roleBadgeStyle: Record<string, string> = {
     admin: "bg-red-50 text-red-700 border-red-200",
@@ -334,27 +329,27 @@ export function TeamsPage() {
               </div>
             </div>
 
-            <div className="rounded-2xl border border-amber-200/80 bg-amber-50/60 p-4 shadow-2xs backdrop-blur-sm">
-              <p className="text-micro font-bold uppercase tracking-wider text-amber-800">Belum Diklaim</p>
+            <div className="rounded-2xl border border-blue-200/80 bg-blue-50/60 p-4 shadow-2xs backdrop-blur-sm">
+              <p className="text-micro font-bold uppercase tracking-wider text-blue-800">Umat</p>
               <div className="mt-1 flex items-baseline justify-between">
-                <span className="text-heading-4 font-black text-amber-900">{stats.unclaimed}</span>
-                <span className="text-micro font-medium text-amber-700">Pre-create</span>
+                <span className="text-heading-4 font-black text-blue-900">{stats.umat}</span>
+                <span className="text-micro font-medium text-blue-700">Anggota</span>
               </div>
             </div>
 
             <div className="rounded-2xl border border-emerald-200/80 bg-emerald-50/60 p-4 shadow-2xs backdrop-blur-sm">
-              <p className="text-micro font-bold uppercase tracking-wider text-emerald-800">Sudah Aktif</p>
+              <p className="text-micro font-bold uppercase tracking-wider text-emerald-800">Aktivis & Relawan</p>
               <div className="mt-1 flex items-baseline justify-between">
-                <span className="text-heading-4 font-black text-emerald-900">{stats.claimed}</span>
-                <span className="text-micro font-medium text-emerald-700">Akun Diklaim</span>
+                <span className="text-heading-4 font-black text-emerald-900">{stats.aktivis}</span>
+                <span className="text-micro font-medium text-emerald-700">Aktivis</span>
               </div>
             </div>
 
-            <div className="rounded-2xl border border-blue-200/80 bg-blue-50/60 p-4 shadow-2xs backdrop-blur-sm">
-              <p className="text-micro font-bold uppercase tracking-wider text-blue-800">Pengurus & Aktivis</p>
+            <div className="rounded-2xl border border-purple-200/80 bg-purple-50/60 p-4 shadow-2xs backdrop-blur-sm">
+              <p className="text-micro font-bold uppercase tracking-wider text-purple-800">Pengurus & Admin</p>
               <div className="mt-1 flex items-baseline justify-between">
-                <span className="text-heading-4 font-black text-blue-900">{stats.staff}</span>
-                <span className="text-micro font-medium text-blue-700">Pengelola</span>
+                <span className="text-heading-4 font-black text-purple-900">{stats.pengurus}</span>
+                <span className="text-micro font-medium text-purple-700">Pengelola</span>
               </div>
             </div>
           </div>
@@ -366,61 +361,52 @@ export function TeamsPage() {
               <div className="flex items-center gap-1 overflow-x-auto no-scrollbar rounded-xl bg-slate-100/90 p-1 w-full sm:w-auto">
                 <button
                   type="button"
-                  onClick={() => setStatusFilter("all")}
+                  onClick={() => setRoleFilter("all")}
                   className={`flex-1 sm:flex-none text-center whitespace-nowrap rounded-lg px-2.5 sm:px-3 py-1.5 text-caption font-semibold transition-all cursor-pointer ${
-                    statusFilter === "all" ? "bg-white text-sekkha-ink shadow-xs" : "text-sekkha-slate hover:text-sekkha-ink"
+                    roleFilter === "all" ? "bg-white text-sekkha-ink shadow-xs" : "text-sekkha-slate hover:text-sekkha-ink"
                   }`}
                 >
                   Semua ({stats.total})
                 </button>
                 <button
                   type="button"
-                  onClick={() => setStatusFilter("unclaimed")}
+                  onClick={() => setRoleFilter("umat")}
                   className={`flex-1 sm:flex-none text-center whitespace-nowrap rounded-lg px-2.5 sm:px-3 py-1.5 text-caption font-semibold transition-all cursor-pointer ${
-                    statusFilter === "unclaimed"
-                      ? "bg-amber-500 text-white shadow-xs"
-                      : "text-amber-800 hover:text-amber-900"
+                    roleFilter === "umat" ? "bg-blue-600 text-white shadow-xs" : "text-blue-800 hover:text-blue-900"
                   }`}
                 >
-                  Belum Klaim ({stats.unclaimed})
+                  Umat ({stats.umat})
                 </button>
                 <button
                   type="button"
-                  onClick={() => setStatusFilter("claimed")}
+                  onClick={() => setRoleFilter("aktivis")}
                   className={`flex-1 sm:flex-none text-center whitespace-nowrap rounded-lg px-2.5 sm:px-3 py-1.5 text-caption font-semibold transition-all cursor-pointer ${
-                    statusFilter === "claimed"
-                      ? "bg-emerald-600 text-white shadow-xs"
-                      : "text-emerald-800 hover:text-emerald-900"
+                    roleFilter === "aktivis" ? "bg-emerald-600 text-white shadow-xs" : "text-emerald-800 hover:text-emerald-900"
                   }`}
                 >
-                  Aktif ({stats.claimed})
+                  Aktivis ({stats.aktivis})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRoleFilter("pengurus")}
+                  className={`flex-1 sm:flex-none text-center whitespace-nowrap rounded-lg px-2.5 sm:px-3 py-1.5 text-caption font-semibold transition-all cursor-pointer ${
+                    roleFilter === "pengurus" ? "bg-purple-600 text-white shadow-xs" : "text-purple-800 hover:text-purple-900"
+                  }`}
+                >
+                  Pengurus ({stats.pengurus})
                 </button>
               </div>
 
-              {/* Right side: Role filter & Search box */}
-              <div className="flex flex-col xs:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
-                <select
-                  value={roleFilter}
-                  onChange={(e) => setRoleFilter(e.target.value)}
-                  className="rounded-xl border border-sekkha-hairline-strong bg-white px-3 py-2 sm:py-1.5 text-caption text-sekkha-ink outline-none focus:border-sekkha-brand-blue"
-                >
-                  <option value="all">Semua Peran</option>
-                  <option value="umat">Umat</option>
-                  <option value="aktivis">Aktivis</option>
-                  <option value="pengurus">Pengurus</option>
-                  <option value="admin">Admin</option>
-                </select>
-
-                <div className="relative flex-1 sm:w-64">
-                  <SearchIcon className="absolute left-3 top-2.5 sm:top-2 size-4 text-sekkha-slate" />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Cari nama, ID, kontak..."
-                    className="w-full rounded-xl border border-sekkha-hairline-strong bg-white pl-9 pr-4 py-2 sm:py-1.5 text-caption text-sekkha-ink outline-none focus:border-sekkha-brand-blue"
-                  />
-                </div>
+              {/* Right side: Search box */}
+              <div className="relative flex-1 sm:w-72">
+                <SearchIcon className="absolute left-3 top-2.5 sm:top-2 size-4 text-sekkha-slate" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Cari nama, @username, ID, kontak..."
+                  className="w-full rounded-xl border border-sekkha-hairline-strong bg-white pl-9 pr-4 py-2 sm:py-1.5 text-caption text-sekkha-ink outline-none focus:border-sekkha-brand-blue"
+                />
               </div>
             </div>
           </div>
@@ -429,23 +415,30 @@ export function TeamsPage() {
           <div className="grid gap-6 lg:grid-cols-3">
             
             {/* Members Directory (Col Span 2 or 3) */}
-            <div className={`${isAdmin ? "lg:col-span-2" : "lg:col-span-3"} space-y-4`}>
+            <div className={`space-y-4 ${isAdmin ? "lg:col-span-2" : "lg:col-span-3"}`}>
               <div className="flex items-center justify-between">
-                <h2 className="text-body-sm font-bold text-sekkha-ink">
-                  Daftar Pengguna & Umat ({filteredMembers.length})
-                </h2>
+                <div>
+                  <h2 className="text-body-base font-bold text-sekkha-ink">Daftar Anggota & Umat</h2>
+                  <p className="text-micro text-sekkha-slate">
+                    Menampilkan {filteredMembers.length} dari {members.length} anggota terdaftar
+                  </p>
+                </div>
               </div>
 
               {loading ? (
-                <div className="h-64 flex flex-col items-center justify-center rounded-2xl border border-sekkha-hairline bg-white/80 text-center">
-                  <div className="size-8 animate-spin rounded-full border-2 border-sekkha-brand-blue border-t-transparent mb-3" />
-                  <span className="text-body-sm text-sekkha-slate">Memuat database People...</span>
+                <div className="flex min-h-[300px] items-center justify-center rounded-2xl border border-sekkha-hairline bg-white p-8">
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="size-8 animate-spin rounded-full border-3 border-sekkha-brand-blue border-t-transparent" />
+                    <p className="text-body-sm font-medium text-sekkha-slate">Memuat database pengguna...</p>
+                  </div>
                 </div>
               ) : filteredMembers.length === 0 ? (
-                <div className="h-64 flex flex-col items-center justify-center rounded-2xl border border-dashed border-sekkha-hairline bg-white text-center p-6">
+                <div className="flex min-h-[260px] flex-col items-center justify-center rounded-2xl border border-dashed border-sekkha-hairline bg-white p-8 text-center">
                   <UsersIcon className="size-10 text-slate-300 mb-2" />
-                  <p className="text-body-sm font-semibold text-sekkha-ink">Tidak ada data anggota ditemukan</p>
-                  <p className="text-micro text-sekkha-muted mt-1">Coba sesuaikan kata kunci pencarian atau filter status.</p>
+                  <p className="text-body-sm font-bold text-sekkha-ink">Tidak ada anggota yang cocok</p>
+                  <p className="text-micro text-sekkha-slate mt-1 max-w-xs">
+                    Coba sesuaikan kata kunci pencarian atau ganti filter kategori.
+                  </p>
                 </div>
               ) : (
                 <>
@@ -464,7 +457,7 @@ export function TeamsPage() {
                           key={m.id}
                           className="rounded-2xl border border-sekkha-hairline bg-white p-4 shadow-2xs space-y-3 transition-shadow hover:shadow-xs"
                         >
-                          {/* Card Header: Avatar, Name, Status & Role */}
+                          {/* Card Header: Avatar, Name, Username, Role */}
                           <div className="flex items-start justify-between gap-2.5">
                             <div className="flex items-center gap-3 min-w-0">
                               <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-caption-bold text-white shadow-2xs">
@@ -473,19 +466,14 @@ export function TeamsPage() {
                               <div className="min-w-0">
                                 <p className="font-extrabold text-body-sm text-sekkha-ink truncate">{m.name}</p>
                                 <div className="flex items-center gap-1.5 mt-0.5">
-                                  <span className="font-mono text-micro font-bold text-sekkha-brand-blue">
+                                  {m.username && (
+                                    <span className="font-mono text-micro font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded">
+                                      @{m.username}
+                                    </span>
+                                  )}
+                                  <span className="font-mono text-micro font-medium text-sekkha-slate">
                                     {m.user_number || "—"}
                                   </span>
-                                  {m.user_number && (
-                                    <button
-                                      type="button"
-                                      onClick={() => handleCopy(m.user_number)}
-                                      className="text-slate-400 hover:text-sekkha-brand-blue p-0.5 cursor-pointer"
-                                      title="Salin No. Unik"
-                                    >
-                                      <CopyIcon className="size-3" />
-                                    </button>
-                                  )}
                                 </div>
                               </div>
                             </div>
@@ -494,17 +482,6 @@ export function TeamsPage() {
                               <span className={`inline-block rounded-full border px-2 py-0.5 text-[10px] font-extrabold capitalize ${roleBadgeStyle[m.role] || roleBadgeStyle.umat}`}>
                                 {m.role}
                               </span>
-                              {m.is_claimed ? (
-                                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[9px] font-bold text-emerald-800">
-                                  <CheckCircleIcon className="size-2.5 text-emerald-600" />
-                                  <span>Aktif</span>
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-[9px] font-bold text-amber-800">
-                                  <AlertTriangleIcon className="size-2.5 text-amber-600" />
-                                  <span>Pre-created</span>
-                                </span>
-                              )}
                             </div>
                           </div>
 
@@ -530,20 +507,17 @@ export function TeamsPage() {
                                 <span>QR & Kartu</span>
                               </button>
 
-                              {!m.is_claimed && isPengurusOrAdmin && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleOpenExistingPin(m)}
-                                  disabled={generatingPin}
-                                  className="flex size-9 items-center justify-center rounded-xl border border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100 transition-colors cursor-pointer shadow-2xs"
-                                  title="Buat / Lihat PIN Aktivasi Akun (6-Digit)"
-                                >
-                                  <KeyIcon className="size-4 text-amber-700" />
-                                </button>
-                              )}
-
                               {isPengurusOrAdmin && (
                                 <>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleResetPassword(m)}
+                                    className="flex size-9 items-center justify-center rounded-xl border border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100 transition-colors cursor-pointer shadow-2xs"
+                                    title="Reset Password ke default (sekkha123)"
+                                  >
+                                    <KeyIcon className="size-4 text-amber-700" />
+                                  </button>
+
                                   <button
                                     type="button"
                                     onClick={() => {
@@ -580,8 +554,7 @@ export function TeamsPage() {
                         <thead>
                           <tr className="border-b border-sekkha-hairline-soft bg-slate-50/70 text-micro-bold uppercase tracking-wider text-sekkha-slate">
                             <th className="px-4 py-3">No. Unik</th>
-                            <th className="px-4 py-3">Nama Lengkap</th>
-                            <th className="px-4 py-3">Status Klaim</th>
+                            <th className="px-4 py-3">Nama & Username</th>
                             <th className="px-4 py-3">Peran</th>
                             <th className="px-4 py-3">Sekolah / Kontak</th>
                             <th className="px-4 py-3 text-center">Aksi</th>
@@ -614,41 +587,26 @@ export function TeamsPage() {
                                   </div>
                                 </td>
 
-                                {/* Nama */}
+                                {/* Nama & Username */}
                                 <td className="px-4 py-3">
                                   <div className="flex items-center gap-2.5">
                                     <div className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-micro-bold text-white shadow-2xs">
                                       {initials}
                                     </div>
                                     <div className="min-w-0">
-                                      <p className="font-bold text-sekkha-ink truncate">{m.name}</p>
+                                      <div className="flex items-center gap-2">
+                                        <p className="font-bold text-sekkha-ink truncate">{m.name}</p>
+                                        {m.username && (
+                                          <span className="font-mono text-micro font-semibold text-indigo-600 bg-indigo-50 px-1.5 py-0.2 rounded border border-indigo-100">
+                                            @{m.username}
+                                          </span>
+                                        )}
+                                      </div>
                                       <p className="text-micro text-sekkha-slate truncate">
                                         {m.email || (m.phone ? `HP: ${m.phone}` : "Tanpa kontak email")}
                                       </p>
                                     </div>
                                   </div>
-                                </td>
-
-                                {/* Status Klaim */}
-                                <td className="px-4 py-3">
-                                  {m.is_claimed ? (
-                                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-micro-bold text-emerald-800">
-                                      <CheckCircleIcon className="size-3 text-emerald-600" />
-                                      <span>Sudah Aktif</span>
-                                    </span>
-                                  ) : (
-                                    <span className="inline-flex items-center gap-1.5">
-                                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200 px-2.5 py-0.5 text-micro-bold text-amber-800">
-                                        <AlertTriangleIcon className="size-3 text-amber-600" />
-                                        <span>Belum Klaim</span>
-                                      </span>
-                                      {m.claim_pin && (
-                                        <span className="font-mono text-[11px] font-black text-amber-900 bg-amber-100/80 px-2 py-0.5 rounded border border-amber-300 shadow-2xs">
-                                          PIN: {m.claim_pin}
-                                        </span>
-                                      )}
-                                    </span>
-                                  )}
                                 </td>
 
                                 {/* Role */}
@@ -679,20 +637,17 @@ export function TeamsPage() {
                                       <QrCodeIcon className="size-4" />
                                     </button>
 
-                                    {!m.is_claimed && isPengurusOrAdmin && (
-                                      <button
-                                        type="button"
-                                        onClick={() => handleOpenExistingPin(m)}
-                                        disabled={generatingPin}
-                                        className="flex size-8 items-center justify-center rounded-lg border border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100 transition-colors cursor-pointer"
-                                        title="Buat / Lihat PIN Aktivasi Akun (6-Digit)"
-                                      >
-                                        <KeyIcon className="size-4 text-amber-700" />
-                                      </button>
-                                    )}
-
                                     {isPengurusOrAdmin && (
                                       <>
+                                        <button
+                                          type="button"
+                                          onClick={() => handleResetPassword(m)}
+                                          className="flex size-8 items-center justify-center rounded-lg border border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100 transition-colors cursor-pointer"
+                                          title="Reset Password ke default (sekkha123)"
+                                        >
+                                          <KeyIcon className="size-4 text-amber-700" />
+                                        </button>
+
                                         <button
                                           type="button"
                                           onClick={() => {
@@ -817,18 +772,33 @@ export function TeamsPage() {
             </div>
 
             <form onSubmit={handleCreateMember} className="space-y-4">
-              <div className="space-y-1">
-                <label className="text-caption font-bold text-sekkha-ink">
-                  Nama Lengkap <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Contoh: Budi Santoso"
-                  value={createForm.name}
-                  onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
-                  className="w-full rounded-xl border border-sekkha-hairline-strong px-3.5 py-2 text-body-sm text-sekkha-ink outline-none focus:border-sekkha-brand-blue"
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-caption font-bold text-sekkha-ink">
+                    Nama Lengkap <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Contoh: Budi Santoso"
+                    value={createForm.name}
+                    onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
+                    className="w-full rounded-xl border border-sekkha-hairline-strong px-3.5 py-2 text-body-sm text-sekkha-ink outline-none focus:border-sekkha-brand-blue"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-caption font-semibold text-sekkha-slate">
+                    Username <span className="text-micro text-sekkha-muted font-normal">(Otomatis jika kosong)</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Contoh: budi.santoso"
+                    value={createForm.username || ""}
+                    onChange={(e) => setCreateForm({ ...createForm, username: e.target.value })}
+                    className="w-full rounded-xl border border-sekkha-hairline-strong px-3.5 py-2 text-body-sm text-sekkha-ink outline-none focus:border-sekkha-brand-blue"
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -905,8 +875,8 @@ export function TeamsPage() {
                 </div>
               </div>
 
-              <div className="rounded-xl bg-blue-50/70 p-3 text-micro text-blue-900 border border-blue-200/60 leading-relaxed">
-                💡 <strong>Nomor Unik Anggota</strong> terstandarisasi (format: <code>YYYYMMDDxxxx</code>) akan otomatis dibuat oleh sistem dan langsung dapat digunakan untuk absensi event.
+              <div className="rounded-xl bg-blue-50/70 p-3 text-micro text-blue-900 border border-blue-200/60 leading-relaxed space-y-1">
+                <p>💡 <strong>Password Default:</strong> Akun baru akan dibuatkan password awal <code>sekkha123</code>. Umat dapat langsung login dan mengganti password mandiri.</p>
               </div>
 
               <div className="flex gap-2.5 pt-2">
@@ -1216,25 +1186,25 @@ export function TeamsPage() {
       )}
 
       {/* ───────────────────────────────────────────────────────────────────────── */}
-      {/* MODAL 6: Claim PIN Modal (Pengurus / Admin)                               */}
+      {/* MODAL 6: Member Credentials Modal (Pengurus / Admin)                      */}
       {/* ───────────────────────────────────────────────────────────────────────── */}
-      {pinModalData && (
+      {credentialModalData && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-3.5 sm:p-4 animate-in fade-in">
-          <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-3xl border border-amber-200 bg-white p-5 sm:p-6 shadow-2xl space-y-4 sm:space-y-5">
+          <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-3xl border border-blue-200 bg-white p-5 sm:p-6 shadow-2xl space-y-4 sm:space-y-5">
             {/* Header */}
             <div className="flex items-center justify-between border-b border-sekkha-hairline-soft pb-3">
               <div className="flex items-center gap-2.5">
-                <div className="flex size-9 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
+                <div className="flex size-9 items-center justify-center rounded-xl bg-blue-100 text-sekkha-brand-blue">
                   <KeyIcon className="size-5" />
                 </div>
                 <div>
-                  <h3 className="text-body-base font-extrabold text-sekkha-ink">PIN Aktivasi Akun Umat</h3>
-                  <p className="text-micro text-sekkha-slate">Berikan PIN 6-digit ini ke umat terkait</p>
+                  <h3 className="text-body-base font-extrabold text-sekkha-ink">Kredensial Akun Umat</h3>
+                  <p className="text-micro text-sekkha-slate">Username & password untuk login umat</p>
                 </div>
               </div>
               <button
                 type="button"
-                onClick={() => setPinModalData(null)}
+                onClick={() => setCredentialModalData(null)}
                 className="rounded-full p-1.5 text-sekkha-slate hover:bg-slate-100"
               >
                 <XIcon className="size-5" />
@@ -1245,35 +1215,63 @@ export function TeamsPage() {
             <div className="rounded-2xl bg-slate-50 border border-sekkha-hairline p-3.5 flex items-center justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-micro font-bold text-sekkha-muted uppercase tracking-wider">Nama Umat</p>
-                <p className="text-body-sm font-extrabold text-sekkha-ink truncate">{pinModalData.member.name}</p>
-                {pinModalData.member.phone && (
-                  <p className="text-micro text-sekkha-slate">📞 {pinModalData.member.phone}</p>
+                <p className="text-body-sm font-extrabold text-sekkha-ink truncate">{credentialModalData.memberName}</p>
+                {credentialModalData.phone && (
+                  <p className="text-micro text-sekkha-slate">📞 {credentialModalData.phone}</p>
                 )}
               </div>
-              <div className="text-right shrink-0">
-                <p className="text-micro font-bold text-sekkha-muted uppercase tracking-wider">No. Unik</p>
-                <span className="font-mono text-caption-bold text-sekkha-brand-blue bg-blue-50 px-2 py-1 rounded-lg border border-blue-200">
-                  {pinModalData.member.user_number || "—"}
-                </span>
-              </div>
+              {credentialModalData.userNumber && (
+                <div className="text-right shrink-0">
+                  <p className="text-micro font-bold text-sekkha-muted uppercase tracking-wider">No. Unik</p>
+                  <span className="font-mono text-caption-bold text-sekkha-brand-blue bg-blue-50 px-2 py-1 rounded-lg border border-blue-200">
+                    {credentialModalData.userNumber}
+                  </span>
+                </div>
+              )}
             </div>
 
-            {/* Big PIN Display */}
-            <div className="space-y-2 text-center">
-              <div className="rounded-2xl bg-gradient-to-b from-amber-50 to-amber-100/60 border-2 border-dashed border-amber-300/80 p-5 shadow-xs">
-                <p className="text-micro-bold text-amber-800 uppercase tracking-widest mb-1.5">KODE PIN 6-DIGIT</p>
-                <p className="font-mono text-heading-2 font-black tracking-[0.25em] text-amber-950 select-all">
-                  {pinModalData.pin}
-                </p>
-                <p className="text-micro text-amber-700 mt-1 font-medium">
-                  {pinModalData.expires_at
-                    ? `Berlaku hingga: ${new Date(pinModalData.expires_at).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}`
-                    : "Berlaku 30 hari untuk klaim mandiri"}
-                </p>
+            {/* Username & Password Display */}
+            <div className="space-y-3">
+              <div className="rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50/60 border border-blue-200/80 p-4 space-y-3">
+                {/* Username */}
+                <div>
+                  <p className="text-micro-bold text-blue-900 uppercase tracking-wider mb-1">USERNAME LOGIN</p>
+                  <div className="flex items-center justify-between bg-white rounded-xl border border-blue-200 px-3.5 py-2.5">
+                    <span className="font-mono text-body-base font-black text-sekkha-ink select-all">
+                      @{credentialModalData.username}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleCopy(credentialModalData.username)}
+                      className="flex items-center gap-1 text-micro-bold text-sekkha-brand-blue hover:text-blue-800 cursor-pointer"
+                    >
+                      <CopyIcon className="size-3.5" />
+                      <span>Salin</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Password Default */}
+                <div>
+                  <p className="text-micro-bold text-blue-900 uppercase tracking-wider mb-1">PASSWORD DEFAULT</p>
+                  <div className="flex items-center justify-between bg-white rounded-xl border border-blue-200 px-3.5 py-2.5">
+                    <span className="font-mono text-body-base font-black text-sekkha-ink select-all">
+                      {credentialModalData.defaultPassword}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleCopy(credentialModalData.defaultPassword)}
+                      className="flex items-center gap-1 text-micro-bold text-sekkha-brand-blue hover:text-blue-800 cursor-pointer"
+                    >
+                      <CopyIcon className="size-3.5" />
+                      <span>Salin</span>
+                    </button>
+                  </div>
+                </div>
               </div>
 
-              <p className="text-micro text-sekkha-slate leading-relaxed px-2">
-                Umat dapat memasukkan 6 digit PIN ini di menu <strong>Profil &gt; Tautkan Akun Lama</strong> untuk menggabungkan seluruh poin dan riwayat kehadiran secara instan.
+              <p className="text-micro text-sekkha-slate leading-relaxed px-1">
+                Umat dapat langsung login menggunakan <strong>Username</strong> dan <strong>Password Default</strong> di atas, lalu dapat mengubah password dan username mereka di menu Profil.
               </p>
             </div>
 
@@ -1283,19 +1281,20 @@ export function TeamsPage() {
                 <button
                   type="button"
                   onClick={() => {
-                    navigator.clipboard.writeText(pinModalData.pin)
-                    showToast(`PIN ${pinModalData.pin} berhasil disalin!`)
+                    const fullText = `Akun Sekkha Vihara:\nNama: ${credentialModalData.memberName}\nUsername: @${credentialModalData.username}\nPassword: ${credentialModalData.defaultPassword}`
+                    navigator.clipboard.writeText(fullText)
+                    showToast("Semua kredensial berhasil disalin!")
                   }}
                   className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-sekkha-ink py-2.5 text-body-sm font-bold text-white shadow-xs hover:bg-slate-800 transition-all cursor-pointer"
                 >
                   <CopyIcon className="size-4" />
-                  <span>Salin PIN</span>
+                  <span>Salin Semua</span>
                 </button>
 
-                {pinModalData.member.phone && (
+                {credentialModalData.phone && (
                   <a
-                    href={`https://api.whatsapp.com/send?phone=${pinModalData.member.phone.replace(/[^0-9]/g, "")}&text=${encodeURIComponent(
-                      `Namo Buddhaya ${pinModalData.member.name},\n\nBerikut kode PIN Aktivasi akun Sekkha Vihara Anda:\n🔑 PIN: *${pinModalData.pin}*\nNomor Anggota: *${pinModalData.member.user_number || "-"}*\n\nSilakan buka aplikasi Sekkha di menu *Profil > Tautkan Akun Lama*, lalu masukkan 6-digit PIN di atas untuk menggabungkan riwayat presensi & poin Anda.\n\nTerima kasih!`
+                    href={`https://api.whatsapp.com/send?phone=${credentialModalData.phone.replace(/[^0-9]/g, "")}&text=${encodeURIComponent(
+                      `Namo Buddhaya ${credentialModalData.memberName},\n\nBerikut akun login Sekkha Vihara Anda:\n👤 Username: *${credentialModalData.username}*\n🔑 Password: *${credentialModalData.defaultPassword}*\n🆔 No. Anggota: *${credentialModalData.userNumber || "-"}*\n\nSilakan login ke aplikasi Sekkha dengan username dan password di atas. Jangan lupa untuk mengganti password Anda di menu *Profil > Ganti Password*.\n\nTerima kasih!`
                     )}`}
                     target="_blank"
                     rel="noreferrer"
@@ -1308,22 +1307,13 @@ export function TeamsPage() {
                 )}
               </div>
 
-              <div className="flex items-center justify-between pt-1">
+              <div className="flex items-center justify-end pt-1">
                 <button
                   type="button"
-                  onClick={() => handleGeneratePin(pinModalData.member)}
-                  disabled={generatingPin}
-                  className="text-micro font-bold text-amber-800 hover:text-amber-950 underline underline-offset-2 cursor-pointer disabled:opacity-50"
-                >
-                  {generatingPin ? "Membuat PIN Baru..." : "🔄 Regenerate PIN Baru"}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setPinModalData(null)}
+                  onClick={() => setCredentialModalData(null)}
                   className="text-micro font-semibold text-sekkha-slate hover:text-sekkha-ink cursor-pointer"
                 >
-                  Tutup
+                  Selesai
                 </button>
               </div>
             </div>

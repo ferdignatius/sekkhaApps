@@ -23,7 +23,6 @@ import {
   AwardIcon,
   QrCodeIcon,
   SettingsIcon,
-  Link2Icon,
   LogOutIcon,
   MailIcon,
   CameraIcon,
@@ -48,6 +47,7 @@ import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
 interface UserProfile {
   id: string
   name: string
+  username?: string | null
   email: string
   school?: string | null
   phone?: string | null
@@ -63,8 +63,9 @@ interface UserProfile {
 }
 
 interface UserStreakData {
-  current_streak: number
-  longest_streak: number
+  currentStreak: number
+  longestStreak: number
+  weeklyActivity: boolean[]
 }
 
 interface UserBadge {
@@ -110,6 +111,7 @@ export function ProfilePage() {
   const [showEditModal, setShowEditModal] = useState(false)
   const [editForm, setEditForm] = useState({
     name: "",
+    username: "",
     phone: "",
     school: "",
     birth_date: "",
@@ -120,16 +122,14 @@ export function ProfilePage() {
   // Print Card Modal
   const [showPrintModal, setShowPrintModal] = useState(false)
 
-  // Account Linking Modal state
-  const [showLinkModal, setShowLinkModal] = useState(false)
-  const [claimPin, setClaimPin] = useState("")
-  const [targetUserId, setTargetUserId] = useState("")
-  const [linking, setLinking] = useState(false)
-  const [linkResult, setLinkResult] = useState<{
-    success: boolean
-    message: string
-    stats?: { attendances: number; badges: number; points: number }
-  } | null>(null)
+  // Change Password Modal state
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false)
+  const [passwordForm, setPasswordForm] = useState({
+    current_password: "",
+    new_password: "",
+    confirm_password: "",
+  })
+  const [savingPassword, setSavingPassword] = useState(false)
 
   // Toast State
   const [toast, setToast] = useState<{ text: string; type: "success" | "error" } | null>(null)
@@ -188,6 +188,7 @@ export function ProfilePage() {
 
     setEditForm({
       name: profile.name || "",
+      username: profile.username || "",
       phone: profile.phone || "",
       school: profile.school || "",
       birth_date: formattedBirthDate,
@@ -207,6 +208,7 @@ export function ProfilePage() {
       setSavingProfile(true)
       const updated = await api.patch<UserProfile>("/users/me", {
         name: editForm.name.trim(),
+        username: editForm.username.trim().toLowerCase() || null,
         phone: editForm.phone.trim() || null,
         school: editForm.school.trim() || null,
         birth_date: editForm.birth_date || null,
@@ -224,6 +226,37 @@ export function ProfilePage() {
     }
   }
 
+  async function handleChangePassword(e: React.FormEvent) {
+    e.preventDefault()
+    if (passwordForm.new_password.length < 6) {
+      showToast("Password baru minimal 6 karakter", "error")
+      return
+    }
+    if (passwordForm.new_password !== passwordForm.confirm_password) {
+      showToast("Konfirmasi password baru tidak cocok", "error")
+      return
+    }
+
+    try {
+      setSavingPassword(true)
+      await teamsApi.changePassword({
+        current_password: passwordForm.current_password,
+        new_password: passwordForm.new_password,
+      })
+      showToast("Password Anda berhasil diperbarui! ✨")
+      setShowChangePasswordModal(false)
+      setPasswordForm({
+        current_password: "",
+        new_password: "",
+        confirm_password: "",
+      })
+    } catch (err: any) {
+      showToast(err.message || "Gagal mengubah password", "error")
+    } finally {
+      setSavingPassword(false)
+    }
+  }
+
   function handleCopyNumber(num: string) {
     if (!num) return
     navigator.clipboard.writeText(num)
@@ -236,50 +269,14 @@ export function ProfilePage() {
     window.print()
   }
 
-  async function handleLinkAccount(e: React.FormEvent) {
-    e.preventDefault()
-    const cleanPin = claimPin.replace(/[^0-9]/g, "").trim()
-    if (!cleanPin || cleanPin.length < 6) {
-      showToast("Harap masukkan 6 digit PIN Aktivasi", "error")
-      return
-    }
-
-    try {
-      setLinking(true)
-      setLinkResult(null)
-      const res = await teamsApi.linkLegacyAccount({
-        claim_pin: cleanPin,
-        target_user_id: targetUserId.trim() || undefined,
-      })
-      setLinkResult({
-        success: true,
-        message: res.message || "Akun lama berhasil ditautkan!",
-        stats: {
-          attendances: res.data.merged_attendances_count,
-          badges: res.data.merged_badges_count,
-          points: res.data.new_total_points,
-        },
-      })
-      showToast("Akun lama berhasil ditautkan! Poin & kehadiran telah digabung.")
-      await loadProfileData()
-    } catch (err: any) {
-      setLinkResult({
-        success: false,
-        message: err.message || "Gagal menautkan akun lama. Pastikan 6 digit PIN sesuai.",
-      })
-    } finally {
-      setLinking(false)
-    }
-  }
-
   // 100% Real Calculated Values
   const role = profile?.role || authState.role || "umat"
   const displayName = profile?.name || (authState.name ? authState.name : role.charAt(0).toUpperCase() + role.slice(1))
   const school = profile?.school || ""
   const memberId = profile?.user_number || profile?.userNumber || (authState.userId ? `SKH-${authState.userId.slice(-4)}` : "—")
   const totalPoints = profile?.points ?? 0
-  const currentStreak = streakData?.current_streak ?? 0
-  const longestStreak = streakData?.longest_streak ?? 0
+  const currentStreak = streakData?.currentStreak ?? (streakData as any)?.current_streak ?? 0
+  const longestStreak = streakData?.longestStreak ?? (streakData as any)?.longest_streak ?? 0
   const totalAttended = attendances.length
 
   const userInitials =
@@ -1010,30 +1007,28 @@ export function ProfilePage() {
         {/* TAB 4: PENGATURAN & AKUN */}
         {activeTab === "settings" && (
           <div className="space-y-6 animate-in fade-in duration-200">
-            {/* Account Linking Option */}
+            {/* Change Password Option */}
             <div className="rounded-3xl border border-blue-200/80 bg-gradient-to-r from-blue-50/90 via-white to-blue-50/60 p-6 shadow-2xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="flex items-start gap-3.5">
                 <div className="flex size-10 items-center justify-center rounded-2xl bg-sekkha-brand-blue text-white shadow-xs shrink-0">
-                  <Link2Icon className="size-5 text-amber-300" />
+                  <KeyIcon className="size-5 text-amber-300" />
                 </div>
                 <div className="space-y-0.5">
-                  <h3 className="text-body-base font-extrabold text-sekkha-ink">Tautkan Data Lama dari Pengurus</h3>
+                  <h3 className="text-body-base font-extrabold text-sekkha-ink">Ganti Password Akun</h3>
                   <p className="text-caption text-sekkha-slate">
-                    Pernah didaftarkan oleh pengurus saat acara vihara? Tautkan nomor unik lama agar riwayat presensi dan poin otomatis tersambung.
+                    Perbarui kata sandi akun Anda secara berkala untuk menjaga keamanan data & presensi.
                   </p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => {
-                  setShowLinkModal(true)
-                  setLinkResult(null)
-                  setTargetUserId("")
-                  setClaimPin("")
+                  setPasswordForm({ current_password: "", new_password: "", confirm_password: "" })
+                  setShowChangePasswordModal(true)
                 }}
                 className="rounded-xl bg-sekkha-brand-blue px-4 py-2.5 text-caption-bold text-white shadow-xs hover:bg-blue-700 transition-all shrink-0 cursor-pointer"
               >
-                Tautkan Akun
+                Ganti Password
               </button>
             </div>
 
@@ -1051,7 +1046,7 @@ export function ProfilePage() {
                     </div>
                     <div>
                       <p className="text-caption-bold text-sekkha-ink">Perbarui Data Profil</p>
-                      <p className="text-micro text-sekkha-slate">Nama, kontak WhatsApp, tanggal lahir</p>
+                      <p className="text-micro text-sekkha-slate">Nama, username login, kontak WhatsApp, tanggal lahir</p>
                     </div>
                   </div>
                   <button
@@ -1150,6 +1145,24 @@ export function ProfilePage() {
                     onChange={(e) => setEditForm((prev) => ({ ...prev, name: e.target.value }))}
                     placeholder="Contoh: Dewi Lestari"
                     className="w-full rounded-xl border border-sekkha-hairline-strong pl-10 pr-3.5 py-2.5 text-body-sm text-sekkha-ink outline-none focus:border-sekkha-brand-blue focus:ring-2 focus:ring-blue-100 transition-all"
+                  />
+                </div>
+              </div>
+
+              {/* Username */}
+              <div className="space-y-1">
+                <label className="text-caption-bold text-sekkha-ink flex items-center gap-1">
+                  <span>Username Login</span>
+                  <span className="text-micro text-sekkha-muted font-normal">(Harus unik, untuk login)</span>
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-mono text-body-sm font-bold text-sekkha-slate">@</span>
+                  <input
+                    type="text"
+                    value={editForm.username}
+                    onChange={(e) => setEditForm((prev) => ({ ...prev, username: e.target.value.toLowerCase().replace(/[^a-z0-9_.]/g, "") }))}
+                    placeholder="username.anda"
+                    className="w-full rounded-xl border border-sekkha-hairline-strong pl-8 pr-3.5 py-2.5 font-mono text-body-sm text-sekkha-ink outline-none focus:border-sekkha-brand-blue focus:ring-2 focus:ring-blue-100 transition-all"
                   />
                 </div>
               </div>
@@ -1338,14 +1351,14 @@ export function ProfilePage() {
                 className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-sekkha-brand-blue py-2.5 text-body-sm font-bold text-white shadow-sm hover:bg-blue-700 transition-all cursor-pointer"
               >
                 <PrinterIcon className="size-4" />
-                <span>Cetak Sekarang</span>
+                <span>Cetak Kartu Sekarang</span>
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ── MODAL 3: DETAIL LENCANA PENCAPAIAN ── */}
+      {/* ── MODAL 3: DETAIL LENCANA & PRESTASI ── */}
       {selectedBadge && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in">
           <div className="relative w-full max-w-sm rounded-3xl border border-sekkha-hairline bg-white p-6 shadow-2xl text-center space-y-4 font-sans">
@@ -1388,134 +1401,91 @@ export function ProfilePage() {
         </div>
       )}
 
-      {/* ── MODAL 4: TAUTKAN DATA LAMA ── */}
-      {showLinkModal && (
+      {/* ── MODAL 4: GANTI PASSWORD ── */}
+      {showChangePasswordModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in">
           <div className="relative w-full max-w-md rounded-3xl border border-sekkha-hairline bg-white p-6 shadow-2xl space-y-5 text-left font-sans">
             <div className="flex items-center justify-between border-b border-sekkha-hairline-soft pb-3">
               <div className="flex items-center gap-2.5">
-                <div className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-tr from-amber-500 to-amber-600 text-white shadow-xs">
+                <div className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white shadow-xs">
                   <KeyIcon className="size-5" />
                 </div>
                 <div>
-                  <h3 className="text-heading-6 font-extrabold text-sekkha-ink">Tautkan Akun / Kartu Lama</h3>
-                  <p className="text-micro text-sekkha-slate">Gabungkan riwayat kehadiran & poin Anda</p>
+                  <h3 className="text-heading-6 font-extrabold text-sekkha-ink">Ganti Password</h3>
+                  <p className="text-micro text-sekkha-slate">Perbarui kata sandi akun Anda</p>
                 </div>
               </div>
               <button
                 type="button"
-                onClick={() => {
-                  setShowLinkModal(false)
-                  setLinkResult(null)
-                  setClaimPin("")
-                  setTargetUserId("")
-                }}
+                onClick={() => setShowChangePasswordModal(false)}
                 className="rounded-full p-1.5 text-sekkha-slate hover:bg-slate-100 cursor-pointer"
               >
                 <XIcon className="size-5" />
               </button>
             </div>
 
-            {linkResult?.success ? (
-              <div className="space-y-4 text-center py-3">
-                <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
-                  <CheckCircleIcon className="size-8" />
-                </div>
-                <div className="space-y-1">
-                  <p className="text-body-base font-extrabold text-sekkha-ink">Penautan Berhasil!</p>
-                  <p className="text-caption text-sekkha-slate">{linkResult.message}</p>
-                </div>
-                {linkResult.stats && (
-                  <div className="grid grid-cols-2 gap-2 rounded-2xl bg-emerald-50/70 p-3 border border-emerald-200">
-                    <div className="text-center">
-                      <p className="text-micro text-emerald-800">Kehadiran Baru</p>
-                      <p className="text-body-base font-extrabold text-emerald-900">+{linkResult.stats.attendances}</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-micro text-emerald-800">Total Poin</p>
-                      <p className="text-body-base font-extrabold text-emerald-900">{linkResult.stats.points}</p>
-                    </div>
-                  </div>
-                )}
+            <form onSubmit={handleChangePassword} className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-caption font-bold text-sekkha-ink">
+                  Password Saat Ini <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="password"
+                  required
+                  placeholder="Masukkan password saat ini (default: sekkha123)"
+                  value={passwordForm.current_password}
+                  onChange={(e) => setPasswordForm({ ...passwordForm, current_password: e.target.value })}
+                  className="w-full rounded-xl border border-sekkha-hairline-strong px-3.5 py-2.5 text-body-sm text-sekkha-ink outline-none focus:border-sekkha-brand-blue"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-caption font-bold text-sekkha-ink">
+                  Password Baru <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  placeholder="Minimal 6 karakter"
+                  value={passwordForm.new_password}
+                  onChange={(e) => setPasswordForm({ ...passwordForm, new_password: e.target.value })}
+                  className="w-full rounded-xl border border-sekkha-hairline-strong px-3.5 py-2.5 text-body-sm text-sekkha-ink outline-none focus:border-sekkha-brand-blue"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-caption font-bold text-sekkha-ink">
+                  Konfirmasi Password Baru <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  placeholder="Ulangi password baru"
+                  value={passwordForm.confirm_password}
+                  onChange={(e) => setPasswordForm({ ...passwordForm, confirm_password: e.target.value })}
+                  className="w-full rounded-xl border border-sekkha-hairline-strong px-3.5 py-2.5 text-body-sm text-sekkha-ink outline-none focus:border-sekkha-brand-blue"
+                />
+              </div>
+
+              <div className="flex gap-2.5 pt-2">
                 <button
                   type="button"
-                  onClick={() => {
-                    setShowLinkModal(false)
-                    setLinkResult(null)
-                  }}
-                  className="w-full rounded-xl bg-sekkha-brand-blue py-2.5 text-body-sm font-bold text-white shadow-sm hover:bg-blue-700 transition-all cursor-pointer"
+                  onClick={() => setShowChangePasswordModal(false)}
+                  className="flex-1 rounded-xl border border-sekkha-hairline-strong py-2.5 text-body-sm font-semibold text-sekkha-ink hover:bg-slate-100 transition-colors cursor-pointer"
                 >
-                  Tutup
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingPassword}
+                  className="flex-1 rounded-xl bg-sekkha-brand-blue py-2.5 text-body-sm font-bold text-white shadow-sm hover:bg-blue-700 transition-all disabled:opacity-50 cursor-pointer"
+                >
+                  {savingPassword ? "Menyimpan..." : "Simpan Password"}
                 </button>
               </div>
-            ) : (
-              <form onSubmit={handleLinkAccount} className="space-y-4">
-                {linkResult && !linkResult.success && (
-                  <div className="flex items-center gap-2 rounded-xl bg-red-50 p-3 border border-red-200 text-micro text-red-800">
-                    <AlertTriangleIcon className="size-4 shrink-0 text-red-600" />
-                    <span>{linkResult.message}</span>
-                  </div>
-                )}
-
-                <div className="rounded-2xl bg-amber-50/70 border border-amber-200/80 p-3.5 space-y-1">
-                  <div className="flex items-center gap-1.5 text-amber-900 font-bold text-caption">
-                    <SparklesIcon className="size-4 text-amber-600" />
-                    <span>Gunakan 6-Digit PIN Aktivasi</span>
-                  </div>
-                  <p className="text-micro text-amber-800/90 leading-relaxed">
-                    Minta 6 digit kode PIN kepada pengurus vihara atau periksa pesan WhatsApp pendaftaran Anda.
-                  </p>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-caption font-bold text-sekkha-ink">
-                    Kode PIN Aktivasi (6 Digit) <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    maxLength={8}
-                    placeholder="Contoh: 749102"
-                    value={claimPin}
-                    onChange={(e) => setClaimPin(e.target.value.replace(/[^0-9]/g, ""))}
-                    className="w-full rounded-2xl border-2 border-amber-300 bg-amber-50/30 px-4 py-3 font-mono text-heading-4 font-black tracking-[0.25em] text-center text-amber-950 outline-none focus:border-amber-500 focus:bg-white transition-all placeholder:font-sans placeholder:text-body-sm placeholder:tracking-normal placeholder:font-normal placeholder:text-slate-400"
-                  />
-                </div>
-
-                <div className="space-y-1 pt-1">
-                  <label className="text-caption font-semibold text-sekkha-slate">
-                    Nomor Unik Anggota (Opsional)
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Contoh: 202608210001 (kosongkan jika tidak tahu)"
-                    value={targetUserId}
-                    onChange={(e) => setTargetUserId(e.target.value)}
-                    className="w-full rounded-xl border border-sekkha-hairline-strong px-3.5 py-2 font-mono text-body-sm text-sekkha-ink outline-none focus:border-sekkha-brand-blue"
-                  />
-                </div>
-
-                <div className="flex gap-2.5 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowLinkModal(false)
-                      setLinkResult(null)
-                    }}
-                    className="flex-1 rounded-xl border border-sekkha-hairline-strong py-2.5 text-body-sm font-semibold text-sekkha-ink hover:bg-slate-100 transition-colors cursor-pointer"
-                  >
-                    Batal
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={linking || claimPin.length < 6}
-                    className="flex-1 rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 py-2.5 text-body-sm font-bold text-white shadow-sm hover:from-amber-700 hover:to-amber-800 transition-all disabled:opacity-50 cursor-pointer"
-                  >
-                    {linking ? "Memverifikasi..." : "Verifikasi & Tautkan"}
-                  </button>
-                </div>
-              </form>
-            )}
+            </form>
           </div>
         </div>
       )}

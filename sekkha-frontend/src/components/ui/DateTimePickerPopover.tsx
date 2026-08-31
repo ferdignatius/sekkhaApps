@@ -31,16 +31,16 @@ function parseValue(isoStr: string) {
 }
 
 function formatDisplayDate(datePart: string, timePart: string) {
-  if (!datePart) return "Pilih Tanggal & Waktu..."
+  if (!datePart) return "Select Date & Time..."
   const [y, m, d] = datePart.split("-").map(Number)
   const date = new Date(y!, (m ?? 1) - 1, d)
-  const days = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"]
+  const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
   const months = [
-    "Jan", "Feb", "Mar", "Apr", "Mei", "Jun",
-    "Jul", "Agu", "Sep", "Okt", "Nov", "Des"
+    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
   ]
   const dayName = days[date.getDay()]
-  return `${dayName}, ${d} ${months[(m ?? 1) - 1]} ${y} · ${timePart} WIB`
+  return `${dayName}, ${d} ${months[(m ?? 1) - 1]} ${y} · ${timePart}`
 }
 
 export function DateTimePickerPopover({
@@ -101,11 +101,11 @@ export function DateTimePickerPopover({
         <div className="flex items-center gap-2.5 min-w-0">
           <CalendarIcon className="size-4 text-sekkha-brand-blue shrink-0" />
           <span className="truncate font-bold text-sekkha-ink text-caption">
-            {value ? formatDisplayDate(datePart, timePart) : <span className="text-sekkha-slate/70 font-medium">Pilih Tanggal & Waktu...</span>}
+            {value ? formatDisplayDate(datePart, timePart) : <span className="text-sekkha-slate/70 font-medium">Select Date & Time...</span>}
           </span>
         </div>
         <span className="rounded-lg bg-sekkha-brand-blue/10 px-2.5 py-1 text-micro-bold text-sekkha-brand-blue hover:bg-sekkha-brand-blue hover:text-white transition-all shrink-0 ml-1">
-          {value ? "Ubah" : "Pilih"}
+          {value ? "Change" : "Select"}
         </span>
       </button>
 
@@ -129,8 +129,8 @@ export function DateTimePickerPopover({
                   <CalendarDaysIcon className="size-5" />
                 </div>
                 <div className="min-w-0">
-                  <h3 className="text-body-sm-medium font-extrabold text-sekkha-ink">Atur Tanggal & Waktu</h3>
-                  <p className="text-micro text-sekkha-slate">Pilih preset, tanggal, dan jam acara</p>
+                  <h3 className="text-body-sm-medium font-extrabold text-sekkha-ink">Set Date & Time</h3>
+                  <p className="text-micro text-sekkha-slate">Choose preset, date, and event time</p>
                 </div>
               </div>
               <button
@@ -150,7 +150,7 @@ export function DateTimePickerPopover({
                 <div className="space-y-2">
                   <p className="flex items-center gap-1.5 text-micro-bold uppercase tracking-wider text-sekkha-slate">
                     <SparklesIcon className="size-3.5 text-amber-500" />
-                    <span>Preset Cepat Vihara</span>
+                    <span>Quick Vihara Presets</span>
                     <span className="ml-1 rounded-full bg-amber-100 border border-amber-200 px-1.5 py-0.5 text-[10px] font-bold text-amber-700">1-Click</span>
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -174,7 +174,7 @@ export function DateTimePickerPopover({
                             )}
                             {qt.day_of_week !== undefined && qt.day_of_week >= 0 && (
                               <span className="mt-1 text-[10px] font-bold text-purple-700 bg-purple-100 border border-purple-200 px-1.5 py-0.5 rounded-md inline-block">
-                                📅 Hari {DAY_NAMES[qt.day_of_week]} (Auto-tanggal)
+                                📅 {DAY_NAMES[qt.day_of_week]} (Auto-date)
                               </span>
                             )}
                           </div>
@@ -193,7 +193,7 @@ export function DateTimePickerPopover({
               {presets.length > 0 && (
                 <div className="flex items-center gap-2 text-micro text-sekkha-slate">
                   <div className="flex-1 h-px bg-sekkha-hairline-soft" />
-                  <span>atau pilih manual</span>
+                  <span>or select manually</span>
                   <div className="flex-1 h-px bg-sekkha-hairline-soft" />
                 </div>
               )}
@@ -202,13 +202,13 @@ export function DateTimePickerPopover({
               <div className="space-y-2">
                 <p className="flex items-center gap-1.5 text-micro-bold uppercase tracking-wider text-sekkha-slate">
                   <CalendarIcon className="size-3.5 text-sekkha-brand-blue" />
-                  <span>Tanggal Pelaksanaan</span>
+                  <span>Event Date</span>
                   {draftDate && (
                     <span className="ml-auto text-caption-bold text-sekkha-brand-blue normal-case tracking-normal">
                       {(() => {
                         const [y, m, d] = draftDate.split("-").map(Number)
                         const dt = new Date(y!, (m ?? 1) - 1, d)
-                        return dt.toLocaleDateString("id-ID", { weekday: "short", day: "numeric", month: "short" })
+                        return dt.toLocaleDateString("en-US", { weekday: "short", day: "numeric", month: "short" })
                       })()}
                     </span>
                   )}
@@ -228,8 +228,8 @@ export function DateTimePickerPopover({
               <div className="space-y-2 pb-2">
                 <p className="flex items-center gap-1.5 text-micro-bold uppercase tracking-wider text-sekkha-slate">
                   <ClockIcon className="size-3.5 text-sekkha-brand-blue" />
-                  <span>Jam Pelaksanaan</span>
-                  <span className="ml-auto text-caption-bold text-sekkha-brand-blue normal-case tracking-normal">{draftTime} WIB</span>
+                  <span>Event Time</span>
+                  <span className="ml-auto text-caption-bold text-sekkha-brand-blue normal-case tracking-normal">{draftTime}</span>
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {QUICK_HOURS_LIST.map(t => {
@@ -252,7 +252,7 @@ export function DateTimePickerPopover({
                 </div>
                 {/* Custom time input for non-standard hours */}
                 <div className="flex items-center gap-2 pt-1">
-                  <span className="text-micro text-sekkha-slate shrink-0">Jam lain:</span>
+                  <span className="text-micro text-sekkha-slate shrink-0">Other time:</span>
                   <input
                     type="time"
                     value={draftTime}
@@ -268,9 +268,9 @@ export function DateTimePickerPopover({
             <div className="px-5 py-3.5 border-t border-sekkha-hairline-soft shrink-0 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 bg-sekkha-canvas/60 rounded-b-[28px] sm:rounded-b-3xl">
               {/* Summary */}
               <div className="flex-1 min-w-0">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-sekkha-slate">Hasil Pilihan</p>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-sekkha-slate">Selection Summary</p>
                 <p className="text-caption-bold text-sekkha-brand-blue truncate mt-0.5">
-                  {draftDate ? formatDisplayDate(draftDate, draftTime) : "Belum dipilih"}
+                  {draftDate ? formatDisplayDate(draftDate, draftTime) : "Not selected"}
                 </p>
               </div>
               {/* Buttons */}
@@ -280,14 +280,14 @@ export function DateTimePickerPopover({
                   onClick={() => setOpen(false)}
                   className="flex-1 sm:flex-initial rounded-xl border border-sekkha-hairline bg-white px-4 py-2.5 text-micro-bold text-sekkha-slate hover:bg-sekkha-surface transition-colors cursor-pointer"
                 >
-                  Batal
+                  Cancel
                 </button>
                 <button
                   type="button"
                   onClick={handleApply}
                   className="flex-1 sm:flex-initial rounded-xl bg-sekkha-brand-blue px-5 py-2.5 text-micro-bold text-white shadow-xs hover:bg-blue-700 transition-all active:scale-95 cursor-pointer font-extrabold"
                 >
-                  Terapkan
+                  Apply
                 </button>
               </div>
             </div>

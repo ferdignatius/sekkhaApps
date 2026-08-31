@@ -51,7 +51,7 @@ eventsRouter.get("/:id", requireAuth, async (req, res, next) => {
     const event = await prisma.event.findUnique({
       where: { id },
     })
-    if (!event) { res.status(404).json({ error: "Event tidak ditemukan" }); return }
+    if (!event) { res.status(404).json({ error: "Event not found" }); return }
 
     res.json({
       id: event.id,
@@ -198,7 +198,7 @@ eventsRouter.post("/:id/attendance", requireAuth, async (req, res, next) => {
     // Authorization Guard: Prevent normal users from recording attendance on behalf of others
     if (user_id && user_id !== req.user!.userId) {
       if (req.user!.role !== "pengurus" && req.user!.role !== "admin") {
-        res.status(403).json({ error: "Hanya Pengurus atau Admin yang dapat mencatatkan presensi untuk anggota lain." })
+        res.status(403).json({ error: "Only Organizers or Admins can record attendance for other members." })
         return
       }
     }
@@ -212,38 +212,47 @@ eventsRouter.post("/:id/attendance", requireAuth, async (req, res, next) => {
     })
 
     if (!event) {
-      res.status(404).json({ error: "Kegiatan tidak ditemukan." })
+      res.status(404).json({ error: "Event not found." })
       return
     }
 
     if (event.status === "closed" || event.status === "cancelled") {
-      res.status(400).json({ error: "Sesi presensi untuk kegiatan ini telah ditutup." })
+      res.status(400).json({ error: "Attendance session for this event is closed." })
       return
     }
 
-    // Verify target user exists in People database
-    const targetUser = await prisma.user.findUnique({
-      where: { id: targetUserId },
+    // Verify target user exists in People database (by id, userNumber, username, or email)
+    const targetUser = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { id: targetUserId },
+          { userNumber: targetUserId },
+          { username: targetUserId },
+          { email: targetUserId },
+        ],
+      },
       select: { id: true, name: true, role: true, userNumber: true },
     })
 
     if (!targetUser) {
-      res.status(404).json({ error: "Pengguna tidak ditemukan dalam basis data People." })
+      res.status(404).json({ error: "User not found in People directory." })
       return
     }
 
+    const actualUserId = targetUser.id
+
     // Strict Idempotency Check: Reject duplicate scans
     const existing = await prisma.attendance.findUnique({
-      where: { userId_eventId: { userId: targetUserId, eventId: id } },
+      where: { userId_eventId: { userId: actualUserId, eventId: id } },
     })
 
     if (existing) {
       res.status(409).json({
         error: "DUPLICATE_ATTENDANCE",
-        message: `Umat ${targetUser.name} (${targetUser.userNumber || "ID Terdaftar"}) sudah tercatat hadir sebelumnya.`,
+        message: `Member ${targetUser.name} (${targetUser.userNumber || "Registered ID"}) has already been recorded present.`,
         data: {
           id: existing.id,
-          user_id: targetUserId,
+          user_id: actualUserId,
           name: targetUser.name,
           scanned_at: existing.scannedAt.toISOString(),
         },
@@ -260,7 +269,7 @@ eventsRouter.post("/:id/attendance", requireAuth, async (req, res, next) => {
     // Persist attendance immediately in DB (Staged — preserved across reloads / navigation)
     const attendance = await prisma.attendance.create({
       data: {
-        userId: targetUserId,
+        userId: actualUserId,
         eventId: id,
         method,
         pointsEarned: pointsAwarded,
@@ -268,12 +277,12 @@ eventsRouter.post("/:id/attendance", requireAuth, async (req, res, next) => {
       },
     })
 
-    await invalidate(CacheKeys.userAttendances(targetUserId))
+    await invalidate(CacheKeys.userAttendances(actualUserId))
     await invalidatePattern("events:*")
 
     res.status(201).json({
       id: attendance.id,
-      user_id: targetUserId,
+      user_id: actualUserId,
       name: targetUser.name,
       role: targetUser.role,
       user_number: targetUser.userNumber,
@@ -319,7 +328,7 @@ eventsRouter.delete("/:id/attendances/:userId", requireAuth, requireRole("pengur
       where: { userId_eventId: { userId: userId as string, eventId: id as string } },
     })
     await invalidate(CacheKeys.userAttendances(userId as string))
-    res.json({ success: true, message: "Presensi berhasil dihapus" })
+    res.json({ success: true, message: "Attendance record deleted" })
   } catch (err) { next(err) }
 })
 
@@ -332,7 +341,7 @@ eventsRouter.delete("/:id", requireAuth, requireRole("pengurus", "admin"), async
     await prisma.event.delete({ where: { id } })
     await invalidatePattern("events:*")
     await invalidate(CacheKeys.events())
-    res.json({ message: "Event berhasil dihapus" })
+    res.json({ message: "Event deleted successfully" })
   } catch (err) { next(err) }
 })
 

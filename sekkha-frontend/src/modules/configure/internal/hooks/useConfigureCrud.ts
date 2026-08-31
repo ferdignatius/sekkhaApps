@@ -26,7 +26,7 @@ export function useConfigureCrud<T extends { id: string }>(
       setItems(data)
     } catch (err) {
       console.warn("Failed to fetch from API, using fallback:", err)
-      setError("Gagal memuat data dari server")
+      setError("Failed to load data from server")
       setItems(fallbackData)
     } finally {
       setLoading(false)

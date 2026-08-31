@@ -63,9 +63,9 @@ export function EventTypePage() {
   function openEdit(item: EventCategoryItem) {
     setName(item.name)
     setColorHex(item.colorHex || "#0284c7")
-    setAutofillTitle(item.autofillTitle ?? `Kegiatan ${item.name} Vihara`)
+    setAutofillTitle(item.autofillTitle ?? `Vihara ${item.name} Activity`)
     setAutofillLocation(item.autofillLocation ?? "Vihara Sekkha")
-    setAutofillDesc(item.autofillDesc ?? `Kegiatan ${item.name.toLowerCase()} bersama Umat Vihara Sekkha.`)
+    setAutofillDesc(item.autofillDesc ?? `${item.name} activity session with Vihara Sekkha community.`)
     setTargetRoles(item.target_roles && item.target_roles.length > 0 ? item.target_roles : ["admin", "pengurus", "aktivis", "umat"])
     setEditing(item)
     setShowModal(true)
@@ -115,7 +115,7 @@ export function EventTypePage() {
 
   return (
     <main className="min-h-screen bg-sekkha-surface pb-32 md:pb-12 font-sans text-left">
-      <PageBreadcrumb items={[{ label: "Configure" }, { label: "Kategori Event" }]} />
+      <PageBreadcrumb items={[{ label: "Configure" }, { label: "Event Categories" }]} />
       <div className="px-4 py-6 sm:px-6 md:px-8 max-w-7xl mx-auto space-y-5">
 
         {/* Header */}
@@ -125,8 +125,8 @@ export function EventTypePage() {
               <TagIcon className="size-5" />
             </div>
             <div className="min-w-0">
-              <h1 className="text-body-base sm:text-heading-5 font-black text-sekkha-ink">Master Data Kategori Event</h1>
-              <p className="text-micro text-sekkha-slate">Kelola kategori event, skema warna, hak akses role pengguna, dan template autofill formulir</p>
+              <h1 className="text-body-base sm:text-heading-5 font-black text-sekkha-ink">Event Categories Master Data</h1>
+              <p className="text-micro text-sekkha-slate">Manage event categories, color palettes, role access permissions, and form autofill presets</p>
             </div>
           </div>
 
@@ -137,7 +137,7 @@ export function EventTypePage() {
               className="w-full sm:w-auto shrink-0"
             >
               <PlusIcon className="size-4 mr-1.5" />
-              <span>Tambah Kategori Event</span>
+              <span>Add Event Category</span>
             </Button>
           )}
         </div>
@@ -147,11 +147,11 @@ export function EventTypePage() {
           <Table className="min-w-[700px]">
             <TableHeader>
               <TableRow>
-                <TableHead>Nama Kategori & Color Badge</TableHead>
-                <TableHead>Hak Akses Role Pengguna</TableHead>
-                <TableHead>Template Judul Autofill</TableHead>
+                <TableHead>Category Name & Color Badge</TableHead>
+                <TableHead>Allowed Roles Access</TableHead>
+                <TableHead>Autofill Title Preset</TableHead>
                 <TableHead className="text-center">Status</TableHead>
-                {isPengurusOrAdmin && <TableHead className="text-right">Aksi</TableHead>}
+                {isPengurusOrAdmin && <TableHead className="text-right">Actions</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -189,17 +189,17 @@ export function EventTypePage() {
                     <TableCell className="text-sekkha-ink font-medium">
                       <span className="flex items-center gap-1">
                         <Wand2Icon className="size-3 text-sekkha-brand-blue shrink-0" />
-                        <span className="truncate max-w-xs">{c.autofillTitle || `Kegiatan ${c.name} Vihara`}</span>
+                        <span className="truncate max-w-xs">{c.autofillTitle || `Vihara ${c.name} Activity`}</span>
                       </span>
                     </TableCell>
                     <TableCell className="text-center">
                       {c.is_active !== false ? (
                         <Badge variant="emerald">
-                          <CheckIcon className="size-3 mr-0.5" /> Aktif
+                          <CheckIcon className="size-3 mr-0.5" /> Active
                         </Badge>
                       ) : (
                         <Badge variant="slate">
-                          Non-Aktif
+                          Inactive
                         </Badge>
                       )}
                     </TableCell>
@@ -213,15 +213,15 @@ export function EventTypePage() {
                                 ? "border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100"
                                 : "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
                               }`}
-                            title={c.is_active !== false ? "Non-Aktifkan" : "Aktifkan"}
+                            title={c.is_active !== false ? "Deactivate" : "Activate"}
                           >
-                            {c.is_active !== false ? "Non-Aktifkan" : "Aktifkan"}
+                            {c.is_active !== false ? "Deactivate" : "Activate"}
                           </button>
                           <button
                             type="button"
                             onClick={() => openEdit(c)}
                             className="rounded-lg border border-sekkha-hairline bg-sekkha-canvas p-1.5 text-sekkha-ink hover:bg-blue-50 hover:text-sekkha-brand-blue transition-colors"
-                            title="Edit Kategori, Warna, & Hak Akses"
+                            title="Edit Category, Color, & Permissions"
                           >
                             <PencilIcon className="size-4" />
                           </button>
@@ -229,7 +229,7 @@ export function EventTypePage() {
                             type="button"
                             onClick={() => handleDelete(c.id)}
                             className="rounded-lg border border-rose-200 bg-rose-50 p-1.5 text-rose-600 hover:bg-rose-100 transition-colors"
-                            title="Hapus Kategori"
+                            title="Delete Category"
                           >
                             <TrashIcon className="size-4" />
                           </button>
@@ -255,7 +255,7 @@ export function EventTypePage() {
                 <div className="flex items-center gap-2">
                   <SparklesIcon className="size-5 text-sekkha-brand-blue" />
                   <h3 className="text-body-base font-extrabold text-sekkha-ink">
-                    {editing ? "Edit Kategori & Hak Akses" : "Tambah Kategori Event Baru"}
+                    {editing ? "Edit Category & Permissions" : "Add New Event Category"}
                   </h3>
                 </div>
                 <button type="button" onClick={resetForm} className="text-sekkha-slate hover:text-sekkha-ink cursor-pointer p-1">✕</button>
@@ -263,39 +263,39 @@ export function EventTypePage() {
 
               <form onSubmit={handleSubmit} className="space-y-3.5">
                 <Input
-                  label="Nama Kategori *"
+                  label="Category Name *"
                   required
                   value={name}
                   onChange={e => {
                     const val = e.target.value
                     setName(val)
                     if (!editing) {
-                      setAutofillTitle(`Kegiatan ${val} Vihara`)
-                      setAutofillDesc(`Kegiatan ${val.toLowerCase()} bersama Umat Vihara Sekkha.`)
+                      setAutofillTitle(`Vihara ${val} Activity`)
+                      setAutofillDesc(`${val} activity session with Vihara Sekkha community.`)
                     }
                   }}
-                  placeholder="Misal: Youth / Sekolah Minggu / Acara Pengurus"
+                  placeholder="e.g. Youth / Sunday School / Organizer Session"
                 />
 
                 {/* Color Wheel Picker Component */}
                 <ColorWheelPicker
                   color={colorHex}
                   onChange={setColorHex}
-                  label="Warna Badge Kategori"
+                  label="Category Badge Color"
                 />
 
                 {/* Many-to-Many Target Roles Access Permissions */}
                 <div className="space-y-1.5">
                   <label className="text-caption font-bold text-sekkha-ink flex items-center gap-1.5">
                     <ShieldCheckIcon className="size-4 text-purple-600" />
-                    <span>Hak Akses Role Pengguna</span>
+                    <span>Role Access Permissions</span>
                   </label>
-                  <p className="text-micro text-sekkha-slate">Hanya role yang dipilih yang bisa melihat kategori ini di kalender event.</p>
+                  <p className="text-micro text-sekkha-slate">Only selected roles can see and access this category in the event calendar.</p>
                   <MultiSelectDropdown
                     options={ALL_USER_ROLES.map(r => ({ value: r.id, label: r.label }))}
                     value={targetRoles}
                     onChange={v => setTargetRoles(v as UserRoleName[])}
-                    placeholder="Pilih role yang boleh akses..."
+                    placeholder="Select allowed roles..."
                     defaultValue={["admin", "pengurus", "aktivis", "umat"]}
                     allowEmpty={false}
                   />
@@ -305,28 +305,28 @@ export function EventTypePage() {
                 <div className="p-3.5 rounded-2xl border border-blue-200 bg-blue-50/50 space-y-2.5">
                   <p className="text-micro font-bold text-sekkha-brand-blue uppercase tracking-wider flex items-center gap-1.5">
                     <Wand2Icon className="size-3.5" />
-                    <span>Pengaturan Template Autofill Form Create Event:</span>
+                    <span>Create Event Form Autofill Template Settings:</span>
                   </p>
 
                   <Input
-                    label="Judul Event:"
+                    label="Event Title Preset:"
                     value={autofillTitle}
                     onChange={e => setAutofillTitle(e.target.value)}
-                    placeholder="Misal: Kebaktian Youth Vihara Sekkha"
+                    placeholder="e.g. Vihara Sekkha Youth Service"
                   />
 
                   <Input
-                    label="Lokasi Tempat:"
+                    label="Location Preset:"
                     value={autofillLocation}
                     onChange={e => setAutofillLocation(e.target.value)}
-                    placeholder="Misal: Dhammasala Utama Vihara Sekkha"
+                    placeholder="e.g. Main Dhammasala Vihara Sekkha"
                   />
 
                   <Input
-                    label="Deskripsi Event:"
+                    label="Description Preset:"
                     value={autofillDesc}
                     onChange={e => setAutofillDesc(e.target.value)}
-                    placeholder="Misal: Sesi kebaktian pemuda, paritta, dan Dhammadesana."
+                    placeholder="e.g. Youth service session, chanting, and Dhamma talk."
                   />
                 </div>
 
@@ -336,12 +336,12 @@ export function EventTypePage() {
                     variant="secondary"
                     onClick={resetForm}
                   >
-                    Batal
+                    Cancel
                   </Button>
                   <Button
                     type="submit"
                   >
-                    {editing ? "Simpan Perubahan" : "Buat Kategori"}
+                    {editing ? "Save Changes" : "Create Category"}
                   </Button>
                 </div>
               </form>

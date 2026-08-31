@@ -8,10 +8,10 @@ export { PengurusContributionPage } from "./internal/components/PengurusContribu
 export const pengurusModule: ModuleDefinition = {
   name: "pengurus",
   navItems: [],
-  // Pengurus-only nav items (Insight, Kontribusi & Recency Alert)
+  // Pengurus-only nav items (Community Insights, Contributor Insights & Recency Alerts)
   pengurusNavItems: [
-    { label: "Insight Umat", to: "/insight", icon: "BarChart3" },
-    { label: "Insight Kontribusi", to: "/pengurus-contribution", icon: "Award" },
-    { label: "Silent-Churn Alert", to: "/recency-alerts", icon: "AlertTriangle" },
+    { label: "Community Insights", to: "/insight", icon: "BarChart3" },
+    { label: "Contributor Insights", to: "/pengurus-contribution", icon: "Award" },
+    { label: "Recency Alerts", to: "/recency-alerts", icon: "AlertTriangle" },
   ],
 }

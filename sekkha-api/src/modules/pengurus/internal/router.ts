@@ -316,7 +316,7 @@ pengurusRouter.get(
       })
 
       if (!user) {
-        res.status(404).json({ error: "Member tidak ditemukan" })
+        res.status(404).json({ error: "Member not found" })
         return
       }
 

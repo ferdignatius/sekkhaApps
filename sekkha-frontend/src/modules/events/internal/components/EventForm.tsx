@@ -66,9 +66,9 @@ export function EventForm({
     bg: `${cat.bg} ${cat.text} border-current/30`,
     colorHex: cat.colorHex,
     autofill: {
-      title: cat.autofillTitle ?? `Kegiatan ${cat.name} Vihara`,
+      title: cat.autofillTitle ?? `${cat.name} Activity`,
       location: cat.autofillLocation ?? "Vihara Sekkha",
-      description: cat.autofillDesc ?? `Kegiatan ${cat.name.toLowerCase()} bersama Umat Vihara Sekkha.`,
+      description: cat.autofillDesc ?? `${cat.name} session with Sekkha community members.`,
     },
   }))
 
@@ -105,10 +105,10 @@ export function EventForm({
 
     const errs: Record<string, string> = {}
     if (!title.trim()) {
-      errs.title = "Nama event wajib diisi"
+      errs.title = "Event name is required"
     }
     if (!eventDate) {
-      errs.event_date = "Tanggal dan waktu event wajib diisi"
+      errs.event_date = "Event date and time is required"
     }
 
     if (Object.keys(errs).length > 0) {
@@ -134,11 +134,11 @@ export function EventForm({
         <div className="flex items-center justify-between">
           <label className="flex items-center gap-1.5 text-caption font-bold text-sekkha-ink">
             <TagIcon className="size-4 text-sekkha-brand-blue" />
-            <span>Kategori Event</span>
+            <span>Event Category</span>
           </label>
           <span className="flex items-center gap-1 text-micro text-sekkha-slate">
             <Wand2Icon className="size-3 text-sekkha-brand-blue" />
-            Auto-fill aktif
+            Auto-fill active
           </span>
         </div>
 
@@ -177,11 +177,11 @@ export function EventForm({
       {/* 2. Event Title Field */}
       <Input
         id="ev-title"
-        label="Nama Event Vihara"
+        label="Event Name"
         required
         value={title}
         onChange={e => setTitle(e.target.value)}
-        placeholder="Contoh: Kebaktian Minggu Remaja"
+        placeholder="e.g. Sunday Youth Fellowship"
         startIcon={<SparklesIcon className="size-4 text-sekkha-brand-blue" />}
         error={errors.title}
       />
@@ -191,7 +191,7 @@ export function EventForm({
         {/* Date & Time Input (Mandatory) */}
         <div className="flex flex-col gap-1.5 w-full">
           <label htmlFor="ev-date" className="text-caption font-bold text-sekkha-ink">
-            Tanggal & Waktu Event <span className="text-red-500 font-semibold">*</span>
+            Event Date & Time <span className="text-red-500 font-semibold">*</span>
           </label>
           <DateTimePickerPopover
             value={eventDate}
@@ -218,10 +218,10 @@ export function EventForm({
         {/* Location Input (OPTIONAL) */}
         <Input
           id="ev-loc"
-          label="Lokasi Tempat (Opsional)"
+          label="Location (Optional)"
           value={location}
           onChange={e => setLocation(e.target.value)}
-          placeholder="Misal: Dhammasala Utama"
+          placeholder="e.g. Main Hall"
           startIcon={<MapPinIcon className="size-4 text-sekkha-brand-blue" />}
         />
       </div>
@@ -229,14 +229,14 @@ export function EventForm({
       {/* 4. Description Field */}
       <div className="flex flex-col gap-1.5 w-full">
         <label htmlFor="ev-desc" className="text-caption font-bold text-sekkha-ink">
-          Deskripsi Keterangan Event <span className="text-micro text-sekkha-slate font-normal">(Opsional)</span>
+          Description / Instructions <span className="text-micro text-sekkha-slate font-normal">(Optional)</span>
         </label>
         <textarea
           id="ev-desc"
           rows={3}
           value={description}
           onChange={e => setDescription(e.target.value)}
-          placeholder="Tuliskan keterangan detail atau instruksi bagi peserta yang akan hadir..."
+          placeholder="Write additional details or instructions for attendees..."
           className="w-full rounded-2xl bg-slate-50/70 border border-sekkha-hairline-strong px-3.5 py-2.5 text-body-sm text-sekkha-ink placeholder:text-slate-400 outline-none focus:border-sekkha-brand-blue focus:bg-white focus:ring-2 focus:ring-blue-500/10 transition-all"
         />
       </div>
@@ -247,16 +247,16 @@ export function EventForm({
           type="button"
           variant="secondary"
           onClick={onCancel}
-          className="flex-1"
+          className="flex-1 cursor-pointer"
         >
-          Batal
+          Cancel
         </Button>
         <Button
           type="submit"
           disabled={isSubmitting}
-          className="flex-1"
+          className="flex-1 cursor-pointer"
         >
-          {isSubmitting ? "Menyimpan..." : initial?.id ? "Simpan Perubahan" : "Buat Event Sekarang"}
+          {isSubmitting ? "Saving..." : initial?.id ? "Save Changes" : "Create Event"}
         </Button>
       </div>
 

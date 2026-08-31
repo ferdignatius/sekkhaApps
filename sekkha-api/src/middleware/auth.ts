@@ -17,7 +17,7 @@ declare global {
 export function requireAuth(req: Request, res: Response, next: NextFunction) {
   const header = req.headers.authorization
   if (!header?.startsWith("Bearer ")) {
-    res.status(401).json({ error: "Token tidak ditemukan" })
+    res.status(401).json({ error: "Token not found" })
     return
   }
 
@@ -25,7 +25,7 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
   const secret = process.env.JWT_SECRET
   if (!secret) {
     console.error("❌ JWT_SECRET is not configured in environment variables")
-    res.status(500).json({ error: "Konfigurasi keamanan server tidak lengkap" })
+    res.status(500).json({ error: "Server security configuration is incomplete" })
     return
   }
 
@@ -34,7 +34,7 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
     req.user = payload
     next()
   } catch {
-    res.status(401).json({ error: "Token tidak valid atau telah kedaluwarsa" })
+    res.status(401).json({ error: "Token is invalid or has expired" })
   }
 }
 
@@ -48,6 +48,6 @@ export function requireRole(...roles: string[]) {
       next()
       return
     }
-    res.status(403).json({ error: "Akses ditolak" })
+    res.status(403).json({ error: "Access denied" })
   }
 }

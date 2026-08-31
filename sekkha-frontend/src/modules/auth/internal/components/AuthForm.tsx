@@ -55,7 +55,7 @@ export function AuthForm({
       onSubmit={handleSubmit}
       noValidate
       className="flex flex-col gap-5"
-      aria-label={isSignUp ? "Formulir pendaftaran" : "Formulir masuk"}
+      aria-label={isSignUp ? "Sign Up Form" : "Log In Form"}
     >
       {/* Mode Switcher Tabs */}
       <div className="flex rounded-full bg-surface-soft p-1 border border-hairline/60">
@@ -68,7 +68,7 @@ export function AuthForm({
               : "text-text-muted hover:text-ink"
           }`}
         >
-          Masuk
+          Sign In
         </Link>
         <Link
           to="/sign-up"
@@ -78,7 +78,7 @@ export function AuthForm({
               : "text-text-muted hover:text-ink"
           }`}
         >
-          Daftar Akun
+          Register
         </Link>
       </div>
 
@@ -90,9 +90,9 @@ export function AuthForm({
         {/* Email / Username field */}
         <AuthFormField
           id="email"
-          label={isSignUp ? "Email" : "Email atau Username"}
+          label={isSignUp ? "Email" : "Email or Username"}
           type={isSignUp ? "email" : "text"}
-          placeholder={isSignUp ? "nama@email.com" : "nama@email.com atau username"}
+          placeholder={isSignUp ? "name@email.com" : "name@email.com or username"}
           value={fields.email}
           onChange={(val) => handleChange("email", val)}
           onBlur={() => onFieldBlur("email")}
@@ -104,7 +104,7 @@ export function AuthForm({
           id="password"
           label="Password"
           type="password"
-          placeholder="Minimal 6 karakter"
+          placeholder="Minimum 6 characters"
           value={fields.password}
           onChange={(val) => handleChange("password", val)}
           onBlur={() => onFieldBlur("password")}
@@ -115,9 +115,9 @@ export function AuthForm({
         {isSignUp && (
           <AuthFormField
             id="confirmPassword"
-            label="Konfirmasi Password"
+            label="Confirm Password"
             type="password"
-            placeholder="Ulangi password Anda"
+            placeholder="Repeat your password"
             value={fields.confirmPassword ?? ""}
             onChange={(val) => handleChange("confirmPassword", val)}
             onBlur={() => onFieldBlur("confirmPassword")}
@@ -126,14 +126,14 @@ export function AuthForm({
         )}
       </div>
 
-      {/* "Lupa password?" link — Login only */}
+      {/* "Forgot password?" link — Login only */}
       {!isSignUp && (
         <div className="flex justify-end -mt-1">
           <a
             href="/forgot-password"
             className="text-micro-bold text-sekkha-brand-blue hover:underline"
           >
-            Lupa password?
+            Forgot password?
           </a>
         </div>
       )}
@@ -142,7 +142,7 @@ export function AuthForm({
       <Button
         type="submit"
         disabled={isLoading}
-        className="w-full py-3.5 flex items-center justify-center gap-2"
+        className="w-full py-3.5 flex items-center justify-center gap-2 cursor-pointer"
       >
         {isLoading ? (
           <>
@@ -167,11 +167,11 @@ export function AuthForm({
                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4Z"
               />
             </svg>
-            <span>{isSignUp ? "Mendaftarkan..." : "Memproses Masuk..."}</span>
+            <span>{isSignUp ? "Registering..." : "Signing in..."}</span>
           </>
         ) : (
           <>
-            <span>{isSignUp ? "Daftar Akun Baru" : "Masuk ke Akun"}</span>
+            <span>{isSignUp ? "Create Account" : "Sign In"}</span>
             <ArrowRightIcon className="size-4 ml-1" />
           </>
         )}

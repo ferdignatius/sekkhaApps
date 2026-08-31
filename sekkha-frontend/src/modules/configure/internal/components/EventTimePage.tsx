@@ -107,7 +107,7 @@ export function EventTimePage() {
 
   return (
     <main className="min-h-screen bg-sekkha-surface pb-32 md:pb-12 font-sans text-left">
-      <PageBreadcrumb items={[{ label: "Configure" }, { label: "Preset Waktu Vihara" }]} />
+      <PageBreadcrumb items={[{ label: "Configure" }, { label: "Vihara Time Presets" }]} />
       <div className="px-4 py-6 sm:px-6 md:px-8 max-w-7xl mx-auto space-y-5">
 
         {/* Header */}
@@ -117,8 +117,8 @@ export function EventTimePage() {
               <ClockIcon className="size-5" />
             </div>
             <div className="min-w-0">
-              <h1 className="text-body-base sm:text-heading-5 font-black text-sekkha-ink">Master Data Preset Waktu Vihara</h1>
-              <p className="text-micro text-sekkha-slate">Kelola daftar pilihan waktu & hari pelaksanaan cepat untuk kegiatan Vihara</p>
+              <h1 className="text-body-base sm:text-heading-5 font-black text-sekkha-ink">Vihara Time Presets Master Data</h1>
+              <p className="text-micro text-sekkha-slate">Manage preset event times and days for fast scheduling across Vihara activities</p>
             </div>
           </div>
 
@@ -129,7 +129,7 @@ export function EventTimePage() {
               className="w-full sm:w-auto shrink-0"
             >
               <PlusIcon className="size-4 mr-1.5" />
-              <span>Tambah Preset Waktu</span>
+              <span>Add Time Preset</span>
             </Button>
           )}
         </div>
@@ -139,13 +139,13 @@ export function EventTimePage() {
           <Table className="min-w-[650px]">
             <TableHeader>
               <TableRow>
-                <TableHead>Label Preset Waktu</TableHead>
-                <TableHead>Target Hari</TableHead>
-                <TableHead>Jam WIB</TableHead>
-                <TableHead>Kategori Event</TableHead>
-                <TableHead>Keterangan</TableHead>
+                <TableHead>Time Preset Label</TableHead>
+                <TableHead>Target Day</TableHead>
+                <TableHead>Time</TableHead>
+                <TableHead>Event Category</TableHead>
+                <TableHead>Description</TableHead>
                 <TableHead className="text-center">Status</TableHead>
-                {isPengurusOrAdmin && <TableHead className="text-right">Aksi</TableHead>}
+                {isPengurusOrAdmin && <TableHead className="text-right">Actions</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -160,23 +160,23 @@ export function EventTimePage() {
                   <TableCell>
                     {p.day_of_week !== undefined && p.day_of_week >= 0 ? (
                       <Badge variant="purple" icon={<CalendarIcon className="size-3" />}>
-                        Hari {DAY_NAMES[p.day_of_week]}
+                        {DAY_NAMES[p.day_of_week]}
                       </Badge>
                     ) : (
                       <Badge variant="slate">
-                        Bebas (Hanya Jam)
+                        Any Day (Time Only)
                       </Badge>
                     )}
                   </TableCell>
                   <TableCell>
                     <Badge variant="blue">
-                      {p.time} WIB
+                      {p.time}
                     </Badge>
                   </TableCell>
-                  {/* Kategori Event column */}
+                  {/* Event Category column */}
                   <TableCell>
                     {!p.target_category_tags || p.target_category_tags.length === 0 ? (
-                      <span className="text-micro text-sekkha-slate font-medium">Semua Kategori</span>
+                      <span className="text-micro text-sekkha-slate font-medium">All Categories</span>
                     ) : (
                       <div className="flex flex-wrap gap-1">
                         {p.target_category_tags.map(tag => (
@@ -193,11 +193,11 @@ export function EventTimePage() {
                   <TableCell className="text-center">
                     {p.is_active !== false ? (
                       <Badge variant="emerald">
-                        <CheckIcon className="size-3 mr-0.5" /> Aktif
+                        <CheckIcon className="size-3 mr-0.5" /> Active
                       </Badge>
                     ) : (
                       <Badge variant="slate">
-                        Non-Aktif
+                        Inactive
                       </Badge>
                     )}
                   </TableCell>
@@ -211,15 +211,15 @@ export function EventTimePage() {
                               ? "border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100"
                               : "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
                             }`}
-                          title={p.is_active !== false ? "Non-Aktifkan" : "Aktifkan"}
+                          title={p.is_active !== false ? "Deactivate" : "Activate"}
                         >
-                          {p.is_active !== false ? "Non-Aktifkan" : "Aktifkan"}
+                          {p.is_active !== false ? "Deactivate" : "Activate"}
                         </button>
                         <button
                           type="button"
                           onClick={() => openEdit(p)}
                           className="rounded-lg border border-sekkha-hairline bg-sekkha-canvas p-1.5 text-sekkha-ink hover:bg-blue-50 hover:text-sekkha-brand-blue transition-colors cursor-pointer"
-                          title="Edit Preset Jam"
+                          title="Edit Time Preset"
                         >
                           <PencilIcon className="size-4" />
                         </button>
@@ -227,7 +227,7 @@ export function EventTimePage() {
                           type="button"
                           onClick={() => handleDelete(p.id)}
                           className="rounded-lg border border-rose-200 bg-rose-50 p-1.5 text-rose-600 hover:bg-rose-100 transition-colors cursor-pointer"
-                          title="Hapus Preset Jam"
+                          title="Delete Time Preset"
                         >
                           <TrashIcon className="size-4" />
                         </button>
@@ -252,7 +252,7 @@ export function EventTimePage() {
                 <div className="flex items-center gap-2">
                   <SparklesIcon className="size-5 text-sekkha-brand-blue" />
                   <h3 className="text-body-base font-extrabold text-sekkha-ink">
-                    {editing ? "Edit Preset Waktu" : "Tambah Preset Waktu Baru"}
+                    {editing ? "Edit Time Preset" : "Add New Time Preset"}
                   </h3>
                 </div>
                 <button type="button" onClick={resetForm} className="text-sekkha-slate hover:text-sekkha-ink cursor-pointer p-1">✕</button>
@@ -260,16 +260,16 @@ export function EventTimePage() {
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <Input
-                  label="Label Preset Waktu *"
+                  label="Time Preset Label *"
                   required
                   value={label}
                   onChange={e => setLabel(e.target.value)}
-                  placeholder="Misal: Kebaktian Pagi / Sesi Sore"
+                  placeholder="e.g. Morning Puja / Evening Session"
                 />
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <label className="text-caption font-bold text-sekkha-ink">Pukul Waktu (WIB) *</label>
+                    <label className="text-caption font-bold text-sekkha-ink">Time *</label>
                     <WheelTimePickerTrigger
                       value={time}
                       onChange={setTime}
@@ -277,36 +277,36 @@ export function EventTimePage() {
                   </div>
 
                   <div className="flex flex-col gap-1.5 w-full">
-                    <label className="text-caption font-bold text-sekkha-ink">Target Hari Tertentu</label>
+                    <label className="text-caption font-bold text-sekkha-ink">Target Specific Day</label>
                     <select
                       value={dayOfWeek}
                       onChange={e => setDayOfWeek(Number(e.target.value))}
                       className="w-full rounded-2xl bg-slate-50/70 border border-sekkha-hairline-strong px-3.5 py-2.5 text-body-sm text-sekkha-ink outline-none focus:border-sekkha-brand-blue"
                     >
-                      <option value={-1}>Bebas (Berlaku Semua Hari)</option>
+                      <option value={-1}>Any Day (Applies to all)</option>
                       {DAY_NAMES.map((d, idx) => (
-                        <option key={d} value={idx}>Hari {d}</option>
+                        <option key={d} value={idx}>{d}</option>
                       ))}
                     </select>
                   </div>
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-caption font-bold text-sekkha-ink">Kategori Event Terkait</label>
-                  <p className="text-micro text-sekkha-slate">Preset ini akan diprioritaskan muncul saat kategori yang dipilih aktif.</p>
+                  <label className="text-caption font-bold text-sekkha-ink">Associated Event Category</label>
+                  <p className="text-micro text-sekkha-slate">This preset will be highlighted when the selected category is active.</p>
                   <MultiSelectDropdown
                     options={allCategories.map(c => ({ value: c.tag, label: c.name }))}
                     value={targetCategoryTags}
                     onChange={v => setTargetCategoryTags(v)}
-                    placeholder="Semua Kategori (default)..."
+                    placeholder="All Categories (default)..."
                   />
                 </div>
 
                 <Input
-                  label="Keterangan Tambahan"
+                  label="Additional Description"
                   value={description}
                   onChange={e => setDescription(e.target.value)}
-                  placeholder="Misal: Jadwal rutin mingguan pemuda"
+                  placeholder="e.g. Weekly youth schedule"
                 />
 
                 <div className="flex items-center justify-end gap-2 pt-3 border-t border-sekkha-hairline-soft">
@@ -315,12 +315,12 @@ export function EventTimePage() {
                     variant="secondary"
                     onClick={resetForm}
                   >
-                    Batal
+                    Cancel
                   </Button>
                   <Button
                     type="submit"
                   >
-                    {editing ? "Simpan Perubahan" : "Buat Preset"}
+                    {editing ? "Save Changes" : "Create Preset"}
                   </Button>
                 </div>
               </form>

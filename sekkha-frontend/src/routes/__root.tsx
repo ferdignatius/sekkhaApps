@@ -21,7 +21,7 @@ export const Route = createRootRoute({
       },
       {
         name: "description",
-        content: "Sekkha Vihara Community App — Platform presensi kebaktian, gamifikasi poin, streak keaktifan, dan manajemen umat terpadu.",
+        content: "Sekkha Vihara Community App — Fellowship attendance, points gamification, activity streaks, and member management platform.",
       },
     ],
     links: [

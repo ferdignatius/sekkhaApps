@@ -50,8 +50,8 @@ const LEVEL_CONFIG: Record<AlertLevel, TierDesign> = {
     cardBorder: "border-sekkha-hairline-soft",
     cardHoverBorder: "hover:border-emerald-400/60",
     dotColor: "bg-emerald-500",
-    desc: "Presensi aktif & lancar (absen < 2 event)",
-    recommendation: "Apresiasi keaktifan member secara berkala.",
+    desc: "Active & consistent attendance (missed < 2 events)",
+    recommendation: "Appreciate member participation periodically.",
   },
   mulai_jarang: {
     label: "Warning",
@@ -60,8 +60,8 @@ const LEVEL_CONFIG: Record<AlertLevel, TierDesign> = {
     cardBorder: "border-amber-200 dark:border-amber-900/40",
     cardHoverBorder: "hover:border-amber-400/80",
     dotColor: "bg-amber-500",
-    desc: "Absen 2 event berturut-turut",
-    recommendation: "Kirim pengingat ramah untuk event rutin berikutnya.",
+    desc: "Missed 2 consecutive events",
+    recommendation: "Send friendly reminders for upcoming routine events.",
   },
   at_risk: {
     label: "At Risk",
@@ -70,8 +70,8 @@ const LEVEL_CONFIG: Record<AlertLevel, TierDesign> = {
     cardBorder: "border-orange-200 dark:border-orange-900/40",
     cardHoverBorder: "hover:border-orange-400/80",
     dotColor: "bg-orange-500",
-    desc: "Absen 3 event berturut-turut",
-    recommendation: "Tanyakan kabar personal untuk mengidentifikasi kendala member.",
+    desc: "Missed 3 consecutive events",
+    recommendation: "Reach out personally to understand obstacles or challenges.",
   },
   kemungkinan_hilang: {
     label: "Lost",
@@ -80,8 +80,8 @@ const LEVEL_CONFIG: Record<AlertLevel, TierDesign> = {
     cardBorder: "border-rose-200 dark:border-rose-900/40",
     cardHoverBorder: "hover:border-rose-400/80",
     dotColor: "bg-rose-500",
-    desc: "Absen 4+ event berturut-turut",
-    recommendation: "Kontak langsung oleh pengurus atau jadwalkan kunjungan perhatian.",
+    desc: "Missed 4+ consecutive events",
+    recommendation: "Direct contact by organizers or schedule pastoral care visit.",
   },
   churned: {
     label: "Lost",
@@ -90,17 +90,17 @@ const LEVEL_CONFIG: Record<AlertLevel, TierDesign> = {
     cardBorder: "border-rose-200 dark:border-rose-900/40",
     cardHoverBorder: "hover:border-rose-400/80",
     dotColor: "bg-rose-500",
-    desc: "Absen > 60 hari berturut-turut tanpa kabar",
-    recommendation: "Lakukan tindakan pengjangkauan khusus sebelum member hilang total.",
+    desc: "Absent > 60 consecutive days without notice",
+    recommendation: "Execute dedicated outreach before member completely disengages.",
   },
 }
 
 const ACTION_STATUS_OPTIONS = [
-  { id: "none", label: "Belum Action", icon: "⏳", color: "text-amber-700 bg-amber-500/10 border-amber-500/30" },
-  { id: "sapa_wa", label: "Sudah Sapa WA", icon: "💬", color: "text-emerald-700 bg-emerald-500/10 border-emerald-500/30" },
-  { id: "kunjungan", label: "Kunjungan Perhatian", icon: "🏠", color: "text-emerald-700 bg-emerald-500/10 border-emerald-500/30" },
-  { id: "izin", label: "Izin / Luar Kota", icon: "✈️", color: "text-blue-700 bg-blue-500/10 border-blue-500/30" },
-  { id: "reengaged", label: "Member Aktif Kembali", icon: "✅", color: "text-emerald-700 bg-emerald-500/10 border-emerald-500/30" },
+  { id: "none", label: "No Action Yet", icon: "⏳", color: "text-amber-700 bg-amber-500/10 border-amber-500/30" },
+  { id: "sapa_wa", label: "WhatsApp Sent", icon: "💬", color: "text-emerald-700 bg-emerald-500/10 border-emerald-500/30" },
+  { id: "kunjungan", label: "Pastoral Visit", icon: "🏠", color: "text-emerald-700 bg-emerald-500/10 border-emerald-500/30" },
+  { id: "izin", label: "On Leave / Away", icon: "✈️", color: "text-blue-700 bg-blue-500/10 border-blue-500/30" },
+  { id: "reengaged", label: "Re-engaged Active", icon: "✅", color: "text-emerald-700 bg-emerald-500/10 border-emerald-500/30" },
 ]
 
 export function RecencyAlertsPage() {
@@ -224,7 +224,7 @@ export function RecencyAlertsPage() {
   const getWhatsAppUrl = (name: string, phone?: string | null) => {
     const cleanPhone = (phone || "").replace(/\D/g, "")
     const formattedPhone = cleanPhone.startsWith("0") ? `62${cleanPhone.slice(1)}` : cleanPhone
-    const msg = `Halo Kak ${name}, semoga sehat selalu! Kapan-kapan kalau sempat, yuk kumpul lagi di Vihara 😊`
+    const msg = `Hello ${name}, hope you are doing well! If you have time, let's connect at the Vihara again soon 😊`
     return formattedPhone ? `https://wa.me/${formattedPhone}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`
   }
 
@@ -252,7 +252,7 @@ export function RecencyAlertsPage() {
 
   return (
     <main className="min-h-screen pb-24 md:pb-12">
-      <PageBreadcrumb items={[{ label: "Pengurus" }, { label: "Silent-Churn Alert" }]} />
+      <PageBreadcrumb items={[{ label: "Organizer" }, { label: "Silent-Churn Alerts" }]} />
 
       <div className="px-4 py-6 md:px-8 lg:px-12">
         <div className="mx-auto max-w-7xl space-y-6">
@@ -276,7 +276,7 @@ export function RecencyAlertsPage() {
                   </span>
                 </div>
                 <p className="mt-2.5 text-heading-3 font-extrabold text-sekkha-ink">{summary.normalCount}</p>
-                <p className="mt-0.5 text-caption text-sekkha-slate">Presensi aktif</p>
+                <p className="mt-0.5 text-caption text-sekkha-slate">Active presence</p>
               </div>
 
               {/* 2. Warning */}
@@ -295,7 +295,7 @@ export function RecencyAlertsPage() {
                   </span>
                 </div>
                 <p className="mt-2.5 text-heading-3 font-extrabold text-sekkha-ink">{summary.warningCount}</p>
-                <p className="mt-0.5 text-caption text-sekkha-slate">Absen 2x event</p>
+                <p className="mt-0.5 text-caption text-sekkha-slate">Missed 2 events</p>
               </div>
 
               {/* 3. At Risk */}
@@ -314,7 +314,7 @@ export function RecencyAlertsPage() {
                   </span>
                 </div>
                 <p className="mt-2.5 text-heading-3 font-extrabold text-sekkha-ink">{summary.atRiskCount}</p>
-                <p className="mt-0.5 text-caption text-sekkha-slate">Absen 3x event</p>
+                <p className="mt-0.5 text-caption text-sekkha-slate">Missed 3 events</p>
               </div>
 
               {/* 4. Lost */}
@@ -333,7 +333,7 @@ export function RecencyAlertsPage() {
                   </span>
                 </div>
                 <p className="mt-2.5 text-heading-3 font-extrabold text-sekkha-ink">{summary.lostCount}</p>
-                <p className="mt-0.5 text-caption text-sekkha-slate">Absen 4x+ / &gt; 60 hr</p>
+                <p className="mt-0.5 text-caption text-sekkha-slate">Missed 4+ / &gt; 60 days</p>
               </div>
             </div>
           )}
@@ -345,7 +345,7 @@ export function RecencyAlertsPage() {
               <SearchIcon className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-sekkha-muted" />
               <input
                 type="text"
-                placeholder="Cari nama member..."
+                placeholder="Search member name..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full rounded-xl border border-sekkha-hairline-soft bg-sekkha-surface pl-9 pr-9 py-2 text-body-sm text-sekkha-ink outline-none transition focus:border-sekkha-brand-blue"
@@ -373,7 +373,7 @@ export function RecencyAlertsPage() {
                         ? "bg-white font-bold text-sekkha-ink shadow-2xs"
                         : "text-sekkha-slate hover:text-sekkha-ink"
                     }`}
-                    title="Tampilan Grid (Kartu)"
+                    title="Grid View (Cards)"
                   >
                     <LayoutGridIcon className="size-4" />
                     <span className="hidden sm:inline ml-1">Grid</span>
@@ -387,10 +387,10 @@ export function RecencyAlertsPage() {
                         ? "bg-white font-bold text-sekkha-ink shadow-2xs"
                         : "text-sekkha-slate hover:text-sekkha-ink"
                     }`}
-                    title="Tampilan Daftar (Tabel)"
+                    title="List View (Table)"
                   >
                     <ListIcon className="size-4" />
-                    <span className="hidden sm:inline ml-1">Daftar</span>
+                    <span className="hidden sm:inline ml-1">List</span>
                   </button>
                 </div>
 
@@ -402,9 +402,9 @@ export function RecencyAlertsPage() {
                     onChange={(e) => setSortBy(e.target.value)}
                     className="w-full bg-transparent text-caption-bold text-sekkha-ink outline-none cursor-pointer truncate"
                   >
-                    <option value="longest_absence">Paling Lama Absen</option>
-                    <option value="consecutive_missed">Absen Berturut-turut</option>
-                    <option value="name">Nama (A-Z)</option>
+                    <option value="longest_absence">Longest Absent</option>
+                    <option value="consecutive_missed">Consecutive Missed</option>
+                    <option value="name">Name (A-Z)</option>
                   </select>
                 </div>
 
@@ -413,7 +413,7 @@ export function RecencyAlertsPage() {
                   onClick={() => loadData(true)}
                   disabled={isRefreshing}
                   className="flex items-center justify-center gap-1.5 rounded-xl border border-sekkha-hairline-soft bg-sekkha-surface p-2 sm:px-3 sm:py-1.5 text-caption-bold font-bold text-sekkha-ink transition hover:bg-sekkha-hairline-soft disabled:opacity-50 cursor-pointer shrink-0"
-                  title="Muat ulang data"
+                  title="Refresh Data"
                 >
                   <RefreshCwIcon className={`size-4 ${isRefreshing ? "animate-spin" : ""}`} />
                   <span className="hidden sm:inline">Refresh</span>
@@ -440,14 +440,14 @@ export function RecencyAlertsPage() {
             <div className="flex h-64 items-center justify-center rounded-2xl border border-sekkha-hairline-soft bg-sekkha-canvas">
               <div className="flex flex-col items-center gap-2 text-sekkha-muted">
                 <RefreshCwIcon className="size-6 animate-spin text-sekkha-brand-blue" />
-                <p className="text-body-sm font-medium">Memuat data recency member...</p>
+                <p className="text-body-sm font-medium">Loading member recency data...</p>
               </div>
             </div>
           ) : members.length === 0 ? (
             <div className="flex h-56 flex-col items-center justify-center rounded-2xl border border-sekkha-hairline-soft bg-sekkha-canvas text-center">
               <UserCheckIcon className="size-10 text-sekkha-muted/60" />
-              <p className="mt-2 text-body-sm-medium font-bold text-sekkha-ink">Tidak ada member ditemukan</p>
-              <p className="text-caption text-sekkha-slate">Coba ubah kata kunci pencarian atau klik kartu mini dashboard untuk memfilter.</p>
+              <p className="mt-2 text-body-sm-medium font-bold text-sekkha-ink">No members found</p>
+              <p className="text-caption text-sekkha-slate">Try changing search keywords or click a card above to filter.</p>
             </div>
           ) : viewMode === "grid" ? (
             /* ── GRID VIEW ── */
@@ -504,11 +504,11 @@ export function RecencyAlertsPage() {
                         </div>
                       </div>
 
-                      {/* Streamlined Metric: Event Dilewati Only */}
+                      {/* Streamlined Metric: Missed Events */}
                       <div className="my-3 flex items-center justify-between rounded-xl border border-sekkha-hairline-soft bg-sekkha-surface px-3 py-2">
-                        <span className="text-[11px] text-sekkha-slate">Event Dilewati:</span>
+                        <span className="text-[11px] text-sekkha-slate">Missed Events:</span>
                         <span className="text-caption-bold font-extrabold text-sekkha-ink">
-                          {m.consecutiveMissedEvents}x Event
+                          {m.consecutiveMissedEvents}x Events
                         </span>
                       </div>
 
@@ -526,23 +526,23 @@ export function RecencyAlertsPage() {
                     {/* Footer Actions & 4 Trend Dots for 4 Weeks in 1 Month */}
                     <div className="space-y-3 pt-1 border-t border-sekkha-hairline-soft">
                       <div className="flex items-center justify-between text-caption text-sekkha-slate">
-                        <span className="text-[11px]">Tren 4 Minggu:</span>
+                        <span className="text-[11px]">4-Week Trend:</span>
                         {(() => {
                           const missedCount = Math.min(4, Math.max(0, m.consecutiveMissedEvents))
                           const attendedCount = 4 - missedCount
                           return (
-                            <div className="flex items-center gap-1.5" title="Kilas Presensi 4 Minggu (1 Bulan)">
+                            <div className="flex items-center gap-1.5" title="4-Week Attendance Snapshot (1 Month)">
                               {Array.from({ length: attendedCount }).map((_, i) => (
                                 <span
                                   key={`att-${i}`}
-                                  title={`Minggu ${i + 1}: Hadir`}
+                                  title={`Week ${i + 1}: Attended`}
                                   className="size-2.5 rounded-full bg-emerald-500 shadow-xs"
                                 />
                               ))}
                               {Array.from({ length: missedCount }).map((_, i) => (
                                 <span
                                   key={`miss-${i}`}
-                                  title={`Minggu ${attendedCount + i + 1}: Absen`}
+                                  title={`Week ${attendedCount + i + 1}: Absent`}
                                   className="size-2.5 rounded-full bg-rose-400 opacity-80"
                                 />
                               ))}
@@ -567,7 +567,7 @@ export function RecencyAlertsPage() {
                           }`}
                         >
                           <MessageCircleIcon className="size-4" />
-                          {actionId !== "none" ? "✓ Actioned" : "Sapa WA"}
+                          {actionId !== "none" ? "✓ Actioned" : "WhatsApp"}
                         </a>
 
                         <button
@@ -575,7 +575,7 @@ export function RecencyAlertsPage() {
                           onClick={() => handleOpenDetail(m.userId)}
                           className="inline-flex items-center justify-center gap-1 rounded-xl border border-sekkha-hairline-soft bg-sekkha-surface px-3 py-2 text-caption-bold font-bold text-sekkha-ink transition hover:bg-sekkha-hairline-soft cursor-pointer"
                         >
-                          Detail <ChevronRightIcon className="size-4" />
+                          Details <ChevronRightIcon className="size-4" />
                         </button>
                       </div>
                     </div>
@@ -590,11 +590,11 @@ export function RecencyAlertsPage() {
                 <thead>
                   <tr className="border-b border-sekkha-hairline-soft bg-sekkha-surface/60 text-micro font-extrabold uppercase tracking-wider text-sekkha-slate">
                     <th className="px-4 py-3.5">Member</th>
-                    <th className="px-4 py-3.5">Status Risk</th>
-                    <th className="px-4 py-3.5 text-center">Event Dilewati</th>
-                    <th className="px-4 py-3.5">Status Action</th>
-                    <th className="px-4 py-3.5 text-center">Tren 4 Minggu</th>
-                    <th className="px-4 py-3.5 text-right">Aksi</th>
+                    <th className="px-4 py-3.5">Risk Level</th>
+                    <th className="px-4 py-3.5 text-center">Missed Events</th>
+                    <th className="px-4 py-3.5">Action Status</th>
+                    <th className="px-4 py-3.5 text-center">4-Week Trend</th>
+                    <th className="px-4 py-3.5 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-sekkha-hairline-soft/80 text-body-sm">
@@ -647,14 +647,14 @@ export function RecencyAlertsPage() {
                           </div>
                         </td>
 
-                        {/* Event Dilewati */}
+                        {/* Missed Events */}
                         <td className="px-4 py-3 text-center">
                           <span className="inline-flex items-center rounded-lg bg-sekkha-surface border border-sekkha-hairline-soft px-2.5 py-1 text-caption-bold font-extrabold text-sekkha-ink">
-                            {m.consecutiveMissedEvents}x Event
+                            {m.consecutiveMissedEvents}x Events
                           </span>
                         </td>
 
-                        {/* Status Action */}
+                        {/* Action Status */}
                         <td className="px-4 py-3">
                           <span className={`inline-flex items-center gap-1 rounded-xl border px-2.5 py-1 text-micro-bold font-bold ${actionConfig.color}`}>
                             <span>{actionConfig.icon}</span>
@@ -662,27 +662,27 @@ export function RecencyAlertsPage() {
                           </span>
                         </td>
 
-                        {/* Tren 4 Minggu */}
+                        {/* 4-Week Trend */}
                         <td className="px-4 py-3">
-                          <div className="flex items-center justify-center gap-1" title="Kilas Presensi 4 Minggu (1 Bulan)">
+                          <div className="flex items-center justify-center gap-1" title="4-Week Attendance Snapshot (1 Month)">
                             {Array.from({ length: attendedCount }).map((_, i) => (
                               <span
                                 key={`att-${i}`}
-                                title={`Minggu ${i + 1}: Hadir`}
+                                title={`Week ${i + 1}: Attended`}
                                 className="size-2.5 rounded-full bg-emerald-500 shadow-xs"
                               />
                             ))}
                             {Array.from({ length: missedCount }).map((_, i) => (
                               <span
                                 key={`miss-${i}`}
-                                title={`Minggu ${attendedCount + i + 1}: Absen`}
+                                title={`Week ${attendedCount + i + 1}: Absent`}
                                 className="size-2.5 rounded-full bg-rose-400 opacity-80"
                               />
                             ))}
                           </div>
                         </td>
 
-                        {/* Aksi */}
+                        {/* Actions */}
                         <td className="px-4 py-3 text-right">
                           <div className="flex items-center justify-end gap-2">
                             <a
@@ -700,7 +700,7 @@ export function RecencyAlertsPage() {
                               }`}
                             >
                               <MessageCircleIcon className="size-3.5" />
-                              <span>{actionId !== "none" ? "Done" : "Sapa WA"}</span>
+                              <span>{actionId !== "none" ? "Done" : "WhatsApp"}</span>
                             </a>
 
                             <button
@@ -708,7 +708,7 @@ export function RecencyAlertsPage() {
                               onClick={() => handleOpenDetail(m.userId)}
                               className="inline-flex items-center gap-1 rounded-lg border border-sekkha-hairline-soft bg-sekkha-surface px-2.5 py-1.5 text-micro-bold font-bold text-sekkha-ink hover:bg-sekkha-hairline-soft cursor-pointer"
                             >
-                              <span>Detail</span>
+                              <span>Details</span>
                               <ChevronRightIcon className="size-3.5" />
                             </button>
                           </div>
@@ -727,11 +727,11 @@ export function RecencyAlertsPage() {
               {/* Left: Range Info & Page Size Select */}
               <div className="flex items-center justify-between gap-2 w-full sm:w-auto sm:justify-start">
                 <span className="text-micro sm:text-caption">
-                  Menampilkan <strong className="text-sekkha-ink">{startIndex + 1}</strong>–<strong className="text-sekkha-ink">{endIndex}</strong> dari <strong className="text-sekkha-ink">{totalItems}</strong> member
+                  Showing <strong className="text-sekkha-ink">{startIndex + 1}</strong>–<strong className="text-sekkha-ink">{endIndex}</strong> of <strong className="text-sekkha-ink">{totalItems}</strong> members
                 </span>
 
                 <div className="flex items-center gap-1.5 sm:border-l sm:border-sekkha-hairline-soft sm:pl-3">
-                  <span className="hidden sm:inline text-micro text-sekkha-slate">Tampilkan:</span>
+                  <span className="hidden sm:inline text-micro text-sekkha-slate">Show:</span>
                   <select
                     value={pageSize}
                     onChange={(e) => {
@@ -740,9 +740,9 @@ export function RecencyAlertsPage() {
                     }}
                     className="rounded-lg border border-sekkha-hairline-soft bg-sekkha-surface px-2 py-1 text-micro-bold text-sekkha-ink outline-none cursor-pointer"
                   >
-                    <option value={12}>12 / hal</option>
-                    <option value={24}>24 / hal</option>
-                    <option value={48}>48 / hal</option>
+                    <option value={12}>12 / page</option>
+                    <option value={24}>24 / page</option>
+                    <option value={48}>48 / page</option>
                   </select>
                 </div>
               </div>
@@ -754,7 +754,7 @@ export function RecencyAlertsPage() {
                   onClick={() => setCurrentPage(1)}
                   disabled={validCurrentPage === 1}
                   className="flex size-8 items-center justify-center rounded-lg border border-sekkha-hairline-soft bg-sekkha-surface text-sekkha-slate hover:bg-sekkha-hairline-soft disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
-                  title="Halaman Pertama"
+                  title="First Page"
                 >
                   <ChevronsLeftIcon className="size-4" />
                 </button>
@@ -764,7 +764,7 @@ export function RecencyAlertsPage() {
                   onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                   disabled={validCurrentPage === 1}
                   className="flex size-8 items-center justify-center rounded-lg border border-sekkha-hairline-soft bg-sekkha-surface text-sekkha-slate hover:bg-sekkha-hairline-soft disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
-                  title="Halaman Sebelumnya"
+                  title="Previous Page"
                 >
                   <ChevronLeftIcon className="size-4" />
                 </button>
@@ -792,7 +792,7 @@ export function RecencyAlertsPage() {
                   onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
                   disabled={validCurrentPage === totalPages}
                   className="flex size-8 items-center justify-center rounded-lg border border-sekkha-hairline-soft bg-sekkha-surface text-sekkha-slate hover:bg-sekkha-hairline-soft disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
-                  title="Halaman Selanjutnya"
+                  title="Next Page"
                 >
                   <ChevronRightIcon className="size-4" />
                 </button>
@@ -802,7 +802,7 @@ export function RecencyAlertsPage() {
                   onClick={() => setCurrentPage(totalPages)}
                   disabled={validCurrentPage === totalPages}
                   className="flex size-8 items-center justify-center rounded-lg border border-sekkha-hairline-soft bg-sekkha-surface text-sekkha-slate hover:bg-sekkha-hairline-soft disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
-                  title="Halaman Terakhir"
+                  title="Last Page"
                 >
                   <ChevronsRightIcon className="size-4" />
                 </button>
@@ -826,7 +826,7 @@ export function RecencyAlertsPage() {
             {isDetailLoading || !memberDetail ? (
               <div className="flex h-64 flex-col items-center justify-center gap-2">
                 <RefreshCwIcon className="size-7 animate-spin text-sekkha-brand-blue" />
-                <p className="text-body-sm font-semibold text-sekkha-slate">Memuat detail member & histori...</p>
+                <p className="text-body-sm font-semibold text-sekkha-slate">Loading member details & history...</p>
               </div>
             ) : (
               <div className="space-y-6">
@@ -880,7 +880,7 @@ export function RecencyAlertsPage() {
                 {saveSuccessToast && (
                   <div className="flex items-center gap-2 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-3.5 text-body-sm font-bold text-emerald-700 dark:text-emerald-400 animate-fadeIn">
                     <CheckCircle2Icon className="size-5 shrink-0" />
-                    Perubahan status member berhasil disimpan!
+                    Member status changes saved successfully!
                   </div>
                 )}
 
@@ -889,15 +889,15 @@ export function RecencyAlertsPage() {
                   <div className="flex items-center justify-between border-b border-sekkha-brand-blue/20 pb-3">
                     <div className="flex items-center gap-2 text-body-sm-medium font-bold text-sekkha-brand-blue">
                       <WrenchIcon className="size-4.5" />
-                      Aksi & Override Status Pengurus
+                      Organizer Action & Status Override
                     </div>
-                    <span className="text-[11px] font-semibold text-sekkha-slate">Pilih & Klik Simpan</span>
+                    <span className="text-[11px] font-semibold text-sekkha-slate">Select & Click Save</span>
                   </div>
 
                   {/* 1. Status Action Selector Pills */}
                   <div className="space-y-2">
                     <label className="block text-caption-bold font-bold text-sekkha-ink">
-                      Status Tindakan / Follow-Up
+                      Follow-up / Action Status
                     </label>
                     <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                       {ACTION_STATUS_OPTIONS.map((opt) => {
@@ -925,11 +925,11 @@ export function RecencyAlertsPage() {
                   {/* 2. Manual Alert Status Override Buttons */}
                   <div className="space-y-2 pt-1 border-t border-sekkha-hairline-soft">
                     <label className="block text-caption-bold font-bold text-sekkha-ink">
-                      Override Status Alert Member
+                      Override Member Alert Status
                     </label>
                     <div className="flex flex-wrap items-center gap-2">
                       {[
-                        { id: "auto", label: `Otomatis System (${memberDetail.member.level})` },
+                        { id: "auto", label: `Auto System (${memberDetail.member.level})` },
                         { id: "normal", label: "🟢 Normal" },
                         { id: "mulai_jarang", label: "🟡 Warning" },
                         { id: "at_risk", label: "🟠 At Risk" },
@@ -955,7 +955,7 @@ export function RecencyAlertsPage() {
                     </div>
                   </div>
 
-                  {/* Actions Footer: Direct WA Button + SIMPAN PERUBAHAN BUTTON */}
+                  {/* Actions Footer: Direct WA Button + SAVE BUTTON */}
                   <div className="pt-3 border-t border-sekkha-brand-blue/20 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <a
                       href={getWhatsAppUrl(memberDetail.member.name, memberDetail.member.phone)}
@@ -965,7 +965,7 @@ export function RecencyAlertsPage() {
                       className="inline-flex items-center justify-center gap-1.5 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-2.5 text-caption-bold font-bold text-emerald-700 dark:text-emerald-400 transition hover:bg-emerald-500 hover:text-white"
                     >
                       <MessageCircleIcon className="size-4" />
-                      Sapa WhatsApp Direct
+                      Direct WhatsApp Outreach
                       <ExternalLinkIcon className="size-3.5" />
                     </a>
 
@@ -975,7 +975,7 @@ export function RecencyAlertsPage() {
                       className="inline-flex items-center justify-center gap-2 rounded-2xl bg-sekkha-brand-blue px-6 py-2.5 text-caption-bold font-bold text-white shadow-md transition hover:bg-sekkha-brand-blue/90 active:scale-95 cursor-pointer"
                     >
                       <SaveIcon className="size-4" />
-                      Simpan Perubahan
+                      Save Changes
                     </button>
                   </div>
                 </div>
@@ -984,18 +984,18 @@ export function RecencyAlertsPage() {
                 <div className="space-y-3">
                   <h3 className="flex items-center gap-2 text-body-sm-medium font-bold text-sekkha-ink">
                     <CalendarIcon className="size-4 text-sekkha-brand-blue" />
-                    Histori Presensi (4 Event Terakhir)
+                    Attendance History (Last 4 Events)
                   </h3>
                   <div className="rounded-2xl border border-sekkha-hairline-soft bg-sekkha-canvas divide-y divide-sekkha-hairline-soft overflow-hidden">
                     {memberDetail.eventTimeline.length === 0 ? (
-                      <p className="p-4 text-center text-caption text-sekkha-slate">Belum ada event rutin selesai.</p>
+                      <p className="p-4 text-center text-caption text-sekkha-slate">No completed routine events yet.</p>
                     ) : (
                       memberDetail.eventTimeline.slice(0, 4).map((ev) => (
                         <div key={ev.eventId} className="flex items-center justify-between p-3.5 transition hover:bg-sekkha-surface">
                           <div>
                             <p className="text-body-sm font-semibold text-sekkha-ink">{ev.title}</p>
                             <p className="text-caption text-sekkha-slate">
-                              {new Date(ev.eventDate).toLocaleDateString("id-ID", {
+                              {new Date(ev.eventDate).toLocaleDateString("en-US", {
                                 weekday: "long",
                                 day: "numeric",
                                 month: "short",
@@ -1006,11 +1006,11 @@ export function RecencyAlertsPage() {
                           <div>
                             {ev.attended ? (
                               <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-3 py-1 text-caption-bold font-bold text-emerald-700 dark:text-emerald-400">
-                                <UserCheckIcon className="size-3.5" /> Hadir
+                                <UserCheckIcon className="size-3.5" /> Present
                               </span>
                             ) : (
                               <span className="inline-flex items-center gap-1 rounded-full bg-rose-500/10 px-3 py-1 text-caption-bold font-bold text-rose-700 dark:text-rose-400">
-                                <UserXIcon className="size-3.5" /> Absen
+                                <UserXIcon className="size-3.5" /> Absent
                               </span>
                             )}
                           </div>

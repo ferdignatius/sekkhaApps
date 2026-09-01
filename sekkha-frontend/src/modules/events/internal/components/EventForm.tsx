@@ -2,10 +2,9 @@
 // Create / edit event form for pengurus+ with unified categories, masterdata autofill, & optional location.
 
 import { useState } from "react"
-import { MapPinIcon, SparklesIcon, TagIcon, CheckIcon, Wand2Icon } from "lucide-react"
+import { MapPinIcon, SparklesIcon, TagIcon, CheckIcon, Wand2Icon, CalendarIcon } from "lucide-react"
 import { useAuth } from "@/modules/auth"
 import { DateTimePickerPopover } from "@/components/ui/DateTimePickerPopover"
-import { Button, Input } from "@/components/base"
 import type { CreateEventPayload, EventListItem, EventTag, EventType } from "../types"
 import { getAccessibleCategories } from "../masterdata"
 
@@ -63,7 +62,7 @@ export function EventForm({
   const categoryOptions: CategoryOption[] = getAccessibleCategories(role, true).map(cat => ({
     id: cat.tag as EventTag,
     label: cat.name,
-    bg: `${cat.bg} ${cat.text} border-current/30`,
+    bg: `${cat.bg} ${cat.text}`,
     colorHex: cat.colorHex,
     autofill: {
       title: cat.autofillTitle ?? `${cat.name} Activity`,
@@ -129,15 +128,15 @@ export function EventForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 font-sans text-left">
-      {/* 1. Category Selection Pill Badges */}
+      {/* 1. Category Selection Badges */}
       <div className="space-y-1.5">
         <div className="flex items-center justify-between">
-          <label className="flex items-center gap-1.5 text-caption font-bold text-sekkha-ink">
-            <TagIcon className="size-4 text-sekkha-brand-blue" />
+          <label className="flex items-center gap-1.5 text-xs font-bold text-[#0a0a0a]">
+            <TagIcon className="size-3.5 text-[#0a0a0a]" />
             <span>Event Category</span>
           </label>
-          <span className="flex items-center gap-1 text-micro text-sekkha-slate">
-            <Wand2Icon className="size-3 text-sekkha-brand-blue" />
+          <span className="flex items-center gap-1 text-[11px] font-semibold text-[#6a6a6a]">
+            <Wand2Icon className="size-3 text-[#e8b94a]" />
             Auto-fill active
           </span>
         </div>
@@ -145,28 +144,19 @@ export function EventForm({
         <div className="flex flex-wrap gap-2 pt-0.5">
           {categoryOptions.map(cat => {
             const isSelected = tag === cat.id
-            const hex = cat.colorHex
-            const customStyle = hex
-              ? {
-                  backgroundColor: isSelected ? `${hex}15` : undefined,
-                  borderColor: isSelected ? hex : undefined,
-                  color: isSelected ? hex : undefined,
-                }
-              : undefined
 
             return (
               <button
                 key={cat.id}
                 type="button"
                 onClick={() => handleSelectCategory(cat)}
-                style={customStyle}
-                className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-caption-bold transition-all border cursor-pointer ${
+                className={`flex items-center gap-1.5 rounded-[10px] px-3.5 py-1.5 text-xs font-bold transition-all border cursor-pointer ${
                   isSelected
-                    ? hex ? "shadow-xs ring-2 ring-sekkha-brand-blue/20" : `${cat.bg} shadow-xs ring-2 ring-sekkha-brand-blue/20`
-                    : "bg-sekkha-canvas border-sekkha-hairline text-sekkha-slate hover:bg-white"
+                    ? "bg-[#0a0a0a] text-white border-[#0a0a0a] shadow-xs"
+                    : "bg-[#fffaf0] border-[#e5e5e5] text-[#6a6a6a] hover:bg-[#faf5e8] hover:text-[#0a0a0a]"
                 }`}
               >
-                {isSelected && <CheckIcon className="size-3.5 text-current" />}
+                {isSelected && <CheckIcon className="size-3.5 text-white" />}
                 <span>{cat.label}</span>
               </button>
             )
@@ -175,23 +165,48 @@ export function EventForm({
       </div>
 
       {/* 2. Event Title Field */}
-      <Input
-        id="ev-title"
-        label="Event Name"
-        required
-        value={title}
-        onChange={e => setTitle(e.target.value)}
-        placeholder="e.g. Sunday Youth Fellowship"
-        startIcon={<SparklesIcon className="size-4 text-sekkha-brand-blue" />}
-        error={errors.title}
-      />
+      <div className="space-y-1.5">
+        <label htmlFor="ev-title" className="text-xs font-bold text-[#0a0a0a]">
+          Event Name <span className="text-rose-500">*</span>
+        </label>
+        <div className="relative">
+          <SparklesIcon className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-[#e8b94a]" />
+          <input
+            id="ev-title"
+            type="text"
+            required
+            value={title}
+            onChange={e => {
+              setTitle(e.target.value)
+              if (errors.title) {
+                setErrors(prev => {
+                  const next = { ...prev }
+                  delete next.title
+                  return next
+                })
+              }
+            }}
+            placeholder="e.g. Sunday Youth Fellowship"
+            className={`h-11 w-full rounded-[12px] border bg-[#fffaf0] pl-10 pr-4 text-xs sm:text-sm text-[#0a0a0a] placeholder:text-[#6a6a6a] outline-none shadow-xs transition-all ${
+              errors.title
+                ? "border-rose-400 focus:border-rose-500"
+                : "border-[#e5e5e5] focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a]"
+            }`}
+          />
+        </div>
+        {errors.title && (
+          <p className="text-[11px] font-semibold text-rose-600 animate-in fade-in">
+            {errors.title}
+          </p>
+        )}
+      </div>
 
       {/* 3. Date & Location Fields (Location is OPTIONAL) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-start">
         {/* Date & Time Input (Mandatory) */}
         <div className="flex flex-col gap-1.5 w-full">
-          <label htmlFor="ev-date" className="text-caption font-bold text-sekkha-ink">
-            Event Date & Time <span className="text-red-500 font-semibold">*</span>
+          <label htmlFor="ev-date" className="text-xs font-bold text-[#0a0a0a]">
+            Event Date & Time <span className="text-rose-500">*</span>
           </label>
           <DateTimePickerPopover
             value={eventDate}
@@ -209,27 +224,35 @@ export function EventForm({
             error={errors.event_date}
           />
           {errors.event_date && (
-            <p className="text-micro font-medium text-red-600 animate-in fade-in">
+            <p className="text-[11px] font-semibold text-rose-600 animate-in fade-in">
               {errors.event_date}
             </p>
           )}
         </div>
 
         {/* Location Input (OPTIONAL) */}
-        <Input
-          id="ev-loc"
-          label="Location (Optional)"
-          value={location}
-          onChange={e => setLocation(e.target.value)}
-          placeholder="e.g. Main Hall"
-          startIcon={<MapPinIcon className="size-4 text-sekkha-brand-blue" />}
-        />
+        <div className="flex flex-col gap-1.5 w-full">
+          <label htmlFor="ev-loc" className="text-xs font-bold text-[#0a0a0a]">
+            Location <span className="text-[11px] text-[#6a6a6a] font-normal">(Optional)</span>
+          </label>
+          <div className="relative">
+            <MapPinIcon className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-[#0a0a0a]" />
+            <input
+              id="ev-loc"
+              type="text"
+              value={location}
+              onChange={e => setLocation(e.target.value)}
+              placeholder="e.g. Main Hall"
+              className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] pl-10 pr-4 text-xs sm:text-sm text-[#0a0a0a] placeholder:text-[#6a6a6a] outline-none shadow-xs focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] transition-all"
+            />
+          </div>
+        </div>
       </div>
 
       {/* 4. Description Field */}
       <div className="flex flex-col gap-1.5 w-full">
-        <label htmlFor="ev-desc" className="text-caption font-bold text-sekkha-ink">
-          Description / Instructions <span className="text-micro text-sekkha-slate font-normal">(Optional)</span>
+        <label htmlFor="ev-desc" className="text-xs font-bold text-[#0a0a0a]">
+          Description / Instructions <span className="text-[11px] text-[#6a6a6a] font-normal">(Optional)</span>
         </label>
         <textarea
           id="ev-desc"
@@ -237,27 +260,26 @@ export function EventForm({
           value={description}
           onChange={e => setDescription(e.target.value)}
           placeholder="Write additional details or instructions for attendees..."
-          className="w-full rounded-2xl bg-slate-50/70 border border-sekkha-hairline-strong px-3.5 py-2.5 text-body-sm text-sekkha-ink placeholder:text-slate-400 outline-none focus:border-sekkha-brand-blue focus:bg-white focus:ring-2 focus:ring-blue-500/10 transition-all"
+          className="w-full rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 py-2.5 text-xs sm:text-sm text-[#0a0a0a] placeholder:text-[#6a6a6a] outline-none shadow-xs focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] transition-all"
         />
       </div>
 
       {/* 5. Action Form Buttons */}
       <div className="flex items-center gap-2.5 pt-2">
-        <Button
+        <button
           type="button"
-          variant="secondary"
           onClick={onCancel}
-          className="flex-1 cursor-pointer"
+          className="h-11 flex-1 rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] text-xs sm:text-sm font-bold text-[#0a0a0a] hover:bg-[#faf5e8] transition-colors cursor-pointer"
         >
           Cancel
-        </Button>
-        <Button
+        </button>
+        <button
           type="submit"
           disabled={isSubmitting}
-          className="flex-1 cursor-pointer"
+          className="h-11 flex-1 rounded-[12px] bg-[#0a0a0a] text-xs sm:text-sm font-bold text-white shadow-xs hover:bg-[#1f1f1f] disabled:opacity-50 transition-all cursor-pointer"
         >
           {isSubmitting ? "Saving..." : initial?.id ? "Save Changes" : "Create Event"}
-        </Button>
+        </button>
       </div>
 
     </form>

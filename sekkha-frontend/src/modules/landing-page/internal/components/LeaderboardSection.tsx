@@ -31,7 +31,7 @@ export function LeaderboardSection({ heading, subheading, entries }: Leaderboard
           transition={{ duration: 0.6, ease: "easeOut" }}
         >
           <span className="inline-flex items-center gap-1.5 rounded-full glass-pill px-3.5 py-1 text-micro font-semibold text-sekkha-ink uppercase tracking-wider mb-3">
-            <TrophyIcon className="size-3.5 text-amber-500" /> Presensi & Partisipasi Umat
+            <TrophyIcon className="size-3.5 text-amber-500" /> Attendance & Member Engagement
           </span>
           <h2 id="leaderboard-heading" className="text-heading-2 text-sekkha-ink font-bold tracking-tight text-3xl sm:text-4xl">
             {heading}
@@ -43,7 +43,7 @@ export function LeaderboardSection({ heading, subheading, entries }: Leaderboard
 
         {/* Leaderboard list container */}
         <div className="glass-panel rounded-[32px] p-6 md:p-8 shadow-xl border border-white relative">
-          <ol className="flex flex-col gap-3.5" aria-label="Daftar umat paling aktif">
+          <ol className="flex flex-col gap-3.5" aria-label="Top active members list">
             {entries.map((entry, i) => {
               const glassClass = rankGlassStyles[entry.rank] || 'bg-white/60 border-white/60 hover:bg-white'
 
@@ -60,7 +60,7 @@ export function LeaderboardSection({ heading, subheading, entries }: Leaderboard
                   {/* Rank badge */}
                   <span
                     className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/80 font-bold text-body-md text-sekkha-ink shadow-sm ring-1 ring-black/5"
-                    aria-label={`Peringkat ${entry.rank}`}
+                    aria-label={`Rank ${entry.rank}`}
                   >
                     {entry.rank}
                   </span>
@@ -74,7 +74,7 @@ export function LeaderboardSection({ heading, subheading, entries }: Leaderboard
                       {entry.name}
                     </span>
                     <span className="text-micro text-sekkha-slate font-medium">
-                      Umat Remaja • Lv.{6 - entry.rank}
+                      Youth Member • Lv.{6 - entry.rank}
                     </span>
                   </div>
 
@@ -82,7 +82,7 @@ export function LeaderboardSection({ heading, subheading, entries }: Leaderboard
                   <div className="flex items-center gap-1.5 shrink-0 bg-white/70 px-3 py-1.5 rounded-full border border-black/5">
                     <StarIcon className="size-4 text-amber-500 fill-amber-400" />
                     <span className="text-body-sm-medium font-bold text-sekkha-ink tabular-nums">
-                      {entry.points.toLocaleString('id-ID')} pts
+                      {entry.points.toLocaleString('en-US')} pts
                     </span>
                   </div>
                 </motion.li>
@@ -103,7 +103,7 @@ export function LeaderboardSection({ heading, subheading, entries }: Leaderboard
             href="/leaderboard"
             className="inline-flex items-center gap-2 px-6 py-3 rounded-full glass-pill text-body-sm-medium text-sekkha-ink hover:bg-white hover:shadow-md transition-all border border-white/80"
           >
-            Lihat leaderboard lengkap komunitas →
+            View full community leaderboard →
           </a>
         </motion.div>
       </div>

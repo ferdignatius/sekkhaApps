@@ -10,6 +10,7 @@ export { useAuth } from "./internal/hooks/useAuth"
 export { SignUpPage } from "./internal/components/SignUpPage"
 export { LoginPage } from "./internal/components/LoginPage"
 export { OnboardingPage } from "./internal/components/OnboardingPage"
+export { ForgotPasswordPage } from "./internal/components/ForgotPasswordPage"
 
 // ── Type exports ────────────────────────────────────────────────────────────
 export type { AuthState, AuthStatus, UserRole } from "./internal/context/authReducer"

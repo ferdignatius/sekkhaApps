@@ -13,10 +13,7 @@ import {
   CopyIcon,
   CheckIcon,
   PrinterIcon,
-  Share2Icon,
   SparklesIcon,
-  AwardIcon,
-  CheckCircleIcon,
   ExternalLinkIcon,
 } from "lucide-react"
 import QRCode from "react-qr-code"
@@ -35,7 +32,7 @@ interface MemberDetailSheetProps {
 export function MemberDetailSheet({
   member,
   isPengurusOrAdmin,
-  isAdmin,
+  isAdmin: _isAdmin,
   onClose,
   onResetPassword,
   onChangeRole,

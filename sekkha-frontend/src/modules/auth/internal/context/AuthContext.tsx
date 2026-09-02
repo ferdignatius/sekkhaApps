@@ -28,6 +28,12 @@ export interface AuthContextValue {
   login: (email: string, password: string) => Promise<void>
   /** Creates a new account with email + password + optional name. */
   register: (email: string, password: string, name?: string) => Promise<void>
+  /** Requests a 6-digit OTP code sent to user email for registration. */
+  requestRegisterOtp: (email: string, password: string, name?: string) => Promise<{ success: boolean; message: string }>
+  /** Verifies 6-digit OTP code and creates account. */
+  verifyRegisterOtp: (email: string, otp: string) => Promise<void>
+  /** Resends 6-digit OTP code to user email. */
+  resendRegisterOtp: (email: string) => Promise<{ success: boolean; message: string }>
   /** Clears the session and sets auth state to unauthenticated. */
   logout: () => void
   /** Initiates the Google OAuth flow by redirecting to the backend OAuth entry point. */
@@ -153,10 +159,25 @@ export function AuthProvider({ children }: AuthProviderProps) {
     authService.initiateGoogleOAuth()
   }
 
+  const requestRegisterOtp = async (email: string, password: string, name?: string) => {
+    return await authService.requestRegisterOtp(email, password, name)
+  }
+
+  const verifyRegisterOtp = async (email: string, otp: string) => {
+    await authService.verifyRegisterOtp(email, otp)
+  }
+
+  const resendRegisterOtp = async (email: string) => {
+    return await authService.resendRegisterOtp(email)
+  }
+
   const value: AuthContextValue = {
     authState,
     login,
     register,
+    requestRegisterOtp,
+    verifyRegisterOtp,
+    resendRegisterOtp,
     logout,
     initiateGoogleOAuth,
   }

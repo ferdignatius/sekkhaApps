@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react"
-import { useNavigate, useParams, Link } from "@tanstack/react-router"
+import { useNavigate, useParams } from "@tanstack/react-router"
 import {
-  ArrowLeftIcon,
   UserIcon,
   PhoneIcon,
   MailIcon,

@@ -1,5 +1,5 @@
 // Static content data for the Sekkha Landing Page
-// Sekkha — platform digital komunitas & kebaktian remaja Vihara Tri Maha Dharma
+// Sekkha — digital community & youth fellowship platform for Vihara Tri Maha Dharma
 
 export interface LeaderboardEntry {
   rank: number
@@ -12,7 +12,7 @@ export interface EventItem {
   title: string
   date: string
   location: string
-  category: 'kebaktian' | 'retreat' | 'bakti-sosial' | 'event'
+  category: 'fellowship' | 'retreat' | 'social' | 'event'
 }
 
 export interface LandingContent {
@@ -39,7 +39,7 @@ export interface LandingContent {
     items: EventItem[]
   }
   ctaBanner: {
-    heading: string // maks 80 karakter
+    heading: string
   }
   footer: {
     navColumns: Array<{
@@ -51,66 +51,66 @@ export interface LandingContent {
 
 export const landingContent: LandingContent = {
   hero: {
-    headline: 'Komunitas Remaja Vihara Tri Maha Dharma',
+    headline: 'Buddhist Youth Community of Vihara Tri Maha Dharma',
     subheadline:
-      'Platform digital terpadu untuk umat remaja Buddhis — presensi kebaktian, daftar retreat, kumpulkan poin kebaikan, dan terhubung bersama komunitas.',
+      'An integrated digital platform for youth fellowship — scan attendance, join retreats, earn merit points, and stay connected with the community.',
   },
 
   features: [
     {
-      title: 'Presensi Kebaktian Quick-Scan',
+      title: 'Quick-Scan Attendance',
       description:
-        'Hadir kebaktian rutin setiap Minggu, pindai QR presensi instan di lokasi vihara, dan riwayat kehadiranmu langsung tercatat secara otomatis.',
+        'Attend regular Sunday services, scan instant QR codes at the temple, and your attendance history is recorded automatically.',
     },
     {
-      title: 'Poin & Leaderboard Umat',
+      title: 'Merit Points & Leaderboard',
       description:
-        'Kumpulkan poin kebaikan setiap kali mengikuti kebaktian dan kegiatan, raih badge prestasi, serta naikkan level peringkatmu di komunitas.',
+        'Earn merit points every time you participate in fellowship and activities, unlock achievement badges, and level up in the community.',
     },
     {
-      title: 'Pendaftaran Retreat & Event',
+      title: 'Retreat & Event Registration',
       description:
-        'Daftar kegiatan retreat youth, kamp Dhamma, dan workshop pengembangan diri hanya dalam beberapa sentuhan dengan konfirmasi langsung.',
+        'Register for youth retreats, Dhamma camps, and self-development workshops in just a few taps with instant confirmation.',
     },
     {
-      title: 'Aksi Bakti Sosial',
+      title: 'Social Impact & Charity',
       description:
-        'Bergabung dalam aksi nyata kepedulian sosial, donor darah, dan penghijauan lingkungan vihara bersama teman-teman se-dharma.',
+        'Join hands-on community service, blood donation drives, and environmental initiatives alongside your fellow Dhamma friends.',
     },
     {
-      title: 'Akses Materi & Paritta',
+      title: 'Dhamma Resources & Chanting',
       description:
-        'Akses kumpulan materi Dhamma interaktif, teks paritta kebaktian, dan rekaman pembacaan kapan saja untuk memperdalam pengetahuan spiritual.',
+        'Access interactive Dhamma teachings, service chanting parittas, and audio guides anytime to deepen your spiritual journey.',
     },
     {
-      title: 'Notifikasi & Pengumuman Instant',
+      title: 'Real-time Notifications',
       description:
-        'Dapatkan informasi jadwal kebaktian terbaru, pergeseran jam kegiatan, dan pengumuman penting vihara langsung di genggamanmu.',
+        'Get timely schedule updates, room adjustments, and important announcements right in the palm of your hand.',
     },
   ],
 
   stats: [
     {
       value: '500+',
-      label: 'Anggota Aktif',
+      label: 'Active Members',
     },
     {
       value: '120+',
-      label: 'Kegiatan per Tahun',
+      label: 'Annual Events',
     },
     {
       value: '15+',
-      label: 'Tahun Komunitas',
+      label: 'Years of Community',
     },
     {
       value: '98%',
-      label: 'Kepuasan Umat',
+      label: 'Member Satisfaction',
     },
   ],
 
   leaderboard: {
-    heading: 'Leaderboard Umat Aktif',
-    subheading: 'Umat remaja paling aktif bulan ini berdasarkan presensi kebaktian dan partisipasi kegiatan.',
+    heading: 'Community Leaderboard',
+    subheading: 'Most active youth members this month based on attendance, contributions, and community involvement.',
     entries: [
       { rank: 1, name: 'Sari Dewi', points: 980, badge: '🥇' },
       { rank: 2, name: 'Budi Santoso', points: 870, badge: '🥈' },
@@ -121,30 +121,30 @@ export const landingContent: LandingContent = {
   },
 
   events: {
-    heading: 'Kegiatan Mendatang',
-    subheading: 'Jangan lewatkan kegiatan seru dan bermakna yang sudah menunggumu.',
+    heading: 'Upcoming Events',
+    subheading: 'Discover meaningful gatherings, spiritual retreats, and fun activities crafted for youth.',
     items: [
       {
-        title: 'Kebaktian Remaja Minggu',
-        date: '15 Jun 2026',
-        location: 'Aula Utama Vihara',
-        category: 'kebaktian',
+        title: 'Sunday Youth Fellowship',
+        date: 'Jun 15, 2026',
+        location: 'Main Temple Hall',
+        category: 'fellowship',
       },
       {
-        title: 'Retreat Dhamma Muda',
-        date: '20–22 Jun 2026',
-        location: 'Puncak Bogor',
+        title: 'Youth Dhamma Retreat',
+        date: 'Jun 20–22, 2026',
+        location: 'Bogor Highlands',
         category: 'retreat',
       },
       {
-        title: 'Bakti Sosial Panti Asuhan',
-        date: '28 Jun 2026',
-        location: 'Panti Asuhan Cahaya',
-        category: 'bakti-sosial',
+        title: 'Community Outreach & Charity',
+        date: 'Jun 28, 2026',
+        location: 'Cahaya Orphanage',
+        category: 'social',
       },
       {
-        title: 'Perayaan Asadha Youth',
-        date: '5 Jul 2026',
+        title: 'Asadha Youth Celebration',
+        date: 'Jul 5, 2026',
         location: 'Vihara Tri Maha Dharma',
         category: 'event',
       },
@@ -152,40 +152,38 @@ export const landingContent: LandingContent = {
   },
 
   ctaBanner: {
-    // Tepat ≤ 80 karakter
-    heading: 'Bergabunglah bersama komunitas kami hari ini',
+    heading: 'Join our vibrant youth community today',
   },
 
   footer: {
     navColumns: [
       {
-        heading: 'Komunitas',
+        heading: 'Community',
         links: [
-          { label: 'Tentang Kami', href: '/about' },
-          { label: 'Kebaktian', href: '#kebaktian' },
-          { label: 'Kegiatan', href: '#events' },
+          { label: 'About Us', href: '/about' },
+          { label: 'Fellowship', href: '#fellowship' },
+          { label: 'Events', href: '#events' },
           { label: 'Leaderboard', href: '#leaderboard' },
         ],
       },
       {
-        heading: 'Program Umat',
+        heading: 'Programs',
         links: [
-          { label: 'Retreat & Kamp', href: '/retreat' },
-          { label: 'Bakti Sosial', href: '/bakti-sosial' },
-          { label: 'Forum Dhamma', href: '/forum' },
-          { label: 'Materi Dhamma', href: '/materi' },
+          { label: 'Retreats & Camps', href: '/retreat' },
+          { label: 'Social Action', href: '/social' },
+          { label: 'Dhamma Forum', href: '/forum' },
+          { label: 'Study Resources', href: '/resources' },
         ],
       },
       {
-        heading: 'Informasi',
+        heading: 'Information',
         links: [
-          { label: 'Kontak', href: '/contact' },
-          { label: 'Kebijakan Privasi', href: '/privacy' },
-          { label: 'Syarat & Ketentuan', href: '/terms' },
+          { label: 'Contact', href: '/contact' },
+          { label: 'Privacy Policy', href: '/privacy' },
+          { label: 'Terms of Service', href: '/terms' },
           { label: 'FAQ', href: '/faq' },
         ],
       },
     ],
   },
 }
-

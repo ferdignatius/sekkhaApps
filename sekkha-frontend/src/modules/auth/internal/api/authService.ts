@@ -134,6 +134,135 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
     )
   }
 
+  // ── requestRegisterOtp ───────────────────────────────────────────────────
+  /**
+   * POST /auth/register-request — Validates input and triggers 6-digit OTP email.
+   */
+  async function requestRegisterOtp(email: string, password: string, name?: string): Promise<{ success: boolean; message: string }> {
+    let response: Response
+
+    try {
+      response = await fetchWithTimeout(
+        `${API_BASE_URL}/auth/register-request`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password, name: name?.trim() || email.split("@")[0] }),
+        },
+        10_000,
+      )
+    } catch (error) {
+      if (error instanceof AuthError) throw error
+      throw new AuthError(
+        "UNKNOWN_ERROR",
+        "Terjadi kesalahan koneksi. Silakan coba beberapa saat lagi.",
+      )
+    }
+
+    if (response.ok) {
+      const data = await response.json()
+      return data
+    }
+
+    if (response.status === 409) {
+      throw new AuthError(
+        "EMAIL_ALREADY_EXISTS",
+        "Email sudah digunakan. Silakan gunakan email lain atau masuk ke akun Anda.",
+      )
+    }
+
+    const errData = await response.json().catch(() => null)
+    throw new AuthError(
+      "UNKNOWN_ERROR",
+      errData?.error || "Gagal mengirim kode OTP. Silakan periksa data Anda.",
+    )
+  }
+
+  // ── verifyRegisterOtp ────────────────────────────────────────────────────
+  /**
+   * POST /auth/register-verify-otp — Submits 6-digit OTP to create user and obtain token.
+   */
+  async function verifyRegisterOtp(email: string, otp: string): Promise<void> {
+    let response: Response
+
+    try {
+      response = await fetchWithTimeout(
+        `${API_BASE_URL}/auth/register-verify-otp`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, otp }),
+        },
+        10_000,
+      )
+    } catch (error) {
+      if (error instanceof AuthError) throw error
+      throw new AuthError(
+        "UNKNOWN_ERROR",
+        "Koneksi bermasalah. Periksa koneksi internet Anda dan coba lagi.",
+      )
+    }
+
+    if (response.ok) {
+      const data = (await response.json()) as AuthSuccessResponse
+      localStorage.setItem(STORAGE_KEY, data.accessToken)
+      dispatch({
+        type: "AUTH_SUCCESS",
+        payload: {
+          accessToken: data.accessToken,
+          userId: data.user?.id ?? (data as any).userId ?? "user-1",
+          role: (data.user?.role as UserRole) ?? ((data as any).role as UserRole) ?? "umat",
+          name: data.user?.name ?? null,
+          email: data.user?.email ?? null,
+        },
+      })
+      return
+    }
+
+    const errData = await response.json().catch(() => null)
+    throw new AuthError(
+      "INVALID_CREDENTIALS",
+      errData?.error || "Kode OTP salah atau telah kedaluwarsa. Silakan periksa kembali.",
+    )
+  }
+
+  // ── resendRegisterOtp ────────────────────────────────────────────────────
+  /**
+   * POST /auth/resend-otp — Resends fresh OTP to the email.
+   */
+  async function resendRegisterOtp(email: string): Promise<{ success: boolean; message: string }> {
+    let response: Response
+
+    try {
+      response = await fetchWithTimeout(
+        `${API_BASE_URL}/auth/resend-otp`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email }),
+        },
+        10_000,
+      )
+    } catch (error) {
+      if (error instanceof AuthError) throw error
+      throw new AuthError(
+        "UNKNOWN_ERROR",
+        "Koneksi bermasalah. Silakan coba beberapa saat lagi.",
+      )
+    }
+
+    if (response.ok) {
+      const data = await response.json()
+      return data
+    }
+
+    const errData = await response.json().catch(() => null)
+    throw new AuthError(
+      "UNKNOWN_ERROR",
+      errData?.error || "Gagal mengirim ulang kode OTP.",
+    )
+  }
+
   // ── register ───────────────────────────────────────────────────────────────
   /**
    * POST /auth/register with a 10 000 ms timeout.
@@ -272,7 +401,16 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
     }
   }
 
-  return { login, register, verifyToken, logout, initiateGoogleOAuth }
+  return {
+    login,
+    register,
+    requestRegisterOtp,
+    verifyRegisterOtp,
+    resendRegisterOtp,
+    verifyToken,
+    logout,
+    initiateGoogleOAuth,
+  }
 }
 
 // ─── Type alias for the service instance ──────────────────────────────────────

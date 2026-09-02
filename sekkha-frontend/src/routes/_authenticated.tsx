@@ -90,9 +90,9 @@ export const Route = createFileRoute("/_authenticated")({
 
 function DashboardLayout() {
   const { location } = useRouterState()
-  const isScanPage = location.pathname.includes("/scan")
+  const isImmersivePage = location.pathname.includes("/scan") || location.pathname.startsWith("/onboarding")
 
-  if (isScanPage) {
+  if (isImmersivePage) {
     return <Outlet />
   }
 

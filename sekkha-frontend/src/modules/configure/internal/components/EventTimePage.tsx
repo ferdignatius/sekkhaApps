@@ -2,7 +2,7 @@
 // Master Data: Preset Jam Umum Vihara management — with Clay Design, Wheel Time Picker, & Category targeting.
 
 import { useState } from "react"
-import { PlusIcon, PencilIcon, TrashIcon, ClockIcon, CheckIcon, CalendarIcon, SparklesIcon, ChevronRightIcon } from "lucide-react"
+import { PlusIcon, PencilIcon, TrashIcon, ClockIcon, CalendarIcon } from "lucide-react"
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
 import { ResponsiveFormModal } from "@/components/common/ResponsiveFormModal"
 import { useAuth } from "@/modules/auth"

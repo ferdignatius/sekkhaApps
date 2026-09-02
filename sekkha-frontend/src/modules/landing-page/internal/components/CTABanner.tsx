@@ -42,7 +42,7 @@ export function CTABanner({ heading, onSignUpNavigate }: CTABannerProps) {
 
           {/* Dhamma Quote */}
           <blockquote className="text-lg md:text-xl font-medium text-sekkha-ink leading-relaxed tracking-tight mb-4">
-            &ldquo;Kebajikan yang ditanam oleh generasi muda hari ini adalah naungan kedamaian bagi masa depan kita bersama.&rdquo;
+            &ldquo;The virtues planted by youth today are the sanctuary of peace for our shared tomorrow.&rdquo;
           </blockquote>
 
           {/* Author info */}
@@ -51,7 +51,7 @@ export function CTABanner({ heading, onSignUpNavigate }: CTABannerProps) {
               TM
             </div>
             <p className="text-body-sm font-semibold text-sekkha-ink">
-              Pesan Pembimbing Youth • <span className="text-sekkha-slate font-normal">Vihara Tri Maha Dharma</span>
+              Youth Spiritual Mentors • <span className="text-sekkha-slate font-normal">Vihara Tri Maha Dharma</span>
             </p>
           </div>
 
@@ -82,14 +82,14 @@ export function CTABanner({ heading, onSignUpNavigate }: CTABannerProps) {
               onClick={onSignUpNavigate}
               className="shadow-xl hover:scale-105 transition-all text-body-md font-semibold px-8 py-4"
             >
-              Bergabung Sekarang — Gratis
+              Join Now — Free
             </Button>
           </motion.div>
 
           {/* Sub-badge */}
           <div className="mt-6 flex items-center gap-1.5 text-micro font-medium text-amber-900 bg-amber-100/70 px-3.5 py-1.5 rounded-full border border-amber-200/60">
             <HeartIcon className="size-3.5 fill-amber-500 text-amber-600" />
-            <span>Bersama Membangun Karakter & Kebajikan Remaja Buddhis</span>
+            <span>Cultivating Mindfulness & Compassion in Youth</span>
           </div>
         </div>
       </motion.div>

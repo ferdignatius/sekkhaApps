@@ -40,6 +40,7 @@ import { ResponsiveFormModal } from "@/components/common/ResponsiveFormModal"
 import { SettingsSection } from "@/modules/profile/internal/components/SettingsSection"
 import { activeModules } from "@/shell/registry"
 import { iconMap } from "@/shell/icon-map"
+import { cn } from "@/lib/utils"
 
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const { logout, authState } = useAuth()
@@ -92,9 +93,9 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   }, [])
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-[#e5e5e5] font-sans bg-[#fffaf0]/95 backdrop-blur-md" {...props}>
+    <Sidebar collapsible="icon" className="border-r border-[#e5e5e5] font-sans bg-[#fffaf0]" {...props}>
       {/* Brand Header & Sidebar Toggle Button */}
-      <SidebarHeader className="border-b border-[#e5e5e5] px-3 py-3.5">
+      <SidebarHeader className="border-b border-[#e5e5e5] px-3.5 py-3.5">
         <div className="flex items-center justify-between gap-2">
           {/* Logo & Title Toggle Trigger */}
           <button
@@ -103,7 +104,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
             className="flex items-center gap-2.5 min-w-0 text-left cursor-pointer group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:w-full focus:outline-hidden"
             title={state === "collapsed" ? "Expand Sidebar" : undefined}
           >
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[#0a0a0a] text-white shadow-xs font-bold transition-transform active:scale-95">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[12px] bg-[#0a0a0a] text-white shadow-xs font-bold transition-transform active:scale-95">
               <SparklesIcon className="size-4.5 text-[#e8b94a]" />
             </div>
             <div className="flex flex-col min-w-0 group-data-[collapsible=icon]:hidden">
@@ -118,7 +119,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
           </button>
 
           {/* Toggle Sidebar Expand / Collapse Button */}
-          <SidebarTrigger className="shrink-0 text-[#6a6a6a] hover:bg-[#faf5e8] hover:text-[#0a0a0a] cursor-pointer group-data-[collapsible=icon]:hidden rounded-[8px]" />
+          <SidebarTrigger className="shrink-0 text-[#6a6a6a] hover:bg-[#f5f0e0] hover:text-[#0a0a0a] cursor-pointer group-data-[collapsible=icon]:hidden rounded-[8px]" />
         </div>
       </SidebarHeader>
 
@@ -126,7 +127,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
       <SidebarContent className="px-2.5 py-3 space-y-3">
         {/* Main nav — Menu Utama */}
         <SidebarGroup className="p-0">
-          <SidebarGroupLabel className="text-[11px] font-bold uppercase tracking-wider text-[#6a6a6a] px-2 py-1 group-data-[collapsible=icon]:hidden">
+          <SidebarGroupLabel className="text-[11px] font-bold uppercase tracking-[1.5px] text-[#6a6a6a] px-2 py-1 group-data-[collapsible=icon]:hidden">
             Main Navigation
           </SidebarGroupLabel>
           <SidebarMenu className="space-y-0.5">
@@ -143,14 +144,22 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                     asChild
                     isActive={isActive}
                     tooltip={label}
-                    className={`rounded-[10px] transition-all font-semibold ${
+                    className={cn(
+                      "rounded-[12px] transition-all font-medium text-sm",
                       isActive
-                        ? "bg-[#0a0a0a] text-white font-bold shadow-xs"
-                        : "text-[#6a6a6a] hover:bg-[#faf5e8] hover:text-[#0a0a0a]"
-                    }`}
+                        ? "!bg-[#0a0a0a] !text-white font-semibold shadow-xs"
+                        : "text-[#3a3a3a] hover:bg-[#f5f0e0] hover:text-[#0a0a0a]"
+                    )}
                   >
-                    <Link to={to}>
-                      {Icon && <Icon className={`size-4 shrink-0 ${isActive ? "text-white" : "text-[#6a6a6a]"}`} />}
+                    <Link to={to} className="flex items-center gap-2.5 w-full">
+                      {Icon && (
+                        <Icon
+                          className={cn(
+                            "size-4 shrink-0 transition-colors",
+                            isActive ? "!text-white" : "text-[#6a6a6a]"
+                          )}
+                        />
+                      )}
                       <span className="flex-1 truncate">{label}</span>
                     </Link>
                   </SidebarMenuButton>
@@ -162,8 +171,8 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
 
         {/* Pengurus section — dari Registry */}
         {isPengurus && pengurusNavItems.length > 0 && (
-          <SidebarGroup className="pt-2 border-t border-[#e5e5e5] p-0">
-            <SidebarGroupLabel className="text-[11px] font-bold uppercase tracking-wider text-[#1a3a3a] px-2 py-1 group-data-[collapsible=icon]:hidden">
+          <SidebarGroup className="pt-2.5 border-t border-[#e5e5e5] p-0">
+            <SidebarGroupLabel className="text-[11px] font-bold uppercase tracking-[1.5px] text-[#1a3a3a] px-2 py-1 group-data-[collapsible=icon]:hidden">
               Admin & Organizer
             </SidebarGroupLabel>
             <SidebarMenu className="space-y-0.5">
@@ -176,14 +185,22 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                       asChild
                       isActive={isActive}
                       tooltip={label}
-                      className={`rounded-[10px] transition-all font-semibold ${
+                      className={cn(
+                        "rounded-[12px] transition-all font-medium text-sm",
                         isActive
-                          ? "bg-[#1a3a3a] text-white font-bold shadow-xs"
-                          : "text-[#6a6a6a] hover:bg-[#faf5e8] hover:text-[#0a0a0a]"
-                      }`}
+                          ? "!bg-[#1a3a3a] !text-white font-semibold shadow-xs"
+                          : "text-[#3a3a3a] hover:bg-[#f5f0e0] hover:text-[#0a0a0a]"
+                      )}
                     >
-                      <Link to={to}>
-                        {Icon && <Icon className={`size-4 shrink-0 ${isActive ? "text-white" : "text-[#6a6a6a]"}`} />}
+                      <Link to={to} className="flex items-center gap-2.5 w-full">
+                        {Icon && (
+                          <Icon
+                            className={cn(
+                              "size-4 shrink-0 transition-colors",
+                              isActive ? "!text-white" : "text-[#6a6a6a]"
+                            )}
+                          />
+                        )}
                         <span className="truncate">{label}</span>
                       </Link>
                     </SidebarMenuButton>
@@ -196,8 +213,8 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
 
         {/* Configure Sections — dari Registry */}
         {isPengurus && configureSections.length > 0 && (
-          <SidebarGroup className="pt-2 border-t border-[#e5e5e5] p-0">
-            <SidebarGroupLabel className="text-[11px] font-bold uppercase tracking-wider text-[#6a6a6a] px-2 py-1 group-data-[collapsible=icon]:hidden">
+          <SidebarGroup className="pt-2.5 border-t border-[#e5e5e5] p-0">
+            <SidebarGroupLabel className="text-[11px] font-bold uppercase tracking-[1.5px] text-[#6a6a6a] px-2 py-1 group-data-[collapsible=icon]:hidden">
               System Configuration
             </SidebarGroupLabel>
             <SidebarMenu className="space-y-0.5">
@@ -218,19 +235,20 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                       <CollapsibleTrigger asChild>
                         <SidebarMenuButton
                           tooltip={section.label}
-                          className={`rounded-[10px] transition-all font-semibold ${
+                          className={cn(
+                            "rounded-[12px] transition-all text-sm font-medium",
                             isSectionActive
-                              ? "bg-[#faf5e8] text-[#0a0a0a] font-bold"
-                              : "text-[#6a6a6a] hover:bg-[#faf5e8] hover:text-[#0a0a0a]"
-                          }`}
+                              ? "bg-[#faf5e8] text-[#0a0a0a] font-semibold border border-[#e5e5e5]/80"
+                              : "text-[#3a3a3a] hover:bg-[#f5f0e0] hover:text-[#0a0a0a]"
+                          )}
                         >
-                          {SectionIcon && <SectionIcon className="size-4 shrink-0" />}
+                          {SectionIcon && <SectionIcon className="size-4 shrink-0 text-[#6a6a6a]" />}
                           <span className="truncate">{section.label}</span>
-                          <ChevronRightIcon className="ml-auto size-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                          <ChevronRightIcon className="ml-auto size-4 text-[#6a6a6a] transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                         </SidebarMenuButton>
                       </CollapsibleTrigger>
                       <CollapsibleContent>
-                        <SidebarMenuSub className="my-1 space-y-0.5 border-l border-[#e5e5e5] ml-3.5 pl-2.5">
+                        <SidebarMenuSub className="my-1 space-y-0.5 border-l border-[#e5e5e5] ml-4 pl-2.5">
                           {section.items.map((item) => {
                             const SubIcon = iconMap[item.icon]
                             const isSubActive = pathname.startsWith(item.to)
@@ -240,20 +258,35 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                                 <SidebarMenuSubButton
                                   asChild
                                   isActive={isSubActive}
-                                  className={`rounded-[8px] py-1.5 transition-all text-xs font-medium ${
+                                  className={cn(
+                                    "rounded-[8px] py-1.5 transition-all text-xs font-medium",
                                     isSubActive
-                                      ? "bg-[#0a0a0a] text-white font-bold shadow-xs"
-                                      : "text-[#6a6a6a] hover:bg-[#faf5e8] hover:text-[#0a0a0a]"
-                                  }`}
+                                      ? "!bg-[#0a0a0a] !text-white font-semibold shadow-xs"
+                                      : "text-[#6a6a6a] hover:bg-[#f5f0e0] hover:text-[#0a0a0a]"
+                                  )}
                                 >
                                   {item.hasRoute ? (
-                                    <Link to={item.to as "/"}>
-                                      {SubIcon && <SubIcon className="size-3.5 shrink-0" />}
+                                    <Link to={item.to as "/"} className="flex items-center gap-2 w-full">
+                                      {SubIcon && (
+                                        <SubIcon
+                                          className={cn(
+                                            "size-3.5 shrink-0",
+                                            isSubActive ? "!text-white" : "text-[#6a6a6a]"
+                                          )}
+                                        />
+                                      )}
                                       <span className="truncate">{item.label}</span>
                                     </Link>
                                   ) : (
-                                    <a href={item.to}>
-                                      {SubIcon && <SubIcon className="size-3.5 shrink-0" />}
+                                    <a href={item.to} className="flex items-center gap-2 w-full">
+                                      {SubIcon && (
+                                        <SubIcon
+                                          className={cn(
+                                            "size-3.5 shrink-0",
+                                            isSubActive ? "!text-white" : "text-[#6a6a6a]"
+                                          )}
+                                        />
+                                      )}
                                       <span className="truncate">{item.label}</span>
                                     </a>
                                   )}
@@ -280,7 +313,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
             <Link
               to="/home/profile"
               onClick={() => setShowProfileMenu(false)}
-              className="flex items-center gap-2.5 rounded-[10px] px-3 py-2 text-xs font-semibold text-[#0a0a0a] hover:bg-[#faf5e8] transition-colors"
+              className="flex items-center gap-2.5 rounded-[10px] px-3 py-2 text-xs font-semibold text-[#0a0a0a] hover:bg-[#f5f0e0] transition-colors"
             >
               <UserIcon className="size-4 text-[#0a0a0a]" />
               <span>View Profile</span>
@@ -292,7 +325,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                 setShowProfileMenu(false)
                 setSettingsOpen(true)
               }}
-              className="flex w-full items-center gap-2.5 rounded-[10px] px-3 py-2 text-xs font-semibold text-[#0a0a0a] hover:bg-[#faf5e8] transition-colors cursor-pointer"
+              className="flex w-full items-center gap-2.5 rounded-[10px] px-3 py-2 text-xs font-semibold text-[#0a0a0a] hover:bg-[#f5f0e0] transition-colors cursor-pointer"
             >
               <SettingsIcon className="size-4 text-[#6a6a6a]" />
               <span>Settings & Goals</span>
@@ -320,11 +353,12 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
             type="button"
             onClick={() => setShowProfileMenu(!showProfileMenu)}
             title={roleLabel}
-            className={`flex w-full items-center gap-2.5 rounded-[12px] transition-all cursor-pointer group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:border-none group-data-[collapsible=icon]:bg-transparent ${
+            className={cn(
+              "flex w-full items-center gap-2.5 rounded-[12px] transition-all cursor-pointer group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:border-none group-data-[collapsible=icon]:bg-transparent",
               showProfileMenu
-                ? "ring-2 ring-[#0a0a0a]/20 bg-[#faf5e8] border border-[#e5e5e5] p-2"
-                : "border border-[#e5e5e5] bg-[#fffaf0] p-2 hover:bg-[#faf5e8]"
-            }`}
+                ? "ring-2 ring-[#0a0a0a]/15 bg-[#f5f0e0] border border-[#ebe6d6] p-2"
+                : "border border-[#e5e5e5] bg-[#fffaf0] p-2 hover:bg-[#f5f0e0] hover:border-[#ebe6d6]"
+            )}
           >
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[#0a0a0a] text-xs text-white font-bold shadow-xs uppercase transition-transform active:scale-95">
               {userInitials}
@@ -333,7 +367,12 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
               <span className="truncate text-xs text-[#0a0a0a] font-bold">{userName}</span>
               <span className="truncate text-[11px] text-[#6a6a6a] font-medium">{roleLabel}</span>
             </div>
-            <ChevronUpIcon className={`size-4 text-[#6a6a6a] transition-transform duration-200 group-data-[collapsible=icon]:hidden ${showProfileMenu ? "rotate-180 text-[#0a0a0a]" : ""}`} />
+            <ChevronUpIcon
+              className={cn(
+                "size-4 text-[#6a6a6a] transition-transform duration-200 group-data-[collapsible=icon]:hidden",
+                showProfileMenu && "rotate-180 text-[#0a0a0a]"
+              )}
+            />
           </button>
         )}
 

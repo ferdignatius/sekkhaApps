@@ -39,12 +39,12 @@ export function SocialAuthButton({ provider: _provider, mode = "login", onError 
       disabled={isRedirecting}
       className="
         inline-flex w-full items-center justify-center gap-3
-        rounded-2xl border border-sekkha-hairline-strong bg-white
-        px-5 py-3
-        text-body-sm font-semibold text-sekkha-ink shadow-sm
-        transition-all duration-200 hover:bg-slate-50 hover:border-slate-300 hover:shadow active:scale-[0.99]
-        disabled:opacity-60 disabled:pointer-events-none
-        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2
+        rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0]
+        px-5 h-11
+        text-xs font-semibold text-[#0a0a0a] shadow-2xs
+        transition-all duration-150 hover:bg-[#faf5e8] hover:border-[#ebe6d6] active:scale-[0.99]
+        disabled:opacity-60 disabled:pointer-events-none cursor-pointer
+        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0a0a0a]
       "
     >
       {/* Google "G" SVG Icon */}
@@ -74,7 +74,7 @@ export function SocialAuthButton({ provider: _provider, mode = "login", onError 
         />
       </svg>
 
-      <span>{mode === "sign-up" ? "Daftar dengan Google" : "Masuk dengan Google"}</span>
+      <span>{mode === "sign-up" ? "Sign up with Google" : "Sign in with Google"}</span>
     </button>
   )
 }

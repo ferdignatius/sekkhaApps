@@ -143,7 +143,6 @@ export function EventsPage() {
       const colorInfo = getCategoryColor(tag)
       map[key].push({
         colorHex: colorInfo.hex,
-        className: colorInfo.badgeClass,
       })
     })
     return map

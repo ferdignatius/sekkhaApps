@@ -20,8 +20,8 @@ interface LandingNavbarProps {
 // ─── Nav links ────────────────────────────────────────────────────────────────
 
 const NAV_LINKS: NavLink[] = [
-  { label: 'Kegiatan', href: '#events' },
-  { label: 'Komunitas', href: '#features' },
+  { label: 'Events', href: '#events' },
+  { label: 'Community', href: '#features' },
   { label: 'Leaderboard', href: '#leaderboard' },
 ]
 
@@ -33,12 +33,12 @@ function DesktopCTA({ authState }: { authState: AuthState }) {
       <div className="hidden md:flex items-center gap-3">
         <div
           className="animate-pulse bg-sekkha-hairline rounded-md"
-          style={{ width: 120, height: 36 }}
+          style={{ width: 100, height: 36 }}
           aria-hidden="true"
         />
         <div
           className="animate-pulse bg-sekkha-hairline rounded-md"
-          style={{ width: 140, height: 36 }}
+          style={{ width: 120, height: 36 }}
           aria-hidden="true"
         />
       </div>
@@ -49,7 +49,7 @@ function DesktopCTA({ authState }: { authState: AuthState }) {
     return (
       <div className="hidden md:flex items-center">
         <Button variant="primary" asChild>
-          <a href="/dashboard">Dashboard</a>
+          <a href="/home">Dashboard</a>
         </Button>
       </div>
     )
@@ -58,10 +58,10 @@ function DesktopCTA({ authState }: { authState: AuthState }) {
   return (
     <div className="hidden md:flex items-center gap-3">
       <Button variant="secondary" asChild>
-        <a href="/login" className="!text-sekkha-ink font-semibold">Masuk</a>
+        <a href="/login" className="!text-sekkha-ink font-semibold">Sign In</a>
       </Button>
       <Button variant="primary" asChild>
-        <a href="/sign-up" className="!text-white font-semibold">Bergabung Gratis</a>
+        <a href="/sign-up" className="!text-white font-semibold">Join for Free</a>
       </Button>
     </div>
   )
@@ -83,14 +83,14 @@ function MobileInlineCTA({ authState }: { authState: AuthState }) {
   if (authState === 'authenticated') {
     return (
       <Button variant="primary" asChild className="md:hidden text-body-sm px-4 py-2 h-auto">
-        <a href="/dashboard">Dashboard</a>
+        <a href="/home">Dashboard</a>
       </Button>
     )
   }
 
   return (
     <Button variant="primary" asChild className="md:hidden text-body-sm px-4 py-2 h-auto">
-      <a href="/login">Masuk</a>
+      <a href="/login">Sign In</a>
     </Button>
   )
 }
@@ -204,7 +204,7 @@ function MobileDrawer({ isOpen, onClose, authState, navLinks, firstFocusableRef 
               <div className="flex flex-col gap-3 pt-2 border-t border-sekkha-hairline">
                 {authState === 'unauthenticated' && (
                   <Button variant="secondary" asChild>
-                    <a href="/sign-up" onClick={onClose}>Bergabung Gratis</a>
+                    <a href="/sign-up" onClick={onClose}>Join for Free</a>
                   </Button>
                 )}
                 {authState === 'authenticated' && (

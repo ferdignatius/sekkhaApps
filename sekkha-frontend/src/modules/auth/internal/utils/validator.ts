@@ -24,6 +24,7 @@ export interface SignUpFormInput {
   email: string
   password: string
   confirmPassword: string
+  agreeToPrivacy?: boolean
 }
 
 /**
@@ -36,11 +37,13 @@ export interface SignUpFormInput {
  * - Password must not be empty (req 3.3)
  * - Password must be at least 8 characters (req 1.12, 3.4)
  * - confirmPassword must match password (req 1.13, 3.5)
+ * - agreeToPrivacy must be true when provided
  */
 export function validateSignUpForm({
   email,
   password,
   confirmPassword,
+  agreeToPrivacy,
 }: SignUpFormInput): ValidationResult {
   const errors: FieldError[] = []
 
@@ -66,6 +69,14 @@ export function validateSignUpForm({
     errors.push({
       field: "confirmPassword",
       message: "Konfirmasi password tidak cocok",
+    })
+  }
+
+  // Privacy policy agreement validation (mandatory if specified)
+  if (agreeToPrivacy === false) {
+    errors.push({
+      field: "agreeToPrivacy",
+      message: "Anda wajib menyetujui Kebijakan Privasi untuk mendaftar",
     })
   }
 

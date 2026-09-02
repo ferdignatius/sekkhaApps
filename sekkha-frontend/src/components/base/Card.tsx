@@ -1,6 +1,5 @@
 import * as React from "react"
 import {
-  Card as ShadcnCard,
   CardHeader,
   CardFooter,
   CardTitle,

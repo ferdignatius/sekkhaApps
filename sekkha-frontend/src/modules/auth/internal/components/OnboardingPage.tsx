@@ -91,95 +91,95 @@ export function OnboardingPage() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-blue-50/50 p-4 py-12">
+    <main className="min-h-screen flex items-center justify-center bg-[#fffaf0] p-4 py-12 font-sans selection:bg-[#f5f0e0] selection:text-[#0a0a0a]">
       <div className="w-full max-w-xl space-y-6">
 
         {/* Brand Header */}
-        <div className="text-center space-y-2">
-          <div className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-gradient-to-br from-sekkha-brand-blue to-blue-700 text-white shadow-md shadow-blue-500/20">
-            <SparklesIcon className="size-6" />
+        <div className="text-center space-y-2.5">
+          <div className="mx-auto flex size-13 items-center justify-center rounded-[16px] bg-[#0a0a0a] text-white shadow-xs">
+            <SparklesIcon className="size-6 text-[#e8b94a]" />
           </div>
-          <h1 className="text-heading-4 font-black text-sekkha-ink">Selamat Datang di Sekkha</h1>
-          <p className="text-body-sm text-sekkha-slate">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#0a0a0a]">Selamat Datang di Sekkha</h1>
+          <p className="text-xs sm:text-sm text-[#6a6a6a] font-medium">
             {step === "profile" && "Lengkapi profil singkat Anda untuk mengaktifkan Nomor Anggota resmi"}
             {step === "success" && "Akun Anda telah siap digunakan!"}
           </p>
         </div>
 
         {/* Main Card */}
-        <div className="rounded-3xl border border-sekkha-hairline bg-white/95 p-6 sm:p-8 shadow-xl shadow-slate-200/50 backdrop-blur-sm space-y-6">
+        <div className="rounded-[24px] border border-[#e5e5e5] bg-[#ffffff] p-6 sm:p-8 shadow-xl shadow-[#0a0a0a]/5 space-y-6">
 
           {/* ─────────────────────────────────────────────────────────────────── */}
           {/* STEP 1: COMPLETE PROFILE                                           */}
           {/* ─────────────────────────────────────────────────────────────────── */}
           {step === "profile" && (
             <form onSubmit={handleProfileSubmit} className="space-y-4 animate-in fade-in">
-              <div className="flex items-center justify-between border-b border-sekkha-hairline-soft pb-3">
-                <span className="text-caption-bold text-sekkha-ink">Lengkapi Informasi Diri</span>
-                <span className="rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-micro-bold text-emerald-800">
+              <div className="flex items-center justify-between border-b border-[#e5e5e5] pb-3">
+                <span className="text-xs font-bold text-[#0a0a0a] uppercase tracking-wider">Lengkapi Informasi Diri</span>
+                <span className="rounded-full bg-[#faf5e8] border border-[#e5e5e5] px-2.5 py-0.5 text-xs font-semibold text-[#0a0a0a]">
                   Langkah 1 dari 1
                 </span>
               </div>
 
               {errorMsg && (
-                <div className="flex items-center gap-2 rounded-xl bg-red-50 p-3.5 border border-red-200 text-caption text-red-800">
-                  <AlertTriangleIcon className="size-4 shrink-0 text-red-600" />
+                <div className="flex items-center gap-2 rounded-[12px] bg-[#ef4444]/10 p-3.5 border border-[#ef4444]/20 text-xs text-[#ef4444] font-medium">
+                  <AlertTriangleIcon className="size-4 shrink-0 text-[#ef4444]" />
                   <span>{errorMsg}</span>
                 </div>
               )}
 
-              <div className="space-y-1">
-                <label className="text-caption font-bold text-sekkha-ink">Nama Lengkap</label>
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-[#0a0a0a]">Nama Lengkap</label>
                 <input
                   type="text"
                   placeholder="Nama Lengkap Anda"
                   value={profileForm.name}
                   onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
-                  className="w-full rounded-xl border border-sekkha-hairline-strong px-3.5 py-2 text-body-sm text-sekkha-ink outline-none focus:border-sekkha-brand-blue"
+                  className="w-full h-11 rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 py-2 text-sm text-[#0a0a0a] placeholder:text-[#9a9a9a] outline-none focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] transition-all"
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="text-caption font-semibold text-sekkha-slate">Nomor HP / WhatsApp</label>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-[#0a0a0a]">Nomor HP / WhatsApp</label>
                   <input
                     type="tel"
                     placeholder="081234567890"
                     value={profileForm.phone}
                     onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
-                    className="w-full rounded-xl border border-sekkha-hairline-strong px-3.5 py-2 text-body-sm text-sekkha-ink outline-none focus:border-sekkha-brand-blue"
+                    className="w-full h-11 rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 py-2 text-sm text-[#0a0a0a] placeholder:text-[#9a9a9a] outline-none focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] transition-all"
                   />
                 </div>
 
-                <div className="space-y-1">
-                  <label className="text-caption font-semibold text-sekkha-slate">Asal Sekolah / Kampus</label>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-[#0a0a0a]">Asal Sekolah / Kampus</label>
                   <input
                     type="text"
                     placeholder="Contoh: SMA Dharma Widya"
                     value={profileForm.school}
                     onChange={(e) => setProfileForm({ ...profileForm, school: e.target.value })}
-                    className="w-full rounded-xl border border-sekkha-hairline-strong px-3.5 py-2 text-body-sm text-sekkha-ink outline-none focus:border-sekkha-brand-blue"
+                    className="w-full h-11 rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 py-2 text-sm text-[#0a0a0a] placeholder:text-[#9a9a9a] outline-none focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] transition-all"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="text-caption font-semibold text-sekkha-slate">Tanggal Lahir</label>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-[#0a0a0a]">Tanggal Lahir</label>
                   <input
                     type="date"
                     value={profileForm.birth_date}
                     onChange={(e) => setProfileForm({ ...profileForm, birth_date: e.target.value })}
-                    className="w-full rounded-xl border border-sekkha-hairline-strong px-3.5 py-2 text-body-sm text-sekkha-ink outline-none focus:border-sekkha-brand-blue"
+                    className="w-full h-11 rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 py-2 text-sm text-[#0a0a0a] placeholder:text-[#9a9a9a] outline-none focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] transition-all"
                   />
                 </div>
 
-                <div className="space-y-1">
-                  <label className="text-caption font-semibold text-sekkha-slate">Jenis Kelamin</label>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-[#0a0a0a]">Jenis Kelamin</label>
                   <select
                     value={profileForm.gender}
                     onChange={(e) => setProfileForm({ ...profileForm, gender: e.target.value })}
-                    className="w-full rounded-xl border border-sekkha-hairline-strong px-3.5 py-2 text-body-sm text-sekkha-ink outline-none focus:border-sekkha-brand-blue bg-white"
+                    className="w-full h-11 rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 py-2 text-sm text-[#0a0a0a] outline-none focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] transition-all"
                   >
                     <option value="L">Laki-laki</option>
                     <option value="P">Perempuan</option>
@@ -191,7 +191,7 @@ export function OnboardingPage() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="w-full flex items-center justify-center gap-2 rounded-xl bg-sekkha-brand-blue py-3 text-body-sm font-bold text-white shadow-sm hover:bg-blue-700 transition-all disabled:opacity-50 cursor-pointer"
+                  className="w-full h-11 flex items-center justify-center gap-2 rounded-[12px] bg-[#0a0a0a] text-sm font-semibold text-white shadow-xs hover:bg-[#1f1f1f] transition-all disabled:opacity-50 cursor-pointer"
                 >
                   {submitting ? "Menyimpan..." : "Simpan & Dapatkan ID Anggota"}
                 </button>
@@ -199,7 +199,7 @@ export function OnboardingPage() {
                 <button
                   type="button"
                   onClick={handleFinish}
-                  className="w-full text-center text-caption font-semibold text-sekkha-slate hover:text-sekkha-ink py-1.5 transition-colors cursor-pointer"
+                  className="w-full text-center text-xs font-semibold text-[#6a6a6a] hover:text-[#0a0a0a] py-2 transition-colors cursor-pointer"
                 >
                   Lewati untuk sekarang →
                 </button>
@@ -212,32 +212,32 @@ export function OnboardingPage() {
           {/* ─────────────────────────────────────────────────────────────────── */}
           {step === "success" && successData && (
             <div className="space-y-5 text-center animate-in fade-in">
-              <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 shadow-sm">
+              <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-[#22c55e]/10 text-[#22c55e] border border-[#22c55e]/20 shadow-xs">
                 <CheckCircleIcon className="size-8" />
               </div>
 
               <div className="space-y-1">
-                <h3 className="text-heading-5 font-black text-sekkha-ink">
+                <h3 className="text-xl font-bold text-[#0a0a0a]">
                   ID Anggota Anda Siap!
                 </h3>
-                <p className="text-body-sm text-sekkha-slate">
+                <p className="text-xs text-[#6a6a6a]">
                   Nomor ID resmi Vihara Sekkha Anda berhasil dibuat dan siap digunakan untuk presensi.
                 </p>
               </div>
 
-              {/* Digital Card Preview */}
-              <div className="rounded-2xl border-2 border-sekkha-brand-blue/30 bg-gradient-to-br from-blue-50/60 via-white to-indigo-50/40 p-5 text-left shadow-sm space-y-3">
-                <div className="flex items-center justify-between border-b border-sekkha-hairline-soft pb-2">
-                  <span className="text-micro-bold uppercase tracking-wider text-sekkha-brand-blue">
+              {/* Digital Card Preview — Clay Card Token */}
+              <div className="rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] p-5 text-left shadow-xs space-y-3">
+                <div className="flex items-center justify-between border-b border-[#e5e5e5] pb-2">
+                  <span className="text-[11px] font-bold uppercase tracking-[1.5px] text-[#0a0a0a]">
                     Kartu Anggota Sekkha
                   </span>
-                  <span className="rounded-full bg-emerald-100 border border-emerald-300 px-2 py-0.5 text-micro-bold text-emerald-800">
+                  <span className="rounded-full bg-[#22c55e]/10 border border-[#22c55e]/30 px-2 py-0.5 text-[11px] font-bold text-[#22c55e]">
                     Aktif
                   </span>
                 </div>
 
                 <div className="flex items-center gap-4 py-1">
-                  <div className="rounded-xl border border-slate-200 bg-white p-2 shrink-0">
+                  <div className="rounded-[12px] border border-[#e5e5e5] bg-white p-2.5 shrink-0 shadow-2xs">
                     <QRCode
                       value={successData.userNumber}
                       size={90}
@@ -246,17 +246,19 @@ export function OnboardingPage() {
                     />
                   </div>
 
-                  <div className="space-y-1 min-w-0">
-                    <p className="text-body-base font-extrabold text-sekkha-ink truncate">{successData.name}</p>
-                    <p className="font-mono text-caption-bold text-sekkha-brand-blue">{successData.userNumber}</p>
-                    <button
-                      type="button"
-                      onClick={() => handleCopy(successData.userNumber)}
-                      className="flex items-center gap-1 text-micro-bold text-sekkha-slate hover:text-sekkha-brand-blue transition-colors cursor-pointer"
-                    >
-                      {copied ? <CheckIcon className="size-3 text-emerald-600" /> : <CopyIcon className="size-3" />}
-                      <span>{copied ? "ID Tersalin!" : "Salin ID Anggota"}</span>
-                    </button>
+                  <div className="space-y-1.5 min-w-0">
+                    <p className="text-sm font-bold text-[#0a0a0a] truncate">{successData.name}</p>
+                    <p className="font-mono text-xs font-bold text-[#0a0a0a] bg-[#ebe6d6] px-2 py-0.5 rounded-[6px] inline-block">{successData.userNumber}</p>
+                    <div>
+                      <button
+                        type="button"
+                        onClick={() => handleCopy(successData.userNumber)}
+                        className="flex items-center gap-1.5 text-xs font-semibold text-[#6a6a6a] hover:text-[#0a0a0a] transition-colors cursor-pointer"
+                      >
+                        {copied ? <CheckIcon className="size-3.5 text-[#22c55e]" /> : <CopyIcon className="size-3.5" />}
+                        <span>{copied ? "ID Tersalin!" : "Salin ID Anggota"}</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -264,10 +266,10 @@ export function OnboardingPage() {
               <button
                 type="button"
                 onClick={handleFinish}
-                className="w-full flex items-center justify-center gap-2 rounded-xl bg-sekkha-brand-blue py-3 text-body-sm font-bold text-white shadow-sm hover:bg-blue-700 transition-all cursor-pointer"
+                className="w-full h-11 flex items-center justify-center gap-2 rounded-[12px] bg-[#0a0a0a] text-sm font-semibold text-white shadow-xs hover:bg-[#1f1f1f] transition-all cursor-pointer"
               >
                 <span>Masuk ke Dashboard Sekkha</span>
-                <ArrowRightIcon className="size-4" />
+                <ArrowRightIcon className="size-4 ml-1" />
               </button>
             </div>
           )}

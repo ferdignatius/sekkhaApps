@@ -2,7 +2,7 @@
 // Create / edit event form for pengurus+ with unified categories, masterdata autofill, & optional location.
 
 import { useState } from "react"
-import { MapPinIcon, SparklesIcon, TagIcon, CheckIcon, Wand2Icon, CalendarIcon } from "lucide-react"
+import { MapPinIcon, SparklesIcon, TagIcon, CheckIcon, Wand2Icon } from "lucide-react"
 import { useAuth } from "@/modules/auth"
 import { DateTimePickerPopover } from "@/components/ui/DateTimePickerPopover"
 import type { CreateEventPayload, EventListItem, EventTag, EventType } from "../types"

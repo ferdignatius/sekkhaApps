@@ -1,5 +1,4 @@
 import { createFileRoute, lazyRouteComponent } from "@tanstack/react-router"
-import { RefreshCwIcon } from "lucide-react"
 
 function ScanLoadingSkeleton() {
   return (

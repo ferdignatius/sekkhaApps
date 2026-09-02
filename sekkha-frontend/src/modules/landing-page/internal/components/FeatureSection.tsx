@@ -26,16 +26,16 @@ export function FeatureSection({ features }: FeatureSectionProps) {
           transition={{ duration: 0.6, ease: "easeOut" }}
         >
           <span className="inline-flex items-center gap-1.5 rounded-full glass-pill px-3.5 py-1 text-micro font-semibold text-sekkha-ink uppercase tracking-wider mb-3">
-            ⭐ Fitur Khusus Umat Remaja
+            ⭐ Dedicated Youth Features
           </span>
           <h2
             id="features-heading"
             className="text-heading-2 text-sekkha-ink text-center tracking-tight font-bold text-3xl sm:text-4xl md:text-5xl"
           >
-            Apa yang Bisa Kamu Lakukan?
+            What Can You Experience?
           </h2>
           <p className="text-subtitle text-sekkha-slate text-center max-w-[600px] mx-auto mt-4 text-base md:text-lg">
-            Semua fasilitas digital terpadu untuk umat remaja agar tetap terhubung, aktif, dan bertumbuh bersama vihara.
+            All-in-one digital tools crafted for youth to stay connected, active, and spiritually inspired together.
           </p>
         </motion.div>
 

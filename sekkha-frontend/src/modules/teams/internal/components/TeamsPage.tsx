@@ -7,8 +7,6 @@ import {
   SearchIcon,
   UserPlusIcon,
   ClockIcon,
-  QrCodeIcon,
-  Edit2Icon,
   Trash2Icon,
   CheckCircleIcon,
   AlertTriangleIcon,
@@ -21,7 +19,6 @@ import {
   KeyIcon,
   Share2Icon,
   ChevronRightIcon,
-  EyeIcon,
 } from "lucide-react"
 import QRCode from "react-qr-code"
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
@@ -162,24 +159,6 @@ export function TeamsPage() {
       showToast(err.message || "Failed to add member", "error")
     } finally {
       setSubmitting(false)
-    }
-  }
-
-  // Handle Reset Member Password
-  async function handleResetPassword(m: MemberDto) {
-    if (!confirm(`Reset password for "${m.name}" (@${m.username || "member"}) to default password (sekkha123)?`)) return
-    try {
-      const res = await teamsApi.resetMemberPassword(m.id)
-      setCredentialModalData({
-        memberName: res.name,
-        username: res.username || "-",
-        defaultPassword: res.default_password,
-        userNumber: res.user_number,
-        phone: m.phone,
-      })
-      showToast(res.message)
-    } catch (err: any) {
-      showToast(err.message || "Failed to reset password", "error")
     }
   }
 

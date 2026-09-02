@@ -35,10 +35,10 @@ export function LandingFooter({ navColumns }: LandingFooterProps) {
           transition={{ duration: 0.6, ease: "easeOut" }}
         >
           {/* Brand */}
-          <div className="flex flex-col gap-3 max-w-[260px]">
-            <span className="text-heading-5 text-sekkha-on-dark">🙏 Sekkha</span>
+          <div className="flex flex-col gap-3 max-w-[280px]">
+            <span className="text-heading-5 text-sekkha-on-dark font-bold tracking-tight">🙏 Sekkha</span>
             <p className="text-body-sm text-sekkha-on-dark-muted leading-relaxed">
-              Platform komunitas & kebaktian remaja Vihara Tri Maha Dharma.
+              Digital community & fellowship platform for Vihara Tri Maha Dharma.
             </p>
           </div>
 
@@ -69,8 +69,8 @@ export function LandingFooter({ navColumns }: LandingFooterProps) {
           <p className="text-micro text-sekkha-on-dark-muted">
             © {new Date().getFullYear()} Vihara Tri Maha Dharma — Sekkha. All rights reserved.
           </p>
-          <p className="text-micro text-sekkhaha-on-dark-muted">
-            Semoga semua makhluk berbahagia 🙏
+          <p className="text-micro text-sekkha-on-dark-muted">
+            May all beings be peaceful and happy 🙏
           </p>
         </div>
       </div>

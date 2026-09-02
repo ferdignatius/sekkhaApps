@@ -40,7 +40,6 @@ import {
 import QRCode from "react-qr-code"
 import { useAuth } from "@/modules/auth"
 import { api } from "@/lib/api"
-import { teamsApi } from "@/modules/teams/internal/api/teamsApi"
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
 import { Skeleton } from "@/components/ui/skeleton"
 

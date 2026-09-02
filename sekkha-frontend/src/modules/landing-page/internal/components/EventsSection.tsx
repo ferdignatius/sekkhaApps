@@ -10,16 +10,16 @@ interface EventsSectionProps {
 }
 
 const categoryStyles: Record<EventItem['category'], { bg: string; label: string }> = {
-  kebaktian: { bg: 'bg-teal-100/80 text-teal-900 border-teal-200/60', label: 'Kebaktian' },
+  fellowship: { bg: 'bg-teal-100/80 text-teal-900 border-teal-200/60', label: 'Fellowship' },
   retreat: { bg: 'bg-amber-100/80 text-amber-900 border-amber-200/60', label: 'Retreat' },
-  'bakti-sosial': { bg: 'bg-rose-100/80 text-rose-900 border-rose-200/60', label: 'Bakti Sosial' },
-  event: { bg: 'bg-fuchsia-100/80 text-fuchsia-900 border-fuchsia-200/60', label: 'Event Special' },
+  social: { bg: 'bg-rose-100/80 text-rose-900 border-rose-200/60', label: 'Social Action' },
+  event: { bg: 'bg-fuchsia-100/80 text-fuchsia-900 border-fuchsia-200/60', label: 'Special Event' },
 }
 
 export function EventsSection({ heading, subheading, items }: EventsSectionProps) {
-  const [activeCategory, setActiveCategory] = useState<string>('semua')
+  const [activeCategory, setActiveCategory] = useState<string>('all')
 
-  const filteredItems = activeCategory === 'semua' 
+  const filteredItems = activeCategory === 'all' 
     ? items 
     : items.filter(item => item.category === activeCategory)
 
@@ -39,7 +39,7 @@ export function EventsSection({ heading, subheading, items }: EventsSectionProps
           transition={{ duration: 0.6, ease: "easeOut" }}
         >
           <span className="inline-flex items-center gap-1.5 rounded-full glass-pill px-3.5 py-1 text-micro font-semibold text-sekkha-ink uppercase tracking-wider mb-3">
-            <SparklesIcon className="size-3.5 text-amber-500" /> Agenda Umat Remaja
+            <SparklesIcon className="size-3.5 text-amber-500" /> Youth Gathering Agenda
           </span>
           <h2 id="events-heading" className="text-heading-2 text-sekkha-ink font-bold tracking-tight text-3xl sm:text-4xl md:text-5xl">
             {heading}
@@ -51,11 +51,11 @@ export function EventsSection({ heading, subheading, items }: EventsSectionProps
           {/* Interactive Category Filter Pills */}
           <div className="flex flex-wrap items-center justify-center gap-2 mt-8">
             {[
-              { id: 'semua', label: 'Semua Kegiatan' },
-              { id: 'kebaktian', label: 'Kebaktian' },
-              { id: 'retreat', label: 'Retreat & Kamp' },
-              { id: 'bakti-sosial', label: 'Bakti Sosial' },
-              { id: 'event', label: 'Event Special' },
+              { id: 'all', label: 'All Events' },
+              { id: 'fellowship', label: 'Fellowship' },
+              { id: 'retreat', label: 'Retreat & Camps' },
+              { id: 'social', label: 'Social Action' },
+              { id: 'event', label: 'Special Events' },
             ].map(cat => (
               <button
                 key={cat.id}
@@ -76,7 +76,7 @@ export function EventsSection({ heading, subheading, items }: EventsSectionProps
         {/* Event cards grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {filteredItems.map((event, i) => {
-            const cat = categoryStyles[event.category]
+            const cat = categoryStyles[event.category] || { bg: 'bg-teal-100/80 text-teal-900 border-teal-200/60', label: 'Event' }
             return (
               <motion.article
                 key={i}
@@ -95,7 +95,7 @@ export function EventsSection({ heading, subheading, items }: EventsSectionProps
                     {cat.label}
                   </span>
                   <span className="text-micro font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/50">
-                    Sisa 15 Kursi
+                    15 Seats Left
                   </span>
                 </div>
 
@@ -132,7 +132,7 @@ export function EventsSection({ heading, subheading, items }: EventsSectionProps
             href="/events"
             className="inline-flex items-center gap-2 px-6 py-3 rounded-full glass-pill text-body-sm-medium text-sekkha-ink hover:bg-white hover:shadow-md transition-all border border-white/80"
           >
-            Lihat semua jadwal kegiatan →
+            View all upcoming events →
           </a>
         </motion.div>
       </div>

@@ -10,18 +10,29 @@ import { AuthError } from "../context/authReducer"
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
-type SignUpField = "email" | "password" | "confirmPassword"
+type SignUpField = "email" | "password" | "confirmPassword" | "agreeToPrivacy"
 
 type FieldErrors = Partial<Record<SignUpField, string>>
 
 export interface UseSignUpFormReturn {
-  fields: Record<SignUpField, string>
+  step: "form" | "otp"
+  fields: {
+    email: string
+    password: string
+    confirmPassword: string
+    agreeToPrivacy?: boolean
+  }
   errors: FieldErrors
   isLoading: boolean
   apiError: string | null
-  handleChange: (field: string, value: string) => void
+  otpError: string | null
+  isVerifyingOtp: boolean
+  handleChange: (field: string, value: string | boolean) => void
   handleBlur: (field: string) => void
   handleSubmit: () => Promise<void>
+  handleVerifyOtp: (otp: string) => Promise<void>
+  handleResendOtp: () => Promise<void>
+  handleBackToForm: () => void
   dismissApiError: () => void
   setApiError: (message: string | null) => void
 }
@@ -29,23 +40,40 @@ export interface UseSignUpFormReturn {
 // ─── Hook ──────────────────────────────────────────────────────────────────────
 
 export function useSignUpForm(): UseSignUpFormReturn {
-  const { register } = useAuth()
+  const { requestRegisterOtp, verifyRegisterOtp, resendRegisterOtp } = useAuth()
   const navigate = useNavigate()
 
-  const [fields, setFields] = useState<Record<SignUpField, string>>({
+  const [step, setStep] = useState<"form" | "otp">("form")
+  const [fields, setFields] = useState<{
+    email: string
+    password: string
+    confirmPassword: string
+    agreeToPrivacy?: boolean
+  }>({
     email: "",
     password: "",
     confirmPassword: "",
+    agreeToPrivacy: false,
   })
   const [errors, setErrors] = useState<FieldErrors>({})
   const [isLoading, setIsLoading] = useState(false)
   const [apiError, setApiError] = useState<string | null>(null)
+  const [otpError, setOtpError] = useState<string | null>(null)
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false)
   // Track whether the apiError was visible when the user starts typing
   const [apiErrorDismissed, setApiErrorDismissed] = useState(false)
 
   // ── handleChange ─────────────────────────────────────────────────────────────
-  function handleChange(field: string, value: string) {
+  function handleChange(field: string, value: string | boolean) {
     setFields((prev) => ({ ...prev, [field]: value }))
+
+    if (field === "agreeToPrivacy" && value === true) {
+      setErrors((prev) => {
+        const next = { ...prev }
+        delete next.agreeToPrivacy
+        return next
+      })
+    }
 
     // Dismiss the API error banner on first keystroke after it appeared (req 7.5)
     if (apiError && !apiErrorDismissed) {
@@ -73,7 +101,7 @@ export function useSignUpForm(): UseSignUpFormReturn {
     })
   }
 
-  // ── handleSubmit ─────────────────────────────────────────────────────────────
+  // ── handleSubmit (Requests OTP) ─────────────────────────────────────────────
   async function handleSubmit(): Promise<void> {
     const result = validateSignUpForm(fields)
 
@@ -92,8 +120,9 @@ export function useSignUpForm(): UseSignUpFormReturn {
     setApiErrorDismissed(false)
 
     try {
-      await register(fields.email, fields.password)
-      void navigate({ to: "/onboarding" })
+      await requestRegisterOtp(fields.email, fields.password)
+      setStep("otp")
+      setOtpError(null)
     } catch (error) {
       if (error instanceof AuthError) {
         switch (error.code) {
@@ -108,7 +137,7 @@ export function useSignUpForm(): UseSignUpFormReturn {
             )
             break
           default:
-            setApiError("Terjadi kesalahan. Silakan coba beberapa saat lagi.")
+            setApiError(error.message || "Terjadi kesalahan saat mengirim kode OTP.")
         }
       } else {
         setApiError("Terjadi kesalahan. Silakan coba beberapa saat lagi.")
@@ -118,19 +147,65 @@ export function useSignUpForm(): UseSignUpFormReturn {
     }
   }
 
+  // ── handleVerifyOtp ─────────────────────────────────────────────────────────
+  async function handleVerifyOtp(otp: string): Promise<void> {
+    setIsVerifyingOtp(true)
+    setOtpError(null)
+
+    try {
+      await verifyRegisterOtp(fields.email, otp)
+      void navigate({ to: "/onboarding" })
+    } catch (error) {
+      if (error instanceof AuthError) {
+        setOtpError(error.message)
+      } else {
+        setOtpError("Kode OTP salah atau tidak valid. Silakan coba lagi.")
+      }
+    } finally {
+      setIsVerifyingOtp(false)
+    }
+  }
+
+  // ── handleResendOtp ─────────────────────────────────────────────────────────
+  async function handleResendOtp(): Promise<void> {
+    setOtpError(null)
+    try {
+      await resendRegisterOtp(fields.email)
+    } catch (error) {
+      if (error instanceof AuthError) {
+        setOtpError(error.message)
+      } else {
+        setOtpError("Gagal mengirim ulang OTP. Silakan coba lagi nanti.")
+      }
+      throw error
+    }
+  }
+
+  // ── handleBackToForm ────────────────────────────────────────────────────────
+  function handleBackToForm() {
+    setStep("form")
+    setOtpError(null)
+  }
+
   // ── dismissApiError ──────────────────────────────────────────────────────────
   function dismissApiError() {
     setApiError(null)
   }
 
   return {
+    step,
     fields,
     errors,
     isLoading,
     apiError,
+    otpError,
+    isVerifyingOtp,
     handleChange,
     handleBlur,
     handleSubmit,
+    handleVerifyOtp,
+    handleResendOtp,
+    handleBackToForm,
     dismissApiError,
     setApiError,
   }

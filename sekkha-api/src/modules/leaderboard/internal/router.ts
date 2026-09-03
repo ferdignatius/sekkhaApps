@@ -4,7 +4,7 @@ import { prisma } from "../../../lib/prisma"
 import { requireAuth, requireRole } from "../../../middleware/auth"
 import { getLeaderboardSnapshot, MetricType } from "./service"
 
-export const leaderboardRouter = Router()
+export const leaderboardRouter: Router = Router()
 
 // GET /api/leaderboard/debug — Debug DB users and cache (Admin only)
 leaderboardRouter.get("/debug", requireAuth, requireRole("admin"), async (req, res, next) => {

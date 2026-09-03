@@ -333,7 +333,7 @@ export function MemberDetailSheet({
                 type="button"
                 onClick={() => onResetPassword(member)}
                 className="h-11 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 rounded-[12px] border border-[#e8b94a]/50 bg-[#e8b94a]/15 px-2 text-xs font-bold text-[#0a0a0a] hover:bg-[#e8b94a]/25 transition-all cursor-pointer"
-                title="Reset Password to default (sekkha123)"
+                title="Reset Password to default (Sekkha[4-digit]Puggala)"
               >
                 <KeyIcon className="size-3.5 text-[#0a0a0a]" />
                 <span className="text-[11px] sm:text-xs">Reset Pass</span>

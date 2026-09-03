@@ -25,9 +25,6 @@ export function EventsSection({ heading, subheading, items }: EventsSectionProps
 
   return (
     <section aria-labelledby="events-heading" id="events" className="relative py-[96px]">
-      {/* Ambient background glow */}
-      <div className="absolute top-1/3 right-1/4 w-96 h-96 bg-teal-100/30 rounded-full blur-3xl pointer-events-none -z-10" />
-
       <div className="mx-auto w-full max-w-[1280px] px-4 md:px-8">
 
         {/* Heading */}
@@ -38,13 +35,13 @@ export function EventsSection({ heading, subheading, items }: EventsSectionProps
           viewport={{ once: true }}
           transition={{ duration: 0.6, ease: "easeOut" }}
         >
-          <span className="inline-flex items-center gap-1.5 rounded-full glass-pill px-3.5 py-1 text-micro font-semibold text-sekkha-ink uppercase tracking-wider mb-3">
-            <SparklesIcon className="size-3.5 text-amber-500" /> Youth Gathering Agenda
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-white border border-sekkha-hairline px-3.5 py-1 text-caption-uppercase text-sekkha-ink tracking-[1.5px] mb-4 shadow-xs">
+            <SparklesIcon className="size-3.5 text-[#e8b94a]" /> Agenda & Events
           </span>
-          <h2 id="events-heading" className="text-heading-2 text-sekkha-ink font-bold tracking-tight text-3xl sm:text-4xl md:text-5xl">
+          <h2 id="events-heading" className="text-display-md text-sekkha-ink font-medium tracking-[-1px] text-3xl sm:text-4xl md:text-5xl">
             {heading}
           </h2>
-          <p className="text-subtitle text-sekkha-slate mt-3 max-w-[540px] mx-auto text-base md:text-lg">
+          <p className="text-body-md text-sekkha-slate mt-3 max-w-[540px] mx-auto text-base md:text-lg">
             {subheading}
           </p>
 
@@ -52,19 +49,19 @@ export function EventsSection({ heading, subheading, items }: EventsSectionProps
           <div className="flex flex-wrap items-center justify-center gap-2 mt-8">
             {[
               { id: 'all', label: 'All Events' },
-              { id: 'fellowship', label: 'Fellowship' },
-              { id: 'retreat', label: 'Retreat & Camps' },
-              { id: 'social', label: 'Social Action' },
-              { id: 'event', label: 'Special Events' },
+              { id: 'fellowship', label: 'Fellowship & Puja' },
+              { id: 'retreat', label: 'Retreat & Dhamma Camp' },
+              { id: 'social', label: 'Social Action & Charity' },
+              { id: 'event', label: 'Special Celebrations' },
             ].map(cat => (
               <button
                 key={cat.id}
                 type="button"
                 onClick={() => setActiveCategory(cat.id)}
-                className={`px-4 py-2 rounded-full text-body-sm font-medium transition-all ${
+                className={`px-4 py-2 rounded-full text-body-sm font-semibold transition-all ${
                   activeCategory === cat.id
-                    ? 'bg-sekkha-primary text-white shadow-md scale-105'
-                    : 'glass-pill text-sekkha-slate hover:text-sekkha-ink hover:bg-white'
+                    ? 'bg-sekkha-primary text-white shadow-xs'
+                    : 'bg-transparent text-sekkha-slate hover:text-sekkha-ink hover:bg-black/5'
                 }`}
               >
                 {cat.label}
@@ -76,42 +73,44 @@ export function EventsSection({ heading, subheading, items }: EventsSectionProps
         {/* Event cards grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {filteredItems.map((event, i) => {
-            const cat = categoryStyles[event.category] || { bg: 'bg-teal-100/80 text-teal-900 border-teal-200/60', label: 'Event' }
+            const cat = categoryStyles[event.category] || { bg: 'bg-[#a4d4c5]/40 text-[#1a3a3a] border-[#a4d4c5]/60', label: 'Event' }
             return (
               <motion.article
                 key={i}
-                className="flex flex-col gap-4 rounded-[28px] glass-panel p-6 border border-white/80 shadow-md relative overflow-hidden group"
+                className="flex flex-col justify-between gap-4 rounded-[20px] bg-white p-6 border border-sekkha-hairline shadow-xs relative overflow-hidden group hover:border-black/20 hover:shadow-md transition-all"
                 initial={{ opacity: 0, y: 28 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: '-40px' }}
                 transition={{ duration: 0.55, delay: i * 0.1, ease: "easeOut" }}
-                whileHover={{ y: -6, boxShadow: '0 20px 40px -10px rgba(5,0,56,0.1)', transition: { duration: 0.25 } }}
+                whileHover={{ y: -4, transition: { duration: 0.25 } }}
               >
-                {/* Category badge */}
-                <div className="flex items-center justify-between">
-                  <span
-                    className={`rounded-full px-3 py-1 text-micro font-bold border backdrop-blur-md ${cat.bg}`}
-                  >
-                    {cat.label}
-                  </span>
-                  <span className="text-micro font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/50">
-                    15 Seats Left
-                  </span>
+                <div>
+                  {/* Category badge */}
+                  <div className="flex items-center justify-between mb-3">
+                    <span
+                      className={`rounded-full px-2.5 py-0.5 text-micro font-semibold border ${cat.bg}`}
+                    >
+                      {cat.label}
+                    </span>
+                    <span className="text-micro font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/60">
+                      Available
+                    </span>
+                  </div>
+
+                  {/* Title */}
+                  <h3 className="text-title-md text-sekkha-ink font-semibold leading-snug group-hover:text-sekkha-primary transition-colors">
+                    {event.title}
+                  </h3>
                 </div>
 
-                {/* Title */}
-                <h3 className="text-heading-5 text-sekkha-ink font-semibold leading-snug group-hover:text-sekkha-brand-blue transition-colors">
-                  {event.title}
-                </h3>
-
                 {/* Meta */}
-                <div className="mt-auto pt-4 border-t border-sekkha-hairline-soft/60 flex flex-col gap-2">
+                <div className="mt-4 pt-4 border-t border-sekkha-hairline flex flex-col gap-2">
                   <p className="text-body-sm text-sekkha-slate flex items-center gap-2">
-                    <CalendarIcon className="size-4 text-sekkha-brand-blue shrink-0" />
+                    <CalendarIcon className="size-4 text-[#1a3a3a] shrink-0" />
                     <span>{event.date}</span>
                   </p>
                   <p className="text-body-sm text-sekkha-slate flex items-center gap-2">
-                    <MapPinIcon className="size-4 text-rose-500 shrink-0" />
+                    <MapPinIcon className="size-4 text-[#ff4d8b] shrink-0" />
                     <span className="truncate">{event.location}</span>
                   </p>
                 </div>
@@ -130,7 +129,7 @@ export function EventsSection({ heading, subheading, items }: EventsSectionProps
         >
           <a
             href="/events"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-full glass-pill text-body-sm-medium text-sekkha-ink hover:bg-white hover:shadow-md transition-all border border-white/80"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-[12px] bg-white text-body-sm font-semibold text-sekkha-ink hover:bg-sekkha-surface hover:shadow-xs transition-all border border-sekkha-hairline"
           >
             View all upcoming events →
           </a>

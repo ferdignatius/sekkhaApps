@@ -4,7 +4,7 @@ import { prisma } from "../../../lib/prisma"
 import { cached, invalidatePattern, invalidate, CacheKeys } from "../../../lib/cache"
 import { requireAuth, requireRole } from "../../../middleware/auth"
 
-export const eventsRouter = Router()
+export const eventsRouter: Router = Router()
 
 const CreateEventSchema = z.object({
   title: z.string().min(1),

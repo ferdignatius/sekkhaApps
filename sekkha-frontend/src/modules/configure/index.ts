@@ -30,6 +30,8 @@ export const configureModule: ModuleDefinition = {
       icon: "Sparkles",
       items: [
         { label: "Achievements", to: "/configure/master/achievement", icon: "Trophy", hasRoute: true },
+        { label: "Master Badges", to: "/configure/master/badge", icon: "Award", hasRoute: true },
+        { label: "Member Levels", to: "/configure/master/level", icon: "Zap", hasRoute: true },
       ],
     },
     {

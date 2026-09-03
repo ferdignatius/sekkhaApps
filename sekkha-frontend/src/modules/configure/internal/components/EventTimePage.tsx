@@ -18,7 +18,7 @@ import {
 
 export function EventTimePage() {
   const { authState } = useAuth()
-  const isPengurusOrAdmin = authState.status === "authenticated" && (authState.role === "admin" || authState.role === "pengurus")
+  const isAdmin = authState.status === "authenticated" && authState.role === "admin"
 
   const [presets, setPresets] = useState<EventTimePresetItem[]>(() => getMasterTimePresets())
   const [editing, setEditing] = useState<EventTimePresetItem | null>(null)
@@ -63,7 +63,7 @@ export function EventTimePage() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!label.trim() || !time) return
+    if (!label.trim() || !time || !isAdmin) return
 
     if (editing) {
       updateAndPersistPresets(
@@ -85,12 +85,14 @@ export function EventTimePage() {
   }
 
   function handleToggleActive(id: string) {
+    if (!isAdmin) return
     updateAndPersistPresets(
       presets.map(p => (p.id === id ? { ...p, is_active: !p.is_active } : p))
     )
   }
 
   function handleDelete(id: string) {
+    if (!isAdmin) return
     if (window.confirm("Are you sure you want to delete this time preset?")) {
       updateAndPersistPresets(presets.filter(p => p.id !== id))
     }
@@ -98,7 +100,7 @@ export function EventTimePage() {
 
   return (
     <main className="min-h-screen bg-[#fffaf0] pb-32 md:pb-12 font-sans text-left">
-      <PageBreadcrumb items={[{ label: "Configure" }, { label: "Vihara Time Presets" }]} />
+      <PageBreadcrumb items={[{ label: "Configure" }, { label: "Master Data" }, { label: "Time Presets" }]} />
       
       <div className="px-3.5 py-4 sm:px-6 sm:py-6 md:px-8 max-w-7xl mx-auto space-y-5">
 
@@ -114,7 +116,7 @@ export function EventTimePage() {
             </div>
           </div>
 
-          {isPengurusOrAdmin && (
+          {isAdmin && (
             <button
               type="button"
               onClick={openCreate}
@@ -178,7 +180,7 @@ export function EventTimePage() {
               </div>
 
               {/* Actions */}
-              {isPengurusOrAdmin && (
+              {isAdmin && (
                 <div className="flex items-center justify-end gap-2 pt-1">
                   <button
                     type="button"
@@ -222,7 +224,7 @@ export function EventTimePage() {
                 <th className="px-4 py-3 w-[15%]">Event Category</th>
                 <th className="px-4 py-3 w-[20%]">Description</th>
                 <th className="px-4 py-3 w-[8%] text-center">Status</th>
-                {isPengurusOrAdmin && <th className="px-4 py-3 w-[10%] text-right">Actions</th>}
+                {isAdmin && <th className="px-4 py-3 w-[10%] text-right">Actions</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-[#f0f0f0]">
@@ -289,7 +291,7 @@ export function EventTimePage() {
                   </td>
 
                   {/* Actions */}
-                  {isPengurusOrAdmin && (
+                  {isAdmin && (
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-1.5">
                         <button
@@ -331,7 +333,7 @@ export function EventTimePage() {
 
         {/* Form Modal Sub-Dialog */}
         <ResponsiveFormModal
-          open={showForm}
+          open={showForm && isAdmin}
           onOpenChange={setShowForm}
           onClose={resetForm}
           title={editing ? "Edit Time Preset" : "Add New Time Preset"}

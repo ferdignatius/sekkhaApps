@@ -73,14 +73,47 @@ export interface InvitationDto {
   }
 }
 
+export interface PaginatedMembersResponse {
+  items: MemberDto[]
+  total: number
+  page: number
+  limit: number
+  totalPages: number
+  stats?: {
+    total: number
+    umat: number
+    aktivis: number
+    pengurus: number
+  }
+}
+
+export interface ListMembersParams {
+  search?: string
+  claimed_status?: string
+  role?: string
+}
+
+export interface ListPaginatedMembersParams extends ListMembersParams {
+  page: number
+  limit?: number
+}
+
 export const teamsApi = {
-  listMembers: (params?: { search?: string; claimed_status?: string; role?: string }) => {
+  listMembers: ((params?: ListMembersParams & { page?: number; limit?: number }) => {
     const searchParams = new URLSearchParams()
     if (params?.search) searchParams.set("search", params.search)
     if (params?.claimed_status && params.claimed_status !== "all") searchParams.set("claimed_status", params.claimed_status)
     if (params?.role && params.role !== "all") searchParams.set("role", params.role)
+    if (params?.page !== undefined) searchParams.set("page", params.page.toString())
+    if (params?.limit !== undefined) searchParams.set("limit", params.limit.toString())
     const qs = searchParams.toString()
+    if (params?.page !== undefined || params?.limit !== undefined) {
+      return api.get<PaginatedMembersResponse>(`/teams/members${qs ? `?${qs}` : ""}`)
+    }
     return api.get<MemberDto[]>(`/teams/members${qs ? `?${qs}` : ""}`)
+  }) as {
+    (params: ListPaginatedMembersParams): Promise<PaginatedMembersResponse>
+    (params?: ListMembersParams): Promise<MemberDto[]>
   },
 
   getMember: (id: string) => api.get<MemberDetailDto>(`/teams/members/${id}`),

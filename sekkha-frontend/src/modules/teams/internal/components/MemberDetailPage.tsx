@@ -50,7 +50,6 @@ export function MemberDetailPage({ memberId: propMemberId }: { memberId?: string
   const memberId = propMemberId || (params as any)?.memberId
 
   const { authState } = useAuth()
-  const isPengurusOrAdmin = authState.status === "authenticated" && (authState.role === "pengurus" || authState.role === "admin")
   const isAdmin = authState.status === "authenticated" && authState.role === "admin"
 
   const [member, setMember] = useState<MemberDetailDto | null>(null)
@@ -114,13 +113,13 @@ export function MemberDetailPage({ memberId: propMemberId }: { memberId?: string
   }
 
   async function handleResetPassword() {
-    if (!member) return
+    if (!member || !isAdmin) return
     try {
       const res = await teamsApi.resetMemberPassword(member.id)
       setCredentialModalData({
         memberName: member.name,
         username: res.username || member.username || member.name.toLowerCase().replace(/\s+/g, ""),
-        defaultPassword: res.default_password || "sekkha123",
+        defaultPassword: res.default_password || "Sekkha****Puggala",
         userNumber: member.user_number || undefined,
         phone: member.phone,
       })
@@ -132,7 +131,7 @@ export function MemberDetailPage({ memberId: propMemberId }: { memberId?: string
 
   async function handleUpdateRole(e: React.FormEvent) {
     e.preventDefault()
-    if (!member) return
+    if (!member || !isAdmin) return
     setSavingRole(true)
     try {
       await teamsApi.updateMember(member.id, { role: newRole })
@@ -147,7 +146,7 @@ export function MemberDetailPage({ memberId: propMemberId }: { memberId?: string
   }
 
   async function handleDeleteMember() {
-    if (!member) return
+    if (!member || !isAdmin) return
     setDeleting(true)
     try {
       await teamsApi.deleteMember(member.id)
@@ -520,8 +519,8 @@ export function MemberDetailPage({ memberId: propMemberId }: { memberId?: string
               </div>
             )}
 
-            {/* ── 6. PENGURUS / ADMIN ACTIONS TOOLBAR ── */}
-            {isPengurusOrAdmin && (
+            {/* ── 6. ADMIN ACTIONS TOOLBAR ── */}
+            {isAdmin && (
               <div className="rounded-[20px] border border-[#e5e5e5] bg-[#fffaf0] p-4 sm:p-5 shadow-xs space-y-3">
                 <p className="text-[11px] font-bold uppercase tracking-wider text-[#6a6a6a]">
                   Administrative Actions
@@ -531,7 +530,7 @@ export function MemberDetailPage({ memberId: propMemberId }: { memberId?: string
                     type="button"
                     onClick={handleResetPassword}
                     className="h-11 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 rounded-[12px] border border-[#e8b94a]/50 bg-[#e8b94a]/15 px-2 text-xs font-bold text-[#0a0a0a] hover:bg-[#e8b94a]/25 transition-all cursor-pointer"
-                    title="Reset Password to default (sekkha123)"
+                    title="Reset Password to default (Sekkha[4-digit]Puggala)"
                   >
                     <KeyIcon className="size-3.5 text-[#0a0a0a]" />
                     <span className="text-[11px] sm:text-xs">Reset Pass</span>
@@ -541,7 +540,7 @@ export function MemberDetailPage({ memberId: propMemberId }: { memberId?: string
                     type="button"
                     onClick={() => setShowRoleModal(true)}
                     className="h-11 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] px-2 text-xs font-bold text-[#0a0a0a] hover:bg-[#f5f0e0] transition-all cursor-pointer"
-                    title="Change Account Role"
+                    title="Change Account Role (Admin only)"
                   >
                     <ShieldCheckIcon className="size-3.5 text-[#0a0a0a]" />
                     <span className="text-[11px] sm:text-xs">Change Role</span>
@@ -551,7 +550,7 @@ export function MemberDetailPage({ memberId: propMemberId }: { memberId?: string
                     type="button"
                     onClick={() => setShowDeleteModal(true)}
                     className="h-11 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 rounded-[12px] border border-rose-200 bg-rose-50 px-2 text-xs font-bold text-rose-600 hover:bg-rose-100 transition-all cursor-pointer"
-                    title="Delete Member"
+                    title="Delete Member (Admin only)"
                   >
                     <Trash2Icon className="size-3.5" />
                     <span className="text-[11px] sm:text-xs">Delete</span>
@@ -564,8 +563,8 @@ export function MemberDetailPage({ memberId: propMemberId }: { memberId?: string
 
       </div>
 
-      {/* ── MODAL: CHANGE ROLE ── */}
-      {showRoleModal && (
+      {/* ── MODAL: CHANGE ROLE (Admin only) ── */}
+      {showRoleModal && isAdmin && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3.5 sm:p-4 animate-in fade-in">
           <div className="relative w-full max-w-sm rounded-[24px] border border-[#e5e5e5] bg-[#fffaf0] p-5 sm:p-6 shadow-2xl space-y-4 text-left">
             <div className="flex items-center justify-between border-b border-[#e5e5e5] pb-3">
@@ -590,7 +589,7 @@ export function MemberDetailPage({ memberId: propMemberId }: { memberId?: string
                   <option value="umat">Umat (Regular Member)</option>
                   <option value="aktivis">Aktivis (Activist / Volunteer)</option>
                   <option value="pengurus">Pengurus (Organizer)</option>
-                  {isAdmin && <option value="admin">Admin Vihara (Superadmin)</option>}
+                  <option value="admin">Admin Vihara (Superadmin)</option>
                 </select>
               </div>
 
@@ -615,8 +614,8 @@ export function MemberDetailPage({ memberId: propMemberId }: { memberId?: string
         </div>
       )}
 
-      {/* ── MODAL: DELETE CONFIRMATION ── */}
-      {showDeleteModal && (
+      {/* ── MODAL: DELETE CONFIRMATION (Admin only) ── */}
+      {showDeleteModal && isAdmin && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3.5 sm:p-4 animate-in fade-in">
           <div className="relative w-full max-w-sm rounded-[24px] border border-[#e5e5e5] bg-[#fffaf0] p-5 sm:p-6 shadow-2xl space-y-4 text-center">
             <div className="mx-auto flex size-12 items-center justify-center rounded-[12px] bg-rose-50 text-rose-600 border border-rose-200">

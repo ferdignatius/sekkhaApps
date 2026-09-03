@@ -5,7 +5,7 @@ import { prisma } from "../../../lib/prisma"
 import { cached, invalidate, CacheKeys } from "../../../lib/cache"
 import { requireAuth } from "../../../middleware/auth"
 
-export const usersRouter = Router()
+export const usersRouter: Router = Router()
 
 // GET /api/users/me (cached 120s)
 usersRouter.get("/me", requireAuth, async (req, res, next) => {

@@ -3,7 +3,7 @@ import { prisma } from "../../../lib/prisma"
 import { requireAuth, requireRole } from "../../../middleware/auth"
 import { cached } from "../../../lib/cache"
 
-export const pengurusRouter = Router()
+export const pengurusRouter: Router = Router()
 
 /**
  * Interface for Recency Calculation Result

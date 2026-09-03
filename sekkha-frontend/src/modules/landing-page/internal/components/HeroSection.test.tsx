@@ -24,16 +24,16 @@ describe('HeroSection', () => {
   })
 
   // Requirement 3.3 — primary CTA button rendered
-  it('renders the "Bergabung Sekarang" CTA button', () => {
+  it('renders the "Join for Free" CTA button', () => {
     render(<HeroSection {...defaultProps} />)
-    const primaryCta = screen.getByRole('button', { name: /bergabung sekarang/i })
+    const primaryCta = screen.getByRole('button', { name: /(join for free|bergabung sekarang)/i })
     expect(primaryCta).toBeDefined()
   })
 
   // Requirement 3.4 — secondary CTA button rendered
-  it('renders the "Lihat Kegiatan" CTA button', () => {
+  it('renders the "Explore Events" CTA button', () => {
     render(<HeroSection {...defaultProps} />)
-    const secondaryCta = screen.getByRole('button', { name: /lihat kegiatan/i })
+    const secondaryCta = screen.getByRole('button', { name: /(explore events|lihat kegiatan)/i })
     expect(secondaryCta).toBeDefined()
   })
 

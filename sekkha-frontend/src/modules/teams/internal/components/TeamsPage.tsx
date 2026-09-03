@@ -2,11 +2,8 @@ import { useEffect, useState, useMemo } from "react"
 import { useNavigate } from "@tanstack/react-router"
 import {
   UsersIcon,
-  MailIcon,
   PlusIcon,
   SearchIcon,
-  UserPlusIcon,
-  ClockIcon,
   Trash2Icon,
   CheckCircleIcon,
   AlertTriangleIcon,
@@ -19,6 +16,9 @@ import {
   KeyIcon,
   Share2Icon,
   ChevronRightIcon,
+  ChevronLeftIcon,
+  ChevronsLeftIcon,
+  ChevronsRightIcon,
 } from "lucide-react"
 import QRCode from "react-qr-code"
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
@@ -26,7 +26,7 @@ import { useAuth } from "@/modules/auth"
 import { useDebounce } from "@/hooks/useDebounce"
 import { SkeletonCard, SkeletonTableRow } from "@/components/ui/skeleton"
 import { teamsApi } from "../api/teamsApi"
-import type { MemberDto, InvitationDto, CreateMemberPayload, UpdateMemberPayload } from "../api/teamsApi"
+import type { MemberDto, CreateMemberPayload, UpdateMemberPayload, PaginatedMembersResponse } from "../api/teamsApi"
 
 export function formatRoleLabel(role?: string | null): string {
   if (!role) return "Member"
@@ -47,20 +47,23 @@ export function formatRoleLabel(role?: string | null): string {
 export function TeamsPage() {
   const navigate = useNavigate()
   const { authState } = useAuth()
-  const isPengurusOrAdmin = authState.status === "authenticated" && (authState.role === "pengurus" || authState.role === "admin")
   const isAdmin = authState.status === "authenticated" && authState.role === "admin"
 
   const [members, setMembers] = useState<MemberDto[]>([])
-  const [invitations, setInvitations] = useState<InvitationDto[]>([])
+  const [totalItems, setTotalItems] = useState(0)
+  const [totalPages, setTotalPages] = useState(1)
   const [loading, setLoading] = useState(true)
+  const [stats, setStats] = useState({ total: 0, umat: 0, aktivis: 0, pengurus: 0 })
 
-  // Filters
+  // Filters & Pagination
   const [searchQuery, setSearchQuery] = useState("")
+  const debouncedSearchQuery = useDebounce(searchQuery, 300)
   const [roleFilter, setRoleFilter] = useState<string>("all")
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(15)
 
   // Modals
   const [showCreateModal, setShowCreateModal] = useState(false)
-  const [showInviteModal, setShowInviteModal] = useState(false)
   const [editingMember, setEditingMember] = useState<MemberDto | null>(null)
   const [deletingMember, setDeletingMember] = useState<MemberDto | null>(null)
   const [qrMember, setQrMember] = useState<MemberDto | null>(null)
@@ -86,15 +89,19 @@ export function TeamsPage() {
     role: "umat",
   })
   const [updateForm, setUpdateForm] = useState<UpdateMemberPayload>({})
-  const [inviteEmail, setInviteEmail] = useState("")
-  const [inviteRole, setInviteRole] = useState<"pengurus" | "aktivis">("aktivis")
   const [submitting, setSubmitting] = useState(false)
   const [toastMessage, setToastMessage] = useState<{ text: string; type: "success" | "error" } | null>(null)
   const [copiedId, setCopiedId] = useState(false)
 
+  // Reset pagination when filter/search changes
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [debouncedSearchQuery, roleFilter])
+
+  // Fetch paginated & filtered data from API
   useEffect(() => {
     loadData()
-  }, [])
+  }, [currentPage, pageSize, debouncedSearchQuery, roleFilter])
 
   function showToast(text: string, type: "success" | "error" = "success") {
     setToastMessage({ text, type })
@@ -104,12 +111,19 @@ export function TeamsPage() {
   async function loadData() {
     try {
       setLoading(true)
-      const [membersData, invitationsData] = await Promise.all([
-        teamsApi.listMembers(),
-        isPengurusOrAdmin ? teamsApi.listInvitations().catch(() => []) : Promise.resolve([]),
-      ])
-      setMembers(membersData)
-      setInvitations(invitationsData)
+      const res = (await teamsApi.listMembers({
+        search: debouncedSearchQuery.trim() || undefined,
+        role: roleFilter,
+        page: currentPage,
+        limit: pageSize,
+      })) as PaginatedMembersResponse
+
+      setMembers(res.items || [])
+      setTotalItems(res.total || 0)
+      setTotalPages(res.totalPages || 1)
+      if (res.stats) {
+        setStats(res.stats)
+      }
     } catch (err) {
       console.error("Failed to load People data:", err)
       showToast("Failed to load member data", "error")
@@ -118,10 +132,10 @@ export function TeamsPage() {
     }
   }
 
-  // Handle Create Member with auto-generated credentials
+  // Handle Create Member with auto-generated credentials (Admin only)
   async function handleCreateMember(e: React.FormEvent) {
     e.preventDefault()
-    if (!createForm.name.trim()) return
+    if (!isAdmin || !createForm.name.trim()) return
 
     try {
       setSubmitting(true)
@@ -151,7 +165,7 @@ export function TeamsPage() {
       setCredentialModalData({
         memberName: created.name,
         username: created.username || "-",
-        defaultPassword: created.default_password || "sekkha123",
+        defaultPassword: created.default_password || "Sekkha****Puggala",
         userNumber: created.user_number || undefined,
         phone: created.phone,
       })
@@ -197,26 +211,6 @@ export function TeamsPage() {
     }
   }
 
-  // Handle Send Invitation (Admin only)
-  async function handleInviteSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!inviteEmail.trim()) return
-
-    try {
-      setSubmitting(true)
-      await teamsApi.sendInvitation({ email: inviteEmail.trim(), role: inviteRole })
-      showToast(`Invitation successfully sent to ${inviteEmail.trim()}`)
-      setInviteEmail("")
-      setShowInviteModal(false)
-      const invData = await teamsApi.listInvitations()
-      setInvitations(invData)
-    } catch (err: any) {
-      showToast(err.message || "Failed to send invitation", "error")
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
   // Copy helper
   function handleCopy(text?: string | null) {
     if (!text) return
@@ -226,40 +220,22 @@ export function TeamsPage() {
     showToast("Copied to clipboard!")
   }
 
-  // Stats calculation
-  const stats = useMemo(() => {
-    const total = members.length
-    const umat = members.filter((m) => m.role === "umat").length
-    const aktivis = members.filter((m) => m.role === "aktivis").length
-    const pengurus = members.filter((m) => m.role === "pengurus" || m.role === "admin").length
-    return { total, umat, aktivis, pengurus }
-  }, [members])
+  // Pagination calculations based on server response
+  const startIndex = totalItems === 0 ? 0 : (currentPage - 1) * pageSize
+  const endIndex = Math.min(startIndex + pageSize, totalItems)
 
-  const debouncedSearchQuery = useDebounce(searchQuery, 250)
-
-  // Filtered members list with debounced query optimization
-  const filteredMembers = useMemo(() => {
-    return members.filter((m) => {
-      const q = debouncedSearchQuery.toLowerCase()
-      const matchesQuery =
-        !q ||
-        m.name.toLowerCase().includes(q) ||
-        (m.username && m.username.toLowerCase().includes(q)) ||
-        (m.email && m.email.toLowerCase().includes(q)) ||
-        (m.user_number && m.user_number.toLowerCase().includes(q)) ||
-        (m.school && m.school.toLowerCase().includes(q)) ||
-        (m.phone && m.phone.toLowerCase().includes(q))
-
-      const matchesRole =
-        roleFilter === "all"
-          ? true
-          : roleFilter === "pengurus"
-          ? m.role === "pengurus" || m.role === "admin"
-          : m.role === roleFilter
-
-      return matchesQuery && matchesRole
-    })
-  }, [members, debouncedSearchQuery, roleFilter])
+  const pageNumbers = useMemo(() => {
+    if (totalPages <= 7) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1)
+    }
+    if (currentPage <= 4) {
+      return [1, 2, 3, 4, 5, "...", totalPages]
+    }
+    if (currentPage >= totalPages - 3) {
+      return [1, "...", totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages]
+    }
+    return [1, "...", currentPage - 1, currentPage, currentPage + 1, "...", totalPages]
+  }, [totalPages, currentPage])
 
   const roleBadgeStyle: Record<string, string> = {
     admin: "bg-[#ff4d8b]/15 text-[#ff4d8b] border-[#ff4d8b]/30 font-semibold",
@@ -303,8 +279,8 @@ export function TeamsPage() {
               </div>
             </div>
 
-            {/* Action Buttons */}
-            {isPengurusOrAdmin && (
+            {/* Action Buttons (Admin only) */}
+            {isAdmin && (
               <div className="flex flex-row items-center gap-2 w-full sm:w-auto">
                 <button
                   type="button"
@@ -314,17 +290,6 @@ export function TeamsPage() {
                   <PlusIcon className="size-4" />
                   <span>Add New Member</span>
                 </button>
-
-                {isAdmin && (
-                  <button
-                    type="button"
-                    onClick={() => setShowInviteModal(true)}
-                    className="h-11 flex items-center justify-center gap-2 rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-4 text-xs sm:text-sm font-bold text-[#0a0a0a] shadow-xs hover:bg-[#faf5e8] transition-all active:scale-[0.98] cursor-pointer shrink-0"
-                  >
-                    <UserPlusIcon className="size-4 text-[#1a3a3a]" />
-                    <span>Invite Staff</span>
-                  </button>
-                )}
               </div>
             )}
           </div>
@@ -431,16 +396,14 @@ export function TeamsPage() {
             </div>
           </div>
 
-          {/* Main Grid: Directory & Invitations (if Admin) */}
-          <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
-            
-            {/* Members Directory (Col Span 2 or 3) */}
-            <div className={`space-y-3 sm:space-y-4 ${isAdmin ? "lg:col-span-2" : "lg:col-span-3"}`}>
+          {/* Main Directory */}
+          <div className="w-full space-y-3 sm:space-y-4">
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-sm font-bold text-[#0a0a0a]">Members Directory</h2>
                   <p className="text-xs text-[#6a6a6a]">
-                    Showing {filteredMembers.length} of {members.length} registered members
+                    Showing {totalItems === 0 ? 0 : startIndex + 1}–{endIndex} of {totalItems} members
+                    {totalItems !== members.length && ` (filtered from ${members.length} total)`}
                   </p>
                 </div>
               </div>
@@ -474,7 +437,7 @@ export function TeamsPage() {
                     </table>
                   </div>
                 </>
-              ) : filteredMembers.length === 0 ? (
+              ) : members.length === 0 ? (
                 <div className="flex min-h-[260px] flex-col items-center justify-center rounded-[20px] border border-dashed border-[#e5e5e5] bg-[#fffaf0] p-8 text-center">
                   <UsersIcon className="size-10 text-[#6a6a6a]/40 mb-2" />
                   <p className="text-sm font-bold text-[#0a0a0a]">No members found</p>
@@ -486,7 +449,7 @@ export function TeamsPage() {
                 <>
                   {/* 📱 MOBILE VIEW: Touch-optimized Card List (< md) */}
                   <div className="md:hidden space-y-3">
-                    {filteredMembers.map((m) => {
+                    {members.map((m) => {
                       const initials =
                         m.name
                           .split(" ")
@@ -573,7 +536,7 @@ export function TeamsPage() {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-[#f0f0f0]">
-                          {filteredMembers.map((m) => {
+                          {members.map((m) => {
                             const initials = m.name
                               .split(" ")
                               .slice(0, 2)
@@ -665,68 +628,104 @@ export function TeamsPage() {
                       </table>
                     </div>
                   </div>
+
+                  {/* ── PAGINATION CONTROLS BAR (CLAY DESIGN) ── */}
+                  {totalItems > 0 && (
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0] p-3 sm:p-4 text-xs text-[#0a0a0a] shadow-xs">
+                      {/* Left: Summary & Page Size Select */}
+                      <div className="flex items-center justify-between sm:justify-start gap-3 w-full sm:w-auto">
+                        <span className="text-[#6a6a6a]">
+                          Showing <strong className="text-[#0a0a0a]">{startIndex + 1}</strong>–<strong className="text-[#0a0a0a]">{endIndex}</strong> of <strong className="text-[#0a0a0a]">{totalItems}</strong> members
+                        </span>
+
+                        <div className="flex items-center gap-1.5 border-l border-[#e5e5e5] pl-3">
+                          <span className="text-[#6a6a6a]">Per page:</span>
+                          <select
+                            value={pageSize}
+                            onChange={(e) => {
+                              setPageSize(Number(e.target.value))
+                              setCurrentPage(1)
+                            }}
+                            className="h-8 rounded-[8px] border border-[#e5e5e5] bg-[#fffaf0] px-2 text-xs font-bold text-[#0a0a0a] outline-none shadow-xs cursor-pointer focus:border-[#0a0a0a]"
+                          >
+                            <option value={10}>10</option>
+                            <option value={15}>15</option>
+                            <option value={25}>25</option>
+                            <option value={50}>50</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Right: Page Navigation Buttons */}
+                      <div className="flex items-center justify-center sm:justify-end gap-1 w-full sm:w-auto overflow-x-auto py-0.5">
+                        <button
+                          type="button"
+                          onClick={() => setCurrentPage(1)}
+                          disabled={currentPage === 1}
+                          className="size-8 flex items-center justify-center rounded-[8px] border border-[#e5e5e5] bg-[#fffaf0] hover:bg-[#faf5e8] text-[#0a0a0a] disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer shadow-xs"
+                          title="First page"
+                        >
+                          <ChevronsLeftIcon className="size-3.5" />
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                          disabled={currentPage === 1}
+                          className="size-8 flex items-center justify-center rounded-[8px] border border-[#e5e5e5] bg-[#fffaf0] hover:bg-[#faf5e8] text-[#0a0a0a] disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer shadow-xs"
+                          title="Previous page"
+                        >
+                          <ChevronLeftIcon className="size-3.5" />
+                        </button>
+
+                        {/* Page Numbers */}
+                        <div className="flex items-center gap-1 px-1">
+                          {pageNumbers.map((page, idx) =>
+                            typeof page === "number" ? (
+                              <button
+                                key={idx}
+                                type="button"
+                                onClick={() => setCurrentPage(page)}
+                                className={`size-8 flex items-center justify-center rounded-[8px] text-xs font-bold transition-all cursor-pointer shadow-xs ${
+                                  page === currentPage
+                                    ? "bg-[#0a0a0a] text-white"
+                                    : "border border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] hover:bg-[#faf5e8]"
+                                }`}
+                              >
+                                {page}
+                              </button>
+                            ) : (
+                              <span key={idx} className="px-1 text-[#6a6a6a] font-bold">
+                                ...
+                              </span>
+                            )
+                          )}
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                          disabled={currentPage === totalPages}
+                          className="size-8 flex items-center justify-center rounded-[8px] border border-[#e5e5e5] bg-[#fffaf0] hover:bg-[#faf5e8] text-[#0a0a0a] disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer shadow-xs"
+                          title="Next page"
+                        >
+                          <ChevronRightIcon className="size-3.5" />
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setCurrentPage(totalPages)}
+                          disabled={currentPage === totalPages}
+                          className="size-8 flex items-center justify-center rounded-[8px] border border-[#e5e5e5] bg-[#fffaf0] hover:bg-[#faf5e8] text-[#0a0a0a] disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer shadow-xs"
+                          title="Last page"
+                        >
+                          <ChevronsRightIcon className="size-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </>
               )}
-            </div>
-
-            {/* Invitations History (Admin only) */}
-            {isAdmin && (
-              <div className="space-y-3 sm:space-y-4">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-sm font-bold text-[#0a0a0a]">Staff Invitations History</h2>
-                  <ClockIcon className="size-4 text-[#6a6a6a]" />
-                </div>
-
-                {loading ? (
-                  <div className="h-64 flex items-center justify-center rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0] text-center">
-                    <span className="text-xs text-[#6a6a6a]">Loading...</span>
-                  </div>
-                ) : invitations.length === 0 ? (
-                  <div className="h-48 flex flex-col items-center justify-center rounded-[16px] border border-dashed border-[#e5e5e5] bg-[#fffaf0] text-center p-4">
-                    <MailIcon className="size-6 text-[#6a6a6a] mb-1" />
-                    <span className="text-xs text-[#6a6a6a]">No invitations sent yet.</span>
-                  </div>
-                ) : (
-                  <div className="space-y-2.5">
-                    {invitations.map((inv) => {
-                      const statusStyles: Record<string, string> = {
-                        pending: "bg-amber-50 text-amber-800 border-amber-200",
-                        accepted: "bg-emerald-50 text-emerald-800 border-emerald-200",
-                        rejected: "bg-rose-50 text-rose-800 border-rose-200",
-                      }
-
-                      return (
-                        <div
-                          key={inv.id}
-                          className="rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0] p-3.5 space-y-1.5 shadow-xs hover:shadow-sm transition-shadow"
-                        >
-                          <div className="flex justify-between items-center">
-                            <p className="text-xs font-bold text-[#0a0a0a] truncate max-w-[160px]">{inv.email}</p>
-                            <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold capitalize ${statusStyles[inv.status]}`}>
-                              {inv.status}
-                            </span>
-                          </div>
-                          <p className="text-xs text-[#6a6a6a]">
-                            Invited as: <span className="font-bold text-[#0a0a0a] uppercase">{inv.role}</span>
-                          </p>
-                          <div className="flex justify-between text-[11px] text-[#6a6a6a] pt-1.5 border-t border-[#e5e5e5] mt-1">
-                            <span>Invited by: {inv.invited_by?.name || "Admin"}</span>
-                            <span>
-                              {new Date(inv.created_at).toLocaleDateString("en-US", {
-                                day: "numeric",
-                                month: "short",
-                                year: "numeric",
-                              })}
-                            </span>
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
-
           </div>
 
         </div>
@@ -734,21 +733,19 @@ export function TeamsPage() {
 
 
       {/* ───────────────────────────────────────────────────────────────────────── */}
-      {/* MODAL 1: Create Pre-provisioned Member                                    */}
+      {/* MODAL 1: Create Pre-provisioned Member (Admin only)                       */}
       {/* ───────────────────────────────────────────────────────────────────────── */}
-      {showCreateModal && (
-
-
+      {showCreateModal && isAdmin && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3.5 sm:p-4 animate-in fade-in">
           <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-[24px] border border-[#e5e5e5] bg-[#fffaf0] p-4 sm:p-6 shadow-2xl space-y-4 sm:space-y-5 text-left">
             <div className="flex items-center justify-between border-b border-[#e5e5e5] pb-3">
               <div className="flex items-center gap-2.5">
                 <div className="flex size-9 items-center justify-center rounded-[10px] bg-[#0a0a0a] text-white shadow-xs">
-                  <UserPlusIcon className="size-4.5 text-[#e8b94a]" />
+                  <PlusIcon className="size-4.5 text-[#e8b94a]" />
                 </div>
                 <div>
                   <h3 className="text-sm sm:text-base font-bold text-[#0a0a0a]">Add New Member</h3>
-                  <p className="text-[11px] sm:text-xs text-[#6a6a6a]">Pre-provision member account by Organizer</p>
+                  <p className="text-[11px] sm:text-xs text-[#6a6a6a]">Pre-provision member account by Admin</p>
                 </div>
               </div>
               <button
@@ -860,12 +857,13 @@ export function TeamsPage() {
                     <option value="umat">Member</option>
                     <option value="aktivis">Activist</option>
                     <option value="pengurus">Organizer</option>
+                    <option value="admin">Admin</option>
                   </select>
                 </div>
               </div>
 
               <div className="rounded-[12px] bg-[#faf5e8] p-3 text-xs text-[#0a0a0a] border border-[#e5e5e5] leading-relaxed space-y-1">
-                <p>💡 <strong>Default Password:</strong> New accounts are assigned temporary password <code className="font-bold bg-[#f5f0e0] px-1.5 py-0.5 rounded">sekkha123</code>. Members can change it anytime in Profile.</p>
+                <p>💡 <strong>Default Password:</strong> New accounts are assigned an auto-generated temporary password with format <code className="font-bold bg-[#f5f0e0] px-1.5 py-0.5 rounded">Sekkha[4-digit]Puggala</code>. Members can change it anytime in Profile.</p>
               </div>
 
               <div className="flex gap-2.5 pt-2">
@@ -1108,75 +1106,7 @@ export function TeamsPage() {
       )}
 
       {/* ───────────────────────────────────────────────────────────────────────── */}
-      {/* MODAL 5: Invite Staff (Admin only)                                        */}
-      {/* ───────────────────────────────────────────────────────────────────────── */}
-      {showInviteModal && isAdmin && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3.5 sm:p-4 animate-in fade-in">
-          <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-[24px] border border-[#e5e5e5] bg-[#fffaf0] p-4 sm:p-6 shadow-2xl space-y-4 sm:space-y-5 text-left">
-            <div className="flex items-center justify-between border-b border-[#e5e5e5] pb-3">
-              <div className="flex items-center gap-2.5">
-                <div className="flex size-9 items-center justify-center rounded-[10px] bg-[#0a0a0a] text-white shadow-xs">
-                  <UserPlusIcon className="size-4.5 text-[#e8b94a]" />
-                </div>
-                <h3 className="text-sm sm:text-base font-bold text-[#0a0a0a]">Invite Staff Member</h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowInviteModal(false)}
-                className="rounded-full p-1.5 text-[#6a6a6a] hover:bg-[#faf5e8] cursor-pointer"
-              >
-                <XIcon className="size-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleInviteSubmit} className="space-y-4">
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-[#0a0a0a]">Staff Email Address</label>
-                <input
-                  type="email"
-                  required
-                  placeholder="staff.member@gmail.com"
-                  value={inviteEmail}
-                  onChange={(e) => setInviteEmail(e.target.value)}
-                  className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-xs sm:text-sm text-[#0a0a0a] outline-none focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a]"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-[#0a0a0a]">Assigned Role</label>
-                <select
-                  value={inviteRole}
-                  onChange={(e) => setInviteRole(e.target.value as "pengurus" | "aktivis")}
-                  className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-xs sm:text-sm text-[#0a0a0a] outline-none focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a]"
-                >
-                  <option value="aktivis">Activist (Access: Events & Attendance Duties)</option>
-                  <option value="pengurus">Organizer (Full Management & Data Access)</option>
-                </select>
-              </div>
-
-              <div className="flex gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowInviteModal(false)}
-                  className="h-11 flex-1 rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] text-xs sm:text-sm font-semibold text-[#0a0a0a] hover:bg-[#faf5e8] transition-colors cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="h-11 flex-1 rounded-[12px] bg-[#0a0a0a] text-xs sm:text-sm font-bold text-white shadow-xs hover:bg-[#1f1f1f] transition-all disabled:opacity-50 cursor-pointer"
-                >
-                  {submitting ? "Sending..." : "Send Invitation"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* ───────────────────────────────────────────────────────────────────────── */}
-      {/* MODAL 6: Member Credentials Modal (Pengurus / Admin)                      */}
+      {/* MODAL 5: Member Credentials Modal (Pengurus / Admin)                      */}
       {/* ───────────────────────────────────────────────────────────────────────── */}
       {credentialModalData && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3.5 sm:p-4 animate-in fade-in">

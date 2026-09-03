@@ -20,7 +20,7 @@ describe('CTABanner', () => {
     ).toBeDefined()
   })
 
-  it('calls onSignUpNavigate when "bergabung sekarang" button is clicked', () => {
+  it('calls onSignUpNavigate when CTA button is clicked', () => {
     const onSignUpNavigate = vi.fn()
 
     render(
@@ -30,20 +30,12 @@ describe('CTABanner', () => {
       />,
     )
 
-    fireEvent.click(screen.getByRole('button', { name: /bergabung sekarang/i }))
+    fireEvent.click(screen.getByRole('button', { name: /(join for free|join now|bergabung sekarang)/i }))
 
     expect(onSignUpNavigate).toHaveBeenCalledTimes(1)
   })
 
   it('still invokes onSignUpNavigate even when the function throws (no internal suppression)', () => {
-    // CTABanner has no try-catch — it delegates error handling to the parent
-    // (LandingPage, implemented in task 8.1).  We verify the prop is always
-    // called on click regardless of what it does; error display is out of scope
-    // for this component.
-    //
-    // React 19 re-dispatches event handler errors as Node uncaughtExceptions.
-    // We intercept process-level uncaughtException for this test to keep the
-    // suite clean while still asserting the prop was invoked.
     const throwingNavigate = vi.fn(() => {
       throw new Error('Route not available')
     })
@@ -62,7 +54,7 @@ describe('CTABanner', () => {
         />,
       )
 
-      fireEvent.click(screen.getByRole('button', { name: /bergabung sekarang/i }))
+      fireEvent.click(screen.getByRole('button', { name: /(join for free|join now|bergabung sekarang)/i }))
     } finally {
       process.off('uncaughtException', uncaughtHandler)
     }

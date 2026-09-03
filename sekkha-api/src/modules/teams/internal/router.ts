@@ -6,7 +6,7 @@ import { requireAuth, requireRole } from "../../../middleware/auth"
 import { generateUniqueUsername } from "../../auth/internal/repository"
 import { invalidate, CacheKeys } from "../../../lib/cache"
 
-export const teamsRouter = Router()
+export const teamsRouter: Router = Router()
 
 // Helper: Generate standardized user number format YYYYMMDDxxxx
 async function generateUserNumber(date: Date = new Date()): Promise<string> {
@@ -18,6 +18,12 @@ async function generateUserNumber(date: Date = new Date()): Promise<string> {
     where: { userNumber: { startsWith: prefix } },
   })
   return `${prefix}${String(count + 1).padStart(4, "0")}`
+}
+
+// Helper: Generate default password with format Sekkha(num random 4)Puggala
+export function generateDefaultPassword(): string {
+  const random4 = Math.floor(1000 + Math.random() * 9000).toString()
+  return `Sekkha${random4}Puggala`
 }
 
 // 1. GET /api/teams/members — List all members with filtering
@@ -36,7 +42,11 @@ teamsRouter.get("/members", requireAuth, async (req, res, next) => {
     }
 
     if (roleFilter !== "all") {
-      where.role = roleFilter
+      if (roleFilter === "pengurus") {
+        where.role = { in: ["pengurus", "admin"] }
+      } else {
+        where.role = roleFilter
+      }
     }
 
     if (searchQuery) {
@@ -52,37 +62,48 @@ teamsRouter.get("/members", requireAuth, async (req, res, next) => {
 
     const limitParam = req.query.limit ? parseInt(req.query.limit as string, 10) : undefined
     const pageParam = req.query.page ? parseInt(req.query.page as string, 10) : undefined
-    const skip = pageParam && limitParam ? (pageParam - 1) * limitParam : undefined
+    const isPaginated = pageParam !== undefined || limitParam !== undefined
+    const limit = limitParam && limitParam > 0 ? limitParam : 15
+    const page = pageParam && pageParam > 0 ? pageParam : 1
+    const skip = isPaginated ? (page - 1) * limit : undefined
+    const take = isPaginated ? limit : undefined
 
-    const rawMembers = await (prisma.user as any).findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-      take: limitParam,
-      skip,
-      select: {
-        id: true,
-        name: true,
-        username: true,
-        email: true,
-        phone: true,
-        school: true,
-        birthDate: true,
-        gender: true,
-        role: true,
-        avatarUrl: true,
-        userNumber: true,
-        isClaimed: true,
-        claimedAt: true,
-        claimPin: true,
-        points: true,
-        createdAt: true,
-        _count: {
-          select: {
-            attendances: true,
+    const [totalMatching, rawMembers, totalAll, umatCount, aktivisCount, pengurusCount] = await Promise.all([
+      (prisma.user as any).count({ where }),
+      (prisma.user as any).findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        take,
+        skip,
+        select: {
+          id: true,
+          name: true,
+          username: true,
+          email: true,
+          phone: true,
+          school: true,
+          birthDate: true,
+          gender: true,
+          role: true,
+          avatarUrl: true,
+          userNumber: true,
+          isClaimed: true,
+          claimedAt: true,
+          claimPin: true,
+          points: true,
+          createdAt: true,
+          _count: {
+            select: {
+              attendances: true,
+            },
           },
         },
-      },
-    })
+      }),
+      (prisma.user as any).count(),
+      (prisma.user as any).count({ where: { role: "umat" } }),
+      (prisma.user as any).count({ where: { role: "aktivis" } }),
+      (prisma.user as any).count({ where: { role: { in: ["pengurus", "admin"] } } }),
+    ])
 
     const members = rawMembers.map((m: any) => ({
       id: m.id,
@@ -103,6 +124,23 @@ teamsRouter.get("/members", requireAuth, async (req, res, next) => {
       points: m.points ?? 0,
       created_at: new Date(m.createdAt).toISOString(),
     }))
+
+    if (isPaginated) {
+      const totalPages = Math.max(1, Math.ceil(totalMatching / limit))
+      return res.json({
+        items: members,
+        total: totalMatching,
+        page,
+        limit,
+        totalPages,
+        stats: {
+          total: totalAll,
+          umat: umatCount,
+          aktivis: aktivisCount,
+          pengurus: pengurusCount,
+        },
+      })
+    }
 
     res.json(members)
   } catch (err) {
@@ -212,7 +250,7 @@ const CreateMemberSchema = z.object({
   default_password: z.string().min(6).optional(),
 })
 
-teamsRouter.post("/members", requireAuth, requireRole("pengurus", "admin"), async (req, res, next) => {
+teamsRouter.post("/members", requireAuth, requireRole("admin"), async (req, res, next) => {
   try {
     const data = CreateMemberSchema.parse(req.body)
 
@@ -235,7 +273,7 @@ teamsRouter.post("/members", requireAuth, requireRole("pengurus", "admin"), asyn
       return
     }
 
-    const defaultPassword = data.default_password || "sekkha123"
+    const defaultPassword = data.default_password || generateDefaultPassword()
     const hashedPassword = await bcrypt.hash(defaultPassword, 10)
     const userNumber = await generateUserNumber()
 
@@ -301,6 +339,12 @@ teamsRouter.put("/members/:id", requireAuth, requireRole("pengurus", "admin"), a
     const id = req.params.id as string
     const data = UpdateMemberSchema.parse(req.body)
 
+    // Only admin can change member role
+    if (data.role && req.user?.role !== "admin") {
+      res.status(403).json({ error: "Only admin can change member role." })
+      return
+    }
+
     const existing = await (prisma.user as any).findUnique({ where: { id } })
     if (!existing) {
       res.status(404).json({ error: "Member not found" })
@@ -362,7 +406,7 @@ teamsRouter.put("/members/:id", requireAuth, requireRole("pengurus", "admin"), a
 })
 
 // 5. DELETE /api/teams/members/:id — Delete member
-teamsRouter.delete("/members/:id", requireAuth, requireRole("pengurus", "admin"), async (req, res, next) => {
+teamsRouter.delete("/members/:id", requireAuth, requireRole("admin"), async (req, res, next) => {
   try {
     const id = req.params.id as string
     const currentUserId = req.user!.userId
@@ -585,8 +629,8 @@ teamsRouter.post("/invitations/:id/reject", requireAuth, async (req, res, next) 
   }
 })
 
-// 10. POST /api/teams/members/:id/reset-password — Pengurus/Admin resets a member's password to default
-teamsRouter.post("/members/:id/reset-password", requireAuth, requireRole("pengurus", "admin"), async (req, res, next) => {
+// 10. POST /api/teams/members/:id/reset-password — Admin resets a member's password to default
+teamsRouter.post("/members/:id/reset-password", requireAuth, requireRole("admin"), async (req, res, next) => {
   try {
     const id = req.params.id as string
     const targetUser = await (prisma.user as any).findUnique({
@@ -598,7 +642,7 @@ teamsRouter.post("/members/:id/reset-password", requireAuth, requireRole("pengur
       return
     }
 
-    const defaultPassword = "sekkha123"
+    const defaultPassword = generateDefaultPassword()
     const hashedPassword = await bcrypt.hash(defaultPassword, 10)
 
     await (prisma.user as any).update({

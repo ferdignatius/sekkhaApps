@@ -381,8 +381,9 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
           open={settingsOpen}
           onOpenChange={setSettingsOpen}
           title="Settings & Goals"
+          maxWidth="max-w-md"
         >
-          <SettingsSection onLogout={logout} />
+          <SettingsSection onLogout={logout} onClose={() => setSettingsOpen(false)} />
         </ResponsiveFormModal>
       </SidebarFooter>
 

@@ -47,23 +47,23 @@ export function DashboardMockup() {
       
       {/* ── Outer Whiteboard Frame ── */}
       <motion.div
-        className="w-full glass-panel rounded-2xl p-4 md:p-6 shadow-xl relative z-10"
+        className="w-full bg-white/95 rounded-[24px] p-4 md:p-6 shadow-xs border border-sekkha-hairline relative z-10 backdrop-blur-md"
         initial={{ opacity: 0, y: 48 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.85, ease: 'easeOut', delay: 0.4 }}
       >
         {/* Mockup Header Bar */}
-        <div className="flex items-center justify-between pb-4 mb-4 border-b border-sekkha-hairline-soft">
+        <div className="flex items-center justify-between pb-4 mb-4 border-b border-sekkha-hairline">
           <div className="flex items-center gap-2">
-            <span className="h-3 w-3 rounded-full bg-red-400" />
-            <span className="h-3 w-3 rounded-full bg-yellow-400" />
-            <span className="h-3 w-3 rounded-full bg-green-400" />
-            <span className="text-micro-uppercase font-semibold text-sekkha-slate ml-2 tracking-wider hidden sm:inline">
+            <span className="h-3 w-3 rounded-full bg-[#ff4d8b]" />
+            <span className="h-3 w-3 rounded-full bg-[#e8b94a]" />
+            <span className="h-3 w-3 rounded-full bg-[#22c55e]" />
+            <span className="text-caption-uppercase font-semibold text-sekkha-slate ml-2 tracking-wider hidden sm:inline">
               Youth Workspace • Vihara Tri Maha Dharma
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-sekkha-teal-light px-2.5 py-0.5 text-micro font-medium text-sekkha-ink">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#a4d4c5]/40 border border-[#a4d4c5]/60 px-2.5 py-0.5 text-micro font-medium text-[#1a3a3a]">
               ● Live Preview
             </span>
           </div>

@@ -33,12 +33,12 @@ function DesktopCTA({ authState }: { authState: AuthState }) {
       <div className="hidden md:flex items-center gap-3">
         <div
           className="animate-pulse bg-sekkha-hairline rounded-md"
-          style={{ width: 100, height: 36 }}
+          style={{ width: 100, height: 40 }}
           aria-hidden="true"
         />
         <div
           className="animate-pulse bg-sekkha-hairline rounded-md"
-          style={{ width: 120, height: 36 }}
+          style={{ width: 130, height: 40 }}
           aria-hidden="true"
         />
       </div>
@@ -48,8 +48,8 @@ function DesktopCTA({ authState }: { authState: AuthState }) {
   if (authState === 'authenticated') {
     return (
       <div className="hidden md:flex items-center">
-        <Button variant="primary" asChild>
-          <a href="/home">Dashboard</a>
+        <Button variant="primary" asChild className="rounded-[12px] h-[44px] px-5 bg-sekkha-primary text-white font-semibold">
+          <a href="/dashboard">Dashboard</a>
         </Button>
       </div>
     )
@@ -57,11 +57,11 @@ function DesktopCTA({ authState }: { authState: AuthState }) {
 
   return (
     <div className="hidden md:flex items-center gap-3">
-      <Button variant="secondary" asChild>
-        <a href="/login" className="!text-sekkha-ink font-semibold">Sign In</a>
+      <Button variant="secondary" asChild className="rounded-[12px] h-[44px] px-5 bg-sekkha-canvas border border-sekkha-hairline !text-sekkha-ink font-semibold hover:bg-sekkha-surface">
+        <a href="/login">Sign In</a>
       </Button>
-      <Button variant="primary" asChild>
-        <a href="/sign-up" className="!text-white font-semibold">Join for Free</a>
+      <Button variant="primary" asChild className="rounded-[12px] h-[44px] px-5 bg-sekkha-primary hover:bg-[#1f1f1f] !text-white font-semibold shadow-xs">
+        <a href="/sign-up">Join for Free</a>
       </Button>
     </div>
   )
@@ -73,8 +73,8 @@ function MobileInlineCTA({ authState }: { authState: AuthState }) {
   if (authState === 'loading') {
     return (
       <div
-        className="md:hidden animate-pulse bg-sekkha-hairline rounded-full"
-        style={{ width: 72, height: 34 }}
+        className="md:hidden animate-pulse bg-sekkha-hairline rounded-md"
+        style={{ width: 72, height: 36 }}
         aria-hidden="true"
       />
     )
@@ -82,14 +82,14 @@ function MobileInlineCTA({ authState }: { authState: AuthState }) {
 
   if (authState === 'authenticated') {
     return (
-      <Button variant="primary" asChild className="md:hidden text-body-sm px-4 py-2 h-auto">
-        <a href="/home">Dashboard</a>
+      <Button variant="primary" asChild className="md:hidden text-body-sm px-4 py-2 h-[38px] rounded-[10px] bg-sekkha-primary text-white font-semibold">
+        <a href="/dashboard">Dashboard</a>
       </Button>
     )
   }
 
   return (
-    <Button variant="primary" asChild className="md:hidden text-body-sm px-4 py-2 h-auto">
+    <Button variant="primary" asChild className="md:hidden text-body-sm px-4 py-2 h-[38px] rounded-[10px] bg-sekkha-primary text-white font-semibold">
       <a href="/login">Sign In</a>
     </Button>
   )
@@ -163,7 +163,7 @@ function MobileDrawer({ isOpen, onClose, authState, navLinks, firstFocusableRef 
         <>
           {/* Backdrop */}
           <motion.div
-            className="fixed inset-0 z-40 bg-black/20"
+            className="fixed inset-0 z-40 bg-black/20 backdrop-blur-xs"
             onClick={onClose}
             aria-hidden="true"
             initial={{ opacity: 0 }}
@@ -184,15 +184,15 @@ function MobileDrawer({ isOpen, onClose, authState, navLinks, firstFocusableRef 
             exit={{ opacity: 0, y: -12 }}
             transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
           >
-            <nav aria-label="Mobile navigation" className="flex flex-col px-4 py-6 gap-4">
+            <nav aria-label="Mobile navigation" className="flex flex-col px-6 py-6 gap-4">
               {navLinks.map((link, idx) => (
                 <a
                   key={link.href}
                   href={link.href}
                   ref={idx === 0 ? firstFocusableRef : undefined}
                   className={cn(
-                    'text-body-sm-medium text-sekkha-ink py-2',
-                    'focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-sekkha-primary focus-visible:outline-none rounded-sm',
+                    'text-body-md text-sekkha-ink py-2 font-medium',
+                    'focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-sekkha-primary focus-visible:outline-none rounded-md',
                   )}
                   onClick={onClose}
                 >
@@ -201,15 +201,20 @@ function MobileDrawer({ isOpen, onClose, authState, navLinks, firstFocusableRef 
               ))}
 
               {/* Extra CTA in drawer */}
-              <div className="flex flex-col gap-3 pt-2 border-t border-sekkha-hairline">
+              <div className="flex flex-col gap-3 pt-3 border-t border-sekkha-hairline">
                 {authState === 'unauthenticated' && (
-                  <Button variant="secondary" asChild>
-                    <a href="/sign-up" onClick={onClose}>Join for Free</a>
-                  </Button>
+                  <>
+                    <Button variant="secondary" asChild className="h-11 rounded-[12px] bg-white border border-sekkha-hairline !text-sekkha-ink font-semibold">
+                      <a href="/login" onClick={onClose}>Sign In</a>
+                    </Button>
+                    <Button variant="primary" asChild className="h-11 rounded-[12px] bg-sekkha-primary text-white font-semibold">
+                      <a href="/sign-up" onClick={onClose}>Join for Free</a>
+                    </Button>
+                  </>
                 )}
                 {authState === 'authenticated' && (
-                  <Button variant="primary" asChild>
-                    <a href="/home" onClick={onClose}>Dashboard</a>
+                  <Button variant="primary" asChild className="h-11 rounded-[12px] bg-sekkha-primary text-white font-semibold">
+                    <a href="/dashboard" onClick={onClose}>Dashboard</a>
                   </Button>
                 )}
               </div>

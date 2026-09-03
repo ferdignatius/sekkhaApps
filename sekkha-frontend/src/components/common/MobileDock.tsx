@@ -390,8 +390,9 @@ export function MobileDock() {
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
         title="Settings & Goals"
+        maxWidth="max-w-md"
       >
-        <SettingsSection onLogout={logout} />
+        <SettingsSection onLogout={logout} onClose={() => setSettingsOpen(false)} />
       </ResponsiveFormModal>
 
     </div>

@@ -15,29 +15,29 @@ export function CTABanner({ heading, onSignUpNavigate }: CTABannerProps) {
   return (
     <section
       aria-labelledby="cta-heading"
-      className="relative mx-auto w-full max-w-[1280px] px-4 md:px-8 py-[64px]"
+      className="relative mx-auto w-full max-w-[1280px] px-4 md:px-8 py-[96px]"
     >
       <motion.div
-        className="glass-panel relative overflow-hidden rounded-[36px] p-8 md:p-14 flex flex-col items-center text-center shadow-2xl border border-white/80 bg-gradient-to-br from-white/95 via-amber-50/60 to-teal-50/60"
-        initial={{ opacity: 0, scale: 0.96 }}
+        className="relative overflow-hidden rounded-[24px] p-8 md:p-16 flex flex-col items-center text-center bg-sekkha-surface border border-sekkha-hairline shadow-xs"
+        initial={{ opacity: 0, scale: 0.98 }}
         whileInView={{ opacity: 1, scale: 1 }}
         viewport={{ once: true, margin: '-80px' }}
         transition={{ duration: 0.65, ease: "easeOut" }}
       >
-        {/* Background ambient decorative shapes */}
+        {/* Background subtle warm glow */}
         <span
-          className="pointer-events-none absolute -top-24 -left-24 h-80 w-80 rounded-full bg-amber-200/40 blur-3xl animate-pulse-slow"
+          className="pointer-events-none absolute -top-24 -left-24 h-80 w-80 rounded-full bg-[#e8b94a]/15 blur-3xl"
           aria-hidden="true"
         />
         <span
-          className="pointer-events-none absolute -bottom-24 -right-24 h-80 w-80 rounded-full bg-teal-200/40 blur-3xl animate-float"
+          className="pointer-events-none absolute -bottom-24 -right-24 h-80 w-80 rounded-full bg-[#1a3a3a]/10 blur-3xl"
           aria-hidden="true"
         />
 
         <div className="relative z-10 flex flex-col items-center max-w-[800px] w-full">
           {/* Quote Icon Badge */}
-          <div className="inline-flex items-center justify-center p-3 rounded-full bg-amber-100/90 border border-amber-200/70 mb-5 shadow-sm">
-            <QuoteIcon className="size-5 text-amber-800" />
+          <div className="inline-flex items-center justify-center p-3 rounded-full bg-white border border-sekkha-hairline mb-5 shadow-xs">
+            <QuoteIcon className="size-5 text-[#e8b94a]" />
           </div>
 
           {/* Dhamma Quote */}
@@ -47,21 +47,21 @@ export function CTABanner({ heading, onSignUpNavigate }: CTABannerProps) {
 
           {/* Author info */}
           <div className="flex items-center gap-2.5 mb-6">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-sekkha-primary text-white font-bold text-micro shadow-sm">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-sekkha-primary text-white font-bold text-micro shadow-xs">
               TM
             </div>
             <p className="text-body-sm font-semibold text-sekkha-ink">
-              Youth Spiritual Mentors • <span className="text-sekkha-slate font-normal">Vihara Tri Maha Dharma</span>
+              Youth Mentors & Sangha • <span className="text-sekkha-slate font-normal">Vihara Tri Maha Dharma</span>
             </p>
           </div>
 
           {/* Separator line */}
-          <div className="w-24 h-px bg-sekkha-hairline-strong/40 mb-6" aria-hidden="true" />
+          <div className="w-24 h-px bg-sekkha-hairline mb-8" aria-hidden="true" />
 
           {/* Heading */}
           <motion.h2
             id="cta-heading"
-            className="text-heading-2 text-sekkha-ink font-bold tracking-tight text-2xl sm:text-3xl md:text-4xl mb-6"
+            className="text-display-md text-sekkha-ink font-medium tracking-[-1px] text-2xl sm:text-3xl md:text-4xl mb-8"
             initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -80,16 +80,16 @@ export function CTABanner({ heading, onSignUpNavigate }: CTABannerProps) {
             <Button
               variant="primary"
               onClick={onSignUpNavigate}
-              className="shadow-xl hover:scale-105 transition-all text-body-md font-semibold px-8 py-4"
+              className="h-[44px] px-8 rounded-[12px] bg-sekkha-primary hover:bg-[#1f1f1f] text-white font-semibold shadow-xs hover:scale-[1.02] transition-all"
             >
-              Join Now — Free
+              Join for Free
             </Button>
           </motion.div>
 
           {/* Sub-badge */}
-          <div className="mt-6 flex items-center gap-1.5 text-micro font-medium text-amber-900 bg-amber-100/70 px-3.5 py-1.5 rounded-full border border-amber-200/60">
-            <HeartIcon className="size-3.5 fill-amber-500 text-amber-600" />
-            <span>Cultivating Mindfulness & Compassion in Youth</span>
+          <div className="mt-6 flex items-center gap-2 text-micro font-medium text-sekkha-slate bg-white px-4 py-1.5 rounded-full border border-sekkha-hairline">
+            <HeartIcon className="size-3.5 fill-[#ff4d8b] text-[#ff4d8b]" />
+            <span>Cultivating Mindfulness, Wisdom & Fellowship</span>
           </div>
         </div>
       </motion.div>

@@ -18,6 +18,7 @@ import { leaderboardModule } from "./modules/leaderboard/module"
 import { teamsModule } from "./modules/teams/module"
 import { notificationsModule } from "./modules/notifications/module"
 import { pengurusModule } from "./modules/pengurus/module"
+import { schoolsModule } from "./modules/schools/module"
 
 dotenv.config()
 
@@ -137,6 +138,7 @@ const modules: AppModule[] = [
   teamsModule,
   notificationsModule,
   pengurusModule,
+  schoolsModule,
 ]
 
 // 1. Register routes

@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs"
 import { prisma } from "../../../lib/prisma"
 import { cached, invalidate, CacheKeys } from "../../../lib/cache"
 import { requireAuth } from "../../../middleware/auth"
+import { redis } from "../../../lib/redis"
 
 export const usersRouter: Router = Router()
 
@@ -20,6 +21,7 @@ usersRouter.get("/me", requireAuth, async (req, res, next) => {
           email: true,
           name: true,
           school: true,
+          classGrade: true,
           phone: true,
           birthDate: true,
           gender: true,
@@ -50,6 +52,7 @@ usersRouter.get("/me", requireAuth, async (req, res, next) => {
 
     res.json({
       ...user,
+      class_grade: user.classGrade,
       birth_date: user.birthDate ? new Date(user.birthDate).toISOString() : null,
       user_number: uNum,
     })
@@ -121,6 +124,7 @@ const UpdateProfileSchema = z.object({
     .optional()
     .nullable(),
   school: z.string().optional().nullable(),
+  class_grade: z.string().optional().nullable(),
   phone: z.string().optional().nullable(),
   birth_date: z.string().optional().nullable(),
   gender: z.string().optional().nullable(),
@@ -161,6 +165,7 @@ usersRouter.patch("/me", requireAuth, async (req, res, next) => {
         ...(body.name && { name: body.name.trim() }),
         ...(body.username !== undefined && { username: body.username ? body.username.toLowerCase().trim() : null }),
         ...(body.school !== undefined && { school: body.school ? body.school.trim() : null }),
+        ...(body.class_grade !== undefined && { classGrade: body.class_grade ? body.class_grade.trim() : null }),
         ...(body.phone !== undefined && { phone: body.phone ? body.phone.trim() : null }),
         ...(body.birth_date !== undefined && {
           birthDate: body.birth_date ? new Date(body.birth_date) : null,
@@ -175,6 +180,7 @@ usersRouter.patch("/me", requireAuth, async (req, res, next) => {
         name: true,
         email: true,
         school: true,
+        classGrade: true,
         phone: true,
         birthDate: true,
         gender: true,
@@ -187,8 +193,23 @@ usersRouter.patch("/me", requireAuth, async (req, res, next) => {
     // Invalidate profile cache
     await invalidate(CacheKeys.userProfile(userId))
 
+    // Update Redis session cache so /auth/verify returns the new name immediately
+    const authHeader = req.headers.authorization
+    const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null
+    if (token) {
+      const updatedSession = {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        name: user.name,
+        role: user.role,
+      }
+      await redis.set(`auth:token:${token}`, JSON.stringify(updatedSession), "EX", 30 * 24 * 60 * 60).catch(() => {})
+    }
+
     res.json({
       ...user,
+      class_grade: user.classGrade,
       birth_date: user.birthDate ? new Date(user.birthDate).toISOString() : null,
       user_number: user.userNumber,
     })

@@ -7,7 +7,6 @@ import { Link, useRouterState } from "@tanstack/react-router"
 import {
   LogOutIcon,
   ChevronRightIcon,
-  SparklesIcon,
   ShieldCheckIcon,
   UserIcon,
   SettingsIcon,
@@ -36,6 +35,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
 import { useAuth } from "@/modules/auth"
+import { api } from "@/lib/api"
 import { ResponsiveFormModal } from "@/components/common/ResponsiveFormModal"
 import { SettingsSection } from "@/modules/profile/internal/components/SettingsSection"
 import { activeModules } from "@/shell/registry"
@@ -43,13 +43,38 @@ import { iconMap } from "@/shell/icon-map"
 import { cn } from "@/lib/utils"
 
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
-  const { logout, authState } = useAuth()
+  const { logout, authState, updateUser } = useAuth()
   const { location } = useRouterState()
   const pathname = location.pathname
   const { state, toggleSidebar } = useSidebar()
   const [showProfileMenu, setShowProfileMenu] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const profileMenuRef = useRef<HTMLDivElement>(null)
+
+  // Synchronize fresh user profile (including updated Full Name) on mount and on update events
+  useEffect(() => {
+    if (authState.status === "authenticated") {
+      api.get<{ name?: string }>("/users/me")
+        .then((u) => {
+          if (u.name && u.name !== authState.name) {
+            updateUser({ name: u.name })
+          }
+        })
+        .catch(() => {})
+    }
+
+    function handleProfileUpdated(e: Event) {
+      const customEvent = e as CustomEvent<{ name?: string }>
+      if (customEvent.detail?.name) {
+        updateUser({ name: customEvent.detail.name })
+      }
+    }
+
+    window.addEventListener("sekkha:profile_updated", handleProfileUpdated)
+    return () => {
+      window.removeEventListener("sekkha:profile_updated", handleProfileUpdated)
+    }
+  }, [authState.status, authState.name, updateUser])
 
   const userId = authState.status === "authenticated" ? authState.userId : null
   const role = authState.status === "authenticated" ? authState.role : null
@@ -104,8 +129,8 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
             className="flex items-center gap-2.5 min-w-0 text-left cursor-pointer group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:w-full focus:outline-hidden"
             title={state === "collapsed" ? "Expand Sidebar" : undefined}
           >
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[12px] bg-[#0a0a0a] text-white shadow-xs font-bold transition-transform active:scale-95">
-              <SparklesIcon className="size-4.5 text-[#e8b94a]" />
+            <div className="flex size-9 shrink-0 items-center justify-center transition-transform active:scale-95">
+              <img src="/sekkha_logo.svg" alt="Sekkha Logo" className="size-full object-contain" />
             </div>
             <div className="flex flex-col min-w-0 group-data-[collapsible=icon]:hidden">
               <span className="truncate text-sm font-bold text-[#0a0a0a] tracking-tight">

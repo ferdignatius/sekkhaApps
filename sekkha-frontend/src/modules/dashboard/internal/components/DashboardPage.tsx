@@ -14,21 +14,24 @@ import {
   QrCodeIcon,
   AwardIcon,
   ArrowRightIcon,
-  UserCheckIcon,
   SearchIcon,
   BellIcon,
   SettingsIcon,
   TicketIcon,
-  NewspaperIcon,
-  GraduationCapIcon,
   HeartHandshakeIcon,
-  SparklesIcon,
   TrophyIcon,
-  SlidersHorizontalIcon,
+  UsersIcon,
+  UserIcon,
+  LayoutGridIcon,
+  ScanLineIcon,
+  BarChart3Icon,
+  ClockIcon,
+  XIcon,
 } from "lucide-react"
 import { api } from "@/lib/api"
 import { DhammaWidget } from "./DhammaWidget"
 import { Link } from "@tanstack/react-router"
+import { ResponsiveFormModal } from "@/components/common/ResponsiveFormModal"
 
 function formatEventDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-US", {
@@ -41,7 +44,6 @@ function formatEventDate(iso: string): string {
 export function DashboardPage() {
   const { authState } = useAuth()
   const [showQrModal, setShowQrModal] = useState(false)
-  const [searchQuery, setSearchQuery] = useState("")
   const [userProfile, setUserProfile] = useState<any>(null)
 
   const [streakData, setStreakData] = useState<any>(null)
@@ -81,19 +83,27 @@ export function DashboardPage() {
   const memberId = userProfile?.user_number || userProfile?.userNumber || userProfile?.id || (authState.userId ? `SKH-${authState.userId.slice(-4)}` : "SKH-8821")
   const totalPoints = userProfile?.points ?? 0
   const currentStreak = streakData?.current_streak ?? 0
-  const activeEvent = events.length > 0 ? events[0] : null
 
-  // 8 Quick Access Items in Clay 6-Color Palette (pink, teal, lavender, peach, ochre, cream)
-  const quickAccessItems = [
-    {
-      id: "newsfeed",
-      label: "Newsfeed",
-      icon: NewspaperIcon,
-      bg: "bg-[#ff4d8b]",
-      iconColor: "text-white",
-      href: "/home",
-      badge: "News",
-    },
+  // Filter for next upcoming event only (exclude past/previous events)
+  const upcomingEvents = events
+    .filter((e) => {
+      if (!e || e.status === "cancelled" || e.status === "done" || e.status === "closed") {
+        return false
+      }
+      const eventTime = new Date(e.event_date).getTime()
+      // Exclude past events (allow ongoing events within 3 hours)
+      return !isNaN(eventTime) && eventTime >= Date.now() - 3 * 60 * 60 * 1000
+    })
+    .sort((a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime())
+
+  const nextEvent = upcomingEvents.length > 0 ? upcomingEvents[0] : null
+
+  // State for "See More" (Lainnya) modal and in-modal menu search
+  const [showAllMenusModal, setShowAllMenusModal] = useState(false)
+  const [menuSearchQuery, setMenuSearchQuery] = useState("")
+
+  // 8 Primary Quick Access Items for Home (Clay 6-Color Palette)
+  const primaryQuickAccessItems = [
     {
       id: "events",
       label: "Events",
@@ -101,43 +111,6 @@ export function DashboardPage() {
       bg: "bg-[#e8b94a]",
       iconColor: "text-[#0a0a0a]",
       href: "/events",
-      badge: "Schedule",
-    },
-    {
-      id: "classes",
-      label: "Classes",
-      icon: GraduationCapIcon,
-      bg: "bg-[#b8a4ed]",
-      iconColor: "text-[#0a0a0a]",
-      href: "/home/achievements",
-      badge: "Dhamma",
-    },
-    {
-      id: "community",
-      label: "Community",
-      icon: HeartHandshakeIcon,
-      bg: "bg-[#ffb084]",
-      iconColor: "text-[#0a0a0a]",
-      href: "/teams",
-      badge: "Fellowship",
-    },
-    {
-      id: "chanting",
-      label: "Paritta & Puja",
-      icon: SparklesIcon,
-      bg: "bg-[#1a3a3a]",
-      iconColor: "text-white",
-      href: "/events",
-      badge: "Chanting",
-    },
-    {
-      id: "leaderboard",
-      label: "Leaderboard",
-      icon: TrophyIcon,
-      bg: "bg-[#e8b94a]",
-      iconColor: "text-[#0a0a0a]",
-      href: "/leaderboard",
-      badge: "Points",
     },
     {
       id: "checkin",
@@ -146,23 +119,234 @@ export function DashboardPage() {
       bg: "bg-[#0a0a0a]",
       iconColor: "text-white",
       onClick: () => setShowQrModal(true),
-      badge: "Attendance",
     },
     {
-      id: "settings",
-      label: "Settings",
-      icon: SlidersHorizontalIcon,
-      bg: "bg-[#f5f0e0]",
+      id: "leaderboard",
+      label: "Leaderboard",
+      icon: TrophyIcon,
+      bg: "bg-[#ff4d8b]",
+      iconColor: "text-white",
+      href: "/leaderboard",
+    },
+    {
+      id: "achievements",
+      label: "Achievements",
+      icon: AwardIcon,
+      bg: "bg-[#b8a4ed]",
       iconColor: "text-[#0a0a0a]",
+      href: "/home/achievements",
+    },
+    {
+      id: "community",
+      label: "Community",
+      icon: UsersIcon,
+      bg: "bg-[#ffb084]",
+      iconColor: "text-[#0a0a0a]",
+      href: "/teams",
+    },
+    {
+      id: "notifications",
+      label: "Notifications",
+      icon: BellIcon,
+      bg: "bg-[#faf5e8] border border-[#e5e5e5]",
+      iconColor: "text-[#0a0a0a]",
+      href: "/notifications",
+    },
+    {
+      id: "profile",
+      label: "My Profile",
+      icon: UserIcon,
+      bg: "bg-[#1a3a3a]",
+      iconColor: "text-white",
       href: "/home/profile",
-      badge: "Profile",
+    },
+    {
+      id: "see-more",
+      label: "See More",
+      icon: LayoutGridIcon,
+      bg: "bg-[#f5f0e0] border border-[#e5e5e5]",
+      iconColor: "text-[#0a0a0a]",
+      onClick: () => {
+        setMenuSearchQuery("")
+        setShowAllMenusModal(true)
+      },
     },
   ]
 
-  const filteredQuickAccess = quickAccessItems.filter((item) =>
-    item.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.badge.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  // All application menus categorized for the "See More" modal
+  const isPengurus = role === "pengurus" || role === "admin"
+
+  const allMenuSections = [
+    {
+      category: "Core Features",
+      items: [
+        {
+          id: "events",
+          label: "Events Schedule",
+          description: "Temple services, puja schedules, and community gatherings",
+          icon: CalendarIcon,
+          bg: "bg-[#e8b94a]",
+          iconColor: "text-[#0a0a0a]",
+          href: "/events",
+          badge: "Schedule",
+          keywords: "events schedule calendar puja services activities vihara agenda",
+        },
+        {
+          id: "checkin",
+          label: "My QR Code",
+          description: "Display your personal attendance QR code to organizers",
+          icon: QrCodeIcon,
+          bg: "bg-[#0a0a0a]",
+          iconColor: "text-white",
+          onClick: () => setShowQrModal(true),
+          badge: "Attendance",
+          keywords: "qr code attendance barcode checkin presensi pass ticket",
+        },
+        {
+          id: "leaderboard",
+          label: "Leaderboard",
+          description: "Community activity ranking and merit point standings",
+          icon: TrophyIcon,
+          bg: "bg-[#ff4d8b]",
+          iconColor: "text-white",
+          href: "/leaderboard",
+          badge: "Rankings",
+          keywords: "leaderboard ranking score points merit standings peringkat",
+        },
+        {
+          id: "achievements",
+          label: "Achievements & Badges",
+          description: "Track your Dhamma badges, spiritual levels, and milestones",
+          icon: AwardIcon,
+          bg: "bg-[#b8a4ed]",
+          iconColor: "text-[#0a0a0a]",
+          href: "/home/achievements",
+          badge: "Badges",
+          keywords: "achievements badges milestones level rewards pencapaian lencana",
+        },
+        {
+          id: "community",
+          label: "Teams & Ministries",
+          description: "Temple committee structure, service teams, and fellowships",
+          icon: UsersIcon,
+          bg: "bg-[#ffb084]",
+          iconColor: "text-[#0a0a0a]",
+          href: "/teams",
+          badge: "Committees",
+          keywords: "teams ministry fellowship community committees organisasi tim",
+        },
+      ],
+    },
+    {
+      category: "Account & Activity",
+      items: [
+        {
+          id: "profile",
+          label: "Profile & Settings",
+          description: "Manage personal information, attendance history, and preferences",
+          icon: UserIcon,
+          bg: "bg-[#1a3a3a]",
+          iconColor: "text-white",
+          href: "/home/profile",
+          badge: "Account",
+          keywords: "profile settings account user preferences security password akun",
+        },
+        {
+          id: "notifications",
+          label: "Notification Center",
+          description: "Temple announcements, event reminders, and community alerts",
+          icon: BellIcon,
+          bg: "bg-[#e8b94a]",
+          iconColor: "text-[#0a0a0a]",
+          href: "/notifications",
+          badge: "Alerts",
+          keywords: "notifications alerts messages announcements reminders notifikasi",
+        },
+      ],
+    },
+    ...(isPengurus
+      ? [
+          {
+            category: "Organizer & Administration",
+            items: [
+              {
+                id: "scanner",
+                label: "Attendance Scanner",
+                description: "Scan attendee QR codes during onsite registration",
+                icon: ScanLineIcon,
+                bg: "bg-[#1a3a3a]",
+                iconColor: "text-white",
+                href: "/events/scan",
+                badge: "Scanner",
+                keywords: "scan scanner camera qr attendance check-in panitia pemindai",
+              },
+              {
+                id: "insight",
+                label: "Analytics & Insights",
+                description: "Attendance trends, community demographics, and engagement metrics",
+                icon: BarChart3Icon,
+                bg: "bg-[#ffb084]",
+                iconColor: "text-[#0a0a0a]",
+                href: "/insight",
+                badge: "Analytics",
+                keywords: "insight analytics reports stats charts data trends analitik",
+              },
+              {
+                id: "contributions",
+                label: "Organizer Contributions",
+                description: "Review volunteer hours, committee contributions, and seva records",
+                icon: HeartHandshakeIcon,
+                bg: "bg-[#b8a4ed]",
+                iconColor: "text-[#0a0a0a]",
+                href: "/pengurus-contribution",
+                badge: "Service",
+                keywords: "contributions volunteers service seva records kontribusi",
+              },
+              {
+                id: "recency",
+                label: "Attendance Recency Alerts",
+                description: "Monitor member absence recency for pastoral follow-up",
+                icon: ClockIcon,
+                bg: "bg-[#ff4d8b]",
+                iconColor: "text-white",
+                href: "/recency-alerts",
+                badge: "Care",
+                keywords: "recency alerts pastoral follow-up care inactive absence",
+              },
+              {
+                id: "configure",
+                label: "System Configuration",
+                description: "Configure temple master data, gamification rules, and badges",
+                icon: SettingsIcon,
+                bg: "bg-[#f5f0e0] border border-[#e5e5e5]",
+                iconColor: "text-[#0a0a0a]",
+                href: "/configure",
+                badge: "Settings",
+                keywords: "system config master data gamification badges admin setting",
+              },
+            ],
+          },
+        ]
+      : []),
+  ]
+
+  // Flattened & filtered for in-modal search
+  const normalizedQuery = menuSearchQuery.trim().toLowerCase()
+  const filteredModalSections = allMenuSections
+    .map((section) => ({
+      ...section,
+      items: section.items.filter(
+        (item) =>
+          !normalizedQuery ||
+          item.label.toLowerCase().includes(normalizedQuery) ||
+          item.description.toLowerCase().includes(normalizedQuery) ||
+          item.badge?.toLowerCase().includes(normalizedQuery) ||
+          item.keywords?.toLowerCase().includes(normalizedQuery)
+      ),
+    }))
+    .filter((section) => section.items.length > 0)
+
+  const totalFilteredItems = filteredModalSections.reduce((acc, sec) => acc + sec.items.length, 0)
 
   const topBarActions = (
     <div className="flex items-center gap-1.5 sm:gap-2">
@@ -275,22 +459,10 @@ export function DashboardPage() {
             </div>
           </div>
 
-          {/* ── 2. Search Bar (Clay Rounded Hairline Style) ── */}
-          <div className="relative">
-            <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-[#6a6a6a]" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Find events, classes & other features..."
-              className="w-full rounded-[14px] border border-[#e5e5e5] bg-white py-3.5 pl-11 pr-4 text-xs sm:text-sm text-[#0a0a0a] shadow-xs placeholder:text-[#6a6a6a] focus:border-[#0a0a0a] focus:outline-none focus:ring-1 focus:ring-[#0a0a0a] transition-all"
-            />
-          </div>
-
-          {/* ── 3. Quick Access Feature Grid (8 Direct Access Items in Clay 6-Color Palette) ── */}
+          {/* ── 2. Quick Access Feature Grid (8 Direct Access Items in Clay 6-Color Palette) ── */}
           <div className="rounded-[24px] border border-[#e5e5e5] bg-[#faf5e8] p-4 sm:p-6 shadow-xs">
             <div className="grid grid-cols-4 gap-y-4 gap-x-2 sm:gap-6">
-              {filteredQuickAccess.map((item) => {
+              {primaryQuickAccessItems.map((item) => {
                 const Icon = item.icon
                 const content = (
                   <div className="flex flex-col items-center text-center group cursor-pointer">
@@ -322,12 +494,11 @@ export function DashboardPage() {
             </div>
           </div>
 
-          {/* ── 4. Community Agenda & Dhamma Wisdom Grid ── */}
+          {/* ── 3. Community Agenda & Dhamma Wisdom Grid ── */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
 
-            {/* ── Event Active & Status Card ── */}
+            {/* ── Upcoming Event Card ── */}
             <div className="relative overflow-hidden rounded-[20px] sm:rounded-[24px] border border-[#e5e5e5] bg-[#fffaf0] p-4 sm:p-5 shadow-xs transition-all flex flex-col justify-between">
-              
               <div>
                 {/* Header */}
                 <div className="mb-3 flex items-center justify-between gap-2">
@@ -335,7 +506,7 @@ export function DashboardPage() {
                     <span className="flex h-7 w-7 items-center justify-center rounded-[8px] bg-[#0a0a0a] text-white shadow-xs">
                       <CalendarIcon className="size-4 text-[#e8b94a]" />
                     </span>
-                    <h2 className="text-sm font-bold text-[#0a0a0a]">Community Events & Attendance</h2>
+                    <h2 className="text-sm font-bold text-[#0a0a0a]">Upcoming Event</h2>
                   </div>
                   <Link to="/events" className="flex items-center gap-1 text-xs text-[#0a0a0a] hover:underline font-bold">
                     <span>Full Schedule</span> <ArrowRightIcon className="size-3" />
@@ -343,60 +514,39 @@ export function DashboardPage() {
                 </div>
 
                 {/* Event Status Card */}
-                <div className="rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] p-3.5 sm:p-4 space-y-3">
-                  
-                  {activeEvent ? (
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#e5e5e5] pb-3">
+                <div className="rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] p-3.5 sm:p-4">
+                  {nextEvent ? (
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 border border-emerald-300 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800 shrink-0">
-                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-ping" /> Active Event
+                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-ping" /> Next Event
                           </span>
                         </div>
                         <h3 className="text-base sm:text-lg font-bold text-[#0a0a0a] mt-1.5">
-                          {activeEvent.title}
+                          {nextEvent.title}
                         </h3>
                         <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-[#6a6a6a]">
                           <span className="flex items-center gap-1">
                             <CalendarIcon className="size-3.5 text-[#1a3a3a]" />
-                            {formatEventDate(activeEvent.event_date)}
+                            {formatEventDate(nextEvent.event_date)}
                           </span>
                           <span className="flex items-center gap-1">
                             <MapPinIcon className="size-3.5 text-rose-600" />
-                            {activeEvent.location}
+                            {nextEvent.location}
                           </span>
                         </div>
                       </div>
                     </div>
                   ) : (
                     <div className="py-4 text-center space-y-2">
-                      <p className="text-xs font-medium text-[#6a6a6a]">No active events at the moment.</p>
+                      <p className="text-xs font-medium text-[#6a6a6a]">No upcoming events at the moment.</p>
                       <Link to="/events" className="inline-flex items-center gap-1.5 text-xs font-bold text-[#0a0a0a] hover:underline">
                         <span>View Schedule</span> <ArrowRightIcon className="size-3" />
                       </Link>
                     </div>
                   )}
-
-                  {/* Informative Workflow Banner for Check-In */}
-                  <div className="flex items-start gap-2.5 rounded-[12px] bg-[#fffaf0] p-3 border border-[#e5e5e5]">
-                    <UserCheckIcon className="size-4 text-[#1a3a3a] shrink-0 mt-0.5" />
-                    <p className="text-xs text-[#6a6a6a] leading-relaxed">
-                      <strong className="text-[#0a0a0a]">Organizer Check-In:</strong> Present your QR code to the event coordinator during onsite registration.
-                    </p>
-                  </div>
-
                 </div>
-              </div>
-
-              <div className="mt-4 pt-3 border-t border-[#e5e5e5] flex items-center justify-between text-xs">
-                <span className="text-[#6a6a6a]">Member ID: <strong className="text-[#0a0a0a] font-mono">{memberId}</strong></span>
-                <button
-                  type="button"
-                  onClick={() => setShowQrModal(true)}
-                  className="text-xs font-bold text-[#0a0a0a] hover:underline flex items-center gap-1 cursor-pointer"
-                >
-                  <QrCodeIcon className="size-3.5" /> Show QR
-                </button>
               </div>
             </div>
 
@@ -407,6 +557,116 @@ export function DashboardPage() {
 
         </div>
       </div>
+
+      {/* ── See More / All Menus Modal with Search ── */}
+      <ResponsiveFormModal
+        open={showAllMenusModal}
+        onOpenChange={setShowAllMenusModal}
+        title="All Menus & Features"
+        description="Explore all features, schedules, and services in Sekkha"
+        maxWidth="max-w-2xl"
+      >
+        <div className="space-y-4 pt-1 font-sans">
+          {/* Search bar inside See More modal */}
+          <div className="relative">
+            <SearchIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-[#6a6a6a]" />
+            <input
+              type="text"
+              value={menuSearchQuery}
+              onChange={(e) => setMenuSearchQuery(e.target.value)}
+              placeholder="Search features, menus, or services..."
+              autoFocus
+              className="w-full rounded-[14px] border border-[#e5e5e5] bg-white py-2.5 pl-10 pr-9 text-xs sm:text-sm text-[#0a0a0a] shadow-xs placeholder:text-[#6a6a6a] focus:border-[#0a0a0a] focus:outline-none focus:ring-1 focus:ring-[#0a0a0a] transition-all"
+            />
+            {menuSearchQuery && (
+              <button
+                type="button"
+                onClick={() => setMenuSearchQuery("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-[#6a6a6a] hover:text-[#0a0a0a] cursor-pointer"
+                aria-label="Clear search"
+              >
+                <XIcon className="size-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Categorized and filtered items container */}
+          <div className="max-h-[60vh] overflow-y-auto space-y-4 pr-1">
+            {totalFilteredItems === 0 ? (
+              <div className="py-8 text-center space-y-1.5">
+                <p className="text-sm font-semibold text-[#0a0a0a]">No features found</p>
+                <p className="text-xs text-[#6a6a6a]">
+                  No menus matching &quot;{menuSearchQuery}&quot;.
+                </p>
+              </div>
+            ) : (
+              filteredModalSections.map((section) => (
+                <div key={section.category} className="space-y-2">
+                  <h4 className="text-[11px] font-bold uppercase tracking-wider text-[#6a6a6a] px-1">
+                    {section.category}
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5">
+                    {section.items.map((item) => {
+                      const Icon = item.icon
+                      const content = (
+                        <>
+                          <div
+                            className={`flex size-10 shrink-0 items-center justify-center rounded-[12px] ${item.bg} ${item.iconColor} shadow-2xs group-hover:scale-105 transition-transform`}
+                          >
+                            <Icon className="size-5" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="text-xs font-bold text-[#0a0a0a] group-hover:text-black">
+                                {item.label}
+                              </span>
+                              {item.badge && (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#1a3a3a]/10 text-[#1a3a3a] font-semibold">
+                                  {item.badge}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-[11px] text-[#6a6a6a] mt-0.5 line-clamp-2 leading-relaxed">
+                              {item.description}
+                            </p>
+                          </div>
+                        </>
+                      )
+
+                      if (item.onClick) {
+                        return (
+                          <button
+                            key={item.id}
+                            type="button"
+                            onClick={() => {
+                              setShowAllMenusModal(false)
+                              item.onClick?.()
+                            }}
+                            className="flex items-start gap-3 p-3 rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] hover:bg-[#f5f0e0] hover:border-[#0a0a0a]/20 transition-all text-left group cursor-pointer w-full"
+                          >
+                            {content}
+                          </button>
+                        )
+                      }
+
+                      return (
+                        <Link
+                          key={item.id}
+                          to={item.href as "/"}
+                          onClick={() => setShowAllMenusModal(false)}
+                          className="flex items-start gap-3 p-3 rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] hover:bg-[#f5f0e0] hover:border-[#0a0a0a]/20 transition-all text-left group cursor-pointer"
+                        >
+                          {content}
+                        </Link>
+                      )
+                    })}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </ResponsiveFormModal>
 
       {/* ── User Unique QR Code Modal ── */}
       {showQrModal && (

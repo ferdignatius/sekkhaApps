@@ -26,6 +26,7 @@ model User {
   name      String
   phone     String?  @map("phone")
   school    String?
+  classGrade String?  @map("class_grade")
   birthDate DateTime? @map("birth_date")
   gender    String?  @map("gender")
   avatarUrl String?  @map("avatar_url")
@@ -251,5 +252,17 @@ model PointRule {
   updatedAt   DateTime @updatedAt @map("updated_at")
 
   @@map("point_rules")
+}
+
+// ─── Master Data: Schools ───────────────────────────────────────────────────
+
+model School {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  type      String?  // "SMP" | "SMA" | "SMK" | "Universitas" | "Lainnya"
+  city      String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("schools")
 }
 

@@ -115,3 +115,28 @@ export const pointRulesApi = {
     api.put<PointRuleDto>(`/configure/point-rules/${id}`, data),
 }
 
+// ─── Master Data: Schools ───────────────────────────────────────────────────
+
+export interface SchoolDto {
+  id: string
+  name: string
+  type: string
+  city: string
+  userCount?: number
+}
+
+export const schoolsApi = {
+  list: (search?: string) =>
+    api
+      .get<{ total: number; schools: SchoolDto[] }>(
+        `/schools?limit=200${search ? `&search=${encodeURIComponent(search)}` : ""}`
+      )
+      .then((res) => res.schools || []),
+  create: (data: Omit<SchoolDto, "id" | "userCount">) =>
+    api.post<SchoolDto>("/schools", data),
+  update: (id: string, data: Partial<Omit<SchoolDto, "id" | "userCount">>) =>
+    api.put<SchoolDto>(`/schools/${id}`, data),
+  remove: (id: string) => api.delete<{ success: boolean; message: string }>(`/schools/${id}`),
+}
+
+

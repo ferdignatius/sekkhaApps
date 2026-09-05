@@ -1,5 +1,4 @@
 import React from "react"
-import { SparklesIcon } from "lucide-react"
 
 interface AuthLayoutProps {
   children: React.ReactNode
@@ -8,7 +7,7 @@ interface AuthLayoutProps {
 /**
  * Clay-themed responsive layout wrapper for Sign Up and Login pages.
  * Strictly adheres to DESIGN.md: warm cream canvas floor (#fffaf0),
- * solid near-black brand header with ochre sparkles, and rounded-xl card container.
+ * solid near-black brand header with Sekkha logo, and rounded-xl card container.
  */
 export function AuthLayout({ children }: AuthLayoutProps) {
   return (
@@ -24,8 +23,8 @@ export function AuthLayout({ children }: AuthLayoutProps) {
         
         {/* Brand Header */}
         <div className="text-center space-y-2.5">
-          <div className="mx-auto flex size-13 w-13 h-13 items-center justify-center rounded-[16px] bg-[#0a0a0a] text-white shadow-xs font-bold transition-transform hover:scale-105">
-            <SparklesIcon className="size-6 text-[#e8b94a]" />
+          <div className="mx-auto flex size-14 items-center justify-center transition-transform hover:scale-105">
+            <img src="/sekkha_logo.svg" alt="Sekkha Logo" className="size-full object-contain" />
           </div>
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#0a0a0a]">

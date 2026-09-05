@@ -72,23 +72,48 @@ app.use("/api/auth/register", authLimiter)
 app.use("/api/users/change-password", authLimiter)
 
 // 4. CORS Configuration
-const allowedOrigins = process.env.CORS_ORIGIN
-  ? process.env.CORS_ORIGIN.split(",").map((origin) => origin.trim())
-  : ["http://localhost:3000", "http://localhost:5173"]
+const rawOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(",").map((origin) => origin.trim().replace(/\/$/, ""))
+  : ["http://localhost:3000", "http://localhost:5173", "http://localhost:4173"]
 
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps, curl, or Postman)
-      if (!origin) return callback(null, true)
-      if (allowedOrigins.includes("*") || allowedOrigins.includes(origin)) {
-        return callback(null, true)
-      }
-      return callback(new Error(`CORS error: Origin ${origin} not allowed`))
-    },
-    credentials: true,
+const isOriginAllowed = (origin: string): boolean => {
+  // Always allow localhost and loopback in non-production for easy dev testing
+  if (
+    process.env.NODE_ENV !== "production" &&
+    (/^https?:\/\/localhost(:\d+)?$/.test(origin) || /^https?:\/\/127\.0\.0\.1(:\d+)?$/.test(origin))
+  ) {
+    return true
+  }
+
+  return rawOrigins.some((allowed) => {
+    if (allowed === "*") return true
+    if (allowed === origin) return true
+    // Support wildcard subdomains such as *.vercel.app or *.yourdomain.com
+    if (allowed.includes("*")) {
+      const escaped = allowed.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*")
+      const regex = new RegExp(`^${escaped}$`)
+      return regex.test(origin)
+    }
+    return false
   })
-)
+}
+
+const corsOptions: cors.CorsOptions = {
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps, curl, or server-to-server)
+    if (!origin || isOriginAllowed(origin)) {
+      return callback(null, true)
+    }
+    return callback(null, false)
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
+  optionsSuccessStatus: 204,
+}
+
+app.use(cors(corsOptions))
+app.options("*", cors(corsOptions))
 
 // 5. Body parser with strict payload size limit
 app.use(express.json({ limit: "1mb" }))

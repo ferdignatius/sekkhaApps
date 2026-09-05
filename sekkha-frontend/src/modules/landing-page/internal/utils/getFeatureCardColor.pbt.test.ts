@@ -8,15 +8,15 @@ import { getFeatureCardColor, type FeatureCardColor } from './getFeatureCardColo
  * Property 2: Feature Card Color Cycling
  */
 
-const COLOR_CYCLE: FeatureCardColor[] = ['yellow', 'coral', 'teal', 'rose']
+const COLOR_CYCLE: FeatureCardColor[] = ['pink', 'teal', 'lavender', 'peach', 'ochre', 'cream']
 
 describe('getFeatureCardColor - Property 2: Feature Card Color Cycling', () => {
-  it('should return COLOR_CYCLE[i % 4] for any valid index', () => {
+  it('should return COLOR_CYCLE[i % 6] for any valid index', () => {
     fc.assert(
       fc.property(
         fc.integer({ min: 0, max: 1000 }),
         (i) => {
-          expect(getFeatureCardColor(i)).toBe(COLOR_CYCLE[i % 4])
+          expect(getFeatureCardColor(i)).toBe(COLOR_CYCLE[i % 6])
         }
       ),
       { numRuns: 100 }

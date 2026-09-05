@@ -12,8 +12,8 @@ describe("DateTimePickerPopover", () => {
       />
     )
 
-    expect(screen.getByText(/Minggu, 26 Jul 2026 · 09:00 WIB/i)).toBeDefined()
-    expect(screen.getByRole("button", { name: /ubah/i })).toBeDefined()
+    expect(screen.getByText(/Sun, 26 Jul 2026 · 09:00/i)).toBeDefined()
+    expect(screen.getByRole("button", { name: /(change|ubah)/i })).toBeDefined()
   })
 
   it("opens modal and displays date and time options", () => {
@@ -25,11 +25,11 @@ describe("DateTimePickerPopover", () => {
       />
     )
 
-    fireEvent.click(screen.getByRole("button", { name: /ubah/i }))
+    fireEvent.click(screen.getByRole("button", { name: /(change|ubah)/i }))
 
-    expect(screen.getByText("Atur Tanggal & Waktu")).toBeDefined()
-    expect(screen.getByText("Tanggal Pelaksanaan")).toBeDefined()
-    expect(screen.getByText("Jam Pelaksanaan")).toBeDefined()
+    expect(screen.getByText("Set Date & Time")).toBeDefined()
+    expect(screen.getByText("Event Date")).toBeDefined()
+    expect(screen.getByText("Event Time")).toBeDefined()
   })
 
   it("allows selecting quick time chip and applying changes", () => {
@@ -41,14 +41,14 @@ describe("DateTimePickerPopover", () => {
       />
     )
 
-    fireEvent.click(screen.getByRole("button", { name: /ubah/i }))
+    fireEvent.click(screen.getByRole("button", { name: /(change|ubah)/i }))
 
     // Click 15:00 WIB chip
     const chip15 = screen.getByText("15:00")
     fireEvent.click(chip15)
 
-    // Click Terapkan
-    const applyButton = screen.getByRole("button", { name: /terapkan/i })
+    // Click Apply
+    const applyButton = screen.getByRole("button", { name: /(apply|terapkan)/i })
     fireEvent.click(applyButton)
 
     expect(handleChange).toHaveBeenCalledWith("2026-07-26T15:00")

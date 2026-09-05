@@ -21,7 +21,7 @@ export const configureModule: ModuleDefinition = {
       label: "Master Data",
       icon: "Layers",
       items: [
-        { label: "Master Sekolah", to: "/configure/master/school", icon: "GraduationCap", hasRoute: true },
+        { label: "Schools Directory", to: "/configure/master/school", icon: "GraduationCap", hasRoute: true },
         { label: "Event Categories", to: "/configure/master/event-type", icon: "Tag", hasRoute: true },
         { label: "Time Presets", to: "/configure/master/event-time", icon: "Clock", hasRoute: true },
         { label: "Attendance Badges", to: "/configure/master/attendance-badge", icon: "Award", hasRoute: true },

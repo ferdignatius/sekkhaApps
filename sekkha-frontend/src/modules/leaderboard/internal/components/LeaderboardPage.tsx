@@ -320,7 +320,7 @@ export function LeaderboardPage() {
                     )}
                   </div>
                   <h1 className="text-base sm:text-xl font-bold text-[#0a0a0a] mt-0.5">
-                    Community Leaderboard
+                    Leaderboard
                   </h1>
                 </div>
               </div>

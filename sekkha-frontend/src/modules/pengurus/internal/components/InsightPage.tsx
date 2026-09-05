@@ -207,7 +207,7 @@ export function InsightPage() {
 
   return (
     <main className="min-h-screen pb-24 md:pb-12">
-      <PageBreadcrumb items={[{ label: "Organizer" }, { label: "Analytics & Insights" }]} />
+      <PageBreadcrumb items={[{ label: "Organizer" }, { label: "Community Insights" }]} />
 
       <div className="px-3.5 py-4 sm:px-8 lg:px-12">
         <div className="mx-auto max-w-7xl space-y-4 sm:space-y-6">

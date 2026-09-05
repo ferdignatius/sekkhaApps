@@ -272,9 +272,9 @@ export function TeamsPage() {
                 <UsersIcon className="size-5 text-[#e8b94a]" />
               </div>
               <div>
-                <h1 className="text-lg sm:text-2xl font-bold text-[#0a0a0a] tracking-tight">People & Member Database</h1>
+                <h1 className="text-lg sm:text-2xl font-bold text-[#0a0a0a] tracking-tight">People</h1>
                 <p className="text-xs text-[#6a6a6a]">
-                  Centralized member profile management, pre-provisioning, and access roles
+                  Member database, roles, and community directory
                 </p>
               </div>
             </div>

@@ -168,7 +168,7 @@ export function SchoolPage() {
         items={[
           { label: "Configure" },
           { label: "Master Data" },
-          { label: "Master Sekolah" },
+          { label: "Schools Directory" },
         ]}
       />
 

@@ -6,6 +6,6 @@ export { NotificationBell, useUnreadNotificationsCount } from "./internal/compon
 export const notificationsModule: ModuleDefinition = {
   name: "notifications",
   navItems: [
-    { label: "Notifikasi", to: "/notifications", icon: "Bell" },
+    { label: "Notifications", to: "/notifications", icon: "Bell" },
   ],
 }

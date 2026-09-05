@@ -84,22 +84,22 @@ export function NotificationsPage() {
 
   return (
     <main>
-      <PageBreadcrumb items={[{ label: "Notifikasi" }]} />
+      <PageBreadcrumb items={[{ label: "Notifications" }]} />
       <div className="px-4 py-6 pb-24 md:px-8 md:pb-8 lg:px-12">
         <div className="mx-auto max-w-4xl space-y-6">
           <div className="flex items-center gap-2">
             <BellIcon className="size-5 text-sekkha-brand-blue" />
-            <h1 className="text-heading-5 text-sekkha-ink">Notifikasi</h1>
+            <h1 className="text-heading-5 text-sekkha-ink">Notifications</h1>
           </div>
 
           {loading ? (
             <div className="flex h-48 items-center justify-center rounded-xl border border-sekkha-hairline-soft bg-sekkha-canvas">
-              <span className="text-body-sm text-sekkha-muted">Memuat notifikasi...</span>
+              <span className="text-body-sm text-sekkha-muted">Loading notifications...</span>
             </div>
           ) : notifications.length === 0 ? (
             <div className="flex h-48 flex-col items-center justify-center rounded-xl border border-sekkha-hairline-soft bg-sekkha-canvas p-6 text-center space-y-2">
               <InfoIcon className="size-8 text-sekkha-slate" />
-              <p className="text-body-sm text-sekkha-muted font-medium">Belum ada notifikasi baru.</p>
+              <p className="text-body-sm text-sekkha-muted font-medium">No new notifications.</p>
             </div>
           ) : (
             <div className="space-y-3">

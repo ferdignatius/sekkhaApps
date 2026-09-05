@@ -23,10 +23,10 @@ import {
   UsersIcon,
   UserIcon,
   LayoutGridIcon,
-  ScanLineIcon,
   BarChart3Icon,
   ClockIcon,
   XIcon,
+  SparklesIcon,
 } from "lucide-react"
 import { api } from "@/lib/api"
 import { DhammaWidget } from "./DhammaWidget"
@@ -102,6 +102,10 @@ export function DashboardPage() {
   const [showAllMenusModal, setShowAllMenusModal] = useState(false)
   const [menuSearchQuery, setMenuSearchQuery] = useState("")
 
+  const isPengurus = role === "pengurus" || role === "admin"
+  const isAktivis = role === "aktivis"
+  const canAccessTeams = isAktivis || isPengurus
+
   // 8 Primary Quick Access Items for Home (Clay 6-Color Palette)
   const primaryQuickAccessItems = [
     {
@@ -111,14 +115,6 @@ export function DashboardPage() {
       bg: "bg-[#e8b94a]",
       iconColor: "text-[#0a0a0a]",
       href: "/events",
-    },
-    {
-      id: "checkin",
-      label: "My QR Code",
-      icon: QrCodeIcon,
-      bg: "bg-[#0a0a0a]",
-      iconColor: "text-white",
-      onClick: () => setShowQrModal(true),
     },
     {
       id: "leaderboard",
@@ -136,30 +132,38 @@ export function DashboardPage() {
       iconColor: "text-[#0a0a0a]",
       href: "/home/achievements",
     },
-    {
-      id: "community",
-      label: "Community",
-      icon: UsersIcon,
-      bg: "bg-[#ffb084]",
-      iconColor: "text-[#0a0a0a]",
-      href: "/teams",
-    },
-    {
-      id: "notifications",
-      label: "Notifications",
-      icon: BellIcon,
-      bg: "bg-[#faf5e8] border border-[#e5e5e5]",
-      iconColor: "text-[#0a0a0a]",
-      href: "/notifications",
-    },
-    {
-      id: "profile",
-      label: "My Profile",
-      icon: UserIcon,
-      bg: "bg-[#1a3a3a]",
-      iconColor: "text-white",
-      href: "/home/profile",
-    },
+    ...(canAccessTeams
+      ? [
+          {
+            id: "people",
+            label: "People",
+            icon: UsersIcon,
+            bg: "bg-[#ffb084]",
+            iconColor: "text-[#0a0a0a]",
+            href: "/teams",
+          },
+        ]
+      : []),
+    ...(isPengurus
+      ? [
+          {
+            id: "insight",
+            label: "Community Insights",
+            icon: BarChart3Icon,
+            bg: "bg-[#1a3a3a]",
+            iconColor: "text-white",
+            href: "/insight",
+          },
+          {
+            id: "recency",
+            label: "Recency Alerts",
+            icon: ClockIcon,
+            bg: "bg-[#faf5e8] border border-[#e5e5e5]",
+            iconColor: "text-[#0a0a0a]",
+            href: "/recency-alerts",
+          },
+        ]
+      : []),
     {
       id: "see-more",
       label: "See More",
@@ -174,33 +178,20 @@ export function DashboardPage() {
   ]
 
   // All application menus categorized for the "See More" modal
-  const isPengurus = role === "pengurus" || role === "admin"
-
   const allMenuSections = [
     {
       category: "Core Features",
       items: [
         {
           id: "events",
-          label: "Events Schedule",
+          label: "Events",
           description: "Temple services, puja schedules, and community gatherings",
           icon: CalendarIcon,
           bg: "bg-[#e8b94a]",
           iconColor: "text-[#0a0a0a]",
           href: "/events",
           badge: "Schedule",
-          keywords: "events schedule calendar puja services activities vihara agenda",
-        },
-        {
-          id: "checkin",
-          label: "My QR Code",
-          description: "Display your personal attendance QR code to organizers",
-          icon: QrCodeIcon,
-          bg: "bg-[#0a0a0a]",
-          iconColor: "text-white",
-          onClick: () => setShowQrModal(true),
-          badge: "Attendance",
-          keywords: "qr code attendance barcode checkin presensi pass ticket",
+          keywords: "events schedule calendar puja services activities vihara agenda kegiatan jadwal",
         },
         {
           id: "leaderboard",
@@ -211,30 +202,34 @@ export function DashboardPage() {
           iconColor: "text-white",
           href: "/leaderboard",
           badge: "Rankings",
-          keywords: "leaderboard ranking score points merit standings peringkat",
+          keywords: "leaderboard ranking score points merit standings peringkat klasemen skor",
         },
         {
           id: "achievements",
-          label: "Achievements & Badges",
+          label: "Achievements",
           description: "Track your Dhamma badges, spiritual levels, and milestones",
           icon: AwardIcon,
           bg: "bg-[#b8a4ed]",
           iconColor: "text-[#0a0a0a]",
           href: "/home/achievements",
           badge: "Badges",
-          keywords: "achievements badges milestones level rewards pencapaian lencana",
+          keywords: "achievements badges milestones level rewards pencapaian lencana tingkat",
         },
-        {
-          id: "community",
-          label: "Teams & Ministries",
-          description: "Temple committee structure, service teams, and fellowships",
-          icon: UsersIcon,
-          bg: "bg-[#ffb084]",
-          iconColor: "text-[#0a0a0a]",
-          href: "/teams",
-          badge: "Committees",
-          keywords: "teams ministry fellowship community committees organisasi tim",
-        },
+        ...(canAccessTeams
+          ? [
+              {
+                id: "people",
+                label: "People",
+                description: "Temple member database, service teams, and community roles",
+                icon: UsersIcon,
+                bg: "bg-[#ffb084]",
+                iconColor: "text-[#0a0a0a]",
+                href: "/teams",
+                badge: "Directory",
+                keywords: "people teams ministry fellowship community committees members direktori tim kepengurusan umat",
+              },
+            ]
+          : []),
       ],
     },
     {
@@ -242,87 +237,136 @@ export function DashboardPage() {
       items: [
         {
           id: "profile",
-          label: "Profile & Settings",
+          label: "Profile",
           description: "Manage personal information, attendance history, and preferences",
           icon: UserIcon,
           bg: "bg-[#1a3a3a]",
           iconColor: "text-white",
           href: "/home/profile",
           badge: "Account",
-          keywords: "profile settings account user preferences security password akun",
+          keywords: "profile settings account user preferences security password akun profil",
         },
         {
           id: "notifications",
-          label: "Notification Center",
+          label: "Notifications",
           description: "Temple announcements, event reminders, and community alerts",
           icon: BellIcon,
           bg: "bg-[#e8b94a]",
           iconColor: "text-[#0a0a0a]",
           href: "/notifications",
           badge: "Alerts",
-          keywords: "notifications alerts messages announcements reminders notifikasi",
+          keywords: "notifications alerts messages announcements reminders notifikasi pemberitahuan",
         },
       ],
     },
     ...(isPengurus
       ? [
           {
-            category: "Organizer & Administration",
+            category: "Organizer & Analytics",
             items: [
               {
-                id: "scanner",
-                label: "Attendance Scanner",
-                description: "Scan attendee QR codes during onsite registration",
-                icon: ScanLineIcon,
-                bg: "bg-[#1a3a3a]",
-                iconColor: "text-white",
-                href: "/events/scan",
-                badge: "Scanner",
-                keywords: "scan scanner camera qr attendance check-in panitia pemindai",
-              },
-              {
                 id: "insight",
-                label: "Analytics & Insights",
+                label: "Community Insights",
                 description: "Attendance trends, community demographics, and engagement metrics",
                 icon: BarChart3Icon,
                 bg: "bg-[#ffb084]",
                 iconColor: "text-[#0a0a0a]",
                 href: "/insight",
                 badge: "Analytics",
-                keywords: "insight analytics reports stats charts data trends analitik",
+                keywords: "insight community analytics reports stats charts data trends analitik grafik data",
               },
               {
                 id: "contributions",
-                label: "Organizer Contributions",
+                label: "Contributor Insights",
                 description: "Review volunteer hours, committee contributions, and seva records",
                 icon: HeartHandshakeIcon,
                 bg: "bg-[#b8a4ed]",
                 iconColor: "text-[#0a0a0a]",
                 href: "/pengurus-contribution",
                 badge: "Service",
-                keywords: "contributions volunteers service seva records kontribusi",
+                keywords: "contributions contributor insights volunteers service seva records kontribusi pengurus panitia",
               },
               {
                 id: "recency",
-                label: "Attendance Recency Alerts",
+                label: "Recency Alerts",
                 description: "Monitor member absence recency for pastoral follow-up",
                 icon: ClockIcon,
                 bg: "bg-[#ff4d8b]",
                 iconColor: "text-white",
                 href: "/recency-alerts",
                 badge: "Care",
-                keywords: "recency alerts pastoral follow-up care inactive absence",
+                keywords: "recency alerts pastoral follow-up care inactive absence peringatan keaktifan",
+              },
+            ],
+          },
+          {
+            category: "Master Data & Configuration",
+            items: [
+              {
+                id: "schools",
+                label: "Schools Directory",
+                description: "Manage student Buddhist fellowships (KMB) and school databases",
+                icon: SettingsIcon,
+                bg: "bg-[#faf5e8] border border-[#e5e5e5]",
+                iconColor: "text-[#0a0a0a]",
+                href: "/configure/master/school",
+                badge: "Master",
+                keywords: "schools kmb kampus sekolah universitas master data",
               },
               {
-                id: "configure",
-                label: "System Configuration",
-                description: "Configure temple master data, gamification rules, and badges",
-                icon: SettingsIcon,
-                bg: "bg-[#f5f0e0] border border-[#e5e5e5]",
+                id: "badges",
+                label: "Master Badges",
+                description: "Configure spiritual badges, criteria, and gamification rewards",
+                icon: AwardIcon,
+                bg: "bg-[#b8a4ed]",
                 iconColor: "text-[#0a0a0a]",
-                href: "/configure",
-                badge: "Settings",
-                keywords: "system config master data gamification badges admin setting",
+                href: "/configure/master/badge",
+                badge: "Gamification",
+                keywords: "badge master badges lencana gamifikasi",
+              },
+              {
+                id: "levels",
+                label: "Member Levels",
+                description: "Configure point thresholds, level titles, and progression rules",
+                icon: TrophyIcon,
+                bg: "bg-[#e8b94a]",
+                iconColor: "text-[#0a0a0a]",
+                href: "/configure/master/level",
+                badge: "Gamification",
+                keywords: "level tiers rank progression tingkatan member jenjang",
+              },
+              {
+                id: "event-types",
+                label: "Event Categories",
+                description: "Manage activity types, service categories, and liturgical tags",
+                icon: CalendarIcon,
+                bg: "bg-[#ffb084]",
+                iconColor: "text-[#0a0a0a]",
+                href: "/configure/master/event-type",
+                badge: "Master",
+                keywords: "event types categories jenis kegiatan puja kategori",
+              },
+              {
+                id: "points-rules",
+                label: "Point Rules",
+                description: "Define attendance merit multipliers and points scoring logic",
+                icon: SparklesIcon,
+                bg: "bg-[#1a3a3a]",
+                iconColor: "text-white",
+                href: "/configure/rules/points",
+                badge: "Rules",
+                keywords: "points rules aturan poin penilaian merit bobot",
+              },
+              {
+                id: "thresholds",
+                label: "Threshold Settings",
+                description: "Adjust absence duration triggers for pastoral early warning",
+                icon: ClockIcon,
+                bg: "bg-[#ff4d8b]",
+                iconColor: "text-white",
+                href: "/configure/early-warning/threshold",
+                badge: "Alerts",
+                keywords: "thresholds silent churn early warning batas absensi tidak aktif",
               },
             ],
           },
@@ -459,9 +503,19 @@ export function DashboardPage() {
             </div>
           </div>
 
-          {/* ── 2. Quick Access Feature Grid (8 Direct Access Items in Clay 6-Color Palette) ── */}
+          {/* ── 2. Quick Access Feature Grid ── */}
           <div className="rounded-[24px] border border-[#e5e5e5] bg-[#faf5e8] p-4 sm:p-6 shadow-xs">
-            <div className="grid grid-cols-4 gap-y-4 gap-x-2 sm:gap-6">
+            <div
+              className={
+                primaryQuickAccessItems.length <= 4
+                  ? "grid grid-cols-4 gap-y-4 gap-x-2 sm:gap-6"
+                  : primaryQuickAccessItems.length === 5
+                    ? "grid grid-cols-5 gap-y-4 gap-x-2 sm:gap-6"
+                    : primaryQuickAccessItems.length === 6
+                      ? "grid grid-cols-3 sm:grid-cols-6 gap-y-4 gap-x-2 sm:gap-6"
+                      : "grid grid-cols-4 sm:grid-cols-7 gap-y-4 gap-x-2 sm:gap-6"
+              }
+            >
               {primaryQuickAccessItems.map((item) => {
                 const Icon = item.icon
                 const content = (
@@ -471,7 +525,7 @@ export function DashboardPage() {
                       <Icon className="size-6" />
                     </div>
                     {/* Label */}
-                    <span className="mt-2 text-[11px] sm:text-xs font-semibold text-[#0a0a0a] leading-tight line-clamp-1">
+                    <span className="mt-2 text-[11px] sm:text-xs font-semibold text-[#0a0a0a] leading-tight line-clamp-2 text-center min-h-[2.4em] flex items-center justify-center">
                       {item.label}
                     </span>
                   </div>
@@ -551,7 +605,9 @@ export function DashboardPage() {
             </div>
 
             {/* ── Daily Wisdom / Dhamma Reflection ── */}
-            <DhammaWidget />
+            <div id="dhamma-wisdom-card">
+              <DhammaWidget />
+            </div>
 
           </div>
 
@@ -564,7 +620,7 @@ export function DashboardPage() {
         onOpenChange={setShowAllMenusModal}
         title="All Menus & Features"
         description="Explore all features, schedules, and services in Sekkha"
-        maxWidth="max-w-2xl"
+        maxWidth="max-w-4xl"
       >
         <div className="space-y-4 pt-1 font-sans">
           {/* Search bar inside See More modal */}
@@ -591,7 +647,7 @@ export function DashboardPage() {
           </div>
 
           {/* Categorized and filtered items container */}
-          <div className="max-h-[60vh] overflow-y-auto space-y-4 pr-1">
+          <div className="max-h-[72vh] overflow-y-auto space-y-5 pr-1">
             {totalFilteredItems === 0 ? (
               <div className="py-8 text-center space-y-1.5">
                 <p className="text-sm font-semibold text-[#0a0a0a]">No features found</p>
@@ -605,7 +661,7 @@ export function DashboardPage() {
                   <h4 className="text-[11px] font-bold uppercase tracking-wider text-[#6a6a6a] px-1">
                     {section.category}
                   </h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-2.5">
                     {section.items.map((item) => {
                       const Icon = item.icon
                       const content = (
@@ -633,14 +689,14 @@ export function DashboardPage() {
                         </>
                       )
 
-                      if (item.onClick) {
+                      if ("onClick" in item && typeof (item as any).onClick === "function") {
                         return (
                           <button
                             key={item.id}
                             type="button"
                             onClick={() => {
                               setShowAllMenusModal(false)
-                              item.onClick?.()
+                              ;(item as any).onClick()
                             }}
                             className="flex items-start gap-3 p-3 rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] hover:bg-[#f5f0e0] hover:border-[#0a0a0a]/20 transition-all text-left group cursor-pointer w-full"
                           >

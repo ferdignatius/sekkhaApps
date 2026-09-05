@@ -8,12 +8,12 @@ WORKDIR /app
 COPY package*.json ./
 COPY prisma ./prisma/
 
-RUN npm ci
+RUN npm install
 
 COPY tsconfig.json ./
 COPY src ./src
 
-RUN npm run db:generate
+RUN npx prisma generate
 RUN npm run build
 
 # 2. Production Runner Stage
@@ -27,7 +27,7 @@ ENV PORT=4000
 COPY package*.json ./
 COPY prisma ./prisma/
 
-RUN npm ci --omit=dev
+RUN npm install --omit=dev
 RUN npx prisma generate
 
 COPY --from=builder /app/dist ./dist
@@ -35,3 +35,4 @@ COPY --from=builder /app/dist ./dist
 EXPOSE 4000
 
 CMD ["node", "dist/index.js"]
+

@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
+import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as SignUpRouteImport } from './routes/sign-up'
 import { Route as AuthenticatedInsightRouteImport } from './routes/_authenticated/insight'
@@ -18,12 +19,14 @@ import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authen
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
 import { Route as AuthenticatedPengurusContributionRouteImport } from './routes/_authenticated/pengurus-contribution'
 import { Route as AuthenticatedRecencyAlertsRouteImport } from './routes/_authenticated/recency-alerts'
-import { Route as AuthenticatedTeamsRouteImport } from './routes/_authenticated/teams'
 import { Route as AuthenticatedEventsIndexRouteImport } from './routes/_authenticated/events/index'
+import { Route as AuthenticatedEventsScanRouteImport } from './routes/_authenticated/events/scan'
 import { Route as AuthenticatedHomeIndexRouteImport } from './routes/_authenticated/home/index'
 import { Route as AuthenticatedHomeAchievementsRouteImport } from './routes/_authenticated/home/achievements'
 import { Route as AuthenticatedHomeProfileRouteImport } from './routes/_authenticated/home/profile'
 import { Route as AuthenticatedLeaderboardIndexRouteImport } from './routes/_authenticated/leaderboard/index'
+import { Route as AuthenticatedTeamsIndexRouteImport } from './routes/_authenticated/teams/index'
+import { Route as AuthenticatedTeamsMemberIdRouteImport } from './routes/_authenticated/teams/$memberId'
 import { Route as AuthenticatedConfigureEarlyWarningThresholdRouteImport } from './routes/_authenticated/configure/early-warning/threshold'
 import { Route as AuthenticatedConfigureMasterAchievementRouteImport } from './routes/_authenticated/configure/master/achievement'
 import { Route as AuthenticatedConfigureMasterAttendanceBadgeRouteImport } from './routes/_authenticated/configure/master/attendance-badge'
@@ -42,6 +45,11 @@ const IndexRoute = IndexRouteImport.update({
 } as any)
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
   id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -82,17 +90,17 @@ const AuthenticatedRecencyAlertsRoute =
     path: '/recency-alerts',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
-const AuthenticatedTeamsRoute = AuthenticatedTeamsRouteImport.update({
-  id: '/teams',
-  path: '/teams',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
 const AuthenticatedEventsIndexRoute =
   AuthenticatedEventsIndexRouteImport.update({
     id: '/events/',
     path: '/events/',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedEventsScanRoute = AuthenticatedEventsScanRouteImport.update({
+  id: '/events/scan',
+  path: '/events/scan',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedHomeIndexRoute = AuthenticatedHomeIndexRouteImport.update({
   id: '/home/',
   path: '/home/',
@@ -114,6 +122,17 @@ const AuthenticatedLeaderboardIndexRoute =
   AuthenticatedLeaderboardIndexRouteImport.update({
     id: '/leaderboard/',
     path: '/leaderboard/',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedTeamsIndexRoute = AuthenticatedTeamsIndexRouteImport.update({
+  id: '/teams/',
+  path: '/teams/',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedTeamsMemberIdRoute =
+  AuthenticatedTeamsMemberIdRouteImport.update({
+    id: '/teams/$memberId',
+    path: '/teams/$memberId',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedConfigureEarlyWarningThresholdRoute =
@@ -179,6 +198,7 @@ const AuthenticatedConfigureRulesSeasonRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/sign-up': typeof SignUpRoute
   '/insight': typeof AuthenticatedInsightRoute
@@ -186,12 +206,14 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/pengurus-contribution': typeof AuthenticatedPengurusContributionRoute
   '/recency-alerts': typeof AuthenticatedRecencyAlertsRoute
-  '/teams': typeof AuthenticatedTeamsRoute
+  '/events/scan': typeof AuthenticatedEventsScanRoute
   '/home/achievements': typeof AuthenticatedHomeAchievementsRoute
   '/home/profile': typeof AuthenticatedHomeProfileRoute
+  '/teams/$memberId': typeof AuthenticatedTeamsMemberIdRoute
   '/events/': typeof AuthenticatedEventsIndexRoute
   '/home/': typeof AuthenticatedHomeIndexRoute
   '/leaderboard/': typeof AuthenticatedLeaderboardIndexRoute
+  '/teams/': typeof AuthenticatedTeamsIndexRoute
   '/configure/early-warning/threshold': typeof AuthenticatedConfigureEarlyWarningThresholdRoute
   '/configure/master/achievement': typeof AuthenticatedConfigureMasterAchievementRoute
   '/configure/master/attendance-badge': typeof AuthenticatedConfigureMasterAttendanceBadgeRoute
@@ -205,6 +227,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/sign-up': typeof SignUpRoute
   '/insight': typeof AuthenticatedInsightRoute
@@ -212,12 +235,14 @@ export interface FileRoutesByTo {
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/pengurus-contribution': typeof AuthenticatedPengurusContributionRoute
   '/recency-alerts': typeof AuthenticatedRecencyAlertsRoute
-  '/teams': typeof AuthenticatedTeamsRoute
+  '/events/scan': typeof AuthenticatedEventsScanRoute
   '/home/achievements': typeof AuthenticatedHomeAchievementsRoute
   '/home/profile': typeof AuthenticatedHomeProfileRoute
+  '/teams/$memberId': typeof AuthenticatedTeamsMemberIdRoute
   '/events': typeof AuthenticatedEventsIndexRoute
   '/home': typeof AuthenticatedHomeIndexRoute
   '/leaderboard': typeof AuthenticatedLeaderboardIndexRoute
+  '/teams': typeof AuthenticatedTeamsIndexRoute
   '/configure/early-warning/threshold': typeof AuthenticatedConfigureEarlyWarningThresholdRoute
   '/configure/master/achievement': typeof AuthenticatedConfigureMasterAchievementRoute
   '/configure/master/attendance-badge': typeof AuthenticatedConfigureMasterAttendanceBadgeRoute
@@ -233,6 +258,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
+  '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/sign-up': typeof SignUpRoute
   '/_authenticated/insight': typeof AuthenticatedInsightRoute
@@ -240,12 +266,14 @@ export interface FileRoutesById {
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
   '/_authenticated/pengurus-contribution': typeof AuthenticatedPengurusContributionRoute
   '/_authenticated/recency-alerts': typeof AuthenticatedRecencyAlertsRoute
-  '/_authenticated/teams': typeof AuthenticatedTeamsRoute
+  '/_authenticated/events/scan': typeof AuthenticatedEventsScanRoute
   '/_authenticated/home/achievements': typeof AuthenticatedHomeAchievementsRoute
   '/_authenticated/home/profile': typeof AuthenticatedHomeProfileRoute
+  '/_authenticated/teams/$memberId': typeof AuthenticatedTeamsMemberIdRoute
   '/_authenticated/events/': typeof AuthenticatedEventsIndexRoute
   '/_authenticated/home/': typeof AuthenticatedHomeIndexRoute
   '/_authenticated/leaderboard/': typeof AuthenticatedLeaderboardIndexRoute
+  '/_authenticated/teams/': typeof AuthenticatedTeamsIndexRoute
   '/_authenticated/configure/early-warning/threshold': typeof AuthenticatedConfigureEarlyWarningThresholdRoute
   '/_authenticated/configure/master/achievement': typeof AuthenticatedConfigureMasterAchievementRoute
   '/_authenticated/configure/master/attendance-badge': typeof AuthenticatedConfigureMasterAttendanceBadgeRoute
@@ -261,6 +289,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/forgot-password'
     | '/login'
     | '/sign-up'
     | '/insight'
@@ -268,12 +297,14 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/pengurus-contribution'
     | '/recency-alerts'
-    | '/teams'
+    | '/events/scan'
     | '/home/achievements'
     | '/home/profile'
+    | '/teams/$memberId'
     | '/events/'
     | '/home/'
     | '/leaderboard/'
+    | '/teams/'
     | '/configure/early-warning/threshold'
     | '/configure/master/achievement'
     | '/configure/master/attendance-badge'
@@ -287,6 +318,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/forgot-password'
     | '/login'
     | '/sign-up'
     | '/insight'
@@ -294,12 +326,14 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/pengurus-contribution'
     | '/recency-alerts'
-    | '/teams'
+    | '/events/scan'
     | '/home/achievements'
     | '/home/profile'
+    | '/teams/$memberId'
     | '/events'
     | '/home'
     | '/leaderboard'
+    | '/teams'
     | '/configure/early-warning/threshold'
     | '/configure/master/achievement'
     | '/configure/master/attendance-badge'
@@ -314,6 +348,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_authenticated'
+    | '/forgot-password'
     | '/login'
     | '/sign-up'
     | '/_authenticated/insight'
@@ -321,12 +356,14 @@ export interface FileRouteTypes {
     | '/_authenticated/onboarding'
     | '/_authenticated/pengurus-contribution'
     | '/_authenticated/recency-alerts'
-    | '/_authenticated/teams'
+    | '/_authenticated/events/scan'
     | '/_authenticated/home/achievements'
     | '/_authenticated/home/profile'
+    | '/_authenticated/teams/$memberId'
     | '/_authenticated/events/'
     | '/_authenticated/home/'
     | '/_authenticated/leaderboard/'
+    | '/_authenticated/teams/'
     | '/_authenticated/configure/early-warning/threshold'
     | '/_authenticated/configure/master/achievement'
     | '/_authenticated/configure/master/attendance-badge'
@@ -342,6 +379,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
+  ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
   SignUpRoute: typeof SignUpRoute
 }
@@ -360,6 +398,13 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/forgot-password': {
+      id: '/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof ForgotPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -411,18 +456,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRecencyAlertsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/teams': {
-      id: '/_authenticated/teams'
-      path: '/teams'
-      fullPath: '/teams'
-      preLoaderRoute: typeof AuthenticatedTeamsRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
     '/_authenticated/events/': {
       id: '/_authenticated/events/'
       path: '/events'
       fullPath: '/events/'
       preLoaderRoute: typeof AuthenticatedEventsIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/events/scan': {
+      id: '/_authenticated/events/scan'
+      path: '/events/scan'
+      fullPath: '/events/scan'
+      preLoaderRoute: typeof AuthenticatedEventsScanRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/home/': {
@@ -451,6 +496,20 @@ declare module '@tanstack/react-router' {
       path: '/leaderboard'
       fullPath: '/leaderboard/'
       preLoaderRoute: typeof AuthenticatedLeaderboardIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/teams/': {
+      id: '/_authenticated/teams/'
+      path: '/teams'
+      fullPath: '/teams/'
+      preLoaderRoute: typeof AuthenticatedTeamsIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/teams/$memberId': {
+      id: '/_authenticated/teams/$memberId'
+      path: '/teams/$memberId'
+      fullPath: '/teams/$memberId'
+      preLoaderRoute: typeof AuthenticatedTeamsMemberIdRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/configure/early-warning/threshold': {
@@ -532,12 +591,14 @@ interface AuthenticatedRouteChildren {
   AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
   AuthenticatedPengurusContributionRoute: typeof AuthenticatedPengurusContributionRoute
   AuthenticatedRecencyAlertsRoute: typeof AuthenticatedRecencyAlertsRoute
-  AuthenticatedTeamsRoute: typeof AuthenticatedTeamsRoute
+  AuthenticatedEventsScanRoute: typeof AuthenticatedEventsScanRoute
   AuthenticatedHomeAchievementsRoute: typeof AuthenticatedHomeAchievementsRoute
   AuthenticatedHomeProfileRoute: typeof AuthenticatedHomeProfileRoute
+  AuthenticatedTeamsMemberIdRoute: typeof AuthenticatedTeamsMemberIdRoute
   AuthenticatedEventsIndexRoute: typeof AuthenticatedEventsIndexRoute
   AuthenticatedHomeIndexRoute: typeof AuthenticatedHomeIndexRoute
   AuthenticatedLeaderboardIndexRoute: typeof AuthenticatedLeaderboardIndexRoute
+  AuthenticatedTeamsIndexRoute: typeof AuthenticatedTeamsIndexRoute
   AuthenticatedConfigureEarlyWarningThresholdRoute: typeof AuthenticatedConfigureEarlyWarningThresholdRoute
   AuthenticatedConfigureMasterAchievementRoute: typeof AuthenticatedConfigureMasterAchievementRoute
   AuthenticatedConfigureMasterAttendanceBadgeRoute: typeof AuthenticatedConfigureMasterAttendanceBadgeRoute
@@ -557,12 +618,14 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedPengurusContributionRoute:
     AuthenticatedPengurusContributionRoute,
   AuthenticatedRecencyAlertsRoute: AuthenticatedRecencyAlertsRoute,
-  AuthenticatedTeamsRoute: AuthenticatedTeamsRoute,
+  AuthenticatedEventsScanRoute: AuthenticatedEventsScanRoute,
   AuthenticatedHomeAchievementsRoute: AuthenticatedHomeAchievementsRoute,
   AuthenticatedHomeProfileRoute: AuthenticatedHomeProfileRoute,
+  AuthenticatedTeamsMemberIdRoute: AuthenticatedTeamsMemberIdRoute,
   AuthenticatedEventsIndexRoute: AuthenticatedEventsIndexRoute,
   AuthenticatedHomeIndexRoute: AuthenticatedHomeIndexRoute,
   AuthenticatedLeaderboardIndexRoute: AuthenticatedLeaderboardIndexRoute,
+  AuthenticatedTeamsIndexRoute: AuthenticatedTeamsIndexRoute,
   AuthenticatedConfigureEarlyWarningThresholdRoute:
     AuthenticatedConfigureEarlyWarningThresholdRoute,
   AuthenticatedConfigureMasterAchievementRoute:
@@ -592,6 +655,7 @@ const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
+  ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
   SignUpRoute: SignUpRoute,
 }

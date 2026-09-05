@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useContext } from 'react'
+import { AuthContext } from '@/modules/auth/internal/context/AuthContext'
 
 type AuthState = 'loading' | 'authenticated' | 'unauthenticated'
 
@@ -7,33 +8,19 @@ interface UseAuthStateReturn {
 }
 
 /**
- * Hook untuk mengelola auth state pada Landing Page.
- *
- * State awal adalah 'loading'. Jika auth service tidak merespons
- * dalam 3000ms, state di-fallback ke 'unauthenticated' secara otomatis.
- *
- * Hook ini dirancang sebagai placeholder yang mudah diganti ketika
- * auth service nyata tersedia.
- *
- * Requirements: 1.4, 1.5
+ * Hook to manage auth state on the Landing Page.
+ * Immediately checks token in localStorage to prevent lazy load skeleton flicker on buttons.
  */
 export function useAuthState(): UseAuthStateReturn {
-  const [authState, setAuthState] = useState<AuthState>('loading')
+  // If there's no stored token in browser, it is immediately unauthenticated (0ms latency)
+  if (typeof window !== 'undefined' && !localStorage.getItem('sekkha_access_token')) {
+    return { authState: 'unauthenticated' }
+  }
 
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      setAuthState((current) => {
-        if (current === 'loading') {
-          return 'unauthenticated'
-        }
-        return current
-      })
-    }, 3000)
+  const ctx = useContext(AuthContext)
+  if (!ctx) {
+    return { authState: 'unauthenticated' }
+  }
 
-    return () => {
-      clearTimeout(timeout)
-    }
-  }, [])
-
-  return { authState }
+  return { authState: ctx.authState.status }
 }

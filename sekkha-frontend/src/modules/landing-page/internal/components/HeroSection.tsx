@@ -26,14 +26,14 @@ export function HeroSection({ headline, subheadline }: HeroSectionProps) {
           transition={{ duration: 0.7, ease: EASE, delay: 0 }}
         >
           <span className="inline-flex items-center gap-2 rounded-full glass-pill px-4 py-1.5 text-body-sm text-sekkha-ink font-medium shadow-sm">
-            ✨ Platform Digital Remaja • Vihara Tri Maha Dharma
+            ✨ Youth Digital Platform • Vihara Tri Maha Dharma
           </span>
         </motion.div>
 
         {/* Headline */}
         <motion.h1
           id="hero-heading"
-          className="text-hero-display text-sekkha-ink max-w-[840px] mx-auto text-center font-bold tracking-tight text-4xl sm:text-5xl md:text-7xl leading-tight"
+          className="text-display-xl text-sekkha-ink max-w-[860px] mx-auto text-center font-medium tracking-[-1.5px] sm:tracking-[-2px] md:tracking-[-2.5px] text-4xl sm:text-5xl md:text-[68px] lg:text-[72px] leading-[1.05]"
           initial={{ opacity: 0, y: 32 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: EASE, delay: 0.1 }}
@@ -43,7 +43,7 @@ export function HeroSection({ headline, subheadline }: HeroSectionProps) {
 
         {/* Subheadline */}
         <motion.p
-          className="text-subtitle text-sekkha-slate max-w-[640px] mx-auto text-center mt-6 text-base md:text-lg leading-relaxed font-normal"
+          className="text-body-md text-sekkha-slate max-w-[640px] mx-auto text-center mt-6 text-base md:text-lg leading-relaxed font-normal"
           initial={{ opacity: 0, y: 32 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: EASE, delay: 0.2 }}
@@ -53,16 +53,28 @@ export function HeroSection({ headline, subheadline }: HeroSectionProps) {
 
         {/* CTA Group */}
         <motion.div
-          className="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-6 mt-10 w-full md:w-auto"
+          className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-8 w-full sm:w-auto"
           initial={{ opacity: 0, y: 32 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: EASE, delay: 0.35 }}
         >
-          <Button variant="primary" className="w-full md:w-auto shadow-md hover:shadow-lg transition-all" asChild>
-            <a href="/sign-up" role="button" className="!text-white font-semibold">Bergabung Sekarang</a>
+          <Button
+            variant="primary"
+            className="w-full sm:w-auto h-[44px] px-6 rounded-[12px] bg-sekkha-primary hover:bg-[#1f1f1f] text-white font-semibold shadow-xs"
+            asChild
+          >
+            <a href="/sign-up" role="button" className="!text-white font-semibold">
+              Join for Free
+            </a>
           </Button>
-          <Button variant="secondary" className="w-full md:w-auto shadow-sm hover:shadow transition-all" asChild>
-            <a href="#events" role="button" className="!text-sekkha-ink font-semibold">Lihat Kegiatan</a>
+          <Button
+            variant="secondary"
+            className="w-full sm:w-auto h-[44px] px-6 rounded-[12px] bg-sekkha-canvas border border-sekkha-hairline hover:bg-sekkha-surface text-sekkha-ink font-semibold shadow-xs"
+            asChild
+          >
+            <a href="#events" role="button" className="!text-sekkha-ink font-semibold">
+              Explore Events
+            </a>
           </Button>
         </motion.div>
 

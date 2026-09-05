@@ -15,23 +15,23 @@ export type AlertVariant = "info" | "success" | "warning" | "destructive"
 
 const variantStyles: Record<AlertVariant, { container: string; iconClass: string; Icon: React.ComponentType<{ className?: string }> }> = {
   info: {
-    container: "bg-blue-50/80 border-blue-200/90 text-blue-950",
-    iconClass: "text-blue-600",
+    container: "bg-[#1a3a3a]/10 border-[#1a3a3a]/20 text-[#0a0a0a]",
+    iconClass: "text-[#1a3a3a]",
     Icon: InfoIcon,
   },
   success: {
-    container: "bg-emerald-50/80 border-emerald-200/90 text-emerald-950",
-    iconClass: "text-emerald-600",
+    container: "bg-[#22c55e]/10 border-[#22c55e]/25 text-[#0a0a0a]",
+    iconClass: "text-[#22c55e]",
     Icon: CheckCircle2Icon,
   },
   warning: {
-    container: "bg-amber-50/80 border-amber-200/90 text-amber-950",
-    iconClass: "text-amber-600",
+    container: "bg-[#f59e0b]/10 border-[#f59e0b]/25 text-[#0a0a0a]",
+    iconClass: "text-[#f59e0b]",
     Icon: AlertTriangleIcon,
   },
   destructive: {
-    container: "bg-red-50/80 border-red-200/90 text-red-950",
-    iconClass: "text-red-600",
+    container: "bg-[#ef4444]/10 border-[#ef4444]/25 text-[#0a0a0a]",
+    iconClass: "text-[#ef4444]",
     Icon: AlertCircleIcon,
   },
 }
@@ -43,6 +43,9 @@ export interface BaseAlertProps extends React.HTMLAttributes<HTMLDivElement> {
   icon?: React.ReactNode
 }
 
+/**
+ * Sekkha base Alert — aligned strictly with DESIGN.md specifications.
+ */
 export function Alert({
   variant = "info",
   title,
@@ -59,7 +62,7 @@ export function Alert({
     <div
       role="alert"
       className={cn(
-        "flex items-start gap-3 rounded-2xl border p-4 text-body-sm shadow-2xs",
+        "flex items-start gap-3 rounded-[16px] border p-4 text-sm text-[#0a0a0a] shadow-xs transition-all font-sans",
         config.container,
         className
       )}
@@ -68,10 +71,10 @@ export function Alert({
       <div className={cn("size-5 shrink-0 mt-0.5", config.iconClass)}>
         {icon ?? <DefaultIcon className="size-5" />}
       </div>
-      <div className="space-y-0.5 flex-1">
-        {title && <p className="font-bold text-caption leading-tight">{title}</p>}
+      <div className="space-y-1 flex-1 text-left">
+        {title && <p className="font-semibold text-sm leading-tight text-[#0a0a0a]">{title}</p>}
         {description && (
-          <div className="text-micro leading-relaxed opacity-90">{description}</div>
+          <div className="text-xs leading-relaxed text-[#3a3a3a]">{description}</div>
         )}
         {children}
       </div>
@@ -80,3 +83,4 @@ export function Alert({
 }
 
 export { ShadcnAlertTitle as AlertTitle, ShadcnAlertDescription as AlertDescription }
+

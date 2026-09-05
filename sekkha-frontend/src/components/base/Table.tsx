@@ -11,6 +11,9 @@ import {
 } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
 
+/**
+ * Sekkha base Table components — aligned strictly with DESIGN.md specifications.
+ */
 export function TableContainer({
   className,
   children,
@@ -19,7 +22,7 @@ export function TableContainer({
   return (
     <div
       className={cn(
-        "overflow-hidden rounded-2xl border border-sekkha-hairline-soft bg-sekkha-canvas shadow-2xs",
+        "overflow-hidden rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0] shadow-2xs font-sans",
         className
       )}
       {...props}
@@ -35,7 +38,7 @@ export function Table({
 }: React.ComponentProps<typeof ShadcnTable>) {
   return (
     <ShadcnTable
-      className={cn("w-full min-w-[500px] text-left text-body-sm", className)}
+      className={cn("w-full min-w-[500px] text-left text-sm text-[#0a0a0a]", className)}
       {...props}
     />
   )
@@ -47,7 +50,7 @@ export function TableHeader({
 }: React.ComponentProps<typeof ShadcnTableHeader>) {
   return (
     <ShadcnTableHeader
-      className={cn("bg-sekkha-surface border-b border-sekkha-hairline-soft", className)}
+      className={cn("bg-[#faf5e8] border-b border-[#e5e5e5]", className)}
       {...props}
     />
   )
@@ -60,7 +63,7 @@ export function TableRow({
   return (
     <ShadcnTableRow
       className={cn(
-        "border-b border-sekkha-hairline-soft last:border-0 hover:bg-slate-50/70 transition-colors",
+        "border-b border-[#f0f0f0] last:border-0 hover:bg-[#f5f0e0] transition-colors",
         className
       )}
       {...props}
@@ -74,7 +77,7 @@ export function TableHead({
 }: React.ComponentProps<typeof ShadcnTableHead>) {
   return (
     <ShadcnTableHead
-      className={cn("px-4 py-3 font-semibold text-sekkha-slate text-caption", className)}
+      className={cn("px-4 py-3 font-semibold text-[#6a6a6a] text-xs uppercase tracking-wider", className)}
       {...props}
     />
   )
@@ -86,7 +89,7 @@ export function TableCell({
 }: React.ComponentProps<typeof ShadcnTableCell>) {
   return (
     <ShadcnTableCell
-      className={cn("px-4 py-3.5 text-sekkha-ink align-middle", className)}
+      className={cn("px-4 py-3.5 text-[#0a0a0a] text-sm align-middle", className)}
       {...props}
     />
   )
@@ -97,3 +100,4 @@ export {
   ShadcnTableFooter as TableFooter,
   ShadcnTableCaption as TableCaption,
 }
+

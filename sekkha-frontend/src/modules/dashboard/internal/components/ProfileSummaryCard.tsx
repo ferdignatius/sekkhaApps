@@ -4,8 +4,6 @@
 
 import { StarIcon } from "lucide-react"
 
-// ─── Types (shaped after GET /users/me + /users/me/streak + /users/me/level) ──
-
 interface ProfileSummaryCardProps {
   name: string
   avatarUrl?: string
@@ -19,8 +17,6 @@ interface ProfileSummaryCardProps {
   levelLabel: string
 }
 
-// ─── Helpers ────────────────────────────────────────────────────────────────────
-
 function getInitials(name: string): string {
   return name
     .split(" ")
@@ -29,13 +25,6 @@ function getInitials(name: string): string {
     .join("")
 }
 
-/**
- * Returns flame tier config based on streak count.
- * Tier 1: 1–3   → small dim flame
- * Tier 2: 4–7   → medium warm flame
- * Tier 3: 8–11  → large bright flame
- * Tier 4: 12+   → max blazing flame (same icon, stronger visual)
- */
 function getFlameConfig(streak: number): {
   size: string
   colorClass: string
@@ -45,18 +34,18 @@ function getFlameConfig(streak: number): {
 } {
   if (streak >= 12) {
     return {
-      size: "size-12",
+      size: "size-10",
       colorClass: "text-red-500",
-      bgClass: "bg-red-50",
+      bgClass: "bg-red-50 border-red-200",
       label: "Blazing streak",
       emoji: "🔥",
     }
   }
   if (streak >= 8) {
     return {
-      size: "size-10",
+      size: "size-9",
       colorClass: "text-orange-500",
-      bgClass: "bg-orange-50",
+      bgClass: "bg-orange-50 border-orange-200",
       label: "Hot streak",
       emoji: "🔥",
     }
@@ -65,22 +54,19 @@ function getFlameConfig(streak: number): {
     return {
       size: "size-8",
       colorClass: "text-amber-500",
-      bgClass: "bg-amber-50",
+      bgClass: "bg-[#ffb084]/20 border-[#ffb084]/40",
       label: "Warming up",
       emoji: "🔥",
     }
   }
   return {
-    size: "size-6",
-    colorClass: "text-amber-300",
-    bgClass: "bg-amber-50/60",
+    size: "size-7",
+    colorClass: "text-[#e8b94a]",
+    bgClass: "bg-[#faf5e8] border-[#e5e5e5]",
     label: "Keep going",
     emoji: "🔥",
   }
 }
-
-// ─── Flame SVG (custom, three-tier visual) ────────────────────────────────────
-// Using a direct SVG so we can animate / style the fill independently per tier.
 
 function FlameIcon({ className }: { className?: string }) {
   return (
@@ -99,8 +85,6 @@ function FlameIcon({ className }: { className?: string }) {
   )
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
-
 export function ProfileSummaryCard({
   name,
   avatarUrl,
@@ -112,20 +96,20 @@ export function ProfileSummaryCard({
   const flame = getFlameConfig(currentStreak)
 
   return (
-    <div className="rounded-xl border border-sekkha-hairline-soft bg-sekkha-canvas p-5">
+    <div className="rounded-[20px] border border-[#e5e5e5] bg-[#fffaf0] p-5 shadow-xs font-sans text-left">
       <div className="flex items-center gap-4">
         {/* Avatar */}
         <div className="shrink-0">
           {avatarUrl ? (
             <img
               src={avatarUrl}
-              alt={`Foto profil ${name}`}
-              className="h-14 w-14 rounded-full object-cover ring-2 ring-sekkha-hairline-soft"
+              alt={`Profile picture for ${name}`}
+              className="h-14 w-14 rounded-full object-cover ring-2 ring-[#e5e5e5]"
             />
           ) : (
             <div
-              aria-label={`Inisial ${name}`}
-              className="flex h-14 w-14 items-center justify-center rounded-full bg-sekkha-brand-yellow text-heading-5 font-semibold text-sekkha-ink"
+              aria-label={`Initials for ${name}`}
+              className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#e8b94a] text-lg font-bold text-[#0a0a0a]"
             >
               {getInitials(name)}
             </div>
@@ -134,45 +118,45 @@ export function ProfileSummaryCard({
 
         {/* Name + level */}
         <div className="min-w-0 flex-1">
-          <p className="truncate text-heading-5 text-sekkha-ink">{name}</p>
-          <div className="mt-1 flex items-center gap-1.5">
-            <span className="rounded-full bg-sekkha-brand-yellow/20 px-2 py-0.5 text-caption-bold text-sekkha-yellow-dark">
+          <p className="truncate text-base font-bold text-[#0a0a0a]">{name}</p>
+          <div className="mt-1 flex items-center gap-1.5 flex-wrap">
+            <span className="rounded-full bg-[#f5f0e0] border border-[#e5e5e5] px-2.5 py-0.5 text-xs font-bold text-[#0a0a0a]">
               Lv.{level}
             </span>
-            <span className="text-caption text-sekkha-muted">·</span>
-            <span className="text-body-sm-medium text-sekkha-brand-blue">{levelLabel}</span>
+            <span className="text-xs text-[#6a6a6a]">·</span>
+            <span className="text-xs font-semibold text-[#1a3a3a]">{levelLabel}</span>
           </div>
         </div>
       </div>
 
       {/* Stats row */}
-      <div className="mt-4 flex items-center gap-3">
-        {/* Flame streak — the main visual */}
+      <div className="mt-4 grid grid-cols-2 gap-3">
+        {/* Flame streak */}
         <div
-          className={`flex flex-1 items-center gap-3 rounded-xl ${flame.bgClass} px-4 py-3`}
+          className={`flex items-center gap-3 rounded-[12px] border ${flame.bgClass} px-3.5 py-2.5 shadow-2xs`}
         >
           <FlameIcon className={`shrink-0 ${flame.size} ${flame.colorClass}`} />
-          <div>
-            <p className={`text-heading-4 font-semibold leading-none ${flame.colorClass}`}>
+          <div className="min-w-0">
+            <p className={`text-lg font-bold leading-none ${flame.colorClass}`}>
               {currentStreak}
             </p>
-            <p className="mt-0.5 text-caption text-sekkha-slate">
-              {currentStreak === 1 ? "minggu streak" : "minggu streak"}
+            <p className="mt-1 text-[11px] font-medium text-[#6a6a6a] truncate">
+              {currentStreak === 1 ? "week streak" : "weeks streak"}
             </p>
           </div>
         </div>
 
         {/* Points */}
-        <div className="flex flex-1 items-center gap-3 rounded-xl bg-sekkha-surface px-4 py-3">
+        <div className="flex items-center gap-3 rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] px-3.5 py-2.5 shadow-2xs">
           <StarIcon
-            className="size-7 shrink-0 text-sekkha-brand-yellow"
+            className="size-7 shrink-0 text-[#e8b94a]"
             aria-hidden="true"
           />
-          <div>
-            <p className="text-heading-4 font-semibold leading-none text-sekkha-ink">
-              {totalPoints.toLocaleString("id-ID")}
+          <div className="min-w-0">
+            <p className="text-lg font-bold leading-none text-[#0a0a0a]">
+              {totalPoints.toLocaleString("en-US")}
             </p>
-            <p className="mt-0.5 text-caption text-sekkha-slate">total poin</p>
+            <p className="mt-1 text-[11px] font-medium text-[#6a6a6a] truncate">total points</p>
           </div>
         </div>
       </div>

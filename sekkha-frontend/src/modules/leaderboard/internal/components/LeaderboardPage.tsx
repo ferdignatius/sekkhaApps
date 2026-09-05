@@ -1,9 +1,5 @@
 // feature/leaderboard/components/LeaderboardPage
-// Overhauled UI/UX with Rich Glassmorphism Aesthetics & Clear User Rank Indicator:
-// - Ambient background blur glow effects
-// - Dedicated My Rank Indicator Banner & Right Sidebar Widget
-// - Clean desktop padding with no empty bottom gap
-// - Frosted glass cards with backdrop-blur-2xl & subtle borders.
+// Overhauled UI/UX strictly aligned with Clay Design System (DESIGN.md)
 
 import { useState, useEffect } from "react"
 import {
@@ -30,25 +26,25 @@ import type { LeaderboardMetric, LeaderboardEntry } from "../types"
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
 const METRIC_OPTIONS: { value: LeaderboardMetric; label: string; icon: React.ReactNode }[] = [
-  { value: "points",     label: "Total Poin",  icon: <StarIcon className="size-3.5 sm:size-4 text-amber-400" /> },
-  { value: "streak",     label: "Streak",       icon: <FlameIcon className="size-3.5 sm:size-4 text-orange-500" /> },
-  { value: "attendance", label: "Hadir",        icon: <CheckSquareIcon className="size-3.5 sm:size-4 text-emerald-500" /> },
+  { value: "points",     label: "Total Points", icon: <StarIcon className="size-4" /> },
+  { value: "streak",     label: "Streak",       icon: <FlameIcon className="size-4" /> },
+  { value: "attendance", label: "Attendance",   icon: <CheckSquareIcon className="size-4" /> },
 ]
 
 export type RoleCheckboxKey = "umat" | "aktivis" | "pengurus"
 
 const PENGURUS_ROLE_CHECKBOXES: { id: RoleCheckboxKey; label: string; icon: React.ReactNode }[] = [
-  { id: "umat", label: "Umat", icon: <UserIcon className="size-3.5" /> },
-  { id: "aktivis", label: "Aktivis", icon: <AwardIcon className="size-3.5 text-amber-600" /> },
-  { id: "pengurus", label: "Pengurus", icon: <ShieldCheckIcon className="size-3.5 text-blue-600" /> },
+  { id: "umat", label: "Members", icon: <UserIcon className="size-3.5" /> },
+  { id: "aktivis", label: "Activists", icon: <AwardIcon className="size-3.5" /> },
+  { id: "pengurus", label: "Organizers", icon: <ShieldCheckIcon className="size-3.5" /> },
 ]
 
 const AKTIVIS_ROLE_CHECKBOXES: { id: RoleCheckboxKey; label: string; icon: React.ReactNode }[] = [
-  { id: "umat", label: "Umat", icon: <UserIcon className="size-3.5" /> },
-  { id: "aktivis", label: "Aktivis", icon: <AwardIcon className="size-3.5 text-amber-600" /> },
+  { id: "umat", label: "Members", icon: <UserIcon className="size-3.5" /> },
+  { id: "aktivis", label: "Activists", icon: <AwardIcon className="size-3.5" /> },
 ]
 
-// Solid & Gradient Medal Colors for Podium
+// Podium Configuration adhering to Clay Design Tokens
 const PODIUM_CONFIG: Record<1 | 2 | 3, {
   height: string
   barBg: string
@@ -57,41 +53,41 @@ const PODIUM_CONFIG: Record<1 | 2 | 3, {
   avatarBg: string
   crownColor: string
   badgeBg: string
+  badgeText: string
   rankText: string
-  medalEmoji: string
 }> = {
   1: {
-    height: "h-32 sm:h-40",
-    barBg: "bg-gradient-to-t from-amber-500 via-amber-400 to-yellow-300 shadow-amber-200",
-    border: "border-amber-400/80 ring-2 ring-amber-300/50",
-    avatarRing: "ring-3 sm:ring-4 ring-amber-300 shadow-lg shadow-amber-300/40",
-    avatarBg: "bg-gradient-to-br from-amber-300 via-yellow-400 to-amber-500 text-amber-950 font-black",
-    crownColor: "text-amber-400 drop-shadow-md animate-bounce duration-1000",
-    badgeBg: "bg-amber-500 text-amber-950",
-    rankText: "text-amber-950 font-black",
-    medalEmoji: "🥇",
+    height: "h-32 sm:h-38",
+    barBg: "bg-gradient-to-b from-[#e8b94a] to-[#d49e28]",
+    border: "border-t border-x border-[#c28e20]",
+    avatarRing: "ring-4 ring-[#e8b94a]/30 shadow-md",
+    avatarBg: "bg-[#e8b94a] text-[#0a0a0a] font-black",
+    crownColor: "text-[#e8b94a] fill-[#e8b94a]",
+    badgeBg: "bg-[#0a0a0a]",
+    badgeText: "text-white",
+    rankText: "text-[#0a0a0a]/50 font-black",
   },
   2: {
-    height: "h-20 sm:h-28",
-    barBg: "bg-gradient-to-t from-slate-400 via-slate-300 to-slate-200 shadow-slate-200",
-    border: "border-slate-300/80 ring-2 ring-slate-200/50",
-    avatarRing: "ring-3 sm:ring-4 ring-slate-300 shadow-md",
-    avatarBg: "bg-gradient-to-br from-slate-200 via-slate-300 to-slate-400 text-slate-900 font-bold",
-    crownColor: "text-slate-400",
-    badgeBg: "bg-slate-400 text-slate-950",
-    rankText: "text-slate-800 font-extrabold",
-    medalEmoji: "🥈",
+    height: "h-22 sm:h-26",
+    barBg: "bg-gradient-to-b from-[#e5e5e5] to-[#d0d0d0]",
+    border: "border-t border-x border-[#bfbfbf]",
+    avatarRing: "ring-3 ring-[#e5e5e5] shadow-xs",
+    avatarBg: "bg-[#e5e5e5] text-[#0a0a0a] font-bold",
+    crownColor: "text-[#a0a0a0] fill-[#a0a0a0]",
+    badgeBg: "bg-[#6a6a6a]",
+    badgeText: "text-white",
+    rankText: "text-[#0a0a0a]/40 font-extrabold",
   },
   3: {
-    height: "h-14 sm:h-20",
-    barBg: "bg-gradient-to-t from-amber-700 via-amber-600 to-orange-400 shadow-orange-200",
-    border: "border-amber-600/80 ring-2 ring-orange-300/40",
-    avatarRing: "ring-3 sm:ring-4 ring-amber-500/60 shadow-md",
-    avatarBg: "bg-gradient-to-br from-orange-400 via-amber-600 to-amber-700 text-amber-950 font-bold",
-    crownColor: "text-amber-600",
-    badgeBg: "bg-amber-600 text-amber-950",
-    rankText: "text-amber-950 font-bold",
-    medalEmoji: "🥉",
+    height: "h-16 sm:h-20",
+    barBg: "bg-gradient-to-b from-[#d9a07a] to-[#c2845c]",
+    border: "border-t border-x border-[#a86e49]",
+    avatarRing: "ring-3 ring-[#d9a07a]/40 shadow-xs",
+    avatarBg: "bg-[#d9a07a] text-white font-bold",
+    crownColor: "text-[#c2845c] fill-[#c2845c]",
+    badgeBg: "bg-[#8c5230]",
+    badgeText: "text-white",
+    rankText: "text-white/50 font-bold",
   },
 }
 
@@ -109,8 +105,8 @@ function getCompetitionHint(
   if (!above || typeof above.value !== "number" || typeof entry.value !== "number") return null
   const diff = above.value - entry.value
   if (diff <= 0) return null
-  const aboveName = above.name ? above.name.split(" ")[0] : "peringkat atas"
-  return `${diff.toLocaleString("id-ID")} ${metricUnit} lagi untuk menyalip ${aboveName}!`
+  const aboveName = above.name ? above.name.split(" ")[0] : "the rank above"
+  return `${diff.toLocaleString("en-US")} more ${metricUnit} to overtake ${aboveName}!`
 }
 
 // ─── Sub-Components ───────────────────────────────────────────────────────────
@@ -120,63 +116,54 @@ function PodiumEntry({ entry, position, myId }: { entry?: LeaderboardEntry; posi
   const isFirst = position === 1
   const isMe = entry.user_id === myId
   const cfg = PODIUM_CONFIG[position]
-  const avatarSize = isFirst ? "h-14 w-14 sm:h-20 sm:w-20 text-caption-bold sm:text-body-lg font-black" : "h-11 w-11 sm:h-14 sm:w-14 text-micro-bold sm:text-body-base font-bold"
+  const avatarSize = isFirst ? "size-14 sm:size-18 text-sm sm:text-base font-black" : "size-11 sm:size-13 text-xs sm:text-sm font-bold"
 
   return (
-    <div className={`flex flex-1 flex-col items-center gap-1 sm:gap-1.5 min-w-0 transition-all duration-300 relative ${
+    <div className={`flex flex-1 flex-col items-center gap-1 sm:gap-1.5 min-w-0 transition-all duration-200 relative ${
       isMe ? "scale-102 z-20" : ""
     }`}>
-      {/* Crown or Medal Emoji for top 3 */}
+      {/* Crown Icon for top 3 */}
       {isFirst ? (
-        <CrownIcon className={`size-6 sm:size-8 ${cfg.crownColor}`} aria-hidden="true" />
+        <CrownIcon className={`size-6 sm:size-7 ${cfg.crownColor}`} aria-hidden="true" />
       ) : (
-        <span className="text-base sm:text-xl leading-none">{cfg.medalEmoji}</span>
+        <span className="text-xs font-bold text-[#6a6a6a]">#{position}</span>
       )}
 
       {/* Avatar Container */}
       <div className="relative shrink-0">
-        {isMe && (
-          <div className="absolute -inset-1 rounded-2xl bg-sekkha-brand-blue/30 blur-sm animate-pulse" />
-        )}
-        <div className={`relative ${avatarSize} flex shrink-0 items-center justify-center rounded-2xl shadow-md ${
+        <div className={`relative ${avatarSize} flex shrink-0 items-center justify-center rounded-[14px] sm:rounded-[16px] uppercase ${
           isMe
-            ? "ring-4 ring-sekkha-brand-blue ring-offset-2 ring-offset-white shadow-lg shadow-sekkha-brand-blue/30 bg-gradient-to-br from-blue-600 via-sekkha-brand-blue to-indigo-700 text-white"
+            ? "ring-4 ring-[#0a0a0a] shadow-md bg-[#0a0a0a] text-white"
             : `${cfg.avatarRing} ${cfg.avatarBg}`
         }`}>
           {entry.initials}
         </div>
-        <div className={`absolute -bottom-2 left-1/2 -translate-x-1/2 rounded-full px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-black uppercase tracking-wider shadow-xs ${
-          isMe ? "bg-sekkha-brand-blue text-white ring-2 ring-white" : cfg.badgeBg
-        }`}>
+        <div className={`absolute -bottom-2 left-1/2 -translate-x-1/2 rounded-full px-1.5 sm:px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wider shadow-xs ${cfg.badgeBg} ${cfg.badgeText}`}>
           #{position}
         </div>
       </div>
 
       {/* User Name & Score */}
-      <div className="mt-1.5 text-center w-full px-0.5 min-w-0">
+      <div className="mt-1 text-center w-full px-0.5 min-w-0">
         <div className="flex items-center justify-center gap-1">
-          <p className={`truncate font-black ${isMe ? "text-sekkha-brand-blue text-caption-bold" : "text-sekkha-ink"} ${isFirst ? "text-micro-bold sm:text-body-sm" : "text-[11px] sm:text-caption"}`}>
+          <p className={`truncate font-bold text-xs sm:text-sm ${isMe ? "text-[#0a0a0a]" : "text-[#0a0a0a]"}`}>
             {entry.name.split(" ")[0]}
           </p>
           {isMe && (
-            <span className="rounded-md bg-sekkha-brand-blue text-white px-1.5 py-0.5 text-[8px] sm:text-[9px] font-black uppercase shrink-0 shadow-2xs">
-              Kamu
+            <span className="rounded-[4px] bg-[#0a0a0a] text-white px-1 py-0.2 text-[8px] font-extrabold uppercase shrink-0">
+              You
             </span>
           )}
         </div>
-        <p className="text-[10px] sm:text-micro font-black text-sekkha-brand-blue flex items-center justify-center gap-0.5 sm:gap-1 mt-0.5">
-          <ZapIcon className="size-2.5 sm:size-3 text-amber-500 fill-amber-400 shrink-0" />
-          <span className="truncate">{entry.value.toLocaleString("id-ID")}</span>
+        <p className="text-xs font-extrabold text-[#0a0a0a] flex items-center justify-center gap-0.5 mt-0.5">
+          <ZapIcon className="size-3 text-[#e8b94a] fill-[#e8b94a] shrink-0" />
+          <span className="truncate">{entry.value.toLocaleString("en-US")}</span>
         </p>
       </div>
 
-      {/* Clean Metallic Podium Pillar Bar */}
-      <div className={`${cfg.height} relative w-full overflow-hidden rounded-t-2xl border-t border-x ${
-        isMe
-          ? "border-sekkha-brand-blue ring-2 ring-sekkha-brand-blue/30 shadow-md shadow-sekkha-brand-blue/10"
-          : cfg.border
-      } ${cfg.barBg} flex items-center justify-center shadow-md`}>
-        <span className={`text-body-lg sm:text-stat-display opacity-40 select-none ${cfg.rankText}`}>
+      {/* Solid Clay Podium Pillar Bar */}
+      <div className={`${cfg.height} relative w-full overflow-hidden rounded-t-[14px] sm:rounded-t-[18px] ${cfg.border} ${cfg.barBg} flex items-center justify-center shadow-xs`}>
+        <span className={`text-2xl sm:text-3xl font-black select-none ${cfg.rankText}`}>
           {position}
         </span>
       </div>
@@ -186,10 +173,10 @@ function PodiumEntry({ entry, position, myId }: { entry?: LeaderboardEntry; posi
 
 function ListAvatar({ initials, isMe }: { initials: string; isMe?: boolean }) {
   return (
-    <div className={`flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-xl text-micro-bold sm:text-caption-bold font-bold transition-transform ${
+    <div className={`flex size-9 sm:size-10 shrink-0 items-center justify-center rounded-[10px] text-xs font-bold uppercase transition-transform ${
       isMe
-        ? "bg-sekkha-brand-blue text-white shadow-xs"
-        : "bg-sekkha-surface/90 text-sekkha-slate ring-1 ring-sekkha-hairline-soft"
+        ? "bg-[#0a0a0a] text-white shadow-xs"
+        : "bg-[#e8b94a] text-[#0a0a0a] shadow-2xs"
     }`}>
       {initials}
     </div>
@@ -240,7 +227,7 @@ export function LeaderboardPage() {
   const [communityGoal, setCommunityGoal] = useState({
     current: 0,
     target: 500,
-    label: "Target Absensi Komunitas Vihara",
+    label: "Community Attendance Target",
   })
 
   useEffect(() => {
@@ -264,7 +251,7 @@ export function LeaderboardPage() {
         setCommunityGoal(res.community_goal)
       }
     } catch (err) {
-      console.error("Gagal memuat leaderboard:", err)
+      console.error("Failed to load leaderboard:", err)
       setEntries([])
     }
   }
@@ -296,93 +283,88 @@ export function LeaderboardPage() {
   const myFilteredIdx = filteredEntries.findIndex(e => e.user_id === myId)
   const myRank = myFilteredIdx >= 0 ? myFilteredIdx + 1 : "-"
   const myValue = myFilteredIdx >= 0 ? filteredEntries[myFilteredIdx]?.value ?? 0 : myRankData?.value ?? 0
-  const metricUnit = metric === "points" ? "poin" : metric === "streak" ? "minggu" : "kehadiran"
+  const metricUnit = metric === "points" ? "points" : metric === "streak" ? "weeks" : "attendances"
   const roleGroupLabel =
     activeRoles.length === 3
-      ? "Semua Anggota"
+      ? "All Members"
       : activeRoles
-          .map((r) => (r === "umat" ? "Umat" : r === "aktivis" ? "Aktivis" : "Pengurus"))
+          .map((r) => (r === "umat" ? "Members" : r === "aktivis" ? "Activists" : "Organizers"))
           .join(" & ")
 
   const communityPct = Math.min(100, Math.round(((communityGoal.current || 0) / (communityGoal.target || 500)) * 100))
 
   return (
-    <main className="relative font-sans overflow-hidden">
-      {/* ── Glassmorphism Ambient Glow Backdrops ── */}
-      <div className="pointer-events-none absolute -top-20 left-1/4 h-96 w-96 rounded-full bg-sekkha-brand-blue/15 blur-3xl" />
-      <div className="pointer-events-none absolute top-40 right-10 h-80 w-80 rounded-full bg-amber-400/15 blur-3xl" />
-      <div className="pointer-events-none absolute bottom-40 left-10 h-96 w-96 rounded-full bg-indigo-500/10 blur-3xl" />
-
+    <main className="relative font-sans bg-[#fffaf0] min-h-screen text-left">
       {/* ── Page Breadcrumb ── */}
       <PageBreadcrumb items={[{ label: "Leaderboard" }]} />
 
-      <div className="relative px-3.5 py-4 pb-24 md:pb-8 lg:pb-10 sm:px-6 md:px-8 lg:px-12">
-        <div className="mx-auto max-w-7xl space-y-4 sm:space-y-5">
+      <div className="relative px-3.5 py-4 pb-32 md:pb-12 sm:px-6 md:px-8 max-w-6xl mx-auto">
+        <div className="space-y-4 sm:space-y-5">
 
-          {/* ── Top Header Banner: Season Badge & Countdown Urgency ── */}
-          <div className="relative overflow-hidden rounded-3xl border border-white/80 bg-gradient-to-r from-sekkha-brand-blue/15 via-white/80 to-amber-400/15 backdrop-blur-2xl p-4 sm:p-6 shadow-xl shadow-sekkha-brand-blue/5">
-            <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          {/* ── Top Header Banner: Warm Clay Style ── */}
+          <div className="rounded-[20px] sm:rounded-[24px] border border-[#e5e5e5] bg-[#faf5e8] p-4 sm:p-5 shadow-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-400 text-amber-950 shadow-md">
-                  <TrophyIcon className="size-5 sm:size-6" />
+                <div className="flex size-11 sm:size-12 shrink-0 items-center justify-center rounded-[12px] bg-[#0a0a0a] text-white shadow-xs">
+                  <TrophyIcon className="size-5 sm:size-6 text-[#e8b94a]" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="rounded-full bg-amber-400/20 border border-amber-400/40 px-2.5 py-0.5 text-micro-bold text-amber-900 font-extrabold">
+                    <span className="rounded-[8px] bg-[#e8b94a]/20 border border-[#e8b94a]/40 px-2.5 py-0.5 text-xs font-extrabold text-[#0a0a0a]">
                       {seasonData?.name || seasonLabel(season)}
                     </span>
                     {seasonData?.start_date && seasonData?.end_date && (
-                      <span className="hidden sm:inline text-micro text-sekkha-slate font-medium">
-                        ({new Date(seasonData.start_date).toLocaleDateString("id-ID", { day: "numeric", month: "short" })} — {new Date(seasonData.end_date).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })})
+                      <span className="hidden sm:inline text-xs text-[#6a6a6a] font-medium">
+                        ({new Date(seasonData.start_date).toLocaleDateString("en-US", { day: "numeric", month: "short" })} — {new Date(seasonData.end_date).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" })})
                       </span>
                     )}
                   </div>
-                  <h1 className="text-body-base sm:text-heading-5 font-black text-sekkha-ink mt-0.5">
-                    Papan Peringkat Komunitas
+                  <h1 className="text-base sm:text-xl font-bold text-[#0a0a0a] mt-0.5">
+                    Community Leaderboard
                   </h1>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 self-start sm:self-auto rounded-full bg-white/80 border border-white/90 px-3 py-1 text-micro-bold text-sekkha-slate shadow-xs backdrop-blur-md">
-                <TimerIcon className="size-3.5 text-sekkha-brand-blue shrink-0 animate-pulse" />
-                <span>Berakhir dalam <strong>{seasonData?.days_left ?? 14} hari</strong></span>
+              <div className="flex items-center gap-1.5 self-start sm:self-auto rounded-[10px] bg-[#fffaf0] border border-[#e5e5e5] px-3 py-1.5 text-xs font-bold text-[#6a6a6a] shadow-xs">
+                <TimerIcon className="size-3.5 text-[#0a0a0a] shrink-0" />
+                <span>Ends in <strong className="text-[#0a0a0a]">{seasonData?.days_left ?? 14} days</strong></span>
               </div>
             </div>
           </div>
 
-          {/* ── Glassmorphic My Rank Status Indicator Hero Card (Mobile & Tablet) ── */}
-          <div className="lg:hidden rounded-2xl border border-sekkha-brand-blue/30 bg-gradient-to-r from-sekkha-brand-blue/15 via-blue-50/60 to-amber-500/10 backdrop-blur-xl p-3.5 sm:p-4 shadow-md shadow-sekkha-brand-blue/10 flex items-center justify-between gap-3">
+          {/* ── My Rank Status Hero Card (Mobile & Tablet) ── */}
+          <div className="lg:hidden rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0] p-3.5 sm:p-4 shadow-xs flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-sekkha-brand-blue text-caption-bold font-black text-white shadow-xs">
+              <div className="flex size-11 shrink-0 items-center justify-center rounded-[12px] bg-[#0a0a0a] text-xs font-bold text-white shadow-xs uppercase">
                 {myRankData?.initials || "AS"}
               </div>
               <div className="min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-caption-bold font-extrabold text-sekkha-ink truncate">
-                    {myRankData?.name || "Anggota Sekkha"}
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="font-bold text-xs sm:text-sm text-[#0a0a0a] truncate">
+                    {myRankData?.name || "Sekkha Member"}
                   </span>
-                  <span className="rounded-md bg-sekkha-brand-blue text-white px-1.5 py-0.5 text-[9px] font-black uppercase shadow-2xs">
-                    Kamu
+                  <span className="rounded-[6px] bg-[#e8b94a] text-[#0a0a0a] px-1.5 py-0.5 text-[10px] font-extrabold uppercase shadow-2xs">
+                    You
                   </span>
                 </div>
-                <p className="text-micro font-extrabold text-sekkha-brand-blue mt-0.5 flex items-center gap-1">
-                  <TrophyIcon className="size-3.5 text-amber-500 fill-amber-400" />
-                  <span>Peringkat #{myRank} dari {filteredEntries.length} {roleGroupLabel}</span>
+                <p className="text-xs font-medium text-[#6a6a6a] mt-0.5 flex items-center gap-1">
+                  <TrophyIcon className="size-3.5 text-[#e8b94a]" />
+                  <span>Rank #{myRank} of {filteredEntries.length} {roleGroupLabel}</span>
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-1.5 text-caption-bold font-black text-sekkha-brand-blue bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/90 shadow-2xs shrink-0 self-center">
-              <ZapIcon className="size-3.5 text-amber-500 fill-amber-400 shrink-0" />
-              <span>{myValue.toLocaleString("id-ID")}</span>
-              <span className="text-micro font-bold text-sekkha-slate capitalize">{metricUnit}</span>
+            <div className="flex items-center gap-1.5 text-xs sm:text-sm font-bold text-[#0a0a0a] bg-[#faf5e8] px-3 py-1.5 rounded-[10px] border border-[#e5e5e5] shadow-2xs shrink-0 self-center">
+              <ZapIcon className="size-3.5 text-[#e8b94a] fill-[#e8b94a] shrink-0" />
+              <span>{myValue.toLocaleString("en-US")}</span>
+              <span className="text-[11px] font-medium text-[#6a6a6a] capitalize">{metricUnit}</span>
             </div>
           </div>
 
           {/* ── Filters Bar: Metric & Role Filters ── */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
             {/* Metric Filter Tabs */}
-            <div className="grid grid-cols-3 gap-1.5 p-1 bg-white/70 backdrop-blur-lg rounded-2xl border border-white/80 shadow-xs sm:flex sm:gap-2">
+            <div className="flex items-center gap-1 rounded-[12px] bg-[#faf5e8] p-1 border border-[#e5e5e5] w-full md:w-auto">
               {METRIC_OPTIONS.map(m => {
                 const isActive = metric === m.value
                 return (
@@ -390,24 +372,24 @@ export function LeaderboardPage() {
                     key={m.value}
                     type="button"
                     onClick={() => setMetric(m.value)}
-                    className={`flex items-center justify-center gap-1.5 sm:gap-2 rounded-xl sm:rounded-2xl px-2.5 sm:px-4.5 py-2 text-micro sm:text-caption font-bold transition-all cursor-pointer ${
+                    className={`flex-1 md:flex-none flex items-center justify-center gap-1.5 rounded-[8px] px-3.5 py-2 text-xs font-bold transition-all cursor-pointer ${
                       isActive
-                        ? "bg-sekkha-brand-blue text-white shadow-md shadow-sekkha-brand-blue/20 ring-2 ring-sekkha-brand-blue/30 scale-102"
-                        : "bg-white/80 backdrop-blur-md text-sekkha-slate border border-white/70 hover:bg-white hover:text-sekkha-ink"
+                        ? "bg-[#0a0a0a] text-white shadow-xs"
+                        : "text-[#6a6a6a] hover:text-[#0a0a0a]"
                     }`}
                   >
                     {m.icon}
-                    <span className="truncate">{m.label}</span>
+                    <span>{m.label}</span>
                   </button>
                 )
               })}
             </div>
 
-            {/* Role Filter Checkboxes based on viewer's permission */}
+            {/* Role Filter Buttons */}
             {isPengurusOrAdmin && (
-              <div className="flex items-center p-1.5 bg-slate-100/90 backdrop-blur-md rounded-2xl border border-slate-200/80 shadow-2xs gap-1.5 self-start md:self-auto flex-wrap">
-                <span className="text-[10px] font-extrabold uppercase tracking-wider text-sekkha-slate/70 px-1 hidden sm:inline">
-                  Tampilkan:
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#6a6a6a] px-1 hidden sm:inline">
+                  Show:
                 </span>
                 {PENGURUS_ROLE_CHECKBOXES.map(r => {
                   const isChecked = selectedRoles.includes(r.id)
@@ -416,17 +398,13 @@ export function LeaderboardPage() {
                       key={r.id}
                       type="button"
                       onClick={() => toggleRole(r.id)}
-                      className={`flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-micro font-bold cursor-pointer transition-all border select-none ${
+                      className={`flex items-center gap-1.5 rounded-[8px] px-3 py-1.5 text-xs font-bold cursor-pointer transition-all border select-none ${
                         isChecked
-                          ? "bg-white text-sekkha-brand-blue border-sekkha-brand-blue/30 shadow-xs font-extrabold"
-                          : "bg-transparent border-transparent text-sekkha-slate hover:text-sekkha-ink hover:bg-white/50"
+                          ? "bg-[#0a0a0a] text-white border-[#0a0a0a] shadow-xs"
+                          : "bg-[#fffaf0] text-[#6a6a6a] border-[#e5e5e5] hover:bg-[#faf5e8] hover:text-[#0a0a0a]"
                       }`}
                     >
-                      <div className={`size-3.5 rounded flex items-center justify-center border transition-all ${
-                        isChecked ? "bg-sekkha-brand-blue border-sekkha-brand-blue text-white" : "border-slate-300 bg-white/90"
-                      }`}>
-                        {isChecked && <CheckIcon className="size-2.5 stroke-[3]" />}
-                      </div>
+                      {isChecked && <CheckIcon className="size-3 stroke-[3]" />}
                       <span>{r.label}</span>
                     </button>
                   )
@@ -435,9 +413,9 @@ export function LeaderboardPage() {
             )}
 
             {isAktivis && (
-              <div className="flex items-center p-1.5 bg-slate-100/90 backdrop-blur-md rounded-2xl border border-slate-200/80 shadow-2xs gap-1.5 self-start md:self-auto flex-wrap">
-                <span className="text-[10px] font-extrabold uppercase tracking-wider text-sekkha-slate/70 px-1 hidden sm:inline">
-                  Tampilkan:
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#6a6a6a] px-1 hidden sm:inline">
+                  Show:
                 </span>
                 {AKTIVIS_ROLE_CHECKBOXES.map(r => {
                   const isChecked = selectedRoles.includes(r.id)
@@ -446,17 +424,13 @@ export function LeaderboardPage() {
                       key={r.id}
                       type="button"
                       onClick={() => toggleRole(r.id)}
-                      className={`flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-micro font-bold cursor-pointer transition-all border select-none ${
+                      className={`flex items-center gap-1.5 rounded-[8px] px-3 py-1.5 text-xs font-bold cursor-pointer transition-all border select-none ${
                         isChecked
-                          ? "bg-white text-sekkha-brand-blue border-sekkha-brand-blue/30 shadow-xs font-extrabold"
-                          : "bg-transparent border-transparent text-sekkha-slate hover:text-sekkha-ink hover:bg-white/50"
+                          ? "bg-[#0a0a0a] text-white border-[#0a0a0a] shadow-xs"
+                          : "bg-[#fffaf0] text-[#6a6a6a] border-[#e5e5e5] hover:bg-[#faf5e8] hover:text-[#0a0a0a]"
                       }`}
                     >
-                      <div className={`size-3.5 rounded flex items-center justify-center border transition-all ${
-                        isChecked ? "bg-sekkha-brand-blue border-sekkha-brand-blue text-white" : "border-slate-300 bg-white/90"
-                      }`}>
-                        {isChecked && <CheckIcon className="size-2.5 stroke-[3]" />}
-                      </div>
+                      {isChecked && <CheckIcon className="size-3 stroke-[3]" />}
                       <span>{r.label}</span>
                     </button>
                   )
@@ -465,9 +439,9 @@ export function LeaderboardPage() {
             )}
 
             {isUmatOnly && (
-              <div className="flex items-center gap-1.5 rounded-2xl bg-white/80 border border-white/90 px-3.5 py-1.5 text-micro-bold text-sekkha-slate backdrop-blur-md shadow-2xs self-start md:self-auto">
-                <UserIcon className="size-3.5 text-sekkha-brand-blue" />
-                <span>Klasemen: <strong className="text-sekkha-ink">Sesama Umat</strong></span>
+              <div className="flex items-center gap-1.5 rounded-[10px] bg-[#faf5e8] border border-[#e5e5e5] px-3 py-1.5 text-xs font-semibold text-[#6a6a6a]">
+                <UserIcon className="size-3.5 text-[#0a0a0a]" />
+                <span>Rankings: <strong className="text-[#0a0a0a]">Fellow Members</strong></span>
               </div>
             )}
           </div>
@@ -476,58 +450,44 @@ export function LeaderboardPage() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-6 items-start">
 
             {/* Main Content Area (Left 8 Cols) */}
-            <div className="lg:col-span-8 space-y-5">
+            <div className="lg:col-span-8 space-y-4">
               
-              {/* Glassmorphic Leaderboard Card Container */}
-              <div className="rounded-3xl border border-white/70 bg-white/85 backdrop-blur-2xl p-4 sm:p-6 shadow-xl shadow-slate-200/50 ring-1 ring-black/5 space-y-5 sm:space-y-6">
+              {/* Leaderboard Card Container */}
+              <div className="rounded-[20px] sm:rounded-[24px] border border-[#e5e5e5] bg-[#fffaf0] p-4 sm:p-6 shadow-xs space-y-5">
 
-                {/* Empty State when no entries found */}
+                {/* Empty State */}
                 {filteredEntries.length === 0 ? (
                   <div className="py-12 px-4 text-center space-y-3">
-                    <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-500 shadow-sm">
-                      <TrophyIcon className="size-7" />
+                    <div className="mx-auto flex size-12 items-center justify-center rounded-[12px] bg-[#faf5e8] border border-[#e5e5e5] text-[#6a6a6a]">
+                      <TrophyIcon className="size-6 text-[#e8b94a]" />
                     </div>
                     <div>
-                      <h3 className="text-body-base font-bold text-sekkha-ink">Data Peringkat Tidak Ditemukan</h3>
-                      <p className="text-caption text-sekkha-slate mt-1 max-w-sm mx-auto">
-                        Tidak ada anggota dalam kategori <strong>{roleGroupLabel}</strong> untuk season ini.
+                      <h3 className="text-sm font-bold text-[#0a0a0a]">No Ranking Data Found</h3>
+                      <p className="text-xs text-[#6a6a6a] mt-1 max-w-sm mx-auto">
+                        No members found in <strong>{roleGroupLabel}</strong> category for this season.
                       </p>
                     </div>
                   </div>
                 ) : (
                   <>
-                    {/* 3D Metallic Podium for Top 3 Champions */}
-                    {podium.length >= 3 && (
-                      <div className="pt-2 pb-2 px-1 border-b border-sekkha-hairline-soft/80 bg-gradient-to-b from-white/60 via-slate-50/40 to-white/60 backdrop-blur-md rounded-2xl">
-                        <div className="flex items-end justify-center gap-2 sm:gap-5 max-w-lg mx-auto">
-                          <PodiumEntry entry={podium[1]} position={2} myId={myId} />
+                    {/* Champions Podium Pillars (Supports 1, 2, or 3+ entries) */}
+                    {podium.length > 0 && (
+                      <div className="pt-3 pb-2 px-2 border-b border-[#e5e5e5] bg-[#faf5e8] rounded-[16px]">
+                        <div className={`flex items-end justify-center gap-2 sm:gap-4 mx-auto ${
+                          podium.length === 1 ? "max-w-[160px]" : podium.length === 2 ? "max-w-xs" : "max-w-md"
+                        }`}>
+                          {podium.length >= 2 && <PodiumEntry entry={podium[1]} position={2} myId={myId} />}
                           <PodiumEntry entry={podium[0]} position={1} myId={myId} />
-                          <PodiumEntry entry={podium[2]} position={3} myId={myId} />
+                          {podium.length >= 3 && <PodiumEntry entry={podium[2]} position={3} myId={myId} />}
                         </div>
-                      </div>
-                    )}
-
-                    {/* Partial Podium (if 1 or 2 entries exist) */}
-                    {podium.length > 0 && podium.length < 3 && (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pb-2 border-b border-sekkha-hairline-soft/80">
-                        {podium.map((entry, idx) => (
-                          <div key={entry.user_id} className="flex items-center gap-3 p-3 rounded-2xl border border-white/80 bg-white/70 backdrop-blur-md">
-                            <span className="text-caption-bold font-black text-sekkha-brand-blue">#{idx + 1}</span>
-                            <ListAvatar initials={entry.initials} isMe={entry.user_id === myId} />
-                            <div className="min-w-0 flex-1">
-                              <p className="text-caption-bold font-bold text-sekkha-ink truncate">{entry.name}</p>
-                              <p className="text-micro font-bold text-sekkha-brand-blue">{entry.value.toLocaleString("id-ID")} {metricUnit}</p>
-                            </div>
-                          </div>
-                        ))}
                       </div>
                     )}
 
                     {/* Ranked List (Rank 4+) */}
                     {rest.length > 0 && (
                       <div className="space-y-2">
-                        <p className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-widest text-sekkha-slate/70 px-1">
-                          Peringkat {roleGroupLabel} (4+)
+                        <p className="text-[11px] font-bold uppercase tracking-wider text-[#6a6a6a] px-1">
+                          Rankings: {roleGroupLabel} (4+)
                         </p>
                         <ul role="list" className="space-y-2">
                           {rest.map(entry => {
@@ -537,15 +497,15 @@ export function LeaderboardPage() {
                             return (
                               <li
                                 key={entry.user_id}
-                                className={`flex items-center gap-2.5 sm:gap-3.5 rounded-2xl px-3 sm:px-4 py-2.5 sm:py-3 transition-all ${
+                                className={`flex items-center gap-2.5 sm:gap-3.5 rounded-[14px] px-3.5 py-3 transition-all border ${
                                   isMe
-                                    ? "border-2 border-sekkha-brand-blue bg-sekkha-brand-blue/15 backdrop-blur-xl shadow-lg shadow-sekkha-brand-blue/10 ring-1 ring-sekkha-brand-blue/30"
-                                    : "border border-white/80 bg-white/70 backdrop-blur-md hover:bg-white/95 hover:border-sekkha-hairline hover:shadow-md"
+                                    ? "border-[#0a0a0a] bg-[#faf5e8] shadow-xs"
+                                    : "border-[#e5e5e5] bg-[#fffaf0] hover:bg-[#faf5e8]"
                                 }`}
                               >
                                 {/* Rank Number */}
-                                <span className={`w-6 sm:w-8 shrink-0 text-center text-micro-bold sm:text-caption-bold font-extrabold ${
-                                  isMe ? "text-sekkha-brand-blue" : "text-sekkha-slate"
+                                <span className={`w-7 shrink-0 text-center text-xs font-bold ${
+                                  isMe ? "text-[#0a0a0a]" : "text-[#6a6a6a]"
                                 }`}>
                                   #{entry.rank}
                                 </span>
@@ -556,25 +516,25 @@ export function LeaderboardPage() {
                                 {/* Name, Role Badge & Motivational Hint */}
                                 <div className="min-w-0 flex-1">
                                   <div className="flex items-center gap-1.5 flex-wrap">
-                                    <p className={`truncate text-caption-bold font-extrabold ${
-                                      isMe ? "text-sekkha-brand-blue" : "text-sekkha-ink"
+                                    <p className={`truncate font-bold text-xs sm:text-sm ${
+                                      isMe ? "text-[#0a0a0a]" : "text-[#0a0a0a]"
                                     }`}>
                                       {entry.name}
                                     </p>
                                     {isMe && (
-                                      <span className="rounded-md bg-sekkha-brand-blue text-white px-1.5 py-0.5 text-[9px] font-black uppercase shrink-0 shadow-2xs">
-                                        Kamu
+                                      <span className="rounded-[4px] bg-[#0a0a0a] text-white px-1.5 py-0.2 text-[9px] font-extrabold uppercase shrink-0">
+                                        You
                                       </span>
                                     )}
                                     {entry.role && entry.role !== "umat" && (
-                                      <span className="rounded-md bg-purple-50 text-purple-700 border border-purple-200/80 px-1.5 py-0.2 text-[9px] font-bold capitalize shrink-0">
-                                        {entry.role === "admin" ? "Admin" : entry.role === "pengurus" ? "Pengurus" : "Aktivis"}
+                                      <span className="rounded-full bg-[#1a3a3a]/10 text-[#1a3a3a] border border-[#1a3a3a]/20 px-2 py-0.2 text-[9px] font-bold capitalize shrink-0">
+                                        {entry.role === "admin" ? "Admin" : entry.role === "pengurus" ? "Organizer" : "Activist"}
                                       </span>
                                     )}
                                   </div>
 
                                   {hint && (
-                                    <p className="mt-0.5 text-[10px] sm:text-micro font-extrabold text-sekkha-brand-blue flex items-center gap-1 line-clamp-1">
+                                    <p className="mt-0.5 text-[11px] font-semibold text-[#0a0a0a] flex items-center gap-1 line-clamp-1">
                                       <span>🚀</span>
                                       <span>{hint}</span>
                                     </p>
@@ -583,12 +543,10 @@ export function LeaderboardPage() {
 
                                 {/* Score Value */}
                                 <div className="text-right shrink-0">
-                                  <span className={`text-caption-bold font-black ${
-                                    isMe ? "text-sekkha-brand-blue" : "text-sekkha-ink"
-                                  }`}>
-                                    {entry.value.toLocaleString("id-ID")}
+                                  <span className="font-bold text-xs sm:text-sm text-[#0a0a0a]">
+                                    {entry.value.toLocaleString("en-US")}
                                   </span>
-                                  <span className="block text-[9px] sm:text-[10px] font-medium text-sekkha-slate capitalize">
+                                  <span className="block text-[10px] font-medium text-[#6a6a6a] capitalize">
                                     {metricUnit}
                                   </span>
                                 </div>
@@ -604,72 +562,76 @@ export function LeaderboardPage() {
               </div>
             </div>
 
-            {/* Right Sidebar Glassmorphic Widgets (Right 4 Cols on Desktop) */}
-            <aside className="lg:col-span-4 space-y-4 sm:space-y-5">
+            {/* Right Sidebar Widgets (Desktop) */}
+            <aside className="lg:col-span-4 space-y-4">
               
-              {/* Glassmorphic My Rank Sidebar Widget (Desktop) */}
-              <div className="hidden lg:block rounded-3xl border border-sekkha-brand-blue/30 bg-gradient-to-br from-sekkha-brand-blue/10 via-white/80 to-blue-50/50 backdrop-blur-2xl p-4 sm:p-5 shadow-xl shadow-sekkha-brand-blue/5 ring-1 ring-sekkha-brand-blue/20 space-y-3">
+              {/* My Rank Sidebar Widget (Desktop) */}
+              <div className="hidden lg:block rounded-[20px] border border-[#e5e5e5] bg-[#faf5e8] p-4 sm:p-5 shadow-xs space-y-3">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-sekkha-brand-blue text-caption-bold font-black text-white shadow-md">
+                  <div className="flex size-11 shrink-0 items-center justify-center rounded-[12px] bg-[#0a0a0a] text-xs font-bold text-white shadow-xs uppercase">
                     {myRankData?.initials || "AS"}
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-caption-bold font-extrabold text-sekkha-ink truncate">
-                        {myRankData?.name || "Anggota Sekkha"}
+                      <span className="font-bold text-sm text-[#0a0a0a] truncate">
+                        {myRankData?.name || "Sekkha Member"}
                       </span>
-                      <span className="rounded-md bg-sekkha-brand-blue text-white px-1.5 py-0.5 text-[9px] font-black uppercase shrink-0">
-                        Kamu
+                      <span className="rounded-[4px] bg-[#0a0a0a] text-white px-1.5 py-0.2 text-[9px] font-extrabold uppercase shrink-0">
+                        You
                       </span>
                     </div>
-                    <p className="text-micro text-sekkha-slate font-medium">{seasonData?.name || seasonLabel(season)}</p>
+                    <p className="text-xs text-[#6a6a6a] font-medium">{seasonData?.name || seasonLabel(season)}</p>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-center gap-4 rounded-2xl bg-white/90 backdrop-blur-md p-3 border border-white/80 shadow-2xs">
+                <div className="flex items-center justify-center gap-4 rounded-[12px] bg-[#fffaf0] p-3 border border-[#e5e5e5] shadow-2xs">
                   <div className="text-center flex-1">
-                    <p className="text-body-lg font-black text-sekkha-brand-blue">#{myRank}</p>
-                    <p className="text-[10px] font-bold text-sekkha-slate">Peringkat ({roleGroupLabel})</p>
+                    <p className="text-base font-black text-[#0a0a0a]">#{myRank}</p>
+                    <p className="text-[10px] font-bold text-[#6a6a6a]">Rank ({roleGroupLabel})</p>
                   </div>
-                  <div className="h-7 w-px bg-sekkha-hairline" />
+                  <div className="h-7 w-px bg-[#e5e5e5]" />
                   <div className="text-center flex-1">
-                    <p className="text-body-lg font-black text-sekkha-ink">{myValue.toLocaleString("id-ID")}</p>
-                    <p className="text-[10px] font-bold text-sekkha-slate capitalize">{metricUnit}</p>
+                    <p className="text-base font-black text-[#0a0a0a]">{myValue.toLocaleString("en-US")}</p>
+                    <p className="text-[10px] font-bold text-[#6a6a6a] capitalize">{metricUnit}</p>
                   </div>
                 </div>
               </div>
 
-              {/* Glassmorphic Community Goal Progress Card */}
-              <div className="rounded-3xl border border-white/70 bg-white/85 backdrop-blur-2xl p-4 sm:p-5 shadow-xl shadow-slate-200/50 ring-1 ring-black/5 space-y-3">
+              {/* Community Goal Progress Card */}
+              <div className="rounded-[20px] border border-[#e5e5e5] bg-[#fffaf0] p-4 sm:p-5 shadow-xs space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-sekkha-brand-blue/10 text-sekkha-brand-blue">
+                    <div className="flex size-8 items-center justify-center rounded-[8px] bg-[#faf5e8] text-[#0a0a0a]">
                       <UsersIcon className="size-4" aria-hidden="true" />
                     </div>
-                    <h3 className="text-caption-bold font-extrabold text-sekkha-ink">{communityGoal.label}</h3>
+                    <h3 className="text-xs font-bold text-[#0a0a0a]">
+                      {communityGoal.label && communityGoal.label.toLowerCase().includes("absensi")
+                        ? "Vihara Community Attendance Target"
+                        : communityGoal.label || "Vihara Community Attendance Target"}
+                    </h3>
                   </div>
-                  <span className="text-micro-bold font-black text-sekkha-brand-blue bg-sekkha-brand-blue/10 px-2 py-0.5 rounded-lg">
+                  <span className="text-xs font-extrabold text-[#0a0a0a] bg-[#faf5e8] border border-[#e5e5e5] px-2 py-0.5 rounded-[6px]">
                     {communityPct}%
                   </span>
                 </div>
 
                 {/* Progress bar */}
                 <div className="space-y-1.5">
-                  <div className="flex items-center justify-between text-micro font-bold text-sekkha-slate">
-                    <span>Tercapai: {communityGoal.current}</span>
-                    <span>Target: {communityGoal.target} Absensi</span>
+                  <div className="flex items-center justify-between text-[11px] font-semibold text-[#6a6a6a]">
+                    <span>Achieved: {communityGoal.current}</span>
+                    <span>Target: {communityGoal.target} Check-Ins</span>
                   </div>
-                  <div className="h-3 w-full overflow-hidden rounded-full bg-sekkha-surface border border-sekkha-hairline-soft">
+                  <div className="h-2.5 w-full overflow-hidden rounded-full bg-[#f5f0e0] border border-[#e5e5e5]">
                     <div
-                      className="h-full rounded-full bg-gradient-to-r from-sekkha-brand-blue via-indigo-500 to-amber-400 transition-all duration-500 shadow-xs"
+                      className="h-full rounded-full bg-[#0a0a0a] transition-all duration-500 shadow-xs"
                       style={{ width: `${communityPct}%` }}
                     />
                   </div>
                 </div>
 
-                <div className="rounded-2xl bg-amber-500/10 border border-amber-500/20 p-3 text-micro font-bold text-amber-900 flex items-start gap-2">
-                  <SparklesIcon className="size-4 text-amber-600 shrink-0 mt-0.5" />
-                  <span>Jika target {seasonData?.target_attendance ?? communityGoal.target} absensi tercapai, seluruh umat Vihara akan mendapat bonus <strong className="text-amber-950">+{seasonData?.bonus_points ?? 100} Poin ekstra</strong>!</span>
+                <div className="rounded-[12px] bg-[#faf5e8] border border-[#e5e5e5] p-3 text-xs font-medium text-[#6a6a6a] flex items-start gap-2">
+                  <SparklesIcon className="size-4 text-[#e8b94a] shrink-0 mt-0.5" />
+                  <span>When the target of {seasonData?.target_attendance ?? communityGoal.target} check-ins is met, all community members will receive an extra <strong className="text-[#0a0a0a]">+{seasonData?.bonus_points ?? 100} bonus points</strong>!</span>
                 </div>
               </div>
 

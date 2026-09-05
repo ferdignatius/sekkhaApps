@@ -34,12 +34,42 @@ export async function invalidate(key: string): Promise<void> {
 }
 
 /**
- * Invalidate all keys matching a pattern (e.g., "events:*")
+ * Invalidate all keys matching a pattern (e.g., "events:*") using non-blocking SCAN
  */
 export async function invalidatePattern(pattern: string): Promise<void> {
-  const keys = await redis.keys(pattern)
-  if (keys.length > 0) {
-    await redis.del(...keys)
+  try {
+    const stream = redis.scanStream({
+      match: pattern,
+      count: 100,
+    })
+
+    const keysToDelete: string[] = []
+
+    stream.on("data", (resultKeys: string[]) => {
+      for (const k of resultKeys) {
+        keysToDelete.push(k)
+      }
+    })
+
+    await new Promise<void>((resolve, reject) => {
+      stream.on("end", async () => {
+        try {
+          if (keysToDelete.length > 0) {
+            // Delete in batches of 100
+            for (let i = 0; i < keysToDelete.length; i += 100) {
+              const batch = keysToDelete.slice(i, i + 100)
+              await redis.del(...batch)
+            }
+          }
+          resolve()
+        } catch (err) {
+          reject(err)
+        }
+      })
+      stream.on("error", (err) => reject(err))
+    })
+  } catch (err) {
+    console.warn("⚠️ Cache pattern invalidation error:", err)
   }
 }
 

@@ -4,7 +4,7 @@ import { prisma } from "../../../lib/prisma"
 import { cached, invalidatePattern, invalidate, CacheKeys } from "../../../lib/cache"
 import { requireAuth, requireRole } from "../../../middleware/auth"
 
-export const eventsRouter = Router()
+export const eventsRouter: Router = Router()
 
 const CreateEventSchema = z.object({
   title: z.string().min(1),
@@ -51,7 +51,7 @@ eventsRouter.get("/:id", requireAuth, async (req, res, next) => {
     const event = await prisma.event.findUnique({
       where: { id },
     })
-    if (!event) { res.status(404).json({ error: "Event tidak ditemukan" }); return }
+    if (!event) { res.status(404).json({ error: "Event not found" }); return }
 
     res.json({
       id: event.id,
@@ -124,47 +124,55 @@ eventsRouter.patch("/:id/status", requireAuth, requireRole("pengurus", "admin"),
       data: { status },
     })
 
-    // When closing the event, finalize all attendances and credit points to attendees
+    // When closing the event, finalize all attendances and credit points to attendees in batch
     if (status === "closed") {
       const attendees = await prisma.attendance.findMany({
         where: { eventId: id },
-        include: { user: true },
       })
 
-      const pointRuleModel = (prisma as any).pointRule
-      const ruleCode = event.eventType === "special" ? "attendance_special" : "attendance_rutin"
-      const activeRule = await pointRuleModel.findUnique({ where: { code: ruleCode } }).catch(() => null)
-      const defaultPoints = activeRule?.points ?? (event.eventType === "special" ? 100 : 50)
+      if (attendees.length > 0) {
+        const pointRuleModel = (prisma as any).pointRule
+        const ruleCode = event.eventType === "special" ? "attendance_special" : "attendance_rutin"
+        const activeRule = await pointRuleModel.findUnique({ where: { code: ruleCode } }).catch(() => null)
+        const defaultPoints = activeRule?.points ?? (event.eventType === "special" ? 100 : 50)
 
-      for (const att of attendees) {
-        // Check if points were already awarded for this attendance
-        const existingTx = await prisma.pointTransaction.findFirst({
-          where: { referenceId: att.id },
+        const existingTxs = await prisma.pointTransaction.findMany({
+          where: { referenceId: { in: attendees.map((a) => a.id) } },
+          select: { referenceId: true },
         })
+        const processedAttIds = new Set(existingTxs.map((t) => t.referenceId))
+        const pendingAttendees = attendees.filter((a) => !processedAttIds.has(a.id))
 
-        if (!existingTx) {
-          const points = att.pointsEarned || defaultPoints
+        if (pendingAttendees.length > 0) {
+          const pointTxData = pendingAttendees.map((att) => ({
+            userId: att.userId,
+            amount: att.pointsEarned || defaultPoints,
+            type: "attendance",
+            description: `Presensi Event: ${event.title}`,
+            referenceId: att.id,
+          }))
 
-          await prisma.user.update({
-            where: { id: att.userId },
-            data: {
-              points: { increment: points },
-              lastActivityAt: att.scannedAt,
-            },
-          }).catch(() => {})
+          await prisma.$transaction([
+            prisma.pointTransaction.createMany({ data: pointTxData }),
+            ...pendingAttendees.map((att) =>
+              prisma.user.update({
+                where: { id: att.userId },
+                data: {
+                  points: { increment: att.pointsEarned || defaultPoints },
+                  lastActivityAt: att.scannedAt,
+                },
+              })
+            ),
+          ])
 
-          await prisma.pointTransaction.create({
-            data: {
-              userId: att.userId,
-              amount: points,
-              type: "attendance",
-              description: `Presensi Event: ${event.title}`,
-              referenceId: att.id,
-            },
-          }).catch(() => {})
-
-          await invalidate(CacheKeys.userAttendances(att.userId))
-          await invalidate(CacheKeys.userProfile(att.userId))
+          await Promise.all(
+            pendingAttendees.map((att) =>
+              Promise.all([
+                invalidate(CacheKeys.userAttendances(att.userId)),
+                invalidate(CacheKeys.userProfile(att.userId)),
+              ])
+            )
+          )
         }
       }
 
@@ -187,6 +195,14 @@ eventsRouter.post("/:id/attendance", requireAuth, async (req, res, next) => {
       user_id: z.string().optional(),
     }).parse(req.body)
 
+    // Authorization Guard: Prevent normal users from recording attendance on behalf of others
+    if (user_id && user_id !== req.user!.userId) {
+      if (req.user!.role !== "pengurus" && req.user!.role !== "admin") {
+        res.status(403).json({ error: "Only Organizers or Admins can record attendance for other members." })
+        return
+      }
+    }
+
     const targetUserId = user_id ?? req.user!.userId
 
     // Verify event exists and is not closed
@@ -196,38 +212,47 @@ eventsRouter.post("/:id/attendance", requireAuth, async (req, res, next) => {
     })
 
     if (!event) {
-      res.status(404).json({ error: "Kegiatan tidak ditemukan." })
+      res.status(404).json({ error: "Event not found." })
       return
     }
 
     if (event.status === "closed" || event.status === "cancelled") {
-      res.status(400).json({ error: "Sesi presensi untuk kegiatan ini telah ditutup." })
+      res.status(400).json({ error: "Attendance session for this event is closed." })
       return
     }
 
-    // Verify target user exists in People database
-    const targetUser = await prisma.user.findUnique({
-      where: { id: targetUserId },
+    // Verify target user exists in People database (by id, userNumber, username, or email)
+    const targetUser = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { id: targetUserId },
+          { userNumber: targetUserId },
+          { username: targetUserId },
+          { email: targetUserId },
+        ],
+      },
       select: { id: true, name: true, role: true, userNumber: true },
     })
 
     if (!targetUser) {
-      res.status(404).json({ error: "Pengguna tidak ditemukan dalam basis data People." })
+      res.status(404).json({ error: "User not found in People directory." })
       return
     }
 
+    const actualUserId = targetUser.id
+
     // Strict Idempotency Check: Reject duplicate scans
     const existing = await prisma.attendance.findUnique({
-      where: { userId_eventId: { userId: targetUserId, eventId: id } },
+      where: { userId_eventId: { userId: actualUserId, eventId: id } },
     })
 
     if (existing) {
       res.status(409).json({
         error: "DUPLICATE_ATTENDANCE",
-        message: `Umat ${targetUser.name} (${targetUser.userNumber || "ID Terdaftar"}) sudah tercatat hadir sebelumnya.`,
+        message: `Member ${targetUser.name} (${targetUser.userNumber || "Registered ID"}) has already been recorded present.`,
         data: {
           id: existing.id,
-          user_id: targetUserId,
+          user_id: actualUserId,
           name: targetUser.name,
           scanned_at: existing.scannedAt.toISOString(),
         },
@@ -244,7 +269,7 @@ eventsRouter.post("/:id/attendance", requireAuth, async (req, res, next) => {
     // Persist attendance immediately in DB (Staged — preserved across reloads / navigation)
     const attendance = await prisma.attendance.create({
       data: {
-        userId: targetUserId,
+        userId: actualUserId,
         eventId: id,
         method,
         pointsEarned: pointsAwarded,
@@ -252,12 +277,12 @@ eventsRouter.post("/:id/attendance", requireAuth, async (req, res, next) => {
       },
     })
 
-    await invalidate(CacheKeys.userAttendances(targetUserId))
+    await invalidate(CacheKeys.userAttendances(actualUserId))
     await invalidatePattern("events:*")
 
     res.status(201).json({
       id: attendance.id,
-      user_id: targetUserId,
+      user_id: actualUserId,
       name: targetUser.name,
       role: targetUser.role,
       user_number: targetUser.userNumber,
@@ -303,7 +328,7 @@ eventsRouter.delete("/:id/attendances/:userId", requireAuth, requireRole("pengur
       where: { userId_eventId: { userId: userId as string, eventId: id as string } },
     })
     await invalidate(CacheKeys.userAttendances(userId as string))
-    res.json({ success: true, message: "Presensi berhasil dihapus" })
+    res.json({ success: true, message: "Attendance record deleted" })
   } catch (err) { next(err) }
 })
 
@@ -316,7 +341,7 @@ eventsRouter.delete("/:id", requireAuth, requireRole("pengurus", "admin"), async
     await prisma.event.delete({ where: { id } })
     await invalidatePattern("events:*")
     await invalidate(CacheKeys.events())
-    res.json({ message: "Event berhasil dihapus" })
+    res.json({ message: "Event deleted successfully" })
   } catch (err) { next(err) }
 })
 

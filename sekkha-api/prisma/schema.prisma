@@ -48,6 +48,10 @@ model User {
   notifications   Notification[]
   sentInvitations RoleInvitation[] @relation("SentInvitations")
 
+  @@index([points(sort: Desc)])
+  @@index([role])
+  @@index([consecutiveMissed])
+  @@index([createdAt(sort: Desc)])
   @@map("users")
 }
 
@@ -78,6 +82,8 @@ model Event {
   attendances Attendance[]
   rsvps       Rsvp[]
 
+  @@index([status, eventDate])
+  @@index([eventType])
   @@map("events")
 }
 
@@ -106,6 +112,8 @@ model Attendance {
   event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
   @@unique([userId, eventId])
+  @@index([eventId, scannedAt])
+  @@index([userId, scannedAt])
   @@map("attendances")
 }
 
@@ -120,6 +128,7 @@ model PointTransaction {
 
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId, createdAt(sort: Desc)])
   @@map("point_transactions")
 }
 
@@ -206,6 +215,7 @@ model Notification {
 
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId, status, createdAt(sort: Desc)])
   @@map("notifications")
 }
 

@@ -22,7 +22,7 @@ export function WisdomQuoteSection() {
             </div>
 
             <blockquote className="text-xl md:text-2xl font-medium text-sekkha-ink leading-relaxed max-w-[760px] tracking-tight">
-              &ldquo;Kebajikan yang ditanam oleh generasi muda hari ini adalah naungan kedamaian bagi masa depan kita bersama.&rdquo;
+              &ldquo;The virtues planted by youth today are the sanctuary of peace for our shared tomorrow.&rdquo;
             </blockquote>
 
             <div className="mt-6 flex items-center gap-3">
@@ -30,14 +30,14 @@ export function WisdomQuoteSection() {
                 TM
               </div>
               <div className="text-left">
-                <p className="text-body-md font-semibold text-sekkha-ink">Pesan Pembimbing Youth</p>
+                <p className="text-body-md font-semibold text-sekkha-ink">Youth Spiritual Mentors</p>
                 <p className="text-micro text-sekkha-slate">Vihara Tri Maha Dharma</p>
               </div>
             </div>
 
             <div className="mt-8 flex items-center gap-2 text-micro font-medium text-amber-800 bg-amber-100/60 px-4 py-1.5 rounded-full border border-amber-200/50">
               <HeartIcon className="size-3.5 fill-amber-500 text-amber-600" />
-              <span>Bersama Membangun Karakter & Kebajikan Remaja Buddhis</span>
+              <span>Cultivating Mindfulness & Compassion in Youth</span>
             </div>
           </div>
         </motion.div>

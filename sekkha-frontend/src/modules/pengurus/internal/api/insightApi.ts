@@ -8,27 +8,27 @@ export type RoleSegmentFilter = "all" | "umat" | "aktivis" | "pengurus"
 export type EventCategoryFilter = "all" | "puja_bhakti" | "dhammasakaccha" | "meditasi" | "bakti_sosial" | "sekolah_minggu"
 
 export const MONTH_NAMES = [
-  "Januari",
-  "Februari",
-  "Maret",
+  "January",
+  "February",
+  "March",
   "April",
-  "Mei",
-  "Juni",
-  "Juli",
-  "Agustus",
+  "May",
+  "June",
+  "July",
+  "August",
   "September",
-  "Oktober",
+  "October",
   "November",
-  "Desember",
+  "December",
 ]
 
 export const MASTER_EVENT_CATEGORIES: { id: EventCategoryFilter; label: string }[] = [
-  { id: "all", label: "Semua Kategori Event" },
-  { id: "puja_bhakti", label: "Puja Bhakti Minggu" },
-  { id: "dhammasakaccha", label: "Dhammasakaccha" },
-  { id: "meditasi", label: "Latihan Meditasi" },
-  { id: "bakti_sosial", label: "Bakti Sosial / Umat Care" },
-  { id: "sekolah_minggu", label: "Sekolah Minggu / Pemuda" },
+  { id: "all", label: "All Event Categories" },
+  { id: "puja_bhakti", label: "Sunday Service" },
+  { id: "dhammasakaccha", label: "Dhamma Discussion" },
+  { id: "meditasi", label: "Meditation Practice" },
+  { id: "bakti_sosial", label: "Social Service / Care" },
+  { id: "sekolah_minggu", label: "Sunday School / Youth" },
 ]
 
 export interface MetricDelta {

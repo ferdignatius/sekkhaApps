@@ -2,40 +2,12 @@ version: "3.8"
 
 services:
   sekkha-api:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: sekkha-api:latest
+    image: ferdignatius/sekkha-api:latest
     container_name: sekkha-api
     restart: unless-stopped
 
-    # ❌ Tanpa port mapping ke host (Zero host exposure)
-
-    environment:
-      NODE_ENV: production
-      PORT: 4000
-
-      # Koneksi ke STACK 4 (CORE) via data-tier
-      DATABASE_URL: ${DATABASE_URL:-postgresql://sekkha:sekkha_secure_pass_2026@postgres-master:5432/sekkha_db?schema=public}
-      REDIS_URL: ${REDIS_URL:-redis://redis-queue:6379}
-
-      # Security & JWT
-      JWT_SECRET: ${JWT_SECRET:-sekkha_jwt_super_secret_production_key_2026_xyz}
-      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
-
-      # Integrasi Frontend Vercel
-      CORS_ORIGIN: ${CORS_ORIGIN:-https://sekkha.vercel.app,http://localhost:3000}
-      FRONTEND_URL: ${FRONTEND_URL:-https://sekkha.vercel.app}
-
-      # Akun Master / Dummy untuk Seed Awal
-      DUMMY_UMAT_EMAIL: ${DUMMY_UMAT_EMAIL:-umat@sekkha.com}
-      DUMMY_UMAT_PASSWORD: ${DUMMY_UMAT_PASSWORD:-password123}
-      DUMMY_AKTIVIS_EMAIL: ${DUMMY_AKTIVIS_EMAIL:-aktivis@sekkha.com}
-      DUMMY_AKTIVIS_PASSWORD: ${DUMMY_AKTIVIS_PASSWORD:-password123}
-      DUMMY_PENGURUS_EMAIL: ${DUMMY_PENGURUS_EMAIL:-pengurus@sekkha.com}
-      DUMMY_PENGURUS_PASSWORD: ${DUMMY_PENGURUS_PASSWORD:-password123}
-      DUMMY_ADMIN_EMAIL: ${DUMMY_ADMIN_EMAIL:-admin@sekkha.com}
-      DUMMY_ADMIN_PASSWORD: ${DUMMY_ADMIN_PASSWORD:-password123}
+    env_file:
+      - .env
 
     networks:
       - proxy-tier
@@ -60,4 +32,5 @@ networks:
     external: true
   data-tier:
     external: true
+
 

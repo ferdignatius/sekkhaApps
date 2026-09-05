@@ -5,7 +5,7 @@
 //
 // To add more protected pages, create files under src/routes/_authenticated/.
 
-import { createFileRoute, Outlet, redirect } from "@tanstack/react-router"
+import { createFileRoute, Outlet, redirect, useRouterState } from "@tanstack/react-router"
 import type { RouterContext } from "@/modules/auth"
 import { AppSidebar } from "@/components/app-sidebar"
 import { MobileDock } from "@/components/common/MobileDock"
@@ -89,11 +89,18 @@ export const Route = createFileRoute("/_authenticated")({
 })
 
 function DashboardLayout() {
+  const { location } = useRouterState()
+  const isImmersivePage = location.pathname.includes("/scan") || location.pathname.startsWith("/onboarding")
+
+  if (isImmersivePage) {
+    return <Outlet />
+  }
+
   return (
     <TooltipProvider>
       <SidebarProvider>
         <AppSidebar className="hidden md:flex" />
-        <SidebarInset className="min-h-screen bg-sekkha-surface">
+        <SidebarInset className="min-h-screen bg-[#fffaf0]">
           <Outlet />
         </SidebarInset>
         <MobileDock />

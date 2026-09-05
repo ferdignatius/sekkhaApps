@@ -1,10 +1,8 @@
 // feature/dashboard/components/NextEventCard
-// Shows the next upcoming event with direct RSVP buttons (Hadir / Tidak Hadir).
+// Shows the next upcoming event with direct action link.
 
 import { CalendarIcon, MapPinIcon } from "lucide-react"
 import { Link } from "@tanstack/react-router"
-
-// ─── Types ───────────────────────────────────────────────────────────────────
 
 export interface UpcomingEvent {
   id: string
@@ -18,10 +16,8 @@ interface NextEventCardProps {
   event: UpcomingEvent | null
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
 function formatEventDate(isoDate: string): string {
-  return new Date(isoDate).toLocaleDateString("id-ID", {
+  return new Date(isoDate).toLocaleDateString("en-US", {
     weekday: "long",
     day: "numeric",
     month: "long",
@@ -30,74 +26,71 @@ function formatEventDate(isoDate: string): string {
 }
 
 function formatEventTime(isoDate: string): string {
-  return new Date(isoDate).toLocaleTimeString("id-ID", {
+  return new Date(isoDate).toLocaleTimeString("en-US", {
     hour: "2-digit",
     minute: "2-digit",
   })
 }
 
-// ─── Component ───────────────────────────────────────────────────────────────
-
 export function NextEventCard({ event }: NextEventCardProps) {
-
   return (
     <section
       aria-labelledby="next-event-heading"
-      className="rounded-xl border border-sekkha-hairline-soft bg-sekkha-canvas p-5"
+      className="rounded-[20px] border border-[#e5e5e5] bg-[#fffaf0] p-5 shadow-xs font-sans text-left"
     >
       {/* Header */}
       <div className="mb-4 flex items-center gap-2">
-        <CalendarIcon className="size-4 text-sekkha-brand-blue" aria-hidden="true" />
+        <CalendarIcon className="size-4 text-[#1a3a3a]" aria-hidden="true" />
         <h2
           id="next-event-heading"
-          className="text-body-sm-medium text-sekkha-ink"
+          className="text-sm font-bold text-[#0a0a0a]"
         >
-          Kegiatan Mendatang
+          Upcoming Event
         </h2>
       </div>
 
       {/* Content */}
       {!event ? (
-        <p className="text-caption text-sekkha-muted">
-          Tidak ada kegiatan yang dijadwalkan.
+        <p className="text-xs font-medium text-[#6a6a6a] py-2">
+          No upcoming events scheduled.
         </p>
       ) : (
-        <div className="rounded-lg bg-sekkha-surface p-4">
+        <div className="rounded-[16px] bg-[#faf5e8] border border-[#e5e5e5] p-4 space-y-3">
           {/* Event type badge + title */}
           <div className="flex items-start gap-2">
             <span
-              className={`mt-0.5 shrink-0 rounded-full px-2 py-0.5 text-micro ${
+              className={`mt-0.5 shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-bold ${
                 event.event_type === "rutin"
-                  ? "bg-sekkha-teal-light text-sekkha-moss-dark"
-                  : "bg-sekkha-brand-yellow/20 text-sekkha-yellow-dark"
+                  ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
+                  : "bg-[#ffb084]/25 text-[#0a0a0a] border border-[#ffb084]/50"
               }`}
             >
-              {event.event_type === "rutin" ? "Rutin" : "Special"}
+              {event.event_type === "rutin" ? "Routine" : "Special"}
             </span>
-            <p className="text-body-sm-medium text-sekkha-ink">{event.title}</p>
+            <p className="text-sm font-bold text-[#0a0a0a] leading-snug">{event.title}</p>
           </div>
 
           {/* Date & time */}
-          <div className="mt-3 flex items-center gap-1.5">
-            <CalendarIcon className="size-3.5 text-sekkha-muted" aria-hidden="true" />
-            <span className="text-caption text-sekkha-slate">
+          <div className="flex items-center gap-1.5 text-xs text-[#6a6a6a]">
+            <CalendarIcon className="size-3.5 text-[#6a6a6a]" aria-hidden="true" />
+            <span>
               {formatEventDate(event.event_date)} · {formatEventTime(event.event_date)}
             </span>
           </div>
 
           {/* Location */}
-          <div className="mt-1.5 flex items-center gap-1.5">
-            <MapPinIcon className="size-3.5 text-sekkha-muted" aria-hidden="true" />
-            <span className="text-caption text-sekkha-slate">{event.location}</span>
+          <div className="flex items-center gap-1.5 text-xs text-[#6a6a6a]">
+            <MapPinIcon className="size-3.5 text-[#6a6a6a]" aria-hidden="true" />
+            <span>{event.location}</span>
           </div>
 
           {/* Action button */}
-          <div className="mt-4">
+          <div className="pt-2 border-t border-[#e5e5e5]">
             <Link
               to="/events"
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-sekkha-brand-blue py-2.5 px-4 text-caption-bold text-white shadow-xs hover:bg-blue-700 transition-all active:scale-[0.99]"
+              className="flex w-full items-center justify-center gap-2 rounded-[12px] bg-[#0a0a0a] py-2.5 px-4 text-xs font-bold text-white shadow-xs hover:bg-[#1f1f1f] transition-all active:scale-[0.99]"
             >
-              <span>Lihat Detail Event</span>
+              <span>View Event Details</span>
             </Link>
           </div>
         </div>

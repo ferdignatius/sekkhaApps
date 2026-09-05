@@ -1,29 +1,28 @@
 // feature/dashboard/components/DhammaWidget
-// Daily dhamma reflection card — modern, inspirational & youth-friendly design.
+// Daily Dhamma reflection card — modern, inspirational & youth-friendly design.
 
 import { SparklesIcon, Share2Icon, BookmarkIcon, QuoteIcon, CheckIcon } from "lucide-react"
 import { useState } from "react"
 
-// Hardcoded quotes for now; future: fetched from API
 const DAILY_QUOTES = [
   {
-    text: "Pikiran adalah pelopor dari segala perbuatan. Pikiran adalah pemimpin, pikiran adalah pembentuk.",
+    text: "Mind is the forerunner of all actions. Mind is chief, mind-made are they.",
     source: "Dhammapada 1",
   },
   {
-    text: "Ribuan lilin dapat dinyalakan dari satu lilin, dan umur lilin itu tidak akan berkurang. Kebahagiaan tidak akan berkurang karena dibagi.",
+    text: "Thousands of candles can be lighted from a single candle, and the life of the candle will not be shortened. Happiness never decreases by being shared.",
     source: "Dhammapada 273",
   },
   {
-    text: "Lebih baik menaklukkan diri sendiri daripada memenangkan seribu pertempuran.",
+    text: "It is better to conquer oneself than to win a thousand battles.",
     source: "Dhammapada 103",
   },
   {
-    text: "Jangan menyia-nyiakan waktu, karena waktu adalah hidup. Setiap detik yang berlalu tidak akan kembali.",
+    text: "Do not waste time, for time is life itself. Every moment that passes never returns.",
     source: "Dhammapada 315",
   },
   {
-    text: "Kebencian tidak akan pernah berakhir dengan kebencian. Hanya dengan cinta kasih, kebencian berakhir.",
+    text: "Hatred does not cease by hatred at any time; hatred ceases by love alone.",
     source: "Dhammapada 5",
   },
 ]
@@ -34,8 +33,6 @@ function getTodayQuote() {
   )
   return DAILY_QUOTES[dayOfYear % DAILY_QUOTES.length]!
 }
-
-// ─── Component ───────────────────────────────────────────────────────────────
 
 export function DhammaWidget() {
   const quote = getTodayQuote()
@@ -54,71 +51,71 @@ export function DhammaWidget() {
   return (
     <section
       aria-labelledby="dhamma-heading"
-      className="relative overflow-hidden rounded-2xl border border-amber-300/60 bg-gradient-to-br from-amber-500/10 via-sekkha-surface-yellow to-amber-100/40 p-4 sm:p-5 shadow-xs transition-all hover:shadow-md"
+      className="relative overflow-hidden rounded-[20px] border border-[#e5e5e5] bg-[#fffaf0] p-4 sm:p-5 shadow-xs transition-all font-sans text-left"
     >
       {/* Decorative background watermark */}
-      <QuoteIcon className="absolute -right-3 -bottom-3 size-24 text-amber-500/10 rotate-12 pointer-events-none" />
+      <QuoteIcon className="absolute -right-3 -bottom-3 size-24 text-[#e8b94a]/10 rotate-12 pointer-events-none" />
 
       {/* Top Header Row */}
       <div className="flex items-center justify-between gap-2 mb-3">
         <div className="flex items-center gap-2">
-          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-sekkha-brand-yellow text-sekkha-ink shadow-xs">
-            <SparklesIcon className="size-4" />
+          <span className="flex h-7 w-7 items-center justify-center rounded-[8px] bg-[#e8b94a]/20 border border-[#e8b94a]/40 text-[#0a0a0a] shadow-xs">
+            <SparklesIcon className="size-4 text-[#e8b94a]" />
           </span>
           <div>
-            <h2 id="dhamma-heading" className="text-body-sm-medium font-bold text-sekkha-ink leading-tight">
-              Renungan Dhamma Harian
+            <h2 id="dhamma-heading" className="text-sm font-bold text-[#0a0a0a] leading-tight">
+              Daily Dhamma Reflection
             </h2>
-            <p className="text-micro text-sekkha-slate">Inspirasi Pagi Ini</p>
+            <p className="text-[11px] text-[#6a6a6a]">Today's Inspiration</p>
           </div>
         </div>
 
         {/* Source Badge */}
-        <span className="rounded-full bg-amber-500/15 border border-amber-500/30 px-2.5 py-0.5 text-micro-bold text-amber-900 font-mono shrink-0">
+        <span className="rounded-full bg-[#f5f0e0] border border-[#e5e5e5] px-2.5 py-0.5 text-[11px] font-bold text-[#0a0a0a] font-mono shrink-0">
           {quote.source}
         </span>
       </div>
 
       {/* Quote Body */}
-      <blockquote className="relative my-2 rounded-xl bg-sekkha-canvas/70 backdrop-blur-xs p-3.5 border border-sekkha-hairline-soft">
-        <p className="text-caption sm:text-body-sm italic font-medium text-sekkha-ink leading-relaxed">
+      <blockquote className="relative my-2 rounded-[12px] bg-[#faf5e8] p-3.5 border border-[#e5e5e5]">
+        <p className="text-xs sm:text-sm italic font-medium text-[#0a0a0a] leading-relaxed">
           "{quote.text}"
         </p>
       </blockquote>
 
       {/* Action Footer */}
-      <div className="mt-3 flex items-center justify-between pt-1 text-micro">
-        <span className="text-sekkha-slate font-medium">Bagikan ke teman-temanmu ✨</span>
+      <div className="mt-3 flex items-center justify-between pt-1 text-xs">
+        <span className="text-[#6a6a6a] font-medium text-[11px]">Share with friends ✨</span>
         
         <div className="flex items-center gap-1.5">
           {/* Bookmark Button */}
           <button
             type="button"
             onClick={() => setSaved(!saved)}
-            className={`flex items-center gap-1 rounded-lg px-2.5 py-1 text-micro-bold transition-all ${
+            className={`flex items-center gap-1 rounded-[8px] px-2.5 py-1 text-xs font-semibold transition-all cursor-pointer ${
               saved
-                ? "bg-amber-500 text-white"
-                : "bg-sekkha-canvas border border-sekkha-hairline-strong text-sekkha-slate hover:text-sekkha-ink"
+                ? "bg-[#0a0a0a] text-white"
+                : "bg-[#fffaf0] border border-[#e5e5e5] text-[#6a6a6a] hover:text-[#0a0a0a] hover:bg-[#faf5e8]"
             }`}
-            title="Simpan Renungan"
+            title="Save Reflection"
           >
             <BookmarkIcon className="size-3" />
-            <span>{saved ? "Tersimpan" : "Simpan"}</span>
+            <span>{saved ? "Saved" : "Save"}</span>
           </button>
 
           {/* Share/Copy Button */}
           <button
             type="button"
             onClick={handleShare}
-            className={`flex items-center gap-1 rounded-lg px-2.5 py-1 text-micro-bold transition-all ${
+            className={`flex items-center gap-1 rounded-[8px] px-2.5 py-1 text-xs font-semibold transition-all cursor-pointer ${
               copied
                 ? "bg-emerald-600 text-white"
-                : "bg-sekkha-brand-blue text-white shadow-xs hover:bg-blue-700"
+                : "bg-[#0a0a0a] text-white shadow-xs hover:bg-[#1f1f1f]"
             }`}
-            title="Salin & Bagikan Renungan"
+            title="Copy & Share Reflection"
           >
             {copied ? <CheckIcon className="size-3" /> : <Share2Icon className="size-3" />}
-            <span>{copied ? "Tersalin!" : "Bagikan"}</span>
+            <span>{copied ? "Copied!" : "Share"}</span>
           </button>
         </div>
       </div>

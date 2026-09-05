@@ -5,6 +5,7 @@
 import { useState } from "react"
 import { PlusIcon, PencilIcon, TrashIcon, TrophyIcon } from "lucide-react"
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
+import { ResponsiveFormModal } from "@/components/common/ResponsiveFormModal"
 import { useAuth } from "@/modules/auth"
 import { achievementsApi } from "../api/configureApi"
 import { useConfigureCrud } from "../hooks/useConfigureCrud"
@@ -25,23 +26,23 @@ interface Achievement {
 // ─── Dummy data ──────────────────────────────────────────────────────────────
 
 const INITIAL_ACHIEVEMENTS: Achievement[] = [
-  { id: "ach-1", name: "Pertama Hadir", icon_url: "🎯", description: "Hadir di kebaktian pertama", condition_type: "attendance", condition_value: 1, is_active: true },
-  { id: "ach-2", name: "Streak 5", icon_url: "🔥", description: "Hadir 5 minggu berturut-turut", condition_type: "streak", condition_value: 5, is_active: true },
-  { id: "ach-3", name: "Streak 10", icon_url: "⚡", description: "Hadir 10 minggu berturut-turut", condition_type: "streak", condition_value: 10, is_active: true },
-  { id: "ach-4", name: "Streak 20", icon_url: "💎", description: "Hadir 20 minggu berturut-turut", condition_type: "streak", condition_value: 20, is_active: true },
-  { id: "ach-5", name: "Loyal", icon_url: "❤️", description: "Aktif selama 3 bulan tanpa putus", condition_type: "attendance", condition_value: 12, is_active: true },
-  { id: "ach-6", name: "Rajin", icon_url: "📚", description: "Hadir 4x berturut-turut di event rutin", condition_type: "event_count", condition_value: 4, is_active: true },
-  { id: "ach-7", name: "100 Poin", icon_url: "⭐", description: "Kumpulkan total 100 poin", condition_type: "points", condition_value: 100, is_active: true },
-  { id: "ach-8", name: "500 Poin", icon_url: "🏆", description: "Kumpulkan total 500 poin", condition_type: "points", condition_value: 500, is_active: true },
-  { id: "ach-9", name: "1000 Poin", icon_url: "👑", description: "Kumpulkan total 1000 poin", condition_type: "points", condition_value: 1000, is_active: false },
-  { id: "ach-10", name: "Sosial", icon_url: "🤝", description: "Ikut 3 kegiatan bakti sosial", condition_type: "event_count", condition_value: 3, is_active: true },
+  { id: "ach-1", name: "First Attendance", icon_url: "🎯", description: "Attended first service", condition_type: "attendance", condition_value: 1, is_active: true },
+  { id: "ach-2", name: "Streak 5", icon_url: "🔥", description: "Attended 5 weeks consecutively", condition_type: "streak", condition_value: 5, is_active: true },
+  { id: "ach-3", name: "Streak 10", icon_url: "⚡", description: "Attended 10 weeks consecutively", condition_type: "streak", condition_value: 10, is_active: true },
+  { id: "ach-4", name: "Streak 20", icon_url: "💎", description: "Attended 20 weeks consecutively", condition_type: "streak", condition_value: 20, is_active: true },
+  { id: "ach-5", name: "Loyal", icon_url: "❤️", description: "Active for 3 months unbroken", condition_type: "attendance", condition_value: 12, is_active: true },
+  { id: "ach-6", name: "Diligent", icon_url: "📚", description: "Attended 4 consecutive routine events", condition_type: "event_count", condition_value: 4, is_active: true },
+  { id: "ach-7", name: "100 Points", icon_url: "⭐", description: "Accumulate 100 points total", condition_type: "points", condition_value: 100, is_active: true },
+  { id: "ach-8", name: "500 Points", icon_url: "🏆", description: "Accumulate 500 points total", condition_type: "points", condition_value: 500, is_active: true },
+  { id: "ach-9", name: "1000 Points", icon_url: "👑", description: "Accumulate 1000 points total", condition_type: "points", condition_value: 1000, is_active: false },
+  { id: "ach-10", name: "Social Service", icon_url: "🤝", description: "Participated in 3 charity drives", condition_type: "event_count", condition_value: 3, is_active: true },
 ]
 
 const conditionLabel: Record<Achievement["condition_type"], string> = {
   streak: "Streak",
-  attendance: "Kehadiran",
-  points: "Poin",
-  event_count: "Jumlah Event",
+  attendance: "Attendance",
+  points: "Points",
+  event_count: "Event Count",
   manual: "Manual",
 }
 
@@ -83,7 +84,7 @@ export function AchievementPage() {
   }
 
   function handleSave() {
-    if (!name.trim()) return
+    if (!name.trim() || !isAdmin) return
     const payload = {
       name,
       icon_url: icon || "🏅",
@@ -102,10 +103,12 @@ export function AchievementPage() {
   }
 
   function handleDelete(id: string) {
+    if (!isAdmin) return
     void apiRemove(id).catch(() => { })
   }
 
   function toggleActive(id: string) {
+    if (!isAdmin) return
     const item = achievements.find(a => a.id === id)
     if (item) {
       void apiUpdate(id, { is_active: !(item as any).is_active }).catch(() => { })
@@ -113,131 +116,202 @@ export function AchievementPage() {
   }
 
   return (
-    <main>
-      <PageBreadcrumb items={[{ label: "Configure" }, { label: "Gamifikasi" }, { label: "Achievement" }]} />
-      <div className="px-4 py-6 pb-32 sm:pb-36 md:px-8 md:pb-12 lg:px-12">
-        <div className="mx-auto max-w-8xl space-y-5">
+    <main className="min-h-screen bg-[#fffaf0] pb-32 md:pb-12 font-sans text-left">
+      <PageBreadcrumb items={[{ label: "Configure" }, { label: "Gamification" }, { label: "Achievements" }]} />
+      <div className="px-3.5 py-4 sm:px-6 sm:py-6 md:px-8 max-w-7xl mx-auto space-y-5">
 
-          {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5">
-              <TrophyIcon className="size-5 text-sekkha-brand-yellow shrink-0" />
-              <h1 className="text-body-base sm:text-heading-5 font-extrabold text-sekkha-ink">Achievement</h1>
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#e5e5e5] pb-4">
+          <div className="flex items-center gap-3">
+            <div className="flex size-10 items-center justify-center rounded-[12px] bg-[#0a0a0a] text-white shrink-0 shadow-xs">
+              <TrophyIcon className="size-5 text-[#e8b94a]" />
             </div>
-            {isAdmin && (
-              <button
-                type="button"
-                onClick={openCreate}
-                className="w-full sm:w-auto shrink-0 flex items-center justify-center gap-1.5 rounded-full bg-sekkha-primary px-4 py-2.5 sm:py-2 text-body-sm-medium text-white transition-opacity hover:opacity-90 cursor-pointer"
-              >
-                <PlusIcon className="size-4" />
-                <span>Tambah Achievement</span>
-              </button>
-            )}
+            <div className="min-w-0">
+              <h1 className="text-base sm:text-xl font-bold text-[#0a0a0a]">Member Achievements</h1>
+              <p className="text-xs text-[#6a6a6a]">Manage gamification milestones, streak achievements, and attendance recognition</p>
+            </div>
           </div>
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={openCreate}
+              className="h-10 w-full sm:w-auto flex items-center justify-center gap-1.5 rounded-[12px] bg-[#0a0a0a] text-white px-4 text-xs font-bold hover:bg-[#1f1f1f] transition-all cursor-pointer shadow-xs shrink-0"
+            >
+              <PlusIcon className="size-4" />
+              <span>Add Achievement</span>
+            </button>
+          )}
+        </div>
 
-          {/* Inline form */}
-          {formOpen && isAdmin && (
-            <div className="rounded-xl border border-sekkha-hairline-soft bg-sekkha-canvas p-5">
-              <h2 className="mb-4 text-body-sm-medium text-sekkha-ink">
-                {editTarget ? "Edit Achievement" : "Tambah Achievement Baru"}
-              </h2>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="mb-1 block text-caption text-sekkha-slate">Nama</label>
-                  <input type="text" value={name} onChange={e => setName(e.target.value)} className="w-full rounded-md border border-sekkha-hairline-strong bg-sekkha-canvas px-3 py-2 text-body-sm text-sekkha-ink outline-none focus:border-sekkha-brand-blue" placeholder="Streak 5" />
-                </div>
-                <div>
-                  <label className="mb-1 block text-caption text-sekkha-slate">Icon (emoji)</label>
-                  <input type="text" value={icon} onChange={e => setIcon(e.target.value)} className="w-full rounded-md border border-sekkha-hairline-strong bg-sekkha-canvas px-3 py-2 text-body-sm text-sekkha-ink outline-none focus:border-sekkha-brand-blue" placeholder="🔥" />
-                </div>
-                <div className="sm:col-span-2">
-                  <label className="mb-1 block text-caption text-sekkha-slate">Deskripsi</label>
-                  <input type="text" value={description} onChange={e => setDescription(e.target.value)} className="w-full rounded-md border border-sekkha-hairline-strong bg-sekkha-canvas px-3 py-2 text-body-sm text-sekkha-ink outline-none focus:border-sekkha-brand-blue" placeholder="Hadir 5 minggu berturut-turut" />
-                </div>
-                <div>
-                  <label className="mb-1 block text-caption text-sekkha-slate">Tipe Kondisi</label>
-                  <select value={conditionType} onChange={e => setConditionType(e.target.value as Achievement["condition_type"])} className="w-full rounded-md border border-sekkha-hairline-strong bg-sekkha-canvas px-3 py-2 text-body-sm text-sekkha-ink outline-none focus:border-sekkha-brand-blue">
-                    <option value="streak">Streak</option>
-                    <option value="attendance">Kehadiran</option>
-                    <option value="points">Poin</option>
-                    <option value="event_count">Jumlah Event</option>
-                    <option value="manual">Manual</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="mb-1 block text-caption text-sekkha-slate">Nilai Kondisi</label>
-                  <input type="number" value={conditionValue} onChange={e => setConditionValue(Number(e.target.value))} className="w-full rounded-md border border-sekkha-hairline-strong bg-sekkha-canvas px-3 py-2 text-body-sm text-sekkha-ink outline-none focus:border-sekkha-brand-blue" min={1} />
-                </div>
-              </div>
-              <div className="mt-4 flex items-center gap-2">
-                <button type="button" onClick={handleSave} className="rounded-full bg-sekkha-brand-blue px-5 py-2 text-body-sm-medium text-white transition-opacity hover:opacity-90">
-                  {editTarget ? "Simpan" : "Tambah"}
-                </button>
-                <button type="button" onClick={() => setFormOpen(false)} className="rounded-full border border-sekkha-hairline-strong px-5 py-2 text-body-sm-medium text-sekkha-ink transition-colors hover:bg-sekkha-surface">
-                  Batal
-                </button>
-              </div>
+        {/* Table */}
+        <div className="overflow-hidden rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0] shadow-xs">
+          <div className="overflow-x-auto scrollbar-none">
+            <table className="w-full text-left text-xs font-sans">
+              <thead>
+                <tr className="border-b border-[#e5e5e5] bg-[#faf5e8] text-[#6a6a6a] font-bold">
+                  <th className="px-4 py-3 w-16">Icon</th>
+                  <th className="px-4 py-3">Achievement Details</th>
+                  <th className="px-4 py-3 hidden sm:table-cell">Condition</th>
+                  <th className="px-4 py-3 hidden sm:table-cell">Target Value</th>
+                  <th className="px-4 py-3 text-center">Status</th>
+                  {isAdmin && <th className="px-4 py-3 w-28 text-right">Actions</th>}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#f0f0f0]">
+                {achievements.map((ach) => (
+                  <tr key={ach.id} className="hover:bg-[#faf5e8]/70 transition-colors">
+                    <td className="px-4 py-3 text-2xl">{ach.icon_url}</td>
+                    <td className="px-4 py-3">
+                      <p className="font-bold text-[#0a0a0a]">{ach.name}</p>
+                      <p className="text-xs text-[#6a6a6a]">{ach.description}</p>
+                    </td>
+                    <td className="px-4 py-3 hidden sm:table-cell">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-[6px] text-[11px] font-semibold bg-[#faf5e8] text-[#0a0a0a] border border-[#e5e5e5]">
+                        {conditionLabel[ach.condition_type]}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 hidden sm:table-cell font-mono font-bold text-[#0a0a0a]">
+                      {ach.condition_value}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <button
+                        type="button"
+                        disabled={!isAdmin}
+                        onClick={() => toggleActive(ach.id)}
+                        className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold border transition-all ${
+                          !isAdmin ? "cursor-default" : "cursor-pointer"
+                        } ${
+                          ach.is_active
+                            ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                            : "bg-[#faf5e8] text-[#6a6a6a] border-[#e5e5e5]"
+                        }`}
+                      >
+                        {ach.is_active ? "Active" : "Inactive"}
+                      </button>
+                    </td>
+                    {isAdmin && (
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => openEdit(ach)}
+                            className="h-8 px-2.5 rounded-[8px] border border-[#e5e5e5] bg-[#fffaf0] hover:bg-[#faf5e8] text-xs font-bold text-[#0a0a0a] transition-colors cursor-pointer flex items-center gap-1"
+                            title="Edit Achievement"
+                          >
+                            <PencilIcon className="size-3.5" />
+                            <span>Edit</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(ach.id)}
+                            className="size-8 flex items-center justify-center rounded-[8px] border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 transition-colors cursor-pointer"
+                            title="Delete Achievement"
+                          >
+                            <TrashIcon className="size-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {achievements.length === 0 && (
+            <div className="py-12 text-center">
+              <p className="text-xs text-[#6a6a6a]">No achievements found.</p>
             </div>
           )}
+        </div>
 
-          {/* Table */}
-          <div className="overflow-hidden rounded-xl border border-sekkha-hairline-soft bg-sekkha-canvas">
-            <div className="overflow-x-auto scrollbar-none">
-              <table className="w-full min-w-[600px] text-body-sm">
-                <thead>
-                  <tr className="border-b border-sekkha-hairline-soft bg-sekkha-surface">
-                    <th className="px-4 py-3 text-left font-medium text-sekkha-slate">Icon</th>
-                    <th className="px-4 py-3 text-left font-medium text-sekkha-slate">Nama</th>
-                    <th className="hidden px-4 py-3 text-left font-medium text-sekkha-slate sm:table-cell">Kondisi</th>
-                    <th className="hidden px-4 py-3 text-left font-medium text-sekkha-slate sm:table-cell">Nilai</th>
-                    <th className="px-4 py-3 text-left font-medium text-sekkha-slate">Status</th>
-                    {isAdmin && <th className="px-4 py-3 text-left font-medium text-sekkha-slate">Aksi</th>}
-                  </tr>
-                </thead>
-                <tbody>
-                  {achievements.map((ach) => (
-                    <tr key={ach.id} className="border-b border-sekkha-hairline-soft last:border-0">
-                      <td className="px-4 py-3 text-lg">{ach.icon_url}</td>
-                      <td className="px-4 py-3">
-                        <p className="font-medium text-sekkha-ink">{ach.name}</p>
-                        <p className="text-caption text-sekkha-muted">{ach.description}</p>
-                      </td>
-                      <td className="hidden px-4 py-3 text-sekkha-slate sm:table-cell">{conditionLabel[ach.condition_type]}</td>
-                      <td className="hidden px-4 py-3 text-sekkha-ink sm:table-cell">{ach.condition_value}</td>
-                      <td className="px-4 py-3">
-                        <button
-                          type="button"
-                          disabled={!isAdmin}
-                          onClick={() => toggleActive(ach.id)}
-                          className={`rounded-full px-2.5 py-0.5 text-caption-bold ${!isAdmin ? "" : "cursor-pointer"
-                            } ${ach.is_active
-                              ? "bg-sekkha-teal-light text-sekkha-brand-blue"
-                              : "bg-sekkha-surface text-sekkha-muted"
-                            }`}
-                        >
-                          {ach.is_active ? "Aktif" : "Nonaktif"}
-                        </button>
-                      </td>
-                      {isAdmin && (
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-1">
-                            <button type="button" onClick={() => openEdit(ach)} className="rounded-md p-1.5 text-sekkha-slate hover:bg-sekkha-surface hover:text-sekkha-ink" aria-label="Edit">
-                              <PencilIcon className="size-3.5" />
-                            </button>
-                            <button type="button" onClick={() => handleDelete(ach.id)} className="rounded-md p-1.5 text-sekkha-slate hover:bg-red-50 hover:text-red-500" aria-label="Hapus">
-                              <TrashIcon className="size-3.5" />
-                            </button>
-                          </div>
-                        </td>
-                      )}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+        {/* Responsive Modal Form */}
+        <ResponsiveFormModal
+          isOpen={formOpen && isAdmin}
+          onClose={() => setFormOpen(false)}
+          title={editTarget ? "Edit Achievement" : "Add New Achievement"}
+          description="Configure achievement milestone, criteria type, and trigger target."
+        >
+          <div className="space-y-4 text-left font-sans">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-[#0a0a0a]">Name *</label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={e => setName(e.target.value)}
+                  placeholder="Streak 5"
+                  className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-xs sm:text-sm text-[#0a0a0a] placeholder:text-[#6a6a6a] outline-none shadow-xs focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] transition-all"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-[#0a0a0a]">Icon (Emoji)</label>
+                <input
+                  type="text"
+                  value={icon}
+                  onChange={e => setIcon(e.target.value)}
+                  placeholder="🔥"
+                  className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-xs sm:text-sm text-[#0a0a0a] placeholder:text-[#6a6a6a] outline-none shadow-xs focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] transition-all"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-[#0a0a0a]">Description</label>
+              <input
+                type="text"
+                value={description}
+                onChange={e => setDescription(e.target.value)}
+                placeholder="Attended 5 consecutive weeks"
+                className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-xs sm:text-sm text-[#0a0a0a] placeholder:text-[#6a6a6a] outline-none shadow-xs focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] transition-all"
+              />
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-[#0a0a0a]">Condition Type</label>
+                <select
+                  value={conditionType}
+                  onChange={e => setConditionType(e.target.value as Achievement["condition_type"])}
+                  className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3 text-xs sm:text-sm text-[#0a0a0a] outline-none shadow-xs focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] transition-all cursor-pointer"
+                >
+                  <option value="streak">Streak</option>
+                  <option value="attendance">Attendance</option>
+                  <option value="points">Points</option>
+                  <option value="event_count">Event Count</option>
+                  <option value="manual">Manual</option>
+                </select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-[#0a0a0a]">Target Value</label>
+                <input
+                  type="number"
+                  min={1}
+                  value={conditionValue}
+                  onChange={e => setConditionValue(Number(e.target.value))}
+                  className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-xs sm:text-sm text-[#0a0a0a] placeholder:text-[#6a6a6a] outline-none shadow-xs focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] transition-all"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-2 pt-2 justify-end border-t border-[#e5e5e5]">
+              <button
+                type="button"
+                onClick={() => setFormOpen(false)}
+                className="h-10 px-4 rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] hover:bg-[#faf5e8] text-xs font-bold text-[#0a0a0a] transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSave}
+                className="h-10 px-5 rounded-[12px] bg-[#0a0a0a] hover:bg-[#1f1f1f] text-xs font-bold text-white shadow-xs transition-colors cursor-pointer"
+              >
+                {editTarget ? "Save Changes" : "Create Achievement"}
+              </button>
             </div>
           </div>
-        </div>
+        </ResponsiveFormModal>
       </div>
     </main>
   )

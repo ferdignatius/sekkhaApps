@@ -19,6 +19,9 @@ export interface UseAuthReturn {
   authState: AuthState
   login: (email: string, password: string) => Promise<void>
   register: (email: string, password: string) => Promise<void>
+  requestRegisterOtp: (email: string, password: string, name?: string) => Promise<{ success: boolean; message: string }>
+  verifyRegisterOtp: (email: string, otp: string) => Promise<void>
+  resendRegisterOtp: (email: string) => Promise<{ success: boolean; message: string }>
   logout: () => void
   initiateGoogleOAuth: () => void
 }
@@ -43,7 +46,25 @@ export interface UseAuthReturn {
 export function useAuth(): UseAuthReturn {
   // useAuthContext already throws a descriptive error when the context is null
   // (i.e. when used outside <AuthProvider>), satisfying requirement 4.6.
-  const { authState, login, register, logout, initiateGoogleOAuth } = useAuthContext()
+  const {
+    authState,
+    login,
+    register,
+    requestRegisterOtp,
+    verifyRegisterOtp,
+    resendRegisterOtp,
+    logout,
+    initiateGoogleOAuth,
+  } = useAuthContext()
 
-  return { authState, login, register, logout, initiateGoogleOAuth }
+  return {
+    authState,
+    login,
+    register,
+    requestRegisterOtp,
+    verifyRegisterOtp,
+    resendRegisterOtp,
+    logout,
+    initiateGoogleOAuth,
+  }
 }

@@ -2,6 +2,7 @@
 import type { ModuleDefinition } from "@/shell/registry"
 
 export { EventsPage } from "./internal/components/EventsPage"
+export { AttendanceScanPage } from "./internal/components/AttendanceScanPage"
 export type { EventListItem, EventType } from "./internal/types"
 
 export const eventsModule: ModuleDefinition = {

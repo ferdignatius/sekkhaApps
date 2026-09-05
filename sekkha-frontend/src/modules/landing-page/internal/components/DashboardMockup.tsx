@@ -12,9 +12,9 @@ import {
 
 // Dummy Data
 const MOCK_MISSIONS = [
-  { id: 1, title: 'Hadir Kebaktian Minggu', reward: 50, done: true },
-  { id: 2, title: 'Bakti Sosial Panti Asuhan', reward: 100, done: false },
-  { id: 3, title: 'Sesi Meditasi Bersama', reward: 30, done: false },
+  { id: 1, title: 'Attend Sunday Service', reward: 50, done: true },
+  { id: 2, title: 'Charity Outreach Drive', reward: 100, done: false },
+  { id: 3, title: 'Group Meditation Session', reward: 30, done: false },
 ]
 
 const MOCK_LEADERBOARD = [
@@ -47,23 +47,23 @@ export function DashboardMockup() {
       
       {/* ── Outer Whiteboard Frame ── */}
       <motion.div
-        className="w-full glass-panel rounded-2xl p-4 md:p-6 shadow-xl relative z-10"
+        className="w-full bg-white/95 rounded-[24px] p-4 md:p-6 shadow-xs border border-sekkha-hairline relative z-10 backdrop-blur-md"
         initial={{ opacity: 0, y: 48 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.85, ease: 'easeOut', delay: 0.4 }}
       >
         {/* Mockup Header Bar */}
-        <div className="flex items-center justify-between pb-4 mb-4 border-b border-sekkha-hairline-soft">
+        <div className="flex items-center justify-between pb-4 mb-4 border-b border-sekkha-hairline">
           <div className="flex items-center gap-2">
-            <span className="h-3 w-3 rounded-full bg-red-400" />
-            <span className="h-3 w-3 rounded-full bg-yellow-400" />
-            <span className="h-3 w-3 rounded-full bg-green-400" />
-            <span className="text-micro-uppercase font-semibold text-sekkha-slate ml-2 tracking-wider hidden sm:inline">
-              Workspace Remaja Vihara Tri Maha Dharma
+            <span className="h-3 w-3 rounded-full bg-[#ff4d8b]" />
+            <span className="h-3 w-3 rounded-full bg-[#e8b94a]" />
+            <span className="h-3 w-3 rounded-full bg-[#22c55e]" />
+            <span className="text-caption-uppercase font-semibold text-sekkha-slate ml-2 tracking-wider hidden sm:inline">
+              Youth Workspace • Vihara Tri Maha Dharma
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-sekkha-teal-light px-2.5 py-0.5 text-micro font-medium text-sekkha-ink">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#a4d4c5]/40 border border-[#a4d4c5]/60 px-2.5 py-0.5 text-micro font-medium text-[#1a3a3a]">
               ● Live Preview
             </span>
           </div>
@@ -72,7 +72,7 @@ export function DashboardMockup() {
         {/* Mockup Main Workspace */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           
-          {/* Left Column: Progress & Misi (Span 2) */}
+          {/* Left Column: Progress & Quests (Span 2) */}
           <div className="md:col-span-2 space-y-6">
             
             {/* User Level Info Card */}
@@ -85,19 +85,19 @@ export function DashboardMockup() {
                 {/* Level details */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <p className="truncate text-body-sm-medium text-sekkha-ink font-semibold">Umat Sekkha</p>
+                    <p className="truncate text-body-sm-medium text-sekkha-ink font-semibold">Sekkha Member</p>
                     <span className="rounded-full bg-sekkha-brand-yellow/20 px-2 py-0.5 text-micro font-bold text-sekkha-yellow-dark">
                       Lv.3
                     </span>
                   </div>
-                  <p className="text-micro text-sekkha-slate">Umat Setia</p>
+                  <p className="text-micro text-sekkha-slate">Dedicated Member</p>
                 </div>
               </div>
 
               {/* Progress Level Bar */}
               <div className="mt-4">
                 <div className="flex justify-between items-center text-micro mb-1">
-                  <span className="text-sekkha-slate">Progress Level</span>
+                  <span className="text-sekkha-slate">Level Progress</span>
                   <span className="font-semibold text-sekkha-ink">{userPoints} / 1500 XP</span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -124,15 +124,15 @@ export function DashboardMockup() {
                 <div className="flex items-center gap-3.5 rounded-lg bg-orange-50/80 px-3 py-2">
                   <FlameIcon className="size-6 text-orange-500 fill-orange-55" />
                   <div>
-                    <span className="block text-body-sm-medium font-bold text-orange-600">5 Minggu</span>
-                    <span className="text-micro text-sekkha-slate">Streak Keaktifan 🔥</span>
+                    <span className="block text-body-sm-medium font-bold text-orange-600">5 Weeks</span>
+                    <span className="text-micro text-sekkha-slate">Active Streak 🔥</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-3.5 rounded-lg bg-blue-50/80 px-3 py-2">
                   <ShieldCheckIcon className="size-6 text-sekkha-brand-blue" />
                   <div>
-                    <span className="block text-body-sm-medium font-bold text-sekkha-brand-blue">Aktif</span>
-                    <span className="text-micro text-sekkha-slate">Streak Shield Aktif 🛡️</span>
+                    <span className="block text-body-sm-medium font-bold text-sekkha-brand-blue">Active</span>
+                    <span className="text-micro text-sekkha-slate">Streak Shield 🛡️</span>
                   </div>
                 </div>
               </div>
@@ -142,7 +142,7 @@ export function DashboardMockup() {
             <div className="rounded-xl border border-sekkha-hairline bg-white/70 backdrop-blur-md p-4">
               <div className="flex items-center gap-2 mb-3">
                 <CalendarIcon className="size-4 text-sekkha-brand-blue" />
-                <h4 className="text-body-sm-medium font-semibold text-sekkha-ink">Misi Minggu Ini (Klik untuk Simulasi)</h4>
+                <h4 className="text-body-sm-medium font-semibold text-sekkha-ink">Weekly Quests (Click to Simulate)</h4>
               </div>
 
               <div className="space-y-2">
@@ -176,7 +176,7 @@ export function DashboardMockup() {
                           : 'bg-sekkha-surface-yellow text-sekkha-yellow-dark'
                       }`}
                     >
-                      {mission.done ? 'Selesai' : `+${mission.reward} XP`}
+                      {mission.done ? 'Done' : `+${mission.reward} XP`}
                     </span>
                   </motion.div>
                 ))}
@@ -191,7 +191,7 @@ export function DashboardMockup() {
             <div className="rounded-xl border border-sekkha-hairline-soft bg-white/60 backdrop-blur-md p-4">
               <div className="flex items-center gap-2 mb-3">
                 <TrophyIcon className="size-4 text-sekkha-brand-yellow" />
-                <h4 className="text-body-sm-medium font-semibold text-sekkha-ink font-roobert">Top 3 Remaja Aktif</h4>
+                <h4 className="text-body-sm-medium font-semibold text-sekkha-ink font-roobert">Top 3 Active Members</h4>
               </div>
 
               <div className="space-y-2">
@@ -214,7 +214,7 @@ export function DashboardMockup() {
             <div className="rounded-xl border border-sekkha-hairline bg-white/70 backdrop-blur-md p-4">
               <div className="flex items-center gap-2 mb-3">
                 <UsersIcon className="size-4 text-sekkha-brand-teal" />
-                <h4 className="text-body-sm-medium font-semibold text-sekkha-ink">Koleksi Lencana Umat</h4>
+                <h4 className="text-body-sm-medium font-semibold text-sekkha-ink">Member Badge Collection</h4>
               </div>
 
               <div className="grid grid-cols-4 gap-2">
@@ -238,7 +238,7 @@ export function DashboardMockup() {
                 ))}
               </div>
               <p className="text-micro text-sekkha-slate mt-2.5 text-center">
-                Dapatkan lencana dengan mengikuti kegiatan remaja vihara!
+                Earn badges by participating in youth temple events!
               </p>
             </div>
           </div>
@@ -257,7 +257,7 @@ export function DashboardMockup() {
         whileHover={{ scale: 1.05, rotate: '-2deg', boxShadow: '0 10px 20px rgba(0,0,0,0.1)' }}
       >
         <p className="text-caption font-semibold leading-snug">
-          Jangan lupa bawa botol minum sendiri untuk baksos! 🌍💚
+          Don't forget your reusable bottle for charity drive! 🌍💚
         </p>
         <span className="text-[10px] text-sekkha-slate text-right font-medium">
           #GoGreen
@@ -274,10 +274,10 @@ export function DashboardMockup() {
         whileHover={{ scale: 1.05, rotate: '3deg', boxShadow: '0 10px 20px rgba(0,0,0,0.1)' }}
       >
         <p className="text-caption font-semibold leading-snug">
-          Jadwal Meditasi bersama Bhante sabtu ini dimundurkan 🧘‍♂️✨
+          Saturday Meditation with Bhante starts at 4 PM 🧘‍♂️✨
         </p>
         <span className="text-[10px] text-sekkha-slate text-right font-medium">
-          #InfoRemaja
+          #YouthNotice
         </span>
       </motion.div>
 
@@ -290,10 +290,10 @@ export function DashboardMockup() {
         transition={{ duration: 1.1, delay: 0.9 }}
       >
         <p className="text-micro font-semibold leading-snug">
-          Materi Dhamma Kelas 10 sudah diupload! 📜
+          Grade 10 Dhamma Study Guide is now online! 📜
         </p>
         <span className="text-[9px] text-sekkha-slate text-right">
-          #DhammaClass
+          #DhammaStudy
         </span>
       </motion.div>
 

@@ -5,21 +5,8 @@
 import { useState } from "react"
 import { PlusIcon, PencilIcon, TrashIcon, AwardIcon } from "lucide-react"
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
+import { ResponsiveFormModal } from "@/components/common/ResponsiveFormModal"
 import { useAuth } from "@/modules/auth"
-import {
-  Button,
-  Input,
-  Select,
-  Card,
-  TableContainer,
-  Table,
-  TableHeader,
-  TableRow,
-  TableHead,
-  TableBody,
-  TableCell,
-  Badge as BaseBadge,
-} from "@/components/base"
 import { badgesApi } from "../api/configureApi"
 import { useConfigureCrud } from "../hooks/useConfigureCrud"
 import type { BadgeDto } from "../api/configureApi"
@@ -41,8 +28,8 @@ interface Badge {
 const INITIAL_BADGES: Badge[] = [
   {
     id: "badge-1",
-    name: "Pertama Kali Hadir",
-    description: "Berhasil scan QR pertama kalinya",
+    name: "First Attendance",
+    description: "Successfully scanned QR code for the first time",
     icon_url: "🎯",
     condition_type: "attendance",
     condition_value: 1,
@@ -51,7 +38,7 @@ const INITIAL_BADGES: Badge[] = [
   {
     id: "badge-2",
     name: "Streak 5",
-    description: "Hadir 5 minggu berturut-turut",
+    description: "Attended 5 weeks consecutively",
     icon_url: "🔥",
     condition_type: "streak",
     condition_value: 5,
@@ -60,7 +47,7 @@ const INITIAL_BADGES: Badge[] = [
   {
     id: "badge-3",
     name: "Streak 10",
-    description: "Hadir 10 minggu berturut-turut",
+    description: "Attended 10 weeks consecutively",
     icon_url: "⚡",
     condition_type: "streak",
     condition_value: 10,
@@ -68,8 +55,8 @@ const INITIAL_BADGES: Badge[] = [
   },
   {
     id: "badge-4",
-    name: "Kolektor 100 Poin",
-    description: "Mengumpulkan 100 poin total",
+    name: "100 Points Collector",
+    description: "Accumulated 100 total points",
     icon_url: "⭐",
     condition_type: "points",
     condition_value: 100,
@@ -78,10 +65,10 @@ const INITIAL_BADGES: Badge[] = [
 ]
 
 const CONDITION_OPTIONS = [
-  { value: "attendance", label: "Total Kehadiran" },
-  { value: "streak", label: "Streak (minggu)" },
-  { value: "points", label: "Total Poin" },
-  { value: "event_count", label: "Jumlah Event" },
+  { value: "attendance", label: "Total Attendance" },
+  { value: "streak", label: "Streak (weeks)" },
+  { value: "points", label: "Total Points" },
+  { value: "event_count", label: "Event Count" },
   { value: "manual", label: "Manual" },
 ]
 
@@ -129,7 +116,7 @@ export function BadgePage() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!name.trim()) return
+    if (!name.trim() || !isAdmin) return
 
     const payload = {
       name,
@@ -149,162 +136,192 @@ export function BadgePage() {
   }
 
   function handleDelete(id: string) {
+    if (!isAdmin) return
     void apiRemove(id).catch(() => { })
   }
 
   const conditionLabel: Record<Badge["condition_type"], string> = {
-    attendance: "Total Kehadiran",
-    streak: "Streak (minggu)",
-    points: "Total Poin",
-    event_count: "Jumlah Event",
+    attendance: "Total Attendance",
+    streak: "Streak (weeks)",
+    points: "Total Points",
+    event_count: "Event Count",
     manual: "Manual",
   }
 
   return (
-    <main className="min-h-screen bg-sekkha-surface pb-32 md:pb-12 font-sans">
-      <PageBreadcrumb items={[{ label: "Configure" }, { label: "Gamifikasi" }, { label: "Badge Pencapaian" }]} />
-      <div className="px-4 py-6 sm:px-6 md:px-8 max-w-6xl mx-auto space-y-5">
+    <main className="min-h-screen bg-[#fffaf0] pb-32 md:pb-12 font-sans text-left">
+      <PageBreadcrumb items={[{ label: "Configure" }, { label: "Gamification" }, { label: "Master Badges" }]} />
+      <div className="px-3.5 py-4 sm:px-6 sm:py-6 md:px-8 max-w-7xl mx-auto space-y-5">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-sekkha-hairline-soft pb-4">
-          <div className="flex items-center gap-2.5">
-            <div className="flex size-9 items-center justify-center rounded-xl bg-blue-50 text-sekkha-brand-blue border border-blue-200/60">
-              <AwardIcon className="size-5" />
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#e5e5e5] pb-4">
+          <div className="flex items-center gap-3">
+            <div className="flex size-10 items-center justify-center rounded-[12px] bg-[#0a0a0a] text-white shrink-0 shadow-xs">
+              <AwardIcon className="size-5 text-[#e8b94a]" />
             </div>
-            <div>
-              <h1 className="text-body-base sm:text-heading-5 font-black text-sekkha-ink">Badge Pencapaian Umat</h1>
-              <p className="text-micro text-sekkha-slate">Kelola master badge dan kondisi trigger gamifikasi umat.</p>
+            <div className="min-w-0">
+              <h1 className="text-base sm:text-xl font-bold text-[#0a0a0a]">Member Achievement Badges</h1>
+              <p className="text-xs text-[#6a6a6a]">Manage master badges and member gamification trigger conditions</p>
             </div>
           </div>
           {isAdmin && (
-            <Button
+            <button
               type="button"
               onClick={openCreate}
-              className="w-full sm:w-auto shrink-0"
+              className="h-10 w-full sm:w-auto flex items-center justify-center gap-1.5 rounded-[12px] bg-[#0a0a0a] text-white px-4 text-xs font-bold hover:bg-[#1f1f1f] transition-all cursor-pointer shadow-xs shrink-0"
             >
-              <PlusIcon className="size-4 mr-1.5" />
-              <span>Tambah Badge</span>
-            </Button>
+              <PlusIcon className="size-4" />
+              <span>Add Badge</span>
+            </button>
           )}
         </div>
 
-        {/* Form Card */}
-        {showForm && isAdmin && (
-          <Card className="p-5 sm:p-6 space-y-4">
-            <h2 className="text-body-sm font-bold text-sekkha-ink">
-              {editing ? "Edit Badge" : "Badge Baru"}
-            </h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid gap-3 sm:grid-cols-2">
-                <Input
-                  id="badge-name"
-                  label="Nama"
+        {/* Table */}
+        <div className="overflow-hidden rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0] shadow-xs">
+          <div className="overflow-x-auto scrollbar-none">
+            <table className="w-full text-left text-xs font-sans">
+              <thead>
+                <tr className="border-b border-[#e5e5e5] bg-[#faf5e8] text-[#6a6a6a] font-bold">
+                  <th className="px-4 py-3 w-16">Icon</th>
+                  <th className="px-4 py-3">Badge Details</th>
+                  <th className="px-4 py-3 hidden sm:table-cell">Trigger Condition</th>
+                  <th className="px-4 py-3 hidden sm:table-cell">Threshold Value</th>
+                  {isAdmin && <th className="px-4 py-3 w-28 text-right">Actions</th>}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#f0f0f0]">
+                {badges.map((badge) => (
+                  <tr key={badge.id} className="hover:bg-[#faf5e8]/70 transition-colors">
+                    <td className="px-4 py-3 text-2xl">{badge.icon_url}</td>
+                    <td className="px-4 py-3">
+                      <p className="font-bold text-[#0a0a0a]">{badge.name}</p>
+                      <p className="text-xs text-[#6a6a6a]">{badge.description}</p>
+                    </td>
+                    <td className="px-4 py-3 hidden sm:table-cell">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-[6px] text-[11px] font-semibold bg-[#faf5e8] text-[#0a0a0a] border border-[#e5e5e5]">
+                        {conditionLabel[badge.condition_type]}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 hidden sm:table-cell font-mono font-bold text-[#0a0a0a]">
+                      {badge.condition_value}
+                    </td>
+                    {isAdmin && (
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => openEdit(badge)}
+                            className="h-8 px-2.5 rounded-[8px] border border-[#e5e5e5] bg-[#fffaf0] hover:bg-[#faf5e8] text-xs font-bold text-[#0a0a0a] transition-colors cursor-pointer flex items-center gap-1"
+                            title="Edit Badge"
+                          >
+                            <PencilIcon className="size-3.5" />
+                            <span>Edit</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(badge.id)}
+                            className="size-8 flex items-center justify-center rounded-[8px] border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 transition-colors cursor-pointer"
+                            title="Delete Badge"
+                          >
+                            <TrashIcon className="size-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {badges.length === 0 && (
+            <div className="py-12 text-center">
+              <p className="text-xs text-[#6a6a6a]">No badges saved yet.</p>
+            </div>
+          )}
+        </div>
+
+        {/* Responsive Modal Form */}
+        <ResponsiveFormModal
+          isOpen={showForm && isAdmin}
+          onClose={resetForm}
+          title={editing ? "Edit Badge" : "Add New Badge"}
+          description="Configure achievement badge name, icon, and trigger condition."
+        >
+          <form onSubmit={handleSubmit} className="space-y-4 text-left font-sans">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-[#0a0a0a]">Badge Name *</label>
+                <input
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Contoh: Streak 5"
+                  placeholder="e.g. Streak 5"
+                  className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-xs sm:text-sm text-[#0a0a0a] placeholder:text-[#6a6a6a] outline-none shadow-xs focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] transition-all"
                 />
-                <Input
-                  id="badge-icon"
-                  label="Icon (emoji/URL)"
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-[#0a0a0a]">Icon (Emoji / URL)</label>
+                <input
                   value={iconUrl}
                   onChange={(e) => setIconUrl(e.target.value)}
                   placeholder="🔥"
+                  className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-xs sm:text-sm text-[#0a0a0a] placeholder:text-[#6a6a6a] outline-none shadow-xs focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] transition-all"
                 />
               </div>
-              <Input
-                id="badge-desc"
-                label="Deskripsi"
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-[#0a0a0a]">Description</label>
+              <input
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Hadir 5 minggu berturut-turut"
+                placeholder="Attend 5 consecutive weeks"
+                className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-xs sm:text-sm text-[#0a0a0a] placeholder:text-[#6a6a6a] outline-none shadow-xs focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] transition-all"
               />
-              <div className="grid gap-3 sm:grid-cols-2">
-                <Select
-                  id="badge-cond-type"
-                  label="Kondisi Trigger"
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-[#0a0a0a]">Trigger Condition</label>
+                <select
                   value={conditionType}
-                  options={CONDITION_OPTIONS}
-                  onChange={(val) => setConditionType(val as Badge["condition_type"])}
-                />
-                <Input
-                  id="badge-cond-val"
-                  label="Nilai Target"
+                  onChange={(e) => setConditionType(e.target.value as Badge["condition_type"])}
+                  className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3 text-xs sm:text-sm text-[#0a0a0a] outline-none shadow-xs focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] transition-all cursor-pointer"
+                >
+                  {CONDITION_OPTIONS.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-[#0a0a0a]">Target Value</label>
+                <input
                   type="number"
                   value={conditionValue}
                   onChange={(e) => setConditionValue(e.target.value)}
                   placeholder="5"
+                  className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-xs sm:text-sm text-[#0a0a0a] placeholder:text-[#6a6a6a] outline-none shadow-xs focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] transition-all"
                 />
               </div>
-              <div className="flex gap-2 pt-2 justify-end border-t border-sekkha-hairline-soft">
-                <Button type="button" variant="secondary" onClick={resetForm}>
-                  Batal
-                </Button>
-                <Button type="submit">
-                  {editing ? "Simpan" : "Buat Badge"}
-                </Button>
-              </div>
-            </form>
-          </Card>
-        )}
-
-        {/* Table */}
-        <TableContainer>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-16">Icon</TableHead>
-                <TableHead>Nama & Deskripsi</TableHead>
-                <TableHead className="hidden sm:table-cell">Kondisi</TableHead>
-                <TableHead className="hidden sm:table-cell">Nilai</TableHead>
-                {isAdmin && <TableHead className="w-24 text-right">Aksi</TableHead>}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {badges.map((badge) => (
-                <TableRow key={badge.id}>
-                  <TableCell className="text-2xl">{badge.icon_url}</TableCell>
-                  <TableCell>
-                    <p className="font-bold text-sekkha-ink">{badge.name}</p>
-                    <p className="text-caption text-sekkha-slate">{badge.description}</p>
-                  </TableCell>
-                  <TableCell className="hidden sm:table-cell">
-                    <BaseBadge variant="slate">{conditionLabel[badge.condition_type]}</BaseBadge>
-                  </TableCell>
-                  <TableCell className="hidden sm:table-cell font-mono font-bold text-sekkha-ink">
-                    {badge.condition_value}
-                  </TableCell>
-                  {isAdmin && (
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <button
-                          type="button"
-                          onClick={() => openEdit(badge)}
-                          className="rounded-lg p-1.5 text-sekkha-slate hover:bg-slate-100 hover:text-sekkha-ink transition-colors"
-                          aria-label="Edit"
-                        >
-                          <PencilIcon className="size-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(badge.id)}
-                          className="rounded-lg p-1.5 text-sekkha-slate hover:bg-red-50 hover:text-red-500 transition-colors"
-                          aria-label="Hapus"
-                        >
-                          <TrashIcon className="size-4" />
-                        </button>
-                      </div>
-                    </TableCell>
-                  )}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          {badges.length === 0 && (
-            <div className="py-12 text-center">
-              <p className="text-body-sm text-sekkha-muted">Belum ada badge tersimpan.</p>
             </div>
-          )}
-        </TableContainer>
+
+            <div className="flex gap-2 pt-2 justify-end border-t border-[#e5e5e5]">
+              <button
+                type="button"
+                onClick={resetForm}
+                className="h-10 px-4 rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] hover:bg-[#faf5e8] text-xs font-bold text-[#0a0a0a] transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="h-10 px-5 rounded-[12px] bg-[#0a0a0a] hover:bg-[#1f1f1f] text-xs font-bold text-white shadow-xs transition-colors cursor-pointer"
+              >
+                {editing ? "Save Changes" : "Create Badge"}
+              </button>
+            </div>
+          </form>
+        </ResponsiveFormModal>
       </div>
     </main>
   )

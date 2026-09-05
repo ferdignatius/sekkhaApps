@@ -23,37 +23,37 @@ export const STATUS_CONFIG: Record<ContributionStatusBadge, StatusDesign> = {
     label: "Reliable",
     badgeBg: "bg-emerald-500/10 text-emerald-700 border-emerald-500/20",
     dotColor: "bg-emerald-500",
-    description: "Konsisten & efektif, kandidat regenerasi kuat",
+    description: "Consistent & effective, strong leadership successor",
   },
   overloaded: {
     label: "Overloaded",
     badgeBg: "bg-rose-500/10 text-rose-700 border-rose-500/20",
     dotColor: "bg-rose-500",
-    description: "Beban event jauh di atas rata-rata, risiko burnout",
+    description: "Event workload far above average, burnout risk",
   },
   promotion_ready: {
-    label: "Siap Promosi",
+    label: "Promotion Ready",
     badgeBg: "bg-violet-500/10 text-violet-700 border-violet-500/20",
     dotColor: "bg-violet-500",
-    description: "Aktivis berprestasi, kandidat promosi pengurus",
+    description: "High-achieving activist, ready for organizer role",
   },
   consistent: {
-    label: "Konsisten",
+    label: "Consistent",
     badgeBg: "bg-blue-500/10 text-blue-700 border-blue-500/20",
     dotColor: "bg-blue-500",
-    description: "Kontribusi stabil dan teratur",
+    description: "Stable and regular contribution",
   },
   growing: {
-    label: "Bertumbuh",
+    label: "Growing",
     badgeBg: "bg-amber-500/10 text-amber-700 border-amber-500/20",
     dotColor: "bg-amber-500",
-    description: "Baru aktif, menunjukkan potensi",
+    description: "Newly active, showing high potential",
   },
   passive: {
-    label: "Pasif",
+    label: "Passive",
     badgeBg: "bg-gray-500/10 text-gray-600 border-gray-500/20",
     dotColor: "bg-gray-400",
-    description: "Kontribusi minim, perlu dievaluasi",
+    description: "Minimal contribution, requires follow-up",
   },
 }
 
@@ -65,12 +65,12 @@ export const CONTRIBUTION_PERIODS: ContributionPeriod[] = [
 ]
 
 export const DIVISI_OPTIONS = [
-  { id: "all", label: "Semua Divisi" },
-  { id: "acara", label: "Divisi Acara" },
-  { id: "logistik", label: "Divisi Logistik" },
-  { id: "humas", label: "Divisi Humas & Komunikasi" },
-  { id: "pendidikan", label: "Divisi Pendidikan Dhamma" },
-  { id: "pemuda", label: "Divisi Kepemudaan" },
+  { id: "all", label: "All Divisions" },
+  { id: "acara", label: "Events Division" },
+  { id: "logistik", label: "Logistics Division" },
+  { id: "humas", label: "Public Relations Division" },
+  { id: "pendidikan", label: "Dhamma Education Division" },
+  { id: "pemuda", label: "Youth Division" },
 ]
 
 export interface ContributionPerson {

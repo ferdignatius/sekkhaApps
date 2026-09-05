@@ -4,8 +4,9 @@ import bcrypt from "bcryptjs"
 import { prisma } from "../../../lib/prisma"
 import { requireAuth, requireRole } from "../../../middleware/auth"
 import { generateUniqueUsername } from "../../auth/internal/repository"
+import { invalidate, CacheKeys } from "../../../lib/cache"
 
-export const teamsRouter = Router()
+export const teamsRouter: Router = Router()
 
 // Helper: Generate standardized user number format YYYYMMDDxxxx
 async function generateUserNumber(date: Date = new Date()): Promise<string> {
@@ -17,6 +18,12 @@ async function generateUserNumber(date: Date = new Date()): Promise<string> {
     where: { userNumber: { startsWith: prefix } },
   })
   return `${prefix}${String(count + 1).padStart(4, "0")}`
+}
+
+// Helper: Generate default password with format Sekkha(num random 4)Puggala
+export function generateDefaultPassword(): string {
+  const random4 = Math.floor(1000 + Math.random() * 9000).toString()
+  return `Sekkha${random4}Puggala`
 }
 
 // 1. GET /api/teams/members — List all members with filtering
@@ -35,7 +42,11 @@ teamsRouter.get("/members", requireAuth, async (req, res, next) => {
     }
 
     if (roleFilter !== "all") {
-      where.role = roleFilter
+      if (roleFilter === "pengurus") {
+        where.role = { in: ["pengurus", "admin"] }
+      } else {
+        where.role = roleFilter
+      }
     }
 
     if (searchQuery) {
@@ -49,46 +60,87 @@ teamsRouter.get("/members", requireAuth, async (req, res, next) => {
       ]
     }
 
-    const rawMembers = await (prisma.user as any).findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-      include: {
-        _count: {
-          select: {
-            attendances: true,
+    const limitParam = req.query.limit ? parseInt(req.query.limit as string, 10) : undefined
+    const pageParam = req.query.page ? parseInt(req.query.page as string, 10) : undefined
+    const isPaginated = pageParam !== undefined || limitParam !== undefined
+    const limit = limitParam && limitParam > 0 ? limitParam : 15
+    const page = pageParam && pageParam > 0 ? pageParam : 1
+    const skip = isPaginated ? (page - 1) * limit : undefined
+    const take = isPaginated ? limit : undefined
+
+    const [totalMatching, rawMembers, totalAll, umatCount, aktivisCount, pengurusCount] = await Promise.all([
+      (prisma.user as any).count({ where }),
+      (prisma.user as any).findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        take,
+        skip,
+        select: {
+          id: true,
+          name: true,
+          username: true,
+          email: true,
+          phone: true,
+          school: true,
+          birthDate: true,
+          gender: true,
+          role: true,
+          avatarUrl: true,
+          userNumber: true,
+          isClaimed: true,
+          claimedAt: true,
+          claimPin: true,
+          points: true,
+          createdAt: true,
+          _count: {
+            select: {
+              attendances: true,
+            },
           },
         },
-      },
-    })
+      }),
+      (prisma.user as any).count(),
+      (prisma.user as any).count({ where: { role: "umat" } }),
+      (prisma.user as any).count({ where: { role: "aktivis" } }),
+      (prisma.user as any).count({ where: { role: { in: ["pengurus", "admin"] } } }),
+    ])
 
-    const members = await Promise.all(
-      rawMembers.map(async (m: any) => {
-        let uNum = m.userNumber
-        if (!uNum) {
-          uNum = await generateUserNumber(m.createdAt ? new Date(m.createdAt) : new Date())
-          await (prisma.user as any).update({ where: { id: m.id }, data: { userNumber: uNum } }).catch(() => {})
-        }
-        return {
-          id: m.id,
-          name: m.name,
-          username: m.username || null,
-          email: m.email,
-          phone: m.phone,
-          school: m.school,
-          birth_date: m.birthDate ? new Date(m.birthDate).toISOString() : null,
-          gender: m.gender,
-          role: m.role,
-          avatar_url: m.avatarUrl,
-          user_number: uNum,
-          is_claimed: m.isClaimed ?? true,
-          claimed_at: m.claimedAt ? new Date(m.claimedAt).toISOString() : null,
-          claim_pin: m.claimPin || null,
-          total_attendance: m._count?.attendances ?? 0,
-          points: m.points ?? 0,
-          created_at: new Date(m.createdAt).toISOString(),
-        }
+    const members = rawMembers.map((m: any) => ({
+      id: m.id,
+      name: m.name,
+      username: m.username || null,
+      email: m.email,
+      phone: m.phone,
+      school: m.school,
+      birth_date: m.birthDate ? new Date(m.birthDate).toISOString() : null,
+      gender: m.gender,
+      role: m.role,
+      avatar_url: m.avatarUrl,
+      user_number: m.userNumber || null,
+      is_claimed: m.isClaimed ?? true,
+      claimed_at: m.claimedAt ? new Date(m.claimedAt).toISOString() : null,
+      claim_pin: m.claimPin || null,
+      total_attendance: m._count?.attendances ?? 0,
+      points: m.points ?? 0,
+      created_at: new Date(m.createdAt).toISOString(),
+    }))
+
+    if (isPaginated) {
+      const totalPages = Math.max(1, Math.ceil(totalMatching / limit))
+      return res.json({
+        items: members,
+        total: totalMatching,
+        page,
+        limit,
+        totalPages,
+        stats: {
+          total: totalAll,
+          umat: umatCount,
+          aktivis: aktivisCount,
+          pengurus: pengurusCount,
+        },
       })
-    )
+    }
 
     res.json(members)
   } catch (err) {
@@ -139,7 +191,7 @@ teamsRouter.get("/members/:id", requireAuth, async (req, res, next) => {
     })
 
     if (!member) {
-      res.status(404).json({ error: "Anggota tidak ditemukan" })
+      res.status(404).json({ error: "Member not found" })
       return
     }
 
@@ -181,15 +233,15 @@ teamsRouter.get("/members/:id", requireAuth, async (req, res, next) => {
 
 // 3. POST /api/teams/members — Pengurus/Admin adds a new member with auto-generated username & password
 const CreateMemberSchema = z.object({
-  name: z.string().min(1, "Nama wajib diisi"),
+  name: z.string().min(1, "Name is required"),
   username: z
     .string()
-    .min(3, "Username minimal 3 karakter")
+    .min(3, "Username must be at least 3 characters")
     .max(30)
-    .regex(/^[a-zA-Z0-9_.]+$/, "Username hanya boleh huruf, angka, titik, underscore")
+    .regex(/^[a-zA-Z0-9_.]+$/, "Username may only contain letters, numbers, dots, or underscores")
     .optional()
     .or(z.literal("")),
-  email: z.string().email("Email tidak valid").optional().or(z.literal("")),
+  email: z.string().email("Invalid email format").optional().or(z.literal("")),
   phone: z.string().optional().or(z.literal("")),
   school: z.string().optional().or(z.literal("")),
   birth_date: z.string().optional().or(z.literal("")),
@@ -198,7 +250,7 @@ const CreateMemberSchema = z.object({
   default_password: z.string().min(6).optional(),
 })
 
-teamsRouter.post("/members", requireAuth, requireRole("pengurus", "admin"), async (req, res, next) => {
+teamsRouter.post("/members", requireAuth, requireRole("admin"), async (req, res, next) => {
   try {
     const data = CreateMemberSchema.parse(req.body)
 
@@ -207,7 +259,7 @@ teamsRouter.post("/members", requireAuth, requireRole("pengurus", "admin"), asyn
         where: { email: data.email.toLowerCase().trim() },
       })
       if (existingEmail) {
-        res.status(400).json({ error: "Email sudah terdaftar pada pengguna lain." })
+        res.status(400).json({ error: "Email is already registered with another user." })
         return
       }
     }
@@ -217,11 +269,11 @@ teamsRouter.post("/members", requireAuth, requireRole("pengurus", "admin"), asyn
       where: { username },
     })
     if (existingUsername) {
-      res.status(400).json({ error: `Username @${username} sudah digunakan. Silakan pilih username lain.` })
+      res.status(400).json({ error: `Username @${username} is already taken. Please choose another username.` })
       return
     }
 
-    const defaultPassword = data.default_password || "sekkha123"
+    const defaultPassword = data.default_password || generateDefaultPassword()
     const hashedPassword = await bcrypt.hash(defaultPassword, 10)
     const userNumber = await generateUserNumber()
 
@@ -256,7 +308,7 @@ teamsRouter.post("/members", requireAuth, requireRole("pengurus", "admin"), asyn
       default_password: defaultPassword,
       is_claimed: true,
       created_at: new Date(newMember.createdAt).toISOString(),
-      message: "Data umat berhasil ditambahkan",
+      message: "Member added successfully",
     })
   } catch (err) {
     next(err)
@@ -268,9 +320,9 @@ const UpdateMemberSchema = z.object({
   name: z.string().min(1).optional(),
   username: z
     .string()
-    .min(3, "Username minimal 3 karakter")
+    .min(3, "Username must be at least 3 characters")
     .max(30)
-    .regex(/^[a-zA-Z0-9_.]+$/, "Username hanya boleh huruf, angka, titik, underscore")
+    .regex(/^[a-zA-Z0-9_.]+$/, "Username may only contain letters, numbers, dots, or underscores")
     .optional()
     .nullable()
     .or(z.literal("")),
@@ -287,16 +339,22 @@ teamsRouter.put("/members/:id", requireAuth, requireRole("pengurus", "admin"), a
     const id = req.params.id as string
     const data = UpdateMemberSchema.parse(req.body)
 
+    // Only admin can change member role
+    if (data.role && req.user?.role !== "admin") {
+      res.status(403).json({ error: "Only admin can change member role." })
+      return
+    }
+
     const existing = await (prisma.user as any).findUnique({ where: { id } })
     if (!existing) {
-      res.status(404).json({ error: "Anggota tidak ditemukan" })
+      res.status(404).json({ error: "Member not found" })
       return
     }
 
     if (data.email && data.email !== existing.email) {
       const emailInUse = await (prisma.user as any).findUnique({ where: { email: data.email.toLowerCase().trim() } })
       if (emailInUse) {
-        res.status(400).json({ error: "Email sudah digunakan oleh anggota lain." })
+        res.status(400).json({ error: "Email is already used by another member." })
         return
       }
     }
@@ -304,7 +362,7 @@ teamsRouter.put("/members/:id", requireAuth, requireRole("pengurus", "admin"), a
     if (data.username && data.username !== existing.username) {
       const usernameInUse = await (prisma.user as any).findUnique({ where: { username: data.username.toLowerCase().trim() } })
       if (usernameInUse) {
-        res.status(400).json({ error: "Username sudah digunakan oleh anggota lain." })
+        res.status(400).json({ error: "Username is already used by another member." })
         return
       }
     }
@@ -325,7 +383,6 @@ teamsRouter.put("/members/:id", requireAuth, requireRole("pengurus", "admin"), a
       },
     })
 
-    const { invalidate, CacheKeys } = await import("../../../lib/cache")
     await invalidate(CacheKeys.userProfile(id))
 
     res.json({
@@ -349,33 +406,32 @@ teamsRouter.put("/members/:id", requireAuth, requireRole("pengurus", "admin"), a
 })
 
 // 5. DELETE /api/teams/members/:id — Delete member
-teamsRouter.delete("/members/:id", requireAuth, requireRole("pengurus", "admin"), async (req, res, next) => {
+teamsRouter.delete("/members/:id", requireAuth, requireRole("admin"), async (req, res, next) => {
   try {
     const id = req.params.id as string
     const currentUserId = req.user!.userId
 
     if (id === currentUserId) {
-      res.status(400).json({ error: "Tidak dapat menghapus akun Anda sendiri." })
+      res.status(400).json({ error: "You cannot delete your own account." })
       return
     }
 
     const member = await (prisma.user as any).findUnique({ where: { id } })
     if (!member) {
-      res.status(404).json({ error: "Anggota tidak ditemukan" })
+      res.status(404).json({ error: "Member not found" })
       return
     }
 
     if (member.role === "admin" && req.user!.role !== "admin") {
-      res.status(403).json({ error: "Hanya Admin yang dapat menghapus sesama Admin." })
+      res.status(403).json({ error: "Only Admins can delete another Admin." })
       return
     }
 
     await (prisma.user as any).delete({ where: { id } })
 
-    const { invalidate, CacheKeys } = await import("../../../lib/cache")
     await invalidate(CacheKeys.userProfile(id))
 
-    res.json({ success: true, message: "Data anggota berhasil dihapus." })
+    res.json({ success: true, message: "Member deleted successfully." })
   } catch (err) {
     next(err)
   }
@@ -421,7 +477,7 @@ teamsRouter.post("/invitations", requireAuth, requireRole("admin"), async (req, 
       where: { email, role, status: "pending" },
     })
     if (existing) {
-      res.status(400).json({ error: "Undangan serupa masih pending untuk email ini." })
+      res.status(400).json({ error: "A similar invitation is already pending for this email." })
       return
     }
 
@@ -442,8 +498,8 @@ teamsRouter.post("/invitations", requireAuth, requireRole("admin"), async (req, 
       await prisma.notification.create({
         data: {
           userId: targetUser.id,
-          title: "Undangan Peran Baru",
-          message: `Anda diundang untuk bergabung sebagai ${role === "pengurus" ? "Pengurus" : "Aktivis"}.`,
+          title: "New Role Invitation",
+          message: `You have been invited to join as ${role === "pengurus" ? "Organizer" : "Activist"}.`,
           type: "role_invitation",
           status: "unread",
           data: { invitationId: invitation.id },
@@ -470,12 +526,12 @@ teamsRouter.post("/invitations/:id/accept", requireAuth, async (req, res, next) 
     })
 
     if (!invitation) {
-      res.status(404).json({ error: "Undangan tidak ditemukan" })
+      res.status(404).json({ error: "Invitation not found" })
       return
     }
 
     if (invitation.status !== "pending") {
-      res.status(400).json({ error: "Undangan sudah tidak aktif" })
+      res.status(400).json({ error: "Invitation is no longer active" })
       return
     }
 
@@ -484,7 +540,7 @@ teamsRouter.post("/invitations/:id/accept", requireAuth, async (req, res, next) 
     })
 
     if (!user || user.email !== invitation.email) {
-      res.status(403).json({ error: "Email Anda tidak cocok dengan undangan ini" })
+      res.status(403).json({ error: "Your email does not match this invitation" })
       return
     }
 
@@ -513,7 +569,6 @@ teamsRouter.post("/invitations/:id/accept", requireAuth, async (req, res, next) 
       })
     }
 
-    const { invalidate, CacheKeys } = await import("../../../lib/cache")
     await invalidate(CacheKeys.userProfile(user.id))
 
     res.json({ success: true, role: invitation.role })
@@ -530,12 +585,12 @@ teamsRouter.post("/invitations/:id/reject", requireAuth, async (req, res, next) 
     })
 
     if (!invitation) {
-      res.status(404).json({ error: "Undangan tidak ditemukan" })
+      res.status(404).json({ error: "Invitation not found" })
       return
     }
 
     if (invitation.status !== "pending") {
-      res.status(400).json({ error: "Undangan sudah tidak aktif" })
+      res.status(400).json({ error: "Invitation is no longer active" })
       return
     }
 
@@ -544,7 +599,7 @@ teamsRouter.post("/invitations/:id/reject", requireAuth, async (req, res, next) 
     })
 
     if (!user || user.email !== invitation.email) {
-      res.status(403).json({ error: "Email Anda tidak cocok dengan undangan ini" })
+      res.status(403).json({ error: "Your email does not match this invitation" })
       return
     }
 
@@ -574,8 +629,8 @@ teamsRouter.post("/invitations/:id/reject", requireAuth, async (req, res, next) 
   }
 })
 
-// 10. POST /api/teams/members/:id/reset-password — Pengurus/Admin resets a member's password to default
-teamsRouter.post("/members/:id/reset-password", requireAuth, requireRole("pengurus", "admin"), async (req, res, next) => {
+// 10. POST /api/teams/members/:id/reset-password — Admin resets a member's password to default
+teamsRouter.post("/members/:id/reset-password", requireAuth, requireRole("admin"), async (req, res, next) => {
   try {
     const id = req.params.id as string
     const targetUser = await (prisma.user as any).findUnique({
@@ -583,11 +638,11 @@ teamsRouter.post("/members/:id/reset-password", requireAuth, requireRole("pengur
     })
 
     if (!targetUser) {
-      res.status(404).json({ error: "Anggota tidak ditemukan." })
+      res.status(404).json({ error: "Member not found." })
       return
     }
 
-    const defaultPassword = "sekkha123"
+    const defaultPassword = generateDefaultPassword()
     const hashedPassword = await bcrypt.hash(defaultPassword, 10)
 
     await (prisma.user as any).update({
@@ -597,7 +652,6 @@ teamsRouter.post("/members/:id/reset-password", requireAuth, requireRole("pengur
       },
     })
 
-    const { invalidate, CacheKeys } = await import("../../../lib/cache")
     await invalidate(CacheKeys.userProfile(id))
 
     res.json({
@@ -606,7 +660,7 @@ teamsRouter.post("/members/:id/reset-password", requireAuth, requireRole("pengur
       username: targetUser.username,
       name: targetUser.name,
       default_password: defaultPassword,
-      message: `Password untuk ${targetUser.name} (${targetUser.username ? `@${targetUser.username}` : "umat"}) berhasil di-reset ke: ${defaultPassword}`,
+      message: `Password for ${targetUser.name} (${targetUser.username ? `@${targetUser.username}` : "member"}) successfully reset to: ${defaultPassword}`,
     })
   } catch (err) {
     next(err)

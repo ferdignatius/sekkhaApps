@@ -1,6 +1,6 @@
 // components/ui/DateTimePickerPopover
 // Pop-up Sub-Modal Dialog for Date & Time Selection.
-// Single-scroll layout with category-aware preset filtering & clean responsive UX.
+// Single-scroll layout with category-aware preset filtering & clean Clay Design responsive UX.
 
 import { useState } from "react"
 import { CalendarIcon, ClockIcon, XIcon, CheckIcon, SparklesIcon, CalendarDaysIcon } from "lucide-react"
@@ -31,16 +31,16 @@ function parseValue(isoStr: string) {
 }
 
 function formatDisplayDate(datePart: string, timePart: string) {
-  if (!datePart) return "Pilih Tanggal & Waktu..."
+  if (!datePart) return "Select Date & Time..."
   const [y, m, d] = datePart.split("-").map(Number)
   const date = new Date(y!, (m ?? 1) - 1, d)
-  const days = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"]
+  const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
   const months = [
-    "Jan", "Feb", "Mar", "Apr", "Mei", "Jun",
-    "Jul", "Agu", "Sep", "Okt", "Nov", "Des"
+    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
   ]
   const dayName = days[date.getDay()]
-  return `${dayName}, ${d} ${months[(m ?? 1) - 1]} ${y} · ${timePart} WIB`
+  return `${dayName}, ${d} ${months[(m ?? 1) - 1]} ${y} · ${timePart}`
 }
 
 export function DateTimePickerPopover({
@@ -90,53 +90,53 @@ export function DateTimePickerPopover({
       <button
         type="button"
         onClick={handleOpenModal}
-        className={`flex h-11 w-full items-center justify-between rounded-2xl border bg-slate-50/70 px-3.5 text-body-sm text-sekkha-ink transition-all duration-200 outline-none cursor-pointer ${
+        className={`flex h-11 w-full items-center justify-between rounded-[12px] border bg-[#fffaf0] px-3.5 text-xs sm:text-sm text-[#0a0a0a] transition-all duration-200 outline-none cursor-pointer ${
           error
-            ? "border-red-400 bg-red-50/30 text-red-900"
+            ? "border-rose-400 bg-rose-50/30 text-rose-900"
             : open
-              ? "border-sekkha-brand-blue bg-white shadow-xs ring-2 ring-blue-500/10"
-              : "border-sekkha-hairline-strong hover:border-slate-400 hover:bg-white"
+              ? "border-[#0a0a0a] ring-1 ring-[#0a0a0a] shadow-xs"
+              : "border-[#e5e5e5] hover:bg-[#faf5e8]"
         }`}
       >
         <div className="flex items-center gap-2.5 min-w-0">
-          <CalendarIcon className="size-4 text-sekkha-brand-blue shrink-0" />
-          <span className="truncate font-bold text-sekkha-ink text-caption">
-            {value ? formatDisplayDate(datePart, timePart) : <span className="text-sekkha-slate/70 font-medium">Pilih Tanggal & Waktu...</span>}
+          <CalendarIcon className="size-4 text-[#0a0a0a] shrink-0" />
+          <span className="truncate font-bold text-[#0a0a0a]">
+            {value ? formatDisplayDate(datePart, timePart) : <span className="text-[#6a6a6a] font-normal">Select Date & Time...</span>}
           </span>
         </div>
-        <span className="rounded-lg bg-sekkha-brand-blue/10 px-2.5 py-1 text-micro-bold text-sekkha-brand-blue hover:bg-sekkha-brand-blue hover:text-white transition-all shrink-0 ml-1">
-          {value ? "Ubah" : "Pilih"}
+        <span className="rounded-[8px] bg-[#faf5e8] border border-[#e5e5e5] px-2.5 py-1 text-xs font-bold text-[#0a0a0a] hover:bg-[#f5f0e0] transition-colors shrink-0 ml-1">
+          {value ? "Change" : "Select"}
         </span>
       </button>
 
       {/* ── Modal Overlay ─────────────────────────────────────────────────── */}
       {open && (
         <div
-          className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center bg-slate-900/60 backdrop-blur-sm p-0 sm:p-4 animate-in fade-in-0"
+          className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-xs p-0 sm:p-4 animate-in fade-in-0"
           onClick={e => { if (e.target === e.currentTarget) setOpen(false) }}
         >
-          <div className="w-full sm:max-w-lg max-h-[93vh] sm:max-h-[88vh] rounded-t-[28px] sm:rounded-3xl border-t sm:border border-sekkha-hairline bg-white flex flex-col font-sans shadow-2xl animate-in slide-in-from-bottom-full sm:zoom-in-95 duration-200">
+          <div className="w-full sm:max-w-lg max-h-[93vh] sm:max-h-[88vh] rounded-t-[24px] sm:rounded-[24px] border-t sm:border border-[#e5e5e5] bg-[#fffaf0] flex flex-col font-sans shadow-2xl animate-in slide-in-from-bottom-full sm:zoom-in-95 duration-200">
 
             {/* ── Drag Handle (Mobile) ── */}
             <div className="flex items-center justify-center pt-3 pb-1 sm:hidden shrink-0">
-              <div className="w-12 h-1.5 bg-slate-200 rounded-full" />
+              <div className="w-12 h-1.5 bg-[#6a6a6a]/30 rounded-full" />
             </div>
 
             {/* ── Header ── */}
-            <div className="flex items-center justify-between px-5 pt-3 sm:pt-5 pb-3 border-b border-sekkha-hairline-soft shrink-0">
+            <div className="flex items-center justify-between px-5 pt-3 sm:pt-5 pb-3 border-b border-[#e5e5e5] shrink-0">
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-sekkha-brand-blue shrink-0">
-                  <CalendarDaysIcon className="size-5" />
+                <div className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-[#0a0a0a] text-white shrink-0 shadow-xs">
+                  <CalendarDaysIcon className="size-4.5 text-[#e8b94a]" />
                 </div>
                 <div className="min-w-0">
-                  <h3 className="text-body-sm-medium font-extrabold text-sekkha-ink">Atur Tanggal & Waktu</h3>
-                  <p className="text-micro text-sekkha-slate">Pilih preset, tanggal, dan jam acara</p>
+                  <h3 className="text-sm sm:text-base font-bold text-[#0a0a0a]">Set Date & Time</h3>
+                  <p className="text-xs text-[#6a6a6a]">Choose preset, date, and event time</p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="rounded-xl p-2 text-sekkha-slate hover:bg-sekkha-surface hover:text-sekkha-ink transition-colors cursor-pointer shrink-0 ml-2"
+                className="rounded-[8px] p-1.5 text-[#6a6a6a] hover:bg-[#faf5e8] hover:text-[#0a0a0a] transition-colors cursor-pointer shrink-0 ml-2"
               >
                 <XIcon className="size-4" />
               </button>
@@ -148,10 +148,10 @@ export function DateTimePickerPopover({
               {/* ── Section 1: Preset Waktu (category-filtered) ── */}
               {presets.length > 0 && (
                 <div className="space-y-2">
-                  <p className="flex items-center gap-1.5 text-micro-bold uppercase tracking-wider text-sekkha-slate">
-                    <SparklesIcon className="size-3.5 text-amber-500" />
-                    <span>Preset Cepat Vihara</span>
-                    <span className="ml-1 rounded-full bg-amber-100 border border-amber-200 px-1.5 py-0.5 text-[10px] font-bold text-amber-700">1-Click</span>
+                  <p className="flex items-center gap-1.5 text-xs font-bold text-[#6a6a6a] uppercase tracking-wider">
+                    <SparklesIcon className="size-3.5 text-[#e8b94a]" />
+                    <span>Quick Vihara Presets</span>
+                    <span className="ml-1 rounded-full bg-[#e8b94a]/20 border border-[#e8b94a]/40 px-2 py-0.2 text-[10px] font-bold text-[#0a0a0a]">1-Click</span>
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {presets.map(qt => {
@@ -161,26 +161,28 @@ export function DateTimePickerPopover({
                           key={qt.id || qt.time}
                           type="button"
                           onClick={() => handleSelectPreset(qt)}
-                          className={`flex items-center justify-between rounded-xl px-3 py-2.5 text-micro font-semibold transition-all border cursor-pointer text-left ${
+                          className={`flex items-center justify-between rounded-[12px] px-3.5 py-2.5 text-xs font-semibold transition-all border cursor-pointer text-left ${
                             isSelected
-                              ? "bg-sekkha-brand-blue/10 border-sekkha-brand-blue text-sekkha-brand-blue font-bold shadow-2xs"
-                              : "bg-sekkha-canvas border-sekkha-hairline hover:bg-white hover:border-sekkha-brand-blue/40 text-sekkha-ink"
+                              ? "bg-[#0a0a0a] border-[#0a0a0a] text-white font-bold shadow-xs"
+                              : "bg-[#faf5e8] border-[#e5e5e5] hover:bg-[#f5f0e0] text-[#0a0a0a]"
                           }`}
                         >
                           <div className="min-w-0 flex-1">
-                            <p className="truncate font-bold text-[13px]">{qt.label}</p>
+                            <p className="truncate font-bold text-xs">{qt.label}</p>
                             {qt.description && (
-                              <p className="text-[11px] text-sekkha-slate truncate mt-0.5">{qt.description}</p>
+                              <p className={`text-[11px] truncate mt-0.5 ${isSelected ? "text-white/80" : "text-[#6a6a6a]"}`}>{qt.description}</p>
                             )}
                             {qt.day_of_week !== undefined && qt.day_of_week >= 0 && (
-                              <span className="mt-1 text-[10px] font-bold text-purple-700 bg-purple-100 border border-purple-200 px-1.5 py-0.5 rounded-md inline-block">
-                                📅 Hari {DAY_NAMES[qt.day_of_week]} (Auto-tanggal)
+                              <span className={`mt-1 text-[10px] font-bold px-1.5 py-0.5 rounded-[4px] inline-block ${
+                                isSelected ? "bg-white/20 text-white" : "bg-[#b8a4ed]/30 text-[#0a0a0a] border border-[#b8a4ed]/50"
+                              }`}>
+                                📅 {DAY_NAMES[qt.day_of_week]} (Auto-date)
                               </span>
                             )}
                           </div>
                           <div className="flex items-center gap-1.5 shrink-0 ml-2">
-                            <span className="font-extrabold text-caption text-sekkha-brand-blue">{qt.time}</span>
-                            {isSelected && <CheckIcon className="size-4 text-sekkha-brand-blue" />}
+                            <span className={`font-mono text-xs font-bold ${isSelected ? "text-[#e8b94a]" : "text-[#0a0a0a]"}`}>{qt.time}</span>
+                            {isSelected && <CheckIcon className="size-4 text-white" />}
                           </div>
                         </button>
                       )
@@ -191,29 +193,29 @@ export function DateTimePickerPopover({
 
               {/* Divider if presets exist */}
               {presets.length > 0 && (
-                <div className="flex items-center gap-2 text-micro text-sekkha-slate">
-                  <div className="flex-1 h-px bg-sekkha-hairline-soft" />
-                  <span>atau pilih manual</span>
-                  <div className="flex-1 h-px bg-sekkha-hairline-soft" />
+                <div className="flex items-center gap-2 text-xs text-[#6a6a6a]">
+                  <div className="flex-1 h-px bg-[#e5e5e5]" />
+                  <span>or select manually</span>
+                  <div className="flex-1 h-px bg-[#e5e5e5]" />
                 </div>
               )}
 
               {/* ── Section 2: Calendar Date Picker ── */}
               <div className="space-y-2">
-                <p className="flex items-center gap-1.5 text-micro-bold uppercase tracking-wider text-sekkha-slate">
-                  <CalendarIcon className="size-3.5 text-sekkha-brand-blue" />
-                  <span>Tanggal Pelaksanaan</span>
+                <p className="flex items-center gap-1.5 text-xs font-bold text-[#6a6a6a] uppercase tracking-wider">
+                  <CalendarIcon className="size-3.5 text-[#0a0a0a]" />
+                  <span>Event Date</span>
                   {draftDate && (
-                    <span className="ml-auto text-caption-bold text-sekkha-brand-blue normal-case tracking-normal">
+                    <span className="ml-auto text-xs font-bold text-[#0a0a0a] normal-case tracking-normal">
                       {(() => {
                         const [y, m, d] = draftDate.split("-").map(Number)
                         const dt = new Date(y!, (m ?? 1) - 1, d)
-                        return dt.toLocaleDateString("id-ID", { weekday: "short", day: "numeric", month: "short" })
+                        return dt.toLocaleDateString("en-US", { weekday: "short", day: "numeric", month: "short", year: "numeric" })
                       })()}
                     </span>
                   )}
                 </p>
-                <div className="rounded-2xl border border-sekkha-hairline bg-sekkha-canvas/50 p-2 sm:p-3">
+                <div className="rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] p-2 sm:p-3 shadow-xs">
                   <EventCalendar
                     month={calendarMonth}
                     onMonthChange={setCalendarMonth}
@@ -226,10 +228,10 @@ export function DateTimePickerPopover({
 
               {/* ── Section 3: Quick Time Chips ── */}
               <div className="space-y-2 pb-2">
-                <p className="flex items-center gap-1.5 text-micro-bold uppercase tracking-wider text-sekkha-slate">
-                  <ClockIcon className="size-3.5 text-sekkha-brand-blue" />
-                  <span>Jam Pelaksanaan</span>
-                  <span className="ml-auto text-caption-bold text-sekkha-brand-blue normal-case tracking-normal">{draftTime} WIB</span>
+                <p className="flex items-center gap-1.5 text-xs font-bold text-[#6a6a6a] uppercase tracking-wider">
+                  <ClockIcon className="size-3.5 text-[#0a0a0a]" />
+                  <span>Event Time</span>
+                  <span className="ml-auto font-mono text-xs font-bold text-[#0a0a0a] normal-case tracking-normal">{draftTime}</span>
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {QUICK_HOURS_LIST.map(t => {
@@ -239,10 +241,10 @@ export function DateTimePickerPopover({
                         key={t}
                         type="button"
                         onClick={() => setDraftTime(t)}
-                        className={`rounded-xl px-3 py-2 text-micro-bold border transition-all cursor-pointer ${
+                        className={`rounded-[8px] px-3 py-1.5 text-xs font-bold border transition-all cursor-pointer ${
                           isSelected
-                            ? "bg-sekkha-brand-blue text-white border-sekkha-brand-blue shadow-xs"
-                            : "bg-sekkha-canvas border-sekkha-hairline text-sekkha-ink hover:bg-white hover:border-sekkha-brand-blue/40"
+                            ? "bg-[#0a0a0a] text-white border-[#0a0a0a] shadow-xs"
+                            : "bg-[#fffaf0] border-[#e5e5e5] text-[#6a6a6a] hover:bg-[#faf5e8] hover:text-[#0a0a0a]"
                         }`}
                       >
                         {t}
@@ -252,12 +254,12 @@ export function DateTimePickerPopover({
                 </div>
                 {/* Custom time input for non-standard hours */}
                 <div className="flex items-center gap-2 pt-1">
-                  <span className="text-micro text-sekkha-slate shrink-0">Jam lain:</span>
+                  <span className="text-xs font-semibold text-[#6a6a6a] shrink-0">Other time:</span>
                   <input
                     type="time"
                     value={draftTime}
                     onChange={e => setDraftTime(e.target.value)}
-                    className="h-9 rounded-xl border border-sekkha-hairline bg-sekkha-canvas px-3 text-caption font-bold text-sekkha-ink outline-none focus:border-sekkha-brand-blue focus:ring-2 focus:ring-sekkha-brand-blue/20 transition-all"
+                    className="h-10 rounded-[10px] border border-[#e5e5e5] bg-[#fffaf0] px-3 font-mono text-xs font-bold text-[#0a0a0a] outline-none focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] transition-all"
                   />
                 </div>
               </div>
@@ -265,12 +267,12 @@ export function DateTimePickerPopover({
             </div>
 
             {/* ── Footer: Summary + Actions ── */}
-            <div className="px-5 py-3.5 border-t border-sekkha-hairline-soft shrink-0 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 bg-sekkha-canvas/60 rounded-b-[28px] sm:rounded-b-3xl">
+            <div className="px-5 py-3.5 border-t border-[#e5e5e5] shrink-0 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 bg-[#faf5e8] rounded-b-[24px]">
               {/* Summary */}
               <div className="flex-1 min-w-0">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-sekkha-slate">Hasil Pilihan</p>
-                <p className="text-caption-bold text-sekkha-brand-blue truncate mt-0.5">
-                  {draftDate ? formatDisplayDate(draftDate, draftTime) : "Belum dipilih"}
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#6a6a6a]">Selection Summary</p>
+                <p className="text-xs font-bold text-[#0a0a0a] truncate mt-0.5">
+                  {draftDate ? formatDisplayDate(draftDate, draftTime) : "Not selected"}
                 </p>
               </div>
               {/* Buttons */}
@@ -278,16 +280,16 @@ export function DateTimePickerPopover({
                 <button
                   type="button"
                   onClick={() => setOpen(false)}
-                  className="flex-1 sm:flex-initial rounded-xl border border-sekkha-hairline bg-white px-4 py-2.5 text-micro-bold text-sekkha-slate hover:bg-sekkha-surface transition-colors cursor-pointer"
+                  className="h-10 rounded-[10px] border border-[#e5e5e5] bg-[#fffaf0] px-4 text-xs font-bold text-[#0a0a0a] hover:bg-[#f5f0e0] transition-colors cursor-pointer"
                 >
-                  Batal
+                  Cancel
                 </button>
                 <button
                   type="button"
                   onClick={handleApply}
-                  className="flex-1 sm:flex-initial rounded-xl bg-sekkha-brand-blue px-5 py-2.5 text-micro-bold text-white shadow-xs hover:bg-blue-700 transition-all active:scale-95 cursor-pointer font-extrabold"
+                  className="h-10 rounded-[10px] bg-[#0a0a0a] px-5 text-xs font-bold text-white shadow-xs hover:bg-[#1f1f1f] transition-all cursor-pointer"
                 >
-                  Terapkan
+                  Apply
                 </button>
               </div>
             </div>

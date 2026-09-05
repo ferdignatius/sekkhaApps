@@ -18,6 +18,9 @@ export function Dialog({
   return <ShadcnDialog {...props}>{children}</ShadcnDialog>
 }
 
+/**
+ * Sekkha base DialogContent — aligned strictly with DESIGN.md specifications.
+ */
 export function DialogContent({
   className,
   children,
@@ -26,7 +29,7 @@ export function DialogContent({
   return (
     <ShadcnDialogContent
       className={cn(
-        "rounded-3xl border border-sekkha-hairline bg-white p-6 shadow-xl sm:max-w-lg",
+        "rounded-[24px] border border-[#e5e5e5] bg-[#fffaf0] p-6 shadow-2xl sm:max-w-lg text-[#0a0a0a]",
         className
       )}
       {...props}
@@ -44,3 +47,4 @@ export {
   DialogDescription,
   DialogClose,
 }
+

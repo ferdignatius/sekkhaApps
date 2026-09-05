@@ -35,14 +35,14 @@ describe('LandingNavbar — auth state: loading', () => {
     expect(screen.queryByText('Dashboard')).toBeNull()
   })
 
-  it('does not render the "Masuk" button', () => {
+  it('does not render the "Sign In" button', () => {
     renderNavbar('loading')
-    expect(screen.queryByText('Masuk')).toBeNull()
+    expect(screen.queryByText('Sign In')).toBeNull()
   })
 
-  it('does not render the "Bergabung Gratis" button', () => {
+  it('does not render the "Join for Free" button', () => {
     renderNavbar('loading')
-    expect(screen.queryByText('Bergabung Gratis')).toBeNull()
+    expect(screen.queryByText('Join for Free')).toBeNull()
   })
 })
 
@@ -60,9 +60,9 @@ describe('LandingNavbar — auth state: authenticated', () => {
     expect(skeletons.length).toBe(0)
   })
 
-  it('does not render the "Masuk" button', () => {
+  it('does not render the "Sign In" button', () => {
     renderNavbar('authenticated')
-    expect(screen.queryByText('Masuk')).toBeNull()
+    expect(screen.queryByText('Sign In')).toBeNull()
   })
 
   it('"Dashboard" links to /dashboard', () => {
@@ -77,9 +77,9 @@ describe('LandingNavbar — auth state: authenticated', () => {
 // ─── Auth state: unauthenticated ─────────────────────────────────────────────
 
 describe('LandingNavbar — auth state: unauthenticated', () => {
-  it('renders the "Masuk" button (mobile inline CTA)', () => {
+  it('renders the "Sign In" button (mobile inline CTA)', () => {
     renderNavbar('unauthenticated')
-    expect(screen.getAllByText('Masuk').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText('Sign In').length).toBeGreaterThanOrEqual(1)
   })
 
   it('does not render skeleton elements', () => {
@@ -93,9 +93,9 @@ describe('LandingNavbar — auth state: unauthenticated', () => {
     expect(screen.queryByText('Dashboard')).toBeNull()
   })
 
-  it('"Masuk" links to /login', () => {
+  it('"Sign In" links to /login', () => {
     renderNavbar('unauthenticated')
-    const links = screen.getAllByText('Masuk')
+    const links = screen.getAllByText('Sign In')
     links.forEach((link) => {
       expect((link as HTMLAnchorElement).href).toContain('/login')
     })
@@ -106,8 +106,7 @@ describe('LandingNavbar — auth state: unauthenticated', () => {
 
 describe('LandingNavbar — hamburger menu toggle', () => {
   function getHamburgerButton() {
-    // aria-label is "Buka menu navigasi" when closed
-    return screen.getByRole('button', { name: /buka menu navigasi/i })
+    return screen.getByRole('button', { name: /(buka menu navigasi|open navigation menu)/i })
   }
 
   it('drawer is closed by default', () => {
@@ -142,8 +141,7 @@ describe('LandingNavbar — hamburger menu toggle', () => {
     fireEvent.click(hamburger)
     expect(hamburger.getAttribute('aria-expanded')).toBe('true')
 
-    // After opening, aria-label becomes "Tutup menu navigasi"
-    const closeBtn = screen.getByRole('button', { name: /tutup menu navigasi/i })
+    const closeBtn = screen.getByRole('button', { name: /(tutup menu navigasi|close navigation menu)/i })
     fireEvent.click(closeBtn)
     expect(hamburger.getAttribute('aria-expanded')).toBe('false')
   })
@@ -166,24 +164,23 @@ describe('LandingNavbar — hamburger menu toggle', () => {
 
     const dialog = screen.getByRole('dialog')
     expect(dialog).toBeDefined()
-    // NAV_LINKS: Kegiatan, Komunitas, Leaderboard
-    expect(dialog.textContent).toContain('Kegiatan')
-    expect(dialog.textContent).toContain('Komunitas')
+    expect(dialog.textContent).toContain('Events')
+    expect(dialog.textContent).toContain('Community')
     expect(dialog.textContent).toContain('Leaderboard')
   })
 
-  it('drawer shows "Bergabung Gratis" when unauthenticated', () => {
+  it('drawer shows "Join for Free" when unauthenticated', () => {
     renderNavbar('unauthenticated')
     const hamburger = getHamburgerButton()
     fireEvent.click(hamburger)
 
     const dialog = screen.getByRole('dialog')
-    expect(dialog.textContent).toContain('Bergabung Gratis')
+    expect(dialog.textContent).toContain('Join for Free')
   })
 
   it('drawer shows "Dashboard" when authenticated', () => {
     renderNavbar('authenticated')
-    const hamburger = screen.getByRole('button', { name: /buka menu navigasi/i })
+    const hamburger = screen.getByRole('button', { name: /(buka menu navigasi|open navigation menu)/i })
     fireEvent.click(hamburger)
 
     const dialog = screen.getByRole('dialog')

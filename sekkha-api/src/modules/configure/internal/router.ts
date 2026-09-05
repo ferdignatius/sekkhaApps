@@ -4,11 +4,22 @@ import { prisma } from "../../../lib/prisma"
 import { requireAuth, requireRole } from "../../../middleware/auth"
 import { computeAndCacheLeaderboard } from "../../leaderboard/internal/service"
 
-export const configureRouter = Router()
+export const configureRouter: Router = Router()
 
 // All configure routes require auth and pengurus/admin role
 configureRouter.use(requireAuth)
 configureRouter.use(requireRole("pengurus", "admin"))
+
+// Read-only for pengurus: all mutating methods (POST, PUT, PATCH, DELETE) require admin role
+configureRouter.use((req, res, next) => {
+  if (req.method !== "GET" && req.method !== "HEAD" && req.method !== "OPTIONS") {
+    if (req.user?.role !== "admin") {
+      res.status(403).json({ error: "Only admin can modify configuration settings" })
+      return
+    }
+  }
+  next()
+})
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // BADGES

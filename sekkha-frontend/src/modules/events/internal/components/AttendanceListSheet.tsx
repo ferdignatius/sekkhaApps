@@ -1,6 +1,6 @@
 // feature/events/components/AttendanceListSheet
-// Displays attendance records in a clean Glassmorphic Table.
-// Features a custom Multi-Select Badge Dropdown Picker matching exact user UI specifications.
+// Displays attendance records in a clean Clay Design System Table.
+// Features horizontal scrolling for guaranteed mobile responsiveness and a custom Multi-Select Badge Dropdown.
 
 import { useState } from "react"
 import {
@@ -15,7 +15,6 @@ import {
   SquareIcon,
 } from "lucide-react"
 import type { AttendanceRecord, UserRole, AttendanceBadge } from "../types"
-
 import { getMasterBadges } from "../masterdata"
 
 interface AttendanceListSheetProps {
@@ -26,12 +25,13 @@ interface AttendanceListSheetProps {
   onDeleteRecord?: (userId: string) => void
 }
 
-// Preset Badges — hanya yang aktif (dari Master Data)
+// Preset Badges — only active from Master Data
 const BADGE_PRESETS: AttendanceBadge[] = getMasterBadges(true)
 
 function formatTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString("id-ID", {
-    hour: "2-digit", minute: "2-digit",
+  return new Date(iso).toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
   })
 }
 
@@ -44,12 +44,10 @@ export function AttendanceListSheet({
 }: AttendanceListSheetProps) {
   const isPengurus = role === "pengurus" || role === "admin"
   const isEditable = isPengurus && !isClosed
-  
-  // Local state for interactive manipulation demo
+
   const [localRecords, setLocalRecords] = useState<AttendanceRecord[]>(records)
   const [activePickerUser, setActivePickerUser] = useState<string | null>(null)
 
-  // Use localRecords if updated locally
   const displayRecords = localRecords.length > 0 ? localRecords : records
 
   function handleToggleBadge(userId: string, badge: AttendanceBadge) {
@@ -101,265 +99,267 @@ export function AttendanceListSheet({
   }
 
   return (
-    <div className="space-y-3 text-left">
+    <div className="space-y-3 text-left font-sans">
       {/* Summary Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <CheckCircleIcon className="size-4 text-sekkha-brand-blue" aria-hidden="true" />
-          <span className="text-caption-bold text-sekkha-ink">
-            Daftar Kehadiran Peserta
+          <CheckCircleIcon className="size-4 text-[#1a3a3a]" aria-hidden="true" />
+          <span className="text-xs font-bold text-[#0a0a0a]">
+            Attendance List
           </span>
         </div>
-        <span className="text-micro font-medium text-sekkha-slate">
-          {displayRecords.length} Peserta Terdaftar Hadir
+        <span className="text-xs font-medium text-[#6a6a6a]">
+          {displayRecords.length} Attendees Checked In
         </span>
       </div>
 
       {/* Attendance Table */}
       {displayRecords.length === 0 ? (
-        <div className="rounded-2xl border border-sekkha-hairline bg-sekkha-canvas/60 py-8 text-center text-caption text-sekkha-slate">
-          Belum ada peserta yang tercatat hadir.
+        <div className="rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0] py-8 text-center text-xs text-[#6a6a6a]">
+          No attendance records yet.
         </div>
       ) : (
-        <div className="w-full rounded-2xl border border-sekkha-hairline bg-white/90 shadow-2xs pb-4">
-          <table className="w-full text-left text-xs font-sans border-collapse">
-            {/* Table Header */}
-            <thead>
-              <tr className="border-b border-sekkha-hairline text-sekkha-slate">
-                <th className="py-2.5 px-3 font-bold">Peserta</th>
-                <th className="py-2.5 px-3 font-bold">Waktu</th>
-                <th className="py-2.5 px-3 font-bold">Badges (Bonus Poin)</th>
-                <th className="py-2.5 px-3 font-bold">Metode</th>
-                <th className="py-2.5 px-3 font-bold text-right">Total Poin</th>
-                {isPengurus && <th className="py-2.5 px-3 font-bold text-center">Kelola / Akses</th>}
-              </tr>
-            </thead>
+        <div className="w-full overflow-hidden rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0] shadow-xs">
+          <div className="overflow-x-auto scrollbar-none">
+            <table className="w-full min-w-[620px] text-left text-xs font-sans border-collapse">
+              {/* Table Header */}
+              <thead>
+                <tr className="border-b border-[#e5e5e5] bg-[#faf5e8] text-[#6a6a6a]">
+                  <th className="py-2.5 px-3 font-bold">Attendee</th>
+                  <th className="py-2.5 px-3 font-bold">Time</th>
+                  <th className="py-2.5 px-3 font-bold">Badges (Bonus Points)</th>
+                  <th className="py-2.5 px-3 font-bold">Method</th>
+                  <th className="py-2.5 px-3 font-bold text-right">Total Points</th>
+                  {isPengurus && <th className="py-2.5 px-3 font-bold text-center">Manage</th>}
+                </tr>
+              </thead>
 
-            {/* Table Body */}
-            <tbody className="divide-y divide-sekkha-hairline-soft/70 text-sekkha-ink">
-              {displayRecords.map((rec, i) => {
-                const basePoints = rec.base_points ?? 50
-                const badgeBonus = (rec.badges ?? []).reduce((acc, b) => acc + b.points, 0)
-                const totalPoints = basePoints + badgeBonus
-                const userBadges = rec.badges ?? []
-                const isAllSelected = userBadges.length === BADGE_PRESETS.length
+              {/* Table Body */}
+              <tbody className="divide-y divide-[#f0f0f0] text-[#0a0a0a]">
+                {displayRecords.map((rec, i) => {
+                  const basePoints = rec.base_points ?? 50
+                  const badgeBonus = (rec.badges ?? []).reduce((acc, b) => acc + b.points, 0)
+                  const totalPoints = basePoints + badgeBonus
+                  const userBadges = rec.badges ?? []
+                  const isAllSelected = userBadges.length === BADGE_PRESETS.length
 
-                return (
-                  <tr key={`${rec.user_id}-${i}`} className="hover:bg-blue-50/30 transition-colors">
-                    
-                    {/* Col 1: Name & No. Unik */}
-                    <td className="py-2.5 px-3 font-medium min-w-[150px]">
-                      <div className="flex items-center gap-2">
-                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-sekkha-surface text-sekkha-slate">
-                          <UserIcon className="size-3" />
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate font-bold leading-tight">{rec.name}</p>
-                          {rec.user_number && (
-                            <p className="text-[10px] font-mono text-sekkha-brand-blue font-semibold">
-                              {rec.user_number}
-                            </p>
+                  return (
+                    <tr key={`${rec.user_id}-${i}`} className="hover:bg-[#faf5e8]/80 transition-colors">
+                      
+                      {/* Col 1: Name & No. Unik */}
+                      <td className="py-2.5 px-3 font-medium min-w-[150px]">
+                        <div className="flex items-center gap-2">
+                          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#faf5e8] text-[#0a0a0a] border border-[#e5e5e5]">
+                            <UserIcon className="size-3.5" />
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate font-bold leading-tight text-[#0a0a0a]">{rec.name}</p>
+                            {rec.user_number && (
+                              <p className="text-[10px] font-mono text-[#1a3a3a] font-semibold mt-0.5">
+                                {rec.user_number}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Col 2: Time */}
+                      <td className="py-2.5 px-3 text-[#6a6a6a] whitespace-nowrap">
+                        {formatTime(rec.scanned_at)}
+                      </td>
+
+                      {/* Col 3: Badges Chips Display */}
+                      <td className="py-2.5 px-3 min-w-[200px]">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          {userBadges.length === 0 ? (
+                            <span className="text-xs text-[#6a6a6a] italic">-</span>
+                          ) : (
+                            userBadges.map(b => (
+                              <span
+                                key={b.id}
+                                className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold bg-[#f5f0e0] text-[#0a0a0a] border border-[#e5e5e5] shadow-2xs"
+                              >
+                                <span>{b.name}</span>
+                                {isEditable && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveBadge(rec.user_id, b.id)}
+                                    className="ml-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[#e5e5e5] text-[#6a6a6a] hover:bg-[#0a0a0a] hover:text-white transition-colors cursor-pointer"
+                                    title="Remove Badge"
+                                  >
+                                    <XIcon className="size-2.5" />
+                                  </button>
+                                )}
+                              </span>
+                            ))
                           )}
                         </div>
-                      </div>
-                    </td>
+                      </td>
 
-                    {/* Col 2: Time */}
-                    <td className="py-2.5 px-3 text-sekkha-slate whitespace-nowrap">
-                      {formatTime(rec.scanned_at)}
-                    </td>
+                      {/* Col 4: Method */}
+                      <td className="py-2.5 px-3 whitespace-nowrap">
+                        <span
+                          className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
+                            rec.method === "qr"
+                              ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
+                              : "bg-[#faf5e8] text-[#6a6a6a] border border-[#e5e5e5]"
+                          }`}
+                        >
+                          {rec.method === "qr" ? (
+                            <><QrCodeIcon className="size-3" /> QR Scan</>
+                          ) : (
+                            "Manual"
+                          )}
+                        </span>
+                      </td>
 
-                    {/* Col 3: Badges Chips Display (Style Pill Matching Reference UI) */}
-                    <td className="py-2.5 px-3 min-w-[200px]">
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        {userBadges.length === 0 ? (
-                          <span className="text-micro text-sekkha-slate italic">-</span>
-                        ) : (
-                          userBadges.map(b => (
-                            <span
-                              key={b.id}
-                              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-micro-bold border shadow-2xs ${b.color ?? "bg-blue-50/90 text-blue-700 border-blue-200/80"}`}
-                            >
-                              <span>{b.name}</span>
-                              {isEditable && (
+                      {/* Col 5: Total Points */}
+                      <td className="py-2.5 px-3 text-right font-bold whitespace-nowrap">
+                        <span className="inline-flex items-center gap-1 rounded-[8px] bg-[#e8b94a]/20 border border-[#e8b94a]/40 px-2.5 py-0.5 text-xs font-bold text-[#0a0a0a] shadow-2xs">
+                          <SparklesIcon className="size-3 text-[#e8b94a]" />
+                          <span>+{totalPoints} Pts</span>
+                        </span>
+                      </td>
+
+                      {/* Col 6: Actions for Pengurus */}
+                      {isPengurus && (
+                        <td className="py-2.5 px-3 text-center relative whitespace-nowrap">
+                          {isEditable ? (
+                            <div className="flex items-center justify-center gap-1.5">
+                              {/* Add Badge Multi-Select Trigger */}
+                              <button
+                                type="button"
+                                onClick={() => setActivePickerUser(activePickerUser === rec.user_id ? null : rec.user_id)}
+                                className="inline-flex items-center gap-1 rounded-[8px] border border-[#e5e5e5] bg-[#fffaf0] px-2.5 py-1 text-xs font-semibold text-[#0a0a0a] hover:bg-[#faf5e8] transition-all shadow-2xs active:scale-95 cursor-pointer"
+                                title="Manage Badges"
+                              >
+                                <PlusIcon className="size-3" />
+                                <span>Badge</span>
+                              </button>
+
+                              {/* Delete User Button */}
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveUser(rec.user_id)}
+                                className="inline-flex items-center justify-center rounded-[8px] border border-rose-200 bg-rose-50 p-1.5 text-rose-600 hover:bg-rose-100 transition-all shadow-2xs active:scale-95 cursor-pointer"
+                                title="Remove Attendee"
+                              >
+                                <Trash2Icon className="size-3.5" />
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="text-xs font-medium text-[#6a6a6a] italic">🔒 Locked</span>
+                          )}
+
+                          {/* ── Multi-Select Dropdown Picker ── */}
+                          {activePickerUser === rec.user_id && (
+                            <div className="absolute right-3 top-10 z-40 w-64 rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0] p-2.5 shadow-2xl text-left font-sans space-y-2">
+                              
+                              {/* Dropdown Header: Select/Deselect All & Reset */}
+                              <div className="flex items-center justify-between pb-1.5 border-b border-[#e5e5e5] px-1">
                                 <button
                                   type="button"
-                                  onClick={() => handleRemoveBadge(rec.user_id, b.id)}
-                                  className="ml-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-slate-200/80 text-slate-600 hover:bg-slate-300 hover:text-slate-900 transition-colors"
-                                  title="Hapus Badge Ini"
+                                  onClick={() => isAllSelected ? handleDeselectAll(rec.user_id) : handleSelectAll(rec.user_id)}
+                                  className="flex items-center gap-1.5 text-xs font-bold text-[#0a0a0a] hover:text-[#1a3a3a] transition-colors cursor-pointer"
                                 >
-                                  <XIcon className="size-2.5" />
+                                  {isAllSelected ? (
+                                    <CheckSquareIcon className="size-4 text-[#0a0a0a]" />
+                                  ) : (
+                                    <SquareIcon className="size-4 text-[#6a6a6a]" />
+                                  )}
+                                  <span>{isAllSelected ? "Deselect All" : "Select All"}</span>
                                 </button>
-                              )}
-                            </span>
-                          ))
-                        )}
-                      </div>
-                    </td>
 
-                    {/* Col 4: Method */}
-                    <td className="py-2.5 px-3 whitespace-nowrap">
-                      <span
-                        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-micro-bold ${
-                          rec.method === "qr"
-                            ? "bg-emerald-100/90 text-emerald-800 border border-emerald-200/80"
-                            : "bg-sekkha-surface text-sekkha-slate border border-sekkha-hairline"
-                        }`}
-                      >
-                        {rec.method === "qr" ? (
-                          <><QrCodeIcon className="size-3" /> QR Scan</>
-                        ) : (
-                          "Manual"
-                        )}
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeselectAll(rec.user_id)}
+                                  className="rounded-[6px] bg-[#faf5e8] border border-[#e5e5e5] px-2 py-0.5 text-xs font-semibold text-[#0a0a0a] hover:bg-[#f5f0e0] transition-colors cursor-pointer"
+                                >
+                                  Reset
+                                </button>
+                              </div>
+
+                              {/* Dropdown Body: Checkbox Item List */}
+                              <div className="max-h-48 overflow-y-auto space-y-1 pr-0.5">
+                                {BADGE_PRESETS.map(preset => {
+                                  const isChecked = userBadges.some(b => b.id === preset.id)
+                                  return (
+                                    <button
+                                      key={preset.id}
+                                      type="button"
+                                      onClick={() => handleToggleBadge(rec.user_id, preset)}
+                                      className={`flex w-full items-center justify-between rounded-[8px] px-2.5 py-1.5 text-xs font-medium transition-all cursor-pointer ${
+                                        isChecked
+                                          ? "bg-[#f5f0e0] text-[#0a0a0a] font-bold border border-[#e5e5e5]"
+                                          : "hover:bg-[#faf5e8] text-[#6a6a6a]"
+                                      }`}
+                                    >
+                                      <div className="flex items-center gap-2 min-w-0">
+                                        {isChecked ? (
+                                          <CheckSquareIcon className="size-3.5 text-[#0a0a0a] shrink-0" />
+                                        ) : (
+                                          <SquareIcon className="size-3.5 text-[#6a6a6a]/60 shrink-0" />
+                                        )}
+                                        <span className="truncate">{preset.name}</span>
+                                      </div>
+                                      <span className="shrink-0 text-xs font-bold text-[#0a0a0a] ml-2">
+                                        +{preset.points} Pts
+                                      </span>
+                                    </button>
+                                  )
+                                })}
+                              </div>
+
+                              {/* Dropdown Footer: Selected Counter */}
+                              <div className="pt-1.5 border-t border-[#e5e5e5] flex items-center justify-between text-xs font-medium text-[#6a6a6a] px-1">
+                                <span>Selected:</span>
+                                <span className="rounded-full bg-[#faf5e8] px-2 py-0.5 text-xs font-bold text-[#0a0a0a] border border-[#e5e5e5]">
+                                  {userBadges.length} Badges
+                                </span>
+                              </div>
+
+                            </div>
+                          )}
+                        </td>
+                      )}
+
+                    </tr>
+                  )
+                })}
+              </tbody>
+
+              {/* Table Footer Summary */}
+              <tfoot>
+                <tr className="border-t-2 border-[#e5e5e5] bg-[#faf5e8] text-[#0a0a0a] font-bold">
+                  <td className="py-3 px-3">
+                    Total Attendance: <span className="text-[#0a0a0a]">{displayRecords.length} Attendees</span>
+                  </td>
+                  <td className="py-3 px-3 text-[#6a6a6a] text-xs font-normal">
+                    {displayRecords.filter(r => r.method === "qr").length} QR · {displayRecords.filter(r => r.method === "manual").length} Manual
+                  </td>
+                  <td className="py-3 px-3 text-[#6a6a6a] text-xs font-normal">
+                    {displayRecords.reduce((acc, r) => acc + (r.badges?.length ?? 0), 0)} Badges Awarded
+                  </td>
+                  <td className="py-3 px-3 text-[#6a6a6a] font-normal text-xs">
+                    Points Summary:
+                  </td>
+                  <td className="py-3 px-3 text-right font-extrabold whitespace-nowrap">
+                    <span className="inline-flex items-center gap-1 rounded-[8px] bg-[#e8b94a]/20 border border-[#e8b94a]/40 px-3 py-1 text-xs font-bold text-[#0a0a0a] shadow-2xs">
+                      <SparklesIcon className="size-3.5 text-[#e8b94a]" />
+                      <span>
+                        Total +{displayRecords.reduce((acc, rec) => {
+                          const base = rec.base_points ?? 50
+                          const bonus = (rec.badges ?? []).reduce((bAcc, b) => bAcc + b.points, 0)
+                          return acc + base + bonus
+                        }, 0)} Pts
                       </span>
-                    </td>
-
-                    {/* Col 5: Total Points */}
-                    <td className="py-2.5 px-3 text-right font-extrabold whitespace-nowrap">
-                      <span className="inline-flex items-center gap-1 rounded-xl bg-amber-50 border border-amber-200 px-2.5 py-0.5 text-micro-bold text-amber-900 shadow-2xs">
-                        <SparklesIcon className="size-3 text-amber-600" />
-                        <span>+{totalPoints} Poin</span>
-                      </span>
-                    </td>
-
-                    {/* Col 6: Actions for Pengurus (Add Badge Multi-Select & Delete User) */}
-                    {isPengurus && (
-                      <td className="py-2.5 px-3 text-center relative whitespace-nowrap">
-                        {isEditable ? (
-                          <div className="flex items-center justify-center gap-1.5">
-                            {/* Add Badge Multi-Select Trigger */}
-                            <button
-                              type="button"
-                              onClick={() => setActivePickerUser(activePickerUser === rec.user_id ? null : rec.user_id)}
-                              className="inline-flex items-center gap-1 rounded-xl border border-sekkha-hairline bg-sekkha-canvas px-2.5 py-1 text-micro-bold text-sekkha-brand-blue hover:bg-blue-50 transition-all shadow-2xs active:scale-95"
-                              title="Kelola Badge Bonus"
-                            >
-                              <PlusIcon className="size-3" />
-                              <span>Badge</span>
-                            </button>
-
-                            {/* Delete User Button */}
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveUser(rec.user_id)}
-                              className="inline-flex items-center justify-center rounded-xl border border-rose-200 bg-rose-50 p-1 text-rose-600 hover:bg-rose-100 transition-all shadow-2xs active:scale-95"
-                              title="Hapus Presensi Peserta Ini"
-                            >
-                              <Trash2Icon className="size-3.5" />
-                            </button>
-                          </div>
-                        ) : (
-                          <span className="text-micro font-semibold text-slate-400 italic">🔒 Terkunci</span>
-                        )}
-
-                        {/* ── Multi-Select Dropdown Picker (Sekkha Glassmorphism Style) ── */}
-                        {activePickerUser === rec.user_id && (
-                          <div className="absolute right-3 top-10 z-40 w-60 rounded-2xl border border-sekkha-hairline bg-white/95 backdrop-blur-md p-2 shadow-xl text-left font-sans space-y-2">
-                            
-                            {/* Dropdown Header: Select/Deselect All & Reset */}
-                            <div className="flex items-center justify-between pb-1.5 border-b border-sekkha-hairline-soft px-1">
-                              <button
-                                type="button"
-                                onClick={() => isAllSelected ? handleDeselectAll(rec.user_id) : handleSelectAll(rec.user_id)}
-                                className="flex items-center gap-1.5 text-micro-bold text-sekkha-ink hover:text-sekkha-brand-blue transition-colors"
-                              >
-                                {isAllSelected ? (
-                                  <CheckSquareIcon className="size-4 text-sekkha-brand-blue" />
-                                ) : (
-                                  <SquareIcon className="size-4 text-sekkha-slate/60" />
-                                )}
-                                <span>{isAllSelected ? "Deselect All" : "Select All"}</span>
-                              </button>
-
-                              <button
-                                type="button"
-                                onClick={() => handleDeselectAll(rec.user_id)}
-                                className="rounded-lg bg-blue-50 px-2 py-0.5 text-micro-bold text-sekkha-brand-blue hover:bg-blue-100 transition-colors"
-                              >
-                                Reset
-                              </button>
-                            </div>
-
-                            {/* Dropdown Body: Checkbox Item List */}
-                            <div className="max-h-48 overflow-y-auto space-y-1 pr-0.5">
-                              {BADGE_PRESETS.map(preset => {
-                                const isChecked = userBadges.some(b => b.id === preset.id)
-                                return (
-                                  <button
-                                    key={preset.id}
-                                    type="button"
-                                    onClick={() => handleToggleBadge(rec.user_id, preset)}
-                                    className={`flex w-full items-center justify-between rounded-xl px-2.5 py-1.5 text-micro font-medium transition-all ${
-                                      isChecked
-                                        ? "bg-sekkha-brand-blue/10 text-sekkha-ink font-bold border border-sekkha-brand-blue/20"
-                                        : "hover:bg-sekkha-surface text-sekkha-slate"
-                                    }`}
-                                  >
-                                    <div className="flex items-center gap-2 min-w-0">
-                                      {isChecked ? (
-                                        <CheckSquareIcon className="size-3.5 text-sekkha-brand-blue shrink-0" />
-                                      ) : (
-                                        <SquareIcon className="size-3.5 text-sekkha-slate/40 shrink-0" />
-                                      )}
-                                      <span className="truncate">{preset.name}</span>
-                                    </div>
-                                    <span className="shrink-0 text-micro-bold text-sekkha-brand-blue ml-2">
-                                      +{preset.points} Poin
-                                    </span>
-                                  </button>
-                                )
-                              })}
-                            </div>
-
-                            {/* Dropdown Footer: Selected Counter */}
-                            <div className="pt-1.5 border-t border-sekkha-hairline-soft flex items-center justify-between text-micro font-semibold text-sekkha-slate px-1">
-                              <span>Total Terpilih:</span>
-                              <span className="rounded-full bg-sekkha-surface px-2 py-0.5 text-micro-bold text-sekkha-ink border border-sekkha-hairline">
-                                {userBadges.length} Badge
-                              </span>
-                            </div>
-
-                          </div>
-                        )}
-                      </td>
-                    )}
-
-                  </tr>
-                )
-              })}
-            </tbody>
-
-            {/* Table Footer Summary */}
-            <tfoot>
-              <tr className="border-t-2 border-sekkha-hairline bg-sekkha-surface/90 text-sekkha-ink font-bold">
-                <td className="py-3 px-3">
-                  Total Kehadiran: <span className="text-sekkha-brand-blue">{displayRecords.length} Peserta</span>
-                </td>
-                <td className="py-3 px-3 text-sekkha-slate text-micro font-medium">
-                  {displayRecords.filter(r => r.method === "qr").length} QR · {displayRecords.filter(r => r.method === "manual").length} Manual
-                </td>
-                <td className="py-3 px-3 text-sekkha-slate text-micro font-medium">
-                  {displayRecords.reduce((acc, r) => acc + (r.badges?.length ?? 0), 0)} Badge Diberikan
-                </td>
-                <td className="py-3 px-3 text-sekkha-slate font-medium text-micro">
-                  Ringkasan Poin:
-                </td>
-                <td className="py-3 px-3 text-right font-extrabold whitespace-nowrap">
-                  <span className="inline-flex items-center gap-1 rounded-xl bg-amber-100/90 border border-amber-300 px-3 py-1 text-xs font-black text-amber-900 shadow-2xs">
-                    <SparklesIcon className="size-3.5 text-amber-600" />
-                    <span>
-                      Total +{displayRecords.reduce((acc, rec) => {
-                        const base = rec.base_points ?? 50
-                        const bonus = (rec.badges ?? []).reduce((bAcc, b) => bAcc + b.points, 0)
-                        return acc + base + bonus
-                      }, 0)} Poin
                     </span>
-                  </span>
-                </td>
-                {isPengurus && <td className="py-3 px-3" />}
-              </tr>
-            </tfoot>
-          </table>
+                  </td>
+                  {isPengurus && <td className="py-3 px-3" />}
+                </tr>
+              </tfoot>
+            </table>
+          </div>
         </div>
       )}
     </div>

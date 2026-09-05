@@ -26,11 +26,12 @@ interface PageBreadcrumbProps {
   items: BreadcrumbEntry[]
   onBack?: () => void
   showBack?: boolean
+  actions?: React.ReactNode
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export function PageBreadcrumb({ items, onBack, showBack }: PageBreadcrumbProps) {
+export function PageBreadcrumb({ items, onBack, showBack, actions }: PageBreadcrumbProps) {
   if (items.length === 0) return null
 
   const lastItem = items[items.length - 1]
@@ -45,23 +46,23 @@ export function PageBreadcrumb({ items, onBack, showBack }: PageBreadcrumbProps)
   }
 
   return (
-    <div className="sticky top-0 z-40 border-b border-sekkha-hairline/80 bg-sekkha-canvas/90 backdrop-blur-md shadow-xs transition-all">
-      <div className="px-3.5 py-3 sm:px-6 md:py-3.5 md:px-8 lg:px-12">
+    <div className="sticky top-0 z-40 border-b border-[#e5e5e5] bg-[#fffaf0]/95 backdrop-blur-md shadow-2xs transition-all font-sans">
+      <div className="px-4 py-2.5 sm:px-6 md:py-3 md:px-8 lg:px-12">
         <div className="mx-auto max-w-7xl flex items-center justify-between gap-3">
           
-          {/* ── Left: Back Button (Only rendered on nested sub-pages) ── */}
+          {/* ── Left: Back Button ── */}
           {shouldShowBack ? (
             <button
               type="button"
               onClick={handleBack}
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-sekkha-hairline bg-white/95 text-sekkha-ink hover:bg-sekkha-surface hover:border-sekkha-hairline-strong transition-all shadow-2xs active:scale-95 cursor-pointer"
-              title="Kembali ke halaman sebelumnya"
-              aria-label="Kembali"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] hover:bg-[#faf5e8] hover:border-[#9a9a9a] transition-all shadow-2xs active:scale-95 cursor-pointer"
+              title="Back to previous page"
+              aria-label="Back"
             >
-              <ArrowLeftIcon className="size-5 text-sekkha-ink" />
+              <ArrowLeftIcon className="size-4 text-[#0a0a0a]" />
             </button>
           ) : (
-            <div className="w-2 shrink-0 md:hidden" />
+            <div className="w-1 shrink-0 md:hidden" />
           )}
 
           {/* ── Center: Desktop Breadcrumb & Mobile Page Title ── */}
@@ -77,7 +78,7 @@ export function PageBreadcrumb({ items, onBack, showBack }: PageBreadcrumbProps)
                       {idx > 0 && <BreadcrumbSeparator />}
                       <BreadcrumbItem>
                         {isLast ? (
-                          <BreadcrumbPage>{item.label}</BreadcrumbPage>
+                          <BreadcrumbPage className="font-semibold text-[#0a0a0a]">{item.label}</BreadcrumbPage>
                         ) : (
                           <BreadcrumbLink asChild>
                             <Link
@@ -88,7 +89,7 @@ export function PageBreadcrumb({ items, onBack, showBack }: PageBreadcrumbProps)
                                   item.onClick()
                                 }
                               }}
-                              className="hover:text-sekkha-brand-blue transition-colors cursor-pointer"
+                              className="text-[#6a6a6a] hover:text-[#0a0a0a] transition-colors cursor-pointer"
                             >
                               {item.label}
                             </Link>
@@ -102,22 +103,26 @@ export function PageBreadcrumb({ items, onBack, showBack }: PageBreadcrumbProps)
             </Breadcrumb>
           </div>
 
-          {/* Mobile Centered Page Title (Proportional & Bold) */}
-          <div className="block md:hidden flex-1 text-center min-w-0 px-2">
-            <h1 className="text-body-base font-black text-sekkha-ink tracking-tight truncate">
+          {/* Mobile Centered Page Title */}
+          <div className="block md:hidden flex-1 text-left min-w-0 px-1">
+            <h1 className="text-sm font-bold text-[#0a0a0a] tracking-tight truncate">
               {lastItem.label}
             </h1>
           </div>
 
-          {/* ── Right: Notification Menu (HIG Standard 40x40 Touch Target) ── */}
+          {/* ── Right: Custom Actions or Notification Bell ── */}
           <div className="flex items-center gap-2 shrink-0">
-            <Link
-              to="/notifications"
-              className="flex h-10 w-10 items-center justify-center rounded-2xl border border-sekkha-hairline bg-white/95 text-sekkha-ink hover:bg-sekkha-surface hover:border-sekkha-hairline-strong transition-all shadow-2xs relative active:scale-95"
-              title="Notifikasi"
-            >
-              <NotificationBell />
-            </Link>
+            {actions ? (
+              actions
+            ) : (
+              <Link
+                to="/notifications"
+                className="flex h-10 w-10 items-center justify-center rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] hover:bg-[#faf5e8] hover:border-[#9a9a9a] transition-all shadow-2xs relative active:scale-95"
+                title="Notifications"
+              >
+                <NotificationBell />
+              </Link>
+            )}
           </div>
 
         </div>

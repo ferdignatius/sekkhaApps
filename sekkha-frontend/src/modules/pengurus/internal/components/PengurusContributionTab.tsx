@@ -112,7 +112,7 @@ function PersonDetailDrawer({
               </div>
               <p className="text-heading-5 font-extrabold text-sekkha-ink">{person.initiativeScore}</p>
               <TrendBadge value={person.initiativeTrend} />
-              <p className="text-micro text-sekkha-slate">Event dibuat</p>
+              <p className="text-micro text-sekkha-slate">Events organized</p>
             </div>
 
             <div className="rounded-2xl border border-sekkha-hairline-soft bg-sekkha-canvas p-3.5 space-y-1.5">
@@ -122,7 +122,7 @@ function PersonDetailDrawer({
               </div>
               <p className="text-heading-5 font-extrabold text-sekkha-ink">{person.executionScore}</p>
               <TrendBadge value={person.executionTrend} />
-              <p className="text-micro text-sekkha-slate">Event ditangani</p>
+              <p className="text-micro text-sekkha-slate">Events handled</p>
             </div>
 
             <div className="rounded-2xl border border-sekkha-hairline-soft bg-sekkha-canvas p-3.5 space-y-1.5">
@@ -132,7 +132,7 @@ function PersonDetailDrawer({
               </div>
               <p className="text-heading-5 font-extrabold text-sekkha-ink">{person.effectivenessPercent}%</p>
               <TrendBadge value={person.effectivenessTrend} suffix="%" />
-              <p className="text-micro text-sekkha-slate">Avg kehadiran Umat</p>
+              <p className="text-micro text-sekkha-slate">Avg attendance rate</p>
             </div>
 
             <div className="rounded-2xl border border-sekkha-hairline-soft bg-sekkha-canvas p-3.5 space-y-1.5">
@@ -142,7 +142,7 @@ function PersonDetailDrawer({
               </div>
               <p className="text-heading-5 font-extrabold text-sekkha-ink">{person.presencePercent}%</p>
               <TrendBadge value={person.presenceTrend} suffix="%" />
-              <p className="text-micro text-sekkha-slate">Kehadiran pribadi</p>
+              <p className="text-micro text-sekkha-slate">Personal attendance</p>
             </div>
           </div>
 
@@ -152,11 +152,11 @@ function PersonDetailDrawer({
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-caption-bold font-bold text-violet-700">
                   <UserPlusIcon className="size-4" />
-                  <span>Umat yang Berhasil Diajak</span>
+                  <span>Members Brought In</span>
                 </div>
                 <TrendBadge value={person.invitedTrend} />
               </div>
-              <p className="text-heading-4 font-extrabold text-violet-700">{person.invitedCount} <span className="text-caption font-normal text-violet-600">Orang</span></p>
+              <p className="text-heading-4 font-extrabold text-violet-700">{person.invitedCount} <span className="text-caption font-normal text-violet-600">Members</span></p>
             </div>
           )}
 
@@ -164,11 +164,11 @@ function PersonDetailDrawer({
           <div className="rounded-2xl border border-sekkha-hairline-soft bg-sekkha-canvas p-4 space-y-2">
             <h4 className="text-caption-bold font-bold text-sekkha-ink flex items-center gap-2">
               <CalendarIcon className="size-4 text-sekkha-brand-blue" />
-              Konsistensi
+              Consistency
             </h4>
             <div className="flex items-center justify-between text-micro">
-              <span className="text-sekkha-slate">Bulan aktif dalam periode</span>
-              <span className="font-extrabold text-sekkha-ink">{person.activeMonths} / {person.totalMonths} Bulan</span>
+              <span className="text-sekkha-slate">Active months in period</span>
+              <span className="font-extrabold text-sekkha-ink">{person.activeMonths} / {person.totalMonths} Months</span>
             </div>
             <div className="h-2.5 w-full rounded-full bg-sekkha-surface overflow-hidden border border-sekkha-hairline-soft">
               <div
@@ -182,7 +182,7 @@ function PersonDetailDrawer({
           <div className="rounded-2xl border border-sekkha-hairline-soft bg-sekkha-canvas p-4 space-y-3">
             <h4 className="text-caption-bold font-bold text-sekkha-ink flex items-center gap-2">
               <ClipboardListIcon className="size-4 text-sekkha-brand-blue" />
-              Distribusi Peran dalam Event
+              Event Duty Distribution
             </h4>
             <div className="space-y-2">
               {person.roleBreakdown.map((rb) => (
@@ -252,7 +252,7 @@ export function PengurusContributionTab() {
       <div className="flex h-64 items-center justify-center rounded-3xl border border-sekkha-hairline-soft bg-sekkha-canvas">
         <div className="flex flex-col items-center gap-2 text-sekkha-muted">
           <AwardIcon className="size-7 animate-pulse text-sekkha-brand-blue" />
-          <p className="text-body-sm font-semibold">Menghitung kontribusi Pengurus & Aktivis...</p>
+          <p className="text-body-sm font-semibold">Calculating Organizer & Activist contributions...</p>
         </div>
       </div>
     )
@@ -279,7 +279,7 @@ export function PengurusContributionTab() {
               className="w-full bg-transparent font-bold text-sekkha-ink outline-none cursor-pointer text-caption sm:text-caption-bold"
             >
               {CONTRIBUTION_PERIODS.map((p) => (
-                <option key={p} value={p}>Periode: {p}</option>
+                <option key={p} value={p}>Period: {p}</option>
               ))}
             </select>
           </div>
@@ -296,7 +296,7 @@ export function PengurusContributionTab() {
               }`}
             >
               <span className="truncate">
-                {DIVISI_OPTIONS.find((d) => d.id === divisiFilter)?.label || "Semua Divisi"}
+                {DIVISI_OPTIONS.find((d) => d.id === divisiFilter)?.label || "All Divisions"}
               </span>
               <ChevronDownIcon className="size-4 opacity-70 shrink-0" />
             </button>
@@ -327,7 +327,7 @@ export function PengurusContributionTab() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Cari nama..."
+              placeholder="Search name..."
               className="w-full bg-transparent text-caption text-sekkha-ink outline-none placeholder:text-sekkha-muted"
             />
             {searchQuery && (
@@ -342,9 +342,9 @@ export function PengurusContributionTab() {
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
           <span className="text-micro font-extrabold uppercase tracking-wider text-sekkha-slate mr-1 shrink-0">Role:</span>
           {[
-            { id: "all" as const, label: `Semua (${summary.totalPengurus + summary.totalAktivis})` },
-            { id: "pengurus" as const, label: `Pengurus (${summary.totalPengurus})` },
-            { id: "aktivis" as const, label: `Aktivis (${summary.totalAktivis})` },
+            { id: "all" as const, label: `All (${summary.totalPengurus + summary.totalAktivis})` },
+            { id: "pengurus" as const, label: `Organizers (${summary.totalPengurus})` },
+            { id: "aktivis" as const, label: `Activists (${summary.totalAktivis})` },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -368,7 +368,7 @@ export function PengurusContributionTab() {
         <div className="rounded-2xl border border-sekkha-hairline-soft bg-sekkha-canvas p-3.5 sm:p-4 shadow-xs">
           <div className="flex items-start justify-between gap-2">
             <div>
-              <p className="text-micro sm:text-caption text-sekkha-slate font-medium">Total Anggota</p>
+              <p className="text-micro sm:text-caption text-sekkha-slate font-medium">Total Staff</p>
               <h3 className="mt-0.5 text-heading-5 sm:text-heading-4 font-extrabold text-sekkha-ink">
                 {summary.totalPengurus + summary.totalAktivis}
               </h3>
@@ -377,7 +377,7 @@ export function PengurusContributionTab() {
               <UsersIcon className="size-4" />
             </span>
           </div>
-          <p className="mt-2 text-micro text-sekkha-slate">{summary.totalPengurus} Pengurus · {summary.totalAktivis} Aktivis</p>
+          <p className="mt-2 text-micro text-sekkha-slate">{summary.totalPengurus} Organizers · {summary.totalAktivis} Activists</p>
         </div>
 
         {/* Reliable Candidates */}
@@ -393,7 +393,7 @@ export function PengurusContributionTab() {
               <ShieldCheckIcon className="size-4" />
             </span>
           </div>
-          <p className="mt-2 text-micro text-sekkha-slate">Kandidat regenerasi kuat</p>
+          <p className="mt-2 text-micro text-sekkha-slate">Strong successor candidates</p>
         </div>
 
         {/* Overloaded Risk */}
@@ -409,14 +409,14 @@ export function PengurusContributionTab() {
               <AlertTriangleIcon className="size-4" />
             </span>
           </div>
-          <p className="mt-2 text-micro text-rose-700/70">Risiko burnout, perlu bagi tugas</p>
+          <p className="mt-2 text-micro text-rose-700/70">Burnout risk, task redistribution needed</p>
         </div>
 
         {/* Umat Diajak by Aktivis */}
         <div className="rounded-2xl border border-violet-500/20 bg-violet-500/5 p-3.5 sm:p-4 shadow-xs">
           <div className="flex items-start justify-between gap-2">
             <div>
-              <p className="text-micro sm:text-caption text-violet-700 font-semibold">Umat Diajak</p>
+              <p className="text-micro sm:text-caption text-violet-700 font-semibold">Members Brought In</p>
               <h3 className="mt-0.5 text-heading-5 sm:text-heading-4 font-extrabold text-violet-700">
                 {summary.totalInvitedByAktivis}
               </h3>
@@ -425,20 +425,20 @@ export function PengurusContributionTab() {
               <UserPlusIcon className="size-4" />
             </span>
           </div>
-          <p className="mt-2 text-micro text-violet-700/70">Total Invite Points Aktivis</p>
+          <p className="mt-2 text-micro text-violet-700/70">Total Activist Invite Points</p>
         </div>
       </div>
 
       {/* ── Highlight Banners ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-        {/* Kandidat Regenerasi Kuat */}
+        {/* Strong Succession Candidates */}
         {reliablePersons.length > 0 && (
           <div className="rounded-2xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/5 to-sekkha-canvas p-4 shadow-xs space-y-3">
             <div className="flex items-center gap-2">
               <span className="flex size-7 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 shrink-0">
                 <ShieldCheckIcon className="size-4" />
               </span>
-              <h3 className="text-caption-bold font-bold text-sekkha-ink">Kandidat Regenerasi Kuat</h3>
+              <h3 className="text-caption-bold font-bold text-sekkha-ink">Strong Succession Candidates</h3>
             </div>
             <div className="space-y-2">
               {reliablePersons.slice(0, 3).map((p) => (
@@ -453,7 +453,7 @@ export function PengurusContributionTab() {
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-caption-bold font-bold text-sekkha-ink truncate">{p.name}</p>
-                    <p className="text-micro text-sekkha-slate capitalize">{p.role} · {p.effectivenessPercent}% efektivitas</p>
+                    <p className="text-micro text-sekkha-slate capitalize">{p.role} · {p.effectivenessPercent}% effectiveness</p>
                   </div>
                 </button>
               ))}
@@ -461,14 +461,14 @@ export function PengurusContributionTab() {
           </div>
         )}
 
-        {/* Pengurus Overloaded */}
+        {/* Overloaded Organizers */}
         {overloadedPersons.length > 0 && (
           <div className="rounded-2xl border border-rose-500/20 bg-gradient-to-br from-rose-500/5 to-sekkha-canvas p-4 shadow-xs space-y-3">
             <div className="flex items-center gap-2">
               <span className="flex size-7 items-center justify-center rounded-lg bg-rose-500/10 text-rose-600 shrink-0">
                 <AlertTriangleIcon className="size-4" />
               </span>
-              <h3 className="text-caption-bold font-bold text-sekkha-ink">Pengurus Overloaded</h3>
+              <h3 className="text-caption-bold font-bold text-sekkha-ink">Overloaded Organizers</h3>
             </div>
             <div className="space-y-2">
               {overloadedPersons.slice(0, 3).map((p) => (
@@ -483,7 +483,7 @@ export function PengurusContributionTab() {
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-caption-bold font-bold text-sekkha-ink truncate">{p.name}</p>
-                    <p className="text-micro text-sekkha-slate">{p.executionScore} event ditangani · {p.initiativeScore} event dibuat</p>
+                    <p className="text-micro text-sekkha-slate">{p.executionScore} events handled · {p.initiativeScore} created</p>
                   </div>
                 </button>
               ))}
@@ -491,14 +491,14 @@ export function PengurusContributionTab() {
           </div>
         )}
 
-        {/* Aktivis Siap Promosi */}
+        {/* Activists Ready for Promotion */}
         {promotionPersons.length > 0 && (
           <div className="rounded-2xl border border-violet-500/20 bg-gradient-to-br from-violet-500/5 to-sekkha-canvas p-4 shadow-xs space-y-3">
             <div className="flex items-center gap-2">
               <span className="flex size-7 items-center justify-center rounded-lg bg-violet-500/10 text-violet-600 shrink-0">
                 <AwardIcon className="size-4" />
               </span>
-              <h3 className="text-caption-bold font-bold text-sekkha-ink">Aktivis Siap Promosi</h3>
+              <h3 className="text-caption-bold font-bold text-sekkha-ink">Activists Ready for Promotion</h3>
             </div>
             <div className="space-y-2">
               {promotionPersons.slice(0, 3).map((p) => (
@@ -513,7 +513,7 @@ export function PengurusContributionTab() {
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-caption-bold font-bold text-sekkha-ink truncate">{p.name}</p>
-                    <p className="text-micro text-sekkha-slate">{p.invitedCount} Umat diajak · {p.presencePercent}% hadir</p>
+                    <p className="text-micro text-sekkha-slate">{p.invitedCount} Members brought in · {p.presencePercent}% attendance</p>
                   </div>
                 </button>
               ))}
@@ -527,16 +527,16 @@ export function PengurusContributionTab() {
         <div className="px-4 sm:px-5 py-3.5 border-b border-sekkha-hairline-soft bg-sekkha-surface/50">
           <h2 className="text-caption-bold sm:text-body-sm font-bold text-sekkha-ink flex items-center gap-2">
             <ClipboardListIcon className="size-4 text-sekkha-brand-blue" />
-            <span>Matrix Evaluasi Kontribusi</span>
-            <span className="rounded-lg bg-sekkha-brand-blue/10 px-2 py-0.5 text-micro-bold text-sekkha-brand-blue">{persons.length} orang</span>
+            <span>Contribution Evaluation Matrix</span>
+            <span className="rounded-lg bg-sekkha-brand-blue/10 px-2 py-0.5 text-micro-bold text-sekkha-brand-blue">{persons.length} members</span>
           </h2>
         </div>
 
         {persons.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-sekkha-muted space-y-2">
             <SearchIcon className="size-8 text-sekkha-hairline-soft" />
-            <p className="text-body-sm font-semibold">Tidak ada data yang cocok</p>
-            <p className="text-caption text-sekkha-slate">Coba ubah filter atau kata kunci pencarian.</p>
+            <p className="text-body-sm font-semibold">No matching records found</p>
+            <p className="text-caption text-sekkha-slate">Try adjusting your filters or search keywords.</p>
           </div>
         ) : (
           <>
@@ -545,7 +545,7 @@ export function PengurusContributionTab() {
               <table className="w-full text-left">
                 <thead>
                   <tr className="border-b border-sekkha-hairline-soft bg-sekkha-surface/30 text-micro font-extrabold uppercase tracking-wider text-sekkha-slate">
-                    <th className="px-4 py-3">Nama</th>
+                    <th className="px-4 py-3">Name</th>
                     <th className="px-3 py-3">Status</th>
                     <th className="px-3 py-3 text-center">Initiative</th>
                     <th className="px-3 py-3 text-center">Execution</th>
@@ -554,7 +554,7 @@ export function PengurusContributionTab() {
                     {(roleFilter === "all" || roleFilter === "aktivis") && (
                       <th className="px-3 py-3 text-center">Invite Points</th>
                     )}
-                    <th className="px-3 py-3 text-center">Konsistensi</th>
+                    <th className="px-3 py-3 text-center">Consistency</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -613,7 +613,7 @@ export function PengurusContributionTab() {
                         )}
                         <td className="px-3 py-3 text-center">
                           <span className="text-caption-bold font-extrabold text-sekkha-ink">{p.activeMonths}/{p.totalMonths}</span>
-                          <span className="text-micro text-sekkha-slate ml-0.5">bln</span>
+                          <span className="text-micro text-sekkha-slate ml-0.5">mo</span>
                         </td>
                       </tr>
                     )
@@ -663,12 +663,12 @@ export function PengurusContributionTab() {
                         <TrendBadge value={p.executionTrend} />
                       </div>
                       <div>
-                        <p className="text-micro text-sekkha-slate">Efek</p>
+                        <p className="text-micro text-sekkha-slate">Effect</p>
                         <p className="text-caption-bold font-extrabold text-sekkha-ink">{p.effectivenessPercent}%</p>
                         <TrendBadge value={p.effectivenessTrend} suffix="%" />
                       </div>
                       <div>
-                        <p className="text-micro text-sekkha-slate">Hadir</p>
+                        <p className="text-micro text-sekkha-slate">Presence</p>
                         <p className="text-caption-bold font-extrabold text-sekkha-ink">{p.presencePercent}%</p>
                         <TrendBadge value={p.presenceTrend} suffix="%" />
                       </div>
@@ -679,14 +679,14 @@ export function PengurusContributionTab() {
                       {p.role === "aktivis" ? (
                         <span className="inline-flex items-center gap-1 font-bold text-violet-700">
                           <UserPlusIcon className="size-3" />
-                          {p.invitedCount} Umat diajak
+                          {p.invitedCount} Members brought in
                           <TrendBadge value={p.invitedTrend} />
                         </span>
                       ) : (
                         <span />
                       )}
                       <span className="text-sekkha-slate font-bold">
-                        {p.activeMonths}/{p.totalMonths} bulan aktif
+                        {p.activeMonths}/{p.totalMonths} months active
                       </span>
                     </div>
                   </button>

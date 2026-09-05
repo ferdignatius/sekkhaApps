@@ -3,24 +3,36 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const sekkhaBadgeVariants = cva(
-  "inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-micro font-semibold transition-colors shrink-0",
+  "inline-flex items-center justify-center gap-1.5 rounded-full font-medium whitespace-nowrap transition-colors shrink-0 select-none",
   {
     variants: {
       variant: {
-        default: "bg-sekkha-primary text-white border-transparent",
-        slate: "bg-slate-100/90 text-sekkha-slate border border-slate-200/80",
-        blue: "bg-blue-50/90 text-sekkha-brand-blue border border-blue-200/80",
-        yellow: "bg-yellow-50/90 text-yellow-800 border border-yellow-200/80",
-        coral: "bg-red-50/90 text-red-700 border border-red-200/80",
-        teal: "bg-teal-50/90 text-teal-800 border border-teal-200/80",
-        emerald: "bg-emerald-50/90 text-emerald-800 border border-emerald-200/80",
-        purple: "bg-purple-50/90 text-purple-800 border border-purple-200/80",
-        outline: "border border-sekkha-hairline-strong text-sekkha-ink bg-transparent",
+        // DESIGN.md badge-pill: #f5f0e0 cream fill, ink text, hairline border
+        default: "bg-[#f5f0e0] text-[#0a0a0a] border border-[#e5e5e5]",
+        primary: "bg-[#0a0a0a] text-white border-transparent",
+        secondary: "bg-[#faf5e8] text-[#0a0a0a] border border-[#e5e5e5]",
+        // 6-color saturated palette
+        pink: "bg-[#ff4d8b] text-white border-transparent",
+        teal: "bg-[#1a3a3a] text-white border-transparent",
+        lavender: "bg-[#b8a4ed] text-[#0a0a0a] border border-[#b8a4ed]/40",
+        peach: "bg-[#ffb084] text-[#0a0a0a] border border-[#ffb084]/40",
+        ochre: "bg-[#e8b94a] text-[#0a0a0a] border border-[#e8b94a]/40",
+        mint: "bg-[#a4d4c5] text-[#0a0a0a] border border-[#a4d4c5]/40",
+        // Semantic & compatibility variants
+        slate: "bg-[#faf5e8] text-[#6a6a6a] border border-[#e5e5e5]",
+        blue: "bg-[#1a3a3a] text-white border-transparent",
+        yellow: "bg-[#e8b94a] text-[#0a0a0a] border border-[#e8b94a]/40",
+        coral: "bg-[#ff6b5a] text-white border-transparent",
+        emerald: "bg-[#22c55e] text-white border-transparent",
+        purple: "bg-[#b8a4ed] text-[#0a0a0a] border border-[#b8a4ed]/40",
+        outline: "border border-[#e5e5e5] text-[#0a0a0a] bg-transparent",
+        destructive: "bg-[#ef4444] text-white border-transparent",
       },
       size: {
-        sm: "px-2 py-0.5 text-micro",
-        default: "px-2.5 py-1 text-micro",
-        lg: "px-3.5 py-1.5 text-caption font-bold",
+        // DESIGN.md standard badge-pill: padding 4px 12px, font 13px / 500
+        sm: "px-2.5 py-0.5 text-xs",
+        default: "px-3 py-1 text-[13px]",
+        lg: "px-4 py-1.5 text-sm font-semibold",
       },
     },
     defaultVariants: {
@@ -36,6 +48,9 @@ export interface SekkhaBadgeProps
   icon?: React.ReactNode
 }
 
+/**
+ * Sekkha base Badge — aligned strictly with DESIGN.md badge-pill specifications.
+ */
 export function Badge({
   className,
   variant,
@@ -49,7 +64,7 @@ export function Badge({
       className={cn(sekkhaBadgeVariants({ variant, size }), className)}
       {...props}
     >
-      {icon && <span className="inline-flex shrink-0">{icon}</span>}
+      {icon && <span className="inline-flex shrink-0 [&>svg]:size-3.5">{icon}</span>}
       {children}
     </span>
   )

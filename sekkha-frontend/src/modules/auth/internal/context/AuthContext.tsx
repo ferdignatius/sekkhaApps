@@ -4,6 +4,7 @@
 import React, {
   createContext,
   useContext,
+  useCallback,
   useEffect,
   useMemo,
   useReducer,
@@ -94,8 +95,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
         if (cancelled) return
 
-        let userId: string = "unknown"
-        let role: string = "umat"
+        // Default to null so the UI can render blank until the real profile
+        // arrives from /users/me (avoids flashing "unknown" / default role).
+        let userId: string | null = null
+        let role: UserRole | null = null
         let name: string | null = null
         let email: string | null = null
 
@@ -110,18 +113,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
               name?: string
               email?: string
             }
-            userId = payload.sub ?? payload.userId ?? payload.id ?? "unknown"
-            role = payload.role ?? "umat"
+            userId = payload.sub ?? payload.userId ?? payload.id ?? null
+            role = (payload.role as UserRole) ?? null
             name = payload.name ?? null
             email = payload.email ?? null
           }
         } catch {
-          // JWT decode failed
+          // JWT decode failed — keep nulls; /users/me will hydrate
         }
 
         dispatch({
           type: "AUTH_SUCCESS",
-          payload: { accessToken: token, userId, role: role as UserRole, name, email },
+          payload: { accessToken: token, userId, role, name, email },
         })
 
         // Best effort: hydrate fresh profile from database
@@ -185,9 +188,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return await authService.resendRegisterOtp(email)
   }
 
-  const updateUser = (data: Partial<{ name: string | null; role: UserRole; email: string | null }>) => {
-    dispatch({ type: "AUTH_UPDATE_USER", payload: data })
-  }
+  const updateUser = useCallback(
+    (data: Partial<{ name: string | null; role: UserRole; email: string | null }>) => {
+      dispatch({ type: "AUTH_UPDATE_USER", payload: data })
+    },
+    [dispatch],
+  )
 
   const refreshUser = async (): Promise<void> => {
     const token = localStorage.getItem(STORAGE_KEY)

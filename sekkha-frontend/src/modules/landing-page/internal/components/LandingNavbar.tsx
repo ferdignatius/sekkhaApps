@@ -49,7 +49,7 @@ function DesktopCTA({ authState }: { authState: AuthState }) {
     return (
       <div className="hidden md:flex items-center">
         <Button variant="primary" asChild className="rounded-[12px] h-[44px] px-5 bg-sekkha-primary text-white font-semibold">
-          <a href="/dashboard">Dashboard</a>
+          <a href="/home">Dashboard</a>
         </Button>
       </div>
     )
@@ -83,7 +83,7 @@ function MobileInlineCTA({ authState }: { authState: AuthState }) {
   if (authState === 'authenticated') {
     return (
       <Button variant="primary" asChild className="md:hidden text-body-sm px-4 py-2 h-[38px] rounded-[10px] bg-sekkha-primary text-white font-semibold">
-        <a href="/dashboard">Dashboard</a>
+        <a href="/home">Dashboard</a>
       </Button>
     )
   }
@@ -214,7 +214,7 @@ function MobileDrawer({ isOpen, onClose, authState, navLinks, firstFocusableRef 
                 )}
                 {authState === 'authenticated' && (
                   <Button variant="primary" asChild className="h-11 rounded-[12px] bg-sekkha-primary text-white font-semibold">
-                    <a href="/dashboard" onClick={onClose}>Dashboard</a>
+                    <a href="/home" onClick={onClose}>Dashboard</a>
                   </Button>
                 )}
               </div>

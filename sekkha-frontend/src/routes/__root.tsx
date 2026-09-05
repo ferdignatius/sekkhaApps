@@ -28,20 +28,21 @@ export const Route = createRootRoute({
       {
         rel: "icon",
         type: "image/svg+xml",
-        href: "/sekkha_logo.svg?v=2",
-      },
-      {
-        rel: "icon",
-        type: "image/png",
-        href: "/favicon.png?v=2",
+        href: "/sekkha_logo.svg?v=3",
       },
       {
         rel: "alternate icon",
-        href: "/favicon.ico?v=2",
+        type: "image/svg+xml",
+        href: "/sekkha_logo.svg?v=3",
       },
       {
         rel: "apple-touch-icon",
-        href: "/favicon.png?v=2",
+        type: "image/svg+xml",
+        href: "/sekkha_logo.svg?v=3",
+      },
+      {
+        rel: "manifest",
+        href: "/manifest.json",
       },
       {
         rel: "stylesheet",

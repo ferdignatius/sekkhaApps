@@ -282,7 +282,7 @@ export function OnboardingPage() {
 
       setSuccessData({
         userNumber: res.user_number,
-        name: finalName || (authState.name ? authState.name : "Umat Sekkha"),
+        name: finalName || authState.name || "",
         username: res.username || profileForm.username.trim().toLowerCase(),
         school: profileForm.school,
         classGrade: hasGradeLevel ? profileForm.class_grade : undefined,
@@ -399,20 +399,20 @@ export function OnboardingPage() {
                 </span>
               </div>
 
-              {/* Username (Autofilled & Editable, Mandatory) */}
+              {/* Username (Mandatory, Editable) */}
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-semibold text-[#0a0a0a] flex items-center gap-1">
-                    <AtSignIcon className="size-3 text-[#6a6a6a]" />
+                  <label className="text-xs font-bold text-[#0a0a0a] flex items-center gap-1.5">
+                    <AtSignIcon className="size-3.5 text-[#0a0a0a]" />
                     <span>Username</span>
                     <span className="text-[#ef4444]">*</span>
                   </label>
-                  <span className="text-[10px] font-semibold text-[#22c55e] bg-[#22c55e]/10 border border-[#22c55e]/25 px-2 py-0.2 rounded-full">
-                    Autofill
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#0a0a0a] bg-[#faf5e8] border border-[#e5e5e5] px-2 py-0.5 rounded-full">
+                    Wajib diisi & dapat diubah
                   </span>
                 </div>
                 <div className="relative flex items-center">
-                  <span className="absolute left-3.5 text-sm font-semibold text-[#6a6a6a] select-none pointer-events-none">
+                  <span className="absolute left-3.5 text-sm font-bold text-[#6a6a6a] select-none pointer-events-none">
                     @
                   </span>
                   <input
@@ -426,11 +426,11 @@ export function OnboardingPage() {
                         username: e.target.value.toLowerCase().replace(/[^a-z0-9_.]/g, ""),
                       })
                     }
-                    className="w-full h-11 rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] pl-8 pr-3.5 py-2 text-sm font-medium text-[#0a0a0a] placeholder:text-[#9a9a9a] outline-none focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] transition-all"
+                    className="w-full h-11 rounded-[12px] border border-[#0a0a0a] bg-[#fffaf0] pl-8 pr-3.5 py-2 text-sm font-bold text-[#0a0a0a] placeholder:text-[#9a9a9a] placeholder:font-medium outline-none focus:border-[#0a0a0a] focus:ring-2 focus:ring-[#0a0a0a] transition-all"
                   />
                 </div>
                 <p className="text-[11px] text-[#6a6a6a]">
-                  Username unik akun Anda. Dapat disesuaikan bila diinginkan.
+                  ID unik Anda untuk login & mention. Huruf kecil, angka, titik, dan underscore saja. Otomatis terisi dari email — silakan sesuaikan bila perlu.
                 </p>
               </div>
 
@@ -742,12 +742,21 @@ export function OnboardingPage() {
 
                 <div className="flex items-center gap-4 py-1">
                   <div className="rounded-[12px] border border-[#e5e5e5] bg-white p-2.5 shrink-0 shadow-2xs">
-                    <QRCode
-                      value={successData.userNumber}
-                      size={90}
-                      style={{ height: "auto", maxWidth: "100%", width: "100%" }}
-                      viewBox="0 0 256 256"
-                    />
+                    {successData.userNumber ? (
+                      <QRCode
+                        value={successData.userNumber}
+                        size={90}
+                        style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+                        viewBox="0 0 256 256"
+                      />
+                    ) : (
+                      <div
+                        className="flex items-center justify-center text-[10px] font-semibold text-[#9a9a9a]"
+                        style={{ height: "90px", width: "90px" }}
+                      >
+                        QR unavailable
+                      </div>
+                    )}
                   </div>
 
                   <div className="space-y-1.5 min-w-0">

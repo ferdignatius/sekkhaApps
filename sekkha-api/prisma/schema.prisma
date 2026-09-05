@@ -36,6 +36,10 @@ model User {
   claimedAt DateTime? @map("claimed_at")
   claimPin  String?  @map("claim_pin")
   claimPinExpiresAt DateTime? @map("claim_pin_expires_at")
+  // Set to true once the user has changed/reset their own password.
+  // When true, admins can no longer force-reset the password — the user owns it.
+  passwordChangedByUser Boolean  @default(false) @map("password_changed_by_user")
+  passwordChangedAt DateTime? @map("password_changed_at")
   lastActivityAt DateTime? @map("last_activity_at")
   consecutiveMissed Int    @default(0) @map("consecutive_missed")
   userNumber String?  @unique @map("user_number")

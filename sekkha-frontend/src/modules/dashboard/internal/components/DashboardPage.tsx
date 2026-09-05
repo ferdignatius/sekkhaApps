@@ -546,6 +546,37 @@ export function DashboardPage() {
                 )
               })}
             </div>
+
+            {/* Search to find any menu — lives right after the quick access grid.
+                Typing opens the See More modal with the filter applied. */}
+            <div className="mt-4 sm:mt-5 pt-4 sm:pt-5 border-t border-[#e5e5e5]">
+              <div className="relative">
+                <SearchIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-[#6a6a6a] pointer-events-none" />
+                <input
+                  type="text"
+                  value={menuSearchQuery}
+                  onChange={(e) => {
+                    const next = e.target.value
+                    setMenuSearchQuery(next)
+                    if (next.trim().length > 0) setShowAllMenusModal(true)
+                  }}
+                  onFocus={() => setShowAllMenusModal(true)}
+                  placeholder="Cari menu atau fitur..."
+                  aria-label="Search menus and features"
+                  className="w-full rounded-[14px] border border-[#e5e5e5] bg-[#fffaf0] py-2.5 pl-10 pr-9 text-xs sm:text-sm text-[#0a0a0a] shadow-2xs placeholder:text-[#6a6a6a] focus:border-[#0a0a0a] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#0a0a0a] transition-all"
+                />
+                {menuSearchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setMenuSearchQuery("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-[#6a6a6a] hover:text-[#0a0a0a] cursor-pointer"
+                    aria-label="Clear search"
+                  >
+                    <XIcon className="size-3.5" />
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* ── 3. Community Agenda & Dhamma Wisdom Grid ── */}
@@ -623,29 +654,6 @@ export function DashboardPage() {
         maxWidth="max-w-4xl"
       >
         <div className="space-y-4 pt-1 font-sans">
-          {/* Search bar inside See More modal */}
-          <div className="relative">
-            <SearchIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-[#6a6a6a]" />
-            <input
-              type="text"
-              value={menuSearchQuery}
-              onChange={(e) => setMenuSearchQuery(e.target.value)}
-              placeholder="Search features, menus, or services..."
-              autoFocus
-              className="w-full rounded-[14px] border border-[#e5e5e5] bg-white py-2.5 pl-10 pr-9 text-xs sm:text-sm text-[#0a0a0a] shadow-xs placeholder:text-[#6a6a6a] focus:border-[#0a0a0a] focus:outline-none focus:ring-1 focus:ring-[#0a0a0a] transition-all"
-            />
-            {menuSearchQuery && (
-              <button
-                type="button"
-                onClick={() => setMenuSearchQuery("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-[#6a6a6a] hover:text-[#0a0a0a] cursor-pointer"
-                aria-label="Clear search"
-              >
-                <XIcon className="size-3.5" />
-              </button>
-            )}
-          </div>
-
           {/* Categorized and filtered items container */}
           <div className="max-h-[72vh] overflow-y-auto space-y-5 pr-1">
             {totalFilteredItems === 0 ? (

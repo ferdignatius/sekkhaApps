@@ -51,30 +51,54 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const profileMenuRef = useRef<HTMLDivElement>(null)
 
-  // Synchronize fresh user profile (including updated Full Name) on mount and on update events
-  useEffect(() => {
-    if (authState.status === "authenticated") {
-      api.get<{ name?: string }>("/users/me")
-        .then((u) => {
-          if (u.name && u.name !== authState.name) {
-            updateUser({ name: u.name })
-          }
-        })
-        .catch(() => {})
-    }
+  // Synchronize fresh user profile (including updated Full Name) on mount and on update events.
+  // Uses refs so the event listener is registered ONCE and always sees the latest state,
+  // avoiding stale-closure bugs when the auth context value reference changes.
+  const updateUserRef = useRef(updateUser)
+  const authStateNameRef = useRef(authState.name)
+  const authStateStatusRef = useRef(authState.status)
 
+  // Keep refs in sync with latest values on every render
+  useEffect(() => {
+    updateUserRef.current = updateUser
+    authStateNameRef.current = authState.name
+    authStateStatusRef.current = authState.status
+  })
+
+  // Event listener: register once on mount, use refs for latest values
+  useEffect(() => {
     function handleProfileUpdated(e: Event) {
       const customEvent = e as CustomEvent<{ name?: string }>
-      if (customEvent.detail?.name) {
-        updateUser({ name: customEvent.detail.name })
+      const newName = customEvent.detail?.name
+      if (newName && newName !== authStateNameRef.current) {
+        updateUserRef.current({ name: newName })
       }
     }
-
     window.addEventListener("sekkha:profile_updated", handleProfileUpdated)
     return () => {
       window.removeEventListener("sekkha:profile_updated", handleProfileUpdated)
     }
-  }, [authState.status, authState.name, updateUser])
+  }, [])
+
+  // Initial / on-status-change API sync: fetch fresh profile from server.
+  // Runs when status transitions to "authenticated" (e.g., after login or onboarding).
+  useEffect(() => {
+    if (authStateStatusRef.current !== "authenticated") return
+    let cancelled = false
+    api
+      .get<{ name?: string }>("/users/me")
+      .then((u) => {
+        if (cancelled) return
+        const freshName = u?.name
+        if (freshName && freshName !== authStateNameRef.current) {
+          updateUserRef.current({ name: freshName })
+        }
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [authState.status])
 
   const userId = authState.status === "authenticated" ? authState.userId : null
   const role = authState.status === "authenticated" ? authState.role : null
@@ -92,14 +116,16 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const configureSections = activeModules.flatMap((m) => m.configureSections ?? [])
 
   const roleLabel = role === "admin" ? "Admin" : role === "pengurus" ? "Organizer" : role === "aktivis" ? "Activist" : "Member"
-  const userName = authState.status === "authenticated" && authState.name ? authState.name : roleLabel
+  // Render blank when no real name is available — avoid flashing a default
+  // (e.g. "Member") before the /users/me hydration completes.
+  const userName = authState.status === "authenticated" && authState.name ? authState.name : ""
   const userInitials =
     userName
       .split(" ")
       .filter(Boolean)
       .slice(0, 2)
       .map((w) => w[0].toUpperCase())
-      .join("") || roleLabel.slice(0, 2)
+      .join("") || ""
 
   // Close profile menu when clicking outside
   useEffect(() => {

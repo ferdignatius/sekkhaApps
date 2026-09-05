@@ -7,6 +7,6 @@ export { AchievementsPage } from "./internal/components/AchievementsPage"
 export const profileModule: ModuleDefinition = {
   name: "profile",
   navItems: [
-    { label: "Profil", to: "/home/profile", icon: "User" },
+    { label: "Profile", to: "/home/profile", icon: "User" },
   ],
 }

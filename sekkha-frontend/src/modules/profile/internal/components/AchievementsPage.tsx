@@ -15,25 +15,25 @@ export function AchievementsPage() {
 
   return (
     <main>
-      <PageBreadcrumb items={[{ label: "Profil", href: "/home/profile" }, { label: "Achievements" }]} />
+      <PageBreadcrumb items={[{ label: "Profile", href: "/home/profile" }, { label: "Achievements" }]} />
       <div className="px-4 py-6 pb-24 md:px-8 md:pb-8 lg:px-12">
         <div className="mx-auto max-w-8xl space-y-5">
 
           {/* Header */}
           <div className="flex items-center gap-2">
             <AwardIcon className="size-5 text-sekkha-brand-yellow" aria-hidden="true" />
-            <h1 className="text-heading-5 text-sekkha-ink">Semua Badge</h1>
+            <h1 className="text-heading-5 text-sekkha-ink">Achievements</h1>
           </div>
 
           {/* Stats summary */}
           <div className="flex items-center gap-4">
             <div className="rounded-xl bg-sekkha-surface-yellow px-4 py-3 text-center">
               <p className="text-heading-4 font-semibold text-sekkha-ink">{earnedCount}</p>
-              <p className="text-caption text-sekkha-slate">Didapatkan</p>
+              <p className="text-caption text-sekkha-slate">Earned</p>
             </div>
             <div className="rounded-xl bg-sekkha-surface px-4 py-3 text-center">
               <p className="text-heading-4 font-semibold text-sekkha-muted">{badges.length - earnedCount}</p>
-              <p className="text-caption text-sekkha-slate">Terkunci</p>
+              <p className="text-caption text-sekkha-slate">Locked</p>
             </div>
           </div>
 

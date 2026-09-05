@@ -25,7 +25,7 @@ const NAV_ITEMS = [
     icon: LayoutDashboardIcon,
   },
   {
-    label: "Profil",
+    label: "Profile",
     to: "/home/profile",
     icon: UserIcon,
   },

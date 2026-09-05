@@ -499,7 +499,7 @@ export function AttendanceScanPage() {
   return (
     <div
       role="main"
-      aria-label="Event Attendance Scanner"
+      aria-label="Scan QR Attendance"
       className="fixed inset-0 z-50 flex flex-col bg-black text-white font-sans overflow-hidden select-none w-full h-[100dvh]"
     >
       {/* ── 1. Floating Top Bar ── */}
@@ -519,7 +519,7 @@ export function AttendanceScanPage() {
         <div className="flex items-center gap-1.5 sm:gap-2 rounded-full bg-black/70 px-3 sm:px-4 py-1 sm:py-1.5 backdrop-blur-md border border-white/20 shadow-lg">
           <span className="flex size-2 sm:size-2.5 rounded-full bg-emerald-500 animate-pulse" />
           <span className="text-[11px] sm:text-caption font-bold text-white tracking-wide">
-            {isPengurus ? `${sessionAttendedIds.size} Attended` : (event?.title || "Self Check-In")}
+            {isPengurus ? `Scan QR • ${sessionAttendedIds.size} Attended` : (event?.title ? `Scan QR • ${event.title}` : "Scan QR Check-In")}
           </span>
           {isPengurus && sessionSuccessCount > 0 && (
             <span className="rounded-full bg-emerald-500/30 px-1.5 py-0.2 text-[9px] sm:text-[10px] font-extrabold text-emerald-300">

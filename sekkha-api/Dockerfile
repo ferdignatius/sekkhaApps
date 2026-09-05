@@ -1,38 +1,45 @@
-# ─── Multi-stage Dockerfile for Sekkha API ──────────────────────────────────────
+# ─── Multi-stage Dockerfile for Sekkha API (Full Bun Stack) ────────────────────
 
 # 1. Build Stage
-FROM node:20-alpine AS builder
+FROM oven/bun:1-alpine AS builder
 
 WORKDIR /app
 
-COPY package*.json ./
+# Install OpenSSL for Prisma CLI and query engine on Alpine
+RUN apk add --no-cache openssl
+
+COPY package.json ./
 COPY prisma ./prisma/
 
-RUN npm install
+RUN bun install
 
 COPY tsconfig.json ./
 COPY src ./src
 
-RUN npx prisma generate
-RUN npm run build
+RUN bunx prisma generate
+RUN bun run build
 
 # 2. Production Runner Stage
-FROM node:20-alpine AS runner
+FROM oven/bun:1-alpine AS runner
 
 WORKDIR /app
+
+# Install OpenSSL at runtime for Prisma query engine
+RUN apk add --no-cache openssl
 
 ENV NODE_ENV=production
 ENV PORT=4000
 
-COPY package*.json ./
+COPY package.json ./
 COPY prisma ./prisma/
 
-RUN npm install --omit=dev
-RUN npx prisma generate
+RUN bun install --production
+RUN bunx prisma generate
 
 COPY --from=builder /app/dist ./dist
 
 EXPOSE 4000
 
-CMD ["node", "dist/index.js"]
+CMD ["bun", "dist/index.js"]
+
 

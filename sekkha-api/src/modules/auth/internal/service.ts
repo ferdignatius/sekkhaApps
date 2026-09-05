@@ -33,7 +33,8 @@ export interface AuthResult {
   user: { id: string; email: string; username?: string | null; name: string; role: string }
 }
 
-const SESSION_TTL_SECONDS = 7 * 24 * 60 * 60 // 7 days matching JWT expiration
+const DEFAULT_JWT_EXPIRY = process.env.JWT_EXPIRES_IN || "30d"
+const SESSION_TTL_SECONDS = 30 * 24 * 60 * 60 // 30 days matching JWT expiration
 
 async function cacheUserSession(token: string, userData: any) {
   try {
@@ -59,7 +60,7 @@ function generateToken(userId: string, role: string, name?: string): string {
   return jwt.sign(
     { userId, role, name },
     process.env.JWT_SECRET || "fallback-secret",
-    { expiresIn: "7d" }
+    { expiresIn: DEFAULT_JWT_EXPIRY as any }
   )
 }
 

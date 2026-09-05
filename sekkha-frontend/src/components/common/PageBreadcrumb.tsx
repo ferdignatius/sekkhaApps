@@ -26,11 +26,12 @@ interface PageBreadcrumbProps {
   items: BreadcrumbEntry[]
   onBack?: () => void
   showBack?: boolean
+  actions?: React.ReactNode
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export function PageBreadcrumb({ items, onBack, showBack }: PageBreadcrumbProps) {
+export function PageBreadcrumb({ items, onBack, showBack, actions }: PageBreadcrumbProps) {
   if (items.length === 0) return null
 
   const lastItem = items[items.length - 1]
@@ -46,7 +47,7 @@ export function PageBreadcrumb({ items, onBack, showBack }: PageBreadcrumbProps)
 
   return (
     <div className="sticky top-0 z-40 border-b border-[#e5e5e5] bg-[#fffaf0]/95 backdrop-blur-md shadow-2xs transition-all font-sans">
-      <div className="px-4 py-3 sm:px-6 md:py-3.5 md:px-8 lg:px-12">
+      <div className="px-4 py-2.5 sm:px-6 md:py-3 md:px-8 lg:px-12">
         <div className="mx-auto max-w-7xl flex items-center justify-between gap-3">
           
           {/* ── Left: Back Button ── */}
@@ -61,7 +62,7 @@ export function PageBreadcrumb({ items, onBack, showBack }: PageBreadcrumbProps)
               <ArrowLeftIcon className="size-4 text-[#0a0a0a]" />
             </button>
           ) : (
-            <div className="w-2 shrink-0 md:hidden" />
+            <div className="w-1 shrink-0 md:hidden" />
           )}
 
           {/* ── Center: Desktop Breadcrumb & Mobile Page Title ── */}
@@ -103,21 +104,25 @@ export function PageBreadcrumb({ items, onBack, showBack }: PageBreadcrumbProps)
           </div>
 
           {/* Mobile Centered Page Title */}
-          <div className="block md:hidden flex-1 text-center min-w-0 px-2">
+          <div className="block md:hidden flex-1 text-left min-w-0 px-1">
             <h1 className="text-sm font-bold text-[#0a0a0a] tracking-tight truncate">
               {lastItem.label}
             </h1>
           </div>
 
-          {/* ── Right: Notification Bell ── */}
+          {/* ── Right: Custom Actions or Notification Bell ── */}
           <div className="flex items-center gap-2 shrink-0">
-            <Link
-              to="/notifications"
-              className="flex h-10 w-10 items-center justify-center rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] hover:bg-[#faf5e8] hover:border-[#9a9a9a] transition-all shadow-2xs relative active:scale-95"
-              title="Notifications"
-            >
-              <NotificationBell />
-            </Link>
+            {actions ? (
+              actions
+            ) : (
+              <Link
+                to="/notifications"
+                className="flex h-10 w-10 items-center justify-center rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] hover:bg-[#faf5e8] hover:border-[#9a9a9a] transition-all shadow-2xs relative active:scale-95"
+                title="Notifications"
+              >
+                <NotificationBell />
+              </Link>
+            )}
           </div>
 
         </div>

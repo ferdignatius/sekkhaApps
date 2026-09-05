@@ -422,12 +422,13 @@ describe("AuthForm — unit tests (task 7.2)", () => {
     )
 
     const inputs = container.querySelectorAll("input")
-    expect(inputs).toHaveLength(3)
+    expect(inputs).toHaveLength(4)
 
     // Verify the expected fields by id
     expect(container.querySelector("#email")).not.toBeNull()
     expect(container.querySelector("#password")).not.toBeNull()
     expect(container.querySelector("#confirmPassword")).not.toBeNull()
+    expect(container.querySelector("#agreeToPrivacy")).not.toBeNull()
 
     unmount()
   })
@@ -513,7 +514,7 @@ describe("AuthForm — unit tests (task 7.2)", () => {
     const { unmount } = render(<SignUpHarness />)
 
     // Submit with all fields empty — find the form by its aria-label
-    const formEl = screen.getByRole("form", { name: "Formulir pendaftaran" })
+    const formEl = screen.getByRole("form", { name: /(sign up form|formulir pendaftaran)/i })
     fireEvent.submit(formEl)
 
     // Allow state updates to propagate

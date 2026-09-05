@@ -37,3 +37,6 @@ pnpm-debug.log*
 
 # Cloned skill repositories
 agent-skills/
+
+# Codewhale runtime state (internal)
+.codewhale/

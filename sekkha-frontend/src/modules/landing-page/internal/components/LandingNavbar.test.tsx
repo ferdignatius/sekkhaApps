@@ -65,11 +65,11 @@ describe('LandingNavbar — auth state: authenticated', () => {
     expect(screen.queryByText('Sign In')).toBeNull()
   })
 
-  it('"Dashboard" links to /dashboard', () => {
+  it('"Dashboard" links to /home', () => {
     renderNavbar('authenticated')
     const links = screen.getAllByText('Dashboard')
     links.forEach((link) => {
-      expect((link as HTMLAnchorElement).href).toContain('/dashboard')
+      expect((link as HTMLAnchorElement).href).toContain('/home')
     })
   })
 })

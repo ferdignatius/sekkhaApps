@@ -34,8 +34,8 @@ export type AuthAction =
       type: "AUTH_SUCCESS"
       payload: {
         accessToken: string
-        userId: string
-        role: UserRole
+        userId: string | null
+        role: UserRole | null
         name?: string | null
         email?: string | null
       }

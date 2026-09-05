@@ -42,6 +42,8 @@ import { useAuth } from "@/modules/auth"
 import { api } from "@/lib/api"
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
 import { Skeleton } from "@/components/ui/skeleton"
+import { ResponsiveFormModal } from "@/components/common/ResponsiveFormModal"
+import { SettingsSection } from "@/modules/profile/internal/components/SettingsSection"
 
 interface UserProfile {
   id: string
@@ -105,6 +107,7 @@ export function ProfilePage() {
   const [showEditModal, setShowEditModal] = useState(false)
   const [showPrintModal, setShowPrintModal] = useState(false)
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const [selectedBadge, setSelectedBadge] = useState<UserBadge | null>(null)
   const [copiedId, setCopiedId] = useState(false)
 
@@ -279,9 +282,13 @@ export function ProfilePage() {
 
   // 100% Real Calculated Values
   const role = profile?.role || authState.role || "umat"
-  const displayName = profile?.name || (authState.name ? authState.name : role.charAt(0).toUpperCase() + role.slice(1))
+  // Render blank when no real name is available — avoid flashing a default
+  // (e.g. capitalized role like "Umat") before hydration completes.
+  const displayName = profile?.name || authState.name || ""
   const school = profile?.school || ""
-  const memberId = profile?.user_number || profile?.userNumber || (authState.userId ? `SKH-${authState.userId.slice(-4)}` : "—")
+  // Render blank when no real member number is available — avoid flashing a
+  // derived placeholder (e.g. "SKH-1234") before the backend responds.
+  const memberId = profile?.user_number || profile?.userNumber || ""
   const totalPoints = profile?.points ?? 0
   const currentStreak = streakData?.currentStreak ?? (streakData as any)?.current_streak ?? 0
   const longestStreak = streakData?.longestStreak ?? (streakData as any)?.longest_streak ?? 0
@@ -914,12 +921,21 @@ export function ProfilePage() {
 
                   <div className="flex flex-col items-center justify-center p-6 bg-[#faf5e8] rounded-[16px] border border-[#e5e5e5] space-y-3">
                     <div className="rounded-[14px] bg-[#fffaf0] p-3 shadow-xs border border-[#e5e5e5]">
-                      <QRCode
-                        value={memberId || "UNKNOWN"}
-                        size={150}
-                        style={{ height: "auto", maxWidth: "100%", width: "150px" }}
-                        viewBox="0 0 256 256"
-                      />
+                      {memberId ? (
+                        <QRCode
+                          value={memberId}
+                          size={150}
+                          style={{ height: "auto", maxWidth: "100%", width: "150px" }}
+                          viewBox="0 0 256 256"
+                        />
+                      ) : (
+                        <div
+                          className="flex items-center justify-center text-[10px] font-semibold text-[#9a9a9a]"
+                          style={{ height: "150px", width: "150px" }}
+                        >
+                          QR unavailable
+                        </div>
+                      )}
                     </div>
                     <div className="text-center space-y-0.5">
                       <p className="font-mono text-sm sm:text-base font-bold text-[#0a0a0a]">{memberId}</p>
@@ -976,12 +992,21 @@ export function ProfilePage() {
 
                     <div className="flex items-center gap-3.5 py-1">
                       <div className="rounded-[10px] bg-white p-1.5 shrink-0 shadow-md">
-                        <QRCode
-                          value={memberId || "UNKNOWN"}
-                          size={70}
-                          style={{ height: "70px", width: "70px" }}
-                          viewBox="0 0 256 256"
-                        />
+                        {memberId ? (
+                          <QRCode
+                            value={memberId}
+                            size={70}
+                            style={{ height: "70px", width: "70px" }}
+                            viewBox="0 0 256 256"
+                          />
+                        ) : (
+                          <div
+                            className="flex items-center justify-center text-[8px] font-semibold text-[#9a9a9a]"
+                            style={{ height: "70px", width: "70px" }}
+                          >
+                            —
+                          </div>
+                        )}
                       </div>
                       <div className="space-y-1 min-w-0 flex-1">
                         <div>
@@ -1295,12 +1320,21 @@ export function ProfilePage() {
 
               <div className="flex items-center gap-3.5 py-1">
                 <div className="rounded-[10px] bg-white p-1.5 shrink-0 shadow-md">
-                  <QRCode
-                    value={memberId || "UNKNOWN"}
-                    size={70}
-                    style={{ height: "70px", width: "70px" }}
-                    viewBox="0 0 256 256"
-                  />
+                  {memberId ? (
+                    <QRCode
+                      value={memberId}
+                      size={70}
+                      style={{ height: "70px", width: "70px" }}
+                      viewBox="0 0 256 256"
+                    />
+                  ) : (
+                    <div
+                      className="flex items-center justify-center text-[8px] font-semibold text-[#9a9a9a]"
+                      style={{ height: "70px", width: "70px" }}
+                    >
+                      —
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-1 min-w-0 flex-1">
@@ -1509,12 +1543,21 @@ export function ProfilePage() {
 
         <div className="flex items-center gap-3 py-1">
           <div className="rounded border border-[#e5e5e5] p-1 shrink-0 bg-white">
-            <QRCode
-              value={memberId || "UNKNOWN"}
-              size={64}
-              style={{ height: "64px", width: "64px" }}
-              viewBox="0 0 256 256"
-            />
+            {memberId ? (
+              <QRCode
+                value={memberId}
+                size={64}
+                style={{ height: "64px", width: "64px" }}
+                viewBox="0 0 256 256"
+              />
+            ) : (
+              <div
+                className="flex items-center justify-center text-[7.5px] font-semibold text-[#9a9a9a]"
+                style={{ height: "64px", width: "64px" }}
+              >
+                —
+              </div>
+            )}
           </div>
 
           <div className="space-y-1 min-w-0 flex-1 text-left">
@@ -1542,6 +1585,50 @@ export function ProfilePage() {
           <span>Lifetime Validity</span>
         </div>
       </div>
+
+      {/* ── MOBILE-ONLY QUICK ACTIONS BAR ──
+          Surfaces Settings + Logout directly on mobile since the desktop
+          sidebar (where these live) is hidden below the `md` breakpoint.
+          Sits above the MobileDock and below the dock's safe zone. */}
+      <div className="md:hidden fixed bottom-[88px] left-3 right-3 z-40 mx-auto max-w-md font-sans">
+        <div className="flex items-center gap-2 rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0]/95 backdrop-blur-xl p-1.5 shadow-lg ring-1 ring-black/5">
+          <button
+            type="button"
+            onClick={() => setSettingsOpen(true)}
+            aria-label="Open settings"
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-[12px] px-3 py-2 text-[11px] font-bold text-[#0a0a0a] hover:bg-[#f5f0e0] active:scale-[0.98] transition-all cursor-pointer"
+          >
+            <SettingsIcon className="size-3.5" />
+            <span>Settings</span>
+          </button>
+          <div className="h-5 w-px bg-[#e5e5e5]" aria-hidden="true" />
+          <button
+            type="button"
+            onClick={logout}
+            aria-label="Sign out"
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-[12px] px-3 py-2 text-[11px] font-bold text-rose-600 hover:bg-rose-50 active:scale-[0.98] transition-all cursor-pointer"
+          >
+            <LogOutIcon className="size-3.5" />
+            <span>Sign Out</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Settings modal — reuses the same component the desktop sidebar opens */}
+      <ResponsiveFormModal
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+        title="Settings & Goals"
+        description="Manage your goals, account preferences, and privacy."
+      >
+        <SettingsSection
+          onLogout={() => {
+            setSettingsOpen(false)
+            logout()
+          }}
+          onClose={() => setSettingsOpen(false)}
+        />
+      </ResponsiveFormModal>
     </main>
   )
 }

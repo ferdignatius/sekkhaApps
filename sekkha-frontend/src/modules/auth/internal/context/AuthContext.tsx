@@ -15,6 +15,7 @@ import {
   type UserRole,
 } from "./authReducer"
 import { createAuthService, STORAGE_KEY } from "../api/authService"
+import { api } from "@/lib/api"
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
@@ -38,6 +39,10 @@ export interface AuthContextValue {
   logout: () => void
   /** Initiates the Google OAuth flow by redirecting to the backend OAuth entry point. */
   initiateGoogleOAuth: () => void
+  /** Updates the in-memory authenticated user info (name, role, email). */
+  updateUser: (user: Partial<{ name: string | null; role: UserRole; email: string | null }>) => void
+  /** Re-verifies session with backend to refresh latest user details. */
+  refreshUser: () => Promise<void>
 }
 
 // ─── Context ───────────────────────────────────────────────────────────────────
@@ -89,15 +94,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
         if (cancelled) return
 
-        // 200 OK — try to get userId from the response (best-effort decode)
-        // For init we re-read the response body; since verifyToken returns void,
-        // we decode userId and role from the JWT payload as a fallback.
         let userId: string = "unknown"
         let role: string = "umat"
         let name: string | null = null
         let email: string | null = null
+
         try {
-          // Attempt lightweight JWT decode (no signature verification needed here)
           const parts = token.split(".")
           if (parts.length === 3) {
             const payload = JSON.parse(atob(parts[1])) as {
@@ -121,6 +123,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
           type: "AUTH_SUCCESS",
           payload: { accessToken: token, userId, role: role as UserRole, name, email },
         })
+
+        // Best effort: hydrate fresh profile from database
+        api.get<{ name?: string; role?: string }>("/users/me")
+          .then((u) => {
+            if (!cancelled && u?.name) {
+              dispatch({
+                type: "AUTH_UPDATE_USER",
+                payload: { name: u.name, role: (u.role as UserRole) || undefined },
+              })
+            }
+          })
+          .catch(() => {})
       } catch {
         if (cancelled) return
 
@@ -171,6 +185,30 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return await authService.resendRegisterOtp(email)
   }
 
+  const updateUser = (data: Partial<{ name: string | null; role: UserRole; email: string | null }>) => {
+    dispatch({ type: "AUTH_UPDATE_USER", payload: data })
+  }
+
+  const refreshUser = async (): Promise<void> => {
+    const token = localStorage.getItem(STORAGE_KEY)
+    if (!token) return
+    try {
+      const res = await api.get<{ name?: string; role?: UserRole; email?: string }>("/users/me")
+      if (res) {
+        dispatch({
+          type: "AUTH_UPDATE_USER",
+          payload: {
+            name: res.name ?? null,
+            role: (res.role as UserRole) || undefined,
+            email: res.email ?? null,
+          },
+        })
+      }
+    } catch {
+      // Non-blocking
+    }
+  }
+
   const value: AuthContextValue = {
     authState,
     login,
@@ -180,6 +218,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     resendRegisterOtp,
     logout,
     initiateGoogleOAuth,
+    updateUser,
+    refreshUser,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

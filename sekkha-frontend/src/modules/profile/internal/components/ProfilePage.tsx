@@ -222,6 +222,9 @@ export function ProfilePage() {
 
       const updated = await api.patch<UserProfile>("/users/me", payload)
       setProfile((prev) => ({ ...prev, ...updated }))
+      if (updated.name) {
+        window.dispatchEvent(new CustomEvent("sekkha:profile_updated", { detail: { name: updated.name } }))
+      }
       setShowEditModal(false)
       showToast("Profile updated successfully!")
     } catch (err: any) {

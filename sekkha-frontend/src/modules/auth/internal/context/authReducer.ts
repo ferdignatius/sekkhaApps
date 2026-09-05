@@ -40,6 +40,14 @@ export type AuthAction =
         email?: string | null
       }
     }
+  | {
+      type: "AUTH_UPDATE_USER"
+      payload: Partial<{
+        name: string | null
+        role: UserRole
+        email: string | null
+      }>
+    }
   | { type: "AUTH_LOGOUT" }
   | { type: "AUTH_VERIFY_FAILED" }
 
@@ -61,6 +69,14 @@ export function authReducer(state: AuthState, action: AuthAction): AuthState {
         role: action.payload.role,
         name: action.payload.name ?? state.name,
         email: action.payload.email ?? state.email,
+      }
+
+    case "AUTH_UPDATE_USER":
+      return {
+        ...state,
+        name: action.payload.name !== undefined ? action.payload.name : state.name,
+        role: action.payload.role !== undefined ? action.payload.role : state.role,
+        email: action.payload.email !== undefined ? action.payload.email : state.email,
       }
 
     case "AUTH_LOGOUT":

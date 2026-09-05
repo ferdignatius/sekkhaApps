@@ -23,6 +23,7 @@ import {
   AlertTriangleIcon,
   ClockIcon,
   ShieldCheckIcon,
+  GraduationCapIcon,
 } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 
@@ -46,4 +47,5 @@ export const iconMap: Record<string, LucideIcon> = {
   AlertTriangle: AlertTriangleIcon,
   Clock: ClockIcon,
   ShieldCheck: ShieldCheckIcon,
+  GraduationCap: GraduationCapIcon,
 }

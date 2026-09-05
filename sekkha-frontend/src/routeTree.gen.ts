@@ -34,6 +34,7 @@ import { Route as AuthenticatedConfigureMasterBadgeRouteImport } from './routes/
 import { Route as AuthenticatedConfigureMasterEventTimeRouteImport } from './routes/_authenticated/configure/master/event-time'
 import { Route as AuthenticatedConfigureMasterEventTypeRouteImport } from './routes/_authenticated/configure/master/event-type'
 import { Route as AuthenticatedConfigureMasterLevelRouteImport } from './routes/_authenticated/configure/master/level'
+import { Route as AuthenticatedConfigureMasterSchoolRouteImport } from './routes/_authenticated/configure/master/school'
 import { Route as AuthenticatedConfigureMasterSeasonRouteImport } from './routes/_authenticated/configure/master/season'
 import { Route as AuthenticatedConfigureRulesPointsRouteImport } from './routes/_authenticated/configure/rules/points'
 import { Route as AuthenticatedConfigureRulesSeasonRouteImport } from './routes/_authenticated/configure/rules/season'
@@ -177,6 +178,12 @@ const AuthenticatedConfigureMasterLevelRoute =
     path: '/configure/master/level',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedConfigureMasterSchoolRoute =
+  AuthenticatedConfigureMasterSchoolRouteImport.update({
+    id: '/configure/master/school',
+    path: '/configure/master/school',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedConfigureMasterSeasonRoute =
   AuthenticatedConfigureMasterSeasonRouteImport.update({
     id: '/configure/master/season',
@@ -221,6 +228,7 @@ export interface FileRoutesByFullPath {
   '/configure/master/event-time': typeof AuthenticatedConfigureMasterEventTimeRoute
   '/configure/master/event-type': typeof AuthenticatedConfigureMasterEventTypeRoute
   '/configure/master/level': typeof AuthenticatedConfigureMasterLevelRoute
+  '/configure/master/school': typeof AuthenticatedConfigureMasterSchoolRoute
   '/configure/master/season': typeof AuthenticatedConfigureMasterSeasonRoute
   '/configure/rules/points': typeof AuthenticatedConfigureRulesPointsRoute
   '/configure/rules/season': typeof AuthenticatedConfigureRulesSeasonRoute
@@ -250,6 +258,7 @@ export interface FileRoutesByTo {
   '/configure/master/event-time': typeof AuthenticatedConfigureMasterEventTimeRoute
   '/configure/master/event-type': typeof AuthenticatedConfigureMasterEventTypeRoute
   '/configure/master/level': typeof AuthenticatedConfigureMasterLevelRoute
+  '/configure/master/school': typeof AuthenticatedConfigureMasterSchoolRoute
   '/configure/master/season': typeof AuthenticatedConfigureMasterSeasonRoute
   '/configure/rules/points': typeof AuthenticatedConfigureRulesPointsRoute
   '/configure/rules/season': typeof AuthenticatedConfigureRulesSeasonRoute
@@ -281,6 +290,7 @@ export interface FileRoutesById {
   '/_authenticated/configure/master/event-time': typeof AuthenticatedConfigureMasterEventTimeRoute
   '/_authenticated/configure/master/event-type': typeof AuthenticatedConfigureMasterEventTypeRoute
   '/_authenticated/configure/master/level': typeof AuthenticatedConfigureMasterLevelRoute
+  '/_authenticated/configure/master/school': typeof AuthenticatedConfigureMasterSchoolRoute
   '/_authenticated/configure/master/season': typeof AuthenticatedConfigureMasterSeasonRoute
   '/_authenticated/configure/rules/points': typeof AuthenticatedConfigureRulesPointsRoute
   '/_authenticated/configure/rules/season': typeof AuthenticatedConfigureRulesSeasonRoute
@@ -312,6 +322,7 @@ export interface FileRouteTypes {
     | '/configure/master/event-time'
     | '/configure/master/event-type'
     | '/configure/master/level'
+    | '/configure/master/school'
     | '/configure/master/season'
     | '/configure/rules/points'
     | '/configure/rules/season'
@@ -341,6 +352,7 @@ export interface FileRouteTypes {
     | '/configure/master/event-time'
     | '/configure/master/event-type'
     | '/configure/master/level'
+    | '/configure/master/school'
     | '/configure/master/season'
     | '/configure/rules/points'
     | '/configure/rules/season'
@@ -371,6 +383,7 @@ export interface FileRouteTypes {
     | '/_authenticated/configure/master/event-time'
     | '/_authenticated/configure/master/event-type'
     | '/_authenticated/configure/master/level'
+    | '/_authenticated/configure/master/school'
     | '/_authenticated/configure/master/season'
     | '/_authenticated/configure/rules/points'
     | '/_authenticated/configure/rules/season'
@@ -561,6 +574,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedConfigureMasterLevelRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/configure/master/school': {
+      id: '/_authenticated/configure/master/school'
+      path: '/configure/master/school'
+      fullPath: '/configure/master/school'
+      preLoaderRoute: typeof AuthenticatedConfigureMasterSchoolRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/configure/master/season': {
       id: '/_authenticated/configure/master/season'
       path: '/configure/master/season'
@@ -606,6 +626,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedConfigureMasterEventTimeRoute: typeof AuthenticatedConfigureMasterEventTimeRoute
   AuthenticatedConfigureMasterEventTypeRoute: typeof AuthenticatedConfigureMasterEventTypeRoute
   AuthenticatedConfigureMasterLevelRoute: typeof AuthenticatedConfigureMasterLevelRoute
+  AuthenticatedConfigureMasterSchoolRoute: typeof AuthenticatedConfigureMasterSchoolRoute
   AuthenticatedConfigureMasterSeasonRoute: typeof AuthenticatedConfigureMasterSeasonRoute
   AuthenticatedConfigureRulesPointsRoute: typeof AuthenticatedConfigureRulesPointsRoute
   AuthenticatedConfigureRulesSeasonRoute: typeof AuthenticatedConfigureRulesSeasonRoute
@@ -640,6 +661,8 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
     AuthenticatedConfigureMasterEventTypeRoute,
   AuthenticatedConfigureMasterLevelRoute:
     AuthenticatedConfigureMasterLevelRoute,
+  AuthenticatedConfigureMasterSchoolRoute:
+    AuthenticatedConfigureMasterSchoolRoute,
   AuthenticatedConfigureMasterSeasonRoute:
     AuthenticatedConfigureMasterSeasonRoute,
   AuthenticatedConfigureRulesPointsRoute:

@@ -4,7 +4,7 @@
 
 import { useState } from "react"
 import QRCode from "react-qr-code"
-import { PrinterIcon, DownloadIcon, SparklesIcon, CheckIcon, XIcon } from "lucide-react"
+import { PrinterIcon, DownloadIcon, CheckIcon, XIcon } from "lucide-react"
 
 interface MemberQrCardProps {
   memberName?: string
@@ -45,8 +45,8 @@ export function MemberQrCard({
         {/* Top Header Card */}
         <div className="flex items-center justify-between border-b border-sekkha-hairline-soft pb-3">
           <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-sekkha-brand-blue text-white shadow-xs">
-              <SparklesIcon className="size-4 text-amber-300" />
+            <div className="flex size-8 shrink-0 items-center justify-center">
+              <img src="/sekkha_logo.svg" alt="Sekkha" className="size-full object-contain" />
             </div>
             <div>
               <h3 className="text-caption-bold text-sekkha-ink">Kartu Anggota Digital</h3>
@@ -154,8 +154,8 @@ export function MemberQrCard({
               {/* Card Header */}
               <div className="flex items-center justify-between border-b border-white/20 pb-2">
                 <div className="flex items-center gap-2">
-                  <div className="flex size-7 items-center justify-center rounded-lg bg-white/20 text-white font-black">
-                    <SparklesIcon className="size-4 text-amber-300" />
+                  <div className="flex size-7 items-center justify-center">
+                    <img src="/sekkha_logo.svg" alt="Sekkha" className="size-full object-contain" />
                   </div>
                   <div>
                     <p className="text-[12px] font-black tracking-tight leading-none uppercase">{viharaName}</p>

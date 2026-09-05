@@ -36,7 +36,10 @@ export function LandingFooter({ navColumns }: LandingFooterProps) {
         >
           {/* Brand */}
           <div className="flex flex-col gap-3 max-w-[320px]">
-            <span className="text-title-lg text-sekkha-ink font-semibold tracking-tight">🙏 Sekkha</span>
+            <span className="flex items-center gap-2 text-title-lg text-sekkha-ink font-semibold tracking-tight">
+              <img src="/sekkha_logo.svg" alt="" className="size-6 object-contain" />
+              <span>Sekkha</span>
+            </span>
             <p className="text-body-sm text-sekkha-slate leading-relaxed">
               Digital community & fellowship platform for Buddhist youth of Vihara Tri Maha Dharma.
             </p>

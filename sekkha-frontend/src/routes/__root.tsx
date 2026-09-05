@@ -26,6 +26,24 @@ export const Route = createRootRoute({
     ],
     links: [
       {
+        rel: "icon",
+        type: "image/svg+xml",
+        href: "/sekkha_logo.svg?v=2",
+      },
+      {
+        rel: "icon",
+        type: "image/png",
+        href: "/favicon.png?v=2",
+      },
+      {
+        rel: "alternate icon",
+        href: "/favicon.ico?v=2",
+      },
+      {
+        rel: "apple-touch-icon",
+        href: "/favicon.png?v=2",
+      },
+      {
         rel: "stylesheet",
         href: appCss,
       },

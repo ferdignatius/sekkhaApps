@@ -279,12 +279,13 @@ export function LandingNavbar({ authState, scrollY }: LandingNavbarProps) {
         <a
           href="/"
           className={cn(
-            'text-heading-5 text-sekkha-ink shrink-0',
+            'flex items-center gap-2.5 text-heading-5 text-sekkha-ink shrink-0 font-bold',
             'focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-sekkha-primary focus-visible:outline-none rounded-sm',
           )}
           aria-label="Sekkha — Kembali ke beranda"
         >
-          Sekkha
+          <img src="/sekkha_logo.svg" alt="" className="size-7 object-contain" />
+          <span>Sekkha</span>
         </a>
 
         {/* Desktop nav links */}

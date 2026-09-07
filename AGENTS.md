@@ -59,4 +59,15 @@ Per-folder rules live in READMEs next to the code (`sekkha-*/src/**/README.md`) 
 - Tests are colocated (`__tests__/`, `*.test.ts(x)`); property-based tests are `*.pbt.test.ts` (fast-check). Vitest uses `vitest.config.ts`, deliberately separate from `vite.config.ts` because TanStack Start/Nitro plugins bundle their own React and break unit tests. jsdom + globals; `src/test-setup.ts` stubs IntersectionObserver for framer-motion.
 - Prettier: no semicolons, double quotes, print width 80, Tailwind class sorting (`cn`/`cva` aware) — `sekkha-frontend/.prettierrc`.
 - `agent-skills/` is a gitignored upstream clone (addyosmani/agent-skills); the installed skills live in `.agents/skills/`. Neither is project code — don't edit or build them.
-- Branches: `main` and `production`. Conventional Commits (`feat:`, `fix:`, `chore:`…); releases land as `release: vX.Y.Z`.
+- Branches: `main` and `production`. Conventional Commits (`feat:`, `fix:`, `chore:`…).
+
+## Release & Versioning
+
+Semver; all three `package.json` files (root, api, frontend) share one version — the annotated git tag is the source of truth. Bump rules: breaking → MAJOR, additive → MINOR, fix → PATCH.
+
+Release flow (from `production`):
+
+1. `bun run release <ver>` — bumps version in all workspaces (no deps needed)
+2. Move `[Unreleased]` entries to the new version in `CHANGELOG.md`; write each entry with the change, not at release time
+3. `git commit -m "release: vX.Y.Z"` then `git tag -a vX.Y.Z -m "Release X.Y.Z"` then push branch + tag
+4. On deploy, bump the pinned image tag in `sekkha-api/docker-compose.yml` (`ferdignatius/sekkha-api:vX.Y.Z`)

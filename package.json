@@ -13,6 +13,7 @@
     "dev": "bun --filter \"*\" dev",
     "build:api": "bun --filter sekkha-api build",
     "build:web": "bun --filter sekkha-frontend build",
-    "build": "bun --filter \"*\" build"
+    "build": "bun --filter \"*\" build",
+    "release": "bun scripts/release.mjs"
   }
 }

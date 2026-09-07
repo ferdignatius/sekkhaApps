@@ -16,7 +16,7 @@ const rankCardStyles: Record<number, string> = {
 
 export function LeaderboardSection({ heading, subheading, entries }: LeaderboardSectionProps) {
   return (
-    <section aria-labelledby="leaderboard-heading" id="leaderboard" className="relative py-[96px] overflow-hidden">
+    <section aria-labelledby="leaderboard-heading" id="leaderboard" className="relative py-16 md:py-24 overflow-hidden">
       <div className="mx-auto w-full max-w-[1280px] px-4 md:px-8">
 
         {/* Heading */}
@@ -30,16 +30,16 @@ export function LeaderboardSection({ heading, subheading, entries }: Leaderboard
           <span className="inline-flex items-center gap-1.5 rounded-full bg-white border border-sekkha-hairline px-3.5 py-1 text-caption-uppercase text-sekkha-ink tracking-[1.5px] mb-4 shadow-xs">
             <TrophyIcon className="size-3.5 text-[#e8b94a]" /> Attendance & Merit Points
           </span>
-          <h2 id="leaderboard-heading" className="text-display-md text-sekkha-ink font-medium tracking-[-1px] text-3xl sm:text-4xl">
+          <h2 id="leaderboard-heading" className="text-3xl sm:text-4xl md:text-display-md text-sekkha-ink font-medium tracking-[-1px]">
             {heading}
           </h2>
-          <p className="text-body-md text-sekkha-slate mt-3 max-w-[520px] mx-auto text-base md:text-lg">
+          <p className="text-body-md md:text-lg text-sekkha-slate mt-3 max-w-[520px] mx-auto">
             {subheading}
           </p>
         </motion.div>
 
         {/* Leaderboard list container */}
-        <div className="rounded-[24px] p-6 md:p-8 shadow-xs border border-sekkha-hairline bg-sekkha-surface relative max-w-[860px] mx-auto">
+        <div className="rounded-lg p-6 md:p-8 shadow-xs border border-sekkha-hairline bg-sekkha-surface relative max-w-[860px] mx-auto">
           <ol className="flex flex-col gap-3" aria-label="Top active members list">
             {entries.map((entry, i) => {
               const cardClass = rankCardStyles[entry.rank] || 'bg-white border-sekkha-hairline hover:border-black/20'
@@ -47,7 +47,7 @@ export function LeaderboardSection({ heading, subheading, entries }: Leaderboard
               return (
                 <motion.li
                   key={entry.rank}
-                  className={`flex items-center gap-4 rounded-xl px-5 py-3.5 border transition-all ${cardClass}`}
+                  className={`flex items-center gap-3 sm:gap-4 rounded-xl px-4 sm:px-5 py-3 sm:py-3.5 border transition-all ${cardClass}`}
                   initial={{ opacity: 0, x: -24 }}
                   whileInView={{ opacity: 1, x: 0 }}
                   viewport={{ once: true, margin: '-30px' }}

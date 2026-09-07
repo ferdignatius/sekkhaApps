@@ -37,11 +37,13 @@ describe('HeroSection', () => {
     expect(secondaryCta).toBeDefined()
   })
 
-  // Both buttons rendered together
+  // Both CTA buttons rendered together
   it('renders both CTA buttons', () => {
     render(<HeroSection {...defaultProps} />)
-    const buttons = screen.getAllByRole('button')
-    expect(buttons.length).toBe(2)
+    const joinCta = screen.getByRole('button', { name: /(join for free|bergabung sekarang)/i })
+    const exploreCta = screen.getByRole('button', { name: /(explore events|lihat kegiatan)/i })
+    expect(joinCta).toBeDefined()
+    expect(exploreCta).toBeDefined()
   })
 
   // Headline reflects the prop value passed in

@@ -86,7 +86,7 @@ export function DashboardMockup() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <p className="truncate text-body-sm-medium text-sekkha-ink font-semibold">Sekkha Member</p>
-                    <span className="rounded-full bg-sekkha-brand-yellow/20 px-2 py-0.5 text-micro font-bold text-sekkha-yellow-dark">
+                    <span className="rounded-full bg-sekkha-brand-yellow/20 px-2 py-0.5 text-micro font-bold text-sekkha-ink">
                       Lv.3
                     </span>
                   </div>
@@ -103,7 +103,7 @@ export function DashboardMockup() {
                 <div className="flex items-center gap-2">
                   <div className="h-3 flex-1 overflow-hidden rounded-full bg-white border border-sekkha-hairline-soft">
                     <motion.div
-                      className="h-full rounded-full bg-gradient-to-r from-sekkha-brand-yellow to-sekkha-brand-yellow-deep"
+                      className="h-full rounded-full bg-gradient-to-r from-sekkha-brand-yellow to-amber-500"
                       style={{ width: `${levelProgress}%` }}
                       layout
                       transition={{ type: 'spring', stiffness: 80, damping: 15 }}
@@ -122,7 +122,7 @@ export function DashboardMockup() {
               {/* Quick Stats Grid */}
               <div className="grid grid-cols-2 gap-3 mt-4">
                 <div className="flex items-center gap-3.5 rounded-lg bg-orange-50/80 px-3 py-2">
-                  <FlameIcon className="size-6 text-orange-500 fill-orange-55" />
+                  <FlameIcon className="size-6 text-orange-500 fill-orange-500" />
                   <div>
                     <span className="block text-body-sm-medium font-bold text-orange-600">5 Weeks</span>
                     <span className="text-micro text-sekkha-slate">Active Streak 🔥</span>
@@ -147,10 +147,11 @@ export function DashboardMockup() {
 
               <div className="space-y-2">
                 {missions.map(mission => (
-                  <motion.div
+                  <motion.button
                     key={mission.id}
-                    role="presentation"
+                    type="button"
                     onClick={() => toggleMission(mission.id)}
+                    aria-pressed={mission.done}
                     className={`flex w-full cursor-pointer items-center justify-between gap-3 rounded-lg px-3.5 py-2.5 text-left border transition-all ${
                       mission.done
                         ? 'bg-sekkha-teal-light/70 border-sekkha-brand-teal/20 text-sekkha-ink'
@@ -173,12 +174,12 @@ export function DashboardMockup() {
                       className={`rounded-full px-2 py-0.5 text-micro font-bold shrink-0 ${
                         mission.done
                           ? 'bg-sekkha-brand-blue text-white'
-                          : 'bg-sekkha-surface-yellow text-sekkha-yellow-dark'
+                          : 'bg-sekkha-brand-yellow/20 text-sekkha-ink'
                       }`}
                     >
                       {mission.done ? 'Done' : `+${mission.reward} XP`}
                     </span>
-                  </motion.div>
+                  </motion.button>
                 ))}
               </div>
             </div>
@@ -249,7 +250,7 @@ export function DashboardMockup() {
       
       {/* Sticky Note 1: Yellow (Top Left) */}
       <motion.div
-        className="absolute -top-10 -left-6 md:-left-12 z-20 bg-sekkha-brand-yellow text-sekkha-ink font-sans p-3 shadow-md w-36 h-36 flex flex-col justify-between rounded-sm cursor-grab active:cursor-grabbing"
+        className="absolute -top-6 -left-3 sm:-top-10 sm:-left-6 md:-left-12 z-20 bg-sekkha-brand-yellow text-sekkha-ink font-sans p-3 shadow-md w-28 h-28 sm:w-36 sm:h-36 flex flex-col justify-between rounded-sm cursor-grab active:cursor-grabbing"
         style={{ rotate: '-4deg' }}
         initial={{ opacity: 0, x: -32, rotate: -15 }}
         animate={{ opacity: 1, x: 0, rotate: -4 }}
@@ -266,7 +267,7 @@ export function DashboardMockup() {
 
       {/* Sticky Note 2: Teal (Bottom Right) */}
       <motion.div
-        className="absolute -bottom-8 -right-6 md:-right-10 z-20 bg-sekkha-teal-light text-sekkha-ink font-sans p-3 shadow-md w-36 h-36 flex flex-col justify-between rounded-sm cursor-grab active:cursor-grabbing"
+        className="absolute -bottom-6 -right-3 sm:-bottom-8 sm:-right-6 md:-right-10 z-20 bg-sekkha-teal-light text-sekkha-ink font-sans p-3 shadow-md w-28 h-28 sm:w-36 sm:h-36 flex flex-col justify-between rounded-sm cursor-grab active:cursor-grabbing"
         style={{ rotate: '5deg' }}
         initial={{ opacity: 0, x: 32, rotate: 15 }}
         animate={{ opacity: 1, x: 0, rotate: 5 }}

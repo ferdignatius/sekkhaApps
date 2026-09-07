@@ -148,10 +148,31 @@ interface MobileDrawerProps {
 }
 
 function MobileDrawer({ isOpen, onClose, authState, navLinks, firstFocusableRef }: MobileDrawerProps) {
+  const drawerRef = React.useRef<HTMLDivElement>(null)
+
   React.useEffect(() => {
     if (!isOpen) return
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape') {
+        onClose()
+        return
+      }
+      if (e.key !== 'Tab') return
+      const drawer = drawerRef.current
+      if (!drawer) return
+      const focusables = drawer.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      )
+      if (focusables.length === 0) return
+      const first = focusables[0]
+      const last = focusables[focusables.length - 1]
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault()
+        last.focus()
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault()
+        first.focus()
+      }
     }
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
@@ -174,11 +195,12 @@ function MobileDrawer({ isOpen, onClose, authState, navLinks, firstFocusableRef 
 
           {/* Drawer panel */}
           <motion.div
+            ref={drawerRef}
             id="mobile-nav-drawer"
             role="dialog"
             aria-modal="true"
             aria-label="Navigation menu"
-            className="fixed inset-x-0 top-16 z-50 bg-sekkha-canvas border-t border-sekkha-hairline shadow-lg"
+            className="fixed inset-x-0 top-16 z-50 bg-sekkha-canvas border-t border-sekkha-hairline shadow-lg max-h-[calc(100dvh-4rem)] overflow-y-auto"
             initial={{ opacity: 0, y: -12 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}

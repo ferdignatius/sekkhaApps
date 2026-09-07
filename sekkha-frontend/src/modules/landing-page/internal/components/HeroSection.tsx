@@ -12,9 +12,9 @@ const EASE = "easeOut"
 
 export function HeroSection({ headline, subheadline }: HeroSectionProps) {
   return (
-    <section aria-labelledby="hero-heading" className="relative w-full py-[120px] overflow-hidden">
-      {/* Background ambient mesh gradient */}
-      <div className="absolute inset-0 -z-10 bg-gradient-to-b from-amber-50/40 via-teal-50/20 to-white pointer-events-none" />
+    <section aria-labelledby="hero-heading" className="relative w-full py-16 md:py-24 overflow-hidden">
+      {/* Background ambient mesh gradient — cream canvas per DESIGN.md */}
+      <div className="absolute inset-0 -z-10 bg-gradient-to-b from-sekkha-surface/70 via-sekkha-canvas to-sekkha-canvas pointer-events-none" />
 
       <div className="mx-auto w-full max-w-[1280px] px-4 md:px-8 relative z-10">
 
@@ -25,7 +25,7 @@ export function HeroSection({ headline, subheadline }: HeroSectionProps) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: EASE, delay: 0 }}
         >
-          <span className="inline-flex items-center gap-2 rounded-full glass-pill px-4 py-1.5 text-body-sm text-sekkha-ink font-medium shadow-sm">
+          <span className="inline-flex items-center gap-2 rounded-full bg-white border border-sekkha-hairline px-4 py-1.5 text-body-sm text-sekkha-ink font-medium shadow-xs">
             ✨ Youth Digital Platform • Vihara Tri Maha Dharma
           </span>
         </motion.div>
@@ -33,7 +33,7 @@ export function HeroSection({ headline, subheadline }: HeroSectionProps) {
         {/* Headline */}
         <motion.h1
           id="hero-heading"
-          className="text-display-xl text-sekkha-ink max-w-[860px] mx-auto text-center font-medium tracking-[-1.5px] sm:tracking-[-2px] md:tracking-[-2.5px] text-4xl sm:text-5xl md:text-[68px] lg:text-[72px] leading-[1.05]"
+          className="text-4xl sm:text-5xl md:text-display-xl text-sekkha-ink max-w-[860px] mx-auto text-center font-medium tracking-[-1.5px] sm:tracking-[-2px] md:tracking-[-2.5px] leading-[1.05]"
           initial={{ opacity: 0, y: 32 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: EASE, delay: 0.1 }}
@@ -43,7 +43,7 @@ export function HeroSection({ headline, subheadline }: HeroSectionProps) {
 
         {/* Subheadline */}
         <motion.p
-          className="text-body-md text-sekkha-slate max-w-[640px] mx-auto text-center mt-6 text-base md:text-lg leading-relaxed font-normal"
+          className="text-body-md md:text-lg text-sekkha-slate max-w-[640px] mx-auto text-center mt-6 leading-relaxed font-normal"
           initial={{ opacity: 0, y: 32 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: EASE, delay: 0.2 }}
@@ -83,14 +83,14 @@ export function HeroSection({ headline, subheadline }: HeroSectionProps) {
 
         {/* Glowing background ambient orbs */}
         <motion.div
-          className="pointer-events-none absolute left-[10%] top-[15%] -z-10 h-96 w-96 rounded-full bg-sekkha-brand-yellow/20 blur-3xl animate-pulse-slow"
+          className="pointer-events-none absolute left-[10%] top-[15%] -z-10 h-40 w-40 sm:h-96 sm:w-96 rounded-full bg-sekkha-brand-yellow/20 blur-3xl animate-pulse-slow"
           initial={{ opacity: 0, scale: 0.6 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 1.4, delay: 0.2, ease: 'easeOut' }}
           aria-hidden="true"
         />
         <motion.div
-          className="pointer-events-none absolute right-[10%] top-[25%] -z-10 h-80 w-80 rounded-full bg-sekkha-teal-light/40 blur-3xl animate-float"
+          className="pointer-events-none absolute right-[10%] top-[25%] -z-10 h-32 w-32 sm:h-80 sm:w-80 rounded-full bg-sekkha-teal-light/40 blur-3xl animate-float"
           initial={{ opacity: 0, scale: 0.6 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 1.4, delay: 0.4, ease: 'easeOut' }}

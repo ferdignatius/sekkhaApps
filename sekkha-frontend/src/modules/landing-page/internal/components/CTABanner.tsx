@@ -15,7 +15,7 @@ export function CTABanner({ heading, onSignUpNavigate }: CTABannerProps) {
   return (
     <section
       aria-labelledby="cta-heading"
-      className="relative mx-auto w-full max-w-[1280px] px-4 md:px-8 py-[96px]"
+      className="relative mx-auto w-full max-w-[1280px] px-4 md:px-8 py-16 md:py-24"
     >
       <motion.div
         className="relative overflow-hidden rounded-[24px] p-8 md:p-16 flex flex-col items-center text-center bg-sekkha-surface border border-sekkha-hairline shadow-xs"
@@ -61,7 +61,7 @@ export function CTABanner({ heading, onSignUpNavigate }: CTABannerProps) {
           {/* Heading */}
           <motion.h2
             id="cta-heading"
-            className="text-display-md text-sekkha-ink font-medium tracking-[-1px] text-2xl sm:text-3xl md:text-4xl mb-8"
+            className="text-2xl sm:text-3xl md:text-display-md text-sekkha-ink font-medium tracking-[-1px] mb-8"
             initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}

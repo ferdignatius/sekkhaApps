@@ -24,7 +24,7 @@ export function EventsSection({ heading, subheading, items }: EventsSectionProps
     : items.filter(item => item.category === activeCategory)
 
   return (
-    <section aria-labelledby="events-heading" id="events" className="relative py-[96px]">
+    <section aria-labelledby="events-heading" id="events" className="relative py-16 md:py-24">
       <div className="mx-auto w-full max-w-[1280px] px-4 md:px-8">
 
         {/* Heading */}
@@ -38,10 +38,10 @@ export function EventsSection({ heading, subheading, items }: EventsSectionProps
           <span className="inline-flex items-center gap-1.5 rounded-full bg-white border border-sekkha-hairline px-3.5 py-1 text-caption-uppercase text-sekkha-ink tracking-[1.5px] mb-4 shadow-xs">
             <SparklesIcon className="size-3.5 text-[#e8b94a]" /> Agenda & Events
           </span>
-          <h2 id="events-heading" className="text-display-md text-sekkha-ink font-medium tracking-[-1px] text-3xl sm:text-4xl md:text-5xl">
+          <h2 id="events-heading" className="text-3xl sm:text-4xl md:text-display-md text-sekkha-ink font-medium tracking-[-1px]">
             {heading}
           </h2>
-          <p className="text-body-md text-sekkha-slate mt-3 max-w-[540px] mx-auto text-base md:text-lg">
+          <p className="text-body-md md:text-lg text-sekkha-slate mt-3 max-w-[540px] mx-auto">
             {subheading}
           </p>
 
@@ -77,7 +77,7 @@ export function EventsSection({ heading, subheading, items }: EventsSectionProps
             return (
               <motion.article
                 key={i}
-                className="flex flex-col justify-between gap-4 rounded-[20px] bg-white p-6 border border-sekkha-hairline shadow-xs relative overflow-hidden group hover:border-black/20 hover:shadow-md transition-all"
+                className="flex flex-col justify-between gap-4 rounded-lg bg-white p-6 border border-sekkha-hairline shadow-xs relative overflow-hidden group hover:border-black/20 hover:shadow-md transition-all"
                 initial={{ opacity: 0, y: 28 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: '-40px' }}

@@ -97,7 +97,7 @@ export function FeatureCard({ title, description, colorVariant, index }: Feature
 
   return (
     <motion.div
-      className={`rounded-[24px] p-8 relative overflow-hidden ${variant.bg} ${variant.border ?? ''} shadow-xs group transition-all flex flex-col justify-between`}
+      className={`rounded-[24px] p-6 sm:p-8 relative overflow-hidden ${variant.bg} ${variant.border ?? ''} shadow-xs group transition-all flex flex-col justify-between`}
       data-index={index}
       initial={{ opacity: 0, y: 24 }}
       whileInView={{ opacity: 1, y: 0 }}
@@ -110,7 +110,7 @@ export function FeatureCard({ title, description, colorVariant, index }: Feature
 
       <div>
         {/* Icon Badge */}
-        <div className={`inline-flex items-center justify-center p-3 rounded-xl border backdrop-blur-md mb-5 shadow-xs ${variant.badgeBg} ${variant.iconColor}`}>
+        <div className={`inline-flex items-center justify-center p-2.5 sm:p-3 rounded-xl border backdrop-blur-md mb-5 shadow-xs ${variant.badgeBg} ${variant.iconColor}`}>
           {icon}
         </div>
 

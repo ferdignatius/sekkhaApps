@@ -13,9 +13,9 @@ interface FeatureSectionProps {
 
 export function FeatureSection({ features }: FeatureSectionProps) {
   return (
-    <section aria-labelledby="features-heading" id="features" className="relative py-[96px] overflow-hidden">
-      {/* Background ambient lighting */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[500px] bg-gradient-to-tr from-amber-100/30 via-teal-100/20 to-pink-100/30 blur-3xl pointer-events-none -z-10 rounded-full" />
+    <section aria-labelledby="features-heading" id="features" className="relative py-16 md:py-24 overflow-hidden">
+      {/* Background ambient lighting — cream-toned per DESIGN.md */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[500px] bg-gradient-to-tr from-sekkha-surface via-white to-sekkha-surface blur-3xl pointer-events-none -z-10 rounded-full" />
 
       <div className="mx-auto w-full max-w-[1280px] px-4 md:px-8">
         <motion.div
@@ -30,11 +30,11 @@ export function FeatureSection({ features }: FeatureSectionProps) {
           </span>
           <h2
             id="features-heading"
-            className="text-display-lg text-sekkha-ink text-center font-medium tracking-[-1px] sm:tracking-[-1.5px] md:tracking-[-2px] text-3xl sm:text-4xl md:text-[52px] leading-tight"
+            className="text-3xl sm:text-4xl md:text-display-lg text-sekkha-ink text-center font-medium tracking-[-1px] sm:tracking-[-1.5px] md:tracking-[-2px] leading-tight"
           >
             What Can You Experience?
           </h2>
-          <p className="text-body-md text-sekkha-slate text-center max-w-[600px] mx-auto mt-4 text-base md:text-lg">
+          <p className="text-body-md md:text-lg text-sekkha-slate text-center max-w-[600px] mx-auto mt-4">
             An integrated digital platform crafted to support your spiritual practice, personal development, and Dhamma fellowship.
           </p>
         </motion.div>

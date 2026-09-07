@@ -22,7 +22,7 @@ export function LandingFooter({ navColumns }: LandingFooterProps) {
   return (
     <footer
       role="contentinfo"
-      className="w-full bg-sekkha-surface text-sekkha-ink border-t border-sekkha-hairline py-[80px]"
+      className="w-full bg-sekkha-surface text-sekkha-ink border-t border-sekkha-hairline py-16 md:py-20"
     >
       <div className="mx-auto w-full max-w-[1280px] px-4 md:px-8">
 

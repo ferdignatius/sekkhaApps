@@ -412,15 +412,6 @@ export function DashboardPage() {
       >
         <BellIcon className="size-4.5 text-[#0a0a0a]" />
       </Link>
-
-      <Link
-        to="/home/profile"
-        aria-label="Profile Settings"
-        className="flex size-9 sm:size-10 items-center justify-center rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] hover:bg-[#faf5e8] hover:border-[#9a9a9a] transition-all shadow-2xs relative active:scale-95"
-        title="Settings"
-      >
-        <SettingsIcon className="size-4.5 text-[#0a0a0a]" />
-      </Link>
     </div>
   )
 
@@ -432,72 +423,75 @@ export function DashboardPage() {
         <div className="mx-auto max-w-7xl space-y-4 sm:space-y-6">
 
           {/* ── 1. Profile Header Card (Clay Warm Canvas Style) ── */}
-          <div className="relative overflow-hidden rounded-[24px] border border-[#e5e5e5] bg-[#faf5e8] p-4 sm:p-6 shadow-xs transition-all">
+          <div className="relative overflow-hidden rounded-[20px] sm:rounded-[24px] border border-[#e5e5e5] bg-[#faf5e8] p-3.5 sm:p-5 lg:p-6 shadow-xs transition-all">
             {/* Playful Subtle Decorative Glows */}
             <div className="absolute -top-10 -right-10 size-40 rounded-full bg-[#ffb084]/20 blur-2xl pointer-events-none" />
             <div className="absolute -bottom-10 -left-10 size-40 rounded-full bg-[#1a3a3a]/10 blur-2xl pointer-events-none" />
 
             {/* Content Wrapper */}
-            <div className="relative z-10 flex flex-col items-center text-center sm:flex-row sm:items-center sm:justify-between sm:text-left gap-4">
+            <div className="relative z-10 flex flex-col gap-3 sm:gap-4">
               
-              {/* Profile Info Section */}
-              <div className="flex flex-col items-center sm:flex-row sm:items-center gap-3.5 sm:gap-4 min-w-0 w-full sm:w-auto">
-                {/* Profile Picture */}
-                <div className="flex flex-col items-center shrink-0">
-                  <div className="flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-[16px] bg-[#e8b94a] text-xl font-black text-[#0a0a0a] ring-4 ring-white shadow-xs">
+              {/* Top Row: Profile Info (Left) + Quick QR Button (Right) */}
+              <div className="flex items-center justify-between gap-3 min-w-0">
+                {/* Profile Picture + Name Info */}
+                <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
+                  {/* Profile Picture */}
+                  <div className="flex size-12 sm:size-14 md:size-16 items-center justify-center rounded-[14px] sm:rounded-[16px] bg-[#e8b94a] text-base sm:text-xl font-black text-[#0a0a0a] ring-2 sm:ring-4 ring-white shadow-xs shrink-0">
                     {displayName.split(" ").slice(0, 2).map((w: string) => w[0]).join("")}
                   </div>
-                </div>
 
-                {/* Text Info: Name -> Role & Member ID */}
-                <div className="min-w-0 flex-1 flex flex-col items-center sm:items-start text-center sm:text-left w-full">
-                  <h1 className="text-base sm:text-xl md:text-2xl font-bold text-[#0a0a0a] tracking-tight break-words leading-snug max-w-full">
-                    Namo Buddhaya, {displayName}! 👋
-                  </h1>
-                  <div className="flex items-center gap-2 mt-1.5 flex-wrap justify-center sm:justify-start">
-                    <span className="rounded-full bg-[#1a3a3a]/10 border border-[#1a3a3a]/20 px-2.5 py-0.5 text-xs font-semibold text-[#1a3a3a] capitalize">
-                      {roleLabel}
-                    </span>
-                    <span className="text-xs text-[#6a6a6a] font-mono">
-                      ID: {memberId}
-                    </span>
-                  </div>
-                </div>
-
-              </div>
-
-              {/* Stats (Streak & Points) & QR Code Trigger */}
-              <div className="flex flex-col sm:flex-row items-center w-full lg:w-auto gap-2.5 border-t border-[#e5e5e5] pt-3 lg:border-t-0 lg:pt-0">
-                
-                {/* Stats pills: Streak & Points */}
-                <div className="flex items-center justify-center gap-2 w-full sm:w-auto shrink-0">
-                  <div className="flex-1 sm:flex-initial flex items-center justify-center gap-2 rounded-[12px] bg-[#ffb084]/25 border border-[#ffb084]/50 px-3.5 py-2 shadow-2xs">
-                    <FlameIcon className="size-4 text-[#ff4d8b] shrink-0" />
-                    <div className="text-left">
-                      <p className="text-[10px] text-[#0a0a0a] uppercase font-bold leading-none">Streak</p>
-                      <p className="text-xs font-black text-[#0a0a0a] leading-tight mt-0.5">{currentStreak}x Active</p>
-                    </div>
-                  </div>
-
-                  <div className="flex-1 sm:flex-initial flex items-center justify-center gap-2 rounded-[12px] bg-[#e8b94a]/25 border border-[#e8b94a]/50 px-3.5 py-2 shadow-2xs">
-                    <AwardIcon className="size-4 text-[#0a0a0a] shrink-0" />
-                    <div className="text-left">
-                      <p className="text-[10px] text-[#0a0a0a] uppercase font-bold leading-none">Points</p>
-                      <p className="text-xs font-black text-[#0a0a0a] leading-tight mt-0.5">{totalPoints.toLocaleString("en-US")} Pts</p>
+                  {/* Text Info: Namo Buddhaya -> Name (Truncated with ...) -> Role & Member ID */}
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs sm:text-sm font-medium text-[#6a6a6a] leading-none">
+                      Namo Buddhaya
+                    </p>
+                    <h1
+                      className="text-base sm:text-xl md:text-2xl font-bold text-[#0a0a0a] tracking-tight truncate leading-tight mt-1"
+                      title={displayName}
+                    >
+                      {displayName}
+                    </h1>
+                    <div className="flex items-center gap-1.5 sm:gap-2 mt-1 flex-wrap">
+                      <span className="rounded-full bg-[#1a3a3a]/10 border border-[#1a3a3a]/20 px-2 py-0.5 text-[11px] sm:text-xs font-semibold text-[#1a3a3a] capitalize shrink-0">
+                        {roleLabel}
+                      </span>
+                      <span className="text-[11px] sm:text-xs text-[#6a6a6a] font-mono shrink-0">
+                        ID: {memberId}
+                      </span>
                     </div>
                   </div>
                 </div>
 
-                {/* Show QR Button */}
+                {/* Quick QR Action (Option B) */}
                 <button
                   type="button"
                   onClick={() => setShowQrModal(true)}
-                  className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-[12px] bg-[#0a0a0a] py-2 px-3.5 text-xs font-bold text-white shadow-xs hover:bg-[#1f1f1f] transition-all active:scale-[0.99] shrink-0 cursor-pointer"
+                  className="flex items-center gap-1.5 sm:gap-2 px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-[12px] bg-[#0a0a0a] text-white hover:bg-[#1f1f1f] shadow-xs active:scale-95 transition-all cursor-pointer shrink-0"
+                  title="Attendance QR Code"
+                  aria-label="Attendance QR Code"
                 >
-                  <QrCodeIcon className="size-4" />
-                  <span>QR Code</span>
+                  <QrCodeIcon className="size-4 sm:size-4.5 text-white shrink-0" />
+                  <span className="text-xs sm:text-sm font-bold whitespace-nowrap">QR Code</span>
                 </button>
+              </div>
 
+              {/* Bottom Row: Stats (Streak & Points) */}
+              <div className="grid grid-cols-2 gap-2 sm:gap-3 pt-2.5 sm:pt-3 border-t border-[#e5e5e5]/80">
+                <div className="flex items-center gap-2 sm:gap-2.5 rounded-[12px] bg-[#ffb084]/25 border border-[#ffb084]/50 px-3 py-1.5 sm:px-4 sm:py-2.5 shadow-2xs">
+                  <FlameIcon className="size-4 sm:size-4.5 text-[#ff4d8b] shrink-0" />
+                  <div className="text-left min-w-0">
+                    <p className="text-[10px] sm:text-[11px] text-[#6a6a6a] uppercase font-bold leading-none">Streak</p>
+                    <p className="text-xs sm:text-sm font-black text-[#0a0a0a] leading-tight mt-0.5 whitespace-nowrap truncate">{currentStreak}x Active</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 sm:gap-2.5 rounded-[12px] bg-[#e8b94a]/25 border border-[#e8b94a]/50 px-3 py-1.5 sm:px-4 sm:py-2.5 shadow-2xs">
+                  <AwardIcon className="size-4 sm:size-4.5 text-[#0a0a0a] shrink-0" />
+                  <div className="text-left min-w-0">
+                    <p className="text-[10px] sm:text-[11px] text-[#6a6a6a] uppercase font-bold leading-none">Points</p>
+                    <p className="text-xs sm:text-sm font-black text-[#0a0a0a] leading-tight mt-0.5 whitespace-nowrap truncate">{totalPoints.toLocaleString("en-US")} Pts</p>
+                  </div>
+                </div>
               </div>
 
             </div>
@@ -546,45 +540,14 @@ export function DashboardPage() {
                 )
               })}
             </div>
-
-            {/* Search to find any menu — lives right after the quick access grid.
-                Typing opens the See More modal with the filter applied. */}
-            <div className="mt-4 sm:mt-5 pt-4 sm:pt-5 border-t border-[#e5e5e5]">
-              <div className="relative">
-                <SearchIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-[#6a6a6a] pointer-events-none" />
-                <input
-                  type="text"
-                  value={menuSearchQuery}
-                  onChange={(e) => {
-                    const next = e.target.value
-                    setMenuSearchQuery(next)
-                    if (next.trim().length > 0) setShowAllMenusModal(true)
-                  }}
-                  onFocus={() => setShowAllMenusModal(true)}
-                  placeholder="Cari menu atau fitur..."
-                  aria-label="Search menus and features"
-                  className="w-full rounded-[14px] border border-[#e5e5e5] bg-[#fffaf0] py-2.5 pl-10 pr-9 text-xs sm:text-sm text-[#0a0a0a] shadow-2xs placeholder:text-[#6a6a6a] focus:border-[#0a0a0a] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#0a0a0a] transition-all"
-                />
-                {menuSearchQuery && (
-                  <button
-                    type="button"
-                    onClick={() => setMenuSearchQuery("")}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-[#6a6a6a] hover:text-[#0a0a0a] cursor-pointer"
-                    aria-label="Clear search"
-                  >
-                    <XIcon className="size-3.5" />
-                  </button>
-                )}
-              </div>
-            </div>
           </div>
 
           {/* ── 3. Community Agenda & Dhamma Wisdom Grid ── */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 items-stretch">
 
             {/* ── Upcoming Event Card ── */}
-            <div className="relative overflow-hidden rounded-[20px] sm:rounded-[24px] border border-[#e5e5e5] bg-[#fffaf0] p-4 sm:p-5 shadow-xs transition-all flex flex-col justify-between">
-              <div>
+            <div className="relative overflow-hidden rounded-[20px] sm:rounded-[24px] border border-[#e5e5e5] bg-[#fffaf0] p-4 sm:p-5 shadow-xs transition-all flex flex-col justify-between h-full">
+              <div className="flex flex-col flex-1">
                 {/* Header */}
                 <div className="mb-3 flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
@@ -599,7 +562,7 @@ export function DashboardPage() {
                 </div>
 
                 {/* Event Status Card */}
-                <div className="rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] p-3.5 sm:p-4">
+                <div className="rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] p-3.5 sm:p-4 flex-1 flex flex-col justify-center min-h-[120px] sm:min-h-[140px]">
                   {nextEvent ? (
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div className="min-w-0">
@@ -624,11 +587,8 @@ export function DashboardPage() {
                       </div>
                     </div>
                   ) : (
-                    <div className="py-4 text-center space-y-2">
-                      <p className="text-xs font-medium text-[#6a6a6a]">No upcoming events at the moment.</p>
-                      <Link to="/events" className="inline-flex items-center gap-1.5 text-xs font-bold text-[#0a0a0a] hover:underline">
-                        <span>View Schedule</span> <ArrowRightIcon className="size-3" />
-                      </Link>
+                    <div className="py-6 sm:py-8 text-center flex flex-col items-center justify-center flex-1">
+                      <p className="text-xs sm:text-sm font-medium text-[#6a6a6a]">No upcoming events at the moment.</p>
                     </div>
                   )}
                 </div>
@@ -636,7 +596,7 @@ export function DashboardPage() {
             </div>
 
             {/* ── Daily Wisdom / Dhamma Reflection ── */}
-            <div id="dhamma-wisdom-card">
+            <div id="dhamma-wisdom-card" className="h-full flex flex-col">
               <DhammaWidget />
             </div>
 
@@ -648,14 +608,40 @@ export function DashboardPage() {
       {/* ── See More / All Menus Modal with Search ── */}
       <ResponsiveFormModal
         open={showAllMenusModal}
-        onOpenChange={setShowAllMenusModal}
+        onOpenChange={(open) => {
+          setShowAllMenusModal(open)
+          if (!open) setMenuSearchQuery("")
+        }}
         title="All Menus & Features"
-        description="Explore all features, schedules, and services in Sekkha"
         maxWidth="max-w-4xl"
       >
         <div className="space-y-4 pt-1 font-sans">
+          {/* Search bar inside modal / drawer */}
+          <div className="relative">
+            <SearchIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-[#6a6a6a] pointer-events-none" />
+            <input
+              type="text"
+              value={menuSearchQuery}
+              onChange={(e) => setMenuSearchQuery(e.target.value)}
+              placeholder="Cari menu atau fitur..."
+              aria-label="Search menus and features"
+              autoFocus
+              className="w-full rounded-[14px] border border-[#e5e5e5] bg-[#fffaf0] py-2.5 pl-10 pr-9 text-xs sm:text-sm text-[#0a0a0a] shadow-2xs placeholder:text-[#6a6a6a] focus:border-[#0a0a0a] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#0a0a0a] transition-all"
+            />
+            {menuSearchQuery && (
+              <button
+                type="button"
+                onClick={() => setMenuSearchQuery("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-[#6a6a6a] hover:text-[#0a0a0a] cursor-pointer"
+                aria-label="Clear search"
+              >
+                <XIcon className="size-3.5" />
+              </button>
+            )}
+          </div>
+
           {/* Categorized and filtered items container */}
-          <div className="max-h-[72vh] overflow-y-auto space-y-5 pr-1">
+          <div className="max-h-[65vh] overflow-y-auto space-y-5 pr-1">
             {totalFilteredItems === 0 ? (
               <div className="py-8 text-center space-y-1.5">
                 <p className="text-sm font-semibold text-[#0a0a0a]">No features found</p>
@@ -675,24 +661,14 @@ export function DashboardPage() {
                       const content = (
                         <>
                           <div
-                            className={`flex size-10 shrink-0 items-center justify-center rounded-[12px] ${item.bg} ${item.iconColor} shadow-2xs group-hover:scale-105 transition-transform`}
+                            className={`flex size-9 sm:size-10 shrink-0 items-center justify-center rounded-[12px] ${item.bg} ${item.iconColor} shadow-2xs group-hover:scale-105 transition-transform`}
                           >
-                            <Icon className="size-5" />
+                            <Icon className="size-4.5 sm:size-5" />
                           </div>
                           <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className="text-xs font-bold text-[#0a0a0a] group-hover:text-black">
-                                {item.label}
-                              </span>
-                              {item.badge && (
-                                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#1a3a3a]/10 text-[#1a3a3a] font-semibold">
-                                  {item.badge}
-                                </span>
-                              )}
-                            </div>
-                            <p className="text-[11px] text-[#6a6a6a] mt-0.5 line-clamp-2 leading-relaxed">
-                              {item.description}
-                            </p>
+                            <span className="text-xs sm:text-sm font-bold text-[#0a0a0a] group-hover:text-black truncate block">
+                              {item.label}
+                            </span>
                           </div>
                         </>
                       )
@@ -706,7 +682,7 @@ export function DashboardPage() {
                               setShowAllMenusModal(false)
                               ;(item as any).onClick()
                             }}
-                            className="flex items-start gap-3 p-3 rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] hover:bg-[#f5f0e0] hover:border-[#0a0a0a]/20 transition-all text-left group cursor-pointer w-full"
+                            className="flex items-center gap-3 px-3 py-2.5 rounded-[14px] border border-[#e5e5e5] bg-[#faf5e8] hover:bg-[#f5f0e0] hover:border-[#0a0a0a]/20 transition-all text-left group cursor-pointer w-full"
                           >
                             {content}
                           </button>
@@ -718,7 +694,7 @@ export function DashboardPage() {
                           key={item.id}
                           to={item.href as "/"}
                           onClick={() => setShowAllMenusModal(false)}
-                          className="flex items-start gap-3 p-3 rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] hover:bg-[#f5f0e0] hover:border-[#0a0a0a]/20 transition-all text-left group cursor-pointer"
+                          className="flex items-center gap-3 px-3 py-2.5 rounded-[14px] border border-[#e5e5e5] bg-[#faf5e8] hover:bg-[#f5f0e0] hover:border-[#0a0a0a]/20 transition-all text-left group cursor-pointer"
                         >
                           {content}
                         </Link>

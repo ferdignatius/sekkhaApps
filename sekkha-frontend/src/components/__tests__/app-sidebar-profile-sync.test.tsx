@@ -5,11 +5,26 @@
 
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest"
 import { render, screen, act, cleanup } from "@testing-library/react"
-import { MemoryRouter } from "@tanstack/react-router"
 import { AppSidebar } from "@/components/app-sidebar"
+import { SidebarProvider } from "@/components/ui/sidebar"
+import { TooltipProvider } from "@/components/ui/tooltip"
 import { AuthContext } from "@/modules/auth/internal/context/AuthContext"
-import { authReducer, initialAuthState, type AuthState, type UserRole } from "@/modules/auth/internal/context/authReducer"
+import {
+  authReducer,
+  initialAuthState,
+  type AuthState,
+  type UserRole,
+} from "@/modules/auth/internal/context/authReducer"
 import { api } from "@/lib/api"
+
+vi.mock("@tanstack/react-router", () => ({
+  Link: ({ children, to, ...props }: any) => (
+    <a href={to} {...props}>
+      {children}
+    </a>
+  ),
+  useRouterState: () => ({ location: { pathname: "/home" } }),
+}))
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -25,7 +40,10 @@ function makeAuthState(overrides: Partial<AuthState> = {}): AuthState {
   }
 }
 
-function renderWithAuth(authState: AuthState, apiGetMock: ReturnType<typeof vi.fn>) {
+function renderWithAuth(
+  authState: AuthState,
+  apiGetMock: ReturnType<typeof vi.fn>
+) {
   // Mock the api module so we can control /users/me responses.
   vi.spyOn(api, "get").mockImplementation(apiGetMock as any)
 
@@ -42,16 +60,29 @@ function renderWithAuth(authState: AuthState, apiGetMock: ReturnType<typeof vi.f
     resendRegisterOtp: vi.fn(),
     logout: vi.fn(),
     initiateGoogleOAuth: vi.fn(),
-    updateUser: (data: Partial<{ name: string | null; role: UserRole; email: string | null }>) => {
-      currentState = authReducer(currentState, { type: "AUTH_UPDATE_USER", payload: data })
+    updateUser: (
+      data: Partial<{
+        name: string | null
+        role: UserRole
+        email: string | null
+      }>
+    ) => {
+      currentState = authReducer(currentState, {
+        type: "AUTH_UPDATE_USER",
+        payload: data,
+      })
     },
     refreshUser: vi.fn(),
   }
 
   const Wrapper = ({ children }: { children: React.ReactNode }) => (
-    <MemoryRouter>
-      <AuthContext.Provider value={value as any}>{children}</AuthContext.Provider>
-    </MemoryRouter>
+    <TooltipProvider>
+      <SidebarProvider>
+        <AuthContext.Provider value={value as any}>
+          {children}
+        </AuthContext.Provider>
+      </SidebarProvider>
+    </TooltipProvider>
   )
 
   const result = render(<AppSidebar />, { wrapper: Wrapper })
@@ -72,7 +103,10 @@ describe("AppSidebar — profile name sync", () => {
   })
 
   it("renders the initial Full Name from authState.name", () => {
-    renderWithAuth(makeAuthState({ name: "Ferdi" }), vi.fn().mockResolvedValue({ name: "Ferdi" }))
+    renderWithAuth(
+      makeAuthState({ name: "Ferdi" }),
+      vi.fn().mockResolvedValue({ name: "Ferdi" })
+    )
 
     // The bottom user card should show "Ferdi"
     const userNameElements = screen.getAllByText("Ferdi")
@@ -82,7 +116,7 @@ describe("AppSidebar — profile name sync", () => {
   it("updates the displayed Full Name when sekkha:profile_updated event is dispatched", () => {
     const { rerender, getState, value } = renderWithAuth(
       makeAuthState({ name: "Ferdi" }),
-      vi.fn().mockResolvedValue({ name: "Ferdi" }),
+      vi.fn().mockResolvedValue({ name: "Ferdi" })
     )
 
     // Verify initial state
@@ -93,7 +127,9 @@ describe("AppSidebar — profile name sync", () => {
     // Our test harness's updateUser mutates the closure's currentState.
     act(() => {
       window.dispatchEvent(
-        new CustomEvent("sekkha:profile_updated", { detail: { name: "Budi Baru" } }),
+        new CustomEvent("sekkha:profile_updated", {
+          detail: { name: "Budi Baru" },
+        })
       )
     })
 
@@ -103,11 +139,15 @@ describe("AppSidebar — profile name sync", () => {
     // Re-render with the new state so the sidebar picks it up
     act(() => {
       rerender(
-        <MemoryRouter>
-          <AuthContext.Provider value={{ ...value, authState: getState() } as any}>
-            <AppSidebar />
-          </AuthContext.Provider>
-        </MemoryRouter>,
+        <TooltipProvider>
+          <SidebarProvider>
+            <AuthContext.Provider
+              value={{ ...value, authState: getState() } as any}
+            >
+              <AppSidebar />
+            </AuthContext.Provider>
+          </SidebarProvider>
+        </TooltipProvider>
       )
     })
 
@@ -118,14 +158,16 @@ describe("AppSidebar — profile name sync", () => {
   it("does NOT throw or lose state when the dispatched name matches the current state (no-op guard)", () => {
     renderWithAuth(
       makeAuthState({ name: "Same Name" }),
-      vi.fn().mockResolvedValue({ name: "Same Name" }),
+      vi.fn().mockResolvedValue({ name: "Same Name" })
     )
 
     // Dispatch event with the SAME name
     expect(() => {
       act(() => {
         window.dispatchEvent(
-          new CustomEvent("sekkha:profile_updated", { detail: { name: "Same Name" } }),
+          new CustomEvent("sekkha:profile_updated", {
+            detail: { name: "Same Name" },
+          })
         )
       })
     }).not.toThrow()

@@ -4,7 +4,19 @@ All notable changes to Sekkha Apps. Semver (`MAJOR.MINOR.PATCH`); newest on top.
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-09-08
+
+### Added
+- Events page: month/year picker, category dropdown, date search, attendance list per event, and role-guarded create/duplicate/delete actions.
+- Leaderboard page: selectable scoring metrics, podium layout, role-filtered entries, and pagination.
+- Teams page: search plus role-based category filtering and pagination.
+- Two new shadcn-style UI components: `field` (`Field`/`FieldLabel`) and `pagination`.
+- `EventCalendar` gains a `hideHeader` prop for compact form pickers.
+- `MobileDock` tests and a `matchMedia` mock in `test-setup` (needed by the `use-mobile` hook).
+
 ### Changed
+- Mobile nudge dock is now role-aware: Community is hidden for `umat`, and nav order matches the sidebar (Home, Events, Leaderboard, Community, Profile).
+- `app-sidebar-profile-sync` test rewritten to use `SidebarProvider`/`TooltipProvider` and a router mock instead of `MemoryRouter`.
 - Landing page responsive overhaul per `DESIGN.md`: mobile-first section padding, typography scale fixed at breakpoints (no more 72px hero overflow), StatsSection dividers corrected on 2-column mobile grid, sticky notes shrink on small screens.
 - Removed codewhale runtime state and unused scratch files; added `AGENTS.md` with repo conventions.
 

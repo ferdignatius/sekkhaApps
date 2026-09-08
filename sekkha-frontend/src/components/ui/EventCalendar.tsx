@@ -20,13 +20,25 @@ export interface EventCalendarProps {
   onMonthChange?: (month: Date) => void
   /** Render compact layout for form pickers */
   compact?: boolean
+  /** Whether to hide the built-in month navigation header */
+  hideHeader?: boolean
 }
 
 const DAYS_EN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 
 const MONTHS_EN = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December"
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ]
 
 function toKey(date: Date): string {
@@ -37,9 +49,11 @@ function toKey(date: Date): string {
 }
 
 function isSameDay(a: Date, b: Date) {
-  return a.getFullYear() === b.getFullYear() &&
+  return (
+    a.getFullYear() === b.getFullYear() &&
     a.getMonth() === b.getMonth() &&
     a.getDate() === b.getDate()
+  )
 }
 
 function buildGrid(year: number, month: number): Date[][] {
@@ -69,6 +83,7 @@ export function EventCalendar({
   month,
   onMonthChange,
   compact = false,
+  hideHeader = false,
 }: EventCalendarProps) {
   const today = new Date()
   const year = month.getFullYear()
@@ -96,55 +111,58 @@ export function EventCalendar({
   }
 
   return (
-    <div className={`w-full select-none font-sans text-left ${
-      compact
-        ? "p-1.5 space-y-2 bg-transparent"
-        : "rounded-[20px] border border-[#e5e5e5] bg-[#fffaf0] p-4 shadow-xs space-y-3"
-    }`}>
-      
+    <div
+      className={`w-full text-left font-sans select-none ${
+        compact
+          ? "space-y-2 bg-transparent p-1.5"
+          : "space-y-3 rounded-[20px] border border-[#e5e5e5] bg-[#fffaf0] p-4 shadow-xs"
+      }`}
+    >
       {/* ── Month Navigation Header ── */}
-      <div className="flex items-center justify-between pb-2 border-b border-[#e5e5e5] px-0.5">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-bold text-[#0a0a0a] tracking-tight">
-            {monthLabel(month)}
-          </span>
-          <button
-            type="button"
-            onClick={resetToToday}
-            className="rounded-[8px] bg-[#faf5e8] border border-[#e5e5e5] px-2 py-0.5 text-xs font-semibold text-[#0a0a0a] hover:bg-[#f5f0e0] transition-colors cursor-pointer"
-            title="Reset to current month"
-          >
-            Today
-          </button>
-        </div>
+      {!hideHeader && (
+        <div className="flex items-center justify-between border-b border-[#e5e5e5] px-0.5 pb-2">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-bold tracking-tight text-[#0a0a0a]">
+              {monthLabel(month)}
+            </span>
+            <button
+              type="button"
+              onClick={resetToToday}
+              className="cursor-pointer rounded-[8px] border border-[#e5e5e5] bg-[#faf5e8] px-2 py-0.5 text-xs font-semibold text-[#0a0a0a] transition-colors hover:bg-[#f5f0e0]"
+              title="Reset to current month"
+            >
+              Today
+            </button>
+          </div>
 
-        <div className="flex items-center gap-1.5">
-          <button
-            type="button"
-            onClick={prevMonth}
-            aria-label="Previous month"
-            className="flex h-8 w-8 items-center justify-center rounded-[10px] border border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] hover:bg-[#faf5e8] transition-all shadow-2xs active:scale-95 cursor-pointer"
-          >
-            <ChevronLeftIcon className="size-4" />
-          </button>
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={prevMonth}
+              aria-label="Previous month"
+              className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-[10px] border border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] shadow-2xs transition-all hover:bg-[#faf5e8] active:scale-95"
+            >
+              <ChevronLeftIcon className="size-4" />
+            </button>
 
-          <button
-            type="button"
-            onClick={nextMonth}
-            aria-label="Next month"
-            className="flex h-8 w-8 items-center justify-center rounded-[10px] border border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] hover:bg-[#faf5e8] transition-all shadow-2xs active:scale-95 cursor-pointer"
-          >
-            <ChevronRightIcon className="size-4" />
-          </button>
+            <button
+              type="button"
+              onClick={nextMonth}
+              aria-label="Next month"
+              className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-[10px] border border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] shadow-2xs transition-all hover:bg-[#faf5e8] active:scale-95"
+            >
+              <ChevronRightIcon className="size-4" />
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* ── Day-of-week headers ── */}
       <div className="grid grid-cols-7 text-center">
         {DAYS_EN.map((d) => (
           <div
             key={d}
-            className="text-[11px] font-bold uppercase tracking-tight py-1 text-[#6a6a6a]"
+            className="py-1 text-[11px] font-bold tracking-tight text-[#6a6a6a] uppercase"
           >
             {d}
           </div>
@@ -165,20 +183,24 @@ export function EventCalendar({
               key={i}
               type="button"
               onClick={() => handleDayClick(date)}
-              aria-label={date.toLocaleDateString("en-US", { day: "numeric", month: "long", year: "numeric" })}
+              aria-label={date.toLocaleDateString("en-US", {
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+              })}
               aria-pressed={isSelected}
               className={[
-                "relative mx-auto flex flex-col items-center justify-center transition-all cursor-pointer",
+                "relative mx-auto flex cursor-pointer flex-col items-center justify-center transition-all",
                 compact
                   ? "h-7 w-7 rounded-[8px] text-xs font-semibold"
-                  : "h-9 w-9 sm:h-9.5 sm:w-9.5 rounded-[10px] text-xs font-semibold",
+                  : "h-9 w-9 rounded-[10px] text-xs font-semibold sm:h-9.5 sm:w-9.5",
                 isSelected
-                  ? "bg-[#0a0a0a] text-white font-bold shadow-xs scale-105"
+                  ? "scale-105 bg-[#0a0a0a] font-bold text-white shadow-xs"
                   : isToday
                     ? "border-2 border-[#0a0a0a] bg-[#faf5e8] font-bold text-[#0a0a0a] shadow-2xs"
                     : isCurrentMonth
-                      ? "text-[#0a0a0a] hover:bg-[#faf5e8] hover:scale-105"
-                      : "text-[#6a6a6a]/40 font-normal hover:bg-[#faf5e8]/50",
+                      ? "text-[#0a0a0a] hover:scale-105 hover:bg-[#faf5e8]"
+                      : "font-normal text-[#6a6a6a]/40 hover:bg-[#faf5e8]/50",
               ].join(" ")}
             >
               {/* Day number */}
@@ -192,8 +214,14 @@ export function EventCalendar({
                 >
                   {dayDots.map((dot, di) => {
                     const isObj = typeof dot === "object" && dot !== null
-                    const hex = isObj ? (dot as EventDotItem).colorHex : undefined
-                    const cls = isObj ? (dot as EventDotItem).className : (typeof dot === "string" ? dot : undefined)
+                    const hex = isObj
+                      ? (dot as EventDotItem).colorHex
+                      : undefined
+                    const cls = isObj
+                      ? (dot as EventDotItem).className
+                      : typeof dot === "string"
+                        ? dot
+                        : undefined
 
                     return (
                       <span
@@ -202,7 +230,11 @@ export function EventCalendar({
                           "h-1.5 w-1.5 rounded-full shadow-2xs",
                           isSelected ? "bg-white" : (cls ?? ""),
                         ].join(" ")}
-                        style={!isSelected && hex ? { backgroundColor: hex } : undefined}
+                        style={
+                          !isSelected && hex
+                            ? { backgroundColor: hex }
+                            : undefined
+                        }
                       />
                     )
                   })}
@@ -212,7 +244,6 @@ export function EventCalendar({
           )
         })}
       </div>
-
     </div>
   )
 }

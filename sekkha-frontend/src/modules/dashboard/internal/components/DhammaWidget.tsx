@@ -133,7 +133,7 @@ export function DhammaWidget() {
   return (
     <section
       aria-labelledby="dhamma-heading"
-      className="relative overflow-hidden rounded-[20px] sm:rounded-[24px] border border-[#e5e5e5] bg-[#fffaf0] p-4 sm:p-5 shadow-xs transition-all font-sans text-left flex flex-col justify-between"
+      className="relative overflow-hidden rounded-[20px] sm:rounded-[24px] border border-[#e5e5e5] bg-[#fffaf0] p-4 sm:p-5 shadow-xs transition-all font-sans text-left flex flex-col justify-between h-full"
     >
       {/* Decorative background watermark */}
       <QuoteIcon className="absolute -right-3 -bottom-3 size-24 text-[#e8b94a]/10 rotate-12 pointer-events-none" />
@@ -193,7 +193,7 @@ export function DhammaWidget() {
       </div>
 
       {/* Action Footer */}
-      <div className="mt-3 flex items-center justify-between pt-1 text-xs border-t border-[#e5e5e5]/60">
+      <div className="mt-3 flex items-center justify-between text-xs">
         <span className="text-[#6a6a6a] font-medium text-[11px] hidden xs:inline">
           Share this wisdom ✨
         </span>

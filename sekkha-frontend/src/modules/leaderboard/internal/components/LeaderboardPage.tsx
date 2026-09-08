@@ -25,42 +25,77 @@ import type { LeaderboardMetric, LeaderboardEntry } from "../types"
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
-const METRIC_OPTIONS: { value: LeaderboardMetric; label: string; icon: React.ReactNode }[] = [
-  { value: "points",     label: "Total Points", icon: <StarIcon className="size-4" /> },
-  { value: "streak",     label: "Streak",       icon: <FlameIcon className="size-4" /> },
-  { value: "attendance", label: "Attendance",   icon: <CheckSquareIcon className="size-4" /> },
+const METRIC_OPTIONS: {
+  value: LeaderboardMetric
+  label: string
+  icon: React.ReactNode
+}[] = [
+  {
+    value: "points",
+    label: "Total Points",
+    icon: <StarIcon className="size-4" />,
+  },
+  { value: "streak", label: "Streak", icon: <FlameIcon className="size-4" /> },
+  {
+    value: "attendance",
+    label: "Attendance",
+    icon: <CheckSquareIcon className="size-4" />,
+  },
 ]
 
 export type RoleCheckboxKey = "umat" | "aktivis" | "pengurus"
 
-const PENGURUS_ROLE_CHECKBOXES: { id: RoleCheckboxKey; label: string; icon: React.ReactNode }[] = [
+const PENGURUS_ROLE_CHECKBOXES: {
+  id: RoleCheckboxKey
+  label: string
+  icon: React.ReactNode
+}[] = [
   { id: "umat", label: "Members", icon: <UserIcon className="size-3.5" /> },
-  { id: "aktivis", label: "Activists", icon: <AwardIcon className="size-3.5" /> },
-  { id: "pengurus", label: "Organizers", icon: <ShieldCheckIcon className="size-3.5" /> },
+  {
+    id: "aktivis",
+    label: "Activists",
+    icon: <AwardIcon className="size-3.5" />,
+  },
+  {
+    id: "pengurus",
+    label: "Organizers",
+    icon: <ShieldCheckIcon className="size-3.5" />,
+  },
 ]
 
-const AKTIVIS_ROLE_CHECKBOXES: { id: RoleCheckboxKey; label: string; icon: React.ReactNode }[] = [
+const AKTIVIS_ROLE_CHECKBOXES: {
+  id: RoleCheckboxKey
+  label: string
+  icon: React.ReactNode
+}[] = [
   { id: "umat", label: "Members", icon: <UserIcon className="size-3.5" /> },
-  { id: "aktivis", label: "Activists", icon: <AwardIcon className="size-3.5" /> },
+  {
+    id: "aktivis",
+    label: "Activists",
+    icon: <AwardIcon className="size-3.5" />,
+  },
 ]
 
 // Podium Configuration adhering to Clay Design Tokens
-const PODIUM_CONFIG: Record<1 | 2 | 3, {
-  height: string
-  barBg: string
-  border: string
-  avatarRing: string
-  avatarBg: string
-  crownColor: string
-  badgeBg: string
-  badgeText: string
-  rankText: string
-}> = {
+const PODIUM_CONFIG: Record<
+  1 | 2 | 3,
+  {
+    height: string
+    barBg: string
+    border: string
+    avatarRing: string
+    avatarBg: string
+    crownColor: string
+    badgeBg: string
+    badgeText: string
+    rankText: string
+  }
+> = {
   1: {
-    height: "h-32 sm:h-38",
+    height: "h-20 sm:h-38",
     barBg: "bg-gradient-to-b from-[#e8b94a] to-[#d49e28]",
     border: "border-t border-x border-[#c28e20]",
-    avatarRing: "ring-4 ring-[#e8b94a]/30 shadow-md",
+    avatarRing: "ring-3 sm:ring-4 ring-[#e8b94a]/30 shadow-md",
     avatarBg: "bg-[#e8b94a] text-[#0a0a0a] font-black",
     crownColor: "text-[#e8b94a] fill-[#e8b94a]",
     badgeBg: "bg-[#0a0a0a]",
@@ -68,10 +103,10 @@ const PODIUM_CONFIG: Record<1 | 2 | 3, {
     rankText: "text-[#0a0a0a]/50 font-black",
   },
   2: {
-    height: "h-22 sm:h-26",
+    height: "h-14 sm:h-26",
     barBg: "bg-gradient-to-b from-[#e5e5e5] to-[#d0d0d0]",
     border: "border-t border-x border-[#bfbfbf]",
-    avatarRing: "ring-3 ring-[#e5e5e5] shadow-xs",
+    avatarRing: "ring-2 sm:ring-3 ring-[#e5e5e5] shadow-xs",
     avatarBg: "bg-[#e5e5e5] text-[#0a0a0a] font-bold",
     crownColor: "text-[#a0a0a0] fill-[#a0a0a0]",
     badgeBg: "bg-[#6a6a6a]",
@@ -79,10 +114,10 @@ const PODIUM_CONFIG: Record<1 | 2 | 3, {
     rankText: "text-[#0a0a0a]/40 font-extrabold",
   },
   3: {
-    height: "h-16 sm:h-20",
+    height: "h-10 sm:h-20",
     barBg: "bg-gradient-to-b from-[#d9a07a] to-[#c2845c]",
     border: "border-t border-x border-[#a86e49]",
-    avatarRing: "ring-3 ring-[#d9a07a]/40 shadow-xs",
+    avatarRing: "ring-2 sm:ring-3 ring-[#d9a07a]/40 shadow-xs",
     avatarBg: "bg-[#d9a07a] text-white font-bold",
     crownColor: "text-[#c2845c] fill-[#c2845c]",
     badgeBg: "bg-[#8c5230]",
@@ -96,13 +131,18 @@ const PODIUM_CONFIG: Record<1 | 2 | 3, {
 function getCompetitionHint(
   entry: LeaderboardEntry,
   allEntries: LeaderboardEntry[],
-  metricUnit: string,
+  metricUnit: string
 ): string | null {
   if (!entry || !allEntries || allEntries.length === 0) return null
-  const idx = allEntries.findIndex(e => e && e.user_id === entry.user_id)
+  const idx = allEntries.findIndex((e) => e && e.user_id === entry.user_id)
   if (idx <= 0) return null
   const above = allEntries[idx - 1]
-  if (!above || typeof above.value !== "number" || typeof entry.value !== "number") return null
+  if (
+    !above ||
+    typeof above.value !== "number" ||
+    typeof entry.value !== "number"
+  )
+    return null
   const diff = above.value - entry.value
   if (diff <= 0) return null
   const aboveName = above.name ? above.name.split(" ")[0] : "the rank above"
@@ -111,59 +151,86 @@ function getCompetitionHint(
 
 // ─── Sub-Components ───────────────────────────────────────────────────────────
 
-function PodiumEntry({ entry, position, myId }: { entry?: LeaderboardEntry; position: 1 | 2 | 3; myId?: string }) {
+function PodiumEntry({
+  entry,
+  position,
+  myId,
+}: {
+  entry?: LeaderboardEntry
+  position: 1 | 2 | 3
+  myId?: string
+}) {
   if (!entry) return null
   const isFirst = position === 1
   const isMe = entry.user_id === myId
   const cfg = PODIUM_CONFIG[position]
-  const avatarSize = isFirst ? "size-14 sm:size-18 text-sm sm:text-base font-black" : "size-11 sm:size-13 text-xs sm:text-sm font-bold"
+  const avatarSize = isFirst
+    ? "size-11 sm:size-18 text-xs sm:text-base font-black"
+    : "size-9 sm:size-13 text-[10px] sm:text-sm font-bold"
 
   return (
-    <div className={`flex flex-1 flex-col items-center gap-1 sm:gap-1.5 min-w-0 transition-all duration-200 relative ${
-      isMe ? "scale-102 z-20" : ""
-    }`}>
+    <div
+      className={`relative flex min-w-0 flex-1 flex-col items-center gap-1 transition-all duration-200 sm:gap-1.5 ${
+        isMe ? "z-20 scale-102" : ""
+      }`}
+    >
       {/* Crown Icon for top 3 */}
       {isFirst ? (
-        <CrownIcon className={`size-6 sm:size-7 ${cfg.crownColor}`} aria-hidden="true" />
+        <CrownIcon
+          className={`size-5 sm:size-7 ${cfg.crownColor}`}
+          aria-hidden="true"
+        />
       ) : (
-        <span className="text-xs font-bold text-[#6a6a6a]">#{position}</span>
+        <span className="text-[10px] font-bold text-[#6a6a6a] sm:text-xs">
+          #{position}
+        </span>
       )}
 
       {/* Avatar Container */}
       <div className="relative shrink-0">
-        <div className={`relative ${avatarSize} flex shrink-0 items-center justify-center rounded-[14px] sm:rounded-[16px] uppercase ${
-          isMe
-            ? "ring-4 ring-[#0a0a0a] shadow-md bg-[#0a0a0a] text-white"
-            : `${cfg.avatarRing} ${cfg.avatarBg}`
-        }`}>
+        <div
+          className={`relative ${avatarSize} flex shrink-0 items-center justify-center rounded-[12px] uppercase sm:rounded-[16px] ${
+            isMe
+              ? "bg-[#0a0a0a] text-white shadow-md ring-3 ring-[#0a0a0a] sm:ring-4"
+              : `${cfg.avatarRing} ${cfg.avatarBg}`
+          }`}
+        >
           {entry.initials}
         </div>
-        <div className={`absolute -bottom-2 left-1/2 -translate-x-1/2 rounded-full px-1.5 sm:px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wider shadow-xs ${cfg.badgeBg} ${cfg.badgeText}`}>
+        <div
+          className={`py-0.2 absolute -bottom-1.5 left-1/2 -translate-x-1/2 rounded-full px-1.5 text-[8px] font-extrabold tracking-wider uppercase shadow-xs sm:px-2 sm:py-0.5 sm:text-[9px] ${cfg.badgeBg} ${cfg.badgeText}`}
+        >
           #{position}
         </div>
       </div>
 
       {/* User Name & Score */}
-      <div className="mt-1 text-center w-full px-0.5 min-w-0">
+      <div className="mt-0.5 w-full min-w-0 px-0.5 text-center sm:mt-1">
         <div className="flex items-center justify-center gap-1">
-          <p className={`truncate font-bold text-xs sm:text-sm ${isMe ? "text-[#0a0a0a]" : "text-[#0a0a0a]"}`}>
+          <p className="truncate text-[11px] font-bold text-[#0a0a0a] sm:text-sm">
             {entry.name.split(" ")[0]}
           </p>
           {isMe && (
-            <span className="rounded-[4px] bg-[#0a0a0a] text-white px-1 py-0.2 text-[8px] font-extrabold uppercase shrink-0">
+            <span className="py-0.2 shrink-0 rounded-[4px] bg-[#0a0a0a] px-1 text-[8px] font-extrabold text-white uppercase">
               You
             </span>
           )}
         </div>
-        <p className="text-xs font-extrabold text-[#0a0a0a] flex items-center justify-center gap-0.5 mt-0.5">
-          <ZapIcon className="size-3 text-[#e8b94a] fill-[#e8b94a] shrink-0" />
-          <span className="truncate">{entry.value.toLocaleString("en-US")}</span>
+        <p className="mt-0.5 flex items-center justify-center gap-0.5 text-[11px] font-extrabold text-[#0a0a0a] sm:text-xs">
+          <ZapIcon className="size-2.5 shrink-0 fill-[#e8b94a] text-[#e8b94a] sm:size-3" />
+          <span className="truncate">
+            {entry.value.toLocaleString("en-US")}
+          </span>
         </p>
       </div>
 
       {/* Solid Clay Podium Pillar Bar */}
-      <div className={`${cfg.height} relative w-full overflow-hidden rounded-t-[14px] sm:rounded-t-[18px] ${cfg.border} ${cfg.barBg} flex items-center justify-center shadow-xs`}>
-        <span className={`text-2xl sm:text-3xl font-black select-none ${cfg.rankText}`}>
+      <div
+        className={`${cfg.height} relative w-full overflow-hidden rounded-t-[12px] sm:rounded-t-[18px] ${cfg.border} ${cfg.barBg} flex items-center justify-center shadow-xs`}
+      >
+        <span
+          className={`text-xl font-black select-none sm:text-3xl ${cfg.rankText}`}
+        >
           {position}
         </span>
       </div>
@@ -173,13 +240,91 @@ function PodiumEntry({ entry, position, myId }: { entry?: LeaderboardEntry; posi
 
 function ListAvatar({ initials, isMe }: { initials: string; isMe?: boolean }) {
   return (
-    <div className={`flex size-9 sm:size-10 shrink-0 items-center justify-center rounded-[10px] text-xs font-bold uppercase transition-transform ${
-      isMe
-        ? "bg-[#0a0a0a] text-white shadow-xs"
-        : "bg-[#e8b94a] text-[#0a0a0a] shadow-2xs"
-    }`}>
+    <div
+      className={`flex size-9 shrink-0 items-center justify-center rounded-[10px] text-xs font-bold uppercase transition-transform sm:size-10 ${
+        isMe
+          ? "bg-[#0a0a0a] text-white shadow-xs"
+          : "bg-[#e8b94a] text-[#0a0a0a] shadow-2xs"
+      }`}
+    >
       {initials}
     </div>
+  )
+}
+
+function LeaderboardRow({
+  entry,
+  isMe,
+  metricUnit,
+  allEntries,
+}: {
+  entry: LeaderboardEntry
+  isMe: boolean
+  metricUnit: string
+  allEntries: LeaderboardEntry[]
+}) {
+  const hint = isMe ? getCompetitionHint(entry, allEntries, metricUnit) : null
+
+  return (
+    <li
+      className={`flex items-center gap-2.5 rounded-[14px] border px-3.5 py-3 transition-all sm:gap-3.5 ${
+        isMe
+          ? "border-[#0a0a0a] bg-[#faf5e8] shadow-xs"
+          : "border-[#e5e5e5] bg-[#fffaf0] hover:bg-[#faf5e8]"
+      }`}
+    >
+      {/* Rank Number */}
+      <span
+        className={`w-7 shrink-0 text-center text-xs font-bold ${
+          isMe ? "text-[#0a0a0a]" : "text-[#6a6a6a]"
+        }`}
+      >
+        #{entry.rank}
+      </span>
+
+      {/* Avatar */}
+      <ListAvatar initials={entry.initials} isMe={isMe} />
+
+      {/* Name, Role Badge & Motivational Hint */}
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <p className="truncate text-xs font-bold text-[#0a0a0a] sm:text-sm">
+            {entry.name}
+          </p>
+          {isMe && (
+            <span className="py-0.2 shrink-0 rounded-[4px] bg-[#0a0a0a] px-1.5 text-[9px] font-extrabold text-white uppercase">
+              You
+            </span>
+          )}
+          {entry.role && entry.role !== "umat" && (
+            <span className="py-0.2 shrink-0 rounded-full border border-[#1a3a3a]/20 bg-[#1a3a3a]/10 px-2 text-[9px] font-bold text-[#1a3a3a] capitalize">
+              {entry.role === "admin"
+                ? "Admin"
+                : entry.role === "pengurus"
+                  ? "Organizer"
+                  : "Activist"}
+            </span>
+          )}
+        </div>
+
+        {hint && (
+          <p className="mt-0.5 line-clamp-1 flex items-center gap-1 text-[11px] font-semibold text-[#0a0a0a]">
+            <span>🚀</span>
+            <span>{hint}</span>
+          </p>
+        )}
+      </div>
+
+      {/* Score Value */}
+      <div className="shrink-0 text-right">
+        <span className="text-xs font-bold text-[#0a0a0a] sm:text-sm">
+          {entry.value.toLocaleString("en-US")}
+        </span>
+        <span className="block text-[10px] font-medium text-[#6a6a6a] capitalize">
+          {metricUnit}
+        </span>
+      </div>
+    </li>
   )
 }
 
@@ -187,17 +332,23 @@ function ListAvatar({ initials, isMe }: { initials: string; isMe?: boolean }) {
 
 export function LeaderboardPage() {
   const { authState } = useAuth()
-  const myId = authState.status === "authenticated" ? authState.userId ?? "" : ""
-  const userRole = authState.status === "authenticated" ? authState.role : "umat"
+  const myId =
+    authState.status === "authenticated" ? (authState.userId ?? "") : ""
+  const userRole =
+    authState.status === "authenticated" ? authState.role : "umat"
   const isPengurusOrAdmin = userRole === "admin" || userRole === "pengurus"
   const isAktivis = userRole === "aktivis"
   const isUmatOnly = !isPengurusOrAdmin && !isAktivis
 
   const season = getCurrentSeason()
   const [metric, setMetric] = useState<LeaderboardMetric>("points")
-  
+
   // Multi-select role checkboxes (default: all checked for pengurus/admin)
-  const [selectedRoles, setSelectedRoles] = useState<RoleCheckboxKey[]>(["umat", "aktivis", "pengurus"])
+  const [selectedRoles, setSelectedRoles] = useState<RoleCheckboxKey[]>([
+    "umat",
+    "aktivis",
+    "pengurus",
+  ])
 
   function toggleRole(role: RoleCheckboxKey) {
     setSelectedRoles((prev) => {
@@ -257,7 +408,8 @@ export function LeaderboardPage() {
   }
 
   const validEntries = (Array.isArray(entries) ? entries : []).filter(
-    (e): e is LeaderboardEntry => Boolean(e) && typeof e === "object" && typeof e.value === "number"
+    (e): e is LeaderboardEntry =>
+      Boolean(e) && typeof e === "object" && typeof e.value === "number"
   )
 
   // Dynamic filter by role with recalculation of ranks
@@ -268,8 +420,8 @@ export function LeaderboardPage() {
         rawRole === "admin" || rawRole === "pengurus"
           ? "pengurus"
           : rawRole === "aktivis"
-          ? "aktivis"
-          : "umat"
+            ? "aktivis"
+            : "umat"
       return activeRoles.includes(normalizedRole)
     })
     .map((entry, idx) => ({
@@ -278,101 +430,129 @@ export function LeaderboardPage() {
     }))
 
   const podium = filteredEntries.slice(0, 3)
-  const rest = filteredEntries.slice(3)
+  // Show ranks 4 through 10 in the main list
+  const rest = filteredEntries.slice(3, 10)
 
-  const myFilteredIdx = filteredEntries.findIndex(e => e.user_id === myId)
-  const myRank = myFilteredIdx >= 0 ? myFilteredIdx + 1 : "-"
-  const myValue = myFilteredIdx >= 0 ? filteredEntries[myFilteredIdx]?.value ?? 0 : myRankData?.value ?? 0
-  const metricUnit = metric === "points" ? "points" : metric === "streak" ? "weeks" : "attendances"
+  const myFilteredIdx = filteredEntries.findIndex((e) => e.user_id === myId)
+  const isUserInTop10 = myFilteredIdx >= 0 && myFilteredIdx < 10
+
+  const metricUnit =
+    metric === "points"
+      ? "points"
+      : metric === "streak"
+        ? "weeks"
+        : "attendances"
+
+  // If current user is outside Top 10, display as 11th entry
+  const userEntryOutsideTop10: LeaderboardEntry | null =
+    !isUserInTop10 && myId
+      ? myFilteredIdx >= 10
+        ? filteredEntries[myFilteredIdx]
+        : myRankData && typeof myRankData.value === "number"
+          ? {
+              user_id: myId,
+              name: myRankData.name || authState.name || "You",
+              initials: myRankData.initials || "YOU",
+              value: myRankData.value ?? 0,
+              rank: typeof myRankData.rank === "number" ? myRankData.rank : 11,
+              label:
+                myRankData.label || `${myRankData.value ?? 0} ${metricUnit}`,
+              role: (userRole || "umat") as any,
+            }
+          : null
+      : null
+
+  const myRank =
+    myFilteredIdx >= 0 ? myFilteredIdx + 1 : (myRankData?.rank ?? "-")
+  const myValue =
+    myFilteredIdx >= 0
+      ? (filteredEntries[myFilteredIdx]?.value ?? 0)
+      : (myRankData?.value ?? 0)
   const roleGroupLabel =
     activeRoles.length === 3
       ? "All Members"
       : activeRoles
-          .map((r) => (r === "umat" ? "Members" : r === "aktivis" ? "Activists" : "Organizers"))
+          .map((r) =>
+            r === "umat"
+              ? "Members"
+              : r === "aktivis"
+                ? "Activists"
+                : "Organizers"
+          )
           .join(" & ")
 
-  const communityPct = Math.min(100, Math.round(((communityGoal.current || 0) / (communityGoal.target || 500)) * 100))
+  const communityPct = Math.min(
+    100,
+    Math.round(
+      ((communityGoal.current || 0) / (communityGoal.target || 500)) * 100
+    )
+  )
 
   return (
-    <main className="relative font-sans bg-[#fffaf0] min-h-screen text-left">
+    <main className="relative min-h-screen bg-[#fffaf0] text-left font-sans">
       {/* ── Page Breadcrumb ── */}
       <PageBreadcrumb items={[{ label: "Leaderboard" }]} />
 
-      <div className="relative px-3.5 py-4 pb-32 md:pb-12 sm:px-6 md:px-8 max-w-6xl mx-auto">
+      <div className="relative mx-auto max-w-6xl px-3.5 py-4 pb-32 sm:px-6 md:px-8 md:pb-12">
         <div className="space-y-4 sm:space-y-5">
-
-          {/* ── Top Header Banner: Warm Clay Style ── */}
-          <div className="rounded-[20px] sm:rounded-[24px] border border-[#e5e5e5] bg-[#faf5e8] p-4 sm:p-5 shadow-xs">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <div className="flex size-11 sm:size-12 shrink-0 items-center justify-center rounded-[12px] bg-[#0a0a0a] text-white shadow-xs">
-                  <TrophyIcon className="size-5 sm:size-6 text-[#e8b94a]" />
+          {/* ── Top Header Banner: Compact & Sleek Clay Style ── */}
+          <div className="rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] p-3 shadow-xs sm:rounded-[24px] sm:p-5">
+            <div className="flex items-center justify-between gap-2.5">
+              <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
+                <div className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-[#0a0a0a] text-white shadow-xs sm:size-12 sm:rounded-[12px]">
+                  <TrophyIcon className="size-4.5 text-[#e8b94a] sm:size-6" />
                 </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="rounded-[8px] bg-[#e8b94a]/20 border border-[#e8b94a]/40 px-2.5 py-0.5 text-xs font-extrabold text-[#0a0a0a]">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <h1 className="truncate text-sm font-bold tracking-tight text-[#0a0a0a] sm:text-xl">
+                      Leaderboard
+                    </h1>
+                    <span className="py-0.2 shrink-0 rounded-[6px] border border-[#e8b94a]/40 bg-[#e8b94a]/20 px-2 text-[10px] font-extrabold text-[#0a0a0a] sm:rounded-[8px] sm:px-2.5 sm:py-0.5 sm:text-xs">
                       {seasonData?.name || seasonLabel(season)}
                     </span>
-                    {seasonData?.start_date && seasonData?.end_date && (
-                      <span className="hidden sm:inline text-xs text-[#6a6a6a] font-medium">
-                        ({new Date(seasonData.start_date).toLocaleDateString("en-US", { day: "numeric", month: "short" })} — {new Date(seasonData.end_date).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" })})
-                      </span>
-                    )}
                   </div>
-                  <h1 className="text-base sm:text-xl font-bold text-[#0a0a0a] mt-0.5">
-                    Leaderboard
-                  </h1>
+                  {seasonData?.start_date && seasonData?.end_date && (
+                    <span className="hidden text-xs font-medium text-[#6a6a6a] sm:inline">
+                      (
+                      {new Date(seasonData.start_date).toLocaleDateString(
+                        "en-US",
+                        { day: "numeric", month: "short" }
+                      )}{" "}
+                      —{" "}
+                      {new Date(seasonData.end_date).toLocaleDateString(
+                        "en-US",
+                        { day: "numeric", month: "short", year: "numeric" }
+                      )}
+                      )
+                    </span>
+                  )}
                 </div>
               </div>
 
-              <div className="flex items-center gap-1.5 self-start sm:self-auto rounded-[10px] bg-[#fffaf0] border border-[#e5e5e5] px-3 py-1.5 text-xs font-bold text-[#6a6a6a] shadow-xs">
-                <TimerIcon className="size-3.5 text-[#0a0a0a] shrink-0" />
-                <span>Ends in <strong className="text-[#0a0a0a]">{seasonData?.days_left ?? 14} days</strong></span>
+              <div className="flex shrink-0 items-center gap-1 rounded-[8px] border border-[#e5e5e5] bg-[#fffaf0] px-2.5 py-1 text-[11px] font-bold text-[#6a6a6a] shadow-xs sm:rounded-[10px] sm:text-xs">
+                <TimerIcon className="size-3.5 shrink-0 text-[#0a0a0a]" />
+                <span>
+                  Ends in{" "}
+                  <strong className="text-[#0a0a0a]">
+                    {seasonData?.days_left ?? 14}d
+                  </strong>
+                </span>
               </div>
-            </div>
-          </div>
-
-          {/* ── My Rank Status Hero Card (Mobile & Tablet) ── */}
-          <div className="lg:hidden rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0] p-3.5 sm:p-4 shadow-xs flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="flex size-11 shrink-0 items-center justify-center rounded-[12px] bg-[#0a0a0a] text-xs font-bold text-white shadow-xs uppercase">
-                {myRankData?.initials || "AS"}
-              </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="font-bold text-xs sm:text-sm text-[#0a0a0a] truncate">
-                    {myRankData?.name || "Sekkha Member"}
-                  </span>
-                  <span className="rounded-[6px] bg-[#e8b94a] text-[#0a0a0a] px-1.5 py-0.5 text-[10px] font-extrabold uppercase shadow-2xs">
-                    You
-                  </span>
-                </div>
-                <p className="text-xs font-medium text-[#6a6a6a] mt-0.5 flex items-center gap-1">
-                  <TrophyIcon className="size-3.5 text-[#e8b94a]" />
-                  <span>Rank #{myRank} of {filteredEntries.length} {roleGroupLabel}</span>
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-1.5 text-xs sm:text-sm font-bold text-[#0a0a0a] bg-[#faf5e8] px-3 py-1.5 rounded-[10px] border border-[#e5e5e5] shadow-2xs shrink-0 self-center">
-              <ZapIcon className="size-3.5 text-[#e8b94a] fill-[#e8b94a] shrink-0" />
-              <span>{myValue.toLocaleString("en-US")}</span>
-              <span className="text-[11px] font-medium text-[#6a6a6a] capitalize">{metricUnit}</span>
             </div>
           </div>
 
           {/* ── Filters Bar: Metric & Role Filters ── */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div className="flex flex-col justify-between gap-2.5 sm:gap-3 md:flex-row md:items-center">
             {/* Metric Filter Tabs */}
-            <div className="flex items-center gap-1 rounded-[12px] bg-[#faf5e8] p-1 border border-[#e5e5e5] w-full md:w-auto">
-              {METRIC_OPTIONS.map(m => {
+            <div className="flex w-full items-center gap-1 rounded-[10px] border border-[#e5e5e5] bg-[#faf5e8] p-1 sm:rounded-[12px] md:w-auto">
+              {METRIC_OPTIONS.map((m) => {
                 const isActive = metric === m.value
                 return (
                   <button
                     key={m.value}
                     type="button"
                     onClick={() => setMetric(m.value)}
-                    className={`flex-1 md:flex-none flex items-center justify-center gap-1.5 rounded-[8px] px-3.5 py-2 text-xs font-bold transition-all cursor-pointer ${
+                    className={`flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-[7px] px-2.5 py-1.5 text-xs font-bold transition-all sm:rounded-[8px] sm:px-3.5 sm:py-2 md:flex-none ${
                       isActive
                         ? "bg-[#0a0a0a] text-white shadow-xs"
                         : "text-[#6a6a6a] hover:text-[#0a0a0a]"
@@ -387,24 +567,26 @@ export function LeaderboardPage() {
 
             {/* Role Filter Buttons */}
             {isPengurusOrAdmin && (
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[#6a6a6a] px-1 hidden sm:inline">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="hidden px-1 text-[10px] font-bold tracking-wider text-[#6a6a6a] uppercase sm:inline">
                   Show:
                 </span>
-                {PENGURUS_ROLE_CHECKBOXES.map(r => {
+                {PENGURUS_ROLE_CHECKBOXES.map((r) => {
                   const isChecked = selectedRoles.includes(r.id)
                   return (
                     <button
                       key={r.id}
                       type="button"
                       onClick={() => toggleRole(r.id)}
-                      className={`flex items-center gap-1.5 rounded-[8px] px-3 py-1.5 text-xs font-bold cursor-pointer transition-all border select-none ${
+                      className={`flex cursor-pointer items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold transition-all select-none ${
                         isChecked
-                          ? "bg-[#0a0a0a] text-white border-[#0a0a0a] shadow-xs"
-                          : "bg-[#fffaf0] text-[#6a6a6a] border-[#e5e5e5] hover:bg-[#faf5e8] hover:text-[#0a0a0a]"
+                          ? "border-[#0a0a0a] bg-[#faf5e8] font-bold text-[#0a0a0a] shadow-2xs"
+                          : "border-[#e5e5e5] bg-transparent text-[#8a8a8a] hover:border-[#bfbfbf] hover:text-[#0a0a0a]"
                       }`}
                     >
-                      {isChecked && <CheckIcon className="size-3 stroke-[3]" />}
+                      {isChecked && (
+                        <CheckIcon className="size-3 stroke-[2.5] text-[#0a0a0a]" />
+                      )}
                       <span>{r.label}</span>
                     </button>
                   )
@@ -413,24 +595,26 @@ export function LeaderboardPage() {
             )}
 
             {isAktivis && (
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[#6a6a6a] px-1 hidden sm:inline">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="hidden px-1 text-[10px] font-bold tracking-wider text-[#6a6a6a] uppercase sm:inline">
                   Show:
                 </span>
-                {AKTIVIS_ROLE_CHECKBOXES.map(r => {
+                {AKTIVIS_ROLE_CHECKBOXES.map((r) => {
                   const isChecked = selectedRoles.includes(r.id)
                   return (
                     <button
                       key={r.id}
                       type="button"
                       onClick={() => toggleRole(r.id)}
-                      className={`flex items-center gap-1.5 rounded-[8px] px-3 py-1.5 text-xs font-bold cursor-pointer transition-all border select-none ${
+                      className={`flex cursor-pointer items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold transition-all select-none ${
                         isChecked
-                          ? "bg-[#0a0a0a] text-white border-[#0a0a0a] shadow-xs"
-                          : "bg-[#fffaf0] text-[#6a6a6a] border-[#e5e5e5] hover:bg-[#faf5e8] hover:text-[#0a0a0a]"
+                          ? "border-[#0a0a0a] bg-[#faf5e8] font-bold text-[#0a0a0a] shadow-2xs"
+                          : "border-[#e5e5e5] bg-transparent text-[#8a8a8a] hover:border-[#bfbfbf] hover:text-[#0a0a0a]"
                       }`}
                     >
-                      {isChecked && <CheckIcon className="size-3 stroke-[3]" />}
+                      {isChecked && (
+                        <CheckIcon className="size-3 stroke-[2.5] text-[#0a0a0a]" />
+                      )}
                       <span>{r.label}</span>
                     </button>
                   )
@@ -439,32 +623,35 @@ export function LeaderboardPage() {
             )}
 
             {isUmatOnly && (
-              <div className="flex items-center gap-1.5 rounded-[10px] bg-[#faf5e8] border border-[#e5e5e5] px-3 py-1.5 text-xs font-semibold text-[#6a6a6a]">
+              <div className="flex items-center gap-1.5 rounded-[10px] border border-[#e5e5e5] bg-[#faf5e8] px-3 py-1.5 text-xs font-semibold text-[#6a6a6a]">
                 <UserIcon className="size-3.5 text-[#0a0a0a]" />
-                <span>Rankings: <strong className="text-[#0a0a0a]">Fellow Members</strong></span>
+                <span>
+                  Rankings:{" "}
+                  <strong className="text-[#0a0a0a]">Fellow Members</strong>
+                </span>
               </div>
             )}
           </div>
 
           {/* ── Two-Column Responsive Layout ── */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-6 items-start">
-
+          <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-12 lg:gap-6">
             {/* Main Content Area (Left 8 Cols) */}
-            <div className="lg:col-span-8 space-y-4">
-              
+            <div className="space-y-4 lg:col-span-8">
               {/* Leaderboard Card Container */}
-              <div className="rounded-[20px] sm:rounded-[24px] border border-[#e5e5e5] bg-[#fffaf0] p-4 sm:p-6 shadow-xs space-y-5">
-
+              <div className="space-y-3.5 rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0] p-3 shadow-xs sm:space-y-5 sm:rounded-[24px] sm:p-6">
                 {/* Empty State */}
                 {filteredEntries.length === 0 ? (
-                  <div className="py-12 px-4 text-center space-y-3">
-                    <div className="mx-auto flex size-12 items-center justify-center rounded-[12px] bg-[#faf5e8] border border-[#e5e5e5] text-[#6a6a6a]">
+                  <div className="space-y-3 px-4 py-12 text-center">
+                    <div className="mx-auto flex size-12 items-center justify-center rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] text-[#6a6a6a]">
                       <TrophyIcon className="size-6 text-[#e8b94a]" />
                     </div>
                     <div>
-                      <h3 className="text-sm font-bold text-[#0a0a0a]">No Ranking Data Found</h3>
-                      <p className="text-xs text-[#6a6a6a] mt-1 max-w-sm mx-auto">
-                        No members found in <strong>{roleGroupLabel}</strong> category for this season.
+                      <h3 className="text-sm font-bold text-[#0a0a0a]">
+                        No Ranking Data Found
+                      </h3>
+                      <p className="mx-auto mt-1 max-w-sm text-xs text-[#6a6a6a]">
+                        No members found in <strong>{roleGroupLabel}</strong>{" "}
+                        category for this season.
                       </p>
                     </div>
                   </div>
@@ -472,145 +659,149 @@ export function LeaderboardPage() {
                   <>
                     {/* Champions Podium Pillars (Supports 1, 2, or 3+ entries) */}
                     {podium.length > 0 && (
-                      <div className="pt-3 pb-2 px-2 border-b border-[#e5e5e5] bg-[#faf5e8] rounded-[16px]">
-                        <div className={`flex items-end justify-center gap-2 sm:gap-4 mx-auto ${
-                          podium.length === 1 ? "max-w-[160px]" : podium.length === 2 ? "max-w-xs" : "max-w-md"
-                        }`}>
-                          {podium.length >= 2 && <PodiumEntry entry={podium[1]} position={2} myId={myId} />}
-                          <PodiumEntry entry={podium[0]} position={1} myId={myId} />
-                          {podium.length >= 3 && <PodiumEntry entry={podium[2]} position={3} myId={myId} />}
+                      <div className="rounded-[14px] border-b border-[#e5e5e5] bg-[#faf5e8] px-1.5 pt-2 pb-1.5 sm:rounded-[16px] sm:px-2 sm:pt-3 sm:pb-2">
+                        <div
+                          className={`mx-auto flex items-end justify-center gap-2 sm:gap-4 ${
+                            podium.length === 1
+                              ? "max-w-[160px]"
+                              : podium.length === 2
+                                ? "max-w-xs"
+                                : "max-w-md"
+                          }`}
+                        >
+                          {podium.length >= 2 && (
+                            <PodiumEntry
+                              entry={podium[1]}
+                              position={2}
+                              myId={myId}
+                            />
+                          )}
+                          <PodiumEntry
+                            entry={podium[0]}
+                            position={1}
+                            myId={myId}
+                          />
+                          {podium.length >= 3 && (
+                            <PodiumEntry
+                              entry={podium[2]}
+                              position={3}
+                              myId={myId}
+                            />
+                          )}
                         </div>
                       </div>
                     )}
 
-                    {/* Ranked List (Rank 4+) */}
-                    {rest.length > 0 && (
+                    {/* Ranked List (Rank 4-10 + 11th entry if user is outside Top 10) */}
+                    {(rest.length > 0 || userEntryOutsideTop10) && (
                       <div className="space-y-2">
-                        <p className="text-[11px] font-bold uppercase tracking-wider text-[#6a6a6a] px-1">
-                          Rankings: {roleGroupLabel} (4+)
+                        <p className="px-1 text-[11px] font-bold tracking-wider text-[#6a6a6a] uppercase">
+                          Rankings: {roleGroupLabel}{" "}
+                          {rest.length > 0
+                            ? `(4–${Math.min(10, filteredEntries.length)})`
+                            : ""}
                         </p>
                         <ul role="list" className="space-y-2">
-                          {rest.map(entry => {
-                            const isMe = entry.user_id === myId
-                            const hint = isMe ? getCompetitionHint(entry, filteredEntries, metricUnit) : null
+                          {rest.map((entry) => (
+                            <LeaderboardRow
+                              key={entry.user_id}
+                              entry={entry}
+                              isMe={entry.user_id === myId}
+                              metricUnit={metricUnit}
+                              allEntries={filteredEntries}
+                            />
+                          ))}
 
-                            return (
+                          {/* 11th Entry: Shown when user is outside Top 10 */}
+                          {userEntryOutsideTop10 && (
+                            <>
                               <li
-                                key={entry.user_id}
-                                className={`flex items-center gap-2.5 sm:gap-3.5 rounded-[14px] px-3.5 py-3 transition-all border ${
-                                  isMe
-                                    ? "border-[#0a0a0a] bg-[#faf5e8] shadow-xs"
-                                    : "border-[#e5e5e5] bg-[#fffaf0] hover:bg-[#faf5e8]"
-                                }`}
+                                className="flex items-center justify-center py-1 select-none"
+                                aria-hidden="true"
                               >
-                                {/* Rank Number */}
-                                <span className={`w-7 shrink-0 text-center text-xs font-bold ${
-                                  isMe ? "text-[#0a0a0a]" : "text-[#6a6a6a]"
-                                }`}>
-                                  #{entry.rank}
-                                </span>
-
-                                {/* Avatar */}
-                                <ListAvatar initials={entry.initials} isMe={isMe} />
-
-                                {/* Name, Role Badge & Motivational Hint */}
-                                <div className="min-w-0 flex-1">
-                                  <div className="flex items-center gap-1.5 flex-wrap">
-                                    <p className={`truncate font-bold text-xs sm:text-sm ${
-                                      isMe ? "text-[#0a0a0a]" : "text-[#0a0a0a]"
-                                    }`}>
-                                      {entry.name}
-                                    </p>
-                                    {isMe && (
-                                      <span className="rounded-[4px] bg-[#0a0a0a] text-white px-1.5 py-0.2 text-[9px] font-extrabold uppercase shrink-0">
-                                        You
-                                      </span>
-                                    )}
-                                    {entry.role && entry.role !== "umat" && (
-                                      <span className="rounded-full bg-[#1a3a3a]/10 text-[#1a3a3a] border border-[#1a3a3a]/20 px-2 py-0.2 text-[9px] font-bold capitalize shrink-0">
-                                        {entry.role === "admin" ? "Admin" : entry.role === "pengurus" ? "Organizer" : "Activist"}
-                                      </span>
-                                    )}
-                                  </div>
-
-                                  {hint && (
-                                    <p className="mt-0.5 text-[11px] font-semibold text-[#0a0a0a] flex items-center gap-1 line-clamp-1">
-                                      <span>🚀</span>
-                                      <span>{hint}</span>
-                                    </p>
-                                  )}
-                                </div>
-
-                                {/* Score Value */}
-                                <div className="text-right shrink-0">
-                                  <span className="font-bold text-xs sm:text-sm text-[#0a0a0a]">
-                                    {entry.value.toLocaleString("en-US")}
-                                  </span>
-                                  <span className="block text-[10px] font-medium text-[#6a6a6a] capitalize">
-                                    {metricUnit}
-                                  </span>
+                                <div className="flex items-center gap-1.5 rounded-full border border-[#e5e5e5] bg-[#faf5e8] px-3 py-0.5 text-[10px] font-bold text-[#8a8a8a]">
+                                  <span className="size-1 rounded-full bg-[#8a8a8a]" />
+                                  <span className="size-1 rounded-full bg-[#8a8a8a]" />
+                                  <span className="size-1 rounded-full bg-[#8a8a8a]" />
                                 </div>
                               </li>
-                            )
-                          })}
+                              <LeaderboardRow
+                                key={`outside-${userEntryOutsideTop10.user_id}`}
+                                entry={userEntryOutsideTop10}
+                                isMe={true}
+                                metricUnit={metricUnit}
+                                allEntries={filteredEntries}
+                              />
+                            </>
+                          )}
                         </ul>
                       </div>
                     )}
                   </>
                 )}
-
               </div>
             </div>
 
             {/* Right Sidebar Widgets (Desktop) */}
-            <aside className="lg:col-span-4 space-y-4">
-              
+            <aside className="space-y-4 lg:col-span-4">
               {/* My Rank Sidebar Widget (Desktop) */}
-              <div className="hidden lg:block rounded-[20px] border border-[#e5e5e5] bg-[#faf5e8] p-4 sm:p-5 shadow-xs space-y-3">
+              <div className="hidden space-y-3 rounded-[20px] border border-[#e5e5e5] bg-[#faf5e8] p-4 shadow-xs sm:p-5 lg:block">
                 <div className="flex items-center gap-3">
-                  <div className="flex size-11 shrink-0 items-center justify-center rounded-[12px] bg-[#0a0a0a] text-xs font-bold text-white shadow-xs uppercase">
+                  <div className="flex size-11 shrink-0 items-center justify-center rounded-[12px] bg-[#0a0a0a] text-xs font-bold text-white uppercase shadow-xs">
                     {myRankData?.initials || "AS"}
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
-                      <span className="font-bold text-sm text-[#0a0a0a] truncate">
+                      <span className="truncate text-sm font-bold text-[#0a0a0a]">
                         {myRankData?.name || "Sekkha Member"}
                       </span>
-                      <span className="rounded-[4px] bg-[#0a0a0a] text-white px-1.5 py-0.2 text-[9px] font-extrabold uppercase shrink-0">
+                      <span className="py-0.2 shrink-0 rounded-[4px] bg-[#0a0a0a] px-1.5 text-[9px] font-extrabold text-white uppercase">
                         You
                       </span>
                     </div>
-                    <p className="text-xs text-[#6a6a6a] font-medium">{seasonData?.name || seasonLabel(season)}</p>
+                    <p className="text-xs font-medium text-[#6a6a6a]">
+                      {seasonData?.name || seasonLabel(season)}
+                    </p>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-center gap-4 rounded-[12px] bg-[#fffaf0] p-3 border border-[#e5e5e5] shadow-2xs">
-                  <div className="text-center flex-1">
-                    <p className="text-base font-black text-[#0a0a0a]">#{myRank}</p>
-                    <p className="text-[10px] font-bold text-[#6a6a6a]">Rank ({roleGroupLabel})</p>
+                <div className="flex items-center justify-center gap-4 rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] p-3 shadow-2xs">
+                  <div className="flex-1 text-center">
+                    <p className="text-base font-black text-[#0a0a0a]">
+                      #{myRank}
+                    </p>
+                    <p className="text-[10px] font-bold text-[#6a6a6a]">
+                      Rank ({roleGroupLabel})
+                    </p>
                   </div>
                   <div className="h-7 w-px bg-[#e5e5e5]" />
-                  <div className="text-center flex-1">
-                    <p className="text-base font-black text-[#0a0a0a]">{myValue.toLocaleString("en-US")}</p>
-                    <p className="text-[10px] font-bold text-[#6a6a6a] capitalize">{metricUnit}</p>
+                  <div className="flex-1 text-center">
+                    <p className="text-base font-black text-[#0a0a0a]">
+                      {myValue.toLocaleString("en-US")}
+                    </p>
+                    <p className="text-[10px] font-bold text-[#6a6a6a] capitalize">
+                      {metricUnit}
+                    </p>
                   </div>
                 </div>
               </div>
 
               {/* Community Goal Progress Card */}
-              <div className="rounded-[20px] border border-[#e5e5e5] bg-[#fffaf0] p-4 sm:p-5 shadow-xs space-y-3">
+              <div className="space-y-3 rounded-[20px] border border-[#e5e5e5] bg-[#fffaf0] p-4 shadow-xs sm:p-5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="flex size-8 items-center justify-center rounded-[8px] bg-[#faf5e8] text-[#0a0a0a]">
                       <UsersIcon className="size-4" aria-hidden="true" />
                     </div>
                     <h3 className="text-xs font-bold text-[#0a0a0a]">
-                      {communityGoal.label && communityGoal.label.toLowerCase().includes("absensi")
+                      {communityGoal.label &&
+                      communityGoal.label.toLowerCase().includes("absensi")
                         ? "Vihara Community Attendance Target"
-                        : communityGoal.label || "Vihara Community Attendance Target"}
+                        : communityGoal.label ||
+                          "Vihara Community Attendance Target"}
                     </h3>
                   </div>
-                  <span className="text-xs font-extrabold text-[#0a0a0a] bg-[#faf5e8] border border-[#e5e5e5] px-2 py-0.5 rounded-[6px]">
+                  <span className="rounded-[6px] border border-[#e5e5e5] bg-[#faf5e8] px-2 py-0.5 text-xs font-extrabold text-[#0a0a0a]">
                     {communityPct}%
                   </span>
                 </div>
@@ -621,24 +812,30 @@ export function LeaderboardPage() {
                     <span>Achieved: {communityGoal.current}</span>
                     <span>Target: {communityGoal.target} Check-Ins</span>
                   </div>
-                  <div className="h-2.5 w-full overflow-hidden rounded-full bg-[#f5f0e0] border border-[#e5e5e5]">
+                  <div className="h-2.5 w-full overflow-hidden rounded-full border border-[#e5e5e5] bg-[#f5f0e0]">
                     <div
-                      className="h-full rounded-full bg-[#0a0a0a] transition-all duration-500 shadow-xs"
+                      className="h-full rounded-full bg-[#0a0a0a] shadow-xs transition-all duration-500"
                       style={{ width: `${communityPct}%` }}
                     />
                   </div>
                 </div>
 
-                <div className="rounded-[12px] bg-[#faf5e8] border border-[#e5e5e5] p-3 text-xs font-medium text-[#6a6a6a] flex items-start gap-2">
-                  <SparklesIcon className="size-4 text-[#e8b94a] shrink-0 mt-0.5" />
-                  <span>When the target of {seasonData?.target_attendance ?? communityGoal.target} check-ins is met, all community members will receive an extra <strong className="text-[#0a0a0a]">+{seasonData?.bonus_points ?? 100} bonus points</strong>!</span>
+                <div className="flex items-start gap-2 rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] p-3 text-xs font-medium text-[#6a6a6a]">
+                  <SparklesIcon className="mt-0.5 size-4 shrink-0 text-[#e8b94a]" />
+                  <span>
+                    When the target of{" "}
+                    {seasonData?.target_attendance ?? communityGoal.target}{" "}
+                    check-ins is met, all community members will receive an
+                    extra{" "}
+                    <strong className="text-[#0a0a0a]">
+                      +{seasonData?.bonus_points ?? 100} bonus points
+                    </strong>
+                    !
+                  </span>
                 </div>
               </div>
-
             </aside>
-
           </div>
-
         </div>
       </div>
     </main>

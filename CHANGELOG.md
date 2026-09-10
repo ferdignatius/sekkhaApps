@@ -2,7 +2,7 @@
 
 All notable changes to Sekkha Apps. Semver (`MAJOR.MINOR.PATCH`); newest on top. Entries are curated for humans — see git log for the full history.
 
-## [Unreleased]
+## [1.3.0] - 2026-09-10
 
 ### Added
 - `POST /auth/logout` with token revocation (Redis blacklist + in-memory fallback); frontend logout now calls it before clearing the stored token.

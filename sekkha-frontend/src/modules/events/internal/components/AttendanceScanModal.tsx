@@ -52,7 +52,9 @@ interface AttendanceScanModalProps {
 // Audio tone helpers
 function playWarningChime() {
   try {
-    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)()
+    const ctx = new (
+      window.AudioContext || (window as any).webkitAudioContext
+    )()
     const osc = ctx.createOscillator()
     const gain = ctx.createGain()
 
@@ -82,7 +84,9 @@ export function AttendanceScanModal({
   const isPengurus = role === "pengurus" || role === "admin"
 
   // Mode for Pengurus: 'camera' | 'search'
-  const [pengurusMode, setPengurusMode] = useState<"camera" | "search">("camera")
+  const [pengurusMode, setPengurusMode] = useState<"camera" | "search">(
+    "camera"
+  )
 
   // Mode for Umat: 'camera' | 'manual'
   const [umatMode, setUmatMode] = useState<"camera" | "manual">("camera")
@@ -94,13 +98,18 @@ export function AttendanceScanModal({
   }, [])
 
   // Camera Switcher state
-  const [cameras, setCameras] = useState<Array<{ id: string; label: string }>>([])
+  const [cameras, setCameras] = useState<Array<{ id: string; label: string }>>(
+    []
+  )
   const [activeCameraId, setActiveCameraId] = useState<string>("")
 
-  const handleCamerasDetected = useCallback((detectedCams: Array<{ id: string; label: string }>, chosenId: string) => {
-    setCameras(detectedCams)
-    setActiveCameraId(chosenId)
-  }, [])
+  const handleCamerasDetected = useCallback(
+    (detectedCams: Array<{ id: string; label: string }>, chosenId: string) => {
+      setCameras(detectedCams)
+      setActiveCameraId(chosenId)
+    },
+    []
+  )
 
   // Collapsible History Drawer State (Collapsed by default so it doesn't take space!)
   const [isHistoryDrawerOpen, setIsHistoryDrawerOpen] = useState(false)
@@ -110,13 +119,15 @@ export function AttendanceScanModal({
   const [loadingPeople, setLoadingPeople] = useState(false)
 
   // Track already attended user IDs (both existing from props + scanned in current session)
-  const [sessionAttendedIds, setSessionAttendedIds] = useState<Set<string>>(() => {
-    const initial = new Set<string>()
-    existingRecords.forEach((r) => {
-      if (r.user_id) initial.add(r.user_id)
-    })
-    return initial
-  })
+  const [sessionAttendedIds, setSessionAttendedIds] = useState<Set<string>>(
+    () => {
+      const initial = new Set<string>()
+      existingRecords.forEach((r) => {
+        if (r.user_id) initial.add(r.user_id)
+      })
+      return initial
+    }
+  )
 
   // Live real-time scan queue list
   const [recentScans, setRecentScans] = useState<RecentScanItem[]>([])
@@ -174,12 +185,18 @@ export function AttendanceScanModal({
       teamsApi
         .listMembers()
         .then((data) => setPeopleList(data))
-        .catch((err) => console.error("Gagal memuat data People untuk presensi:", err))
+        .catch((err) =>
+          console.error("Gagal memuat data People untuk presensi:", err)
+        )
         .finally(() => setLoadingPeople(false))
     }
   }, [isPengurus])
 
-  function triggerFeedback(type: "success" | "duplicate" | "error", title: string, subtitle: string) {
+  function triggerFeedback(
+    type: "success" | "duplicate" | "error",
+    title: string,
+    subtitle: string
+  ) {
     if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current)
     setLastFeedback({ type, title, subtitle })
     feedbackTimerRef.current = setTimeout(() => {
@@ -311,7 +328,10 @@ export function AttendanceScanModal({
         })
         .catch((err: any) => {
           console.warn("Latar belakang sync presensi:", err)
-          if (err.message?.includes("sudah tercatat hadir") || err.error === "DUPLICATE_ATTENDANCE") {
+          if (
+            err.message?.includes("sudah tercatat hadir") ||
+            err.error === "DUPLICATE_ATTENDANCE"
+          ) {
             // Already synced on server — keep as attended
             return
           }
@@ -325,11 +345,19 @@ export function AttendanceScanModal({
           setRecentScans((prev) =>
             prev.map((item) =>
               item.id === scanItemId
-                ? { ...item, status: "error", message: err.message || "Gagal sinkron server" }
+                ? {
+                    ...item,
+                    status: "error",
+                    message: err.message || "Gagal sinkron server",
+                  }
                 : item
             )
           )
-          triggerFeedback("error", "Gagal Sinkronisasi Server", err.message || "Terjadi kendala koneksi.")
+          triggerFeedback(
+            "error",
+            "Gagal Sinkronisasi Server",
+            err.message || "Terjadi kendala koneksi."
+          )
         })
     }
   }
@@ -344,31 +372,55 @@ export function AttendanceScanModal({
     try {
       if (rawText.startsWith("{") && rawText.endsWith("}")) {
         const parsed = JSON.parse(rawText)
-        scannedCode = (parsed.code || parsed.eventCode || rawText).toString().trim().toUpperCase()
+        scannedCode = (parsed.code || parsed.eventCode || rawText)
+          .toString()
+          .trim()
+          .toUpperCase()
       }
     } catch {}
 
-    if (scannedCode !== eventCode.toUpperCase()) {
+    if (eventCode && scannedCode !== eventCode.toUpperCase()) {
       playWarningChime()
       setCodeError("QR Code tidak cocok dengan event ini.")
       return
     }
 
-    const result: ScanResult = {
-      name: "Kamu (Presensi Mandiri)",
-      method: "qr",
-      scanned_at: new Date().toISOString(),
-    }
-    triggerFeedback("success", "Presensi Mandiri Berhasil! 🎉", "Kehadiranmu telah tercatat.")
-    onRecord(result)
-
     if (eventId) {
       setSubmitting(true)
       api
-        .post(`/events/${eventId}/attendance`, { method: "qr" })
+        .post(`/events/${eventId}/attendance`, {
+          method: "qr",
+          qr_code: scannedCode,
+        })
+        .then(() => {
+          const result: ScanResult = {
+            name: "Kamu (Presensi Mandiri)",
+            method: "qr",
+            scanned_at: new Date().toISOString(),
+          }
+          triggerFeedback(
+            "success",
+            "Presensi Mandiri Berhasil! 🎉",
+            "Kehadiranmu telah tercatat."
+          )
+          onRecord(result)
+        })
         .catch((err: any) => {
-          if (err.message?.includes("sudah tercatat hadir") || err.error === "DUPLICATE_ATTENDANCE") {
-            triggerFeedback("duplicate", "Sudah Presensi ⚠️", "Kamu sudah tercatat hadir di acara ini.")
+          playWarningChime()
+          if (
+            err.message?.includes("sudah tercatat hadir") ||
+            err.error === "DUPLICATE_ATTENDANCE"
+          ) {
+            triggerFeedback(
+              "duplicate",
+              "Sudah Presensi ⚠️",
+              "Kamu sudah tercatat hadir di acara ini."
+            )
+          } else if (
+            err.error?.includes("tidak valid") ||
+            err.message?.includes("tidak valid")
+          ) {
+            setCodeError("QR Code tidak cocok dengan event ini.")
           } else {
             setCodeError(err.message || "Gagal mencatat presensi mandiri.")
           }
@@ -416,7 +468,9 @@ export function AttendanceScanModal({
       } else if (matches.length === 1) {
         target = matches[0]!
       } else {
-        setManualError("Ditemukan beberapa pengguna. Silakan pilih salah satu dari daftar.")
+        setManualError(
+          "Ditemukan beberapa pengguna. Silakan pilih salah satu dari daftar."
+        )
         return
       }
     }
@@ -475,9 +529,14 @@ export function AttendanceScanModal({
       setManualError("")
       setPengurusMode("camera")
     } catch (err: any) {
-      if (err.message?.includes("sudah tercatat hadir") || err.error === "DUPLICATE_ATTENDANCE") {
+      if (
+        err.message?.includes("sudah tercatat hadir") ||
+        err.error === "DUPLICATE_ATTENDANCE"
+      ) {
         setSessionAttendedIds((prev) => new Set(prev).add(target!.id))
-        setManualError(`⚠️ ${target.name} sudah tercatat hadir dalam kegiatan ini.`)
+        setManualError(
+          `⚠️ ${target.name} sudah tercatat hadir dalam kegiatan ini.`
+        )
       } else {
         setManualError(err.message || "Gagal mencatat presensi manual.")
       }
@@ -490,9 +549,12 @@ export function AttendanceScanModal({
     ? peopleList.filter(
         (m) =>
           m.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (m.username && m.username.toLowerCase().includes(searchQuery.toLowerCase())) ||
-          (m.email && m.email.toLowerCase().includes(searchQuery.toLowerCase())) ||
-          (m.user_number && m.user_number.toLowerCase().includes(searchQuery.toLowerCase()))
+          (m.username &&
+            m.username.toLowerCase().includes(searchQuery.toLowerCase())) ||
+          (m.email &&
+            m.email.toLowerCase().includes(searchQuery.toLowerCase())) ||
+          (m.user_number &&
+            m.user_number.toLowerCase().includes(searchQuery.toLowerCase()))
       )
     : []
 
@@ -500,10 +562,20 @@ export function AttendanceScanModal({
   function getCameraDisplayName(label?: string): string {
     if (!label) return "Kamera Belakang"
     const l = label.toLowerCase()
-    if (l.includes("back") || l.includes("rear") || l.includes("belakang") || l.includes("environment")) {
+    if (
+      l.includes("back") ||
+      l.includes("rear") ||
+      l.includes("belakang") ||
+      l.includes("environment")
+    ) {
       return "Belakang"
     }
-    if (l.includes("front") || l.includes("depan") || l.includes("user") || l.includes("selfie")) {
+    if (
+      l.includes("front") ||
+      l.includes("depan") ||
+      l.includes("user") ||
+      l.includes("selfie")
+    ) {
       return "Depan"
     }
     return label.replace(/(camera|video|facing)/gi, "").trim() || "Kamera"
@@ -545,28 +617,28 @@ export function AttendanceScanModal({
           zIndex: 99999,
           backgroundColor: "#000000",
         }}
-        className="flex flex-col bg-black text-white font-sans overflow-hidden animate-in fade-in duration-200"
+        className="flex animate-in flex-col overflow-hidden bg-black font-sans text-white duration-200 fade-in"
       >
         {/* ── 1. Floating Top Bar (Responsive QRIS Style) ── */}
-        <div className="absolute top-0 inset-x-0 z-30 flex items-center justify-between p-3 sm:p-4 pt-[max(0.75rem,env(safe-area-inset-top))] bg-gradient-to-b from-black/90 via-black/50 to-transparent">
+        <div className="absolute inset-x-0 top-0 z-30 flex items-center justify-between bg-gradient-to-b from-black/90 via-black/50 to-transparent p-3 pt-[max(0.75rem,env(safe-area-inset-top))] sm:p-4">
           {/* Left: Close Button */}
           <button
             type="button"
             onClick={onClose}
             aria-label="Tutup Scanner"
-            className="flex size-9 sm:size-10 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-md border border-white/20 hover:bg-white/20 transition-all cursor-pointer shadow-lg active:scale-95 shrink-0"
+            className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-black/60 text-white shadow-lg backdrop-blur-md transition-all hover:bg-white/20 active:scale-95 sm:size-10"
           >
             <XIcon className="size-4 sm:size-5" />
           </button>
 
           {/* Center: Live Status & Counter Pill */}
-          <div className="flex items-center gap-1.5 sm:gap-2 rounded-full bg-black/70 px-2.5 sm:px-3.5 py-1 sm:py-1.5 backdrop-blur-md border border-white/20 shadow-lg">
-            <span className="flex size-2 sm:size-2.5 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-[11px] sm:text-caption font-bold text-white tracking-wide">
+          <div className="flex items-center gap-1.5 rounded-full border border-white/20 bg-black/70 px-2.5 py-1 shadow-lg backdrop-blur-md sm:gap-2 sm:px-3.5 sm:py-1.5">
+            <span className="flex size-2 animate-pulse rounded-full bg-emerald-500 sm:size-2.5" />
+            <span className="sm:text-caption text-[11px] font-bold tracking-wide text-white">
               {sessionAttendedIds.size} Hadir
             </span>
             {sessionSuccessCount > 0 && (
-              <span className="rounded-full bg-emerald-500/30 px-1.5 py-0.2 text-[9px] sm:text-[10px] font-extrabold text-emerald-300">
+              <span className="py-0.2 rounded-full bg-emerald-500/30 px-1.5 text-[9px] font-extrabold text-emerald-300 sm:text-[10px]">
                 +{sessionSuccessCount}
               </span>
             )}
@@ -577,15 +649,15 @@ export function AttendanceScanModal({
             <button
               type="button"
               onClick={handleToggleCamera}
-              className="flex items-center gap-1.5 rounded-full bg-black/75 px-3 py-1.5 sm:px-3.5 sm:py-2 text-[10px] sm:text-caption font-bold text-white backdrop-blur-md border border-white/25 hover:bg-white/25 transition-all cursor-pointer shadow-lg active:scale-95 shrink-0"
+              className="sm:text-caption flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-white/25 bg-black/75 px-3 py-1.5 text-[10px] font-bold text-white shadow-lg backdrop-blur-md transition-all hover:bg-white/25 active:scale-95 sm:px-3.5 sm:py-2"
               title="Ganti Kamera Depan / Belakang"
             >
-              <RefreshCwIcon className="size-3.5 sm:size-4 text-amber-300 shrink-0" />
+              <RefreshCwIcon className="size-3.5 shrink-0 text-amber-300 sm:size-4" />
               <span>Kamera: {currentCamLabel}</span>
             </button>
           ) : (
-            <div className="flex items-center gap-1 text-[10px] sm:text-[11px] font-semibold text-white/80 bg-black/60 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full border border-white/10 backdrop-blur-md shrink-0">
-              <CameraIcon className="size-3 sm:size-3.5 text-amber-400" />
+            <div className="flex shrink-0 items-center gap-1 rounded-full border border-white/10 bg-black/60 px-2.5 py-1 text-[10px] font-semibold text-white/80 backdrop-blur-md sm:px-3 sm:py-1.5 sm:text-[11px]">
+              <CameraIcon className="size-3 text-amber-400 sm:size-3.5" />
               <span>Kamera Belakang</span>
             </div>
           )}
@@ -593,33 +665,39 @@ export function AttendanceScanModal({
 
         {/* ── 2. Floating Dynamic Notification Banner (Responsive) ── */}
         {lastFeedback && (
-          <div className="absolute top-16 sm:top-20 inset-x-2.5 sm:inset-x-4 max-w-sm sm:max-w-md mx-auto z-40 animate-in slide-in-from-top-4 fade-in duration-200">
+          <div className="absolute inset-x-2.5 top-16 z-40 mx-auto max-w-sm animate-in duration-200 fade-in slide-in-from-top-4 sm:inset-x-4 sm:top-20 sm:max-w-md">
             <div
-              className={`flex items-start gap-2.5 sm:gap-3 rounded-2xl p-3 sm:p-4 shadow-2xl border backdrop-blur-xl ${
+              className={`flex items-start gap-2.5 rounded-2xl border p-3 shadow-2xl backdrop-blur-xl sm:gap-3 sm:p-4 ${
                 lastFeedback.type === "success"
-                  ? "bg-emerald-950/90 border-emerald-400/80 text-white"
+                  ? "border-emerald-400/80 bg-emerald-950/90 text-white"
                   : lastFeedback.type === "duplicate"
-                  ? "bg-amber-950/90 border-amber-400/80 text-white"
-                  : "bg-rose-950/90 border-rose-400/80 text-white"
+                    ? "border-amber-400/80 bg-amber-950/90 text-white"
+                    : "border-rose-400/80 bg-rose-950/90 text-white"
               }`}
             >
               {lastFeedback.type === "success" ? (
-                <CheckCircle2Icon className="size-5 sm:size-6 text-emerald-400 shrink-0 mt-0.5" />
+                <CheckCircle2Icon className="mt-0.5 size-5 shrink-0 text-emerald-400 sm:size-6" />
               ) : (
                 <AlertTriangleIcon
-                  className={`size-5 sm:size-6 shrink-0 mt-0.5 ${
-                    lastFeedback.type === "duplicate" ? "text-amber-400" : "text-rose-400"
+                  className={`mt-0.5 size-5 shrink-0 sm:size-6 ${
+                    lastFeedback.type === "duplicate"
+                      ? "text-amber-400"
+                      : "text-rose-400"
                   }`}
                 />
               )}
-              <div className="flex-1 min-w-0">
-                <p className="text-caption sm:text-body-sm font-black leading-tight">{lastFeedback.title}</p>
-                <p className="text-[11px] sm:text-caption opacity-90 leading-tight mt-0.5 sm:mt-1">{lastFeedback.subtitle}</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-caption sm:text-body-sm leading-tight font-black">
+                  {lastFeedback.title}
+                </p>
+                <p className="sm:text-caption mt-0.5 text-[11px] leading-tight opacity-90 sm:mt-1">
+                  {lastFeedback.subtitle}
+                </p>
               </div>
               <button
                 type="button"
                 onClick={() => setLastFeedback(null)}
-                className="text-white/60 hover:text-white p-1 cursor-pointer"
+                className="cursor-pointer p-1 text-white/60 hover:text-white"
               >
                 <XIcon className="size-4" />
               </button>
@@ -628,7 +706,7 @@ export function AttendanceScanModal({
         )}
 
         {/* ── 3. Main Center Content: Full Camera or Search Form ── */}
-        <div className="relative flex-1 w-full h-full flex flex-col items-center justify-center">
+        <div className="relative flex h-full w-full flex-1 flex-col items-center justify-center">
           {pengurusMode === "camera" ? (
             <QrScannerCamera
               onScan={processPengurusQrText}
@@ -640,17 +718,17 @@ export function AttendanceScanModal({
             />
           ) : (
             /* Manual Search Form in Full Screen overlay */
-            <div className="w-full max-w-lg mx-auto p-3 sm:p-6 max-h-[80vh] overflow-y-auto space-y-4 animate-in fade-in zoom-in-95 duration-150">
-              <div className="rounded-3xl border border-white/20 bg-slate-950/90 p-4 sm:p-5 backdrop-blur-2xl shadow-2xl space-y-3 sm:space-y-4">
-                <div className="flex items-center justify-between pb-2 border-b border-white/10">
-                  <h4 className="text-caption-bold sm:text-title-sm font-bold text-white flex items-center gap-1.5 sm:gap-2">
+            <div className="mx-auto max-h-[80vh] w-full max-w-lg animate-in space-y-4 overflow-y-auto p-3 duration-150 zoom-in-95 fade-in sm:p-6">
+              <div className="space-y-3 rounded-3xl border border-white/20 bg-slate-950/90 p-4 shadow-2xl backdrop-blur-2xl sm:space-y-4 sm:p-5">
+                <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                  <h4 className="text-caption-bold sm:text-title-sm flex items-center gap-1.5 font-bold text-white sm:gap-2">
                     <SearchIcon className="size-4 text-amber-400" />
                     <span>Cari & Catat Presensi Manual</span>
                   </h4>
                   <button
                     type="button"
                     onClick={() => setPengurusMode("camera")}
-                    className="text-slate-400 hover:text-white text-caption cursor-pointer"
+                    className="text-caption cursor-pointer text-slate-400 hover:text-white"
                   >
                     Kamera
                   </button>
@@ -658,11 +736,14 @@ export function AttendanceScanModal({
 
                 <form onSubmit={handleManualSearchSubmit} className="space-y-3">
                   <div className="space-y-1">
-                    <label htmlFor="people-full-search" className="text-[11px] sm:text-caption font-medium text-slate-300">
+                    <label
+                      htmlFor="people-full-search"
+                      className="sm:text-caption text-[11px] font-medium text-slate-300"
+                    >
                       Nama, @username, atau ID Umat
                     </label>
                     <div className="relative">
-                      <SearchIcon className="absolute left-3.5 top-3 sm:top-3.5 size-4 text-slate-400" />
+                      <SearchIcon className="absolute top-3 left-3.5 size-4 text-slate-400 sm:top-3.5" />
                       <input
                         id="people-full-search"
                         type="text"
@@ -673,7 +754,7 @@ export function AttendanceScanModal({
                           setManualError("")
                         }}
                         placeholder="Ketik nama umat..."
-                        className="w-full rounded-2xl border border-slate-700 bg-slate-900 pl-9 sm:pl-10 pr-3 sm:pr-4 py-2.5 sm:py-3 text-caption sm:text-body-sm text-white outline-none focus:border-amber-400 placeholder:text-slate-500"
+                        className="text-caption sm:text-body-sm w-full rounded-2xl border border-slate-700 bg-slate-900 py-2.5 pr-3 pl-9 text-white outline-none placeholder:text-slate-500 focus:border-amber-400 sm:py-3 sm:pr-4 sm:pl-10"
                         autoFocus
                       />
                     </div>
@@ -681,11 +762,15 @@ export function AttendanceScanModal({
 
                   {/* Autocomplete List */}
                   {searchQuery.trim() && !selectedMember && (
-                    <div className="max-h-44 sm:max-h-52 overflow-y-auto rounded-2xl border border-slate-700 bg-slate-900 divide-y divide-slate-800 shadow-xl">
+                    <div className="max-h-44 divide-y divide-slate-800 overflow-y-auto rounded-2xl border border-slate-700 bg-slate-900 shadow-xl sm:max-h-52">
                       {loadingPeople ? (
-                        <p className="p-3 sm:p-4 text-caption text-slate-400 text-center">Memuat database...</p>
+                        <p className="text-caption p-3 text-center text-slate-400 sm:p-4">
+                          Memuat database...
+                        </p>
                       ) : filteredMembers.length === 0 ? (
-                        <p className="p-3 sm:p-4 text-caption text-slate-400 text-center">Tidak ada anggota cocok.</p>
+                        <p className="text-caption p-3 text-center text-slate-400 sm:p-4">
+                          Tidak ada anggota cocok.
+                        </p>
                       ) : (
                         filteredMembers.slice(0, 6).map((m) => {
                           const alreadyIn = sessionAttendedIds.has(m.id)
@@ -698,22 +783,27 @@ export function AttendanceScanModal({
                                 setSearchQuery(m.name)
                                 setManualError("")
                               }}
-                              className={`w-full flex items-center justify-between p-2.5 sm:p-3 text-left transition-colors cursor-pointer ${
-                                alreadyIn ? "bg-amber-950/30 hover:bg-amber-950/50" : "hover:bg-slate-800"
+                              className={`flex w-full cursor-pointer items-center justify-between p-2.5 text-left transition-colors sm:p-3 ${
+                                alreadyIn
+                                  ? "bg-amber-950/30 hover:bg-amber-950/50"
+                                  : "hover:bg-slate-800"
                               }`}
                             >
                               <div className="min-w-0">
-                                <p className="text-caption font-bold text-white truncate">{m.name}</p>
-                                <p className="text-[10px] sm:text-micro text-slate-400 font-mono">
-                                  {m.username ? `@${m.username} · ` : ""}ID: {m.user_number || "—"}
+                                <p className="text-caption truncate font-bold text-white">
+                                  {m.name}
+                                </p>
+                                <p className="sm:text-micro font-mono text-[10px] text-slate-400">
+                                  {m.username ? `@${m.username} · ` : ""}ID:{" "}
+                                  {m.user_number || "—"}
                                 </p>
                               </div>
                               {alreadyIn ? (
-                                <span className="text-[9px] sm:text-[10px] font-bold text-amber-300 bg-amber-500/20 px-2 py-0.5 rounded-full shrink-0 border border-amber-500/30">
+                                <span className="shrink-0 rounded-full border border-amber-500/30 bg-amber-500/20 px-2 py-0.5 text-[9px] font-bold text-amber-300 sm:text-[10px]">
                                   Sudah Hadir
                                 </span>
                               ) : (
-                                <span className="text-[9px] sm:text-[10px] font-semibold text-emerald-300 bg-emerald-500/20 px-2 py-0.5 rounded-full shrink-0 border border-emerald-500/30">
+                                <span className="shrink-0 rounded-full border border-emerald-500/30 bg-emerald-500/20 px-2 py-0.5 text-[9px] font-semibold text-emerald-300 sm:text-[10px]">
                                   Pilih
                                 </span>
                               )}
@@ -726,11 +816,16 @@ export function AttendanceScanModal({
 
                   {/* Selected Member Card */}
                   {selectedMember && (
-                    <div className="flex items-center justify-between rounded-2xl border border-amber-400/40 bg-amber-950/30 p-3 sm:p-3.5 shadow-md">
+                    <div className="flex items-center justify-between rounded-2xl border border-amber-400/40 bg-amber-950/30 p-3 shadow-md sm:p-3.5">
                       <div>
-                        <p className="text-caption sm:text-body-sm font-bold text-amber-200">{selectedMember.name}</p>
-                        <p className="text-[11px] sm:text-caption text-slate-300 font-mono">
-                          {selectedMember.username ? `@${selectedMember.username} · ` : ""}ID: {selectedMember.user_number || "—"}
+                        <p className="text-caption sm:text-body-sm font-bold text-amber-200">
+                          {selectedMember.name}
+                        </p>
+                        <p className="sm:text-caption font-mono text-[11px] text-slate-300">
+                          {selectedMember.username
+                            ? `@${selectedMember.username} · `
+                            : ""}
+                          ID: {selectedMember.user_number || "—"}
                         </p>
                       </div>
                       <button
@@ -739,7 +834,7 @@ export function AttendanceScanModal({
                           setSelectedMember(null)
                           setSearchQuery("")
                         }}
-                        className="text-caption font-semibold text-amber-400 hover:underline cursor-pointer"
+                        className="text-caption cursor-pointer font-semibold text-amber-400 hover:underline"
                       >
                         Ganti
                       </button>
@@ -747,7 +842,7 @@ export function AttendanceScanModal({
                   )}
 
                   {manualError && (
-                    <p className="flex items-center gap-1.5 text-caption font-semibold text-rose-300 bg-rose-950/60 p-2.5 sm:p-3 rounded-2xl border border-rose-500/40">
+                    <p className="text-caption flex items-center gap-1.5 rounded-2xl border border-rose-500/40 bg-rose-950/60 p-2.5 font-semibold text-rose-300 sm:p-3">
                       <AlertTriangleIcon className="size-4 shrink-0 text-rose-400" />
                       <span>{manualError}</span>
                     </p>
@@ -755,8 +850,10 @@ export function AttendanceScanModal({
 
                   <button
                     type="submit"
-                    disabled={submitting || (!selectedMember && !searchQuery.trim())}
-                    className="w-full rounded-2xl bg-[#e8b94a] py-2.5 sm:py-3 text-caption font-bold text-[#0a0a0a] shadow-lg hover:bg-amber-400 transition-all disabled:opacity-50 cursor-pointer uppercase tracking-wider"
+                    disabled={
+                      submitting || (!selectedMember && !searchQuery.trim())
+                    }
+                    className="text-caption w-full cursor-pointer rounded-2xl bg-[#e8b94a] py-2.5 font-bold tracking-wider text-[#0a0a0a] uppercase shadow-lg transition-all hover:bg-amber-400 disabled:opacity-50 sm:py-3"
                   >
                     {submitting ? "Mencatat..." : "Catat Kehadiran"}
                   </button>
@@ -768,69 +865,82 @@ export function AttendanceScanModal({
 
         {/* ── 4. Collapsible Bottom Scan History Drawer (Responsive) ── */}
         {isHistoryDrawerOpen && (
-          <div className="absolute inset-x-2 sm:inset-x-auto sm:max-w-md sm:mx-auto bottom-20 sm:bottom-24 z-40 max-h-[48vh] sm:max-h-[52vh] bg-slate-950/95 border border-white/20 rounded-3xl p-3.5 sm:p-4 shadow-2xl backdrop-blur-2xl flex flex-col animate-in slide-in-from-bottom-8 duration-200">
-            <div className="flex items-center justify-between pb-2 sm:pb-2.5 border-b border-white/10 shrink-0">
+          <div className="absolute inset-x-2 bottom-20 z-40 flex max-h-[48vh] animate-in flex-col rounded-3xl border border-white/20 bg-slate-950/95 p-3.5 shadow-2xl backdrop-blur-2xl duration-200 slide-in-from-bottom-8 sm:inset-x-auto sm:bottom-24 sm:mx-auto sm:max-h-[52vh] sm:max-w-md sm:p-4">
+            <div className="flex shrink-0 items-center justify-between border-b border-white/10 pb-2 sm:pb-2.5">
               <div className="flex items-center gap-2">
-                <ClockIcon className="size-3.5 sm:size-4 text-amber-400" />
-                <h4 className="text-caption font-bold text-white">Riwayat Antrean Scan ({recentScans.length})</h4>
+                <ClockIcon className="size-3.5 text-amber-400 sm:size-4" />
+                <h4 className="text-caption font-bold text-white">
+                  Riwayat Antrean Scan ({recentScans.length})
+                </h4>
               </div>
               <button
                 type="button"
                 onClick={() => setIsHistoryDrawerOpen(false)}
-                className="text-slate-400 hover:text-white p-1 cursor-pointer"
+                className="cursor-pointer p-1 text-slate-400 hover:text-white"
                 aria-label="Tutup Riwayat"
               >
                 <ChevronDownIcon className="size-5" />
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto space-y-1.5 sm:space-y-2 py-2 pr-1 no-scrollbar">
+            <div className="no-scrollbar flex-1 space-y-1.5 overflow-y-auto py-2 pr-1 sm:space-y-2">
               {recentScans.length === 0 ? (
-                <p className="text-caption text-slate-400 text-center py-6">
-                  Belum ada QR yang di-scan pada sesi ini. Arahkan kamera ke QR umat!
+                <p className="text-caption py-6 text-center text-slate-400">
+                  Belum ada QR yang di-scan pada sesi ini. Arahkan kamera ke QR
+                  umat!
                 </p>
               ) : (
                 recentScans.map((scan) => (
                   <div
                     key={scan.id}
-                    className={`flex items-center justify-between p-2 sm:p-2.5 rounded-2xl border text-caption transition-all ${
+                    className={`text-caption flex items-center justify-between rounded-2xl border p-2 transition-all sm:p-2.5 ${
                       scan.status === "success"
-                        ? "bg-emerald-950/60 border-emerald-500/40 text-emerald-200"
+                        ? "border-emerald-500/40 bg-emerald-950/60 text-emerald-200"
                         : scan.status === "duplicate"
-                        ? "bg-amber-950/60 border-amber-500/40 text-amber-200"
-                        : "bg-rose-950/60 border-rose-500/40 text-rose-200"
+                          ? "border-amber-500/40 bg-amber-950/60 text-amber-200"
+                          : "border-rose-500/40 bg-rose-950/60 text-rose-200"
                     }`}
                   >
-                    <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+                    <div className="flex min-w-0 items-center gap-2 sm:gap-2.5">
                       <span
-                        className={`flex size-6 sm:size-7 shrink-0 items-center justify-center rounded-xl text-caption-bold font-black uppercase ${
+                        className={`text-caption-bold flex size-6 shrink-0 items-center justify-center rounded-xl font-black uppercase sm:size-7 ${
                           scan.status === "success"
                             ? "bg-emerald-500 text-black"
                             : scan.status === "duplicate"
-                            ? "bg-amber-400 text-black"
-                            : "bg-rose-500 text-white"
+                              ? "bg-amber-400 text-black"
+                              : "bg-rose-500 text-white"
                         }`}
                       >
                         {scan.name[0] || "?"}
                       </span>
                       <div className="min-w-0">
-                        <p className="font-bold truncate text-white text-[12px] sm:text-caption">{scan.name}</p>
-                        <p className="text-[10px] sm:text-[11px] opacity-75 truncate">{scan.message}</p>
+                        <p className="sm:text-caption truncate text-[12px] font-bold text-white">
+                          {scan.name}
+                        </p>
+                        <p className="truncate text-[10px] opacity-75 sm:text-[11px]">
+                          {scan.message}
+                        </p>
                       </div>
                     </div>
 
-                    <div className="text-right shrink-0 pl-2">
-                      <span className="text-[9px] sm:text-[10px] font-mono text-slate-300 block">{scan.time}</span>
+                    <div className="shrink-0 pl-2 text-right">
+                      <span className="block font-mono text-[9px] text-slate-300 sm:text-[10px]">
+                        {scan.time}
+                      </span>
                       <span
-                        className={`inline-block text-[8px] sm:text-[9px] font-black uppercase px-1.5 sm:px-2 py-0.5 rounded-full ${
+                        className={`inline-block rounded-full px-1.5 py-0.5 text-[8px] font-black uppercase sm:px-2 sm:text-[9px] ${
                           scan.status === "success"
                             ? "bg-emerald-500/30 text-emerald-300"
                             : scan.status === "duplicate"
-                            ? "bg-amber-500/30 text-amber-300"
-                            : "bg-rose-500/30 text-rose-300"
+                              ? "bg-amber-500/30 text-amber-300"
+                              : "bg-rose-500/30 text-rose-300"
                         }`}
                       >
-                        {scan.status === "success" ? "Hadir" : scan.status === "duplicate" ? "Duplikat" : "Gagal"}
+                        {scan.status === "success"
+                          ? "Hadir"
+                          : scan.status === "duplicate"
+                            ? "Duplikat"
+                            : "Gagal"}
                       </span>
                     </div>
                   </div>
@@ -841,25 +951,29 @@ export function AttendanceScanModal({
         )}
 
         {/* ── 5. Floating Bottom Navigation Bar (Responsive Dock) ── */}
-        <div className="absolute bottom-0 inset-x-0 z-30 p-3 sm:p-4 pb-[max(1rem,env(safe-area-inset-bottom))] bg-gradient-to-t from-black/95 via-black/60 to-transparent flex items-center justify-center gap-1.5 sm:gap-2.5">
+        <div className="absolute inset-x-0 bottom-0 z-30 flex items-center justify-center gap-1.5 bg-gradient-to-t from-black/95 via-black/60 to-transparent p-3 pb-[max(1rem,env(safe-area-inset-bottom))] sm:gap-2.5 sm:p-4">
           {/* Button 1: Add / Search User Manually (Bottom Action) */}
           <button
             type="button"
-            onClick={() => setPengurusMode((prev) => (prev === "camera" ? "search" : "camera"))}
-            className={`flex items-center gap-1.5 sm:gap-2 rounded-full px-3 sm:px-4 py-2 sm:py-2.5 text-[11px] sm:text-caption font-bold backdrop-blur-xl border transition-all cursor-pointer shadow-lg active:scale-95 ${
+            onClick={() =>
+              setPengurusMode((prev) =>
+                prev === "camera" ? "search" : "camera"
+              )
+            }
+            className={`sm:text-caption flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-2 text-[11px] font-bold shadow-lg backdrop-blur-xl transition-all active:scale-95 sm:gap-2 sm:px-4 sm:py-2.5 ${
               pengurusMode === "search"
-                ? "bg-[#e8b94a] text-[#0a0a0a] border-amber-300 font-extrabold"
-                : "bg-black/75 text-white border-white/25 hover:bg-white/20"
+                ? "border-amber-300 bg-[#e8b94a] font-extrabold text-[#0a0a0a]"
+                : "border-white/25 bg-black/75 text-white hover:bg-white/20"
             }`}
           >
             {pengurusMode === "camera" ? (
               <>
-                <UserPlusIcon className="size-3.5 sm:size-4 text-amber-300 shrink-0" />
+                <UserPlusIcon className="size-3.5 shrink-0 text-amber-300 sm:size-4" />
                 <span>Catat Manual</span>
               </>
             ) : (
               <>
-                <CameraIcon className="size-3.5 sm:size-4 shrink-0" />
+                <CameraIcon className="size-3.5 shrink-0 sm:size-4" />
                 <span>Buka Kamera</span>
               </>
             )}
@@ -869,13 +983,13 @@ export function AttendanceScanModal({
           <button
             type="button"
             onClick={() => setIsHistoryDrawerOpen((prev) => !prev)}
-            className={`flex items-center gap-1.5 sm:gap-2 rounded-full px-3 sm:px-4 py-2 sm:py-2.5 text-[11px] sm:text-caption font-bold backdrop-blur-xl border transition-all cursor-pointer shadow-lg active:scale-95 ${
+            className={`sm:text-caption flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-2 text-[11px] font-bold shadow-lg backdrop-blur-xl transition-all active:scale-95 sm:gap-2 sm:px-4 sm:py-2.5 ${
               isHistoryDrawerOpen
-                ? "bg-white text-black border-white"
-                : "bg-black/75 text-white border-white/25 hover:bg-white/20"
+                ? "border-white bg-white text-black"
+                : "border-white/25 bg-black/75 text-white hover:bg-white/20"
             }`}
           >
-            <ListFilterIcon className="size-3.5 sm:size-4 text-amber-400 shrink-0" />
+            <ListFilterIcon className="size-3.5 shrink-0 text-amber-400 sm:size-4" />
             <span>Riwayat ({recentScans.length})</span>
           </button>
 
@@ -883,10 +997,10 @@ export function AttendanceScanModal({
           <button
             type="button"
             onClick={() => uploadInputRef.current?.click()}
-            className="flex items-center gap-1.5 sm:gap-2 rounded-full bg-black/75 text-white border border-white/25 px-3 sm:px-4 py-2 sm:py-2.5 text-[11px] sm:text-caption font-bold backdrop-blur-xl hover:bg-white/20 transition-all cursor-pointer shadow-lg active:scale-95"
+            className="sm:text-caption flex cursor-pointer items-center gap-1.5 rounded-full border border-white/25 bg-black/75 px-3 py-2 text-[11px] font-bold text-white shadow-lg backdrop-blur-xl transition-all hover:bg-white/20 active:scale-95 sm:gap-2 sm:px-4 sm:py-2.5"
             title="Scan dari Foto / Screenshot QR"
           >
-            <ImageIcon className="size-3.5 sm:size-4 text-cyan-400 shrink-0" />
+            <ImageIcon className="size-3.5 shrink-0 text-cyan-400 sm:size-4" />
             <span>Foto QR</span>
           </button>
         </div>
@@ -901,11 +1015,18 @@ export function AttendanceScanModal({
             if (!file) return
             try {
               const { Html5Qrcode } = await import("html5-qrcode")
-              const tempScanner = new Html5Qrcode("temp-qr-div-" + Math.random(), { verbose: false })
+              const tempScanner = new Html5Qrcode(
+                "temp-qr-div-" + Math.random(),
+                { verbose: false }
+              )
               const decoded = await tempScanner.scanFile(file, true)
               await processPengurusQrText(decoded)
             } catch {
-              triggerFeedback("error", "Gagal Membaca QR", "Gambar tidak memuat QR Code yang jelas.")
+              triggerFeedback(
+                "error",
+                "Gagal Membaca QR",
+                "Gambar tidak memuat QR Code yang jelas."
+              )
             } finally {
               if (uploadInputRef.current) uploadInputRef.current.value = ""
             }
@@ -928,40 +1049,40 @@ export function AttendanceScanModal({
   const currentCameraObj = cameras.find((c) => c.id === activeCameraId)
   const currentCamLabel = getCameraDisplayName(currentCameraObj?.label)
 
-    const umatPortalContent = (
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label="Presensi Mandiri Event"
-        style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          width: "100vw",
-          height: "100dvh",
-          zIndex: 99999,
-          backgroundColor: "#000000",
-        }}
-        className="flex flex-col bg-black text-white font-sans overflow-hidden animate-in fade-in duration-200"
-      >
+  const umatPortalContent = (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Presensi Mandiri Event"
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        width: "100vw",
+        height: "100dvh",
+        zIndex: 99999,
+        backgroundColor: "#000000",
+      }}
+      className="flex animate-in flex-col overflow-hidden bg-black font-sans text-white duration-200 fade-in"
+    >
       {/* ── 1. Floating Top Bar ── */}
-      <div className="absolute top-0 inset-x-0 z-30 flex items-center justify-between p-3 sm:p-4 pt-[max(0.75rem,env(safe-area-inset-top))] bg-gradient-to-b from-black/90 via-black/50 to-transparent">
+      <div className="absolute inset-x-0 top-0 z-30 flex items-center justify-between bg-gradient-to-b from-black/90 via-black/50 to-transparent p-3 pt-[max(0.75rem,env(safe-area-inset-top))] sm:p-4">
         {/* Left: Close Button */}
         <button
           type="button"
           onClick={onClose}
           aria-label="Tutup Scanner"
-          className="flex size-9 sm:size-10 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-md border border-white/20 hover:bg-white/20 transition-all cursor-pointer shadow-lg active:scale-95 shrink-0"
+          className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-black/60 text-white shadow-lg backdrop-blur-md transition-all hover:bg-white/20 active:scale-95 sm:size-10"
         >
           <XIcon className="size-4 sm:size-5" />
         </button>
 
         {/* Center: Title Pill */}
-        <div className="flex items-center gap-1.5 sm:gap-2 rounded-full bg-black/70 px-3 sm:px-4 py-1 sm:py-1.5 backdrop-blur-md border border-white/20 shadow-lg">
-          <ScanLineIcon className="size-3.5 sm:size-4 text-amber-400" />
-          <span className="text-[11px] sm:text-caption font-bold text-white tracking-wide">
+        <div className="flex items-center gap-1.5 rounded-full border border-white/20 bg-black/70 px-3 py-1 shadow-lg backdrop-blur-md sm:gap-2 sm:px-4 sm:py-1.5">
+          <ScanLineIcon className="size-3.5 text-amber-400 sm:size-4" />
+          <span className="sm:text-caption text-[11px] font-bold tracking-wide text-white">
             Presensi Mandiri
           </span>
         </div>
@@ -971,15 +1092,15 @@ export function AttendanceScanModal({
           <button
             type="button"
             onClick={handleToggleCamera}
-            className="flex items-center gap-1.5 rounded-full bg-black/75 px-3 py-1.5 sm:px-3.5 sm:py-2 text-[10px] sm:text-caption font-bold text-white backdrop-blur-md border border-white/25 hover:bg-white/25 transition-all cursor-pointer shadow-lg active:scale-95 shrink-0"
+            className="sm:text-caption flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-white/25 bg-black/75 px-3 py-1.5 text-[10px] font-bold text-white shadow-lg backdrop-blur-md transition-all hover:bg-white/25 active:scale-95 sm:px-3.5 sm:py-2"
             title="Ganti Kamera Depan / Belakang"
           >
-            <RefreshCwIcon className="size-3.5 sm:size-4 text-amber-300 shrink-0" />
+            <RefreshCwIcon className="size-3.5 shrink-0 text-amber-300 sm:size-4" />
             <span>Kamera: {currentCamLabel}</span>
           </button>
         ) : (
-          <div className="flex items-center gap-1 text-[10px] sm:text-[11px] font-semibold text-white/80 bg-black/60 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full border border-white/10 backdrop-blur-md shrink-0">
-            <CameraIcon className="size-3 sm:size-3.5 text-amber-400" />
+          <div className="flex shrink-0 items-center gap-1 rounded-full border border-white/10 bg-black/60 px-2.5 py-1 text-[10px] font-semibold text-white/80 backdrop-blur-md sm:px-3 sm:py-1.5 sm:text-[11px]">
+            <CameraIcon className="size-3 text-amber-400 sm:size-3.5" />
             <span>Kamera</span>
           </div>
         )}
@@ -987,23 +1108,23 @@ export function AttendanceScanModal({
 
       {/* ── 2. Floating Dynamic Feedback Banner ── */}
       {lastFeedback && (
-        <div className="absolute top-16 sm:top-20 inset-x-2.5 sm:inset-x-4 max-w-sm sm:max-w-md mx-auto z-40 animate-in slide-in-from-top-4 fade-in duration-200">
+        <div className="absolute inset-x-2.5 top-16 z-40 mx-auto max-w-sm animate-in duration-200 fade-in slide-in-from-top-4 sm:inset-x-4 sm:top-20 sm:max-w-md">
           <div
-            className={`flex items-start gap-2.5 sm:gap-3 rounded-2xl p-3 sm:p-4 shadow-2xl border backdrop-blur-xl ${
+            className={`flex items-start gap-2.5 rounded-2xl border p-3 shadow-2xl backdrop-blur-xl sm:gap-3 sm:p-4 ${
               lastFeedback.type === "success"
-                ? "bg-emerald-950/90 border-emerald-400/80 text-white"
+                ? "border-emerald-400/80 bg-emerald-950/90 text-white"
                 : lastFeedback.type === "duplicate"
-                ? "bg-amber-950/90 border-amber-400/80 text-white"
-                : "bg-rose-950/90 border-rose-400/80 text-white"
+                  ? "border-amber-400/80 bg-amber-950/90 text-white"
+                  : "border-rose-400/80 bg-rose-950/90 text-white"
             }`}
           >
             {lastFeedback.type === "success" ? (
-              <div className="flex size-7 sm:size-8 items-center justify-center rounded-xl bg-emerald-500/30 text-emerald-300 shrink-0">
-                <CheckCircle2Icon className="size-4 sm:size-5 text-emerald-400" />
+              <div className="flex size-7 shrink-0 items-center justify-center rounded-xl bg-emerald-500/30 text-emerald-300 sm:size-8">
+                <CheckCircle2Icon className="size-4 text-emerald-400 sm:size-5" />
               </div>
             ) : (
               <div
-                className={`flex size-7 sm:size-8 items-center justify-center rounded-xl shrink-0 ${
+                className={`flex size-7 shrink-0 items-center justify-center rounded-xl sm:size-8 ${
                   lastFeedback.type === "duplicate"
                     ? "bg-amber-500/30 text-amber-300"
                     : "bg-rose-500/30 text-rose-300"
@@ -1012,14 +1133,18 @@ export function AttendanceScanModal({
                 <AlertTriangleIcon className="size-4 sm:size-5" />
               </div>
             )}
-            <div className="flex-1 min-w-0">
-              <p className="text-caption sm:text-body-sm font-black leading-tight">{lastFeedback.title}</p>
-              <p className="text-[11px] sm:text-caption opacity-90 leading-tight mt-0.5 sm:mt-1">{lastFeedback.subtitle}</p>
+            <div className="min-w-0 flex-1">
+              <p className="text-caption sm:text-body-sm leading-tight font-black">
+                {lastFeedback.title}
+              </p>
+              <p className="sm:text-caption mt-0.5 text-[11px] leading-tight opacity-90 sm:mt-1">
+                {lastFeedback.subtitle}
+              </p>
             </div>
             <button
               type="button"
               onClick={() => setLastFeedback(null)}
-              className="text-white/60 hover:text-white p-1 cursor-pointer"
+              className="cursor-pointer p-1 text-white/60 hover:text-white"
             >
               <XIcon className="size-4" />
             </button>
@@ -1028,9 +1153,9 @@ export function AttendanceScanModal({
       )}
 
       {/* ── 3. Main Center Content: Camera Viewfinder or Manual Form ── */}
-      <div className="relative flex-1 w-full h-full flex flex-col items-center justify-center">
+      <div className="relative flex h-full w-full flex-1 flex-col items-center justify-center">
         {umatMode === "camera" ? (
-          <div className="w-full h-full flex items-center justify-center">
+          <div className="flex h-full w-full items-center justify-center">
             <QrScannerCamera
               onScan={processUmatQrText}
               onError={(err) => setCodeError(err)}
@@ -1042,19 +1167,26 @@ export function AttendanceScanModal({
           </div>
         ) : (
           /* Manual Code Form in Full Screen overlay */
-          <div className="w-full max-w-sm mx-auto p-4 sm:p-6 space-y-5 animate-in fade-in zoom-in-95 duration-150">
-            <div className="rounded-3xl border border-white/20 bg-zinc-950/85 p-5 sm:p-6 shadow-2xl backdrop-blur-xl space-y-4">
+          <div className="mx-auto w-full max-w-sm animate-in space-y-5 p-4 duration-150 zoom-in-95 fade-in sm:p-6">
+            <div className="space-y-4 rounded-3xl border border-white/20 bg-zinc-950/85 p-5 shadow-2xl backdrop-blur-xl sm:p-6">
               <div className="flex items-center gap-3">
-                <div className="flex size-10 items-center justify-center rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                <div className="flex size-10 items-center justify-center rounded-2xl border border-amber-500/30 bg-amber-500/20 text-amber-400">
                   <KeyboardIcon className="size-5" />
                 </div>
                 <div>
-                  <h4 className="text-caption-bold sm:text-body-md text-white">Masukkan Kode Presensi</h4>
-                  <p className="text-[11px] sm:text-caption text-zinc-400">Ketik kode unik dari QR Event Vihara</p>
+                  <h4 className="text-caption-bold sm:text-body-md text-white">
+                    Masukkan Kode Presensi
+                  </h4>
+                  <p className="sm:text-caption text-[11px] text-zinc-400">
+                    Ketik kode unik dari QR Event Vihara
+                  </p>
                 </div>
               </div>
 
-              <form onSubmit={handleUmatManualSubmit} className="space-y-4 pt-2">
+              <form
+                onSubmit={handleUmatManualSubmit}
+                className="space-y-4 pt-2"
+              >
                 <div className="space-y-1.5">
                   <input
                     id="scan-code"
@@ -1065,11 +1197,11 @@ export function AttendanceScanModal({
                       setCodeError("")
                     }}
                     placeholder={eventCode.replace(/./g, "·")}
-                    className="w-full rounded-2xl border border-white/20 bg-black/60 px-4 py-3.5 text-center font-mono text-title-sm sm:text-title-md tracking-widest text-amber-300 placeholder:text-zinc-600 outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 uppercase"
+                    className="text-title-sm sm:text-title-md w-full rounded-2xl border border-white/20 bg-black/60 px-4 py-3.5 text-center font-mono tracking-widest text-amber-300 uppercase outline-none placeholder:text-zinc-600 focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20"
                     autoFocus
                   />
                   {codeError && (
-                    <p className="flex items-center gap-1.5 text-[11px] sm:text-caption font-semibold text-rose-400 bg-rose-950/60 p-2.5 rounded-xl border border-rose-500/30">
+                    <p className="sm:text-caption flex items-center gap-1.5 rounded-xl border border-rose-500/30 bg-rose-950/60 p-2.5 text-[11px] font-semibold text-rose-400">
                       <AlertTriangleIcon className="size-4 shrink-0" />
                       <span>{codeError}</span>
                     </p>
@@ -1079,10 +1211,12 @@ export function AttendanceScanModal({
                 <button
                   type="submit"
                   disabled={submitting || !codeInput.trim()}
-                  className="w-full flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 py-3 sm:py-3.5 text-caption-bold sm:text-body-sm font-black text-black shadow-lg hover:from-amber-300 hover:to-amber-400 transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
+                  className="text-caption-bold sm:text-body-sm flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 py-3 font-black text-black shadow-lg transition-all hover:from-amber-300 hover:to-amber-400 active:scale-[0.98] disabled:opacity-50 sm:py-3.5"
                 >
                   <CheckCircle2Icon className="size-4 sm:size-5" />
-                  <span>{submitting ? "Memverifikasi..." : "Konfirmasi Kehadiran"}</span>
+                  <span>
+                    {submitting ? "Memverifikasi..." : "Konfirmasi Kehadiran"}
+                  </span>
                 </button>
               </form>
             </div>
@@ -1091,7 +1225,7 @@ export function AttendanceScanModal({
       </div>
 
       {/* ── 4. Floating Bottom Action Dock ── */}
-      <div className="absolute bottom-0 inset-x-0 z-30 flex items-center justify-center gap-2 p-3 sm:p-4 pb-[max(1rem,env(safe-area-inset-bottom))] bg-gradient-to-t from-black/90 via-black/50 to-transparent">
+      <div className="absolute inset-x-0 bottom-0 z-30 flex items-center justify-center gap-2 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-3 pb-[max(1rem,env(safe-area-inset-bottom))] sm:p-4">
         {/* Toggle Mode Button (Camera vs Manual) */}
         <button
           type="button"
@@ -1099,20 +1233,20 @@ export function AttendanceScanModal({
             setUmatMode((prev) => (prev === "camera" ? "manual" : "camera"))
             setCodeError("")
           }}
-          className={`flex items-center gap-1.5 sm:gap-2 rounded-full px-3.5 sm:px-4 py-2 sm:py-2.5 text-[11px] sm:text-caption font-bold backdrop-blur-xl border transition-all cursor-pointer shadow-lg active:scale-95 ${
+          className={`sm:text-caption flex cursor-pointer items-center gap-1.5 rounded-full border px-3.5 py-2 text-[11px] font-bold shadow-lg backdrop-blur-xl transition-all active:scale-95 sm:gap-2 sm:px-4 sm:py-2.5 ${
             umatMode === "manual"
-              ? "bg-amber-400 text-black border-amber-300"
-              : "bg-black/75 text-white border-white/25 hover:bg-white/20"
+              ? "border-amber-300 bg-amber-400 text-black"
+              : "border-white/25 bg-black/75 text-white hover:bg-white/20"
           }`}
         >
           {umatMode === "manual" ? (
             <>
-              <CameraIcon className="size-3.5 sm:size-4 text-black shrink-0" />
+              <CameraIcon className="size-3.5 shrink-0 text-black sm:size-4" />
               <span>Buka Kamera</span>
             </>
           ) : (
             <>
-              <KeyboardIcon className="size-3.5 sm:size-4 text-amber-300 shrink-0" />
+              <KeyboardIcon className="size-3.5 shrink-0 text-amber-300 sm:size-4" />
               <span>Input Kode Manual</span>
             </>
           )}
@@ -1122,10 +1256,10 @@ export function AttendanceScanModal({
         <button
           type="button"
           onClick={() => uploadInputRef.current?.click()}
-          className="flex items-center gap-1.5 sm:gap-2 rounded-full bg-black/75 text-white border border-white/25 px-3.5 sm:px-4 py-2 sm:py-2.5 text-[11px] sm:text-caption font-bold backdrop-blur-xl hover:bg-white/20 transition-all cursor-pointer shadow-lg active:scale-95"
+          className="sm:text-caption flex cursor-pointer items-center gap-1.5 rounded-full border border-white/25 bg-black/75 px-3.5 py-2 text-[11px] font-bold text-white shadow-lg backdrop-blur-xl transition-all hover:bg-white/20 active:scale-95 sm:gap-2 sm:px-4 sm:py-2.5"
           title="Scan dari Foto / Screenshot QR"
         >
-          <ImageIcon className="size-3.5 sm:size-4 text-cyan-400 shrink-0" />
+          <ImageIcon className="size-3.5 shrink-0 text-cyan-400 sm:size-4" />
           <span>Foto QR</span>
         </button>
       </div>
@@ -1140,11 +1274,18 @@ export function AttendanceScanModal({
           if (!file) return
           try {
             const { Html5Qrcode } = await import("html5-qrcode")
-            const tempScanner = new Html5Qrcode("temp-qr-div-umat-" + Math.random(), { verbose: false })
+            const tempScanner = new Html5Qrcode(
+              "temp-qr-div-umat-" + Math.random(),
+              { verbose: false }
+            )
             const decoded = await tempScanner.scanFile(file, true)
             processUmatQrText(decoded)
           } catch {
-            triggerFeedback("error", "Gagal Membaca QR", "Gambar tidak memuat QR Code yang jelas.")
+            triggerFeedback(
+              "error",
+              "Gagal Membaca QR",
+              "Gambar tidak memuat QR Code yang jelas."
+            )
           } finally {
             if (uploadInputRef.current) uploadInputRef.current.value = ""
           }

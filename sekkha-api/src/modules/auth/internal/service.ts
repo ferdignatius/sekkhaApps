@@ -89,27 +89,31 @@ function generateToken(
 export async function requestRegisterOtp(input: RequestRegisterOtpInput) {
   const normalizedEmail = input.email.toLowerCase().trim()
 
-  // 1. Check if email already registered
+  // 1. Check if email already registered (Anti-Enumeration: return generic message)
   const emailExists = await repo.findUserByEmail(normalizedEmail)
   if (emailExists) {
-    const err = new Error("Email sudah terdaftar. Silakan masuk ke akun Anda.") as Error & { status: number }
-    err.status = 409
-    throw err
+    return {
+      success: true,
+      message: `Jika data pendaftaran valid, kode verifikasi OTP telah dikirimkan ke ${normalizedEmail}`,
+      email: normalizedEmail,
+    }
   }
 
   // 2. Check if username already taken (if provided)
   if (input.username) {
     const usernameExists = await repo.findUserByUsername(input.username)
     if (usernameExists) {
-      const err = new Error("Username sudah digunakan. Pilih username lain.") as Error & { status: number }
-      err.status = 409
-      throw err
+      return {
+        success: true,
+        message: `Jika data pendaftaran valid, kode verifikasi OTP telah dikirimkan ke ${normalizedEmail}`,
+        email: normalizedEmail,
+      }
     }
   }
 
   // 3. Generate 6-digit OTP code with CSPRNG & password hash
   const otp = randomInt(100000, 1000000).toString()
-  const passwordHash = await bcrypt.hash(input.password, 10)
+  const passwordHash = await bcrypt.hash(input.password, 12)
   const name = input.name || normalizedEmail.split("@")[0]
 
   // 4. Save to OTP cache store (TTL 5 minutes)
@@ -132,7 +136,7 @@ export async function requestRegisterOtp(input: RequestRegisterOtpInput) {
 
   return {
     success: true,
-    message: `Kode verifikasi OTP telah dikirim ke ${normalizedEmail}`,
+    message: `Jika data pendaftaran valid, kode verifikasi OTP telah dikirimkan ke ${normalizedEmail}`,
     email: normalizedEmail,
   }
 }
@@ -273,7 +277,7 @@ export async function registerUser(input: RegisterInput): Promise<AuthResult> {
     }
   }
 
-  const hashedPassword = await bcrypt.hash(input.password, 10)
+  const hashedPassword = await bcrypt.hash(input.password, 12)
   const user = await repo.createUser({
     email: input.email,
     username: input.username ?? undefined,
@@ -405,9 +409,12 @@ export async function forgotPasswordRequest(input: ForgotPasswordRequestInput) {
   const user = await repo.findUserByEmail(normalizedEmail)
 
   if (!user) {
-    const err = new Error("Email tidak terdaftar di sistem Sekkha.") as Error & { status: number }
-    err.status = 404
-    throw err
+    // Anti-Enumeration: Return generic success without revealing that email does not exist
+    return {
+      success: true,
+      message: `Jika email terdaftar di sistem kami, kode pemulihan kata sandi telah dikirim ke ${normalizedEmail}`,
+      email: normalizedEmail,
+    }
   }
 
   const otp = randomInt(100000, 1000000).toString()
@@ -429,7 +436,7 @@ export async function forgotPasswordRequest(input: ForgotPasswordRequestInput) {
 
   return {
     success: true,
-    message: `Kode OTP pemulihan kata sandi telah dikirim ke ${normalizedEmail}`,
+    message: `Jika email terdaftar di sistem kami, kode pemulihan kata sandi telah dikirim ke ${normalizedEmail}`,
     email: normalizedEmail,
   }
 }
@@ -500,7 +507,7 @@ export async function resetPassword(input: ResetPasswordInput) {
     throw err
   }
 
-  const hashedPassword = await bcrypt.hash(input.newPassword, 10)
+  const hashedPassword = await bcrypt.hash(input.newPassword, 12)
   await repo.updateUserPassword(payload.userId, hashedPassword)
 
   // Delete consumed OTP

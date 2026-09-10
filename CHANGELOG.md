@@ -14,6 +14,9 @@ All notable changes to Sekkha Apps. Semver (`MAJOR.MINOR.PATCH`); newest on top.
 - `requireAuth` rejects revoked tokens, re-reads the user role from the DB, and invalidates sessions issued before a password change/reset.
 - JWT: `JWT_SECRET` is required (no fallback secret), default expiry 1 day, and `.env.example` sample lowered to 14 days.
 - OTP dev console logging is disabled when SMTP is configured or in production; email recipients are masked in production logs.
+- Password minimum length raised to 8 characters with bcrypt 12 rounds.
+- Anti-enumeration: `POST /forgot-password/request` and `POST /register-otp/request` return uniform generic success responses.
+- HTML injection prevention: all email recipient names and variables are escaped, and OTP removed from subject lines.
 
 ### Removed
 - Google OAuth remnants (`oauth.ts` and mock routes) and the default-password fallback when resending a registration OTP.

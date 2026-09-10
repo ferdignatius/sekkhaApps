@@ -4,7 +4,7 @@ import { z } from "zod"
 
 export const RegisterSchema = z.object({
   email: z.string().trim().toLowerCase().email("Invalid email format"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
   name: z.string().trim().min(1, "Name is required"),
   username: z
     .string()
@@ -32,7 +32,7 @@ export const ForgotPasswordSchema = z.object({
 
 export const RequestRegisterOtpSchema = z.object({
   email: z.string().trim().toLowerCase().email("Format email tidak valid"),
-  password: z.string().min(6, "Password minimal 6 karakter"),
+  password: z.string().min(8, "Password minimal 8 karakter"),
   name: z.string().trim().min(1).optional(),
   username: z
     .string()

@@ -3,6 +3,7 @@ import { z } from "zod"
 import { prisma } from "../../../lib/prisma"
 import { cached, invalidatePattern, invalidate, CacheKeys } from "../../../lib/cache"
 import { requireAuth, requireRole } from "../../../middleware/auth"
+import { generateBlindIndex } from "../../../lib/crypto"
 
 export const eventsRouter: Router = Router()
 
@@ -292,13 +293,14 @@ async function handleRecordAttendance(req: Request, res: Response, next: NextFun
       }
     }
 
+    const bindex = generateBlindIndex(targetUserId.trim().toLowerCase())
     const targetUser = await prisma.user.findFirst({
       where: {
         OR: [
           { id: targetUserId },
           { userNumber: targetUserId },
           { username: targetUserId },
-          { email: targetUserId },
+          ...(bindex ? [{ emailBindex: bindex }] : []),
         ],
       },
       select: {

@@ -1,4 +1,4 @@
-import { Router } from "express"
+import { Router, type Request, type Response, type NextFunction } from "express"
 import { z } from "zod"
 import { prisma } from "../../../lib/prisma"
 import { cached, invalidatePattern, invalidate, CacheKeys } from "../../../lib/cache"
@@ -10,7 +10,9 @@ const CreateEventSchema = z.object({
   title: z.string().min(1),
   description: z.string().optional(),
   location: z.string().min(1),
-  event_date: z.string(),
+  event_date: z
+    .string()
+    .refine((v) => !isNaN(Date.parse(v)), "Format event_date tidak valid, gunakan format tanggal ISO"),
   event_type: z.enum(["rutin", "special"]).optional(),
   event_type_id: z.string().optional(),
   season_id: z.string().optional(),
@@ -34,6 +36,7 @@ eventsRouter.get("/", requireAuth, async (req, res, next) => {
       })
     })
 
+    const isPrivileged = req.user?.role === "pengurus" || req.user?.role === "admin"
     res.json(events.map(e => ({
       id: e.id,
       title: e.title || "Acara Vihara",
@@ -47,7 +50,7 @@ eventsRouter.get("/", requireAuth, async (req, res, next) => {
       season_id: e.seasonId,
       tag: e.tag || "Umum",
       status: e.status || "published",
-      qr_code: e.qrCode ? { code: e.qrCode, expires_at: null } : null,
+      qr_code: isPrivileged && e.qrCode ? { code: e.qrCode, expires_at: null } : null,
     })))
   } catch (err) { next(err) }
 })
@@ -65,6 +68,12 @@ eventsRouter.get("/:id", requireAuth, async (req, res, next) => {
     })
     if (!event) { res.status(404).json({ error: "Event not found" }); return }
 
+    const isPrivileged = req.user?.role === "pengurus" || req.user?.role === "admin"
+    if (!isPrivileged && (event.status === "draft" || event.status === "cancelled")) {
+      res.status(403).json({ error: "Access denied. Event is not publicly accessible." })
+      return
+    }
+
     res.json({
       id: event.id,
       title: event.title,
@@ -76,7 +85,7 @@ eventsRouter.get("/:id", requireAuth, async (req, res, next) => {
       season_id: event.seasonId,
       tag: event.tag,
       status: event.status,
-      qr_code: event.qrCode ? { code: event.qrCode, expires_at: null } : null,
+      qr_code: isPrivileged && event.qrCode ? { code: event.qrCode, expires_at: null } : null,
     })
   } catch (err) { next(err) }
 })
@@ -230,18 +239,20 @@ eventsRouter.patch("/:id/status", requireAuth, requireRole("pengurus", "admin"),
   } catch (err) { next(err) }
 })
 
-// POST /api/events/:id/attendances — scan / record attendance
-eventsRouter.post("/:id/attendances", requireAuth, async (req, res, next) => {
+// Handler for recording attendance with QR and Active status validation
+async function handleRecordAttendance(req: Request, res: Response, next: NextFunction) {
   try {
     const id = req.params.id as string
-    const { user_id, method = "qr" } = z.object({
+    const isPrivileged = req.user?.role === "pengurus" || req.user?.role === "admin"
+    const { user_id, method = "qr", qr_code } = z.object({
       user_id: z.string().optional(),
       method: z.enum(["qr", "manual"]).optional(),
+      qr_code: z.string().optional(),
     }).parse(req.body)
 
     if (user_id && user_id !== req.user!.userId) {
-      if (req.user!.role !== "pengurus" && req.user!.role !== "admin") {
-        res.status(403).json({ error: "Only Organizers or Admins can record attendance for other members." })
+      if (!isPrivileged) {
+        res.status(403).json({ error: "Hanya Pengurus atau Admin yang dapat mencatat presensi anggota lain." })
         return
       }
     }
@@ -250,17 +261,35 @@ eventsRouter.post("/:id/attendances", requireAuth, async (req, res, next) => {
 
     const event = await prisma.event.findUnique({
       where: { id },
-      select: { id: true, title: true, eventType: true, status: true },
+      select: { id: true, title: true, eventType: true, status: true, qrCode: true },
     })
 
     if (!event) {
-      res.status(404).json({ error: "Event not found." })
+      res.status(404).json({ error: "Event tidak ditemukan." })
       return
     }
 
-    if (event.status === "closed" || event.status === "cancelled") {
-      res.status(400).json({ error: "Attendance session for this event is closed." })
+    // Attendance is ONLY permitted when event status is 'active'
+    if (event.status !== "active") {
+      res.status(400).json({ error: "Presensi hanya dapat dilakukan saat event berstatus aktif (active)." })
       return
+    }
+
+    // Method and QR verification
+    if (method === "qr") {
+      const submittedCode = (qr_code || (req.body as any).qrCode || "").trim().toUpperCase()
+      const expectedCode = (event.qrCode || "").trim().toUpperCase()
+      if (!isPrivileged) {
+        if (!submittedCode || submittedCode !== expectedCode) {
+          res.status(400).json({ error: "Kode QR presensi tidak valid atau tidak cocok dengan event ini." })
+          return
+        }
+      }
+    } else if (method === "manual") {
+      if (!isPrivileged) {
+        res.status(403).json({ error: "Presensi manual hanya dapat dicatat oleh Pengurus atau Admin." })
+        return
+      }
     }
 
     const targetUser = await prisma.user.findFirst({
@@ -281,7 +310,7 @@ eventsRouter.post("/:id/attendances", requireAuth, async (req, res, next) => {
     })
 
     if (!targetUser) {
-      res.status(404).json({ error: "User not found in People directory." })
+      res.status(404).json({ error: "User tidak ditemukan di direktori jemaat." })
       return
     }
 
@@ -295,7 +324,7 @@ eventsRouter.post("/:id/attendances", requireAuth, async (req, res, next) => {
     if (existing) {
       res.status(409).json({
         error: "DUPLICATE_ATTENDANCE",
-        message: `Member ${userName} (${targetUser.userNumber || "Registered ID"}) has already been recorded present.`,
+        message: `Member ${userName} (${targetUser.userNumber || "ID Terdaftar"}) sudah tercatat hadir.`,
         data: {
           id: existing.id,
           user_id: actualUserId,
@@ -334,8 +363,14 @@ eventsRouter.post("/:id/attendances", requireAuth, async (req, res, next) => {
       scanned_at: attendance.scannedAt.toISOString(),
       status: "staged",
     })
-  } catch (err) { next(err) }
-})
+  } catch (err) {
+    next(err)
+  }
+}
+
+// POST /api/events/:id/attendances — scan / record attendance
+eventsRouter.post("/:id/attendances", requireAuth, handleRecordAttendance)
+eventsRouter.post("/:id/attendance", requireAuth, handleRecordAttendance)
 
 // GET /api/events/:id/attendances — list attendees (redacted PII)
 eventsRouter.get("/:id/attendances", requireAuth, async (req, res, next) => {

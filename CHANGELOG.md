@@ -17,6 +17,7 @@ All notable changes to Sekkha Apps. Semver (`MAJOR.MINOR.PATCH`); newest on top.
 - Password minimum length raised to 8 characters with bcrypt 12 rounds.
 - Anti-enumeration: `POST /forgot-password/request` and `POST /register-otp/request` return uniform generic success responses.
 - HTML injection prevention: all email recipient names and variables are escaped, and OTP removed from subject lines.
+- Attendance can only be recorded while an event status is `active`; QR scans must match the event's QR code, and QR codes are exposed only to pengurus/admin. Draft/cancelled events are hidden from non-privileged members.
 - Member password resets now email the temporary password when an email exists; offline members get it displayed once with a change-on-login flag. Default member passwords use high-entropy CSPRNG values.
 
 ### Removed

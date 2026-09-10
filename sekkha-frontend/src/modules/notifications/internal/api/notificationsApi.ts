@@ -9,15 +9,17 @@ export interface NotificationDto {
   message: string
   type: string
   status: "unread" | "read"
-  data?: {
-    invitationId?: string
-  }
+  data?: Record<string, unknown>
   created_at: string
 }
 
 export const notificationsApi = {
-  list: () => (ENABLE_NOTIFICATIONS ? api.get<NotificationDto[]>("/notifications") : Promise.resolve([])),
-  markAsRead: (id: string) => (ENABLE_NOTIFICATIONS ? api.patch(`/notifications/${id}/read`) : Promise.resolve({ success: true })),
-  acceptInvitation: (invitationId: string) => api.post<{ success: boolean; role: string }>(`/teams/invitations/${invitationId}/accept`),
-  rejectInvitation: (invitationId: string) => api.post(`/teams/invitations/${invitationId}/reject`),
+  list: () =>
+    ENABLE_NOTIFICATIONS
+      ? api.get<NotificationDto[]>("/notifications")
+      : Promise.resolve([]),
+  markAsRead: (id: string) =>
+    ENABLE_NOTIFICATIONS
+      ? api.patch(`/notifications/${id}/read`)
+      : Promise.resolve({ success: true }),
 }

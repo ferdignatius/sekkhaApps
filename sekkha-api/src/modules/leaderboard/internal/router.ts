@@ -2,6 +2,7 @@ import { Router } from "express"
 import { z } from "zod"
 import { prisma } from "../../../lib/prisma"
 import { requireAuth, requireRole } from "../../../middleware/auth"
+import { decrypt } from "../../../lib/crypto"
 import { getLeaderboardSnapshot, MetricType } from "./service"
 
 export const leaderboardRouter: Router = Router()
@@ -26,7 +27,7 @@ leaderboardRouter.get("/debug", requireAuth, requireRole("admin"), async (req, r
       db_users: users.map(u => ({
         id: u.id,
         name: u.profile?.name ?? "",
-        email: u.email,
+        email: decrypt(u.email) || u.email,
         role: u.role,
         points: u.stats?.points ?? 0,
         isClaimed: u.isClaimed,

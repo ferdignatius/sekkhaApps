@@ -61,18 +61,6 @@ export interface UpdateMemberPayload {
   role?: "umat" | "aktivis" | "pengurus" | "admin"
 }
 
-export interface InvitationDto {
-  id: string
-  email: string
-  role: "pengurus" | "aktivis"
-  status: "pending" | "accepted" | "rejected"
-  created_at: string
-  invited_by: {
-    id: string
-    name: string
-  }
-}
-
 export interface PaginatedMembersResponse {
   items: MemberDto[]
   total: number
@@ -99,16 +87,24 @@ export interface ListPaginatedMembersParams extends ListMembersParams {
 }
 
 export const teamsApi = {
-  listMembers: ((params?: ListMembersParams & { page?: number; limit?: number }) => {
+  listMembers: ((
+    params?: ListMembersParams & { page?: number; limit?: number }
+  ) => {
     const searchParams = new URLSearchParams()
     if (params?.search) searchParams.set("search", params.search)
-    if (params?.claimed_status && params.claimed_status !== "all") searchParams.set("claimed_status", params.claimed_status)
-    if (params?.role && params.role !== "all") searchParams.set("role", params.role)
-    if (params?.page !== undefined) searchParams.set("page", params.page.toString())
-    if (params?.limit !== undefined) searchParams.set("limit", params.limit.toString())
+    if (params?.claimed_status && params.claimed_status !== "all")
+      searchParams.set("claimed_status", params.claimed_status)
+    if (params?.role && params.role !== "all")
+      searchParams.set("role", params.role)
+    if (params?.page !== undefined)
+      searchParams.set("page", params.page.toString())
+    if (params?.limit !== undefined)
+      searchParams.set("limit", params.limit.toString())
     const qs = searchParams.toString()
     if (params?.page !== undefined || params?.limit !== undefined) {
-      return api.get<PaginatedMembersResponse>(`/teams/members${qs ? `?${qs}` : ""}`)
+      return api.get<PaginatedMembersResponse>(
+        `/teams/members${qs ? `?${qs}` : ""}`
+      )
     }
     return api.get<MemberDto[]>(`/teams/members${qs ? `?${qs}` : ""}`)
   }) as {
@@ -118,11 +114,14 @@ export const teamsApi = {
 
   getMember: (id: string) => api.get<MemberDetailDto>(`/teams/members/${id}`),
 
-  createMember: (data: CreateMemberPayload) => api.post<MemberDto>("/teams/members", data),
+  createMember: (data: CreateMemberPayload) =>
+    api.post<MemberDto>("/teams/members", data),
 
-  updateMember: (id: string, data: UpdateMemberPayload) => api.put<MemberDto>(`/teams/members/${id}`, data),
+  updateMember: (id: string, data: UpdateMemberPayload) =>
+    api.put<MemberDto>(`/teams/members/${id}`, data),
 
-  deleteMember: (id: string) => api.delete<{ success: boolean; message: string }>(`/teams/members/${id}`),
+  deleteMember: (id: string) =>
+    api.delete<{ success: boolean; message: string }>(`/teams/members/${id}`),
 
   resetMemberPassword: (id: string) =>
     api.post<{
@@ -134,13 +133,9 @@ export const teamsApi = {
       message: string
     }>(`/teams/members/${id}/reset-password`),
 
-  listInvitations: () => api.get<InvitationDto[]>("/teams/invitations"),
-
-  sendInvitation: (data: { email: string; role: "pengurus" | "aktivis" }) =>
-    api.post<{ id: string; email: string; role: string; status: string }>("/teams/invitations", data),
-
   changePassword: (data: { current_password: string; new_password: string }) =>
-    api.post<{ success: boolean; message: string }>("/users/change-password", data),
+    api.post<{ success: boolean; message: string }>(
+      "/users/change-password",
+      data
+    ),
 }
-
-

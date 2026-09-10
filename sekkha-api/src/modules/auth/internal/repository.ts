@@ -1,18 +1,21 @@
 import { prisma } from "../../../lib/prisma"
 import { generateUniqueUserNumber } from "../../../lib/userNumber"
-
+import { encrypt, decrypt, generateBlindIndex } from "../../../lib/crypto"
 
 // ─── Repository ──────────────────────────────────────────────────────────────
 // Pure database operations — no business logic here.
 
 export async function findUserByEmail(email: string) {
+  const clean = email.toLowerCase().trim()
+  const bindex = generateBlindIndex(clean)
   const user = await prisma.user.findUnique({
-    where: { email: email.toLowerCase().trim() },
+    where: { emailBindex: bindex || undefined },
     include: { profile: true, stats: true },
   })
   if (!user) return null
   return {
     ...user,
+    email: decrypt(user.email) || user.email,
     name: user.profile?.name ?? "",
   }
 }
@@ -25,16 +28,18 @@ export async function findUserByUsername(username: string) {
   if (!user) return null
   return {
     ...user,
+    email: decrypt(user.email) || user.email,
     name: user.profile?.name ?? "",
   }
 }
 
 export async function findUserByIdentifier(identifier: string) {
   const clean = identifier.trim().toLowerCase()
+  const bindex = generateBlindIndex(clean)
   const user = await prisma.user.findFirst({
     where: {
       OR: [
-        { email: clean },
+        ...(bindex ? [{ emailBindex: bindex }] : []),
         { username: clean },
       ],
     },
@@ -43,6 +48,7 @@ export async function findUserByIdentifier(identifier: string) {
   if (!user) return null
   return {
     ...user,
+    email: decrypt(user.email) || user.email,
     name: user.profile?.name ?? "",
   }
 }
@@ -65,12 +71,13 @@ export async function findUserById(userId: string) {
   return {
     id: user.id,
     username: user.username,
-    email: user.email,
+    email: decrypt(user.email) || user.email,
     name: user.profile?.name ?? "",
     role: user.role,
     passwordChangedAt: user.passwordChangedAt,
   }
 }
+
 
 export async function generateUniqueUsername(baseName: string): Promise<string> {
   const clean = baseName
@@ -105,10 +112,15 @@ export async function createUser(data: {
   while (attempts < 5) {
     attempts++
     const userNumber = await generateUniqueUserNumber(prisma)
+    const cleanEmail = data.email ? data.email.toLowerCase().trim() : null
+    const encryptedEmail = cleanEmail ? encrypt(cleanEmail) : null
+    const emailBindex = cleanEmail ? generateBlindIndex(cleanEmail) : null
+
     try {
       const user = await prisma.user.create({
         data: {
-          email: data.email ? data.email.toLowerCase().trim() : null,
+          email: encryptedEmail,
+          emailBindex,
           username,
           password: data.password,
           passwordChangedAt: new Date(),
@@ -133,6 +145,7 @@ export async function createUser(data: {
 
       return {
         ...user,
+        email: cleanEmail,
         name: user.profile?.name ?? data.name,
       }
     } catch (err: any) {

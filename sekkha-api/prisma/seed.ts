@@ -1,6 +1,7 @@
 import { PrismaClient, Role } from "@prisma/client"
 import bcrypt from "bcryptjs"
 import dotenv from "dotenv"
+import { encrypt, generateBlindIndex } from "../src/lib/crypto"
 
 dotenv.config()
 
@@ -16,7 +17,6 @@ async function main() {
 
   // Clean existing tables in reverse dependency order
   await prisma.notification.deleteMany().catch(() => {})
-  await prisma.roleInvitation.deleteMany().catch(() => {})
   await prisma.userBadge.deleteMany().catch(() => {})
   await prisma.pointTransaction.deleteMany().catch(() => {})
   await prisma.attendance.deleteMany().catch(() => {})
@@ -170,7 +170,8 @@ async function main() {
   // UMAT
   const umatUser = await prisma.user.create({
     data: {
-      email: umatEmail,
+      email: encrypt(umatEmail),
+      emailBindex: generateBlindIndex(umatEmail),
       username: "umat",
       password: await hash(umatPasswordRaw),
       role: Role.umat,
@@ -178,9 +179,11 @@ async function main() {
       profile: {
         create: {
           name: "Sari Dewi (Umat)",
-          phone: "081234567890",
+          phone: encrypt("081234567890"),
           schoolId: schoolTMD.id,
-          gender: "wanita",
+          gender: encrypt("wanita"),
+          birthDate: encrypt(new Date("2008-05-15").toISOString()),
+          classGrade: encrypt("11"),
         },
       },
       stats: {
@@ -198,7 +201,8 @@ async function main() {
   // AKTIVIS
   const aktivisUser = await prisma.user.create({
     data: {
-      email: aktivisEmail,
+      email: encrypt(aktivisEmail),
+      emailBindex: generateBlindIndex(aktivisEmail),
       username: "aktivis",
       password: await hash(aktivisPasswordRaw),
       role: Role.aktivis,
@@ -206,9 +210,11 @@ async function main() {
       profile: {
         create: {
           name: "Budi Santoso (Aktivis)",
-          phone: "081298765432",
+          phone: encrypt("081298765432"),
           schoolId: schoolSMAN1.id,
-          gender: "pria",
+          gender: encrypt("pria"),
+          birthDate: encrypt(new Date("2006-03-20").toISOString()),
+          classGrade: encrypt("12"),
         },
       },
       stats: {
@@ -226,7 +232,8 @@ async function main() {
   // PENGURUS
   const pengurusUser = await prisma.user.create({
     data: {
-      email: pengurusEmail,
+      email: encrypt(pengurusEmail),
+      emailBindex: generateBlindIndex(pengurusEmail),
       username: "pengurus",
       password: await hash(pengurusPasswordRaw),
       role: Role.pengurus,
@@ -234,9 +241,10 @@ async function main() {
       profile: {
         create: {
           name: "Budi Wijaya (Pengurus)",
-          phone: "081311223344",
+          phone: encrypt("081311223344"),
           schoolId: schoolUI.id,
-          gender: "pria",
+          gender: encrypt("pria"),
+          birthDate: encrypt(new Date("2001-11-10").toISOString()),
         },
       },
       stats: {
@@ -254,7 +262,8 @@ async function main() {
   // ADMIN
   const adminUser = await prisma.user.create({
     data: {
-      email: adminEmail,
+      email: encrypt(adminEmail),
+      emailBindex: generateBlindIndex(adminEmail),
       username: "admin",
       password: await hash(adminPasswordRaw),
       role: Role.admin,
@@ -262,9 +271,10 @@ async function main() {
       profile: {
         create: {
           name: "Admin Sekkha",
-          phone: "081199887766",
+          phone: encrypt("081199887766"),
           schoolId: schoolHQ.id,
-          gender: "pria",
+          gender: encrypt("pria"),
+          birthDate: encrypt(new Date("1998-07-01").toISOString()),
         },
       },
       stats: {
@@ -282,15 +292,19 @@ async function main() {
   // Legacy Hendra
   const legacyHendra = await prisma.user.create({
     data: {
-      email: "hendra@sekkha.local",
+      email: encrypt("hendra@sekkha.local"),
+      emailBindex: generateBlindIndex("hendra@sekkha.local"),
       username: "hendra",
       password: await hash("admin"),
       role: Role.umat,
       userNumber: "26010105",
+      isClaimed: false,
       profile: {
         create: {
           name: "Hendra Kusuma",
           schoolId: schoolTMD.id,
+          phone: encrypt("081566778899"),
+          gender: encrypt("pria"),
         },
       },
       stats: {
@@ -302,6 +316,7 @@ async function main() {
       },
     },
   })
+
 
   // ── 8. Assign Badges ────────────────────────────────────────────────────────
   await prisma.userBadge.createMany({
@@ -369,24 +384,14 @@ async function main() {
     },
   })
 
-  // ── 10. Role Invitation & Notifications ─────────────────────────────────────
-  const inviteHendra = await prisma.roleInvitation.create({
-    data: {
-      email: legacyHendra.email!,
-      role: Role.pengurus,
-      status: "pending",
-      invitedById: adminUser.id,
-    },
-  })
-
+  // ── 10. Notifications ──────────────────────────────────────────────────────
   await prisma.notification.create({
     data: {
       userId: legacyHendra.id,
-      title: "Undangan Peran Baru",
-      message: "Anda diundang untuk bergabung sebagai Pengurus.",
-      type: "role_invitation",
+      title: "Selamat Datang di Sekkha",
+      message: "Selamat datang di Sekkha Apps! Pantau kegiatan dan kumpulkan poinmu.",
+      type: "general",
       status: "unread",
-      data: { invitationId: inviteHendra.id },
     },
   })
 

@@ -130,3 +130,18 @@ export async function handleVerify(req: Request, res: Response) {
     res.status(401).json({ error: "Invalid token" })
   }
 }
+
+/** POST /api/auth/logout */
+export async function handleLogout(req: Request, res: Response, next: NextFunction) {
+  try {
+    const header = req.headers.authorization
+    const token = header?.startsWith("Bearer ") ? header.slice(7) : undefined
+    if (token) {
+      await service.logoutUser(token)
+    }
+    res.json({ success: true, message: "Berhasil keluar (logout)" })
+  } catch (err) {
+    next(err)
+  }
+}
+

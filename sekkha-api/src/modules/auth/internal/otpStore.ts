@@ -7,12 +7,14 @@ export interface RegistrationOtpPayload {
   name: string
   username?: string | null
   createdAt: number
+  attempts?: number
 }
 
 // In-memory fallback map if Redis is not running
 const memoryStore = new Map<string, { payload: RegistrationOtpPayload; timer: NodeJS.Timeout }>()
 
 const OTP_TTL_SECONDS = 300 // 5 minutes
+export const MAX_OTP_ATTEMPTS = 5
 
 /**
  * Saves pending registration data with OTP.
@@ -20,6 +22,7 @@ const OTP_TTL_SECONDS = 300 // 5 minutes
 export async function saveRegistrationOtp(email: string, payload: RegistrationOtpPayload): Promise<void> {
   const normalizedEmail = email.toLowerCase().trim()
   const key = `otp:register:${normalizedEmail}`
+  payload.attempts = payload.attempts ?? 0
 
   // 1. Try Redis first
   try {
@@ -69,6 +72,48 @@ export async function getRegistrationOtp(email: string): Promise<RegistrationOtp
 }
 
 /**
+ * Increments failed OTP verification attempts for registration.
+ * If attempts reach MAX_OTP_ATTEMPTS (5), the OTP is immediately deleted to prevent brute-force.
+ * Returns the updated attempt count.
+ */
+export async function incrementRegistrationOtpAttempts(email: string): Promise<number> {
+  const normalizedEmail = email.toLowerCase().trim()
+  const key = `otp:register:${normalizedEmail}`
+
+  const payload = await getRegistrationOtp(normalizedEmail)
+  if (!payload) return 0
+
+  payload.attempts = (payload.attempts ?? 0) + 1
+
+  if (payload.attempts >= MAX_OTP_ATTEMPTS) {
+    await deleteRegistrationOtp(normalizedEmail)
+    return payload.attempts
+  }
+
+  // Update in Redis preserving remaining TTL
+  try {
+    if (redis.status === "ready" || redis.status === "connect") {
+      const ttl = await redis.ttl(key)
+      if (ttl > 0) {
+        await redis.set(key, JSON.stringify(payload), "EX", ttl)
+      } else {
+        await redis.set(key, JSON.stringify(payload), "EX", OTP_TTL_SECONDS)
+      }
+    }
+  } catch (err) {
+    // Fallback
+  }
+
+  // Update in Memory Store preserving existing timer
+  const existing = memoryStore.get(normalizedEmail)
+  if (existing) {
+    memoryStore.set(normalizedEmail, { payload, timer: existing.timer })
+  }
+
+  return payload.attempts
+}
+
+/**
  * Deletes OTP entry upon successful verification.
  */
 export async function deleteRegistrationOtp(email: string): Promise<void> {
@@ -98,6 +143,7 @@ export interface ForgotPasswordOtpPayload {
   userId: string
   name: string
   createdAt: number
+  attempts?: number
 }
 
 const forgotMemoryStore = new Map<string, { payload: ForgotPasswordOtpPayload; timer: NodeJS.Timeout }>()
@@ -105,6 +151,7 @@ const forgotMemoryStore = new Map<string, { payload: ForgotPasswordOtpPayload; t
 export async function saveForgotPasswordOtp(email: string, payload: ForgotPasswordOtpPayload): Promise<void> {
   const normalizedEmail = email.toLowerCase().trim()
   const key = `otp:forgot:${normalizedEmail}`
+  payload.attempts = payload.attempts ?? 0
 
   try {
     if (redis.status === "ready" || redis.status === "connect") {
@@ -144,6 +191,48 @@ export async function getForgotPasswordOtp(email: string): Promise<ForgotPasswor
 
   const item = forgotMemoryStore.get(normalizedEmail)
   return item ? item.payload : null
+}
+
+/**
+ * Increments failed OTP verification attempts for forgot password.
+ * If attempts reach MAX_OTP_ATTEMPTS (5), the OTP is immediately deleted to prevent brute-force.
+ * Returns the updated attempt count.
+ */
+export async function incrementForgotPasswordOtpAttempts(email: string): Promise<number> {
+  const normalizedEmail = email.toLowerCase().trim()
+  const key = `otp:forgot:${normalizedEmail}`
+
+  const payload = await getForgotPasswordOtp(normalizedEmail)
+  if (!payload) return 0
+
+  payload.attempts = (payload.attempts ?? 0) + 1
+
+  if (payload.attempts >= MAX_OTP_ATTEMPTS) {
+    await deleteForgotPasswordOtp(normalizedEmail)
+    return payload.attempts
+  }
+
+  // Update in Redis preserving remaining TTL
+  try {
+    if (redis.status === "ready" || redis.status === "connect") {
+      const ttl = await redis.ttl(key)
+      if (ttl > 0) {
+        await redis.set(key, JSON.stringify(payload), "EX", ttl)
+      } else {
+        await redis.set(key, JSON.stringify(payload), "EX", OTP_TTL_SECONDS)
+      }
+    }
+  } catch (err) {
+    // Fallback
+  }
+
+  // Update in Memory Store preserving existing timer
+  const existing = forgotMemoryStore.get(normalizedEmail)
+  if (existing) {
+    forgotMemoryStore.set(normalizedEmail, { payload, timer: existing.timer })
+  }
+
+  return payload.attempts
 }
 
 export async function deleteForgotPasswordOtp(email: string): Promise<void> {

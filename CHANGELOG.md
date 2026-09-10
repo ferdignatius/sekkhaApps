@@ -4,6 +4,19 @@ All notable changes to Sekkha Apps. Semver (`MAJOR.MINOR.PATCH`); newest on top.
 
 ## [Unreleased]
 
+### Added
+- `POST /auth/logout` with token revocation (Redis blacklist + in-memory fallback); frontend logout now calls it before clearing the stored token.
+- Dedicated OTP rate limiter (5 requests/15 min/IP) on all register and forgot-password OTP endpoints, plus a brute-force guard: OTP is voided after 5 wrong attempts.
+- OTP codes are now generated with a CSPRNG (`crypto.randomInt`) instead of `Math.random`.
+
+### Changed
+- `requireAuth` rejects revoked tokens, re-reads the user role from the DB, and invalidates sessions issued before a password change/reset.
+- JWT: `JWT_SECRET` is required (no fallback secret), default expiry 1 day, and `.env.example` sample lowered to 14 days.
+- OTP dev console logging is disabled when SMTP is configured or in production; email recipients are masked in production logs.
+
+### Removed
+- Google OAuth remnants (`oauth.ts` and mock routes) and the default-password fallback when resending a registration OTP.
+
 ### Changed
 - User table normalized: personal data and stats moved into 1:1 `UserProfile` and `UserStats` tables; new master tables `EventType`, `Season`, and `Level` wired into events, auth, schools, leaderboard, and users modules.
 - `GET /users/me` now resolves school via relation and returns `school_id`; seed data updated for the new schema.

@@ -1,5 +1,7 @@
 import type { Request, Response, NextFunction } from "express"
 import jwt from "jsonwebtoken"
+import { prisma } from "../lib/prisma"
+import { isTokenRevoked } from "../modules/auth/internal/tokenRevocation"
 
 export interface AuthPayload {
   userId: string
@@ -14,7 +16,7 @@ declare global {
   }
 }
 
-export function requireAuth(req: Request, res: Response, next: NextFunction) {
+export async function requireAuth(req: Request, res: Response, next: NextFunction) {
   const header = req.headers.authorization
   if (!header?.startsWith("Bearer ")) {
     res.status(401).json({ error: "Token not found" })
@@ -30,8 +32,50 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
   }
 
   try {
-    const payload = jwt.verify(token, secret) as AuthPayload
-    req.user = payload
+    // 1. Check if token was revoked (logged out)
+    const revoked = await isTokenRevoked(token)
+    if (revoked) {
+      res.status(401).json({ error: "Session has been terminated. Please log in again." })
+      return
+    }
+
+    // 2. Verify JWT signature & expiration
+    const payload = jwt.verify(token, secret) as {
+      userId: string
+      role: string
+      passwordChangedAt?: number
+    }
+
+    // 3. Fetch fresh user role & status directly from database
+    const user = await prisma.user.findUnique({
+      where: { id: payload.userId },
+      select: {
+        id: true,
+        role: true,
+        passwordChangedAt: true,
+      },
+    })
+
+    if (!user) {
+      res.status(401).json({ error: "User not found or account deactivated" })
+      return
+    }
+
+    // 4. Invalidate session if password was changed/reset after token issuance
+    if (user.passwordChangedAt) {
+      const dbTimeSeconds = Math.floor(user.passwordChangedAt.getTime() / 1000)
+      if (!payload.passwordChangedAt || dbTimeSeconds > payload.passwordChangedAt) {
+        res.status(401).json({ error: "Password was changed. Please log in again." })
+        return
+      }
+    }
+
+    // 5. Attach user with FRESH role from DB (not stale JWT role)
+    req.user = {
+      userId: user.id,
+      role: user.role,
+    }
+
     next()
   } catch {
     res.status(401).json({ error: "Token is invalid or has expired" })

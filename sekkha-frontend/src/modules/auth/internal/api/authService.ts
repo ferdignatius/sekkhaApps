@@ -376,7 +376,21 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
    * Requirements: 4.6
    */
   function logout(): void {
-    localStorage.removeItem(STORAGE_KEY)
+    const token = typeof localStorage !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null
+    if (token) {
+      try {
+        fetch(`${API_BASE_URL}/auth/logout`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }).catch(() => {})
+      } catch {}
+    }
+    if (typeof localStorage !== "undefined") {
+      localStorage.removeItem(STORAGE_KEY)
+    }
     dispatch({ type: "AUTH_LOGOUT" })
   }
 

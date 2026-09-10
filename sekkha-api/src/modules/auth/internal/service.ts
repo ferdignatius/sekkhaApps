@@ -1,3 +1,4 @@
+import { randomInt } from "crypto"
 import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
 import { eventbus, DomainEvents } from "../../../core/eventbus"
@@ -19,11 +20,14 @@ import {
   saveRegistrationOtp,
   getRegistrationOtp,
   deleteRegistrationOtp,
+  incrementRegistrationOtpAttempts,
   saveForgotPasswordOtp,
   getForgotPasswordOtp,
   deleteForgotPasswordOtp,
+  incrementForgotPasswordOtpAttempts,
 } from "./otpStore"
 import { sendRegisterOtpEmail, sendForgotPasswordOtpEmail } from "./email"
+import { revokeToken, isTokenRevoked } from "./tokenRevocation"
 
 // ─── Service ─────────────────────────────────────────────────────────────────
 // Business logic layer. Orchestrates repository calls + publishes domain events.
@@ -33,8 +37,8 @@ export interface AuthResult {
   user: { id: string; email: string; username?: string | null; name: string; role: string }
 }
 
-const DEFAULT_JWT_EXPIRY = process.env.JWT_EXPIRES_IN || "30d"
-const SESSION_TTL_SECONDS = 30 * 24 * 60 * 60 // 30 days matching JWT expiration
+const DEFAULT_JWT_EXPIRY = process.env.JWT_EXPIRES_IN || "1d"
+const SESSION_TTL_SECONDS = 24 * 60 * 60 // 1 day matching JWT expiration
 
 async function cacheUserSession(token: string, userData: any) {
   try {
@@ -56,12 +60,27 @@ async function getCachedUserSession(token: string) {
   return null
 }
 
-function generateToken(userId: string, role: string, name?: string): string {
-  return jwt.sign(
-    { userId, role, name },
-    process.env.JWT_SECRET || "fallback-secret",
-    { expiresIn: DEFAULT_JWT_EXPIRY as any }
-  )
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET
+  if (!secret) {
+    throw new Error("JWT_SECRET is not configured in environment variables")
+  }
+  return secret
+}
+
+function generateToken(
+  userId: string,
+  role: string,
+  name?: string,
+  passwordChangedAt?: Date | null
+): string {
+  const payload: any = { userId, role, name }
+  if (passwordChangedAt) {
+    payload.passwordChangedAt = Math.floor(new Date(passwordChangedAt).getTime() / 1000)
+  }
+  return jwt.sign(payload, getJwtSecret(), {
+    expiresIn: DEFAULT_JWT_EXPIRY as any,
+  })
 }
 
 /**
@@ -88,8 +107,8 @@ export async function requestRegisterOtp(input: RequestRegisterOtpInput) {
     }
   }
 
-  // 3. Generate 6-digit OTP code & password hash
-  const otp = Math.floor(100000 + Math.random() * 900000).toString()
+  // 3. Generate 6-digit OTP code with CSPRNG & password hash
+  const otp = randomInt(100000, 1000000).toString()
   const passwordHash = await bcrypt.hash(input.password, 10)
   const name = input.name || normalizedEmail.split("@")[0]
 
@@ -101,6 +120,7 @@ export async function requestRegisterOtp(input: RequestRegisterOtpInput) {
     name,
     username: input.username || null,
     createdAt: Date.now(),
+    attempts: 0,
   })
 
   // 5. Send OTP email via Resend
@@ -131,7 +151,18 @@ export async function verifyRegisterOtp(input: VerifyRegisterOtpInput): Promise<
   }
 
   if (payload.otp !== input.otp.trim()) {
-    const err = new Error("Kode OTP tidak cocok. Periksa kembali email Anda.") as Error & { status: number }
+    const attempts = await incrementRegistrationOtpAttempts(normalizedEmail)
+    if (attempts >= 5) {
+      const err = new Error(
+        "Kode OTP salah sebanyak 5 kali. Kode OTP telah dibatalkan demi keamanan akun Anda. Silakan daftar kembali."
+      ) as Error & { status: number }
+      err.status = 400
+      throw err
+    }
+    const remaining = 5 - attempts
+    const err = new Error(
+      `Kode OTP tidak cocok. Sisa percobaan: ${remaining} kali. Periksa kembali email Anda.`
+    ) as Error & { status: number }
     err.status = 400
     throw err
   }
@@ -156,7 +187,7 @@ export async function verifyRegisterOtp(input: VerifyRegisterOtpInput): Promise<
   // Delete consumed OTP
   await deleteRegistrationOtp(normalizedEmail)
 
-  const token = generateToken(user.id, user.role, user.name)
+  const token = generateToken(user.id, user.role, user.name, user.passwordChangedAt)
   const userData = {
     id: user.id,
     email: user.email || "",
@@ -194,22 +225,19 @@ export async function resendRegisterOtp(input: ResendOtpInput) {
     throw err
   }
 
-  let payload = await getRegistrationOtp(normalizedEmail)
-  const newOtp = Math.floor(100000 + Math.random() * 900000).toString()
-
+  const payload = await getRegistrationOtp(normalizedEmail)
   if (!payload) {
-    const defaultPasswordHash = await bcrypt.hash("sekkha123", 10)
-    payload = {
-      otp: newOtp,
-      email: normalizedEmail,
-      passwordHash: defaultPasswordHash,
-      name: normalizedEmail.split("@")[0],
-      createdAt: Date.now(),
-    }
-  } else {
-    payload.otp = newOtp
-    payload.createdAt = Date.now()
+    const err = new Error(
+      "Sesi pendaftaran tidak ditemukan atau telah kedaluwarsa. Silakan lakukan pendaftaran dari awal."
+    ) as Error & { status: number }
+    err.status = 400
+    throw err
   }
+
+  const newOtp = randomInt(100000, 1000000).toString()
+  payload.otp = newOtp
+  payload.attempts = 0
+  payload.createdAt = Date.now()
 
   await saveRegistrationOtp(normalizedEmail, payload)
 
@@ -253,7 +281,7 @@ export async function registerUser(input: RegisterInput): Promise<AuthResult> {
     password: hashedPassword,
   })
 
-  const token = generateToken(user.id, user.role, user.name)
+  const token = generateToken(user.id, user.role, user.name, user.passwordChangedAt)
   const userData = {
     id: user.id,
     email: user.email || "",
@@ -296,7 +324,7 @@ export async function loginUser(input: LoginInput): Promise<AuthResult> {
     throw err
   }
 
-  const token = generateToken(user.id, user.role, user.name)
+  const token = generateToken(user.id, user.role, user.name, user.passwordChangedAt)
   const userData = {
     id: user.id,
     email: user.email || "",
@@ -314,18 +342,26 @@ export async function loginUser(input: LoginInput): Promise<AuthResult> {
 }
 
 /**
- * Verify a JWT token and return the associated user.
- * Checks Redis cache first to avoid repeating database queries for active tokens.
+ * Verify a JWT token and return the associated user with fresh DB data.
+ * Checks token revocation, signature, and passwordChangedAt invalidation.
  */
 export async function verifyToken(token: string) {
-  // 1. Try Redis cache hit first
-  const cachedUser = await getCachedUserSession(token)
-  if (cachedUser) {
-    return cachedUser
+  // 1. Check if token was revoked (logged out)
+  const revoked = await isTokenRevoked(token)
+  if (revoked) {
+    const err = new Error("Sesi telah berakhir atau dibatalkan") as Error & { status: number }
+    err.status = 401
+    throw err
   }
 
-  // 2. Fallback to JWT verification & DB lookup on cache miss
-  const payload = jwt.verify(token, process.env.JWT_SECRET || "fallback-secret") as { userId: string; role: string }
+  // 2. Fallback to JWT verification & DB lookup
+  const payload = jwt.verify(token, getJwtSecret()) as {
+    userId: string
+    role: string
+    name?: string
+    passwordChangedAt?: number
+  }
+
   const user = await repo.findUserById(payload.userId)
   if (!user) {
     const err = new Error("User tidak ditemukan") as Error & { status: number }
@@ -333,12 +369,32 @@ export async function verifyToken(token: string) {
     throw err
   }
 
-  const userData = { id: user.id, email: user.email, username: user.username, name: user.name, role: user.role }
+  // 3. Invalidate if password was changed after token issuance
+  if (user.passwordChangedAt) {
+    const dbTimeSeconds = Math.floor(user.passwordChangedAt.getTime() / 1000)
+    if (!payload.passwordChangedAt || dbTimeSeconds > payload.passwordChangedAt) {
+      const err = new Error("Kata sandi telah diperbarui. Silakan masuk kembali.") as Error & { status: number }
+      err.status = 401
+      throw err
+    }
+  }
 
-  // Populate cache for subsequent calls
-  await cacheUserSession(token, userData)
+  const userData = {
+    id: user.id,
+    email: user.email,
+    username: user.username,
+    name: user.name,
+    role: user.role, // Fresh from DB
+  }
 
   return userData
+}
+
+/**
+ * Logs out a user by revoking their token in Redis / memory.
+ */
+export async function logoutUser(token: string) {
+  await revokeToken(token)
 }
 
 /**
@@ -354,7 +410,7 @@ export async function forgotPasswordRequest(input: ForgotPasswordRequestInput) {
     throw err
   }
 
-  const otp = Math.floor(100000 + Math.random() * 900000).toString()
+  const otp = randomInt(100000, 1000000).toString()
 
   await saveForgotPasswordOtp(normalizedEmail, {
     otp,
@@ -362,6 +418,7 @@ export async function forgotPasswordRequest(input: ForgotPasswordRequestInput) {
     userId: user.id,
     name: user.name,
     createdAt: Date.now(),
+    attempts: 0,
   })
 
   await sendForgotPasswordOtpEmail({
@@ -391,7 +448,18 @@ export async function forgotPasswordVerifyOtp(input: ForgotPasswordVerifyOtpInpu
   }
 
   if (payload.otp !== input.otp.trim()) {
-    const err = new Error("Kode OTP tidak cocok. Periksa kembali email Anda.") as Error & { status: number }
+    const attempts = await incrementForgotPasswordOtpAttempts(normalizedEmail)
+    if (attempts >= 5) {
+      const err = new Error(
+        "Kode OTP salah sebanyak 5 kali. Kode OTP telah dibatalkan demi keamanan akun Anda. Silakan ajukan pemulihan kata sandi ulang."
+      ) as Error & { status: number }
+      err.status = 400
+      throw err
+    }
+    const remaining = 5 - attempts
+    const err = new Error(
+      `Kode OTP tidak cocok. Sisa percobaan: ${remaining} kali. Periksa kembali email Anda.`
+    ) as Error & { status: number }
     err.status = 400
     throw err
   }
@@ -416,7 +484,18 @@ export async function resetPassword(input: ResetPasswordInput) {
   }
 
   if (payload.otp !== input.otp.trim()) {
-    const err = new Error("Kode OTP tidak cocok.") as Error & { status: number }
+    const attempts = await incrementForgotPasswordOtpAttempts(normalizedEmail)
+    if (attempts >= 5) {
+      const err = new Error(
+        "Kode OTP salah sebanyak 5 kali. Sesi pemulihan kata sandi telah dibatalkan demi keamanan. Silakan ajukan ulang dari awal."
+      ) as Error & { status: number }
+      err.status = 400
+      throw err
+    }
+    const remaining = 5 - attempts
+    const err = new Error(
+      `Kode OTP tidak cocok. Sisa percobaan: ${remaining} kali.`
+    ) as Error & { status: number }
     err.status = 400
     throw err
   }

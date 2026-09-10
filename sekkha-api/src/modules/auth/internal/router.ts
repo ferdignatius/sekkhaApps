@@ -10,6 +10,7 @@ import {
   handleForgotPasswordRequest,
   handleForgotPasswordVerifyOtp,
   handleResetPassword,
+  handleLogout,
 } from "./handler"
 
 // ─── Auth Router ─────────────────────────────────────────────────────────────
@@ -27,12 +28,10 @@ authRouter.post("/forgot-password/request", handleForgotPasswordRequest)
 authRouter.post("/forgot-password/verify-otp", handleForgotPasswordVerifyOtp)
 authRouter.post("/forgot-password/reset", handleResetPassword)
 
-// Legacy / Direct endpoints
+// Session & Auth endpoints
 authRouter.post("/register", handleRegister)
 authRouter.post("/login", handleLogin)
+authRouter.post("/logout", handleLogout)
 authRouter.post("/forgot-password", handleForgotPassword)
 authRouter.get("/verify", handleVerify)
-
-// authRouter.get("/google", handleGoogleRedirect)
-// authRouter.get("/google/callback-mock", handleGoogleMockCallback)
 

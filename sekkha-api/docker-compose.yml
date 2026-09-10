@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   sekkha-api:
-    image: ferdignatius/sekkha-api:v1.0.0
+    image: ferdignatius/sekkha-api:v1.3.0
     container_name: sekkha-api
     restart: unless-stopped
 

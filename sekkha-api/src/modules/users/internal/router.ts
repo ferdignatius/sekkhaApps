@@ -5,6 +5,8 @@ import { prisma } from "../../../lib/prisma"
 import { cached, invalidate, CacheKeys } from "../../../lib/cache"
 import { requireAuth } from "../../../middleware/auth"
 import { redis } from "../../../lib/redis"
+import { generateUniqueUserNumber } from "../../../lib/userNumber"
+import { revokeToken } from "../../auth/internal/tokenRevocation"
 
 export const usersRouter: Router = Router()
 
@@ -30,13 +32,7 @@ usersRouter.get("/me", requireAuth, async (req, res, next) => {
 
     let uNum = user.userNumber
     if (!uNum) {
-      const d = new Date(user.createdAt)
-      const yy = d.getFullYear().toString().slice(2)
-      const mm = String(d.getMonth() + 1).padStart(2, "0")
-      const dd = String(d.getDate()).padStart(2, "0")
-      const prefix = `${yy}${mm}${dd}`
-      const count = await prisma.user.count({ where: { userNumber: { startsWith: prefix } } })
-      uNum = `${prefix}${String(count + 1).padStart(2, "0")}`
+      uNum = await generateUniqueUserNumber(prisma, new Date(user.createdAt))
       await prisma.user.update({ where: { id: user.id }, data: { userNumber: uNum } }).catch(() => {})
     }
 
@@ -51,7 +47,7 @@ usersRouter.get("/me", requireAuth, async (req, res, next) => {
       phone: user.profile?.phone || null,
       birth_date: user.profile?.birthDate ? new Date(user.profile.birthDate).toISOString() : null,
       gender: user.profile?.gender || null,
-      avatar_url: user.profile?.avatarUrl || null,
+      avatar_url: null,
       role: user.role,
       user_number: uNum,
       points: user.stats?.points ?? 0,
@@ -128,9 +124,12 @@ const UpdateProfileSchema = z.object({
   school_id: z.string().optional().nullable(),
   class_grade: z.string().optional().nullable(),
   phone: z.string().optional().nullable(),
-  birth_date: z.string().optional().nullable(),
+  birth_date: z
+    .string()
+    .refine((v) => !v || !isNaN(Date.parse(v)), "Format birth_date tidak valid, gunakan format tanggal ISO (YYYY-MM-DD)")
+    .optional()
+    .nullable(),
   gender: z.string().optional().nullable(),
-  avatar_url: z.string().url().optional().nullable(),
 })
 
 usersRouter.patch("/me", requireAuth, async (req, res, next) => {
@@ -145,13 +144,7 @@ usersRouter.patch("/me", requireAuth, async (req, res, next) => {
 
     let userNumber = existing?.userNumber
     if (!userNumber) {
-      const now = new Date()
-      const yy = now.getFullYear().toString()
-      const mm = String(now.getMonth() + 1).padStart(2, "0")
-      const dd = String(now.getDate()).padStart(2, "0")
-      const prefix = `${yy}${mm}${dd}`
-      const count = await prisma.user.count({ where: { userNumber: { startsWith: prefix } } })
-      userNumber = `${prefix}${String(count + 1).padStart(4, "0")}`
+      userNumber = await generateUniqueUserNumber(prisma)
     }
 
     if (body.username && body.username.toLowerCase().trim() !== existing?.username) {
@@ -165,18 +158,24 @@ usersRouter.patch("/me", requireAuth, async (req, res, next) => {
       }
     }
 
-    // Resolve schoolId if school name string is passed
-    let resolvedSchoolId = body.school_id
-    if (!resolvedSchoolId && body.school) {
-      const schoolRecord = await prisma.school.findUnique({ where: { name: body.school.trim() } })
-      if (schoolRecord) {
-        resolvedSchoolId = schoolRecord.id
+    let resolvedSchoolId: string | null | undefined = undefined
+    if (body.school_id !== undefined) {
+      resolvedSchoolId = body.school_id
+    } else if (body.school) {
+      const trimmedSchool = body.school.trim()
+      const existingSchool = await prisma.school.findUnique({
+        where: { name: trimmedSchool },
+      })
+      if (existingSchool) {
+        resolvedSchoolId = existingSchool.id
       } else {
-        const createdSchool = await prisma.school.create({
-          data: { name: body.school.trim(), type: "Lainnya" },
+        const newSchool = await prisma.school.create({
+          data: { name: trimmedSchool, type: "Lainnya" },
         })
-        resolvedSchoolId = createdSchool.id
+        resolvedSchoolId = newSchool.id
       }
+    } else if (body.school === null) {
+      resolvedSchoolId = null
     }
 
     // Update User core
@@ -200,7 +199,6 @@ usersRouter.patch("/me", requireAuth, async (req, res, next) => {
           birthDate: body.birth_date ? new Date(body.birth_date) : null,
         }),
         ...(body.gender !== undefined && { gender: body.gender ? body.gender.trim() : null }),
-        ...(body.avatar_url !== undefined && { avatarUrl: body.avatar_url }),
       },
       create: {
         userId,
@@ -210,7 +208,7 @@ usersRouter.patch("/me", requireAuth, async (req, res, next) => {
         phone: body.phone ? body.phone.trim() : null,
         birthDate: body.birth_date ? new Date(body.birth_date) : null,
         gender: body.gender ? body.gender.trim() : null,
-        avatarUrl: body.avatar_url || null,
+        avatarUrl: null,
       },
       include: { school: true },
     })
@@ -243,7 +241,7 @@ usersRouter.patch("/me", requireAuth, async (req, res, next) => {
       phone: profile.phone,
       birth_date: profile.birthDate ? new Date(profile.birthDate).toISOString() : null,
       gender: profile.gender,
-      avatar_url: profile.avatarUrl,
+      avatar_url: null,
       user_number: user.userNumber,
       role: user.role,
     })
@@ -347,7 +345,7 @@ usersRouter.get("/me/point-transactions", requireAuth, async (req, res, next) =>
 
 const ChangePasswordSchema = z.object({
   current_password: z.string().min(1, "Current password is required"),
-  new_password: z.string().min(6, "New password must be at least 6 characters"),
+  new_password: z.string().min(8, "New password must be at least 8 characters"),
 })
 
 // POST /api/users/change-password — User updates their password
@@ -368,7 +366,7 @@ usersRouter.post("/change-password", requireAuth, async (req, res, next) => {
       return
     }
 
-    const hashedPassword = await bcrypt.hash(body.new_password, 10)
+    const hashedPassword = await bcrypt.hash(body.new_password, 12)
     await prisma.user.update({
       where: { id: userId },
       data: {
@@ -379,6 +377,143 @@ usersRouter.post("/change-password", requireAuth, async (req, res, next) => {
     })
 
     res.json({ success: true, message: "Password updated successfully" })
+  } catch (err) {
+    next(err)
+  }
+})
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// DATA PRIVACY: EXPORT & ERASURE (GDPR / UU PDP)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// GET /api/users/me/export — Export all personal data in JSON format
+usersRouter.get("/me/export", requireAuth, async (req, res, next) => {
+  try {
+    const userId = req.user!.userId
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        profile: { include: { school: true } },
+        stats: { include: { level: true } },
+        badges: { include: { badge: true } },
+        attendances: {
+          include: { event: { select: { title: true, eventDate: true, location: true } } },
+          orderBy: { scannedAt: "desc" },
+        },
+        pointTransactions: {
+          orderBy: { createdAt: "desc" },
+          take: 100,
+        },
+        notifications: {
+          orderBy: { createdAt: "desc" },
+          take: 50,
+        },
+      },
+    })
+
+    if (!user) {
+      res.status(404).json({ error: "Pengguna tidak ditemukan" })
+      return
+    }
+
+    const exportData = {
+      exported_at: new Date().toISOString(),
+      account: {
+        id: user.id,
+        user_number: user.userNumber,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        is_claimed: user.isClaimed,
+        created_at: user.createdAt,
+        updated_at: user.updatedAt,
+      },
+      profile: {
+        name: user.profile?.name ?? null,
+        phone: user.profile?.phone ?? null,
+        gender: user.profile?.gender ?? null,
+        birth_date: user.profile?.birthDate ? new Date(user.profile.birthDate).toISOString() : null,
+        class_grade: user.profile?.classGrade ?? null,
+        school: user.profile?.school?.name ?? null,
+      },
+      stats: {
+        points: user.stats?.points ?? 0,
+        total_attendances: user.stats?.totalAttendances ?? 0,
+        current_streak: user.stats?.currentStreak ?? 0,
+        level: user.stats?.level?.level ?? 1,
+        level_label: user.stats?.level?.label ?? "Beginner",
+        last_activity_at: user.stats?.lastActivityAt ?? null,
+      },
+      badges: user.badges.map((ub) => ({
+        badge_name: ub.badge.name,
+        description: ub.badge.description,
+        icon: ub.badge.iconUrl,
+        earned_at: ub.earnedAt,
+      })),
+      attendances: user.attendances.map((a) => ({
+        event_title: a.event.title,
+        event_date: a.event.eventDate,
+        location: a.event.location,
+        method: a.method,
+        points_earned: a.pointsEarned,
+        scanned_at: a.scannedAt,
+      })),
+      point_transactions: user.pointTransactions.map((pt) => ({
+        type: pt.type,
+        points: pt.amount,
+        description: pt.description,
+        created_at: pt.createdAt,
+      })),
+    }
+
+    res.setHeader("Content-Type", "application/json")
+    res.setHeader("Content-Disposition", `attachment; filename="sekkha-data-${user.userNumber || userId}.json"`)
+    res.json(exportData)
+  } catch (err) {
+    next(err)
+  }
+})
+
+// POST /api/users/me/delete-account — Delete user account & personal data permanently
+const DeleteAccountSchema = z.object({
+  password: z.string().min(1, "Konfirmasi kata sandi diperlukan"),
+})
+
+usersRouter.post("/me/delete-account", requireAuth, async (req, res, next) => {
+  try {
+    const { password } = DeleteAccountSchema.parse(req.body)
+    const userId = req.user!.userId
+
+    const user = await prisma.user.findUnique({ where: { id: userId } })
+    if (!user || !user.password) {
+      res.status(400).json({ error: "Akun tidak valid atau tidak memiliki kata sandi" })
+      return
+    }
+
+    const isValid = await bcrypt.compare(password, user.password)
+    if (!isValid) {
+      res.status(403).json({ error: "Kata sandi konfirmasi salah" })
+      return
+    }
+
+    // Revoke token immediately
+    const authHeader = req.headers.authorization
+    const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null
+    if (token) {
+      await revokeToken(token).catch(() => {})
+      await redis.del(`auth:token:${token}`).catch(() => {})
+    }
+
+    // Invalidate cache
+    await invalidate(CacheKeys.userProfile(userId))
+
+    // Cascade delete user and all associated personal data
+    await prisma.user.delete({ where: { id: userId } })
+
+    res.json({
+      success: true,
+      message: "Akun dan seluruh data pribadi Anda telah berhasil dihapus secara permanen.",
+    })
   } catch (err) {
     next(err)
   }

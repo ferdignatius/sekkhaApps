@@ -51,25 +51,13 @@ schoolsRouter.get("/", async (req, res, next) => {
 
     const schools = await prisma.school.findMany({
       where: whereClause,
+      include: {
+        _count: {
+          select: { profiles: true },
+        },
+      },
       orderBy: [{ name: "asc" }],
       take: limit,
-    })
-
-    // Get user counts grouped by school for social proof
-    const schoolNames = schools.map((s) => s.name)
-    const usersCount = await prisma.user.groupBy({
-      by: ["school"],
-      where: {
-        school: { in: schoolNames },
-      },
-      _count: { id: true },
-    })
-
-    const countMap = new Map<string, number>()
-    usersCount.forEach((item) => {
-      if (item.school) {
-        countMap.set(item.school.toLowerCase(), item._count.id)
-      }
     })
 
     const result = schools.map((s) => ({
@@ -77,7 +65,7 @@ schoolsRouter.get("/", async (req, res, next) => {
       name: s.name,
       type: s.type || "Umum",
       city: s.city || "Indonesia",
-      userCount: countMap.get(s.name.toLowerCase()) || 0,
+      userCount: s._count.profiles,
     }))
 
     res.json({
@@ -109,19 +97,18 @@ schoolsRouter.get("/stats", async (req, res, next) => {
       return
     }
 
-    // Count users in the same school
-    const totalInSchool = await prisma.user.count({
+    // Count profiles linked to the school
+    const totalInSchool = await prisma.userProfile.count({
       where: {
-        school: { equals: schoolName, mode: "insensitive" },
+        school: { name: { equals: schoolName, mode: "insensitive" } },
       },
     })
 
-    // If class grade provided, count users in same school AND class grade
     let totalInClass = 0
     if (classGrade) {
-      totalInClass = await prisma.user.count({
+      totalInClass = await prisma.userProfile.count({
         where: {
-          school: { equals: schoolName, mode: "insensitive" },
+          school: { name: { equals: schoolName, mode: "insensitive" } },
           classGrade: { equals: classGrade, mode: "insensitive" },
         },
       })
@@ -138,44 +125,41 @@ schoolsRouter.get("/stats", async (req, res, next) => {
   }
 })
 
-// ─── CRUD Endpoints for Pengurus & Admin ─────────────────────────────────────
-
-const SchoolSchema = z.object({
-  name: z.string().trim().min(2, "Nama sekolah minimal 2 karakter"),
-  type: z.enum(["SMP", "SMA", "SMK", "Universitas", "Umum"]).default("SMA"),
-  city: z.string().trim().min(2, "Kota minimal 2 karakter"),
-})
-
 /**
  * POST /api/schools
- * Tambah sekolah baru ke master data (Pengurus / Admin)
+ * Tambah sekolah baru (Admin & Pengurus)
  */
-schoolsRouter.post("/", requireAuth, requireRole("pengurus", "admin"), async (req, res, next) => {
+const CreateSchoolSchema = z.object({
+  name: z.string().min(2, "Nama sekolah minimal 2 karakter").max(100, "Maksimal 100 karakter"),
+  type: z.enum(["SMP", "SMA", "SMK", "Universitas", "Lainnya"]).optional(),
+  city: z.string().max(50).optional(),
+})
+
+schoolsRouter.post("/", requireAuth, requireRole("admin", "pengurus"), async (req, res, next) => {
   try {
-    const body = SchoolSchema.parse(req.body)
+    const body = CreateSchoolSchema.parse(req.body)
 
-    const existing = await prisma.school.findFirst({
-      where: { name: { equals: body.name, mode: "insensitive" } },
+    const existing = await prisma.school.findUnique({
+      where: { name: body.name.trim() },
     })
-
     if (existing) {
-      res.status(409).json({ error: `Sekolah "${body.name}" sudah terdaftar dalam master data.` })
+      res.status(409).json({ error: `Sekolah "${body.name}" sudah terdaftar.` })
       return
     }
 
-    const created = await prisma.school.create({
+    const school = await prisma.school.create({
       data: {
-        name: body.name,
-        type: body.type,
-        city: body.city,
+        name: body.name.trim(),
+        type: body.type || "Umum",
+        city: body.city?.trim() || "Indonesia",
       },
     })
 
     res.status(201).json({
-      id: created.id,
-      name: created.name,
-      type: created.type || "Umum",
-      city: created.city || "Indonesia",
+      id: school.id,
+      name: school.name,
+      type: school.type,
+      city: school.city,
       userCount: 0,
     })
   } catch (err) {
@@ -185,16 +169,23 @@ schoolsRouter.post("/", requireAuth, requireRole("pengurus", "admin"), async (re
 
 /**
  * PUT /api/schools/:id
- * Edit sekolah master data (Pengurus / Admin)
+ * Edit sekolah (Admin & Pengurus)
  */
-schoolsRouter.put("/:id", requireAuth, requireRole("pengurus", "admin"), async (req, res, next) => {
+const UpdateSchoolSchema = z.object({
+  name: z.string().min(2).max(100).optional(),
+  type: z.enum(["SMP", "SMA", "SMK", "Universitas", "Lainnya"]).optional(),
+  city: z.string().max(50).optional(),
+})
+
+schoolsRouter.put("/:id", requireAuth, requireRole("admin", "pengurus"), async (req, res, next) => {
   try {
     const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id
     if (!id) {
       res.status(400).json({ error: "ID parameter is required" })
       return
     }
-    const body = SchoolSchema.partial().parse(req.body)
+
+    const body = UpdateSchoolSchema.parse(req.body)
 
     const existing = await prisma.school.findUnique({ where: { id } })
     if (!existing) {
@@ -202,10 +193,8 @@ schoolsRouter.put("/:id", requireAuth, requireRole("pengurus", "admin"), async (
       return
     }
 
-    if (body.name && body.name.toLowerCase() !== existing.name.toLowerCase()) {
-      const duplicate = await prisma.school.findFirst({
-        where: { name: { equals: body.name, mode: "insensitive" }, id: { not: id } },
-      })
+    if (body.name && body.name !== existing.name) {
+      const duplicate = await prisma.school.findUnique({ where: { name: body.name.trim() } })
       if (duplicate) {
         res.status(409).json({ error: `Sekolah "${body.name}" sudah terdaftar.` })
         return
@@ -215,22 +204,13 @@ schoolsRouter.put("/:id", requireAuth, requireRole("pengurus", "admin"), async (
     const updated = await prisma.school.update({
       where: { id },
       data: {
-        ...(body.name && { name: body.name }),
+        ...(body.name && { name: body.name.trim() }),
         ...(body.type && { type: body.type }),
-        ...(body.city && { city: body.city }),
+        ...(body.city && { city: body.city.trim() }),
       },
-    })
-
-    // If school name changed, update existing users with old school name
-    if (body.name && body.name !== existing.name) {
-      await prisma.user.updateMany({
-        where: { school: existing.name },
-        data: { school: body.name },
-      })
-    }
-
-    const userCount = await prisma.user.count({
-      where: { school: { equals: updated.name, mode: "insensitive" } },
+      include: {
+        _count: { select: { profiles: true } },
+      },
     })
 
     res.json({
@@ -238,7 +218,7 @@ schoolsRouter.put("/:id", requireAuth, requireRole("pengurus", "admin"), async (
       name: updated.name,
       type: updated.type || "Umum",
       city: updated.city || "Indonesia",
-      userCount,
+      userCount: updated._count.profiles,
     })
   } catch (err) {
     next(err)
@@ -263,8 +243,8 @@ schoolsRouter.delete("/:id", requireAuth, requireRole("admin"), async (req, res,
       return
     }
 
-    const count = await prisma.user.count({
-      where: { school: { equals: existing.name, mode: "insensitive" } },
+    const count = await prisma.userProfile.count({
+      where: { schoolId: id },
     })
 
     if (count > 0) {

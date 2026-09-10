@@ -15,21 +15,11 @@ usersRouter.get("/me", requireAuth, async (req, res, next) => {
     const user = await cached(CacheKeys.userProfile(userId), 120, async () => {
       return prisma.user.findUnique({
         where: { id: userId },
-        select: {
-          id: true,
-          username: true,
-          email: true,
-          name: true,
-          school: true,
-          classGrade: true,
-          phone: true,
-          birthDate: true,
-          gender: true,
-          avatarUrl: true,
-          role: true,
-          userNumber: true,
-          points: true,
-          createdAt: true,
+        include: {
+          profile: {
+            include: { school: true },
+          },
+          stats: true,
         },
       })
     })
@@ -51,10 +41,21 @@ usersRouter.get("/me", requireAuth, async (req, res, next) => {
     }
 
     res.json({
-      ...user,
-      class_grade: user.classGrade,
-      birth_date: user.birthDate ? new Date(user.birthDate).toISOString() : null,
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      name: user.profile?.name || "",
+      school: user.profile?.school?.name || null,
+      school_id: user.profile?.schoolId || null,
+      class_grade: user.profile?.classGrade || null,
+      phone: user.profile?.phone || null,
+      birth_date: user.profile?.birthDate ? new Date(user.profile.birthDate).toISOString() : null,
+      gender: user.profile?.gender || null,
+      avatar_url: user.profile?.avatarUrl || null,
+      role: user.role,
       user_number: uNum,
+      points: user.stats?.points ?? 0,
+      created_at: user.createdAt,
     })
   } catch (err) {
     next(err)
@@ -124,6 +125,7 @@ const UpdateProfileSchema = z.object({
     .optional()
     .nullable(),
   school: z.string().optional().nullable(),
+  school_id: z.string().optional().nullable(),
   class_grade: z.string().optional().nullable(),
   phone: z.string().optional().nullable(),
   birth_date: z.string().optional().nullable(),
@@ -136,7 +138,11 @@ usersRouter.patch("/me", requireAuth, async (req, res, next) => {
     const body = UpdateProfileSchema.parse(req.body)
     const userId = req.user!.userId
 
-    const existing = await (prisma.user as any).findUnique({ where: { id: userId } })
+    const existing = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { profile: true },
+    })
+
     let userNumber = existing?.userNumber
     if (!userNumber) {
       const now = new Date()
@@ -159,12 +165,35 @@ usersRouter.patch("/me", requireAuth, async (req, res, next) => {
       }
     }
 
-    const user = await (prisma.user as any).update({
+    // Resolve schoolId if school name string is passed
+    let resolvedSchoolId = body.school_id
+    if (!resolvedSchoolId && body.school) {
+      const schoolRecord = await prisma.school.findUnique({ where: { name: body.school.trim() } })
+      if (schoolRecord) {
+        resolvedSchoolId = schoolRecord.id
+      } else {
+        const createdSchool = await prisma.school.create({
+          data: { name: body.school.trim(), type: "Lainnya" },
+        })
+        resolvedSchoolId = createdSchool.id
+      }
+    }
+
+    // Update User core
+    const user = await prisma.user.update({
       where: { id: userId },
       data: {
-        ...(body.name && { name: body.name.trim() }),
         ...(body.username !== undefined && { username: body.username ? body.username.toLowerCase().trim() : null }),
-        ...(body.school !== undefined && { school: body.school ? body.school.trim() : null }),
+        userNumber,
+      },
+    })
+
+    // Upsert UserProfile
+    const profile = await prisma.userProfile.upsert({
+      where: { userId },
+      update: {
+        ...(body.name && { name: body.name.trim() }),
+        ...(resolvedSchoolId !== undefined && { schoolId: resolvedSchoolId }),
         ...(body.class_grade !== undefined && { classGrade: body.class_grade ? body.class_grade.trim() : null }),
         ...(body.phone !== undefined && { phone: body.phone ? body.phone.trim() : null }),
         ...(body.birth_date !== undefined && {
@@ -172,22 +201,18 @@ usersRouter.patch("/me", requireAuth, async (req, res, next) => {
         }),
         ...(body.gender !== undefined && { gender: body.gender ? body.gender.trim() : null }),
         ...(body.avatar_url !== undefined && { avatarUrl: body.avatar_url }),
-        userNumber,
       },
-      select: {
-        id: true,
-        username: true,
-        name: true,
-        email: true,
-        school: true,
-        classGrade: true,
-        phone: true,
-        birthDate: true,
-        gender: true,
-        avatarUrl: true,
-        userNumber: true,
-        role: true,
+      create: {
+        userId,
+        name: body.name ? body.name.trim() : existing?.username || "Anggota",
+        schoolId: resolvedSchoolId || null,
+        classGrade: body.class_grade ? body.class_grade.trim() : null,
+        phone: body.phone ? body.phone.trim() : null,
+        birthDate: body.birth_date ? new Date(body.birth_date) : null,
+        gender: body.gender ? body.gender.trim() : null,
+        avatarUrl: body.avatar_url || null,
       },
+      include: { school: true },
     })
 
     // Invalidate profile cache
@@ -201,17 +226,26 @@ usersRouter.patch("/me", requireAuth, async (req, res, next) => {
         id: user.id,
         email: user.email,
         username: user.username,
-        name: user.name,
+        name: profile.name,
         role: user.role,
       }
       await redis.set(`auth:token:${token}`, JSON.stringify(updatedSession), "EX", 30 * 24 * 60 * 60).catch(() => {})
     }
 
     res.json({
-      ...user,
-      class_grade: user.classGrade,
-      birth_date: user.birthDate ? new Date(user.birthDate).toISOString() : null,
+      id: user.id,
+      username: user.username,
+      name: profile.name,
+      email: user.email,
+      school: profile.school?.name || null,
+      school_id: profile.schoolId,
+      class_grade: profile.classGrade,
+      phone: profile.phone,
+      birth_date: profile.birthDate ? new Date(profile.birthDate).toISOString() : null,
+      gender: profile.gender,
+      avatar_url: profile.avatarUrl,
       user_number: user.userNumber,
+      role: user.role,
     })
   } catch (err) {
     next(err)
@@ -250,11 +284,9 @@ usersRouter.get("/me/streak", requireAuth, async (req, res, next) => {
     const now = new Date()
     let currentStreak = 0
 
-    // Check consecutive weeks backwards from now
     let checkDate = new Date(now)
     let currentWeekKey = toWeekKey(checkDate)
 
-    // If user hasn't checked in this week yet, check if last week was attended
     if (!attendedWeeks.has(currentWeekKey)) {
       checkDate.setUTCDate(checkDate.getUTCDate() - 7)
       currentWeekKey = toWeekKey(checkDate)
@@ -278,19 +310,19 @@ usersRouter.get("/me/streak", requireAuth, async (req, res, next) => {
 usersRouter.get("/me/level", requireAuth, async (req, res, next) => {
   try {
     const userId = req.user!.userId
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { points: true },
+    const stats = await prisma.userStats.findUnique({
+      where: { userId },
+      include: { level: true },
     })
     const attendanceCount = await prisma.attendance.count({ where: { userId } })
-    const totalPoints = user?.points ?? (attendanceCount * 50)
+    const totalPoints = stats?.points ?? (attendanceCount * 50)
 
     const levels = await prisma.level.findMany({ orderBy: { minPoints: "desc" } })
     const currentLevel = levels.find(l => totalPoints >= l.minPoints) ?? { level: 1, label: "Beginner", minPoints: 0 }
 
     res.json({
-      level: currentLevel.level,
-      level_label: currentLevel.label,
+      level: stats?.level?.level ?? currentLevel.level,
+      level_label: stats?.level?.label ?? currentLevel.label,
       total_points: totalPoints,
     })
   } catch (err) {
@@ -339,7 +371,11 @@ usersRouter.post("/change-password", requireAuth, async (req, res, next) => {
     const hashedPassword = await bcrypt.hash(body.new_password, 10)
     await prisma.user.update({
       where: { id: userId },
-      data: { password: hashedPassword },
+      data: {
+        password: hashedPassword,
+        passwordChangedByUser: true,
+        passwordChangedAt: new Date(),
+      },
     })
 
     res.json({ success: true, message: "Password updated successfully" })
@@ -347,4 +383,3 @@ usersRouter.post("/change-password", requireAuth, async (req, res, next) => {
     next(err)
   }
 })
-

@@ -94,15 +94,23 @@ pengurusRouter.get(
           const users = await prisma.user.findMany({
             select: {
               id: true,
-              name: true,
               email: true,
-              phone: true,
               userNumber: true,
-              avatarUrl: true,
               role: true,
-              lastActivityAt: true,
-              consecutiveMissed: true,
               createdAt: true,
+              profile: {
+                select: {
+                  name: true,
+                  phone: true,
+                  avatarUrl: true,
+                },
+              },
+              stats: {
+                select: {
+                  lastActivityAt: true,
+                  consecutiveMissed: true,
+                },
+              },
               attendances: {
                 select: {
                   id: true,
@@ -197,11 +205,11 @@ pengurusRouter.get(
 
             return {
               userId: u.id,
-              name: u.name,
+              name: u.profile?.name || "Anggota",
               email: u.email,
-              phone: u.phone,
+              phone: u.profile?.phone || null,
               userNumber: u.userNumber,
-              avatarUrl: u.avatarUrl,
+              avatarUrl: u.profile?.avatarUrl || null,
               role: u.role,
               createdAt: new Date(u.createdAt).toISOString(),
               lastAttendedDate,
@@ -290,11 +298,17 @@ pengurusRouter.get(
         where: { id: userId },
         select: {
           id: true,
-          name: true,
           email: true,
-          avatarUrl: true,
           role: true,
           createdAt: true,
+          userNumber: true,
+          profile: {
+            select: {
+              name: true,
+              phone: true,
+              avatarUrl: true,
+            },
+          },
           attendances: {
             select: {
               id: true,
@@ -415,13 +429,13 @@ pengurusRouter.get(
       res.json({
         member: {
           userId: user.id,
-          name: user.name,
+          name: user.profile?.name || "Anggota",
           email: user.email,
-          avatarUrl: user.avatarUrl,
+          avatarUrl: user.profile?.avatarUrl || null,
           role: user.role,
           createdAt: new Date(user.createdAt).toISOString(),
-          phone: (user as any).phone,
-          userNumber: (user as any).userNumber,
+          phone: user.profile?.phone || null,
+          userNumber: user.userNumber,
           lastAttendedDate,
           daysSinceLastAttendance,
           personalBaselineDays,
@@ -492,17 +506,33 @@ pengurusRouter.get(
 
       const insightData = await cached(cacheKey, 120, async () => {
         // 1. Fetch Users
-        const allUsers = await prisma.user.findMany({
+        const allUsersRaw = await prisma.user.findMany({
           select: {
             id: true,
-            name: true,
             email: true,
             role: true,
-            points: true,
-            consecutiveMissed: true,
             createdAt: true,
+            profile: {
+              select: { name: true },
+            },
+            stats: {
+              select: {
+                points: true,
+                consecutiveMissed: true,
+              },
+            },
           },
         })
+
+        const allUsers = allUsersRaw.map((u) => ({
+          id: u.id,
+          name: u.profile?.name || "Anggota",
+          email: u.email,
+          role: u.role,
+          points: u.stats?.points ?? 0,
+          consecutiveMissed: u.stats?.consecutiveMissed ?? 0,
+          createdAt: u.createdAt,
+        }))
 
         const targetUsers = segmentFilter === "all" ? allUsers : allUsers.filter((u) => u.role === segmentFilter)
         const targetUserIds = new Set(targetUsers.map((u) => u.id))

@@ -90,11 +90,19 @@ export async function computeAndCacheLeaderboard(): Promise<void> {
       prisma.user.findMany({
         select: {
           id: true,
-          name: true,
           role: true,
-          points: true,
-          avatarUrl: true,
           userNumber: true,
+          profile: {
+            select: {
+              name: true,
+              avatarUrl: true,
+            },
+          },
+          stats: {
+            select: {
+              points: true,
+            },
+          },
           attendances: {
             where: attendanceWhere,
             select: { scannedAt: true, eventId: true },
@@ -128,7 +136,7 @@ export async function computeAndCacheLeaderboard(): Promise<void> {
     for (const metric of METRICS) {
       const list: LeaderboardUserEntry[] = users
         .map((u) => {
-          const safeName = u.name || "Anggota Sekkha"
+          const safeName = u.profile?.name || "Anggota Sekkha"
           const initials = safeName
             .split(" ")
             .slice(0, 2)
@@ -137,7 +145,7 @@ export async function computeAndCacheLeaderboard(): Promise<void> {
           const attendanceCount = u.attendances.length
           const val =
             metric === "points"
-              ? (u.points ?? attendanceCount * 50)
+              ? (u.stats?.points ?? attendanceCount * 50)
               : metric === "streak"
               ? Math.min(attendanceCount, 12)
               : attendanceCount
@@ -149,7 +157,7 @@ export async function computeAndCacheLeaderboard(): Promise<void> {
             rank: 0,
             value: val,
             attendances_count: attendanceCount,
-            avatar_url: u.avatarUrl,
+            avatar_url: u.profile?.avatarUrl,
             role: u.role || "umat",
           }
         })
@@ -185,7 +193,6 @@ export async function getLeaderboardSnapshot(metric: MetricType, forceRefresh = 
       const raw = await redis.get(cacheKey)
       if (raw) {
         const parsed = JSON.parse(raw) as LeaderboardSnapshot
-        // If cached entries have the role property populated on at least entries, use cache
         const isStale = parsed.entries?.some((e) => !e.role)
         if (!isStale) {
           return parsed
@@ -208,10 +215,10 @@ export async function getLeaderboardSnapshot(metric: MetricType, forceRefresh = 
     entries: [],
     community_total: 0,
     season: {
-      name: "Season 1 · 2026",
+      name: "Musim Berjalan",
       start_date: new Date().toISOString(),
       end_date: new Date().toISOString(),
-      days_left: 14,
+      days_left: 0,
       target_attendance: 500,
       bonus_points: 100,
     },

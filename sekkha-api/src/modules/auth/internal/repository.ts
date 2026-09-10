@@ -1,4 +1,6 @@
 import { prisma } from "../../../lib/prisma"
+import { generateUniqueUserNumber } from "../../../lib/userNumber"
+
 
 // ─── Repository ──────────────────────────────────────────────────────────────
 // Pure database operations — no business logic here.
@@ -95,50 +97,53 @@ export async function createUser(data: {
   password?: string
   username?: string
 }) {
-  const now = new Date()
-  const yy = now.getFullYear().toString().slice(2)
-  const mm = String(now.getMonth() + 1).padStart(2, "0")
-  const dd = String(now.getDate()).padStart(2, "0")
-  const prefix = `${yy}${mm}${dd}`
-
-  const count = await prisma.user.count({
-    where: { userNumber: { startsWith: prefix } },
-  })
-  const userNumber = `${prefix}${String(count + 1).padStart(2, "0")}`
-
   const username = data.username || (await generateUniqueUsername(data.name))
-
   const level1 = await prisma.level.findFirst({ where: { level: 1 } })
 
-  const user = await prisma.user.create({
-    data: {
-      email: data.email ? data.email.toLowerCase().trim() : null,
-      username,
-      password: data.password,
-      passwordChangedAt: new Date(),
-      userNumber,
-      profile: {
-        create: {
-          name: data.name,
+  // Concurrency-safe insertion with retry on unique constraint collision
+  let attempts = 0
+  while (attempts < 5) {
+    attempts++
+    const userNumber = await generateUniqueUserNumber(prisma)
+    try {
+      const user = await prisma.user.create({
+        data: {
+          email: data.email ? data.email.toLowerCase().trim() : null,
+          username,
+          password: data.password,
+          passwordChangedAt: new Date(),
+          userNumber,
+          profile: {
+            create: {
+              name: data.name,
+            },
+          },
+          stats: {
+            create: {
+              points: 0,
+              levelId: level1?.id,
+            },
+          },
         },
-      },
-      stats: {
-        create: {
-          points: 0,
-          levelId: level1?.id,
+        include: {
+          profile: true,
+          stats: true,
         },
-      },
-    },
-    include: {
-      profile: true,
-      stats: true,
-    },
-  })
+      })
 
-  return {
-    ...user,
-    name: user.profile?.name ?? data.name,
+      return {
+        ...user,
+        name: user.profile?.name ?? data.name,
+      }
+    } catch (err: any) {
+      if (err.code === "P2002" && err.meta?.target?.includes("user_number") && attempts < 5) {
+        continue // Retry with newly computed next sequence
+      }
+      throw err
+    }
   }
+
+  throw new Error("Gagal membuat akun karena kepadatan pendaftaran, silakan coba lagi.")
 }
 
 export async function updateUserPassword(userId: string, passwordHash: string) {

@@ -1,30 +1,20 @@
-import { randomInt } from "crypto"
+import { randomBytes } from "crypto"
 import { Router } from "express"
 import { z } from "zod"
 import bcrypt from "bcryptjs"
 import { prisma } from "../../../lib/prisma"
 import { requireAuth, requireRole } from "../../../middleware/auth"
 import { generateUniqueUsername } from "../../auth/internal/repository"
+import { sendTemporaryPasswordEmail } from "../../auth/internal/email"
 import { invalidate, CacheKeys } from "../../../lib/cache"
+import { generateUniqueUserNumber } from "../../../lib/userNumber"
 
 export const teamsRouter: Router = Router()
 
-// Helper: Generate standardized user number format YYYYMMDDxxxx
-async function generateUserNumber(date: Date = new Date()): Promise<string> {
-  const yy = date.getFullYear().toString()
-  const mm = String(date.getMonth() + 1).padStart(2, "0")
-  const dd = String(date.getDate()).padStart(2, "0")
-  const prefix = `${yy}${mm}${dd}`
-  const count = await prisma.user.count({
-    where: { userNumber: { startsWith: prefix } },
-  })
-  return `${prefix}${String(count + 1).padStart(4, "0")}`
-}
-
-// Helper: Generate default password with format Sekkha(num random 4)Puggala using CSPRNG
+// Helper: Generate high-entropy default password using CSPRNG (e.g. Sekkha-7f8a1b2c3d4e-Puggala)
 export function generateDefaultPassword(): string {
-  const random4 = randomInt(1000, 10000).toString()
-  return `Sekkha${random4}Puggala`
+  const randHex = randomBytes(6).toString("hex")
+  return `Sekkha-${randHex}-Puggala`
 }
 
 // 1. GET /api/teams/members — List all members with filtering (pengurus/admin only)
@@ -250,10 +240,14 @@ const CreateMemberSchema = z.object({
   phone: z.string().optional().or(z.literal("")),
   school: z.string().optional().or(z.literal("")),
   school_id: z.string().optional().or(z.literal("")),
-  birth_date: z.string().optional().or(z.literal("")),
+  birth_date: z
+    .string()
+    .refine((v) => !v || !isNaN(Date.parse(v)), "Format birth_date tidak valid, gunakan format tanggal ISO")
+    .optional()
+    .or(z.literal("")),
   gender: z.string().optional().or(z.literal("")),
   role: z.enum(["umat", "aktivis", "pengurus", "admin"]).default("umat"),
-  default_password: z.string().min(6).optional(),
+  default_password: z.string().min(8).optional(),
 })
 
 teamsRouter.post("/members", requireAuth, requireRole("admin"), async (req, res, next) => {
@@ -280,8 +274,7 @@ teamsRouter.post("/members", requireAuth, requireRole("admin"), async (req, res,
     }
 
     const defaultPassword = data.default_password || generateDefaultPassword()
-    const hashedPassword = await bcrypt.hash(defaultPassword, 10)
-    const userNumber = await generateUserNumber()
+    const hashedPassword = await bcrypt.hash(defaultPassword, 12)
 
     let resolvedSchoolId = data.school_id
     if (!resolvedSchoolId && data.school) {
@@ -296,34 +289,53 @@ teamsRouter.post("/members", requireAuth, requireRole("admin"), async (req, res,
 
     const level1 = await prisma.level.findFirst({ where: { level: 1 } })
 
-    const newMember = await prisma.user.create({
-      data: {
-        username,
-        password: hashedPassword,
-        email: data.email ? data.email.toLowerCase().trim() : null,
-        role: data.role,
-        userNumber,
-        isClaimed: true,
-        profile: {
-          create: {
-            name: data.name.trim(),
-            phone: data.phone ? data.phone.trim() : null,
-            schoolId: resolvedSchoolId || null,
-            birthDate: data.birth_date ? new Date(data.birth_date) : null,
-            gender: data.gender ? data.gender.trim() : null,
+    let newMember: any = null
+    let attempts = 0
+    while (attempts < 5) {
+      attempts++
+      const userNumber = await generateUniqueUserNumber(prisma)
+      try {
+        newMember = await prisma.user.create({
+          data: {
+            username,
+            password: hashedPassword,
+            email: data.email ? data.email.toLowerCase().trim() : null,
+            role: data.role,
+            userNumber,
+            isClaimed: true,
+            profile: {
+              create: {
+                name: data.name.trim(),
+                phone: data.phone ? data.phone.trim() : null,
+                schoolId: resolvedSchoolId || null,
+                birthDate: data.birth_date ? new Date(data.birth_date) : null,
+                gender: data.gender ? data.gender.trim() : null,
+              },
+            },
+            stats: {
+              create: {
+                points: 0,
+                levelId: level1?.id,
+              },
+            },
           },
-        },
-        stats: {
-          create: {
-            points: 0,
-            levelId: level1?.id,
+          include: {
+            profile: { include: { school: true } },
           },
-        },
-      },
-      include: {
-        profile: { include: { school: true } },
-      },
-    })
+        })
+        break
+      } catch (err: any) {
+        if (err.code === "P2002" && err.meta?.target?.includes("user_number") && attempts < 5) {
+          continue
+        }
+        throw err
+      }
+    }
+
+    if (!newMember) {
+      res.status(500).json({ error: "Gagal membuat nomor anggota baru karena antrean sistem. Silakan coba lagi." })
+      return
+    }
 
     res.status(201).json({
       id: newMember.id,
@@ -710,17 +722,16 @@ teamsRouter.post("/members/:id/reset-password", requireAuth, requireRole("admin"
       return
     }
 
-    // NEW LOGIC PER USER REQUIREMENT:
-    // Jika akun sudah ter-claim atau password diubah oleh user, admin tidak boleh mereset password
-    if (targetUser.isClaimed && targetUser.passwordChangedByUser) {
+    // Respect passwordChangedByUser flag: admin cannot reset password if user has set/changed their password
+    if (targetUser.passwordChangedByUser) {
       res.status(403).json({
-        error: "Akun ini telah diklaim dan diatur oleh user. Admin tidak dapat mereset password demi keamanan dan privasi pengguna.",
+        error: "Akun ini telah mengubah kata sandi sendiri. Admin tidak dapat mereset kata sandi demi keamanan dan privasi pengguna.",
       })
       return
     }
 
     const defaultPassword = generateDefaultPassword()
-    const hashedPassword = await bcrypt.hash(defaultPassword, 10)
+    const hashedPassword = await bcrypt.hash(defaultPassword, 12)
 
     await prisma.user.update({
       where: { id },
@@ -735,13 +746,34 @@ teamsRouter.post("/members/:id/reset-password", requireAuth, requireRole("admin"
 
     const memberName = targetUser.profile?.name || targetUser.username || "member"
 
+    // If member has email, dispatch temporary password to their email directly
+    if (targetUser.email) {
+      await sendTemporaryPasswordEmail({
+        to: targetUser.email,
+        tempPassword: defaultPassword,
+        name: memberName,
+      })
+
+      res.json({
+        success: true,
+        user_number: targetUser.userNumber,
+        username: targetUser.username,
+        name: memberName,
+        email_sent: true,
+        message: `Kata sandi sementara untuk ${memberName} berhasil dibuat dan dikirimkan ke email terdaftar (${targetUser.email}).`,
+      })
+      return
+    }
+
+    // If member has no email (offline registration), provide temporary password with explicit change flag
     res.json({
       success: true,
       user_number: targetUser.userNumber,
       username: targetUser.username,
       name: memberName,
       default_password: defaultPassword,
-      message: `Password for ${memberName} (${targetUser.username ? `@${targetUser.username}` : "member"}) successfully reset to: ${defaultPassword}`,
+      requires_change_on_login: true,
+      message: `Kata sandi sementara untuk ${memberName} berhasil diatur. Harap minta member segera mengubah kata sandi saat masuk.`,
     })
   } catch (err) {
     next(err)

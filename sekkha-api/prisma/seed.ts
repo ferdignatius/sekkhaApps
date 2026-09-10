@@ -7,6 +7,11 @@ dotenv.config()
 const prisma = new PrismaClient()
 
 async function main() {
+  if (process.env.NODE_ENV === "production") {
+    console.error("❌ CRITICAL: Seeding database is strictly prohibited in production environment!")
+    process.exit(1)
+  }
+
   console.log("🌱 Seeding 3NF database...")
 
   // Clean existing tables in reverse dependency order
@@ -160,7 +165,7 @@ async function main() {
   const adminEmail = process.env.DUMMY_ADMIN_EMAIL || "admin@sekkha.com"
   const adminPasswordRaw = process.env.DUMMY_ADMIN_PASSWORD || "password123"
 
-  const hash = async (pwd: string) => bcrypt.hash(pwd, 10)
+  const hash = async (pwd: string) => bcrypt.hash(pwd, 12)
 
   // UMAT
   const umatUser = await prisma.user.create({

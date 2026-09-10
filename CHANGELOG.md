@@ -8,6 +8,7 @@ All notable changes to Sekkha Apps. Semver (`MAJOR.MINOR.PATCH`); newest on top.
 - `POST /auth/logout` with token revocation (Redis blacklist + in-memory fallback); frontend logout now calls it before clearing the stored token.
 - Dedicated OTP rate limiter (5 requests/15 min/IP) on all register and forgot-password OTP endpoints, plus a brute-force guard: OTP is voided after 5 wrong attempts.
 - OTP codes are now generated with a CSPRNG (`crypto.randomInt`) instead of `Math.random`.
+- GDPR / UU PDP user data export (`GET /users/me/export`) and self-serve account deletion (`POST /users/me/delete-account`).
 - Concurrency-safe unique user number generation (`src/lib/userNumber.ts`) with sequence-order lookup and conflict retry loops.
 
 ### Changed
@@ -22,6 +23,7 @@ All notable changes to Sekkha Apps. Semver (`MAJOR.MINOR.PATCH`); newest on top.
 
 ### Removed
 - Google OAuth remnants (`oauth.ts` and mock routes) and the default-password fallback when resending a registration OTP.
+- User custom avatar image upload / update (`avatar_url`), replaced by deterministic stylized initials display.
 
 ### Changed
 - User table normalized: personal data and stats moved into 1:1 `UserProfile` and `UserStats` tables; new master tables `EventType`, `Season`, and `Level` wired into events, auth, schools, leaderboard, and users modules.

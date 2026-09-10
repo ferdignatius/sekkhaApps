@@ -10,6 +10,11 @@ All notable changes to Sekkha Apps. Semver (`MAJOR.MINOR.PATCH`); newest on top.
 - OTP codes are now generated with a CSPRNG (`crypto.randomInt`) instead of `Math.random`.
 - GDPR / UU PDP user data export (`GET /users/me/export`) and self-serve account deletion (`POST /users/me/delete-account`).
 - Concurrency-safe unique user number generation (`src/lib/userNumber.ts`) with sequence-order lookup and conflict retry loops.
+- Field-level encryption at rest (AES-256-GCM) for member PII — email, phone, class grade, birth date, gender — with HMAC-SHA256 blind-index email lookup; keys configured via `ENCRYPTION_KEY`/`BLIND_INDEX_KEY`.
+- Claim PIN flow for pre-provisioned members: pengurus/admin generate a bcrypt-hashed 30-day PIN (`POST /teams/members/:id/generate-claim-pin`), and the member claims their account via `POST /teams/link-legacy-account`, merging attendance and points history.
+- Tier 1 one-way hashing for `claimPin`: claim PINs are now hashed with bcrypt (12 rounds) in the database, never returned via API responses, and securely compared during account linking.
+- Tier 2 AES-256-GCM at-rest encryption for sensitive PII (`User.email`, `UserProfile.phone`, `UserProfile.birthDate`, `UserProfile.gender`, `UserProfile.classGrade`) using 12-byte random IVs and authenticated tag verification (`src/lib/crypto.ts`).
+- Deterministic HMAC-SHA256 blind indexing (`User.emailBindex`) enabling $O(1)$ unique constraint enforcement and fast lookup without storing plaintext emails in the database.
 
 ### Changed
 - `requireAuth` rejects revoked tokens, re-reads the user role from the DB, and invalidates sessions issued before a password change/reset.
@@ -29,6 +34,8 @@ All notable changes to Sekkha Apps. Semver (`MAJOR.MINOR.PATCH`); newest on top.
 ### Removed
 - Google OAuth remnants (`oauth.ts` and mock routes) and the default-password fallback when resending a registration OTP.
 - User custom avatar image upload / update (`avatar_url`), replaced by deterministic stylized initials display.
+- Role invitation flow end to end: `RoleInvitation` model and `/teams/invitations` endpoints, frontend invitation accept/reject actions, and the `role_invitation` notification type.
+- Role invitation email system and `RoleInvitation` database model; role assignment is now managed directly by administrators via People / Community member management.
 
 ### Changed
 - User table normalized: personal data and stats moved into 1:1 `UserProfile` and `UserStats` tables; new master tables `EventType`, `Season`, and `Level` wired into events, auth, schools, leaderboard, and users modules.

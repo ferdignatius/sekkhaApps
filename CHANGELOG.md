@@ -14,12 +14,14 @@ All notable changes to Sekkha Apps. Semver (`MAJOR.MINOR.PATCH`); newest on top.
 ### Changed
 - `requireAuth` rejects revoked tokens, re-reads the user role from the DB, and invalidates sessions issued before a password change/reset.
 - JWT: `JWT_SECRET` is required (no fallback secret), default expiry 1 day, and `.env.example` sample lowered to 14 days.
-- OTP dev console logging is disabled when SMTP is configured or in production; email recipients are masked in production logs.
+- OTP dev console logging is disabled when SMTP is configured or in production; email recipients and PII are masked in logs.
 - Password minimum length raised to 8 characters with bcrypt 12 rounds.
 - Anti-enumeration: `POST /forgot-password/request` and `POST /register-otp/request` return uniform generic success responses.
 - HTML injection prevention: all email recipient names and variables are escaped, and OTP removed from subject lines.
 - Attendance can only be recorded while an event status is `active`; QR scans must match the event's QR code, and QR codes are exposed only to pengurus/admin. Draft/cancelled events are hidden from non-privileged members.
 - Member password resets now email the temporary password when an email exists; offline members get it displayed once with a change-on-login flag. Default member passwords use high-entropy CSPRNG values.
+- Reverse proxy trust (`trust proxy: 1`) and strict exact-match CORS origins configured (no wildcards).
+- Production Docker container runs as non-root user (`USER bun`); database seeding is blocked when `NODE_ENV=production`.
 
 ### Removed
 - Google OAuth remnants (`oauth.ts` and mock routes) and the default-password fallback when resending a registration OTP.

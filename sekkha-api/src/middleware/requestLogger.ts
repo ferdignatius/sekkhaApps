@@ -60,12 +60,13 @@ export function requestLogger(req: Request, res: Response, next: NextFunction) {
     const statusColor = getStatusColor(res.statusCode)
 
     const userTag = (req as any).user
-      ? ` ${colors.gray}[${(req as any).user.name || (req as any).user.role || (req as any).user.userId}]${colors.reset}`
+      ? ` ${colors.gray}[${(req as any).user.role || (req as any).user.userId}]${colors.reset}`
       : ""
 
     const statusBadge = `${statusColor}${colors.bold}${res.statusCode}${colors.reset}`
     const methodBadge = `${methodColor}${colors.bold}${req.method.padEnd(6)}${colors.reset}`
-    const pathText = `${colors.bold}${req.originalUrl || req.url}${colors.reset}`
+    const cleanPath = req.baseUrl ? `${req.baseUrl}${req.path}` : (req.originalUrl?.split("?")[0] || req.path || req.url)
+    const pathText = `${colors.bold}${cleanPath}${colors.reset}`
     const timeText = `${colors.dim}${durationMs}ms${colors.reset}`
 
     console.log(

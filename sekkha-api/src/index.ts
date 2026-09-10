@@ -34,6 +34,9 @@ if (!process.env.JWT_SECRET) {
 const app = express()
 const PORT = process.env.PORT || 4000
 
+// Trust reverse proxy (Docker, Nginx, Caddy, Cloudflare) for accurate client IP rate limiting
+app.set("trust proxy", 1)
+
 // ─── Request Logger (Live Real-Time Activity Feed) ───────────────────────────
 app.use(requestLogger)
 
@@ -101,17 +104,8 @@ const isOriginAllowed = (origin: string): boolean => {
     return true
   }
 
-  return rawOrigins.some((allowed) => {
-    if (allowed === "*") return true
-    if (allowed === origin) return true
-    // Support wildcard subdomains such as *.vercel.app or *.yourdomain.com
-    if (allowed.includes("*")) {
-      const escaped = allowed.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*")
-      const regex = new RegExp(`^${escaped}$`)
-      return regex.test(origin)
-    }
-    return false
-  })
+  // Exact matching against configured allowed origins (strict CORS: no wildcard or "*" allowed)
+  return rawOrigins.includes(origin)
 }
 
 const corsOptions: cors.CorsOptions = {

@@ -36,7 +36,10 @@ COPY prisma ./prisma/
 RUN bun install --production
 RUN bunx prisma generate
 
-COPY --from=builder /app/dist ./dist
+# Change ownership to non-root user bun
+RUN chown -R bun:bun /app
+
+USER bun
 
 EXPOSE 4000
 

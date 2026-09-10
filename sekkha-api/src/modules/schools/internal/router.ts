@@ -2,6 +2,7 @@ import { Router } from "express"
 import { z } from "zod"
 import { prisma } from "../../../lib/prisma"
 import { requireAuth, requireRole } from "../../../middleware/auth"
+import { decrypt } from "../../../lib/crypto"
 import { INITIAL_SCHOOLS } from "./schoolsData"
 
 export const schoolsRouter: Router = Router()
@@ -106,12 +107,15 @@ schoolsRouter.get("/stats", async (req, res, next) => {
 
     let totalInClass = 0
     if (classGrade) {
-      totalInClass = await prisma.userProfile.count({
+      const profiles = await prisma.userProfile.findMany({
         where: {
           school: { name: { equals: schoolName, mode: "insensitive" } },
-          classGrade: { equals: classGrade, mode: "insensitive" },
         },
+        select: { classGrade: true },
       })
+      totalInClass = profiles.filter(
+        (p) => p.classGrade && (decrypt(p.classGrade) || "").toLowerCase() === classGrade.toLowerCase()
+      ).length
     }
 
     res.json({

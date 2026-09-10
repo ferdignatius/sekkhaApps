@@ -7,6 +7,7 @@ All notable changes to Sekkha Apps. Semver (`MAJOR.MINOR.PATCH`); newest on top.
 ### Changed
 - User table normalized: personal data and stats moved into 1:1 `UserProfile` and `UserStats` tables; new master tables `EventType`, `Season`, and `Level` wired into events, auth, schools, leaderboard, and users modules.
 - `GET /users/me` now resolves school via relation and returns `school_id`; seed data updated for the new schema.
+- Events module no longer auto-registers new users into the welcome event on `user.registered`; the subscriber only logs the welcome flow for now.
 
 ## [1.2.0] - 2026-09-08
 

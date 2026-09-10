@@ -2,6 +2,7 @@ import { Router } from "express"
 import { prisma } from "../../../lib/prisma"
 import { requireAuth, requireRole } from "../../../middleware/auth"
 import { cached } from "../../../lib/cache"
+import { decrypt } from "../../../lib/crypto"
 
 export const pengurusRouter: Router = Router()
 
@@ -206,8 +207,8 @@ pengurusRouter.get(
             return {
               userId: u.id,
               name: u.profile?.name || "Anggota",
-              email: u.email,
-              phone: u.profile?.phone || null,
+              email: decrypt(u.email) || u.email,
+              phone: decrypt(u.profile?.phone) || null,
               userNumber: u.userNumber,
               avatarUrl: u.profile?.avatarUrl || null,
               role: u.role,
@@ -430,11 +431,11 @@ pengurusRouter.get(
         member: {
           userId: user.id,
           name: user.profile?.name || "Anggota",
-          email: user.email,
+          email: decrypt(user.email) || user.email,
           avatarUrl: user.profile?.avatarUrl || null,
           role: user.role,
           createdAt: new Date(user.createdAt).toISOString(),
-          phone: user.profile?.phone || null,
+          phone: decrypt(user.profile?.phone) || null,
           userNumber: user.userNumber,
           lastAttendedDate,
           daysSinceLastAttendance,
@@ -527,7 +528,7 @@ pengurusRouter.get(
         const allUsers = allUsersRaw.map((u) => ({
           id: u.id,
           name: u.profile?.name || "Anggota",
-          email: u.email,
+          email: decrypt(u.email) || u.email,
           role: u.role,
           points: u.stats?.points ?? 0,
           consecutiveMissed: u.stats?.consecutiveMissed ?? 0,

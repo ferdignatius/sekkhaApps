@@ -1,4 +1,4 @@
-import { randomBytes } from "crypto"
+import { randomBytes, randomInt } from "crypto"
 import { Router } from "express"
 import { z } from "zod"
 import bcrypt from "bcryptjs"
@@ -8,6 +8,7 @@ import { generateUniqueUsername } from "../../auth/internal/repository"
 import { sendTemporaryPasswordEmail } from "../../auth/internal/email"
 import { invalidate, CacheKeys } from "../../../lib/cache"
 import { generateUniqueUserNumber } from "../../../lib/userNumber"
+import { encrypt, decrypt, generateBlindIndex } from "../../../lib/crypto"
 
 export const teamsRouter: Router = Router()
 
@@ -48,12 +49,12 @@ teamsRouter.get("/members", requireAuth, requireRole("pengurus", "admin"), async
         { userNumber: { contains: searchQuery, mode: "insensitive" } },
         { profile: { school: { name: { contains: searchQuery, mode: "insensitive" } } } },
       ]
-      // Only privileged roles can search by private PII (email, phone)
+      // Only privileged roles can search by private PII (email via blind index)
       if (isPrivileged) {
-        searchConditions.push(
-          { email: { contains: searchQuery, mode: "insensitive" } },
-          { profile: { phone: { contains: searchQuery, mode: "insensitive" } } },
-        )
+        const emailBindex = generateBlindIndex(searchQuery.trim().toLowerCase())
+        if (emailBindex) {
+          searchConditions.push({ emailBindex })
+        }
       }
       where.OR = searchConditions
     }
@@ -108,12 +109,12 @@ teamsRouter.get("/members", requireAuth, requireRole("pengurus", "admin"), async
         id: m.id,
         name: m.profile?.name || m.username || "Anggota",
         username: m.username || null,
-        email: canViewSensitive ? m.email : null,
-        phone: canViewSensitive ? (m.profile?.phone || null) : null,
+        email: canViewSensitive ? (decrypt(m.email) || m.email) : null,
+        phone: canViewSensitive ? (decrypt(m.profile?.phone) || null) : null,
         school: m.profile?.school?.name || null,
         school_id: m.profile?.schoolId || null,
-        birth_date: canViewSensitive && m.profile?.birthDate ? new Date(m.profile.birthDate).toISOString() : null,
-        gender: canViewSensitive ? (m.profile?.gender || null) : null,
+        birth_date: canViewSensitive ? (decrypt(m.profile?.birthDate) || null) : null,
+        gender: canViewSensitive ? (decrypt(m.profile?.gender) || null) : null,
         role: m.role,
         avatar_url: m.profile?.avatarUrl || null,
         user_number: m.userNumber || null,
@@ -193,12 +194,12 @@ teamsRouter.get("/members/:id", requireAuth, requireRole("pengurus", "admin"), a
       id: member.id,
       name: member.profile?.name || member.username || "Anggota",
       username: member.username,
-      email: canViewSensitive ? member.email : null,
-      phone: canViewSensitive ? (member.profile?.phone || null) : null,
+      email: canViewSensitive ? (decrypt(member.email) || member.email) : null,
+      phone: canViewSensitive ? (decrypt(member.profile?.phone) || null) : null,
       school: member.profile?.school?.name || null,
       school_id: member.profile?.schoolId || null,
-      birth_date: canViewSensitive && member.profile?.birthDate ? new Date(member.profile.birthDate).toISOString() : null,
-      gender: canViewSensitive ? (member.profile?.gender || null) : null,
+      birth_date: canViewSensitive ? (decrypt(member.profile?.birthDate) || null) : null,
+      gender: canViewSensitive ? (decrypt(member.profile?.gender) || null) : null,
       role: member.role,
       avatar_url: member.profile?.avatarUrl || null,
       user_number: member.userNumber,
@@ -255,8 +256,9 @@ teamsRouter.post("/members", requireAuth, requireRole("admin"), async (req, res,
     const data = CreateMemberSchema.parse(req.body)
 
     if (data.email) {
+      const emailBindex = generateBlindIndex(data.email)
       const existingEmail = await prisma.user.findUnique({
-        where: { email: data.email.toLowerCase().trim() },
+        where: { emailBindex: emailBindex || undefined },
       })
       if (existingEmail) {
         res.status(400).json({ error: "Email is already registered with another user." })
@@ -299,17 +301,18 @@ teamsRouter.post("/members", requireAuth, requireRole("admin"), async (req, res,
           data: {
             username,
             password: hashedPassword,
-            email: data.email ? data.email.toLowerCase().trim() : null,
+            email: data.email ? encrypt(data.email.toLowerCase().trim()) : null,
+            emailBindex: data.email ? generateBlindIndex(data.email.toLowerCase().trim()) : null,
             role: data.role,
             userNumber,
             isClaimed: true,
             profile: {
               create: {
                 name: data.name.trim(),
-                phone: data.phone ? data.phone.trim() : null,
+                phone: data.phone ? encrypt(data.phone.trim()) : null,
                 schoolId: resolvedSchoolId || null,
-                birthDate: data.birth_date ? new Date(data.birth_date) : null,
-                gender: data.gender ? data.gender.trim() : null,
+                birthDate: data.birth_date ? encrypt(new Date(data.birth_date).toISOString()) : null,
+                gender: data.gender ? encrypt(data.gender.trim()) : null,
               },
             },
             stats: {
@@ -333,26 +336,27 @@ teamsRouter.post("/members", requireAuth, requireRole("admin"), async (req, res,
     }
 
     if (!newMember) {
-      res.status(500).json({ error: "Gagal membuat nomor anggota baru karena antrean sistem. Silakan coba lagi." })
+      res.status(500).json({ error: "Failed to generate unique user number after multiple attempts." })
       return
     }
 
+    await invalidate(CacheKeys.userProfile(newMember.id))
+
     res.status(201).json({
       id: newMember.id,
-      name: newMember.profile?.name || data.name,
+      name: newMember.profile.name,
       username: newMember.username,
-      email: newMember.email,
-      phone: newMember.profile?.phone,
-      school: newMember.profile?.school?.name || null,
-      school_id: newMember.profile?.schoolId,
-      birth_date: newMember.profile?.birthDate ? new Date(newMember.profile.birthDate).toISOString() : null,
-      gender: newMember.profile?.gender,
+      email: data.email || null,
+      phone: data.phone || null,
+      school: newMember.profile.school?.name || null,
+      birth_date: data.birth_date || null,
+      gender: data.gender || null,
       role: newMember.role,
       user_number: newMember.userNumber,
-      default_password: defaultPassword,
       is_claimed: true,
+      default_password: defaultPassword,
       created_at: new Date(newMember.createdAt).toISOString(),
-      message: "Member added successfully",
+      message: `Member ${newMember.profile.name} created successfully with default password: ${defaultPassword}`,
     })
   } catch (err) {
     next(err)
@@ -399,8 +403,10 @@ teamsRouter.put("/members/:id", requireAuth, requireRole("pengurus", "admin"), a
       return
     }
 
-    if (data.email && data.email !== existing.email) {
-      const emailInUse = await prisma.user.findUnique({ where: { email: data.email.toLowerCase().trim() } })
+    if (data.email) {
+      const cleanEmail = data.email.toLowerCase().trim()
+      const emailBindex = generateBlindIndex(cleanEmail)
+      const emailInUse = await prisma.user.findUnique({ where: { emailBindex: emailBindex || undefined } })
       if (emailInUse && emailInUse.id !== id) {
         res.status(400).json({ error: "Email is already used by another member." })
         return
@@ -430,7 +436,10 @@ teamsRouter.put("/members/:id", requireAuth, requireRole("pengurus", "admin"), a
       where: { id },
       data: {
         ...(data.username !== undefined && { username: data.username ? data.username.toLowerCase().trim() : null }),
-        ...(data.email !== undefined && { email: data.email ? data.email.toLowerCase().trim() : null }),
+        ...(data.email !== undefined && {
+          email: data.email ? encrypt(data.email.toLowerCase().trim()) : null,
+          emailBindex: data.email ? generateBlindIndex(data.email.toLowerCase().trim()) : null,
+        }),
         ...(data.role && { role: data.role }),
       },
     })
@@ -439,20 +448,20 @@ teamsRouter.put("/members/:id", requireAuth, requireRole("pengurus", "admin"), a
       where: { userId: id },
       update: {
         ...(data.name && { name: data.name.trim() }),
-        ...(data.phone !== undefined && { phone: data.phone ? data.phone.trim() : null }),
+        ...(data.phone !== undefined && { phone: data.phone ? encrypt(data.phone.trim()) : null }),
         ...(resolvedSchoolId !== undefined && { schoolId: resolvedSchoolId }),
         ...(data.birth_date !== undefined && {
-          birthDate: data.birth_date ? new Date(data.birth_date) : null,
+          birthDate: data.birth_date ? encrypt(new Date(data.birth_date).toISOString()) : null,
         }),
-        ...(data.gender !== undefined && { gender: data.gender ? data.gender.trim() : null }),
+        ...(data.gender !== undefined && { gender: data.gender ? encrypt(data.gender.trim()) : null }),
       },
       create: {
         userId: id,
         name: data.name ? data.name.trim() : existing.username || "Anggota",
-        phone: data.phone ? data.phone.trim() : null,
+        phone: data.phone ? encrypt(data.phone.trim()) : null,
         schoolId: resolvedSchoolId || null,
-        birthDate: data.birth_date ? new Date(data.birth_date) : null,
-        gender: data.gender ? data.gender.trim() : null,
+        birthDate: data.birth_date ? encrypt(new Date(data.birth_date).toISOString()) : null,
+        gender: data.gender ? encrypt(data.gender.trim()) : null,
       },
       include: { school: true },
     })
@@ -463,11 +472,11 @@ teamsRouter.put("/members/:id", requireAuth, requireRole("pengurus", "admin"), a
       id: updatedUser.id,
       name: updatedProfile.name,
       username: updatedUser.username,
-      email: updatedUser.email,
-      phone: updatedProfile.phone,
+      email: data.email !== undefined ? data.email : (decrypt(updatedUser.email) || updatedUser.email),
+      phone: data.phone !== undefined ? data.phone : (decrypt(updatedProfile.phone) || null),
       school: updatedProfile.school?.name || null,
-      birth_date: updatedProfile.birthDate ? new Date(updatedProfile.birthDate).toISOString() : null,
-      gender: updatedProfile.gender,
+      birth_date: data.birth_date !== undefined ? data.birth_date : (decrypt(updatedProfile.birthDate) || null),
+      gender: data.gender !== undefined ? data.gender : (decrypt(updatedProfile.gender) || null),
       role: updatedUser.role,
       user_number: updatedUser.userNumber,
       is_claimed: updatedUser.isClaimed,
@@ -510,205 +519,7 @@ teamsRouter.delete("/members/:id", requireAuth, requireRole("admin"), async (req
   }
 })
 
-// 6. GET /api/teams/invitations — Get sent invitations (requires pengurus or admin)
-teamsRouter.get("/invitations", requireAuth, requireRole("pengurus", "admin"), async (req, res, next) => {
-  try {
-    const invitations = await prisma.roleInvitation.findMany({
-      include: {
-        invitedBy: {
-          select: {
-            id: true,
-            profile: { select: { name: true } },
-          },
-        },
-      },
-      orderBy: { createdAt: "desc" },
-    })
-    res.json(
-      invitations.map((inv) => ({
-        id: inv.id,
-        email: inv.email,
-        role: inv.role,
-        status: inv.status,
-        created_at: inv.createdAt.toISOString(),
-        invited_by: {
-          id: inv.invitedBy.id,
-          name: inv.invitedBy.profile?.name || "Admin",
-        },
-      }))
-    )
-  } catch (err) {
-    next(err)
-  }
-})
-
-// 7. POST /api/teams/invitations — Invite a user to a role (requires admin)
-const InviteSchema = z.object({
-  email: z.string().email(),
-  role: z.enum(["pengurus", "aktivis"]),
-})
-
-teamsRouter.post("/invitations", requireAuth, requireRole("admin"), async (req, res, next) => {
-  try {
-    const { email, role } = InviteSchema.parse(req.body)
-
-    const existing = await prisma.roleInvitation.findFirst({
-      where: { email, role, status: "pending" },
-    })
-    if (existing) {
-      res.status(400).json({ error: "A similar invitation is already pending for this email." })
-      return
-    }
-
-    const invitation = await prisma.roleInvitation.create({
-      data: {
-        email,
-        role,
-        status: "pending",
-        invitedById: req.user!.userId,
-      },
-    })
-
-    const targetUser = await prisma.user.findUnique({
-      where: { email },
-    })
-
-    if (targetUser) {
-      await prisma.notification.create({
-        data: {
-          userId: targetUser.id,
-          title: "New Role Invitation",
-          message: `You have been invited to join as ${role === "pengurus" ? "Organizer" : "Activist"}.`,
-          type: "role_invitation",
-          status: "unread",
-          data: { invitationId: invitation.id },
-        },
-      })
-    }
-
-    res.status(201).json({
-      id: invitation.id,
-      email: invitation.email,
-      role: invitation.role,
-      status: invitation.status,
-    })
-  } catch (err) {
-    next(err)
-  }
-})
-
-// 8. POST /api/teams/invitations/:id/accept — Accept role invitation (requires auth)
-teamsRouter.post("/invitations/:id/accept", requireAuth, async (req, res, next) => {
-  try {
-    const invitation = await prisma.roleInvitation.findUnique({
-      where: { id: req.params.id as string },
-    })
-
-    if (!invitation) {
-      res.status(404).json({ error: "Invitation not found" })
-      return
-    }
-
-    if (invitation.status !== "pending") {
-      res.status(400).json({ error: "Invitation is no longer active" })
-      return
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { id: req.user!.userId },
-    })
-
-    if (!user || user.email !== invitation.email) {
-      res.status(403).json({ error: "Your email does not match this invitation" })
-      return
-    }
-
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { role: invitation.role },
-    })
-
-    await prisma.roleInvitation.update({
-      where: { id: invitation.id },
-      data: { status: "accepted" },
-    })
-
-    const notification = await prisma.notification.findFirst({
-      where: {
-        userId: user.id,
-        type: "role_invitation",
-        status: "unread",
-      },
-    })
-
-    if (notification && (notification.data as any)?.invitationId === invitation.id) {
-      await prisma.notification.update({
-        where: { id: notification.id },
-        data: { status: "read" },
-      })
-    }
-
-    await invalidate(CacheKeys.userProfile(user.id))
-
-    res.json({ success: true, role: invitation.role })
-  } catch (err) {
-    next(err)
-  }
-})
-
-// 9. POST /api/teams/invitations/:id/reject — Reject role invitation (requires auth)
-teamsRouter.post("/invitations/:id/reject", requireAuth, async (req, res, next) => {
-  try {
-    const invitation = await prisma.roleInvitation.findUnique({
-      where: { id: req.params.id as string },
-    })
-
-    if (!invitation) {
-      res.status(404).json({ error: "Invitation not found" })
-      return
-    }
-
-    if (invitation.status !== "pending") {
-      res.status(400).json({ error: "Invitation is no longer active" })
-      return
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { id: req.user!.userId },
-    })
-
-    if (!user || user.email !== invitation.email) {
-      res.status(403).json({ error: "Your email does not match this invitation" })
-      return
-    }
-
-    await prisma.roleInvitation.update({
-      where: { id: invitation.id },
-      data: { status: "rejected" },
-    })
-
-    const notification = await prisma.notification.findFirst({
-      where: {
-        userId: user.id,
-        type: "role_invitation",
-        status: "unread",
-      },
-    })
-
-    if (notification && (notification.data as any)?.invitationId === invitation.id) {
-      await prisma.notification.update({
-        where: { id: notification.id },
-        data: { status: "read" },
-      })
-    }
-
-    res.json({ success: true })
-  } catch (err) {
-    next(err)
-  }
-})
-
-// 10. POST /api/teams/members/:id/reset-password — Admin resets a member's password to default
+// 6. POST /api/teams/members/:id/reset-password — Admin resets a member's password to default
 teamsRouter.post("/members/:id/reset-password", requireAuth, requireRole("admin"), async (req, res, next) => {
   try {
     const id = req.params.id as string
@@ -747,9 +558,10 @@ teamsRouter.post("/members/:id/reset-password", requireAuth, requireRole("admin"
     const memberName = targetUser.profile?.name || targetUser.username || "member"
 
     // If member has email, dispatch temporary password to their email directly
-    if (targetUser.email) {
+    const decryptedEmail = decrypt(targetUser.email) || targetUser.email
+    if (decryptedEmail) {
       await sendTemporaryPasswordEmail({
-        to: targetUser.email,
+        to: decryptedEmail,
         tempPassword: defaultPassword,
         name: memberName,
       })
@@ -760,7 +572,7 @@ teamsRouter.post("/members/:id/reset-password", requireAuth, requireRole("admin"
         username: targetUser.username,
         name: memberName,
         email_sent: true,
-        message: `Kata sandi sementara untuk ${memberName} berhasil dibuat dan dikirimkan ke email terdaftar (${targetUser.email}).`,
+        message: `Kata sandi sementara untuk ${memberName} berhasil dibuat dan dikirimkan ke email terdaftar (${decryptedEmail}).`,
       })
       return
     }
@@ -779,3 +591,182 @@ teamsRouter.post("/members/:id/reset-password", requireAuth, requireRole("admin"
     next(err)
   }
 })
+
+// 7. POST /api/teams/members/:id/generate-claim-pin — Generate secure claim PIN for pre-provisioned member (pengurus/admin)
+teamsRouter.post("/members/:id/generate-claim-pin", requireAuth, requireRole("pengurus", "admin"), async (req, res, next) => {
+  try {
+    const id = req.params.id as string
+    const targetUser = await prisma.user.findUnique({
+      where: { id },
+      include: { profile: true },
+    })
+
+    if (!targetUser) {
+      res.status(404).json({ error: "Anggota tidak ditemukan." })
+      return
+    }
+
+    if (targetUser.isClaimed) {
+      res.status(400).json({ error: "Akun anggota ini sudah diklaim / aktif." })
+      return
+    }
+
+    // Tier 1: Generate 6-digit numeric PIN using CSPRNG
+    const rawPin = randomInt(100000, 1000000).toString()
+    // Tier 1: Hash with bcrypt (12 rounds) before saving to DB
+    const hashedPin = await bcrypt.hash(rawPin, 12)
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // Valid for 30 days
+
+    await prisma.user.update({
+      where: { id },
+      data: {
+        claimPin: hashedPin,
+        claimPinExpiresAt: expiresAt,
+      },
+    })
+
+    await invalidate(CacheKeys.userProfile(id))
+
+    const memberName = targetUser.profile?.name || targetUser.username || "Anggota"
+
+    // One-time response to admin/pengurus (PIN is never stored plaintext and never shown in GET list)
+    res.json({
+      success: true,
+      claim_pin: rawPin,
+      user_number: targetUser.userNumber,
+      name: memberName,
+      expires_at: expiresAt.toISOString(),
+      message: `PIN klaim 6-digit untuk ${memberName} berhasil dibuat: ${rawPin}. Berikan PIN ini ke anggota terkait.`,
+    })
+  } catch (err) {
+    next(err)
+  }
+})
+
+// 8. POST /api/teams/link-legacy-account — Link pre-provisioned legacy account using claim PIN (requires auth)
+const LinkLegacyAccountSchema = z.object({
+  user_number: z.string().min(1, "Nomor anggota target wajib diisi"),
+  claim_pin: z.string().min(6, "PIN aktivasi minimal 6 karakter"),
+})
+
+teamsRouter.post("/link-legacy-account", requireAuth, async (req, res, next) => {
+  try {
+    const { user_number, claim_pin } = LinkLegacyAccountSchema.parse(req.body)
+    const cleanPin = claim_pin.replace(/[^0-9]/g, "").trim()
+    const currentUserId = req.user!.userId
+
+    // Find pre-provisioned target member
+    const targetUser = await prisma.user.findFirst({
+      where: {
+        userNumber: user_number.trim(),
+        isClaimed: false,
+      },
+      include: {
+        stats: true,
+      },
+    })
+
+    if (!targetUser || !targetUser.claimPin) {
+      res.status(404).json({ error: "Akun dengan nomor anggota tersebut tidak ditemukan atau sudah diklaim." })
+      return
+    }
+
+    if (targetUser.id === currentUserId) {
+      res.status(400).json({ error: "Tidak dapat menautkan akun ke diri sendiri." })
+      return
+    }
+
+    if (targetUser.claimPinExpiresAt && targetUser.claimPinExpiresAt < new Date()) {
+      res.status(400).json({ error: "PIN aktivasi sudah kedaluwarsa. Silakan minta PIN baru ke pengurus." })
+      return
+    }
+
+    // Tier 1: verify using bcrypt.compare against the stored hash
+    const isPinValid = await bcrypt.compare(cleanPin, targetUser.claimPin)
+    if (!isPinValid) {
+      res.status(400).json({ error: "PIN aktivasi salah." })
+      return
+    }
+
+    // Transfer attendances to current user
+    const existingAttendances = await prisma.attendance.findMany({
+      where: { userId: currentUserId },
+      select: { eventId: true },
+    })
+    const existingEventIds = new Set(existingAttendances.map((a) => a.eventId))
+
+    const targetAttendances = await prisma.attendance.findMany({
+      where: { userId: targetUser.id },
+    })
+
+    for (const att of targetAttendances) {
+      if (!existingEventIds.has(att.eventId)) {
+        await prisma.attendance.update({
+          where: { id: att.id },
+          data: { userId: currentUserId },
+        })
+      }
+    }
+
+    // Transfer badges
+    const existingBadges = await prisma.userBadge.findMany({
+      where: { userId: currentUserId },
+      select: { badgeId: true },
+    })
+    const existingBadgeIds = new Set(existingBadges.map((b) => b.badgeId))
+
+    const targetBadges = await prisma.userBadge.findMany({
+      where: { userId: targetUser.id },
+    })
+
+    for (const b of targetBadges) {
+      if (!existingBadgeIds.has(b.badgeId)) {
+        await prisma.userBadge.update({
+          where: { id: b.id },
+          data: { userId: currentUserId },
+        })
+      }
+    }
+
+    // Merge points from target stats
+    const legacyPoints = targetUser.stats?.points || 0
+    if (legacyPoints > 0) {
+      await prisma.userStats.upsert({
+        where: { userId: currentUserId },
+        update: { points: { increment: legacyPoints } },
+        create: { userId: currentUserId, points: legacyPoints },
+      })
+
+      await prisma.pointTransaction.create({
+        data: {
+          userId: currentUserId,
+          amount: legacyPoints,
+          type: "system",
+          description: `Penggabungan data akun lama (${targetUser.userNumber}) via PIN Aktivasi`,
+        },
+      })
+    }
+
+    // Mark pre-provisioned user as claimed and wipe claimPin
+    await prisma.user.update({
+      where: { id: targetUser.id },
+      data: {
+        isClaimed: true,
+        claimedAt: new Date(),
+        claimPin: null,
+        claimPinExpiresAt: null,
+      },
+    })
+
+    await invalidate(CacheKeys.userProfile(currentUserId))
+    await invalidate(CacheKeys.userProfile(targetUser.id))
+
+    res.json({
+      success: true,
+      message: `Akun lama (${targetUser.userNumber}) berhasil ditautkan. Riwayat absensi dan poin telah digabungkan.`,
+    })
+  } catch (err) {
+    next(err)
+  }
+})
+

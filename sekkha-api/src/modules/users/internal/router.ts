@@ -7,6 +7,7 @@ import { requireAuth } from "../../../middleware/auth"
 import { redis } from "../../../lib/redis"
 import { generateUniqueUserNumber } from "../../../lib/userNumber"
 import { revokeToken } from "../../auth/internal/tokenRevocation"
+import { encrypt, decrypt } from "../../../lib/crypto"
 
 export const usersRouter: Router = Router()
 
@@ -39,14 +40,14 @@ usersRouter.get("/me", requireAuth, async (req, res, next) => {
     res.json({
       id: user.id,
       username: user.username,
-      email: user.email,
+      email: decrypt(user.email) || user.email,
       name: user.profile?.name || "",
       school: user.profile?.school?.name || null,
       school_id: user.profile?.schoolId || null,
-      class_grade: user.profile?.classGrade || null,
-      phone: user.profile?.phone || null,
-      birth_date: user.profile?.birthDate ? new Date(user.profile.birthDate).toISOString() : null,
-      gender: user.profile?.gender || null,
+      class_grade: decrypt(user.profile?.classGrade) || null,
+      phone: decrypt(user.profile?.phone) || null,
+      birth_date: decrypt(user.profile?.birthDate) || null,
+      gender: decrypt(user.profile?.gender) || null,
       avatar_url: null,
       role: user.role,
       user_number: uNum,
@@ -193,21 +194,21 @@ usersRouter.patch("/me", requireAuth, async (req, res, next) => {
       update: {
         ...(body.name && { name: body.name.trim() }),
         ...(resolvedSchoolId !== undefined && { schoolId: resolvedSchoolId }),
-        ...(body.class_grade !== undefined && { classGrade: body.class_grade ? body.class_grade.trim() : null }),
-        ...(body.phone !== undefined && { phone: body.phone ? body.phone.trim() : null }),
+        ...(body.class_grade !== undefined && { classGrade: body.class_grade ? encrypt(body.class_grade.trim()) : null }),
+        ...(body.phone !== undefined && { phone: body.phone ? encrypt(body.phone.trim()) : null }),
         ...(body.birth_date !== undefined && {
-          birthDate: body.birth_date ? new Date(body.birth_date) : null,
+          birthDate: body.birth_date ? encrypt(new Date(body.birth_date).toISOString()) : null,
         }),
-        ...(body.gender !== undefined && { gender: body.gender ? body.gender.trim() : null }),
+        ...(body.gender !== undefined && { gender: body.gender ? encrypt(body.gender.trim()) : null }),
       },
       create: {
         userId,
         name: body.name ? body.name.trim() : existing?.username || "Anggota",
         schoolId: resolvedSchoolId || null,
-        classGrade: body.class_grade ? body.class_grade.trim() : null,
-        phone: body.phone ? body.phone.trim() : null,
-        birthDate: body.birth_date ? new Date(body.birth_date) : null,
-        gender: body.gender ? body.gender.trim() : null,
+        classGrade: body.class_grade ? encrypt(body.class_grade.trim()) : null,
+        phone: body.phone ? encrypt(body.phone.trim()) : null,
+        birthDate: body.birth_date ? encrypt(new Date(body.birth_date).toISOString()) : null,
+        gender: body.gender ? encrypt(body.gender.trim()) : null,
         avatarUrl: null,
       },
       include: { school: true },
@@ -219,10 +220,11 @@ usersRouter.patch("/me", requireAuth, async (req, res, next) => {
     // Update Redis session cache so /auth/verify returns the new name immediately
     const authHeader = req.headers.authorization
     const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null
+    const decryptedEmail = decrypt(user.email) || user.email
     if (token) {
       const updatedSession = {
         id: user.id,
-        email: user.email,
+        email: decryptedEmail,
         username: user.username,
         name: profile.name,
         role: user.role,
@@ -230,17 +232,19 @@ usersRouter.patch("/me", requireAuth, async (req, res, next) => {
       await redis.set(`auth:token:${token}`, JSON.stringify(updatedSession), "EX", 30 * 24 * 60 * 60).catch(() => {})
     }
 
+    const decryptedBirthDate = decrypt(profile.birthDate) || null
+
     res.json({
       id: user.id,
       username: user.username,
       name: profile.name,
-      email: user.email,
+      email: decryptedEmail,
       school: profile.school?.name || null,
       school_id: profile.schoolId,
-      class_grade: profile.classGrade,
-      phone: profile.phone,
-      birth_date: profile.birthDate ? new Date(profile.birthDate).toISOString() : null,
-      gender: profile.gender,
+      class_grade: decrypt(profile.classGrade) || null,
+      phone: decrypt(profile.phone) || null,
+      birth_date: decryptedBirthDate ? new Date(decryptedBirthDate).toISOString() : null,
+      gender: decrypt(profile.gender) || null,
       avatar_url: null,
       user_number: user.userNumber,
       role: user.role,
@@ -422,7 +426,7 @@ usersRouter.get("/me/export", requireAuth, async (req, res, next) => {
         id: user.id,
         user_number: user.userNumber,
         username: user.username,
-        email: user.email,
+        email: decrypt(user.email) || user.email,
         role: user.role,
         is_claimed: user.isClaimed,
         created_at: user.createdAt,
@@ -430,10 +434,10 @@ usersRouter.get("/me/export", requireAuth, async (req, res, next) => {
       },
       profile: {
         name: user.profile?.name ?? null,
-        phone: user.profile?.phone ?? null,
-        gender: user.profile?.gender ?? null,
-        birth_date: user.profile?.birthDate ? new Date(user.profile.birthDate).toISOString() : null,
-        class_grade: user.profile?.classGrade ?? null,
+        phone: decrypt(user.profile?.phone) || null,
+        gender: decrypt(user.profile?.gender) || null,
+        birth_date: decrypt(user.profile?.birthDate) || null,
+        class_grade: decrypt(user.profile?.classGrade) || null,
         school: user.profile?.school?.name ?? null,
       },
       stats: {

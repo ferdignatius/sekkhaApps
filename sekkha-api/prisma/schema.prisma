@@ -25,12 +25,6 @@ enum EventStatus {
   cancelled
 }
 
-enum InvitationStatus {
-  pending
-  accepted
-  rejected
-}
-
 enum AttendanceMethod {
   qr
   manual
@@ -68,10 +62,14 @@ enum NotificationType {
 model User {
   id                    String    @id @default(cuid())
   username              String?   @unique @map("username")
-  email                 String?   @unique
+  email                 String?   @map("email") // Tier 2: AES-256-GCM ciphertext
+  emailBindex           String?   @unique @map("email_bindex") // Tier 2: HMAC-SHA256 Blind Index for O(1) lookup & unique constraint
   password              String?
   role                  Role      @default(umat)
   isClaimed             Boolean   @default(true) @map("is_claimed")
+  claimedAt             DateTime? @map("claimed_at")
+  claimPin              String?   @map("claim_pin") // Tier 1: One-way bcrypt hash (12 rounds) — never exposed via API
+  claimPinExpiresAt     DateTime? @map("claim_pin_expires_at")
   passwordChangedByUser Boolean   @default(false) @map("password_changed_by_user")
   passwordChangedAt     DateTime? @map("password_changed_at")
   userNumber            String?   @unique @map("user_number")
@@ -87,7 +85,6 @@ model User {
   pointTransactions     PointTransaction[]
   badges                UserBadge[]
   notifications         Notification[]
-  sentInvitations       RoleInvitation[] @relation("SentInvitations")
 
   @@index([role])
   @@index([isClaimed])
@@ -101,11 +98,11 @@ model UserProfile {
   id         String    @id @default(cuid())
   userId     String    @unique @map("user_id")
   name       String
-  phone      String?   @map("phone")
+  phone      String?   @map("phone") // Tier 2: AES-256-GCM ciphertext
   schoolId   String?   @map("school_id")
-  classGrade String?   @map("class_grade")
-  birthDate  DateTime? @map("birth_date")
-  gender     String?   @map("gender") // "pria" | "wanita"
+  classGrade String?   @map("class_grade") // Tier 2: AES-256-GCM ciphertext
+  birthDate  String?   @map("birth_date") // Tier 2: AES-256-GCM ciphertext of ISO date string
+  gender     String?   @map("gender") // Tier 2: AES-256-GCM ciphertext ("pria" | "wanita")
   avatarUrl  String?   @map("avatar_url")
   createdAt  DateTime  @default(now()) @map("created_at")
   updatedAt  DateTime  @updatedAt @map("updated_at")
@@ -317,20 +314,6 @@ model Level {
 }
 
 // ─── Teams & Notifications ───────────────────────────────────────────────────
-
-model RoleInvitation {
-  id          String           @id @default(cuid())
-  email       String           // Email user yang diundang
-  role        Role             // Target role: aktivis atau pengurus
-  status      InvitationStatus @default(pending)
-  invitedById String           @map("invited_by_id")
-  createdAt   DateTime         @default(now()) @map("created_at")
-  updatedAt   DateTime         @updatedAt @map("updated_at")
-
-  invitedBy   User             @relation("SentInvitations", fields: [invitedById], references: [id], onDelete: Cascade)
-
-  @@map("role_invitations")
-}
 
 model Notification {
   id        String             @id @default(cuid())

@@ -12,18 +12,26 @@ leaderboardRouter.get("/debug", requireAuth, requireRole("admin"), async (req, r
     const users = await prisma.user.findMany({
       select: {
         id: true,
-        name: true,
         email: true,
         role: true,
-        points: true,
         isClaimed: true,
         userNumber: true,
+        profile: { select: { name: true } },
+        stats: { select: { points: true } },
       },
     })
     const snapshot = await getLeaderboardSnapshot("points", true)
     res.json({
       db_users_count: users.length,
-      db_users: users,
+      db_users: users.map(u => ({
+        id: u.id,
+        name: u.profile?.name ?? "",
+        email: u.email,
+        role: u.role,
+        points: u.stats?.points ?? 0,
+        isClaimed: u.isClaimed,
+        userNumber: u.userNumber,
+      })),
       computed_snapshot_entries: snapshot.entries,
     })
   } catch (err) { next(err) }
@@ -38,7 +46,6 @@ leaderboardRouter.get("/", requireAuth, async (req, res, next) => {
     }).parse(req.query)
 
     const userId = req.user!.userId
-    // Always compute live or force refresh if requested
     const forceRefresh = refresh === "true" || refresh === "1"
     const snapshot = await getLeaderboardSnapshot(metric as MetricType, forceRefresh)
     const safeEntries = snapshot.entries || []

@@ -1,3 +1,4 @@
+import { randomInt } from "crypto"
 import { Router } from "express"
 import { z } from "zod"
 import bcrypt from "bcryptjs"
@@ -20,15 +21,16 @@ async function generateUserNumber(date: Date = new Date()): Promise<string> {
   return `${prefix}${String(count + 1).padStart(4, "0")}`
 }
 
-// Helper: Generate default password with format Sekkha(num random 4)Puggala
+// Helper: Generate default password with format Sekkha(num random 4)Puggala using CSPRNG
 export function generateDefaultPassword(): string {
-  const random4 = Math.floor(1000 + Math.random() * 9000).toString()
+  const random4 = randomInt(1000, 10000).toString()
   return `Sekkha${random4}Puggala`
 }
 
-// 1. GET /api/teams/members — List all members with filtering
-teamsRouter.get("/members", requireAuth, async (req, res, next) => {
+// 1. GET /api/teams/members — List all members with filtering (pengurus/admin only)
+teamsRouter.get("/members", requireAuth, requireRole("pengurus", "admin"), async (req, res, next) => {
   try {
+    const isPrivileged = req.user?.role === "pengurus" || req.user?.role === "admin"
     const searchQuery = ((req.query.search as string) || "").toLowerCase().trim()
     const claimedStatus = (req.query.claimed_status as string) || "all"
     const roleFilter = (req.query.role as string) || "all"
@@ -50,14 +52,20 @@ teamsRouter.get("/members", requireAuth, async (req, res, next) => {
     }
 
     if (searchQuery) {
-      where.OR = [
-        { name: { contains: searchQuery, mode: "insensitive" } },
+      const searchConditions: any[] = [
+        { profile: { name: { contains: searchQuery, mode: "insensitive" } } },
         { username: { contains: searchQuery, mode: "insensitive" } },
-        { email: { contains: searchQuery, mode: "insensitive" } },
         { userNumber: { contains: searchQuery, mode: "insensitive" } },
-        { school: { contains: searchQuery, mode: "insensitive" } },
-        { phone: { contains: searchQuery, mode: "insensitive" } },
+        { profile: { school: { name: { contains: searchQuery, mode: "insensitive" } } } },
       ]
+      // Only privileged roles can search by private PII (email, phone)
+      if (isPrivileged) {
+        searchConditions.push(
+          { email: { contains: searchQuery, mode: "insensitive" } },
+          { profile: { phone: { contains: searchQuery, mode: "insensitive" } } },
+        )
+      }
+      where.OR = searchConditions
     }
 
     const limitParam = req.query.limit ? parseInt(req.query.limit as string, 10) : undefined
@@ -69,29 +77,26 @@ teamsRouter.get("/members", requireAuth, async (req, res, next) => {
     const take = isPaginated ? limit : undefined
 
     const [totalMatching, rawMembers, totalAll, umatCount, aktivisCount, pengurusCount] = await Promise.all([
-      (prisma.user as any).count({ where }),
-      (prisma.user as any).findMany({
+      prisma.user.count({ where }),
+      prisma.user.findMany({
         where,
         orderBy: { createdAt: "desc" },
         take,
         skip,
         select: {
           id: true,
-          name: true,
           username: true,
           email: true,
-          phone: true,
-          school: true,
-          birthDate: true,
-          gender: true,
           role: true,
-          avatarUrl: true,
           userNumber: true,
           isClaimed: true,
-          claimedAt: true,
-          claimPin: true,
-          points: true,
           createdAt: true,
+          profile: {
+            include: { school: true },
+          },
+          stats: {
+            select: { points: true },
+          },
           _count: {
             select: {
               attendances: true,
@@ -99,39 +104,44 @@ teamsRouter.get("/members", requireAuth, async (req, res, next) => {
           },
         },
       }),
-      (prisma.user as any).count(),
-      (prisma.user as any).count({ where: { role: "umat" } }),
-      (prisma.user as any).count({ where: { role: "aktivis" } }),
-      (prisma.user as any).count({ where: { role: { in: ["pengurus", "admin"] } } }),
+      prisma.user.count(),
+      prisma.user.count({ where: { role: "umat" } }),
+      prisma.user.count({ where: { role: "aktivis" } }),
+      prisma.user.count({ where: { role: { in: ["pengurus", "admin"] } } }),
     ])
 
-    const members = rawMembers.map((m: any) => ({
-      id: m.id,
-      name: m.name,
-      username: m.username || null,
-      email: m.email,
-      phone: m.phone,
-      school: m.school,
-      birth_date: m.birthDate ? new Date(m.birthDate).toISOString() : null,
-      gender: m.gender,
-      role: m.role,
-      avatar_url: m.avatarUrl,
-      user_number: m.userNumber || null,
-      is_claimed: m.isClaimed ?? true,
-      claimed_at: m.claimedAt ? new Date(m.claimedAt).toISOString() : null,
-      claim_pin: m.claimPin || null,
-      total_attendance: m._count?.attendances ?? 0,
-      points: m.points ?? 0,
-      created_at: new Date(m.createdAt).toISOString(),
-    }))
+    const members = rawMembers.map((m) => {
+      const isSelf = req.user?.userId === m.id
+      const canViewSensitive = isPrivileged || isSelf
+
+      return {
+        id: m.id,
+        name: m.profile?.name || m.username || "Anggota",
+        username: m.username || null,
+        email: canViewSensitive ? m.email : null,
+        phone: canViewSensitive ? (m.profile?.phone || null) : null,
+        school: m.profile?.school?.name || null,
+        school_id: m.profile?.schoolId || null,
+        birth_date: canViewSensitive && m.profile?.birthDate ? new Date(m.profile.birthDate).toISOString() : null,
+        gender: canViewSensitive ? (m.profile?.gender || null) : null,
+        role: m.role,
+        avatar_url: m.profile?.avatarUrl || null,
+        user_number: m.userNumber || null,
+        is_claimed: m.isClaimed ?? true,
+        total_attendance: m._count?.attendances ?? 0,
+        points: canViewSensitive ? (m.stats?.points ?? 0) : 0,
+        created_at: new Date(m.createdAt).toISOString(),
+      }
+    })
 
     if (isPaginated) {
       const totalPages = Math.max(1, Math.ceil(totalMatching / limit))
       return res.json({
         items: members,
-        total: totalMatching,
+        members,
         page,
         limit,
+        total: totalMatching,
         totalPages,
         stats: {
           total: totalAll,
@@ -148,26 +158,20 @@ teamsRouter.get("/members", requireAuth, async (req, res, next) => {
   }
 })
 
-// 2. GET /api/teams/members/:id — Get member detail
-teamsRouter.get("/members/:id", requireAuth, async (req, res, next) => {
+// 2. GET /api/teams/members/:id — Get member detail (pengurus/admin only)
+teamsRouter.get("/members/:id", requireAuth, requireRole("pengurus", "admin"), async (req, res, next) => {
   try {
-    const member = await (prisma.user as any).findUnique({
+    const isPrivileged = req.user?.role === "pengurus" || req.user?.role === "admin"
+    const isSelf = req.user?.userId === req.params.id
+    const canViewSensitive = isPrivileged || isSelf
+
+    const member = await prisma.user.findUnique({
       where: { id: req.params.id as string },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        phone: true,
-        school: true,
-        birthDate: true,
-        gender: true,
-        role: true,
-        avatarUrl: true,
-        userNumber: true,
-        isClaimed: true,
-        claimedAt: true,
-        points: true,
-        createdAt: true,
+      include: {
+        profile: {
+          include: { school: true },
+        },
+        stats: true,
         attendances: {
           include: {
             event: {
@@ -197,29 +201,30 @@ teamsRouter.get("/members/:id", requireAuth, async (req, res, next) => {
 
     res.json({
       id: member.id,
-      name: member.name,
-      email: member.email,
-      phone: member.phone,
-      school: member.school,
-      birth_date: member.birthDate ? new Date(member.birthDate).toISOString() : null,
-      gender: member.gender,
+      name: member.profile?.name || member.username || "Anggota",
+      username: member.username,
+      email: canViewSensitive ? member.email : null,
+      phone: canViewSensitive ? (member.profile?.phone || null) : null,
+      school: member.profile?.school?.name || null,
+      school_id: member.profile?.schoolId || null,
+      birth_date: canViewSensitive && member.profile?.birthDate ? new Date(member.profile.birthDate).toISOString() : null,
+      gender: canViewSensitive ? (member.profile?.gender || null) : null,
       role: member.role,
-      avatar_url: member.avatarUrl,
+      avatar_url: member.profile?.avatarUrl || null,
       user_number: member.userNumber,
       is_claimed: member.isClaimed ?? true,
-      claimed_at: member.claimedAt ? new Date(member.claimedAt).toISOString() : null,
-      points: member.points ?? 0,
+      points: canViewSensitive ? (member.stats?.points ?? 0) : 0,
       created_at: new Date(member.createdAt).toISOString(),
-      attendances: (member.attendances || []).map((a: any) => ({
+      attendances: (member.attendances || []).map((a) => ({
         id: a.id,
         event_title: a.event?.title || "Event",
         event_date: a.event?.eventDate ? new Date(a.event.eventDate).toISOString() : new Date().toISOString(),
         location: a.event?.location || "—",
         method: a.method,
-        points_earned: a.pointsEarned || 50,
+        points_earned: canViewSensitive ? (a.pointsEarned || 50) : 0,
         scanned_at: new Date(a.scannedAt).toISOString(),
       })),
-      badges: (member.badges || []).map((b: any) => ({
+      badges: (member.badges || []).map((b) => ({
         id: b.id,
         name: b.badge?.name,
         icon_url: b.badge?.iconUrl,
@@ -244,6 +249,7 @@ const CreateMemberSchema = z.object({
   email: z.string().email("Invalid email format").optional().or(z.literal("")),
   phone: z.string().optional().or(z.literal("")),
   school: z.string().optional().or(z.literal("")),
+  school_id: z.string().optional().or(z.literal("")),
   birth_date: z.string().optional().or(z.literal("")),
   gender: z.string().optional().or(z.literal("")),
   role: z.enum(["umat", "aktivis", "pengurus", "admin"]).default("umat"),
@@ -277,32 +283,58 @@ teamsRouter.post("/members", requireAuth, requireRole("admin"), async (req, res,
     const hashedPassword = await bcrypt.hash(defaultPassword, 10)
     const userNumber = await generateUserNumber()
 
-    const newMember = await (prisma.user as any).create({
+    let resolvedSchoolId = data.school_id
+    if (!resolvedSchoolId && data.school) {
+      const s = await prisma.school.findUnique({ where: { name: data.school.trim() } })
+      if (s) {
+        resolvedSchoolId = s.id
+      } else {
+        const createdS = await prisma.school.create({ data: { name: data.school.trim(), type: "Lainnya" } })
+        resolvedSchoolId = createdS.id
+      }
+    }
+
+    const level1 = await prisma.level.findFirst({ where: { level: 1 } })
+
+    const newMember = await prisma.user.create({
       data: {
-        name: data.name.trim(),
         username,
         password: hashedPassword,
         email: data.email ? data.email.toLowerCase().trim() : null,
-        phone: data.phone ? data.phone.trim() : null,
-        school: data.school ? data.school.trim() : null,
-        birthDate: data.birth_date ? new Date(data.birth_date) : null,
-        gender: data.gender ? data.gender.trim() : null,
         role: data.role,
         userNumber,
         isClaimed: true,
-        points: 0,
+        profile: {
+          create: {
+            name: data.name.trim(),
+            phone: data.phone ? data.phone.trim() : null,
+            schoolId: resolvedSchoolId || null,
+            birthDate: data.birth_date ? new Date(data.birth_date) : null,
+            gender: data.gender ? data.gender.trim() : null,
+          },
+        },
+        stats: {
+          create: {
+            points: 0,
+            levelId: level1?.id,
+          },
+        },
+      },
+      include: {
+        profile: { include: { school: true } },
       },
     })
 
     res.status(201).json({
       id: newMember.id,
-      name: newMember.name,
+      name: newMember.profile?.name || data.name,
       username: newMember.username,
       email: newMember.email,
-      phone: newMember.phone,
-      school: newMember.school,
-      birth_date: newMember.birthDate ? new Date(newMember.birthDate).toISOString() : null,
-      gender: newMember.gender,
+      phone: newMember.profile?.phone,
+      school: newMember.profile?.school?.name || null,
+      school_id: newMember.profile?.schoolId,
+      birth_date: newMember.profile?.birthDate ? new Date(newMember.profile.birthDate).toISOString() : null,
+      gender: newMember.profile?.gender,
       role: newMember.role,
       user_number: newMember.userNumber,
       default_password: defaultPassword,
@@ -329,6 +361,7 @@ const UpdateMemberSchema = z.object({
   email: z.string().email().optional().nullable().or(z.literal("")),
   phone: z.string().optional().nullable(),
   school: z.string().optional().nullable(),
+  school_id: z.string().optional().nullable(),
   birth_date: z.string().optional().nullable(),
   gender: z.string().optional().nullable(),
   role: z.enum(["umat", "aktivis", "pengurus", "admin"]).optional(),
@@ -345,60 +378,88 @@ teamsRouter.put("/members/:id", requireAuth, requireRole("pengurus", "admin"), a
       return
     }
 
-    const existing = await (prisma.user as any).findUnique({ where: { id } })
+    const existing = await prisma.user.findUnique({
+      where: { id },
+      include: { profile: true },
+    })
     if (!existing) {
       res.status(404).json({ error: "Member not found" })
       return
     }
 
     if (data.email && data.email !== existing.email) {
-      const emailInUse = await (prisma.user as any).findUnique({ where: { email: data.email.toLowerCase().trim() } })
-      if (emailInUse) {
+      const emailInUse = await prisma.user.findUnique({ where: { email: data.email.toLowerCase().trim() } })
+      if (emailInUse && emailInUse.id !== id) {
         res.status(400).json({ error: "Email is already used by another member." })
         return
       }
     }
 
     if (data.username && data.username !== existing.username) {
-      const usernameInUse = await (prisma.user as any).findUnique({ where: { username: data.username.toLowerCase().trim() } })
-      if (usernameInUse) {
+      const usernameInUse = await prisma.user.findUnique({ where: { username: data.username.toLowerCase().trim() } })
+      if (usernameInUse && usernameInUse.id !== id) {
         res.status(400).json({ error: "Username is already used by another member." })
         return
       }
     }
 
-    const updated = await (prisma.user as any).update({
+    let resolvedSchoolId = data.school_id
+    if (!resolvedSchoolId && data.school) {
+      const s = await prisma.school.findUnique({ where: { name: data.school.trim() } })
+      if (s) {
+        resolvedSchoolId = s.id
+      } else {
+        const createdS = await prisma.school.create({ data: { name: data.school.trim(), type: "Lainnya" } })
+        resolvedSchoolId = createdS.id
+      }
+    }
+
+    const updatedUser = await prisma.user.update({
       where: { id },
       data: {
-        ...(data.name && { name: data.name.trim() }),
         ...(data.username !== undefined && { username: data.username ? data.username.toLowerCase().trim() : null }),
         ...(data.email !== undefined && { email: data.email ? data.email.toLowerCase().trim() : null }),
+        ...(data.role && { role: data.role }),
+      },
+    })
+
+    const updatedProfile = await prisma.userProfile.upsert({
+      where: { userId: id },
+      update: {
+        ...(data.name && { name: data.name.trim() }),
         ...(data.phone !== undefined && { phone: data.phone ? data.phone.trim() : null }),
-        ...(data.school !== undefined && { school: data.school ? data.school.trim() : null }),
+        ...(resolvedSchoolId !== undefined && { schoolId: resolvedSchoolId }),
         ...(data.birth_date !== undefined && {
           birthDate: data.birth_date ? new Date(data.birth_date) : null,
         }),
         ...(data.gender !== undefined && { gender: data.gender ? data.gender.trim() : null }),
-        ...(data.role && { role: data.role }),
       },
+      create: {
+        userId: id,
+        name: data.name ? data.name.trim() : existing.username || "Anggota",
+        phone: data.phone ? data.phone.trim() : null,
+        schoolId: resolvedSchoolId || null,
+        birthDate: data.birth_date ? new Date(data.birth_date) : null,
+        gender: data.gender ? data.gender.trim() : null,
+      },
+      include: { school: true },
     })
 
     await invalidate(CacheKeys.userProfile(id))
 
     res.json({
-      id: updated.id,
-      name: updated.name,
-      username: updated.username,
-      email: updated.email,
-      phone: updated.phone,
-      school: updated.school,
-      birth_date: updated.birthDate ? new Date(updated.birthDate).toISOString() : null,
-      gender: updated.gender,
-      role: updated.role,
-      user_number: updated.userNumber,
-      is_claimed: updated.isClaimed,
-      points: updated.points,
-      updated_at: new Date(updated.updatedAt).toISOString(),
+      id: updatedUser.id,
+      name: updatedProfile.name,
+      username: updatedUser.username,
+      email: updatedUser.email,
+      phone: updatedProfile.phone,
+      school: updatedProfile.school?.name || null,
+      birth_date: updatedProfile.birthDate ? new Date(updatedProfile.birthDate).toISOString() : null,
+      gender: updatedProfile.gender,
+      role: updatedUser.role,
+      user_number: updatedUser.userNumber,
+      is_claimed: updatedUser.isClaimed,
+      updated_at: new Date(updatedUser.updatedAt).toISOString(),
     })
   } catch (err) {
     next(err)
@@ -416,7 +477,7 @@ teamsRouter.delete("/members/:id", requireAuth, requireRole("admin"), async (req
       return
     }
 
-    const member = await (prisma.user as any).findUnique({ where: { id } })
+    const member = await prisma.user.findUnique({ where: { id } })
     if (!member) {
       res.status(404).json({ error: "Member not found" })
       return
@@ -427,7 +488,7 @@ teamsRouter.delete("/members/:id", requireAuth, requireRole("admin"), async (req
       return
     }
 
-    await (prisma.user as any).delete({ where: { id } })
+    await prisma.user.delete({ where: { id } })
 
     await invalidate(CacheKeys.userProfile(id))
 
@@ -443,7 +504,10 @@ teamsRouter.get("/invitations", requireAuth, requireRole("pengurus", "admin"), a
     const invitations = await prisma.roleInvitation.findMany({
       include: {
         invitedBy: {
-          select: { id: true, name: true },
+          select: {
+            id: true,
+            profile: { select: { name: true } },
+          },
         },
       },
       orderBy: { createdAt: "desc" },
@@ -455,7 +519,10 @@ teamsRouter.get("/invitations", requireAuth, requireRole("pengurus", "admin"), a
         role: inv.role,
         status: inv.status,
         created_at: inv.createdAt.toISOString(),
-        invited_by: inv.invitedBy,
+        invited_by: {
+          id: inv.invitedBy.id,
+          name: inv.invitedBy.profile?.name || "Admin",
+        },
       }))
     )
   } catch (err) {
@@ -633,8 +700,9 @@ teamsRouter.post("/invitations/:id/reject", requireAuth, async (req, res, next) 
 teamsRouter.post("/members/:id/reset-password", requireAuth, requireRole("admin"), async (req, res, next) => {
   try {
     const id = req.params.id as string
-    const targetUser = await (prisma.user as any).findUnique({
+    const targetUser = await prisma.user.findUnique({
       where: { id },
+      include: { profile: true },
     })
 
     if (!targetUser) {
@@ -642,29 +710,40 @@ teamsRouter.post("/members/:id/reset-password", requireAuth, requireRole("admin"
       return
     }
 
+    // NEW LOGIC PER USER REQUIREMENT:
+    // Jika akun sudah ter-claim atau password diubah oleh user, admin tidak boleh mereset password
+    if (targetUser.isClaimed && targetUser.passwordChangedByUser) {
+      res.status(403).json({
+        error: "Akun ini telah diklaim dan diatur oleh user. Admin tidak dapat mereset password demi keamanan dan privasi pengguna.",
+      })
+      return
+    }
+
     const defaultPassword = generateDefaultPassword()
     const hashedPassword = await bcrypt.hash(defaultPassword, 10)
 
-    await (prisma.user as any).update({
+    await prisma.user.update({
       where: { id },
       data: {
         password: hashedPassword,
+        passwordChangedByUser: false,
+        passwordChangedAt: new Date(),
       },
     })
 
     await invalidate(CacheKeys.userProfile(id))
 
+    const memberName = targetUser.profile?.name || targetUser.username || "member"
+
     res.json({
       success: true,
       user_number: targetUser.userNumber,
       username: targetUser.username,
-      name: targetUser.name,
+      name: memberName,
       default_password: defaultPassword,
-      message: `Password for ${targetUser.name} (${targetUser.username ? `@${targetUser.username}` : "member"}) successfully reset to: ${defaultPassword}`,
+      message: `Password for ${memberName} (${targetUser.username ? `@${targetUser.username}` : "member"}) successfully reset to: ${defaultPassword}`,
     })
   } catch (err) {
     next(err)
   }
 })
-
-

@@ -11,7 +11,9 @@ const CreateEventSchema = z.object({
   description: z.string().optional(),
   location: z.string().min(1),
   event_date: z.string(),
-  event_type: z.enum(["rutin", "special"]),
+  event_type: z.enum(["rutin", "special"]).optional(),
+  event_type_id: z.string().optional(),
+  season_id: z.string().optional(),
   tag: z.string().optional(),
   status: z.enum(["draft", "published", "active", "closed", "cancelled"]).optional(),
 })
@@ -24,6 +26,10 @@ eventsRouter.get("/", requireAuth, async (req, res, next) => {
     const events = await cached(CacheKeys.events(), 60, async () => {
       return prisma.event.findMany({
         where: { status: { in: ["published", "active", "closed"] } },
+        include: {
+          type: true,
+          season: true,
+        },
         orderBy: { eventDate: "asc" },
       })
     })
@@ -36,7 +42,9 @@ eventsRouter.get("/", requireAuth, async (req, res, next) => {
       event_date: e.eventDate
         ? (typeof e.eventDate === "string" ? e.eventDate : new Date(e.eventDate).toISOString())
         : new Date().toISOString(),
-      event_type: e.eventType || "kebaktian",
+      event_type: e.type?.code || e.eventType || "rutin",
+      event_type_id: e.eventTypeId,
+      season_id: e.seasonId,
       tag: e.tag || "Umum",
       status: e.status || "published",
       qr_code: e.qrCode ? { code: e.qrCode, expires_at: null } : null,
@@ -50,6 +58,10 @@ eventsRouter.get("/:id", requireAuth, async (req, res, next) => {
     const id = req.params.id as string
     const event = await prisma.event.findUnique({
       where: { id },
+      include: {
+        type: true,
+        season: true,
+      },
     })
     if (!event) { res.status(404).json({ error: "Event not found" }); return }
 
@@ -59,7 +71,9 @@ eventsRouter.get("/:id", requireAuth, async (req, res, next) => {
       description: event.description,
       location: event.location,
       event_date: typeof event.eventDate === "string" ? event.eventDate : new Date(event.eventDate).toISOString(),
-      event_type: event.eventType,
+      event_type: event.type?.code || event.eventType,
+      event_type_id: event.eventTypeId,
+      season_id: event.seasonId,
       tag: event.tag,
       status: event.status,
       qr_code: event.qrCode ? { code: event.qrCode, expires_at: null } : null,
@@ -72,13 +86,28 @@ eventsRouter.post("/", requireAuth, requireRole("pengurus", "admin"), async (req
   try {
     const body = CreateEventSchema.parse(req.body)
     const qrCode = `EVT-${Date.now().toString(36).toUpperCase()}`
+
+    let eventTypeId = body.event_type_id
+    if (!eventTypeId && body.event_type) {
+      const et = await prisma.eventType.findUnique({ where: { code: body.event_type } })
+      eventTypeId = et?.id
+    }
+
+    let seasonId = body.season_id
+    if (!seasonId) {
+      const activeSeason = await prisma.season.findFirst({ where: { isActive: true } })
+      seasonId = activeSeason?.id
+    }
+
     const event = await prisma.event.create({
       data: {
         title: body.title,
         description: body.description,
         location: body.location,
         eventDate: new Date(body.event_date),
-        eventType: body.event_type,
+        eventType: body.event_type || "rutin",
+        eventTypeId: eventTypeId || null,
+        seasonId: seasonId || null,
         tag: body.tag,
         status: body.status ?? "published",
         qrCode,
@@ -94,6 +123,13 @@ eventsRouter.put("/:id", requireAuth, requireRole("pengurus", "admin"), async (r
   try {
     const id = req.params.id as string
     const body = UpdateEventSchema.parse(req.body)
+
+    let eventTypeId = body.event_type_id
+    if (!eventTypeId && body.event_type) {
+      const et = await prisma.eventType.findUnique({ where: { code: body.event_type } })
+      eventTypeId = et?.id
+    }
+
     const event = await prisma.event.update({
       where: { id },
       data: {
@@ -102,6 +138,8 @@ eventsRouter.put("/:id", requireAuth, requireRole("pengurus", "admin"), async (r
         ...(body.location && { location: body.location }),
         ...(body.event_date && { eventDate: new Date(body.event_date) }),
         ...(body.event_type && { eventType: body.event_type }),
+        ...(eventTypeId && { eventTypeId }),
+        ...(body.season_id && { seasonId: body.season_id }),
         ...(body.tag !== undefined && { tag: body.tag }),
         ...(body.status && { status: body.status }),
       },
@@ -131,9 +169,8 @@ eventsRouter.patch("/:id/status", requireAuth, requireRole("pengurus", "admin"),
       })
 
       if (attendees.length > 0) {
-        const pointRuleModel = (prisma as any).pointRule
         const ruleCode = event.eventType === "special" ? "attendance_special" : "attendance_rutin"
-        const activeRule = await pointRuleModel.findUnique({ where: { code: ruleCode } }).catch(() => null)
+        const activeRule = await prisma.pointRule.findUnique({ where: { code: ruleCode } }).catch(() => null)
         const defaultPoints = activeRule?.points ?? (event.eventType === "special" ? 100 : 50)
 
         const existingTxs = await prisma.pointTransaction.findMany({
@@ -146,8 +183,9 @@ eventsRouter.patch("/:id/status", requireAuth, requireRole("pengurus", "admin"),
         if (pendingAttendees.length > 0) {
           const pointTxData = pendingAttendees.map((att) => ({
             userId: att.userId,
+            ruleId: activeRule?.id || null,
             amount: att.pointsEarned || defaultPoints,
-            type: "attendance",
+            type: "attendance" as const,
             description: `Presensi Event: ${event.title}`,
             referenceId: att.id,
           }))
@@ -155,10 +193,19 @@ eventsRouter.patch("/:id/status", requireAuth, requireRole("pengurus", "admin"),
           await prisma.$transaction([
             prisma.pointTransaction.createMany({ data: pointTxData }),
             ...pendingAttendees.map((att) =>
-              prisma.user.update({
-                where: { id: att.userId },
-                data: {
+              prisma.userStats.upsert({
+                where: { userId: att.userId },
+                update: {
                   points: { increment: att.pointsEarned || defaultPoints },
+                  totalAttendances: { increment: 1 },
+                  consecutiveMissed: 0,
+                  lastActivityAt: att.scannedAt,
+                },
+                create: {
+                  userId: att.userId,
+                  points: att.pointsEarned || defaultPoints,
+                  totalAttendances: 1,
+                  consecutiveMissed: 0,
                   lastActivityAt: att.scannedAt,
                 },
               })
@@ -175,27 +222,23 @@ eventsRouter.patch("/:id/status", requireAuth, requireRole("pengurus", "admin"),
           )
         }
       }
-
-      // Refresh leaderboard snapshots
-      const { computeAndCacheLeaderboard } = await import("../../leaderboard/internal/service")
-      await computeAndCacheLeaderboard().catch(() => {})
     }
 
     await invalidatePattern("events:*")
-    res.json({ id: event.id, status: event.status })
+    await invalidate(CacheKeys.events())
+    res.json({ id: event.id, title: event.title, status: event.status })
   } catch (err) { next(err) }
 })
 
-// POST /api/events/:id/attendance — record attendance (Staged in DB with strict idempotency)
-eventsRouter.post("/:id/attendance", requireAuth, async (req, res, next) => {
+// POST /api/events/:id/attendances — scan / record attendance
+eventsRouter.post("/:id/attendances", requireAuth, async (req, res, next) => {
   try {
     const id = req.params.id as string
-    const { method, user_id } = z.object({
-      method: z.enum(["qr", "manual"]),
+    const { user_id, method = "qr" } = z.object({
       user_id: z.string().optional(),
+      method: z.enum(["qr", "manual"]).optional(),
     }).parse(req.body)
 
-    // Authorization Guard: Prevent normal users from recording attendance on behalf of others
     if (user_id && user_id !== req.user!.userId) {
       if (req.user!.role !== "pengurus" && req.user!.role !== "admin") {
         res.status(403).json({ error: "Only Organizers or Admins can record attendance for other members." })
@@ -205,7 +248,6 @@ eventsRouter.post("/:id/attendance", requireAuth, async (req, res, next) => {
 
     const targetUserId = user_id ?? req.user!.userId
 
-    // Verify event exists and is not closed
     const event = await prisma.event.findUnique({
       where: { id },
       select: { id: true, title: true, eventType: true, status: true },
@@ -221,7 +263,6 @@ eventsRouter.post("/:id/attendance", requireAuth, async (req, res, next) => {
       return
     }
 
-    // Verify target user exists in People database (by id, userNumber, username, or email)
     const targetUser = await prisma.user.findFirst({
       where: {
         OR: [
@@ -231,7 +272,12 @@ eventsRouter.post("/:id/attendance", requireAuth, async (req, res, next) => {
           { email: targetUserId },
         ],
       },
-      select: { id: true, name: true, role: true, userNumber: true },
+      select: {
+        id: true,
+        role: true,
+        userNumber: true,
+        profile: { select: { name: true } },
+      },
     })
 
     if (!targetUser) {
@@ -240,8 +286,8 @@ eventsRouter.post("/:id/attendance", requireAuth, async (req, res, next) => {
     }
 
     const actualUserId = targetUser.id
+    const userName = targetUser.profile?.name || "Anggota"
 
-    // Strict Idempotency Check: Reject duplicate scans
     const existing = await prisma.attendance.findUnique({
       where: { userId_eventId: { userId: actualUserId, eventId: id } },
     })
@@ -249,29 +295,26 @@ eventsRouter.post("/:id/attendance", requireAuth, async (req, res, next) => {
     if (existing) {
       res.status(409).json({
         error: "DUPLICATE_ATTENDANCE",
-        message: `Member ${targetUser.name} (${targetUser.userNumber || "Registered ID"}) has already been recorded present.`,
+        message: `Member ${userName} (${targetUser.userNumber || "Registered ID"}) has already been recorded present.`,
         data: {
           id: existing.id,
           user_id: actualUserId,
-          name: targetUser.name,
+          name: userName,
           scanned_at: existing.scannedAt.toISOString(),
         },
       })
       return
     }
 
-    // Dynamically retrieve configured points rule (non-hardcoded)
-    const pointRuleModel = (prisma as any).pointRule
     const ruleCode = event.eventType === "special" ? "attendance_special" : "attendance_rutin"
-    const activeRule = await pointRuleModel.findUnique({ where: { code: ruleCode } }).catch(() => null)
+    const activeRule = await prisma.pointRule.findUnique({ where: { code: ruleCode } }).catch(() => null)
     const pointsAwarded = activeRule?.points ?? (event.eventType === "special" ? 100 : 50)
 
-    // Persist attendance immediately in DB (Staged — preserved across reloads / navigation)
     const attendance = await prisma.attendance.create({
       data: {
         userId: actualUserId,
         eventId: id,
-        method,
+        method: method === "manual" ? "manual" : "qr",
         pointsEarned: pointsAwarded,
         scannedAt: new Date(),
       },
@@ -283,7 +326,7 @@ eventsRouter.post("/:id/attendance", requireAuth, async (req, res, next) => {
     res.status(201).json({
       id: attendance.id,
       user_id: actualUserId,
-      name: targetUser.name,
+      name: userName,
       role: targetUser.role,
       user_number: targetUser.userNumber,
       method: attendance.method,
@@ -294,7 +337,7 @@ eventsRouter.post("/:id/attendance", requireAuth, async (req, res, next) => {
   } catch (err) { next(err) }
 })
 
-// GET /api/events/:id/attendances — list attendees
+// GET /api/events/:id/attendances — list attendees (redacted PII)
 eventsRouter.get("/:id/attendances", requireAuth, async (req, res, next) => {
   try {
     const id = req.params.id as string
@@ -302,18 +345,22 @@ eventsRouter.get("/:id/attendances", requireAuth, async (req, res, next) => {
       where: { eventId: id },
       include: {
         user: {
-          select: { id: true, name: true, role: true, userNumber: true, email: true, avatarUrl: true },
+          select: {
+            id: true,
+            role: true,
+            userNumber: true,
+            profile: { select: { name: true, avatarUrl: true } },
+          },
         },
       },
       orderBy: { scannedAt: "desc" },
     })
-    res.json(records.map((r: any) => ({
+    res.json(records.map((r) => ({
       user_id: r.userId,
-      name: r.user.name,
+      name: r.user.profile?.name || "Anggota",
       role: r.user.role,
       user_number: r.user.userNumber,
-      email: r.user.email,
-      avatar_url: r.user.avatarUrl,
+      avatar_url: r.user.profile?.avatarUrl || null,
       method: r.method,
       scanned_at: r.scannedAt.toISOString(),
     })))
@@ -336,7 +383,6 @@ eventsRouter.delete("/:id/attendances/:userId", requireAuth, requireRole("pengur
 eventsRouter.delete("/:id", requireAuth, requireRole("pengurus", "admin"), async (req, res, next) => {
   try {
     const id = req.params.id as string
-    await prisma.rsvp.deleteMany({ where: { eventId: id } })
     await prisma.attendance.deleteMany({ where: { eventId: id } })
     await prisma.event.delete({ where: { id } })
     await invalidatePattern("events:*")
@@ -344,4 +390,3 @@ eventsRouter.delete("/:id", requireAuth, requireRole("pengurus", "admin"), async
     res.json({ message: "Event deleted successfully" })
   } catch (err) { next(err) }
 })
-

@@ -72,6 +72,21 @@ app.use("/api/auth/login", authLimiter)
 app.use("/api/auth/register", authLimiter)
 app.use("/api/users/change-password", authLimiter)
 
+// 3b. Dedicated OTP Rate Limiter (5 requests per 15 minutes per IP to prevent brute-force attacks)
+const otpLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Terlalu banyak permintaan OTP dari IP ini. Silakan tunggu 15 menit." },
+})
+app.use("/api/auth/register-request", otpLimiter)
+app.use("/api/auth/register-verify-otp", otpLimiter)
+app.use("/api/auth/resend-otp", otpLimiter)
+app.use("/api/auth/forgot-password/request", otpLimiter)
+app.use("/api/auth/forgot-password/verify-otp", otpLimiter)
+app.use("/api/auth/forgot-password/reset", otpLimiter)
+
 // 4. CORS Configuration
 const rawOrigins = process.env.CORS_ORIGIN
   ? process.env.CORS_ORIGIN.split(",").map((origin) => origin.trim().replace(/\/$/, ""))

@@ -46,7 +46,8 @@ leaderboardRouter.get("/", requireAuth, async (req, res, next) => {
     }).parse(req.query)
 
     const userId = req.user!.userId
-    const forceRefresh = refresh === "true" || refresh === "1"
+    const isPrivileged = req.user?.role === "pengurus" || req.user?.role === "admin"
+    const forceRefresh = isPrivileged && (refresh === "true" || refresh === "1")
     const snapshot = await getLeaderboardSnapshot(metric as MetricType, forceRefresh)
     const safeEntries = snapshot.entries || []
 

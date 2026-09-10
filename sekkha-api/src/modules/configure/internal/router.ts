@@ -248,13 +248,27 @@ let defaultThresholds = {
   churnedDaysThreshold: 60,
 }
 
+const ThresholdSchema = z
+  .object({
+    warningConsecutiveMissed: z.number().int().min(1).max(50).optional(),
+    atRiskConsecutiveMissed: z.number().int().min(1).max(50).optional(),
+    lostConsecutiveMissed: z.number().int().min(1).max(50).optional(),
+    churnedDaysThreshold: z.number().int().min(1).max(365).optional(),
+  })
+  .strict()
+
 configureRouter.get("/threshold", async (_req, res) => {
   res.json(defaultThresholds)
 })
 
-configureRouter.put("/threshold", async (req, res) => {
-  defaultThresholds = { ...defaultThresholds, ...req.body }
-  res.json({ success: true, thresholds: defaultThresholds })
+configureRouter.put("/threshold", async (req, res, next) => {
+  try {
+    const validated = ThresholdSchema.parse(req.body)
+    defaultThresholds = { ...defaultThresholds, ...validated }
+    res.json({ success: true, thresholds: defaultThresholds })
+  } catch (err) {
+    next(err)
+  }
 })
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -264,8 +278,8 @@ configureRouter.put("/threshold", async (req, res) => {
 const SeasonSchema = z.object({
   name: z.string().min(1),
   code: z.string().optional(),
-  start_date: z.string(),
-  end_date: z.string(),
+  start_date: z.string().refine((v) => !isNaN(Date.parse(v)), "Format start_date tidak valid, gunakan format tanggal ISO"),
+  end_date: z.string().refine((v) => !isNaN(Date.parse(v)), "Format end_date tidak valid, gunakan format tanggal ISO"),
   is_active: z.boolean().optional(),
   target_attendance: z.number().int().min(1).optional(),
   bonus_points: z.number().int().min(0).optional(),

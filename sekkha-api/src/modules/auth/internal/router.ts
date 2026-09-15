@@ -1,4 +1,5 @@
 import { Router } from "express"
+import { requireAuth } from "../../../middleware/auth"
 import {
   handleRegisterRequest,
   handleRegisterVerifyOtp,
@@ -11,6 +12,7 @@ import {
   handleForgotPasswordVerifyOtp,
   handleResetPassword,
   handleLogout,
+  handleRefreshSession,
 } from "./handler"
 
 // ─── Auth Router ─────────────────────────────────────────────────────────────
@@ -31,7 +33,8 @@ authRouter.post("/forgot-password/reset", handleResetPassword)
 // Session & Auth endpoints
 authRouter.post("/register", handleRegister)
 authRouter.post("/login", handleLogin)
-authRouter.post("/logout", handleLogout)
+authRouter.post("/refresh", handleRefreshSession)
+authRouter.post("/logout", requireAuth, handleLogout)
 authRouter.post("/forgot-password", handleForgotPassword)
 authRouter.get("/verify", handleVerify)
 

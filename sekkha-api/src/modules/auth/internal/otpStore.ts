@@ -1,36 +1,63 @@
+import crypto from "crypto"
 import { redis } from "../../../lib/redis"
 
 export interface RegistrationOtpPayload {
-  otp: string
+  otpHashed: string
   email: string
   passwordHash: string
   name: string
   username?: string | null
   createdAt: number
-  attempts?: number
 }
 
-// In-memory fallback map if Redis is not running
-const memoryStore = new Map<string, { payload: RegistrationOtpPayload; timer: NodeJS.Timeout }>()
+export interface ForgotPasswordOtpPayload {
+  otpHashed: string
+  email: string
+  userId: string
+  name: string
+  createdAt: number
+}
+
+const memoryStore = new Map<string, { payload: RegistrationOtpPayload; timer: NodeJS.Timeout; attempts: number }>()
+const forgotMemoryStore = new Map<string, { payload: ForgotPasswordOtpPayload; timer: NodeJS.Timeout; attempts: number }>()
+const resetTokenStore = new Map<string, { userId: string; tokenHashed: string; timer: NodeJS.Timeout }>()
 
 const OTP_TTL_SECONDS = 300 // 5 minutes
+const RESET_TOKEN_TTL_SECONDS = 600 // 10 minutes
 export const MAX_OTP_ATTEMPTS = 5
 
-/**
- * Saves pending registration data with OTP.
- */
-export async function saveRegistrationOtp(email: string, payload: RegistrationOtpPayload): Promise<void> {
+export function hashOtp(otp: string): string {
+  return crypto.createHash("sha256").update(otp.trim()).digest("hex")
+}
+
+// ─── Registration OTP Store ──────────────────────────────────────────────────
+
+export async function saveRegistrationOtp(
+  email: string,
+  payload: Omit<RegistrationOtpPayload, "otpHashed"> & { otp: string }
+): Promise<void> {
   const normalizedEmail = email.toLowerCase().trim()
   const key = `otp:register:${normalizedEmail}`
-  payload.attempts = payload.attempts ?? 0
+  const attemptsKey = `otp:attempts:register:${normalizedEmail}`
+  const otpHashed = hashOtp(payload.otp)
 
-  // 1. Try Redis first
+  const securePayload: RegistrationOtpPayload = {
+    otpHashed,
+    email: payload.email,
+    passwordHash: payload.passwordHash,
+    name: payload.name,
+    username: payload.username,
+    createdAt: payload.createdAt,
+  }
+
+  // 1. Try Redis
   try {
     if (redis.status === "ready" || redis.status === "connect") {
-      await redis.set(key, JSON.stringify(payload), "EX", OTP_TTL_SECONDS)
+      await redis.set(key, JSON.stringify(securePayload), "EX", OTP_TTL_SECONDS)
+      await redis.del(attemptsKey)
       return
     }
-  } catch (err) {
+  } catch {
     // Non-blocking fallback to memory store
   }
 
@@ -44,17 +71,13 @@ export async function saveRegistrationOtp(email: string, payload: RegistrationOt
     memoryStore.delete(normalizedEmail)
   }, OTP_TTL_SECONDS * 1000)
 
-  memoryStore.set(normalizedEmail, { payload, timer })
+  memoryStore.set(normalizedEmail, { payload: securePayload, timer, attempts: 0 })
 }
 
-/**
- * Retrieves pending registration data with OTP.
- */
 export async function getRegistrationOtp(email: string): Promise<RegistrationOtpPayload | null> {
   const normalizedEmail = email.toLowerCase().trim()
   const key = `otp:register:${normalizedEmail}`
 
-  // 1. Try Redis first
   try {
     if (redis.status === "ready" || redis.status === "connect") {
       const raw = await redis.get(key)
@@ -62,69 +85,52 @@ export async function getRegistrationOtp(email: string): Promise<RegistrationOtp
         return JSON.parse(raw) as RegistrationOtpPayload
       }
     }
-  } catch (err) {
+  } catch {
     // Fallback to memory store
   }
 
-  // 2. Check Memory Store
   const item = memoryStore.get(normalizedEmail)
   return item ? item.payload : null
 }
 
-/**
- * Increments failed OTP verification attempts for registration.
- * If attempts reach MAX_OTP_ATTEMPTS (5), the OTP is immediately deleted to prevent brute-force.
- * Returns the updated attempt count.
- */
 export async function incrementRegistrationOtpAttempts(email: string): Promise<number> {
   const normalizedEmail = email.toLowerCase().trim()
-  const key = `otp:register:${normalizedEmail}`
+  const attemptsKey = `otp:attempts:register:${normalizedEmail}`
 
-  const payload = await getRegistrationOtp(normalizedEmail)
-  if (!payload) return 0
-
-  payload.attempts = (payload.attempts ?? 0) + 1
-
-  if (payload.attempts >= MAX_OTP_ATTEMPTS) {
-    await deleteRegistrationOtp(normalizedEmail)
-    return payload.attempts
-  }
-
-  // Update in Redis preserving remaining TTL
   try {
     if (redis.status === "ready" || redis.status === "connect") {
-      const ttl = await redis.ttl(key)
-      if (ttl > 0) {
-        await redis.set(key, JSON.stringify(payload), "EX", ttl)
-      } else {
-        await redis.set(key, JSON.stringify(payload), "EX", OTP_TTL_SECONDS)
+      const attempts = await redis.incr(attemptsKey)
+      if (attempts === 1) {
+        await redis.expire(attemptsKey, OTP_TTL_SECONDS)
       }
+      if (attempts >= MAX_OTP_ATTEMPTS) {
+        await deleteRegistrationOtp(normalizedEmail)
+      }
+      return attempts
     }
-  } catch (err) {
-    // Fallback
+  } catch {
+    // Fallback to memory store
   }
 
-  // Update in Memory Store preserving existing timer
-  const existing = memoryStore.get(normalizedEmail)
-  if (existing) {
-    memoryStore.set(normalizedEmail, { payload, timer: existing.timer })
+  const item = memoryStore.get(normalizedEmail)
+  if (!item) return 0
+  item.attempts += 1
+  if (item.attempts >= MAX_OTP_ATTEMPTS) {
+    await deleteRegistrationOtp(normalizedEmail)
   }
-
-  return payload.attempts
+  return item.attempts
 }
 
-/**
- * Deletes OTP entry upon successful verification.
- */
 export async function deleteRegistrationOtp(email: string): Promise<void> {
   const normalizedEmail = email.toLowerCase().trim()
   const key = `otp:register:${normalizedEmail}`
+  const attemptsKey = `otp:attempts:register:${normalizedEmail}`
 
   try {
     if (redis.status === "ready" || redis.status === "connect") {
-      await redis.del(key)
+      await redis.del(key, attemptsKey)
     }
-  } catch (err) {
+  } catch {
     // Ignore
   }
 
@@ -137,28 +143,30 @@ export async function deleteRegistrationOtp(email: string): Promise<void> {
 
 // ─── Forgot Password OTP Store ────────────────────────────────────────────────
 
-export interface ForgotPasswordOtpPayload {
-  otp: string
-  email: string
-  userId: string
-  name: string
-  createdAt: number
-  attempts?: number
-}
-
-const forgotMemoryStore = new Map<string, { payload: ForgotPasswordOtpPayload; timer: NodeJS.Timeout }>()
-
-export async function saveForgotPasswordOtp(email: string, payload: ForgotPasswordOtpPayload): Promise<void> {
+export async function saveForgotPasswordOtp(
+  email: string,
+  payload: Omit<ForgotPasswordOtpPayload, "otpHashed"> & { otp: string }
+): Promise<void> {
   const normalizedEmail = email.toLowerCase().trim()
   const key = `otp:forgot:${normalizedEmail}`
-  payload.attempts = payload.attempts ?? 0
+  const attemptsKey = `otp:attempts:forgot:${normalizedEmail}`
+  const otpHashed = hashOtp(payload.otp)
+
+  const securePayload: ForgotPasswordOtpPayload = {
+    otpHashed,
+    email: payload.email,
+    userId: payload.userId,
+    name: payload.name,
+    createdAt: payload.createdAt,
+  }
 
   try {
     if (redis.status === "ready" || redis.status === "connect") {
-      await redis.set(key, JSON.stringify(payload), "EX", OTP_TTL_SECONDS)
+      await redis.set(key, JSON.stringify(securePayload), "EX", OTP_TTL_SECONDS)
+      await redis.del(attemptsKey)
       return
     }
-  } catch (err) {
+  } catch {
     // Non-blocking fallback
   }
 
@@ -171,7 +179,7 @@ export async function saveForgotPasswordOtp(email: string, payload: ForgotPasswo
     forgotMemoryStore.delete(normalizedEmail)
   }, OTP_TTL_SECONDS * 1000)
 
-  forgotMemoryStore.set(normalizedEmail, { payload, timer })
+  forgotMemoryStore.set(normalizedEmail, { payload: securePayload, timer, attempts: 0 })
 }
 
 export async function getForgotPasswordOtp(email: string): Promise<ForgotPasswordOtpPayload | null> {
@@ -185,7 +193,7 @@ export async function getForgotPasswordOtp(email: string): Promise<ForgotPasswor
         return JSON.parse(raw) as ForgotPasswordOtpPayload
       }
     }
-  } catch (err) {
+  } catch {
     // Fallback
   }
 
@@ -193,57 +201,44 @@ export async function getForgotPasswordOtp(email: string): Promise<ForgotPasswor
   return item ? item.payload : null
 }
 
-/**
- * Increments failed OTP verification attempts for forgot password.
- * If attempts reach MAX_OTP_ATTEMPTS (5), the OTP is immediately deleted to prevent brute-force.
- * Returns the updated attempt count.
- */
 export async function incrementForgotPasswordOtpAttempts(email: string): Promise<number> {
   const normalizedEmail = email.toLowerCase().trim()
-  const key = `otp:forgot:${normalizedEmail}`
+  const attemptsKey = `otp:attempts:forgot:${normalizedEmail}`
 
-  const payload = await getForgotPasswordOtp(normalizedEmail)
-  if (!payload) return 0
-
-  payload.attempts = (payload.attempts ?? 0) + 1
-
-  if (payload.attempts >= MAX_OTP_ATTEMPTS) {
-    await deleteForgotPasswordOtp(normalizedEmail)
-    return payload.attempts
-  }
-
-  // Update in Redis preserving remaining TTL
   try {
     if (redis.status === "ready" || redis.status === "connect") {
-      const ttl = await redis.ttl(key)
-      if (ttl > 0) {
-        await redis.set(key, JSON.stringify(payload), "EX", ttl)
-      } else {
-        await redis.set(key, JSON.stringify(payload), "EX", OTP_TTL_SECONDS)
+      const attempts = await redis.incr(attemptsKey)
+      if (attempts === 1) {
+        await redis.expire(attemptsKey, OTP_TTL_SECONDS)
       }
+      if (attempts >= MAX_OTP_ATTEMPTS) {
+        await deleteForgotPasswordOtp(normalizedEmail)
+      }
+      return attempts
     }
-  } catch (err) {
+  } catch {
     // Fallback
   }
 
-  // Update in Memory Store preserving existing timer
-  const existing = forgotMemoryStore.get(normalizedEmail)
-  if (existing) {
-    forgotMemoryStore.set(normalizedEmail, { payload, timer: existing.timer })
+  const item = forgotMemoryStore.get(normalizedEmail)
+  if (!item) return 0
+  item.attempts += 1
+  if (item.attempts >= MAX_OTP_ATTEMPTS) {
+    await deleteForgotPasswordOtp(normalizedEmail)
   }
-
-  return payload.attempts
+  return item.attempts
 }
 
 export async function deleteForgotPasswordOtp(email: string): Promise<void> {
   const normalizedEmail = email.toLowerCase().trim()
   const key = `otp:forgot:${normalizedEmail}`
+  const attemptsKey = `otp:attempts:forgot:${normalizedEmail}`
 
   try {
     if (redis.status === "ready" || redis.status === "connect") {
-      await redis.del(key)
+      await redis.del(key, attemptsKey)
     }
-  } catch (err) {
+  } catch {
     // Ignore
   }
 
@@ -254,3 +249,59 @@ export async function deleteForgotPasswordOtp(email: string): Promise<void> {
   forgotMemoryStore.delete(normalizedEmail)
 }
 
+// ─── Single-Use Password Reset Token Store ───────────────────────────────────
+
+export async function savePasswordResetToken(email: string, userId: string, token: string): Promise<void> {
+  const normalizedEmail = email.toLowerCase().trim()
+  const tokenHashed = hashOtp(token)
+  const key = `auth:reset-token:${normalizedEmail}`
+
+  try {
+    if (redis.status === "ready" || redis.status === "connect") {
+      await redis.set(key, JSON.stringify({ userId, tokenHashed }), "EX", RESET_TOKEN_TTL_SECONDS)
+      return
+    }
+  } catch {
+    // Fallback
+  }
+
+  const existing = resetTokenStore.get(normalizedEmail)
+  if (existing?.timer) {
+    clearTimeout(existing.timer)
+  }
+  const timer = setTimeout(() => {
+    resetTokenStore.delete(normalizedEmail)
+  }, RESET_TOKEN_TTL_SECONDS * 1000)
+
+  resetTokenStore.set(normalizedEmail, { userId, tokenHashed, timer })
+}
+
+export async function verifyAndConsumePasswordResetToken(email: string, token: string): Promise<string | null> {
+  const normalizedEmail = email.toLowerCase().trim()
+  const tokenHashed = hashOtp(token)
+  const key = `auth:reset-token:${normalizedEmail}`
+
+  try {
+    if (redis.status === "ready" || redis.status === "connect") {
+      const raw = await redis.get(key)
+      if (raw) {
+        const parsed = JSON.parse(raw) as { userId: string; tokenHashed: string }
+        if (parsed.tokenHashed === tokenHashed) {
+          await redis.del(key)
+          return parsed.userId
+        }
+      }
+    }
+  } catch {
+    // Fallback
+  }
+
+  const item = resetTokenStore.get(normalizedEmail)
+  if (item && item.tokenHashed === tokenHashed) {
+    clearTimeout(item.timer)
+    resetTokenStore.delete(normalizedEmail)
+    return item.userId
+  }
+
+  return null
+}

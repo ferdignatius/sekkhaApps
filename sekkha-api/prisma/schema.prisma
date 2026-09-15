@@ -25,6 +25,13 @@ enum EventStatus {
   cancelled
 }
 
+enum EventVisibility {
+  all
+  umat
+  aktivis
+  pengurus_only
+}
+
 enum AttendanceMethod {
   qr
   manual
@@ -68,8 +75,10 @@ model User {
   role                  Role      @default(umat)
   isClaimed             Boolean   @default(true) @map("is_claimed")
   claimedAt             DateTime? @map("claimed_at")
+  claimedByUserId       String?   @map("claimed_by_user_id")
   claimPin              String?   @map("claim_pin") // Tier 1: One-way bcrypt hash (12 rounds) — never exposed via API
   claimPinExpiresAt     DateTime? @map("claim_pin_expires_at")
+  failedClaimAttempts   Int       @default(0) @map("failed_claim_attempts")
   passwordChangedByUser Boolean   @default(false) @map("password_changed_by_user")
   passwordChangedAt     DateTime? @map("password_changed_at")
   userNumber            String?   @unique @map("user_number")
@@ -201,17 +210,20 @@ model Event {
   eventType   String      @default("rutin") @map("event_type") // fallback string code: "rutin" | "special"
   seasonId    String?     @map("season_id")
   tag         String?     // "rutin" | "retreat" | "meditasi" | "sosial"
-  status      EventStatus @default(published)
-  qrCode      String?     @map("qr_code")
-  createdAt   DateTime    @default(now()) @map("created_at")
-  updatedAt   DateTime    @updatedAt @map("updated_at")
+  status      EventStatus     @default(published)
+  visibility  EventVisibility @default(all)
+  qrCode      String?         @map("qr_code")
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
 
   // Relations
-  type        EventType?  @relation(fields: [eventTypeId], references: [id], onDelete: SetNull)
-  season      Season?     @relation(fields: [seasonId], references: [id], onDelete: SetNull)
+  type        EventType?      @relation(fields: [eventTypeId], references: [id], onDelete: SetNull)
+  season      Season?         @relation(fields: [seasonId], references: [id], onDelete: SetNull)
   attendances Attendance[]
 
   @@index([status, eventDate])
+  @@index([status, visibility])
+  @@index([visibility, eventDate])
   @@index([seasonId, eventDate])
   @@index([eventTypeId])
   @@map("events")
@@ -270,6 +282,8 @@ model PointTransaction {
   @@index([userId, createdAt(sort: Desc)])
   @@index([type, createdAt])
   @@index([ruleId])
+  @@index([referenceId])
+  @@unique([userId, referenceId, type])
   @@map("point_transactions")
 }
 

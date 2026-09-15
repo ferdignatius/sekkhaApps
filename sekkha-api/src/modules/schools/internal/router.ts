@@ -3,6 +3,7 @@ import { z } from "zod"
 import { prisma } from "../../../lib/prisma"
 import { requireAuth, requireRole } from "../../../middleware/auth"
 import { decrypt } from "../../../lib/crypto"
+import { cached } from "../../../lib/cache"
 import { INITIAL_SCHOOLS } from "./schoolsData"
 
 export const schoolsRouter: Router = Router()
@@ -98,32 +99,37 @@ schoolsRouter.get("/stats", async (req, res, next) => {
       return
     }
 
-    // Count profiles linked to the school
-    const totalInSchool = await prisma.userProfile.count({
-      where: {
-        school: { name: { equals: schoolName, mode: "insensitive" } },
-      },
-    })
-
-    let totalInClass = 0
-    if (classGrade) {
-      const profiles = await prisma.userProfile.findMany({
+    const cacheKey = `schools:stats:${schoolName.toLowerCase()}:${classGrade.toLowerCase()}`
+    const result = await cached(cacheKey, 300, async () => {
+      // Count profiles linked to the school
+      const totalInSchool = await prisma.userProfile.count({
         where: {
           school: { name: { equals: schoolName, mode: "insensitive" } },
         },
-        select: { classGrade: true },
       })
-      totalInClass = profiles.filter(
-        (p) => p.classGrade && (decrypt(p.classGrade) || "").toLowerCase() === classGrade.toLowerCase()
-      ).length
-    }
 
-    res.json({
-      school: schoolName,
-      class_grade: classGrade,
-      totalInSchool,
-      totalInClass,
+      let totalInClass = 0
+      if (classGrade) {
+        const profiles = await prisma.userProfile.findMany({
+          where: {
+            school: { name: { equals: schoolName, mode: "insensitive" } },
+          },
+          select: { classGrade: true },
+        })
+        totalInClass = profiles.filter(
+          (p) => p.classGrade && (decrypt(p.classGrade) || "").toLowerCase() === classGrade.toLowerCase()
+        ).length
+      }
+
+      return {
+        school: schoolName,
+        class_grade: classGrade,
+        totalInSchool,
+        totalInClass,
+      }
     })
+
+    res.json(result)
   } catch (err) {
     next(err)
   }

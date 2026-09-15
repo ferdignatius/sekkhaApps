@@ -33,6 +33,28 @@ export interface MemberRecency {
   }>
 }
 
+export interface CachedMemberRecency {
+  userId: string
+  name: string
+  encryptedEmail: string | null
+  encryptedPhone?: string | null
+  userNumber?: string | null
+  avatarUrl: string | null
+  role: string
+  createdAt: string
+  lastAttendedDate: string | null
+  daysSinceLastAttendance: number
+  consecutiveMissedEvents: number
+  level: AlertLevel
+  attendanceCount: number
+  recentAttendances: Array<{
+    eventId: string
+    title: string
+    eventDate: string
+    scannedAt: string
+  }>
+}
+
 interface AttendanceItem {
   id: string
   scannedAt: Date
@@ -129,7 +151,7 @@ pengurusRouter.get(
             },
           })
 
-          const members: MemberRecency[] = users.map((u) => {
+          const members: CachedMemberRecency[] = users.map((u) => {
             const attendances = (u.attendances || []) as AttendanceItem[]
             const validAttendances = attendances
               .filter((att) => att.event && att.event.status === "published" && new Date(att.event.eventDate) <= now)
@@ -207,8 +229,8 @@ pengurusRouter.get(
             return {
               userId: u.id,
               name: u.profile?.name || "Anggota",
-              email: decrypt(u.email) || u.email,
-              phone: decrypt(u.profile?.phone) || null,
+              encryptedEmail: u.email,
+              encryptedPhone: u.profile?.phone || null,
               userNumber: u.userNumber,
               avatarUrl: u.profile?.avatarUrl || null,
               role: u.role,
@@ -226,15 +248,33 @@ pengurusRouter.get(
         }
       )
 
-      const normalCount = calculatedMembers.filter((m) => m.level === "normal").length
-      const mulaiJarangCount = calculatedMembers.filter((m) => m.level === "mulai_jarang").length
-      const atRiskCount = calculatedMembers.filter((m) => m.level === "at_risk").length
-      const kemungkinanHilangCount = calculatedMembers.filter((m) => m.level === "kemungkinan_hilang").length
-      const churnedCount = calculatedMembers.filter((m) => m.level === "churned").length
+      // F-08 Remediation: Decrypt PII on-the-fly when serving, never in the shared Redis cache
+      const resolvedMembers: MemberRecency[] = calculatedMembers.map((m: any) => ({
+        userId: m.userId,
+        name: m.name,
+        email: decrypt(m.encryptedEmail) || m.encryptedEmail,
+        phone: decrypt(m.encryptedPhone) || null,
+        userNumber: m.userNumber,
+        avatarUrl: m.avatarUrl,
+        role: m.role,
+        createdAt: m.createdAt,
+        lastAttendedDate: m.lastAttendedDate,
+        daysSinceLastAttendance: m.daysSinceLastAttendance,
+        consecutiveMissedEvents: m.consecutiveMissedEvents,
+        level: m.level,
+        attendanceCount: m.attendanceCount,
+        recentAttendances: m.recentAttendances,
+      }))
+
+      const normalCount = resolvedMembers.filter((m) => m.level === "normal").length
+      const mulaiJarangCount = resolvedMembers.filter((m) => m.level === "mulai_jarang").length
+      const atRiskCount = resolvedMembers.filter((m) => m.level === "at_risk").length
+      const kemungkinanHilangCount = resolvedMembers.filter((m) => m.level === "kemungkinan_hilang").length
+      const churnedCount = resolvedMembers.filter((m) => m.level === "churned").length
       const lostCount = kemungkinanHilangCount + churnedCount
 
       const summary = {
-        totalMembers: calculatedMembers.length,
+        totalMembers: resolvedMembers.length,
         normalCount,
         mulaiJarangCount,
         warningCount: mulaiJarangCount,
@@ -245,7 +285,7 @@ pengurusRouter.get(
         totalClosedEvents: pastEventsCount,
       }
 
-      let filteredMembers = calculatedMembers
+      let filteredMembers = resolvedMembers
       if (levelFilter !== "all") {
         if (levelFilter === "lost") {
           filteredMembers = filteredMembers.filter((m) => m.level === "kemungkinan_hilang" || m.level === "churned")

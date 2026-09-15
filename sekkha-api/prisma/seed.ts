@@ -397,10 +397,10 @@ async function main() {
 
   console.log("✅ Database Seeded Successfully to 3NF!")
   console.log("----------------------------------------")
-  console.log(`📌 [UMAT]     : ${umatEmail} / ${umatPasswordRaw}`)
-  console.log(`📌 [AKTIVIS]  : ${aktivisEmail} / ${aktivisPasswordRaw}`)
-  console.log(`📌 [PENGURUS] : ${pengurusEmail} / ${pengurusPasswordRaw}`)
-  console.log(`📌 [ADMIN]    : ${adminEmail} / ${adminPasswordRaw}`)
+  console.log(`📌 [UMAT]     : ${umatEmail} / [CONFIGURED IN ENV]`)
+  console.log(`📌 [AKTIVIS]  : ${aktivisEmail} / [CONFIGURED IN ENV]`)
+  console.log(`📌 [PENGURUS] : ${pengurusEmail} / [CONFIGURED IN ENV]`)
+  console.log(`📌 [ADMIN]    : ${adminEmail} / [CONFIGURED IN ENV]`)
   console.log("----------------------------------------")
 }
 

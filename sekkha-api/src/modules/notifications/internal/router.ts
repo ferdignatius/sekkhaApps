@@ -4,12 +4,18 @@ import { requireAuth } from "../../../middleware/auth"
 
 export const notificationsRouter: Router = Router()
 
-// GET /api/notifications — List notifications of logged-in user
+// GET /api/notifications — List notifications of logged-in user (F-13: bounded pagination)
 notificationsRouter.get("/", requireAuth, async (req, res, next) => {
   try {
+    const page = Math.max(1, parseInt(req.query.page as string, 10) || 1)
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit as string, 10) || 20))
+    const skip = (page - 1) * limit
+
     const notifications = await prisma.notification.findMany({
       where: { userId: req.user!.userId },
       orderBy: { createdAt: "desc" },
+      skip,
+      take: limit,
     })
     res.json(notifications.map(n => ({
       id: n.id,

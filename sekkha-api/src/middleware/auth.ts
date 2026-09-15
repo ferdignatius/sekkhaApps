@@ -39,8 +39,12 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
       return
     }
 
-    // 2. Verify JWT signature & expiration
-    const payload = jwt.verify(token, secret) as {
+    // 2. Verify JWT signature, algorithm & expiration
+    const payload = jwt.verify(token, secret, {
+      algorithms: ["HS256"],
+      issuer: "sekkha-api",
+      audience: "sekkha-app",
+    }) as {
       userId: string
       role: string
       passwordChangedAt?: number

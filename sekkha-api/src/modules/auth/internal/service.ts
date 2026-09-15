@@ -1,9 +1,10 @@
-import { randomInt } from "crypto"
+import { randomInt, randomBytes, createHash } from "crypto"
 import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
 import { eventbus, DomainEvents } from "../../../core/eventbus"
 import type { UserRegisteredPayload } from "../../../core/eventbus"
 import { redis } from "../../../lib/redis"
+import { auditLogger } from "../../../lib/auditLogger"
 import * as repo from "./repository"
 import type {
   RegisterInput,
@@ -25,7 +26,15 @@ import {
   getForgotPasswordOtp,
   deleteForgotPasswordOtp,
   incrementForgotPasswordOtpAttempts,
+  savePasswordResetToken,
+  verifyAndConsumePasswordResetToken,
+  hashOtp,
 } from "./otpStore"
+import {
+  saveRefreshToken,
+  verifyAndRotateRefreshToken,
+  revokeRefreshToken,
+} from "./refreshTokenStore"
 import { sendRegisterOtpEmail, sendForgotPasswordOtpEmail } from "./email"
 import { revokeToken, isTokenRevoked } from "./tokenRevocation"
 
@@ -34,30 +43,29 @@ import { revokeToken, isTokenRevoked } from "./tokenRevocation"
 
 export interface AuthResult {
   accessToken: string
+  expiresInSeconds: number
+  refreshToken?: string
   user: { id: string; email: string; username?: string | null; name: string; role: string }
 }
 
-const DEFAULT_JWT_EXPIRY = process.env.JWT_EXPIRES_IN || "1d"
-const SESSION_TTL_SECONDS = 24 * 60 * 60 // 1 day matching JWT expiration
+function getJwtExpiry(): string {
+  return process.env.JWT_EXPIRES_IN || "15m" // 15m short-lived access token
+}
+
+export const ACCESS_TOKEN_TTL_SECONDS = 15 * 60 // 15 minutes
+export const REFRESH_TOKEN_TTL_SECONDS = 7 * 24 * 60 * 60 // 7 days
+
+function hashSessionKey(token: string): string {
+  return createHash("sha256").update(token.trim()).digest("hex")
+}
 
 async function cacheUserSession(token: string, userData: any) {
   try {
-    await redis.set(`auth:token:${token}`, JSON.stringify(userData), "EX", SESSION_TTL_SECONDS)
+    const key = `auth:session:${hashSessionKey(token)}`
+    await redis.set(key, JSON.stringify(userData), "EX", ACCESS_TOKEN_TTL_SECONDS)
   } catch {
     // Non-blocking fallback if Redis is offline
   }
-}
-
-async function getCachedUserSession(token: string) {
-  try {
-    const raw = await redis.get(`auth:token:${token}`)
-    if (raw) {
-      return JSON.parse(raw)
-    }
-  } catch {
-    // Fallback on Redis error
-  }
-  return null
 }
 
 function getJwtSecret(): string {
@@ -79,7 +87,10 @@ function generateToken(
     payload.passwordChangedAt = Math.floor(new Date(passwordChangedAt).getTime() / 1000)
   }
   return jwt.sign(payload, getJwtSecret(), {
-    expiresIn: DEFAULT_JWT_EXPIRY as any,
+    algorithm: "HS256",
+    issuer: "sekkha-api",
+    audience: "sekkha-app",
+    expiresIn: getJwtExpiry() as any,
   })
 }
 
@@ -124,10 +135,9 @@ export async function requestRegisterOtp(input: RequestRegisterOtpInput) {
     name,
     username: input.username || null,
     createdAt: Date.now(),
-    attempts: 0,
   })
 
-  // 5. Send OTP email via Resend
+  // 5. Send OTP email via SMTP / Resend
   await sendRegisterOtpEmail({
     to: normalizedEmail,
     otp,
@@ -154,7 +164,7 @@ export async function verifyRegisterOtp(input: VerifyRegisterOtpInput): Promise<
     throw err
   }
 
-  if (payload.otp !== input.otp.trim()) {
+  if (payload.otpHashed !== hashOtp(input.otp)) {
     const attempts = await incrementRegistrationOtpAttempts(normalizedEmail)
     if (attempts >= 5) {
       const err = new Error(
@@ -192,6 +202,9 @@ export async function verifyRegisterOtp(input: VerifyRegisterOtpInput): Promise<
   await deleteRegistrationOtp(normalizedEmail)
 
   const token = generateToken(user.id, user.role, user.name, user.passwordChangedAt)
+  const refreshToken = randomBytes(32).toString("hex")
+  await saveRefreshToken(user.id, refreshToken, REFRESH_TOKEN_TTL_SECONDS)
+
   const userData = {
     id: user.id,
     email: user.email || "",
@@ -202,6 +215,14 @@ export async function verifyRegisterOtp(input: VerifyRegisterOtpInput): Promise<
 
   await cacheUserSession(token, userData)
 
+  auditLogger.log({
+    actorId: user.id,
+    actorRole: user.role,
+    action: "AUTH_LOGIN_SUCCESS",
+    status: "SUCCESS",
+    details: { method: "otp_registration" },
+  })
+
   // Publish domain event
   eventbus.publish<UserRegisteredPayload>(DomainEvents.USER_REGISTERED, {
     userId: user.id,
@@ -211,22 +232,25 @@ export async function verifyRegisterOtp(input: VerifyRegisterOtpInput): Promise<
 
   return {
     accessToken: token,
+    expiresInSeconds: ACCESS_TOKEN_TTL_SECONDS,
+    refreshToken,
     user: userData,
   }
 }
 
 /**
  * Resends a new 6-digit OTP code to the user's email.
+ * F-11 Remediation: Uniform response, prevents account enumeration
  */
 export async function resendRegisterOtp(input: ResendOtpInput) {
   const normalizedEmail = input.email.toLowerCase().trim()
 
-  // 1. Check if user already registered
   const emailExists = await repo.findUserByEmail(normalizedEmail)
   if (emailExists) {
-    const err = new Error("Email sudah terdaftar. Silakan masuk ke akun Anda.") as Error & { status: number }
-    err.status = 409
-    throw err
+    return {
+      success: true,
+      message: `Jika email belum terdaftar, kode OTP telah dikirim ulang ke ${normalizedEmail}`,
+    }
   }
 
   const payload = await getRegistrationOtp(normalizedEmail)
@@ -239,11 +263,15 @@ export async function resendRegisterOtp(input: ResendOtpInput) {
   }
 
   const newOtp = randomInt(100000, 1000000).toString()
-  payload.otp = newOtp
-  payload.attempts = 0
-  payload.createdAt = Date.now()
 
-  await saveRegistrationOtp(normalizedEmail, payload)
+  await saveRegistrationOtp(normalizedEmail, {
+    otp: newOtp,
+    email: payload.email,
+    passwordHash: payload.passwordHash,
+    name: payload.name,
+    username: payload.username,
+    createdAt: Date.now(),
+  })
 
   await sendRegisterOtpEmail({
     to: normalizedEmail,
@@ -253,7 +281,7 @@ export async function resendRegisterOtp(input: ResendOtpInput) {
 
   return {
     success: true,
-    message: `Kode OTP baru telah dikirim ke ${normalizedEmail}`,
+    message: `Jika email belum terdaftar, kode OTP telah dikirim ulang ke ${normalizedEmail}`,
   }
 }
 
@@ -286,6 +314,9 @@ export async function registerUser(input: RegisterInput): Promise<AuthResult> {
   })
 
   const token = generateToken(user.id, user.role, user.name, user.passwordChangedAt)
+  const refreshToken = randomBytes(32).toString("hex")
+  await saveRefreshToken(user.id, refreshToken, REFRESH_TOKEN_TTL_SECONDS)
+
   const userData = {
     id: user.id,
     email: user.email || "",
@@ -296,7 +327,14 @@ export async function registerUser(input: RegisterInput): Promise<AuthResult> {
 
   await cacheUserSession(token, userData)
 
-  // ── Publish domain event ──────────────────────────────────────────────
+  auditLogger.log({
+    actorId: user.id,
+    actorRole: user.role,
+    action: "AUTH_LOGIN_SUCCESS",
+    status: "SUCCESS",
+    details: { method: "direct_registration" },
+  })
+
   eventbus.publish<UserRegisteredPayload>(DomainEvents.USER_REGISTERED, {
     userId: user.id,
     email: user.email || "",
@@ -305,6 +343,8 @@ export async function registerUser(input: RegisterInput): Promise<AuthResult> {
 
   return {
     accessToken: token,
+    expiresInSeconds: ACCESS_TOKEN_TTL_SECONDS,
+    refreshToken,
     user: userData,
   }
 }
@@ -316,6 +356,12 @@ export async function loginUser(input: LoginInput): Promise<AuthResult> {
   const identifier = input.identifier || input.email || input.username || ""
   const user = await repo.findUserByIdentifier(identifier)
   if (!user || !user.password) {
+    auditLogger.log({
+      actorId: "unknown",
+      action: "AUTH_LOGIN_FAILED",
+      status: "FAILURE",
+      details: { identifier },
+    })
     const err = new Error("Email/Username atau password salah") as Error & { status: number }
     err.status = 401
     throw err
@@ -323,12 +369,21 @@ export async function loginUser(input: LoginInput): Promise<AuthResult> {
 
   const valid = await bcrypt.compare(input.password, user.password)
   if (!valid) {
+    auditLogger.log({
+      actorId: user.id,
+      action: "AUTH_LOGIN_FAILED",
+      status: "FAILURE",
+      details: { identifier },
+    })
     const err = new Error("Email/Username atau password salah") as Error & { status: number }
     err.status = 401
     throw err
   }
 
   const token = generateToken(user.id, user.role, user.name, user.passwordChangedAt)
+  const refreshToken = randomBytes(32).toString("hex")
+  await saveRefreshToken(user.id, refreshToken, REFRESH_TOKEN_TTL_SECONDS)
+
   const userData = {
     id: user.id,
     email: user.email || "",
@@ -339,8 +394,18 @@ export async function loginUser(input: LoginInput): Promise<AuthResult> {
 
   await cacheUserSession(token, userData)
 
+  auditLogger.log({
+    actorId: user.id,
+    actorRole: user.role,
+    action: "AUTH_LOGIN_SUCCESS",
+    status: "SUCCESS",
+    details: { method: "password" },
+  })
+
   return {
     accessToken: token,
+    expiresInSeconds: ACCESS_TOKEN_TTL_SECONDS,
+    refreshToken,
     user: userData,
   }
 }
@@ -358,8 +423,12 @@ export async function verifyToken(token: string) {
     throw err
   }
 
-  // 2. Fallback to JWT verification & DB lookup
-  const payload = jwt.verify(token, getJwtSecret()) as {
+  // 2. JWT verification with pinned algorithm & claims
+  const payload = jwt.verify(token, getJwtSecret(), {
+    algorithms: ["HS256"],
+    issuer: "sekkha-api",
+    audience: "sekkha-app",
+  }) as {
     userId: string
     role: string
     name?: string
@@ -388,17 +457,67 @@ export async function verifyToken(token: string) {
     email: user.email,
     username: user.username,
     name: user.name,
-    role: user.role, // Fresh from DB
+    role: user.role,
   }
 
   return userData
 }
 
 /**
- * Logs out a user by revoking their token in Redis / memory.
+ * Refreshes an existing session via refresh token rotation (F-23 & FE-01 Remediation).
  */
-export async function logoutUser(token: string) {
-  await revokeToken(token)
+export async function refreshSession(refreshToken: string): Promise<AuthResult> {
+  const userId = await verifyAndRotateRefreshToken(refreshToken)
+  if (!userId) {
+    const err = new Error("Sesi telah kedaluwarsa atau token tidak valid. Silakan login kembali.") as Error & { status: number }
+    err.status = 401
+    throw err
+  }
+
+  const user = await repo.findUserById(userId)
+  if (!user) {
+    const err = new Error("Akun pengguna tidak ditemukan") as Error & { status: number }
+    err.status = 401
+    throw err
+  }
+
+  const newAccessToken = generateToken(user.id, user.role, user.name, user.passwordChangedAt)
+  const newRefreshToken = randomBytes(32).toString("hex")
+  await saveRefreshToken(user.id, newRefreshToken, REFRESH_TOKEN_TTL_SECONDS)
+
+  const userData = {
+    id: user.id,
+    email: user.email || "",
+    username: user.username,
+    name: user.name,
+    role: user.role,
+  }
+
+  await cacheUserSession(newAccessToken, userData)
+
+  return {
+    accessToken: newAccessToken,
+    expiresInSeconds: ACCESS_TOKEN_TTL_SECONDS,
+    refreshToken: newRefreshToken,
+    user: userData,
+  }
+}
+
+/**
+ * Logs out a user by revoking their token and refresh token in Redis / memory.
+ */
+export async function logoutUser(token?: string, userId?: string, refreshToken?: string) {
+  if (token) {
+    await revokeToken(token)
+  }
+  if (refreshToken) {
+    await revokeRefreshToken(refreshToken)
+  }
+  auditLogger.log({
+    actorId: userId || "authenticated_user",
+    action: "AUTH_LOGOUT",
+    status: "SUCCESS",
+  })
 }
 
 /**
@@ -425,7 +544,6 @@ export async function forgotPasswordRequest(input: ForgotPasswordRequestInput) {
     userId: user.id,
     name: user.name,
     createdAt: Date.now(),
-    attempts: 0,
   })
 
   await sendForgotPasswordOtpEmail({
@@ -443,6 +561,7 @@ export async function forgotPasswordRequest(input: ForgotPasswordRequestInput) {
 
 /**
  * Step 2: Verifies the 6-digit OTP before allowing password change.
+ * F-05 Remediation: Deletes OTP and issues single-use reset token.
  */
 export async function forgotPasswordVerifyOtp(input: ForgotPasswordVerifyOtpInput) {
   const normalizedEmail = input.email.toLowerCase().trim()
@@ -454,7 +573,7 @@ export async function forgotPasswordVerifyOtp(input: ForgotPasswordVerifyOtpInpu
     throw err
   }
 
-  if (payload.otp !== input.otp.trim()) {
+  if (payload.otpHashed !== hashOtp(input.otp)) {
     const attempts = await incrementForgotPasswordOtpAttempts(normalizedEmail)
     if (attempts >= 5) {
       const err = new Error(
@@ -471,47 +590,56 @@ export async function forgotPasswordVerifyOtp(input: ForgotPasswordVerifyOtpInpu
     throw err
   }
 
+  // Consume OTP and generate one-time cryptographically random reset token
+  await deleteForgotPasswordOtp(normalizedEmail)
+  const resetToken = randomBytes(32).toString("hex")
+  await savePasswordResetToken(normalizedEmail, payload.userId, resetToken)
+
   return {
     success: true,
-    message: "Kode OTP valid.",
+    message: "Kode OTP valid. Silakan atur kata sandi baru Anda.",
+    reset_token: resetToken,
   }
 }
 
 /**
- * Step 3: Sets a new password after verifying OTP.
+ * Step 3: Sets a new password using one-time reset token (or verified OTP fallback).
  */
 export async function resetPassword(input: ResetPasswordInput) {
   const normalizedEmail = input.email.toLowerCase().trim()
-  const payload = await getForgotPasswordOtp(normalizedEmail)
+  let targetUserId: string | null = null
 
-  if (!payload) {
-    const err = new Error("Sesi pemulihan telah kedaluwarsa. Silakan ajukan ulang dari awal.") as Error & { status: number }
-    err.status = 400
-    throw err
-  }
-
-  if (payload.otp !== input.otp.trim()) {
-    const attempts = await incrementForgotPasswordOtpAttempts(normalizedEmail)
-    if (attempts >= 5) {
-      const err = new Error(
-        "Kode OTP salah sebanyak 5 kali. Sesi pemulihan kata sandi telah dibatalkan demi keamanan. Silakan ajukan ulang dari awal."
-      ) as Error & { status: number }
+  if (input.reset_token) {
+    targetUserId = await verifyAndConsumePasswordResetToken(normalizedEmail, input.reset_token)
+    if (!targetUserId) {
+      const err = new Error("Token pemulihan kata sandi tidak valid atau telah kedaluwarsa. Silakan ajukan ulang.") as Error & { status: number }
       err.status = 400
       throw err
     }
-    const remaining = 5 - attempts
-    const err = new Error(
-      `Kode OTP tidak cocok. Sisa percobaan: ${remaining} kali.`
-    ) as Error & { status: number }
+  } else if (input.otp) {
+    // Backwards-compatible fallback
+    const payload = await getForgotPasswordOtp(normalizedEmail)
+    if (!payload || payload.otpHashed !== hashOtp(input.otp)) {
+      const err = new Error("Kode OTP salah atau sesi telah kedaluwarsa.") as Error & { status: number }
+      err.status = 400
+      throw err
+    }
+    targetUserId = payload.userId
+    await deleteForgotPasswordOtp(normalizedEmail)
+  } else {
+    const err = new Error("Token pemulihan atau kode OTP wajib disertakan.") as Error & { status: number }
     err.status = 400
     throw err
   }
 
   const hashedPassword = await bcrypt.hash(input.newPassword, 12)
-  await repo.updateUserPassword(payload.userId, hashedPassword)
+  await repo.updateUserPassword(targetUserId, hashedPassword)
 
-  // Delete consumed OTP
-  await deleteForgotPasswordOtp(normalizedEmail)
+  auditLogger.log({
+    actorId: targetUserId,
+    action: "AUTH_PASSWORD_RESET",
+    status: "SUCCESS",
+  })
 
   return {
     success: true,
@@ -521,12 +649,12 @@ export async function resetPassword(input: ResetPasswordInput) {
 
 /**
  * Legacy forgot password handler (backward compatibility).
+ * F-11 Remediation: Does not leak userFound boolean
  */
 export async function forgotPassword(input: ForgotPasswordInput) {
-  const user = await repo.findUserByIdentifier(input.identifier)
+  await repo.findUserByIdentifier(input.identifier)
   return {
     success: true,
-    userFound: Boolean(user),
-    message: "Permintaan pemulihan kata sandi telah diproses. Silakan hubungi admin/pengurus vihara atau cek email Anda.",
+    message: "Permintaan pemulihan kata sandi telah diproses. Silakan cek email Anda.",
   }
 }

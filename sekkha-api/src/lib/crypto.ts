@@ -1,14 +1,21 @@
 import crypto from "crypto"
 
-// Default stable fallback keys (strictly 32 bytes) for development and test environments
+// Default stable fallback keys (strictly 32 bytes) for local development and test environments ONLY
 const DEV_ENCRYPTION_KEY = crypto.createHash("sha256").update("sekkha_dev_aes_256_encryption_key").digest() // 32 bytes
 const DEV_BLIND_INDEX_KEY = crypto.createHash("sha256").update("sekkha_dev_hmac_blind_index_key").digest() // 32 bytes
+
+let warnedFallbackKey = false
 
 function getEncryptionKey(): Buffer {
   const envKey = process.env.ENCRYPTION_KEY
   if (!envKey) {
-    if (process.env.NODE_ENV === "production") {
-      throw new Error("CRITICAL: ENCRYPTION_KEY environment variable is required in production!")
+    const isLocalDev = process.env.NODE_ENV === "development" || process.env.NODE_ENV === "test"
+    if (!isLocalDev) {
+      throw new Error("CRITICAL SECURITY ERROR: ENCRYPTION_KEY environment variable is required in non-development environments!")
+    }
+    if (!warnedFallbackKey) {
+      console.warn("⚠️  [Crypto] Using static DEV_ENCRYPTION_KEY. Set ENCRYPTION_KEY in .env for production use.")
+      warnedFallbackKey = true
     }
     return DEV_ENCRYPTION_KEY
   }
@@ -24,8 +31,9 @@ function getEncryptionKey(): Buffer {
 function getBlindIndexKey(): Buffer {
   const envKey = process.env.BLIND_INDEX_KEY
   if (!envKey) {
-    if (process.env.NODE_ENV === "production") {
-      throw new Error("CRITICAL: BLIND_INDEX_KEY environment variable is required in production!")
+    const isLocalDev = process.env.NODE_ENV === "development" || process.env.NODE_ENV === "test"
+    if (!isLocalDev) {
+      throw new Error("CRITICAL SECURITY ERROR: BLIND_INDEX_KEY environment variable is required in non-development environments!")
     }
     return DEV_BLIND_INDEX_KEY
   }
@@ -85,9 +93,9 @@ export function decrypt(ciphertext: string | null | undefined): string | null {
     let decrypted = decipher.update(encryptedHex, "hex", "utf-8")
     decrypted += decipher.final("utf-8")
     return decrypted
-  } catch (err) {
-    // If decryption fails (e.g. tampered data or wrong key), return null or throw
-    console.error("AES-256-GCM decryption failed:", err)
+  } catch {
+    // Suppress raw error to prevent leaking key/tag specifics
+    console.warn("⚠️ [Crypto] Decryption failed on record (integrity tag mismatch or corrupt data)")
     return null
   }
 }

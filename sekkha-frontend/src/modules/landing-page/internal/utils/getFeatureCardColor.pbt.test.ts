@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import fc from 'fast-check'
-import { getFeatureCardColor, type FeatureCardColor } from './getFeatureCardColor'
+import { getFeatureCardColor  } from './getFeatureCardColor'
+import type {FeatureCardColor} from './getFeatureCardColor';
 
 /**
  * Validates: Requirements 4.4

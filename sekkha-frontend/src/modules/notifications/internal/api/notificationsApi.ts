@@ -1,7 +1,7 @@
 import { api } from "@/lib/api"
 
 // Feature toggle — set to true when notification service is enabled
-export const ENABLE_NOTIFICATIONS = false
+export const ENABLE_NOTIFICATIONS = true
 
 export interface NotificationDto {
   id: string

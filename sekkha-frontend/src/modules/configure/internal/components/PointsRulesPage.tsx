@@ -11,7 +11,8 @@ import {
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
 import { ResponsiveFormModal } from "@/components/common/ResponsiveFormModal"
 import { useAuth } from "@/modules/auth"
-import { pointRulesApi, type PointRuleDto } from "../api/configureApi"
+import { pointRulesApi  } from "../api/configureApi"
+import type {PointRuleDto} from "../api/configureApi";
 
 // Hardcoded structured rule sections
 interface RuleSectionConfig {

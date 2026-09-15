@@ -1,5 +1,6 @@
 import { useContext } from 'react'
 import { AuthContext } from '@/modules/auth/internal/context/AuthContext'
+import { safeStorage } from '@/lib/storage'
 
 type AuthState = 'loading' | 'authenticated' | 'unauthenticated'
 
@@ -15,7 +16,7 @@ export function useAuthState(): UseAuthStateReturn {
   const ctx = useContext(AuthContext)
 
   // If there's no stored token in browser, it is immediately unauthenticated (0ms latency)
-  if (typeof window !== 'undefined' && !localStorage.getItem('sekkha_access_token')) {
+  if (!safeStorage.getItem('sekkha_access_token')) {
     return { authState: 'unauthenticated' }
   }
 

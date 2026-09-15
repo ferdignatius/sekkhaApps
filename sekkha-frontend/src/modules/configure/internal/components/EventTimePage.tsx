@@ -9,12 +9,13 @@ import { useAuth } from "@/modules/auth"
 import { WheelTimePickerTrigger } from "@/components/ui/WheelTimePicker"
 import { MultiSelectDropdown } from "@/components/ui/MultiSelectDropdown"
 import {
-  type EventTimePresetItem,
+  
   DAY_NAMES,
   getMasterTimePresets,
   getMasterCategories,
-  saveMasterTimePresets,
+  saveMasterTimePresets
 } from "@/modules/events/internal/masterdata"
+import type {EventTimePresetItem} from "@/modules/events/internal/masterdata";
 
 export function EventTimePage() {
   const { authState } = useAuth()

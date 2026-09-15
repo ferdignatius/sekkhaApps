@@ -144,44 +144,45 @@ export function ProfilePage() {
   async function loadProfileData() {
     setLoading(true)
     try {
-      // 1. Load User Profile from /users/me
-      const profileRes = await api.get<UserProfile>("/users/me")
-      if (profileRes) {
-        setProfile(profileRes)
+      const [profileRes, streakRes, badgesRes, attendancesRes, lbRes] =
+        await Promise.allSettled([
+          api.get<UserProfile>("/users/me"),
+          api.get<{ current_streak: number; longest_streak: number }>(
+            "/users/me/streak"
+          ),
+          api.get<UserBadge[]>("/users/me/badges"),
+          api.get<UserAttendance[]>("/users/me/attendances"),
+          api.get<LeaderboardResponse>("/leaderboard?metric=points"),
+        ])
+
+      if (profileRes.status === "fulfilled" && profileRes.value) {
+        setProfile(profileRes.value)
       }
 
-      // 2. Load Streak Calculation
-      try {
-        const streakRes = await api.get<UserStreakData>("/gamification/streak")
-        setStreakData(streakRes)
-      } catch (e) {
+      if (streakRes.status === "fulfilled" && streakRes.value) {
+        setStreakData({
+          currentStreak: streakRes.value.current_streak ?? 0,
+          longestStreak: streakRes.value.longest_streak ?? 0,
+          weeklyActivity: [],
+        })
+      } else {
         setStreakData({ currentStreak: 0, longestStreak: 0, weeklyActivity: [] })
       }
 
-      // 3. Load Badges from /users/me/badges
-      try {
-        const badgesRes = await api.get<UserBadge[]>("/users/me/badges")
-        setBadges(badgesRes || [])
-      } catch (e) {
+      if (badgesRes.status === "fulfilled" && badgesRes.value) {
+        setBadges(badgesRes.value || [])
+      } else {
         setBadges([])
       }
 
-      // 4. Load Attendance History from /users/me/attendances
-      try {
-        const historyRes = await api.get<UserAttendance[]>("/users/me/attendances")
-        setAttendances(historyRes || [])
-      } catch (e) {
+      if (attendancesRes.status === "fulfilled" && attendancesRes.value) {
+        setAttendances(attendancesRes.value || [])
+      } else {
         setAttendances([])
       }
 
-      // 5. Load Leaderboard Rank
-      try {
-        const lbRes = await api.get<LeaderboardResponse>("/leaderboard?metric=points")
-        if (lbRes?.my_rank?.rank) {
-          setMyRank(lbRes.my_rank.rank)
-        }
-      } catch (e) {
-        // silently fallback
+      if (lbRes.status === "fulfilled" && lbRes.value?.my_rank?.rank) {
+        setMyRank(lbRes.value.my_rank.rank)
       }
     } catch (err: any) {
       console.error("Failed to load profile data:", err)

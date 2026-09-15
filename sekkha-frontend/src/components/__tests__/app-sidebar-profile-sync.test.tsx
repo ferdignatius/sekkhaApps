@@ -11,10 +11,11 @@ import { TooltipProvider } from "@/components/ui/tooltip"
 import { AuthContext } from "@/modules/auth/internal/context/AuthContext"
 import {
   authReducer,
-  initialAuthState,
-  type AuthState,
-  type UserRole,
+  initialAuthState
+  
+  
 } from "@/modules/auth/internal/context/authReducer"
+import type {AuthState, UserRole} from "@/modules/auth/internal/context/authReducer";
 import { api } from "@/lib/api"
 
 vi.mock("@tanstack/react-router", () => ({

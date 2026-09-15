@@ -22,12 +22,13 @@ import {
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
 import {
   fetchRecencyAlerts,
-  fetchMemberRecencyDetail,
-  type MemberRecency,
-  type RecencySummary,
-  type AlertLevel,
-  type MemberDetailResponse,
+  fetchMemberRecencyDetail
+  
+  
+  
+  
 } from "../api/recencyApi"
+import type {MemberRecency, RecencySummary, AlertLevel, MemberDetailResponse} from "../api/recencyApi";
 
 // ─── Streamlined Alert Level Design Tokens ────────────────────────────────────
 

@@ -81,7 +81,7 @@ export function AttendanceScanModal({
   onRecord,
   onClose,
 }: AttendanceScanModalProps) {
-  const isPengurus = role === "pengurus" || role === "admin"
+  const isPengurus = role === "pengurus" || role === "admin" || role === "aktivis"
 
   // Mode for Pengurus: 'camera' | 'search'
   const [pengurusMode, setPengurusMode] = useState<"camera" | "search">(
@@ -183,8 +183,11 @@ export function AttendanceScanModal({
     if (isPengurus) {
       setLoadingPeople(true)
       teamsApi
-        .listMembers()
-        .then((data) => setPeopleList(data))
+        .listMembers({ limit: 100, page: 1 })
+        .then((data: any) => {
+          const items = Array.isArray(data) ? data : data?.items || []
+          setPeopleList(items)
+        })
         .catch((err) =>
           console.error("Gagal memuat data People untuk presensi:", err)
         )

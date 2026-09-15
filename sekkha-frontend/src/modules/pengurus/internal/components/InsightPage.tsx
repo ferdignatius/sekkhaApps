@@ -27,17 +27,19 @@ import {
 import {
   ChartContainer,
   ChartTooltip,
-  ChartTooltipContent,
-  type ChartConfig,
+  ChartTooltipContent
+  
 } from "@/components/ui/chart"
+import type {ChartConfig} from "@/components/ui/chart";
 import {
   fetchInsightMetricsParams,
-  MASTER_EVENT_CATEGORIES,
-  type InsightMetricsResponse,
-  type RoleSegmentFilter,
-  type EventCategoryFilter,
-  type TimeUnit,
+  MASTER_EVENT_CATEGORIES
+  
+  
+  
+  
 } from "../api/insightApi"
+import type {InsightMetricsResponse, RoleSegmentFilter, EventCategoryFilter, TimeUnit} from "../api/insightApi";
 
 const SERIES_COLORS = ["#1F75FE", "#94A3B8", "#F59E0B", "#10B981", "#8B5CF6"]
 const MONTH_NAMES = [

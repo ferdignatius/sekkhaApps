@@ -11,6 +11,7 @@ import { AppSidebar } from "@/components/app-sidebar"
 import { MobileDock } from "@/components/common/MobileDock"
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
 import { TooltipProvider } from "@/components/ui/tooltip"
+import { safeStorage } from "@/lib/storage"
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
@@ -50,7 +51,7 @@ export async function routeGuardBeforeLoad(
   if (context.authState.status === "loading") {
     await waitForAuthResolution(context, 3000)
   }
-  const token = typeof window !== "undefined" ? localStorage.getItem("sekkha_access_token") : null
+  const token = safeStorage.getItem("sekkha_access_token")
   const isAuthenticated =
     context.authState.status === "authenticated" || (token !== null && token !== "")
 

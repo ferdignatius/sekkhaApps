@@ -15,7 +15,8 @@ import {
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
 import { ResponsiveFormModal } from "@/components/common/ResponsiveFormModal"
 import { useAuth } from "@/modules/auth"
-import { seasonsApi, type SeasonDto } from "../api/configureApi"
+import { seasonsApi  } from "../api/configureApi"
+import type {SeasonDto} from "../api/configureApi";
 
 interface SeasonSectionConfig {
   code: string

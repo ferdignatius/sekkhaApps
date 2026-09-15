@@ -15,5 +15,8 @@
     "build:web": "bun --filter sekkha-frontend build",
     "build": "bun --filter \"*\" build",
     "release": "bun scripts/release.mjs"
+  },
+  "overrides": {
+    "qs": ">=6.16.0"
   }
 }

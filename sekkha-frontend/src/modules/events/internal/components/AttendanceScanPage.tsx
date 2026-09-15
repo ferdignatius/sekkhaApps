@@ -61,7 +61,7 @@ export function AttendanceScanPage() {
 
   const { authState } = useAuth()
   const role: UserRole | null = authState.role ?? null
-  const isPengurus = role === "pengurus" || role === "admin"
+  const isPengurus = role === "pengurus" || role === "admin" || role === "aktivis"
 
   // Event and attendances data state
   const [event, setEvent] = useState<EventListItem | null>(null)
@@ -164,8 +164,11 @@ export function AttendanceScanPage() {
   useEffect(() => {
     if (isPengurus) {
       teamsApi
-        .listMembers()
-        .then((data) => setPeopleList(data))
+        .listMembers({ limit: 100, page: 1 })
+        .then((data: any) => {
+          const items = Array.isArray(data) ? data : data?.items || []
+          setPeopleList(items)
+        })
         .catch((err) => console.error("Gagal memuat People list:", err))
     }
   }, [isPengurus])
@@ -610,6 +613,9 @@ export function AttendanceScanPage() {
       )
     } finally {
       if (uploadInputRef.current) uploadInputRef.current.value = ""
+      if (sandboxEl && sandboxEl.parentNode) {
+        sandboxEl.parentNode.removeChild(sandboxEl)
+      }
     }
   }
 

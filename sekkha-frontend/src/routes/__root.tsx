@@ -23,6 +23,18 @@ export const Route = createRootRoute({
         name: "description",
         content: "Sekkha Vihara Community App — Fellowship attendance, points gamification, activity streaks, and member management platform.",
       },
+      {
+        httpEquiv: "X-Content-Type-Options",
+        content: "nosniff",
+      },
+      {
+        httpEquiv: "Cross-Origin-Opener-Policy",
+        content: "same-origin",
+      },
+      {
+        name: "referrer",
+        content: "strict-origin-when-cross-origin",
+      },
     ],
     links: [
       {

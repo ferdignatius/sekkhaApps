@@ -8,6 +8,11 @@ import * as fc from "fast-check"
 import { render, cleanup, within, screen, fireEvent } from "@testing-library/react"
 import { AuthFormField } from "../components/AuthFormField"
 
+// ─── Property 12: Setiap Field Input Memiliki Label yang Terhubung ─────────────
+
+// Feature: auth-flow, Property 12: Setiap Field Input Memiliki Label yang Terhubung Secara Aksesibel
+import { AuthForm } from "../components/AuthForm"
+
 // Arbitrary for valid HTML element id values (alphanumeric + hyphen/underscore).
 // Avoids characters that are special in CSS selectors to keep tests simple.
 const validIdArb = fc.stringMatching(/^[a-zA-Z][a-zA-Z0-9_-]{0,19}$/)
@@ -71,7 +76,7 @@ describe("AuthFormField — Property 3: ARIA attributes with/without error", () 
       ),
       { numRuns: 100 },
     )
-  }, { timeout: 30000 })
+  }, 30000)
 
   it("sets aria-invalid=false and omits aria-describedby when error is absent", () => {
     fc.assert(
@@ -112,11 +117,6 @@ describe("AuthFormField — Property 3: ARIA attributes with/without error", () 
     )
   })
 })
-
-// ─── Property 12: Setiap Field Input Memiliki Label yang Terhubung ─────────────
-
-// Feature: auth-flow, Property 12: Setiap Field Input Memiliki Label yang Terhubung Secara Aksesibel
-import { AuthForm } from "../components/AuthForm"
 
 // Mock @tanstack/react-router so AuthForm can render without a router context.
 // Link is replaced with a plain <a> to keep DOM assertions straightforward.

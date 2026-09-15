@@ -18,7 +18,8 @@ import {
 import QRCode from "react-qr-code"
 import { api } from "@/lib/api"
 import { useAuth } from "@/modules/auth"
-import { SchoolCombobox, type SchoolOption } from "@/components/ui/SchoolCombobox"
+import { SchoolCombobox  } from "@/components/ui/SchoolCombobox"
+import type {SchoolOption} from "@/components/ui/SchoolCombobox";
 
 type OnboardingStep = "identity" | "academic" | "success"
 

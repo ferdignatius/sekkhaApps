@@ -3,17 +3,16 @@
 // Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 7.1, 7.2, 7.3, 7.4
 
 import type { Dispatch } from "react"
-import type { AuthAction } from "../context/authReducer"
 import { AuthError } from "../context/authReducer"
+import type { AuthAction, UserRole } from "../context/authReducer"
 import { API_BASE_URL } from "@/lib/api"
+import { safeStorage } from "@/lib/storage"
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
 export const STORAGE_KEY = "sekkha_access_token" as const
 
 // ─── Backend Response Types ────────────────────────────────────────────────────
-
-import type { UserRole } from "../context/authReducer"
 
 interface AuthSuccessResponse {
   accessToken: string
@@ -106,7 +105,7 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
 
     if (response.ok) {
       const data = (await response.json()) as AuthSuccessResponse
-      localStorage.setItem(STORAGE_KEY, data.accessToken)
+      safeStorage.setItem(STORAGE_KEY, data.accessToken)
       dispatch({
         type: "AUTH_SUCCESS",
         payload: {
@@ -205,7 +204,7 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
 
     if (response.ok) {
       const data = (await response.json()) as AuthSuccessResponse
-      localStorage.setItem(STORAGE_KEY, data.accessToken)
+      safeStorage.setItem(STORAGE_KEY, data.accessToken)
       dispatch({
         type: "AUTH_SUCCESS",
         payload: {
@@ -295,7 +294,7 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
 
     if (response.ok) {
       const data = (await response.json()) as AuthSuccessResponse
-      localStorage.setItem(STORAGE_KEY, data.accessToken)
+      safeStorage.setItem(STORAGE_KEY, data.accessToken)
       dispatch({
         type: "AUTH_SUCCESS",
         payload: {
@@ -376,7 +375,7 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
    * Requirements: 4.6
    */
   function logout(): void {
-    const token = typeof localStorage !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null
+    const token = safeStorage.getItem(STORAGE_KEY)
     if (token) {
       try {
         fetch(`${API_BASE_URL}/auth/logout`, {
@@ -388,9 +387,7 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
         }).catch(() => {})
       } catch {}
     }
-    if (typeof localStorage !== "undefined") {
-      localStorage.removeItem(STORAGE_KEY)
-    }
+    safeStorage.removeItem(STORAGE_KEY)
     dispatch({ type: "AUTH_LOGOUT" })
   }
 
@@ -406,7 +403,7 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
    */
   function initiateGoogleOAuth(): void {
     try {
-      window.location.href = "http://localhost:4000/api/auth/google"
+      window.location.href = `${API_BASE_URL}/auth/google`
     } catch {
       throw new AuthError(
         "OAUTH_FAILED",

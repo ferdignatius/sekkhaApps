@@ -1,8 +1,8 @@
 // Feature: auth-flow, Property 1: Validator Mengembalikan Error yang Akurat untuk Semua Kombinasi Input
 
-import { describe, it } from "vitest"
+import { describe, it, expect  } from "vitest"
 import * as fc from "fast-check"
-import { expect } from "vitest"
+
 import { validateSignUpForm } from "../utils/validator"
 
 // ─── Constants ─────────────────────────────────────────────────────────────────

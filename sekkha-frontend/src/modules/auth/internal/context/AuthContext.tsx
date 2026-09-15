@@ -12,11 +12,11 @@ import React, {
 import {
   authReducer,
   initialAuthState,
-  type AuthState,
-  type UserRole,
 } from "./authReducer"
+import type { AuthState, UserRole } from "./authReducer"
 import { createAuthService, STORAGE_KEY } from "../api/authService"
 import { api } from "@/lib/api"
+import { safeStorage } from "@/lib/storage"
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
@@ -68,18 +68,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     async function initAuth() {
       // 1. Check if token is present in URL query parameters (Google OAuth callback redirect)
-      const urlParams = new URLSearchParams(window.location.search)
-      const urlToken = urlParams.get("token")
+      const urlParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null
+      const urlToken = urlParams?.get("token")
 
-      let token = localStorage.getItem(STORAGE_KEY)
+      let token = safeStorage.getItem(STORAGE_KEY)
 
       if (urlToken) {
-        localStorage.setItem(STORAGE_KEY, urlToken)
+        safeStorage.setItem(STORAGE_KEY, urlToken)
         token = urlToken
 
         // Clean query parameter from URL to keep it pristine
-        const cleanUrl = window.location.pathname + window.location.hash
-        window.history.replaceState({}, document.title, cleanUrl)
+        if (typeof window !== "undefined") {
+          const cleanUrl = window.location.pathname + window.location.hash
+          window.history.replaceState({}, document.title, cleanUrl)
+        }
       }
 
       // No token → immediately unauthenticated, no server request needed (requirement 4.8)
@@ -95,36 +97,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
         if (cancelled) return
 
-        // Default to null so the UI can render blank until the real profile
-        // arrives from /users/me (avoids flashing "unknown" / default role).
-        let userId: string | null = null
-        let role: UserRole | null = null
-        let name: string | null = null
-        let email: string | null = null
-
-        try {
-          const parts = token.split(".")
-          if (parts.length === 3) {
-            const payload = JSON.parse(atob(parts[1])) as {
-              sub?: string
-              userId?: string
-              id?: string
-              role?: string
-              name?: string
-              email?: string
-            }
-            userId = payload.sub ?? payload.userId ?? payload.id ?? null
-            role = (payload.role as UserRole) ?? null
-            name = payload.name ?? null
-            email = payload.email ?? null
-          }
-        } catch {
-          // JWT decode failed — keep nulls; /users/me will hydrate
-        }
-
+        // FE-14 Remediation: Do not perform unverified client-side atob JWT decoding.
+        // Trust only verified response from backend. Set authenticated session, then hydrate.
         dispatch({
           type: "AUTH_SUCCESS",
-          payload: { accessToken: token, userId, role, name, email },
+          payload: { accessToken: token, userId: null, role: null, name: null, email: null },
         })
 
         // Best effort: hydrate fresh profile from database
@@ -143,7 +120,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
         // verifyToken threw (NETWORK_TIMEOUT, INVALID_CREDENTIALS, or UNKNOWN_ERROR)
         // In all cases: remove stale token and set unauthenticated (requirements 4.5, 4.7)
-        localStorage.removeItem(STORAGE_KEY)
+        safeStorage.removeItem(STORAGE_KEY)
         dispatch({ type: "AUTH_VERIFY_FAILED" })
       }
     }
@@ -196,7 +173,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   )
 
   const refreshUser = async (): Promise<void> => {
-    const token = localStorage.getItem(STORAGE_KEY)
+    const token = safeStorage.getItem(STORAGE_KEY)
     if (!token) return
     try {
       const res = await api.get<{ name?: string; role?: UserRole; email?: string }>("/users/me")
@@ -232,26 +209,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
 }
 
 // ─── RouterContext Integration ─────────────────────────────────────────────────
-// Expose authState to TanStack Router's context so route guards (task 9) can
-// read it via `context.authState` inside `beforeLoad`.
-//
-// Usage in router.tsx (task 11.2):
-//
-//   import { useAuth } from "@/modules/auth"
-//   const router = getRouter()
-//   router.options.context = { authState: useAuth().authState }
-//
-// The RouterContext interface declaration lives in router.tsx alongside the
-// router instance (where it has access to the router type). This file only
-// provides the shape that the context consumer expects.
-
 export interface RouterContext {
   authState: AuthState
 }
 
-// ─── Internal useAuthContext hook (not exported from feature/index) ───────────
-// Public consumers should import `useAuth` from `@/modules/auth/hooks/useAuth`.
-
+// ─── Internal useAuthContext hook ───────────────────────────────────────────
 export function useAuthContext(): AuthContextValue {
   const ctx = useContext(AuthContext)
   if (ctx === null) {

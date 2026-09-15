@@ -1,44 +1,69 @@
 import { Router, type Request, type Response, type NextFunction } from "express"
 import { z } from "zod"
 import { prisma } from "../../../lib/prisma"
-import { cached, invalidatePattern, invalidate, CacheKeys } from "../../../lib/cache"
+import { invalidatePattern, invalidate, CacheKeys } from "../../../lib/cache"
 import { requireAuth, requireRole } from "../../../middleware/auth"
 import { generateBlindIndex } from "../../../lib/crypto"
+import { auditLogger } from "../../../lib/auditLogger"
+import { registerSseClient, broadcastAttendanceScan } from "./sse"
 
 export const eventsRouter: Router = Router()
 
+// F-15 Remediation: Add string length bounds to event schemas
 const CreateEventSchema = z.object({
-  title: z.string().min(1),
-  description: z.string().optional(),
-  location: z.string().min(1),
+  title: z.string().trim().min(1, "Judul event wajib diisi").max(200, "Judul maksimal 200 karakter"),
+  description: z.string().trim().max(2000, "Deskripsi maksimal 2000 karakter").optional(),
+  location: z.string().trim().min(1, "Lokasi event wajib diisi").max(200, "Lokasi maksimal 200 karakter"),
   event_date: z
     .string()
     .refine((v) => !isNaN(Date.parse(v)), "Format event_date tidak valid, gunakan format tanggal ISO"),
   event_type: z.enum(["rutin", "special"]).optional(),
   event_type_id: z.string().optional(),
   season_id: z.string().optional(),
-  tag: z.string().optional(),
+  tag: z.string().max(50).optional(),
   status: z.enum(["draft", "published", "active", "closed", "cancelled"]).optional(),
+  visibility: z.enum(["all", "umat", "aktivis", "pengurus_only"]).optional(),
 })
 
 const UpdateEventSchema = CreateEventSchema.partial()
 
-// GET /api/events — list (cached 60s)
+// GET /api/events — list with visibility authorization (F-10) and pagination bounds (F-13)
 eventsRouter.get("/", requireAuth, async (req, res, next) => {
   try {
-    const events = await cached(CacheKeys.events(), 60, async () => {
-      return prisma.event.findMany({
-        where: { status: { in: ["published", "active", "closed"] } },
-        include: {
-          type: true,
-          season: true,
-        },
-        orderBy: { eventDate: "asc" },
-      })
+    const userRole = req.user?.role || "umat"
+    const isPrivileged = userRole === "pengurus" || userRole === "admin"
+    const page = Math.max(1, parseInt(req.query.page as string, 10) || 1)
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit as string, 10) || 20))
+    const skip = (page - 1) * limit
+
+    let whereClause: any = {}
+    if (userRole === "umat") {
+      whereClause = {
+        status: { in: ["published", "active", "closed"] },
+        visibility: { in: ["all", "umat"] },
+      }
+    } else if (userRole === "aktivis") {
+      whereClause = {
+        status: { in: ["published", "active", "closed"] },
+        visibility: { in: ["all", "umat", "aktivis"] },
+      }
+    } else {
+      // pengurus and admin can see all events
+      whereClause = {}
+    }
+
+    const events = await prisma.event.findMany({
+      where: whereClause,
+      include: {
+        type: true,
+        season: true,
+      },
+      orderBy: { eventDate: "asc" },
+      skip,
+      take: limit,
     })
 
-    const isPrivileged = req.user?.role === "pengurus" || req.user?.role === "admin"
-    res.json(events.map(e => ({
+    const formatted = events.map((e) => ({
       id: e.id,
       title: e.title || "Acara Vihara",
       description: e.description || "",
@@ -51,15 +76,21 @@ eventsRouter.get("/", requireAuth, async (req, res, next) => {
       season_id: e.seasonId,
       tag: e.tag || "Umum",
       status: e.status || "published",
+      visibility: e.visibility,
       qr_code: isPrivileged && e.qrCode ? { code: e.qrCode, expires_at: null } : null,
-    })))
+    }))
+
+    res.json(formatted)
   } catch (err) { next(err) }
 })
 
-// GET /api/events/:id — detail
+// GET /api/events/:id — detail with role-aware visibility guard (F-10)
 eventsRouter.get("/:id", requireAuth, async (req, res, next) => {
   try {
     const id = req.params.id as string
+    const userRole = req.user?.role || "umat"
+    const isPrivileged = userRole === "pengurus" || userRole === "admin"
+
     const event = await prisma.event.findUnique({
       where: { id },
       include: {
@@ -67,12 +98,21 @@ eventsRouter.get("/:id", requireAuth, async (req, res, next) => {
         season: true,
       },
     })
-    if (!event) { res.status(404).json({ error: "Event not found" }); return }
+    if (!event) { res.status(404).json({ error: "Event tidak ditemukan" }); return }
 
-    const isPrivileged = req.user?.role === "pengurus" || req.user?.role === "admin"
-    if (!isPrivileged && (event.status === "draft" || event.status === "cancelled")) {
-      res.status(403).json({ error: "Access denied. Event is not publicly accessible." })
-      return
+    if (!isPrivileged) {
+      if (event.status === "draft" || event.status === "cancelled") {
+        res.status(403).json({ error: "Event tidak dapat diakses." })
+        return
+      }
+      if (event.visibility === "pengurus_only") {
+        res.status(403).json({ error: "Event ini hanya untuk Pengurus." })
+        return
+      }
+      if (event.visibility === "aktivis" && userRole === "umat") {
+        res.status(403).json({ error: "Event ini khusus untuk Aktivis dan Pengurus." })
+        return
+      }
     }
 
     res.json({
@@ -86,6 +126,7 @@ eventsRouter.get("/:id", requireAuth, async (req, res, next) => {
       season_id: event.seasonId,
       tag: event.tag,
       status: event.status,
+      visibility: event.visibility,
       qr_code: isPrivileged && event.qrCode ? { code: event.qrCode, expires_at: null } : null,
     })
   } catch (err) { next(err) }
@@ -120,11 +161,28 @@ eventsRouter.post("/", requireAuth, requireRole("pengurus", "admin"), async (req
         seasonId: seasonId || null,
         tag: body.tag,
         status: body.status ?? "published",
+        visibility: body.visibility ?? "all",
         qrCode,
       },
     })
     await invalidatePattern("events:*")
-    res.status(201).json({ id: event.id, title: event.title, status: event.status, qr_code: { code: qrCode, expires_at: null } })
+
+    auditLogger.log({
+      actorId: req.user!.userId,
+      actorRole: req.user!.role,
+      action: "EVENT_CREATED",
+      targetId: event.id,
+      status: "SUCCESS",
+      details: { title: event.title, visibility: event.visibility },
+    })
+
+    res.status(201).json({
+      id: event.id,
+      title: event.title,
+      status: event.status,
+      visibility: event.visibility,
+      qr_code: { code: qrCode, expires_at: null },
+    })
   } catch (err) { next(err) }
 })
 
@@ -152,14 +210,15 @@ eventsRouter.put("/:id", requireAuth, requireRole("pengurus", "admin"), async (r
         ...(body.season_id && { seasonId: body.season_id }),
         ...(body.tag !== undefined && { tag: body.tag }),
         ...(body.status && { status: body.status }),
+        ...(body.visibility && { visibility: body.visibility }),
       },
     })
     await invalidatePattern("events:*")
-    res.json({ id: event.id, title: event.title, status: event.status })
+    res.json({ id: event.id, title: event.title, status: event.status, visibility: event.visibility })
   } catch (err) { next(err) }
 })
 
-// PATCH /api/events/:id/status — update event lifecycle status (pengurus/admin)
+// PATCH /api/events/:id/status — update event lifecycle status with idempotent point award transaction (F-14)
 eventsRouter.patch("/:id/status", requireAuth, requireRole("pengurus", "admin"), async (req, res, next) => {
   try {
     const id = req.params.id as string
@@ -167,43 +226,54 @@ eventsRouter.patch("/:id/status", requireAuth, requireRole("pengurus", "admin"),
       status: z.enum(["draft", "published", "active", "closed", "cancelled"]),
     }).parse(req.body)
 
-    const event = await prisma.event.update({
-      where: { id },
-      data: { status },
-    })
+    // Execute status transition and point crediting in an atomic database transaction
+    const event = await prisma.$transaction(async (tx) => {
+      const currentEvent = await tx.event.findUnique({ where: { id } })
+      if (!currentEvent) {
+        const err = new Error("Event tidak ditemukan") as Error & { status: number }
+        err.status = 404
+        throw err
+      }
 
-    // When closing the event, finalize all attendances and credit points to attendees in batch
-    if (status === "closed") {
-      const attendees = await prisma.attendance.findMany({
-        where: { eventId: id },
+      // If already closed and requesting closed again, return idempotently without duplicate points
+      if (currentEvent.status === "closed" && status === "closed") {
+        return currentEvent
+      }
+
+      const updated = await tx.event.update({
+        where: { id },
+        data: { status },
       })
 
-      if (attendees.length > 0) {
-        const ruleCode = event.eventType === "special" ? "attendance_special" : "attendance_rutin"
-        const activeRule = await prisma.pointRule.findUnique({ where: { code: ruleCode } }).catch(() => null)
-        const defaultPoints = activeRule?.points ?? (event.eventType === "special" ? 100 : 50)
+      // When closing event, credit points to attendees idempotently
+      if (status === "closed") {
+        const attendees = await tx.attendance.findMany({ where: { eventId: id } })
+        if (attendees.length > 0) {
+          const ruleCode = currentEvent.eventType === "special" ? "attendance_special" : "attendance_rutin"
+          const activeRule = await tx.pointRule.findUnique({ where: { code: ruleCode } }).catch(() => null)
+          const defaultPoints = activeRule?.points ?? (currentEvent.eventType === "special" ? 100 : 50)
 
-        const existingTxs = await prisma.pointTransaction.findMany({
-          where: { referenceId: { in: attendees.map((a) => a.id) } },
-          select: { referenceId: true },
-        })
-        const processedAttIds = new Set(existingTxs.map((t) => t.referenceId))
-        const pendingAttendees = attendees.filter((a) => !processedAttIds.has(a.id))
+          const existingTxs = await tx.pointTransaction.findMany({
+            where: { referenceId: { in: attendees.map((a) => a.id) } },
+            select: { referenceId: true },
+          })
+          const processedAttIds = new Set(existingTxs.map((t) => t.referenceId))
+          const pendingAttendees = attendees.filter((a) => !processedAttIds.has(a.id))
 
-        if (pendingAttendees.length > 0) {
-          const pointTxData = pendingAttendees.map((att) => ({
-            userId: att.userId,
-            ruleId: activeRule?.id || null,
-            amount: att.pointsEarned || defaultPoints,
-            type: "attendance" as const,
-            description: `Presensi Event: ${event.title}`,
-            referenceId: att.id,
-          }))
+          if (pendingAttendees.length > 0) {
+            const pointTxData = pendingAttendees.map((att) => ({
+              userId: att.userId,
+              ruleId: activeRule?.id || null,
+              amount: att.pointsEarned || defaultPoints,
+              type: "attendance" as const,
+              description: `Presensi Event: ${currentEvent.title}`,
+              referenceId: att.id,
+            }))
 
-          await prisma.$transaction([
-            prisma.pointTransaction.createMany({ data: pointTxData }),
-            ...pendingAttendees.map((att) =>
-              prisma.userStats.upsert({
+            await tx.pointTransaction.createMany({ data: pointTxData, skipDuplicates: true })
+
+            for (const att of pendingAttendees) {
+              await tx.userStats.upsert({
                 where: { userId: att.userId },
                 update: {
                   points: { increment: att.pointsEarned || defaultPoints },
@@ -219,46 +289,49 @@ eventsRouter.patch("/:id/status", requireAuth, requireRole("pengurus", "admin"),
                   lastActivityAt: att.scannedAt,
                 },
               })
-            ),
-          ])
-
-          await Promise.all(
-            pendingAttendees.map((att) =>
-              Promise.all([
-                invalidate(CacheKeys.userAttendances(att.userId)),
-                invalidate(CacheKeys.userProfile(att.userId)),
-              ])
-            )
-          )
+            }
+          }
         }
       }
-    }
+
+      return updated
+    })
 
     await invalidatePattern("events:*")
     await invalidate(CacheKeys.events())
+
+    auditLogger.log({
+      actorId: req.user!.userId,
+      actorRole: req.user!.role,
+      action: "EVENT_STATUS_CHANGED",
+      targetId: event.id,
+      status: "SUCCESS",
+      details: { status: event.status },
+    })
+
     res.json({ id: event.id, title: event.title, status: event.status })
   } catch (err) { next(err) }
 })
 
-// Handler for recording attendance with QR and Active status validation
+// Handler for recording attendance — F-06: Restricted to authorized organizers
 async function handleRecordAttendance(req: Request, res: Response, next: NextFunction) {
   try {
     const id = req.params.id as string
-    const isPrivileged = req.user?.role === "pengurus" || req.user?.role === "admin"
-    const { user_id, method = "qr", qr_code } = z.object({
-      user_id: z.string().optional(),
+    const callerRole = req.user?.role
+    const isPrivileged = callerRole === "pengurus" || callerRole === "admin" || callerRole === "aktivis"
+
+    if (!isPrivileged) {
+      res.status(403).json({ error: "Hanya Pengurus, Admin, atau Aktivis yang berhak mencatat presensi." })
+      return
+    }
+
+    const { user_id, method = "qr" } = z.object({
+      user_id: z.string().min(1, "Identifier jemaat (user_id/user_number/username) wajib diisi"),
       method: z.enum(["qr", "manual"]).optional(),
       qr_code: z.string().optional(),
     }).parse(req.body)
 
-    if (user_id && user_id !== req.user!.userId) {
-      if (!isPrivileged) {
-        res.status(403).json({ error: "Hanya Pengurus atau Admin yang dapat mencatat presensi anggota lain." })
-        return
-      }
-    }
-
-    const targetUserId = user_id ?? req.user!.userId
+    const targetUserId = user_id.trim()
 
     const event = await prisma.event.findUnique({
       where: { id },
@@ -276,24 +349,7 @@ async function handleRecordAttendance(req: Request, res: Response, next: NextFun
       return
     }
 
-    // Method and QR verification
-    if (method === "qr") {
-      const submittedCode = (qr_code || (req.body as any).qrCode || "").trim().toUpperCase()
-      const expectedCode = (event.qrCode || "").trim().toUpperCase()
-      if (!isPrivileged) {
-        if (!submittedCode || submittedCode !== expectedCode) {
-          res.status(400).json({ error: "Kode QR presensi tidak valid atau tidak cocok dengan event ini." })
-          return
-        }
-      }
-    } else if (method === "manual") {
-      if (!isPrivileged) {
-        res.status(403).json({ error: "Presensi manual hanya dapat dicatat oleh Pengurus atau Admin." })
-        return
-      }
-    }
-
-    const bindex = generateBlindIndex(targetUserId.trim().toLowerCase())
+    const bindex = generateBlindIndex(targetUserId.toLowerCase())
     const targetUser = await prisma.user.findFirst({
       where: {
         OR: [
@@ -312,7 +368,7 @@ async function handleRecordAttendance(req: Request, res: Response, next: NextFun
     })
 
     if (!targetUser) {
-      res.status(404).json({ error: "User tidak ditemukan di direktori jemaat." })
+      res.status(404).json({ error: "Jemaat dengan identitas tersebut tidak ditemukan." })
       return
     }
 
@@ -354,6 +410,27 @@ async function handleRecordAttendance(req: Request, res: Response, next: NextFun
     await invalidate(CacheKeys.userAttendances(actualUserId))
     await invalidatePattern("events:*")
 
+    auditLogger.log({
+      actorId: req.user!.userId,
+      actorRole: req.user!.role,
+      action: "ATTENDANCE_RECORDED",
+      targetId: actualUserId,
+      status: "SUCCESS",
+      details: { eventId: id, method },
+    })
+
+    // FE-10 Remediation: Broadcast real-time scan event to connected organizer devices
+    broadcastAttendanceScan({
+      eventId: id,
+      attendanceId: attendance.id,
+      userId: actualUserId,
+      name: userName,
+      userNumber: targetUser.userNumber || "",
+      pointsEarned: pointsAwarded,
+      method: attendance.method,
+      scannedAt: attendance.scannedAt.toISOString(),
+    })
+
     res.status(201).json({
       id: attendance.id,
       user_id: actualUserId,
@@ -370,14 +447,36 @@ async function handleRecordAttendance(req: Request, res: Response, next: NextFun
   }
 }
 
-// POST /api/events/:id/attendances — scan / record attendance
-eventsRouter.post("/:id/attendances", requireAuth, handleRecordAttendance)
-eventsRouter.post("/:id/attendance", requireAuth, handleRecordAttendance)
+// POST /api/events/:id/attendances — F-06: scan / record attendance restricted to organizers
+eventsRouter.post("/:id/attendances", requireAuth, requireRole("pengurus", "admin", "aktivis"), handleRecordAttendance)
+eventsRouter.post("/:id/attendance", requireAuth, requireRole("pengurus", "admin", "aktivis"), handleRecordAttendance)
 
-// GET /api/events/:id/attendances — list attendees (redacted PII)
-eventsRouter.get("/:id/attendances", requireAuth, async (req, res, next) => {
+// GET /api/events/:id/live-attendance — FE-10: SSE stream for real-time attendance scan events
+eventsRouter.get("/:id/live-attendance", requireAuth, requireRole("pengurus", "admin", "aktivis"), (req, res) => {
+  const eventId = req.params.id as string
+
+  res.setHeader("Content-Type", "text/event-stream")
+  res.setHeader("Cache-Control", "no-cache")
+  res.setHeader("Connection", "keep-alive")
+  res.flushHeaders?.()
+
+  res.write(`data: ${JSON.stringify({ type: "CONNECTED", eventId })}\n\n`)
+
+  const unregister = registerSseClient(eventId, res)
+
+  req.on("close", () => {
+    unregister()
+  })
+})
+
+// GET /api/events/:id/attendances — F-07: list attendees restricted to organizers with pagination
+eventsRouter.get("/:id/attendances", requireAuth, requireRole("pengurus", "admin", "aktivis"), async (req, res, next) => {
   try {
     const id = req.params.id as string
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string, 10) || 50))
+    const page = Math.max(1, parseInt(req.query.page as string, 10) || 1)
+    const skip = (page - 1) * limit
+
     const records = await prisma.attendance.findMany({
       where: { eventId: id },
       include: {
@@ -391,7 +490,10 @@ eventsRouter.get("/:id/attendances", requireAuth, async (req, res, next) => {
         },
       },
       orderBy: { scannedAt: "desc" },
+      skip,
+      take: limit,
     })
+
     res.json(records.map((r) => ({
       user_id: r.userId,
       name: r.user.profile?.name || "Anggota",
@@ -412,7 +514,17 @@ eventsRouter.delete("/:id/attendances/:userId", requireAuth, requireRole("pengur
       where: { userId_eventId: { userId: userId as string, eventId: id as string } },
     })
     await invalidate(CacheKeys.userAttendances(userId as string))
-    res.json({ success: true, message: "Attendance record deleted" })
+
+    auditLogger.log({
+      actorId: req.user!.userId,
+      actorRole: req.user!.role,
+      action: "ATTENDANCE_DELETED",
+      targetId: userId as string,
+      status: "SUCCESS",
+      details: { eventId: id },
+    })
+
+    res.json({ success: true, message: "Catatan presensi berhasil dihapus" })
   } catch (err) { next(err) }
 })
 
@@ -424,6 +536,15 @@ eventsRouter.delete("/:id", requireAuth, requireRole("pengurus", "admin"), async
     await prisma.event.delete({ where: { id } })
     await invalidatePattern("events:*")
     await invalidate(CacheKeys.events())
-    res.json({ message: "Event deleted successfully" })
+
+    auditLogger.log({
+      actorId: req.user!.userId,
+      actorRole: req.user!.role,
+      action: "EVENT_DELETED",
+      targetId: id,
+      status: "SUCCESS",
+    })
+
+    res.json({ message: "Event berhasil dihapus" })
   } catch (err) { next(err) }
 })

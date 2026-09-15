@@ -9,6 +9,7 @@ import { sendTemporaryPasswordEmail } from "../../auth/internal/email"
 import { invalidate, CacheKeys } from "../../../lib/cache"
 import { generateUniqueUserNumber } from "../../../lib/userNumber"
 import { encrypt, decrypt, generateBlindIndex } from "../../../lib/crypto"
+import { auditLogger } from "../../../lib/auditLogger"
 
 export const teamsRouter: Router = Router()
 
@@ -62,10 +63,10 @@ teamsRouter.get("/members", requireAuth, requireRole("pengurus", "admin"), async
     const limitParam = req.query.limit ? parseInt(req.query.limit as string, 10) : undefined
     const pageParam = req.query.page ? parseInt(req.query.page as string, 10) : undefined
     const isPaginated = pageParam !== undefined || limitParam !== undefined
-    const limit = limitParam && limitParam > 0 ? limitParam : 15
+    const limit = limitParam && limitParam > 0 ? Math.min(limitParam, 100) : 50
     const page = pageParam && pageParam > 0 ? pageParam : 1
-    const skip = isPaginated ? (page - 1) * limit : undefined
-    const take = isPaginated ? limit : undefined
+    const skip = isPaginated ? (page - 1) * limit : 0
+    const take = limit
 
     const [totalMatching, rawMembers, totalAll, umatCount, aktivisCount, pengurusCount] = await Promise.all([
       prisma.user.count({ where }),
@@ -229,26 +230,27 @@ teamsRouter.get("/members/:id", requireAuth, requireRole("pengurus", "admin"), a
 
 // 3. POST /api/teams/members — Pengurus/Admin adds a new member with auto-generated username & password
 const CreateMemberSchema = z.object({
-  name: z.string().min(1, "Name is required"),
+  name: z.string().trim().min(1, "Name is required").max(100, "Name maximum 100 characters"),
   username: z
     .string()
+    .trim()
     .min(3, "Username must be at least 3 characters")
-    .max(30)
+    .max(30, "Username maximum 30 characters")
     .regex(/^[a-zA-Z0-9_.]+$/, "Username may only contain letters, numbers, dots, or underscores")
     .optional()
     .or(z.literal("")),
-  email: z.string().email("Invalid email format").optional().or(z.literal("")),
-  phone: z.string().optional().or(z.literal("")),
-  school: z.string().optional().or(z.literal("")),
+  email: z.string().trim().email("Invalid email format").max(255).optional().or(z.literal("")),
+  phone: z.string().trim().max(20).optional().or(z.literal("")),
+  school: z.string().trim().max(100).optional().or(z.literal("")),
   school_id: z.string().optional().or(z.literal("")),
   birth_date: z
     .string()
     .refine((v) => !v || !isNaN(Date.parse(v)), "Format birth_date tidak valid, gunakan format tanggal ISO")
     .optional()
     .or(z.literal("")),
-  gender: z.string().optional().or(z.literal("")),
+  gender: z.string().trim().max(20).optional().or(z.literal("")),
   role: z.enum(["umat", "aktivis", "pengurus", "admin"]).default("umat"),
-  default_password: z.string().min(8).optional(),
+  default_password: z.string().min(8).max(128).optional(),
 })
 
 teamsRouter.post("/members", requireAuth, requireRole("admin"), async (req, res, next) => {
@@ -342,7 +344,19 @@ teamsRouter.post("/members", requireAuth, requireRole("admin"), async (req, res,
 
     await invalidate(CacheKeys.userProfile(newMember.id))
 
-    res.status(201).json({
+    if (data.email) {
+      try {
+        await sendTemporaryPasswordEmail({
+          to: data.email.toLowerCase().trim(),
+          tempPassword: defaultPassword,
+          name: newMember.profile.name,
+        })
+      } catch (emailErr) {
+        console.error("Failed to send welcome email with temporary password:", emailErr)
+      }
+    }
+
+    const responsePayload: Record<string, any> = {
       id: newMember.id,
       name: newMember.profile.name,
       username: newMember.username,
@@ -354,10 +368,19 @@ teamsRouter.post("/members", requireAuth, requireRole("admin"), async (req, res,
       role: newMember.role,
       user_number: newMember.userNumber,
       is_claimed: true,
-      default_password: defaultPassword,
       created_at: new Date(newMember.createdAt).toISOString(),
-      message: `Member ${newMember.profile.name} created successfully with default password: ${defaultPassword}`,
-    })
+    }
+
+    if (data.email) {
+      responsePayload.email_sent = true
+      responsePayload.message = `Anggota ${newMember.profile.name} berhasil didaftarkan. Informasi kata sandi sementara telah dikirimkan ke email terdaftar.`
+    } else {
+      responsePayload.default_password = defaultPassword
+      responsePayload.requires_change_on_login = true
+      responsePayload.message = `Anggota ${newMember.profile.name} berhasil didaftarkan.`
+    }
+
+    res.status(201).json(responsePayload)
   } catch (err) {
     next(err)
   }
@@ -365,21 +388,22 @@ teamsRouter.post("/members", requireAuth, requireRole("admin"), async (req, res,
 
 // 4. PUT /api/teams/members/:id — Edit member data
 const UpdateMemberSchema = z.object({
-  name: z.string().min(1).optional(),
+  name: z.string().trim().min(1).max(100).optional(),
   username: z
     .string()
+    .trim()
     .min(3, "Username must be at least 3 characters")
-    .max(30)
+    .max(30, "Username maximum 30 characters")
     .regex(/^[a-zA-Z0-9_.]+$/, "Username may only contain letters, numbers, dots, or underscores")
     .optional()
     .nullable()
     .or(z.literal("")),
-  email: z.string().email().optional().nullable().or(z.literal("")),
-  phone: z.string().optional().nullable(),
-  school: z.string().optional().nullable(),
+  email: z.string().trim().email().max(255).optional().nullable().or(z.literal("")),
+  phone: z.string().trim().max(20).optional().nullable(),
+  school: z.string().trim().max(100).optional().nullable(),
   school_id: z.string().optional().nullable(),
   birth_date: z.string().optional().nullable(),
-  gender: z.string().optional().nullable(),
+  gender: z.string().trim().max(20).optional().nullable(),
   role: z.enum(["umat", "aktivis", "pengurus", "admin"]).optional(),
 })
 
@@ -644,9 +668,10 @@ teamsRouter.post("/members/:id/generate-claim-pin", requireAuth, requireRole("pe
 })
 
 // 8. POST /api/teams/link-legacy-account — Link pre-provisioned legacy account using claim PIN (requires auth)
+// F-04 Remediation: Atomic merge transaction, failed attempt counter, lockout, audit trail
 const LinkLegacyAccountSchema = z.object({
-  user_number: z.string().min(1, "Nomor anggota target wajib diisi"),
-  claim_pin: z.string().min(6, "PIN aktivasi minimal 6 karakter"),
+  user_number: z.string().trim().min(1, "Nomor anggota target wajib diisi").max(50),
+  claim_pin: z.string().trim().min(6, "PIN aktivasi minimal 6 karakter").max(20),
 })
 
 teamsRouter.post("/link-legacy-account", requireAuth, async (req, res, next) => {
@@ -676,85 +701,118 @@ teamsRouter.post("/link-legacy-account", requireAuth, async (req, res, next) => 
       return
     }
 
+    // Lockout check
+    if (targetUser.failedClaimAttempts >= 5) {
+      res.status(403).json({
+        error: "Akun ini telah dikunci karena 5 kali percobaan PIN yang salah. Silakan minta PIN baru ke pengurus.",
+      })
+      return
+    }
+
     if (targetUser.claimPinExpiresAt && targetUser.claimPinExpiresAt < new Date()) {
       res.status(400).json({ error: "PIN aktivasi sudah kedaluwarsa. Silakan minta PIN baru ke pengurus." })
       return
     }
 
-    // Tier 1: verify using bcrypt.compare against the stored hash
+    // Verify PIN with bcrypt
     const isPinValid = await bcrypt.compare(cleanPin, targetUser.claimPin)
     if (!isPinValid) {
-      res.status(400).json({ error: "PIN aktivasi salah." })
+      await prisma.user.update({
+        where: { id: targetUser.id },
+        data: { failedClaimAttempts: { increment: 1 } },
+      })
+      const remaining = 5 - (targetUser.failedClaimAttempts + 1)
+      res.status(400).json({
+        error: `PIN aktivasi salah. Sisa percobaan: ${Math.max(0, remaining)} kali.`,
+      })
       return
     }
 
-    // Transfer attendances to current user
-    const existingAttendances = await prisma.attendance.findMany({
-      where: { userId: currentUserId },
-      select: { eventId: true },
-    })
-    const existingEventIds = new Set(existingAttendances.map((a) => a.eventId))
-
-    const targetAttendances = await prisma.attendance.findMany({
-      where: { userId: targetUser.id },
-    })
-
-    for (const att of targetAttendances) {
-      if (!existingEventIds.has(att.eventId)) {
-        await prisma.attendance.update({
-          where: { id: att.id },
-          data: { userId: currentUserId },
-        })
-      }
-    }
-
-    // Transfer badges
-    const existingBadges = await prisma.userBadge.findMany({
-      where: { userId: currentUserId },
-      select: { badgeId: true },
-    })
-    const existingBadgeIds = new Set(existingBadges.map((b) => b.badgeId))
-
-    const targetBadges = await prisma.userBadge.findMany({
-      where: { userId: targetUser.id },
-    })
-
-    for (const b of targetBadges) {
-      if (!existingBadgeIds.has(b.badgeId)) {
-        await prisma.userBadge.update({
-          where: { id: b.id },
-          data: { userId: currentUserId },
-        })
-      }
-    }
-
-    // Merge points from target stats
     const legacyPoints = targetUser.stats?.points || 0
-    if (legacyPoints > 0) {
-      await prisma.userStats.upsert({
+
+    // Execute atomic merge inside transaction
+    await prisma.$transaction(async (tx) => {
+      // 1. Transfer attendances
+      const existingAttendances = await tx.attendance.findMany({
         where: { userId: currentUserId },
-        update: { points: { increment: legacyPoints } },
-        create: { userId: currentUserId, points: legacyPoints },
+        select: { eventId: true },
+      })
+      const existingEventIds = new Set(existingAttendances.map((a) => a.eventId))
+
+      const targetAttendances = await tx.attendance.findMany({
+        where: { userId: targetUser.id },
       })
 
-      await prisma.pointTransaction.create({
+      for (const att of targetAttendances) {
+        if (!existingEventIds.has(att.eventId)) {
+          await tx.attendance.update({
+            where: { id: att.id },
+            data: { userId: currentUserId },
+          })
+        }
+      }
+
+      // 2. Transfer badges
+      const existingBadges = await tx.userBadge.findMany({
+        where: { userId: currentUserId },
+        select: { badgeId: true },
+      })
+      const existingBadgeIds = new Set(existingBadges.map((b) => b.badgeId))
+
+      const targetBadges = await tx.userBadge.findMany({
+        where: { userId: targetUser.id },
+      })
+
+      for (const b of targetBadges) {
+        if (!existingBadgeIds.has(b.badgeId)) {
+          await tx.userBadge.update({
+            where: { id: b.id },
+            data: { userId: currentUserId },
+          })
+        }
+      }
+
+      // 3. Merge points
+      if (legacyPoints > 0) {
+        await tx.userStats.upsert({
+          where: { userId: currentUserId },
+          update: { points: { increment: legacyPoints } },
+          create: { userId: currentUserId, points: legacyPoints },
+        })
+
+        await tx.pointTransaction.create({
+          data: {
+            userId: currentUserId,
+            amount: legacyPoints,
+            type: "system",
+            description: `Penggabungan data akun lama (${targetUser.userNumber}) via PIN Aktivasi`,
+          },
+        })
+      }
+
+      // 4. Mark pre-provisioned user as claimed, link to claimer, and clear sensitive PIN
+      await tx.user.update({
+        where: { id: targetUser.id },
         data: {
-          userId: currentUserId,
-          amount: legacyPoints,
-          type: "system",
-          description: `Penggabungan data akun lama (${targetUser.userNumber}) via PIN Aktivasi`,
+          isClaimed: true,
+          claimedAt: new Date(),
+          claimedByUserId: currentUserId,
+          claimPin: null,
+          claimPinExpiresAt: null,
+          failedClaimAttempts: 0,
         },
       })
-    }
+    })
 
-    // Mark pre-provisioned user as claimed and wipe claimPin
-    await prisma.user.update({
-      where: { id: targetUser.id },
-      data: {
-        isClaimed: true,
-        claimedAt: new Date(),
-        claimPin: null,
-        claimPinExpiresAt: null,
+    auditLogger.log({
+      actorId: currentUserId,
+      actorRole: req.user?.role,
+      action: "USER_ACCOUNT_LINKED",
+      targetId: targetUser.id,
+      status: "SUCCESS",
+      details: {
+        targetUserNumber: targetUser.userNumber,
+        pointsMerged: legacyPoints,
       },
     })
 

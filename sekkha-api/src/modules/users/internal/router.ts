@@ -8,21 +8,39 @@ import { redis } from "../../../lib/redis"
 import { generateUniqueUserNumber } from "../../../lib/userNumber"
 import { revokeToken } from "../../auth/internal/tokenRevocation"
 import { encrypt, decrypt } from "../../../lib/crypto"
+import { auditLogger } from "../../../lib/auditLogger"
 
 export const usersRouter: Router = Router()
 
-// GET /api/users/me (cached 120s)
+// GET /api/users/me (cached 120s with safe DTO - F-08 Remediation)
 usersRouter.get("/me", requireAuth, async (req, res, next) => {
   try {
     const userId = req.user!.userId
     const user = await cached(CacheKeys.userProfile(userId), 120, async () => {
       return prisma.user.findUnique({
         where: { id: userId },
-        include: {
+        select: {
+          id: true,
+          username: true,
+          email: true,
+          role: true,
+          userNumber: true,
+          createdAt: true,
           profile: {
-            include: { school: true },
+            select: {
+              name: true,
+              schoolId: true,
+              classGrade: true,
+              phone: true,
+              birthDate: true,
+              gender: true,
+              avatarUrl: true,
+              school: { select: { name: true } },
+            },
           },
-          stats: true,
+          stats: {
+            select: { points: true },
+          },
         },
       })
     })
@@ -48,7 +66,7 @@ usersRouter.get("/me", requireAuth, async (req, res, next) => {
       phone: decrypt(user.profile?.phone) || null,
       birth_date: decrypt(user.profile?.birthDate) || null,
       gender: decrypt(user.profile?.gender) || null,
-      avatar_url: null,
+      avatar_url: user.profile?.avatarUrl || null,
       role: user.role,
       user_number: uNum,
       points: user.stats?.points ?? 0,
@@ -111,26 +129,27 @@ usersRouter.get("/me/attendances", requireAuth, async (req, res, next) => {
   }
 })
 
-// PATCH /api/users/me — update profile
+// PATCH /api/users/me — update profile (F-15: bounds on user input)
 const UpdateProfileSchema = z.object({
-  name: z.string().min(1).optional(),
+  name: z.string().trim().min(1).max(100).optional(),
   username: z
     .string()
+    .trim()
     .min(3, "Username must be at least 3 characters")
     .max(30, "Username maximum 30 characters")
     .regex(/^[a-zA-Z0-9_.]+$/, "Username may only contain letters, numbers, dots, or underscores")
     .optional()
     .nullable(),
-  school: z.string().optional().nullable(),
+  school: z.string().trim().max(100).optional().nullable(),
   school_id: z.string().optional().nullable(),
-  class_grade: z.string().optional().nullable(),
-  phone: z.string().optional().nullable(),
+  class_grade: z.string().trim().max(50).optional().nullable(),
+  phone: z.string().trim().max(20).optional().nullable(),
   birth_date: z
     .string()
     .refine((v) => !v || !isNaN(Date.parse(v)), "Format birth_date tidak valid, gunakan format tanggal ISO (YYYY-MM-DD)")
     .optional()
     .nullable(),
-  gender: z.string().optional().nullable(),
+  gender: z.string().trim().max(20).optional().nullable(),
 })
 
 usersRouter.patch("/me", requireAuth, async (req, res, next) => {
@@ -283,6 +302,7 @@ usersRouter.get("/me/streak", requireAuth, async (req, res, next) => {
       attendedWeeks.add(toWeekKey(new Date(a.scannedAt)))
     }
 
+    // 1. Calculate current consecutive weekly streak
     const now = new Date()
     let currentStreak = 0
 
@@ -300,7 +320,38 @@ usersRouter.get("/me/streak", requireAuth, async (req, res, next) => {
       currentWeekKey = toWeekKey(checkDate)
     }
 
-    const longestStreak = Math.max(currentStreak, attendances.length > 0 ? currentStreak : 0)
+    // 2. F-25 Remediation: Calculate true longest historical consecutive weekly streak
+    const sortedWeeks = Array.from(attendedWeeks).sort()
+    let longestStreak = 0
+    let runningStreak = 0
+    let prevYear: number | null = null
+    let prevWeekNum: number | null = null
+
+    for (const wKey of sortedWeeks) {
+      const [yearStr, weekPart] = wKey.split("-W")
+      const year = parseInt(yearStr, 10)
+      const week = parseInt(weekPart, 10)
+
+      if (prevYear === null || prevWeekNum === null) {
+        runningStreak = 1
+      } else {
+        const isNextWeek =
+          (year === prevYear && week === prevWeekNum + 1) ||
+          (year === prevYear + 1 && prevWeekNum >= 52 && week === 1)
+        if (isNextWeek) {
+          runningStreak++
+        } else {
+          runningStreak = 1
+        }
+      }
+      prevYear = year
+      prevWeekNum = week
+      if (runningStreak > longestStreak) {
+        longestStreak = runningStreak
+      }
+    }
+
+    longestStreak = Math.max(longestStreak, currentStreak)
 
     res.json({ current_streak: currentStreak, longest_streak: longestStreak })
   } catch (err) {

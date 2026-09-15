@@ -2,6 +2,27 @@
 
 All notable changes to Sekkha Apps. Semver (`MAJOR.MINOR.PATCH`); newest on top. Entries are curated for humans — see git log for the full history.
 
+## [1.4.0] - 2026-09-15
+
+### Added
+- Single-use Refresh Token lifecycle with automatic rotation and revocation via `POST /api/auth/refresh` and HttpOnly cookies (`sekkha_refresh_token`).
+- Server-Sent Events (SSE) real-time streaming endpoint (`GET /api/events/:id/live`) for instant attendee check-in broadcasting on the scanner dashboard.
+- Comprehensive Read-Only Security Audit Report (`AUDIT_REPORT.md`) reviewing OWASP Top 10 2021, concurrency, architecture, and performance.
+- Formal API Contract Specification (`docs/sekkha-api-contract.md`) as single source of truth for request/response payloads, status codes, and envelopes.
+- Structured Security Audit Logger (`src/lib/auditLogger.ts`) for tracking authentication lifecycle, permission elevation, and sensitive administrative operations.
+- Client-side secure token storage abstraction (`src/lib/storage.ts`) and silent token refresh in `@/lib/api`.
+- ESLint 9 configuration with strict quality gate rules for `sekkha-frontend`.
+- Unit tests for token revocation, refresh rotation, EventCard rendering, and attendance scan flows.
+
+### Changed
+- JWT verification hardened: pinned algorithm to HS256, enforced issuer/audience validation, and verified secret presence & strength during boot.
+- Token revocation blacklist hashes bearer tokens with SHA-256 before storage in memory/Redis instead of storing raw credentials.
+- Attendance scanning and roster access (`GET /events/:id/attendances`) strictly restricted to `pengurus` and `admin` roles, preventing unauthorized member access and self-check-in abuse.
+- Bounded queries across events, notifications, teams, and users with enforced limits (`take`/pagination) to eliminate full-table scan and memory exhaustion risks.
+- User and profile responses sanitized across all endpoints to omit password hashes, PIN hashes, and internal authorization timestamps.
+- Rate limiting backed by Redis store (`rate-limit-redis`) when available with strict proxy hop parsing.
+- Overrode `qs` dependency to `>=6.16.0` to eliminate prototype vulnerability advisory.
+
 ## [1.3.0] - 2026-09-10
 
 ### Added

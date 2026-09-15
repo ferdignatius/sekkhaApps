@@ -8,9 +8,10 @@ import { render, screen, waitFor, act } from "@testing-library/react"
 import { useContext, useEffect } from "react"
 import {
   authReducer,
-  initialAuthState,
-  type AuthState,
+  initialAuthState
+  
 } from "../context/authReducer"
+import type {AuthState} from "../context/authReducer";
 import {
   AuthProvider,
   AuthContext,

@@ -9,6 +9,12 @@ import { render, act, waitFor } from "@testing-library/react"
 import type { RouterContext } from "../context/AuthContext"
 import type { AuthState } from "../context/authReducer"
 
+// ─── Import the functions under test ───────────────────────────────────────────
+
+import type * as ReactRouter from "@tanstack/react-router"
+import { routeGuardBeforeLoad } from "../../../../routes/_authenticated"
+import { LoginPage } from "../components/LoginPage"
+
 // ─── Module-level mocks ────────────────────────────────────────────────────────
 // vi.mock hoisting requires these to be at the top level of the file.
 // navigateMock is declared here and referenced inside the mock factory.
@@ -16,7 +22,7 @@ import type { AuthState } from "../context/authReducer"
 const navigateMock = vi.fn().mockResolvedValue(undefined)
 
 vi.mock("@tanstack/react-router", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@tanstack/react-router")>()
+  const actual = await importOriginal<typeof ReactRouter>()
   return {
     ...actual,
     useNavigate: () => navigateMock,
@@ -95,11 +101,6 @@ function getRedirectToParam(err: unknown): string | undefined {
   const opts = getRedirectOptions(err)
   return opts?.search?.redirectTo as string | undefined
 }
-
-// ─── Import the functions under test ───────────────────────────────────────────
-
-import { routeGuardBeforeLoad } from "../../../../routes/_authenticated"
-import { LoginPage } from "../components/LoginPage"
 
 // ─── Unit Tests: Route Guard (unauthenticated → redirect to /login) ─────────────
 

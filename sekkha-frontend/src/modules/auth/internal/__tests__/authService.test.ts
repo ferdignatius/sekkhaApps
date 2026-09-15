@@ -8,6 +8,12 @@ import { createAuthService, STORAGE_KEY } from "../api/authService"
 import { AuthError } from "../context/authReducer"
 import type { AuthAction } from "../context/authReducer"
 
+// ─── Property 5: Token Round-Trip ke localStorage ─────────────────────────────
+// Feature: auth-flow, Property 5: Token Round-Trip ke localStorage
+// Validates: Requirements 4.1, 4.2
+
+import * as fc from "fast-check"
+
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 
 /** Build a minimal Response-like object that fetch would return. */
@@ -30,7 +36,7 @@ let service: ReturnType<typeof createAuthService>
 
 beforeEach(() => {
   dispatch = vi.fn()
-  service = createAuthService(dispatch)
+  service = createAuthService(dispatch as any)
   localStorage.clear()
 })
 
@@ -283,12 +289,6 @@ describe("authService.logout", () => {
     expect(call.type).toBe("AUTH_LOGOUT")
   })
 })
-
-// ─── Property 5: Token Round-Trip ke localStorage ─────────────────────────────
-// Feature: auth-flow, Property 5: Token Round-Trip ke localStorage
-// Validates: Requirements 4.1, 4.2
-
-import * as fc from "fast-check"
 
 describe("Property 5 — Token Round-Trip ke localStorage", () => {
   beforeEach(() => {

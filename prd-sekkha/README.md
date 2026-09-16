@@ -2,23 +2,23 @@
 
 Kumpulan PRD yang menjadi **sumber kebenaran kebutuhan produk** sebelum implementasi kode dimulai. Setiap folder di sini berisi PRD untuk satu domain/fitur.
 
-## Daftar PRD
+## Daftar PRD & Kontrak API
 
-| Folder | Topik | File | Status |
-|--------|-------|------|--------|
-| `auth/` | Sistem autentikasi (manual + Google OAuth), role matrix | `auth.md` | Approved (v1.4.0) |
-| `event/` | Event kebaktian + sistem absensi | `event.md`, `abensiEvent.md` | Approved |
-| `dashboard/` | Halaman dashboard gamifikasi (streak, poin, event, dhamma) | `dashboard.md` | Approved (v1.0.0) |
-| `leaderboard/` | Season-based ranking + podium + community goals | `leaderboard.md` | Approved (v1.0.0) |
-| `notifications/` | In-app notification bell + halaman notifikasi | `notifications.md` | Approved (v1.0.0) |
-| `teams/` | Direktori anggota (People) + detail profil publik | `teams.md` | Approved (v1.0.0) |
-| `profile/` | Halaman profil user | `profile.md` | Approved |
-| `users/` | API user: profil, badge, attendance, streak, level | `users.md` | Approved (v1.0.0) |
-| `masterdata/` | Master data (badge presensi, event type, sekolah) | `badgePresensiEvent.md`, `eventType.md`, `schools.md` | Approved |
-| `schools/` | ⚠️ Direktori master sekolah — **DEPRECATED**, pindah ke `masterdata/schools.md` | `schools.md` (stub) | Deprecated → `masterdata/schools.md` |
-| `configure/` | Master data UI, gamification rules, early warning (admin/pengurus) | `configure.md` | Approved (v1.0.0) |
-| `landing-page/` | Halaman publik pra-login (hero, features, CTA) | `landing-page.md` | Approved (v1.0.0) |
-| `pengurus/` | People management + account linking | `peopleManagementAndAccountLinking.md` | Approved |
+| Folder | Topik | Dokumen Kebutuhan (PRD) | Kontrak API Resmi | Status |
+|--------|-------|-------------------------|-------------------|--------|
+| `auth/` | Sistem autentikasi (manual + OTP + JWT session), role matrix | `auth.md` | [`api-contract.md`](auth/api-contract.md) | Approved (v1.4.1) |
+| `event/` | Event kebaktian + sistem presensi QR & SSE live stream | `event.md`, `abensiEvent.md` | [`api-contract.md`](event/api-contract.md) | Approved (v1.4.1) |
+| `dashboard/` | Halaman dashboard gamifikasi (streak, poin, event, dhamma) | `dashboard.md` | [`api-contract.md`](dashboard/api-contract.md) | Approved (v1.4.1) |
+| `leaderboard/` | Season-based ranking + podium + snapshot kalkulasi | `leaderboard.md` | [`api-contract.md`](leaderboard/api-contract.md) | Approved (v1.4.1) |
+| `notifications/` | In-app notification bell + riwayat notifikasi | `notifications.md` | [`api-contract.md`](notifications/api-contract.md) | Approved (v1.4.1) |
+| `teams/` | Direktori anggota (People) + claim PIN akun legacy | `teams.md` | [`api-contract.md`](teams/api-contract.md) | Approved (v1.4.1) |
+| `profile/` | Halaman profil user & gamifikasi personal | `profile.md` | [`api-contract.md`](profile/api-contract.md) | Approved (v1.4.1) |
+| `users/` | API user: profil, badge, attendance, streak, level, privasi | `users.md` | [`api-contract.md`](users/api-contract.md) | Approved (v1.4.1) |
+| `masterdata/` | Master data (badge presensi, event type, sekolah) | `badgePresensiEvent.md`, `eventType.md`, `schools.md` | [`api-contract.md`](masterdata/api-contract.md) | Approved (v1.4.1) |
+| `schools/` | Master sekolah & statistik distribusi jemaat | `schools.md` | [`api-contract.md`](schools/api-contract.md) | Approved (v1.4.1) |
+| `configure/` | Master data UI, aturan poin, season, threshold | `configure.md` | [`api-contract.md`](configure/api-contract.md) | Approved (v1.4.1) |
+| `landing-page/` | Halaman publik pra-login (hero, features, CTA) | `landing-page.md` | — | Approved (v1.0.0) |
+| `pengurus/` | Recency alerts (early warning), analitik vihara | `peopleManagementAndAccountLinking.md` | [`api-contract.md`](pengurus/api-contract.md) | Approved (v1.4.1) |
 
 ## Tujuan Folder Ini
 

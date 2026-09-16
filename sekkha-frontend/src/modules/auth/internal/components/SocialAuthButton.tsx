@@ -8,7 +8,11 @@ interface SocialAuthButtonProps {
   onError?: (message: string) => void
 }
 
-export function SocialAuthButton({ provider: _provider, mode = "login", onError }: SocialAuthButtonProps) {
+export function SocialAuthButton({
+  provider: _provider,
+  mode = "login",
+  onError,
+}: SocialAuthButtonProps) {
   const { initiateGoogleOAuth } = useAuth()
   const [isRedirecting, setIsRedirecting] = useState(false)
 
@@ -37,15 +41,7 @@ export function SocialAuthButton({ provider: _provider, mode = "login", onError 
       type="button"
       onClick={handleClick}
       disabled={isRedirecting}
-      className="
-        inline-flex w-full items-center justify-center gap-3
-        rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0]
-        px-5 h-11
-        text-xs font-semibold text-[#0a0a0a] shadow-2xs
-        transition-all duration-150 hover:bg-[#faf5e8] hover:border-[#ebe6d6] active:scale-[0.99]
-        disabled:opacity-60 disabled:pointer-events-none cursor-pointer
-        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0a0a0a]
-      "
+      className="inline-flex h-11 w-full cursor-pointer items-center justify-center gap-3 rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-5 text-xs font-semibold text-[#0a0a0a] shadow-2xs transition-all duration-150 hover:border-[#ebe6d6] hover:bg-[#faf5e8] focus-visible:ring-2 focus-visible:ring-[#0a0a0a] focus-visible:outline-none active:scale-[0.99] disabled:pointer-events-none disabled:opacity-60"
     >
       {/* Google "G" SVG Icon */}
       <svg
@@ -74,7 +70,9 @@ export function SocialAuthButton({ provider: _provider, mode = "login", onError 
         />
       </svg>
 
-      <span>{mode === "sign-up" ? "Sign up with Google" : "Sign in with Google"}</span>
+      <span>
+        {mode === "sign-up" ? "Sign up with Google" : "Sign in with Google"}
+      </span>
     </button>
   )
 }

@@ -77,7 +77,7 @@ async function requestTokenRefresh(): Promise<string | null> {
  */
 export async function apiFetch<T = unknown>(
   path: string,
-  options: ApiRequestOptions = {},
+  options: ApiRequestOptions = {}
 ): Promise<T> {
   const url = `${API_BASE_URL}${path}`
   let response = await fetch(url, {
@@ -146,14 +146,38 @@ export const api = {
   get: <T = unknown>(path: string, options?: ApiRequestOptions) =>
     apiFetch<T>(path, { method: "GET", ...options }),
 
-  post: <T = unknown>(path: string, body?: unknown, options?: ApiRequestOptions) =>
-    apiFetch<T>(path, { method: "POST", body: body ? JSON.stringify(body) : undefined, ...options }),
+  post: <T = unknown>(
+    path: string,
+    body?: unknown,
+    options?: ApiRequestOptions
+  ) =>
+    apiFetch<T>(path, {
+      method: "POST",
+      body: body ? JSON.stringify(body) : undefined,
+      ...options,
+    }),
 
-  put: <T = unknown>(path: string, body?: unknown, options?: ApiRequestOptions) =>
-    apiFetch<T>(path, { method: "PUT", body: body ? JSON.stringify(body) : undefined, ...options }),
+  put: <T = unknown>(
+    path: string,
+    body?: unknown,
+    options?: ApiRequestOptions
+  ) =>
+    apiFetch<T>(path, {
+      method: "PUT",
+      body: body ? JSON.stringify(body) : undefined,
+      ...options,
+    }),
 
-  patch: <T = unknown>(path: string, body?: unknown, options?: ApiRequestOptions) =>
-    apiFetch<T>(path, { method: "PATCH", body: body ? JSON.stringify(body) : undefined, ...options }),
+  patch: <T = unknown>(
+    path: string,
+    body?: unknown,
+    options?: ApiRequestOptions
+  ) =>
+    apiFetch<T>(path, {
+      method: "PATCH",
+      body: body ? JSON.stringify(body) : undefined,
+      ...options,
+    }),
 
   delete: <T = unknown>(path: string, options?: ApiRequestOptions) =>
     apiFetch<T>(path, { method: "DELETE", ...options }),

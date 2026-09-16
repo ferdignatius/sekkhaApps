@@ -1,4 +1,8 @@
-import { createFileRoute, lazyRouteComponent, redirect } from "@tanstack/react-router"
+import {
+  createFileRoute,
+  lazyRouteComponent,
+  redirect,
+} from "@tanstack/react-router"
 import { ConfigureSkeleton } from "@/components/common/PageSkeletons"
 
 export const Route = createFileRoute("/_authenticated/configure/rules/season")({
@@ -8,6 +12,8 @@ export const Route = createFileRoute("/_authenticated/configure/rules/season")({
       throw redirect({ to: "/home" })
     }
   },
-  component: lazyRouteComponent(() => import("@/modules/configure").then(m => ({ default: m.SeasonPage }))),
+  component: lazyRouteComponent(() =>
+    import("@/modules/configure").then((m) => ({ default: m.SeasonPage }))
+  ),
   pendingComponent: ConfigureSkeleton,
 })

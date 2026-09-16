@@ -8,7 +8,11 @@ import { Skeleton } from "@/components/ui/skeleton"
 
 export function HomeSkeleton() {
   return (
-    <div className="px-4 py-6 md:px-8 lg:px-12" aria-busy="true" aria-label="Memuat halaman...">
+    <div
+      className="px-4 py-6 md:px-8 lg:px-12"
+      aria-busy="true"
+      aria-label="Memuat halaman..."
+    >
       <div className="mx-auto max-w-8xl space-y-5">
         {/* Profile header */}
         <Skeleton className="h-44 w-full rounded-xl" />
@@ -32,7 +36,11 @@ export function HomeSkeleton() {
 
 export function EventsSkeleton() {
   return (
-    <div className="px-4 py-6 md:px-8 lg:px-12" aria-busy="true" aria-label="Memuat events...">
+    <div
+      className="px-4 py-6 md:px-8 lg:px-12"
+      aria-busy="true"
+      aria-label="Memuat events..."
+    >
       <div className="mx-auto max-w-8xl space-y-4">
         {/* Title + filters */}
         <Skeleton className="h-8 w-40" />
@@ -61,7 +69,11 @@ export function EventsSkeleton() {
 
 export function LeaderboardSkeleton() {
   return (
-    <div className="px-4 py-6 md:px-8 lg:px-12" aria-busy="true" aria-label="Memuat leaderboard...">
+    <div
+      className="px-4 py-6 md:px-8 lg:px-12"
+      aria-busy="true"
+      aria-label="Memuat leaderboard..."
+    >
       <div className="mx-auto max-w-8xl space-y-5">
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-12 w-full rounded-xl" />
@@ -87,7 +99,11 @@ export function LeaderboardSkeleton() {
 
 export function ProfileSkeleton() {
   return (
-    <div className="px-4 py-6 md:px-8 lg:px-12" aria-busy="true" aria-label="Memuat profil...">
+    <div
+      className="px-4 py-6 md:px-8 lg:px-12"
+      aria-busy="true"
+      aria-label="Memuat profil..."
+    >
       <div className="mx-auto max-w-8xl space-y-4">
         <Skeleton className="h-8 w-24" />
         {/* Profile card */}
@@ -108,12 +124,15 @@ export function ProfileSkeleton() {
   )
 }
 
-
 // ─── Configure Page Skeleton ─────────────────────────────────────────────────
 
 export function ConfigureSkeleton() {
   return (
-    <div className="px-4 py-6 md:px-8 lg:px-12" aria-busy="true" aria-label="Memuat konfigurasi...">
+    <div
+      className="px-4 py-6 md:px-8 lg:px-12"
+      aria-busy="true"
+      aria-label="Memuat konfigurasi..."
+    >
       <div className="mx-auto max-w-8xl space-y-5">
         <div className="flex items-center justify-between">
           <Skeleton className="h-8 w-32" />
@@ -129,7 +148,11 @@ export function ConfigureSkeleton() {
 
 export function GenericSkeleton() {
   return (
-    <div className="px-4 py-6 md:px-8 lg:px-12" aria-busy="true" aria-label="Memuat...">
+    <div
+      className="px-4 py-6 md:px-8 lg:px-12"
+      aria-busy="true"
+      aria-label="Memuat..."
+    >
       <div className="mx-auto max-w-8xl space-y-5">
         <Skeleton className="h-8 w-40" />
         <Skeleton className="h-48 w-full rounded-xl" />

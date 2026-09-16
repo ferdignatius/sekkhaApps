@@ -34,7 +34,11 @@ export function SignUpPage() {
 
   // Only redirect if user was already authenticated upon opening the sign-up page before interacting
   useEffect(() => {
-    if (authState.status === "authenticated" && step === "form" && !fields.email) {
+    if (
+      authState.status === "authenticated" &&
+      step === "form" &&
+      !fields.email
+    ) {
       void navigate({ to: "/home" })
     }
   }, [authState.status, step, fields.email, navigate])
@@ -69,4 +73,3 @@ export function SignUpPage() {
     </main>
   )
 }
-

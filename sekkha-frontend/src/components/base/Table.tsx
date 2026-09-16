@@ -22,12 +22,12 @@ export function TableContainer({
   return (
     <div
       className={cn(
-        "overflow-hidden rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0] shadow-2xs font-sans",
+        "overflow-hidden rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0] font-sans shadow-2xs",
         className
       )}
       {...props}
     >
-      <div className="overflow-x-auto scrollbar-none">{children}</div>
+      <div className="scrollbar-none overflow-x-auto">{children}</div>
     </div>
   )
 }
@@ -38,7 +38,10 @@ export function Table({
 }: React.ComponentProps<typeof ShadcnTable>) {
   return (
     <ShadcnTable
-      className={cn("w-full min-w-[500px] text-left text-sm text-[#0a0a0a]", className)}
+      className={cn(
+        "w-full min-w-[500px] text-left text-sm text-[#0a0a0a]",
+        className
+      )}
       {...props}
     />
   )
@@ -50,7 +53,7 @@ export function TableHeader({
 }: React.ComponentProps<typeof ShadcnTableHeader>) {
   return (
     <ShadcnTableHeader
-      className={cn("bg-[#faf5e8] border-b border-[#e5e5e5]", className)}
+      className={cn("border-b border-[#e5e5e5] bg-[#faf5e8]", className)}
       {...props}
     />
   )
@@ -63,7 +66,7 @@ export function TableRow({
   return (
     <ShadcnTableRow
       className={cn(
-        "border-b border-[#f0f0f0] last:border-0 hover:bg-[#f5f0e0] transition-colors",
+        "border-b border-[#f0f0f0] transition-colors last:border-0 hover:bg-[#f5f0e0]",
         className
       )}
       {...props}
@@ -77,7 +80,10 @@ export function TableHead({
 }: React.ComponentProps<typeof ShadcnTableHead>) {
   return (
     <ShadcnTableHead
-      className={cn("px-4 py-3 font-semibold text-[#6a6a6a] text-xs uppercase tracking-wider", className)}
+      className={cn(
+        "px-4 py-3 text-xs font-semibold tracking-wider text-[#6a6a6a] uppercase",
+        className
+      )}
       {...props}
     />
   )
@@ -89,7 +95,10 @@ export function TableCell({
 }: React.ComponentProps<typeof ShadcnTableCell>) {
   return (
     <ShadcnTableCell
-      className={cn("px-4 py-3.5 text-[#0a0a0a] text-sm align-middle", className)}
+      className={cn(
+        "px-4 py-3.5 align-middle text-sm text-[#0a0a0a]",
+        className
+      )}
       {...props}
     />
   )
@@ -100,4 +109,3 @@ export {
   ShadcnTableFooter as TableFooter,
   ShadcnTableCaption as TableCaption,
 }
-

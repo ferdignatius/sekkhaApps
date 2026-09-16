@@ -5,7 +5,12 @@
 //
 // To add more protected pages, create files under src/routes/_authenticated/.
 
-import { createFileRoute, Outlet, redirect, useRouterState } from "@tanstack/react-router"
+import {
+  createFileRoute,
+  Outlet,
+  redirect,
+  useRouterState,
+} from "@tanstack/react-router"
 import type { RouterContext } from "@/modules/auth"
 import { AppSidebar } from "@/components/app-sidebar"
 import { MobileDock } from "@/components/common/MobileDock"
@@ -29,15 +34,21 @@ export function isValidRedirectTo(value: string | undefined): value is string {
 
 async function waitForAuthResolution(
   context: RouterContext,
-  timeoutMs: number,
+  timeoutMs: number
 ): Promise<void> {
   if (context.authState.status !== "loading") return
 
   return new Promise<void>((resolve) => {
     const start = Date.now()
     function poll() {
-      if (context.authState.status !== "loading") { resolve(); return }
-      if (Date.now() - start >= timeoutMs) { resolve(); return }
+      if (context.authState.status !== "loading") {
+        resolve()
+        return
+      }
+      if (Date.now() - start >= timeoutMs) {
+        resolve()
+        return
+      }
       setTimeout(poll, 50)
     }
     poll()
@@ -46,14 +57,15 @@ async function waitForAuthResolution(
 
 export async function routeGuardBeforeLoad(
   context: RouterContext,
-  locationHref: string,
+  locationHref: string
 ): Promise<void> {
   if (context.authState.status === "loading") {
     await waitForAuthResolution(context, 3000)
   }
   const token = safeStorage.getItem("sekkha_access_token")
   const isAuthenticated =
-    context.authState.status === "authenticated" || (token !== null && token !== "")
+    context.authState.status === "authenticated" ||
+    (token !== null && token !== "")
 
   if (!isAuthenticated) {
     throw redirect({ to: "/login", search: { redirectTo: locationHref } })
@@ -70,10 +82,10 @@ function DashboardSkeleton() {
       className="flex min-h-screen animate-pulse bg-sekkha-surface"
     >
       <div className="hidden w-64 shrink-0 border-r border-sekkha-hairline-soft bg-sekkha-canvas md:block" />
-      <div className="flex-1 p-6 space-y-4">
+      <div className="flex-1 space-y-4 p-6">
         <div className="h-8 w-48 rounded-lg bg-sekkha-hairline-strong" />
-        <div className="h-32 rounded-xl bg-sekkha-canvas border border-sekkha-hairline-soft" />
-        <div className="h-32 rounded-xl bg-sekkha-canvas border border-sekkha-hairline-soft" />
+        <div className="h-32 rounded-xl border border-sekkha-hairline-soft bg-sekkha-canvas" />
+        <div className="h-32 rounded-xl border border-sekkha-hairline-soft bg-sekkha-canvas" />
       </div>
     </div>
   )
@@ -91,7 +103,9 @@ export const Route = createFileRoute("/_authenticated")({
 
 function DashboardLayout() {
   const { location } = useRouterState()
-  const isImmersivePage = location.pathname.includes("/scan") || location.pathname.startsWith("/onboarding")
+  const isImmersivePage =
+    location.pathname.includes("/scan") ||
+    location.pathname.startsWith("/onboarding")
 
   if (isImmersivePage) {
     return <Outlet />

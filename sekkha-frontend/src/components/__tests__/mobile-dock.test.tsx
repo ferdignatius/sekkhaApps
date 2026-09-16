@@ -5,12 +5,11 @@ import { describe, it, expect, vi, afterEach } from "vitest"
 import { render, screen, cleanup } from "@testing-library/react"
 import { MobileDock } from "@/components/common/MobileDock"
 import { AuthContext } from "@/modules/auth/internal/context/AuthContext"
-import {
-  initialAuthState
-  
-  
+import { initialAuthState } from "@/modules/auth/internal/context/authReducer"
+import type {
+  AuthState,
+  UserRole,
 } from "@/modules/auth/internal/context/authReducer"
-import type {AuthState, UserRole} from "@/modules/auth/internal/context/authReducer";
 
 let currentPath = "/home"
 

@@ -25,7 +25,11 @@ export function AuthFormField({
 }: AuthFormFieldProps) {
   const [showPassword, setShowPassword] = useState(false)
   const isPasswordType = type === "password"
-  const resolvedType = isPasswordType ? (showPassword ? "text" : "password") : type
+  const resolvedType = isPasswordType
+    ? showPassword
+      ? "text"
+      : "password"
+    : type
 
   const startIcon =
     type === "email" ? (
@@ -41,7 +45,7 @@ export function AuthFormField({
       type="button"
       tabIndex={-1}
       onClick={() => setShowPassword(!showPassword)}
-      className="flex items-center justify-center text-sekkha-slate hover:text-sekkha-ink focus:outline-none transition-colors p-1 rounded-lg cursor-pointer"
+      className="flex cursor-pointer items-center justify-center rounded-lg p-1 text-sekkha-slate transition-colors hover:text-sekkha-ink focus:outline-none"
       title={showPassword ? "Sembunyikan password" : "Tampilkan password"}
     >
       {showPassword ? (
@@ -63,17 +67,17 @@ export function AuthFormField({
         (type === "email"
           ? "nama@email.com"
           : type === "password"
-          ? "••••••••"
-          : "")
+            ? "••••••••"
+            : "")
       }
       autoComplete={
         type === "email"
           ? "email"
           : type === "password"
-          ? id === "confirmPassword"
-            ? "new-password"
-            : "current-password"
-          : "off"
+            ? id === "confirmPassword"
+              ? "new-password"
+              : "current-password"
+            : "off"
       }
       startIcon={startIcon}
       endIcon={endIcon}

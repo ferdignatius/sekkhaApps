@@ -18,7 +18,12 @@ import {
   CameraIcon,
 } from "lucide-react"
 import { AttendanceListSheet } from "./AttendanceListSheet"
-import type { EventListItem, UserRole, AttendanceRecord, EventStatus } from "../types"
+import type {
+  EventListItem,
+  UserRole,
+  AttendanceRecord,
+  EventStatus,
+} from "../types"
 import { getCategoryColor } from "../masterdata"
 
 interface EventDetailSheetProps {
@@ -36,10 +41,28 @@ interface EventDetailSheetProps {
 
 function formatFullDate(iso: string) {
   const d = new Date(iso)
-  const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+  const days = [
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+  ]
   const months = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December"
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
   ]
 
   const dayName = days[d.getDay()]
@@ -100,31 +123,33 @@ export function EventDetailSheet({
 
   return (
     <div className="space-y-4 text-left font-sans">
-      
       {/* ── 1. Header Banner ── */}
-      <div className="relative rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0] p-4 sm:p-5 shadow-xs space-y-3">
-        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-          <div className="space-y-2 min-w-0 flex-1">
+      <div className="relative space-y-3 rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0] p-4 shadow-xs sm:p-5">
+        <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
+          <div className="min-w-0 flex-1 space-y-2">
             {/* Tag Badges */}
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex flex-wrap items-center gap-2">
               <span
-                className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize border shadow-2xs"
+                className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold capitalize shadow-2xs"
                 style={colorInfo.bgStyle}
               >
-                <span className="h-1.5 w-1.5 rounded-full shrink-0" style={colorInfo.dotStyle} />
+                <span
+                  className="h-1.5 w-1.5 shrink-0 rounded-full"
+                  style={colorInfo.dotStyle}
+                />
                 {colorInfo.name}
               </span>
 
               {/* Status Badge */}
               {isActive && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 border border-emerald-300 px-2.5 py-0.5 text-xs font-semibold text-emerald-800 animate-pulse">
+                <span className="inline-flex animate-pulse items-center gap-1 rounded-full border border-emerald-300 bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-800">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
                   Active Session
                 </span>
               )}
 
               {isClosed && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-[#faf5e8] border border-[#e5e5e5] px-2.5 py-0.5 text-xs font-semibold text-[#6a6a6a]">
+                <span className="inline-flex items-center gap-1 rounded-full border border-[#e5e5e5] bg-[#faf5e8] px-2.5 py-0.5 text-xs font-semibold text-[#6a6a6a]">
                   <LockIcon className="size-3 text-[#6a6a6a]" />
                   Completed (Read-Only)
                 </span>
@@ -132,19 +157,22 @@ export function EventDetailSheet({
             </div>
 
             {/* Title */}
-            <h2 id="event-detail-title" className="text-base sm:text-xl font-bold text-[#0a0a0a] tracking-tight leading-snug">
+            <h2
+              id="event-detail-title"
+              className="text-base leading-snug font-bold tracking-tight text-[#0a0a0a] sm:text-xl"
+            >
               {event.title}
             </h2>
           </div>
 
           {/* Pengurus Lifecycle Action Button */}
           {isPengurus && (
-            <div className="w-full sm:w-auto shrink-0">
+            <div className="w-full shrink-0 sm:w-auto">
               {!isActive && !isClosed && (
                 <button
                   type="button"
                   onClick={handleActivateClick}
-                  className="flex w-full sm:w-auto items-center justify-center gap-1.5 rounded-[12px] bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 text-xs font-bold transition-all shadow-xs active:scale-[0.98] cursor-pointer"
+                  className="flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-[12px] bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow-xs transition-all hover:bg-emerald-700 active:scale-[0.98] sm:w-auto"
                   title="Activate attendance for this event"
                 >
                   <PlayIcon className="size-3.5 fill-white" />
@@ -156,7 +184,7 @@ export function EventDetailSheet({
                 <button
                   type="button"
                   onClick={() => executeStatusChange("closed")}
-                  className="flex w-full sm:w-auto items-center justify-center gap-1.5 rounded-[12px] bg-[#d97706] hover:bg-[#b45309] text-white px-4 py-2.5 text-xs font-bold transition-all shadow-xs active:scale-[0.98] cursor-pointer"
+                  className="flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-[12px] bg-[#d97706] px-4 py-2.5 text-xs font-bold text-white shadow-xs transition-all hover:bg-[#b45309] active:scale-[0.98] sm:w-auto"
                   title="Close & complete this event"
                 >
                   <LockIcon className="size-3.5" />
@@ -165,7 +193,7 @@ export function EventDetailSheet({
               )}
 
               {isClosed && (
-                <div className="flex w-full sm:w-auto items-center justify-center gap-1.5 rounded-[12px] bg-[#faf5e8] border border-[#e5e5e5] px-3.5 py-2 text-xs font-semibold text-[#6a6a6a]">
+                <div className="flex w-full items-center justify-center gap-1.5 rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] px-3.5 py-2 text-xs font-semibold text-[#6a6a6a] sm:w-auto">
                   <CheckCircle2Icon className="size-4 text-emerald-600" />
                   <span>Event Completed</span>
                 </div>
@@ -176,28 +204,36 @@ export function EventDetailSheet({
 
         {/* Top Management Toolbar (Edit, Duplicate, Delete) */}
         {isPengurus && (
-          <div className="grid grid-cols-3 gap-1.5 sm:gap-2 pt-2 border-t border-[#e5e5e5]">
+          <div className="grid grid-cols-3 gap-1.5 border-t border-[#e5e5e5] pt-2 sm:gap-2">
             {/* Edit Button — Disabled if active or closed */}
             <button
               type="button"
               disabled={!canEdit}
               onClick={() => canEdit && onEdit?.(event)}
-              className={`flex items-center justify-center gap-1.5 rounded-[10px] border py-2 px-1.5 text-xs font-semibold transition-all shadow-2xs ${
+              className={`flex items-center justify-center gap-1.5 rounded-[10px] border px-1.5 py-2 text-xs font-semibold shadow-2xs transition-all ${
                 canEdit
-                  ? "border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] hover:bg-[#faf5e8] active:scale-[0.98] cursor-pointer"
-                  : "border-[#e5e5e5] bg-[#faf5e8] text-[#9a9a9a] cursor-not-allowed"
+                  ? "cursor-pointer border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] hover:bg-[#faf5e8] active:scale-[0.98]"
+                  : "cursor-not-allowed border-[#e5e5e5] bg-[#faf5e8] text-[#9a9a9a]"
               }`}
-              title={canEdit ? "Edit Event" : "Active or completed events cannot be edited"}
+              title={
+                canEdit
+                  ? "Edit Event"
+                  : "Active or completed events cannot be edited"
+              }
             >
-              <PencilIcon className={`size-3.5 shrink-0 ${canEdit ? "text-[#0a0a0a]" : "text-[#9a9a9a]"}`} />
-              <span className="truncate">Edit {isActive ? "(Locked)" : isClosed ? "(Closed)" : ""}</span>
+              <PencilIcon
+                className={`size-3.5 shrink-0 ${canEdit ? "text-[#0a0a0a]" : "text-[#9a9a9a]"}`}
+              />
+              <span className="truncate">
+                Edit {isActive ? "(Locked)" : isClosed ? "(Closed)" : ""}
+              </span>
             </button>
 
             {/* Duplicate Button */}
             <button
               type="button"
               onClick={() => onDuplicate?.(event)}
-              className="flex items-center justify-center gap-1.5 rounded-[10px] border border-[#e5e5e5] bg-[#fffaf0] py-2 px-1.5 text-xs font-semibold text-[#0a0a0a] hover:bg-[#faf5e8] transition-all shadow-2xs active:scale-[0.98] cursor-pointer"
+              className="flex cursor-pointer items-center justify-center gap-1.5 rounded-[10px] border border-[#e5e5e5] bg-[#fffaf0] px-1.5 py-2 text-xs font-semibold text-[#0a0a0a] shadow-2xs transition-all hover:bg-[#faf5e8] active:scale-[0.98]"
               title="Duplicate Event"
             >
               <CopyIcon className="size-3.5 shrink-0 text-[#e8b94a]" />
@@ -208,7 +244,7 @@ export function EventDetailSheet({
             <button
               type="button"
               onClick={() => onDelete?.(event)}
-              className="flex items-center justify-center gap-1.5 rounded-[10px] border border-rose-200 bg-rose-50/90 py-2 px-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-100 transition-all shadow-2xs active:scale-[0.98] cursor-pointer"
+              className="flex cursor-pointer items-center justify-center gap-1.5 rounded-[10px] border border-rose-200 bg-rose-50/90 px-1.5 py-2 text-xs font-semibold text-rose-700 shadow-2xs transition-all hover:bg-rose-100 active:scale-[0.98]"
               title="Delete Event"
             >
               <Trash2Icon className="size-3.5 shrink-0 text-rose-600" />
@@ -219,15 +255,19 @@ export function EventDetailSheet({
       </div>
 
       {/* ── 2. Informative Cards Grid ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
         <div className="flex items-start gap-3 rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0] p-3.5 shadow-xs">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[#1a3a3a]/10 text-[#1a3a3a]">
             <CalendarIcon className="size-4" />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-[#6a6a6a]">Date & Time</p>
-            <p className="text-xs font-bold text-[#0a0a0a] mt-0.5">{dayName}, {dateStr}</p>
-            <p className="flex items-center gap-1 text-xs font-semibold text-[#1a3a3a] mt-0.5">
+            <p className="text-[11px] font-bold tracking-wider text-[#6a6a6a] uppercase">
+              Date & Time
+            </p>
+            <p className="mt-0.5 text-xs font-bold text-[#0a0a0a]">
+              {dayName}, {dateStr}
+            </p>
+            <p className="mt-0.5 flex items-center gap-1 text-xs font-semibold text-[#1a3a3a]">
               <ClockIcon className="size-3" />
               <span>{timeStr}</span>
             </p>
@@ -239,9 +279,15 @@ export function EventDetailSheet({
             <MapPinIcon className="size-4" />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-[#6a6a6a]">Location</p>
-            <p className="text-xs font-bold text-[#0a0a0a] mt-0.5 truncate">{event.location}</p>
-            <p className="text-xs font-medium text-[#6a6a6a] mt-0.5">Vihara Sekkha</p>
+            <p className="text-[11px] font-bold tracking-wider text-[#6a6a6a] uppercase">
+              Location
+            </p>
+            <p className="mt-0.5 truncate text-xs font-bold text-[#0a0a0a]">
+              {event.location}
+            </p>
+            <p className="mt-0.5 text-xs font-medium text-[#6a6a6a]">
+              Vihara Sekkha
+            </p>
           </div>
         </div>
 
@@ -251,52 +297,62 @@ export function EventDetailSheet({
             <UsersIcon className="size-4 text-[#e8b94a]" />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-[#6a6a6a]">Total Attendance</p>
-            <p className="text-xs font-bold text-[#0a0a0a] mt-0.5">
+            <p className="text-[11px] font-bold tracking-wider text-[#6a6a6a] uppercase">
+              Total Attendance
+            </p>
+            <p className="mt-0.5 text-xs font-bold text-[#0a0a0a]">
               {attendances.length} Attendees
             </p>
-            <p className="text-xs font-medium text-emerald-600 mt-0.5">Recorded</p>
+            <p className="mt-0.5 text-xs font-medium text-emerald-600">
+              Recorded
+            </p>
           </div>
         </div>
       </div>
 
       {/* ── 3. Event Description ── */}
       {event.description && (
-        <div className="rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0] p-4 shadow-xs space-y-1.5">
-          <h4 className="text-xs font-bold text-[#0a0a0a] flex items-center gap-1.5">
+        <div className="space-y-1.5 rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0] p-4 shadow-xs">
+          <h4 className="flex items-center gap-1.5 text-xs font-bold text-[#0a0a0a]">
             <SparklesIcon className="size-3.5 text-[#e8b94a]" />
             <span>Event Description</span>
           </h4>
-          <p className="text-xs text-[#3a3a3a] leading-relaxed">
+          <p className="text-xs leading-relaxed text-[#3a3a3a]">
             {event.description}
           </p>
         </div>
       )}
 
       {/* ── 4. Guidelines & Attendee Notes ── */}
-      <div className="rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0] p-4 shadow-xs space-y-3">
+      <div className="space-y-3 rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0] p-4 shadow-xs">
         <div>
-          <h4 className="text-xs font-bold text-[#0a0a0a] flex items-center gap-1.5 mb-2">
+          <h4 className="mb-2 flex items-center gap-1.5 text-xs font-bold text-[#0a0a0a]">
             <GiftIcon className="size-3.5 text-[#1a3a3a]" />
             <span>Attendee Guidelines & Notes</span>
           </h4>
           <ul className="space-y-2 text-xs text-[#3a3a3a]">
             <li className="flex items-start gap-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#0a0a0a] mt-1.5 shrink-0" />
-              <span>Dress politely and respectfully (white / neat casual preferred).</span>
+              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#0a0a0a]" />
+              <span>
+                Dress politely and respectfully (white / neat casual preferred).
+              </span>
             </li>
             <li className="flex items-start gap-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#0a0a0a] mt-1.5 shrink-0" />
-              <span>Present your Member QR Code to the Event Organizer for check-in.</span>
+              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#0a0a0a]" />
+              <span>
+                Present your Member QR Code to the Event Organizer for check-in.
+              </span>
             </li>
             <li className="flex items-start gap-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#0a0a0a] mt-1.5 shrink-0" />
-              <span>Check in on time to earn <strong>+50 Activity Points</strong>.</span>
+              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#0a0a0a]" />
+              <span>
+                Check in on time to earn <strong>+50 Activity Points</strong>.
+              </span>
             </li>
           </ul>
         </div>
 
-        <div className="pt-2 border-t border-[#e5e5e5]">
+        <div className="border-t border-[#e5e5e5] pt-2">
           <p className="text-xs font-medium text-[#6a6a6a]">
             ℹ️ Need assistance? Contact the Sekkha community organizers.
           </p>
@@ -306,7 +362,7 @@ export function EventDetailSheet({
       {/* ── 5. Attendance & Participants ── */}
       <div className="space-y-3 rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0] p-4 shadow-xs">
         <div className="flex items-center justify-between">
-          <h4 className="text-xs font-bold text-[#0a0a0a] flex items-center gap-1.5">
+          <h4 className="flex items-center gap-1.5 text-xs font-bold text-[#0a0a0a]">
             <ClipboardListIcon className="size-4 text-[#1a3a3a]" />
             <span>Event Attendance</span>
           </h4>
@@ -316,15 +372,18 @@ export function EventDetailSheet({
         {isPengurus && (
           <div>
             {!isActive && !isClosed && (
-              <div className="rounded-[12px] border border-amber-200 bg-amber-50/80 p-3 text-xs text-amber-900 flex items-center gap-2 shadow-2xs">
-                <AlertTriangleIcon className="size-4 text-amber-600 shrink-0" />
-                <span>Click <strong>"Activate Event"</strong> above first to open attendance check-in.</span>
+              <div className="flex items-center gap-2 rounded-[12px] border border-amber-200 bg-amber-50/80 p-3 text-xs text-amber-900 shadow-2xs">
+                <AlertTriangleIcon className="size-4 shrink-0 text-amber-600" />
+                <span>
+                  Click <strong>"Activate Event"</strong> above first to open
+                  attendance check-in.
+                </span>
               </div>
             )}
 
             {isClosed && (
-              <div className="rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] p-3 text-xs text-[#6a6a6a] flex items-center gap-2 shadow-2xs">
-                <LockIcon className="size-4 text-[#6a6a6a] shrink-0" />
+              <div className="flex items-center gap-2 rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] p-3 text-xs text-[#6a6a6a] shadow-2xs">
+                <LockIcon className="size-4 shrink-0 text-[#6a6a6a]" />
                 <span>Attendance for this event is closed (Read-Only).</span>
               </div>
             )}
@@ -332,10 +391,16 @@ export function EventDetailSheet({
             {isActive && (
               <button
                 type="button"
-                onClick={() => navigate({ to: "/events/scan", search: { eventId: event.id } })}
-                className="flex w-full items-center justify-center gap-2 rounded-[12px] bg-[#0a0a0a] py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[#1f1f1f] transition-all active:scale-[0.99] cursor-pointer"
+                onClick={() =>
+                  navigate({
+                    to: "/events/scan",
+                    search: { eventId: event.id },
+                  })
+                }
+                className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-[12px] bg-[#0a0a0a] py-2.5 text-xs font-bold text-white shadow-xs transition-all hover:bg-[#1f1f1f] active:scale-[0.99]"
               >
-                <CameraIcon className="size-4" /> 📷 Open Attendance Scanner (QRIS)
+                <CameraIcon className="size-4" /> 📷 Open Attendance Scanner
+                (QRIS)
               </button>
             )}
           </div>
@@ -344,8 +409,10 @@ export function EventDetailSheet({
         {!isPengurus && isActive && (
           <button
             type="button"
-            onClick={() => navigate({ to: "/events/scan", search: { eventId: event.id } })}
-            className="flex w-full items-center justify-center gap-2 rounded-[12px] bg-emerald-600 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 transition-all active:scale-[0.99] cursor-pointer"
+            onClick={() =>
+              navigate({ to: "/events/scan", search: { eventId: event.id } })
+            }
+            className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-[12px] bg-emerald-600 py-2.5 text-xs font-bold text-white shadow-xs transition-all hover:bg-emerald-700 active:scale-[0.99]"
           >
             <CameraIcon className="size-4" /> 📷 Self-Check-in via QR
           </button>
@@ -362,36 +429,46 @@ export function EventDetailSheet({
 
       {/* ── Warning Modal Alert (When Activating Before Event Date) ── */}
       {warningModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0a0a0a]/40 backdrop-blur-xs p-4">
-          <div className="w-full max-w-md rounded-[24px] border border-[#e5e5e5] bg-[#fffaf0] p-5 sm:p-6 shadow-2xl space-y-4 text-left font-sans animate-in fade-in zoom-in-95">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0a0a0a]/40 p-4 backdrop-blur-xs">
+          <div className="w-full max-w-md animate-in space-y-4 rounded-[24px] border border-[#e5e5e5] bg-[#fffaf0] p-5 text-left font-sans shadow-2xl zoom-in-95 fade-in sm:p-6">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-amber-100 text-amber-700 shrink-0">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-amber-100 text-amber-700">
                 <AlertTriangleIcon className="size-5" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-[#0a0a0a]">Early Activation Warning</h3>
-                <p className="text-xs text-[#6a6a6a]">Event schedule has not arrived yet</p>
+                <h3 className="text-sm font-bold text-[#0a0a0a]">
+                  Early Activation Warning
+                </h3>
+                <p className="text-xs text-[#6a6a6a]">
+                  Event schedule has not arrived yet
+                </p>
               </div>
             </div>
 
-            <p className="text-xs text-[#3a3a3a] leading-relaxed">
-              The scheduled time for this event is <strong>{dayName}, {dateStr} ({timeStr})</strong>. Current time is before the scheduled date.
-              <br /><br />
-              Are you sure you want to <strong>Activate Attendance Check-In</strong> now?
+            <p className="text-xs leading-relaxed text-[#3a3a3a]">
+              The scheduled time for this event is{" "}
+              <strong>
+                {dayName}, {dateStr} ({timeStr})
+              </strong>
+              . Current time is before the scheduled date.
+              <br />
+              <br />
+              Are you sure you want to{" "}
+              <strong>Activate Attendance Check-In</strong> now?
             </p>
 
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#e5e5e5]">
+            <div className="flex items-center justify-end gap-2 border-t border-[#e5e5e5] pt-2">
               <button
                 type="button"
                 onClick={() => setWarningModalOpen(false)}
-                className="rounded-[10px] border border-[#e5e5e5] bg-[#fffaf0] px-4 py-2 text-xs font-semibold text-[#6a6a6a] hover:bg-[#faf5e8] transition-all cursor-pointer"
+                className="cursor-pointer rounded-[10px] border border-[#e5e5e5] bg-[#fffaf0] px-4 py-2 text-xs font-semibold text-[#6a6a6a] transition-all hover:bg-[#faf5e8]"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={() => executeStatusChange("active")}
-                className="rounded-[10px] bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-700 transition-all shadow-xs cursor-pointer"
+                className="cursor-pointer rounded-[10px] bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-xs transition-all hover:bg-emerald-700"
               >
                 Yes, Activate Now
               </button>
@@ -399,7 +476,6 @@ export function EventDetailSheet({
           </div>
         </div>
       )}
-
     </div>
   )
 }

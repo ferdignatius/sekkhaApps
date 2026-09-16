@@ -56,15 +56,20 @@ export const seasonsApi = {
   update: (id: string, data: Partial<SeasonDto>) =>
     api.put<SeasonDto>(`/configure/seasons/${id}`, data),
   remove: (id: string) => api.delete(`/configure/seasons/${id}`),
-  activate: (id: string) => api.post<{ success: boolean; season: SeasonDto }>(`/configure/seasons/${id}/activate`),
+  activate: (id: string) =>
+    api.post<{ success: boolean; season: SeasonDto }>(
+      `/configure/seasons/${id}/activate`
+    ),
 }
 
 // ─── Badges ──────────────────────────────────────────────────────────────────
 
 export const badgesApi = {
   list: () => api.get<BadgeDto[]>("/configure/badges"),
-  create: (data: Omit<BadgeDto, "id" | "is_active">) => api.post<{ id: string }>("/configure/badges", data),
-  update: (id: string, data: Partial<BadgeDto>) => api.put<{ id: string }>(`/configure/badges/${id}`, data),
+  create: (data: Omit<BadgeDto, "id" | "is_active">) =>
+    api.post<{ id: string }>("/configure/badges", data),
+  update: (id: string, data: Partial<BadgeDto>) =>
+    api.put<{ id: string }>(`/configure/badges/${id}`, data),
   remove: (id: string) => api.delete(`/configure/badges/${id}`),
 }
 
@@ -72,8 +77,10 @@ export const badgesApi = {
 
 export const levelsApi = {
   list: () => api.get<LevelDto[]>("/configure/levels"),
-  create: (data: Omit<LevelDto, "id">) => api.post<{ id: string }>("/configure/levels", data),
-  update: (id: string, data: Partial<LevelDto>) => api.put<{ id: string }>(`/configure/levels/${id}`, data),
+  create: (data: Omit<LevelDto, "id">) =>
+    api.post<{ id: string }>("/configure/levels", data),
+  update: (id: string, data: Partial<LevelDto>) =>
+    api.put<{ id: string }>(`/configure/levels/${id}`, data),
   remove: (id: string) => api.delete(`/configure/levels/${id}`),
 }
 
@@ -81,8 +88,10 @@ export const levelsApi = {
 
 export const eventTypesApi = {
   list: () => api.get<EventTypeDto[]>("/configure/event-types"),
-  create: (data: Omit<EventTypeDto, "id">) => api.post<{ id: string }>("/configure/event-types", data),
-  update: (id: string, data: Partial<EventTypeDto>) => api.put<{ id: string }>(`/configure/event-types/${id}`, data),
+  create: (data: Omit<EventTypeDto, "id">) =>
+    api.post<{ id: string }>("/configure/event-types", data),
+  update: (id: string, data: Partial<EventTypeDto>) =>
+    api.put<{ id: string }>(`/configure/event-types/${id}`, data),
   remove: (id: string) => api.delete(`/configure/event-types/${id}`),
 }
 
@@ -90,8 +99,9 @@ export const eventTypesApi = {
 
 export const achievementsApi = {
   list: () => api.get<AchievementDto[]>("/configure/achievements"),
-  create: (data: Omit<AchievementDto, "id" | "is_active"> & { is_active?: boolean }) =>
-    api.post<{ id: string }>("/configure/achievements", data),
+  create: (
+    data: Omit<AchievementDto, "id" | "is_active"> & { is_active?: boolean }
+  ) => api.post<{ id: string }>("/configure/achievements", data),
   update: (id: string, data: Partial<AchievementDto>) =>
     api.put<{ id: string }>(`/configure/achievements/${id}`, data),
   remove: (id: string) => api.delete(`/configure/achievements/${id}`),
@@ -111,8 +121,10 @@ export interface PointRuleDto {
 
 export const pointRulesApi = {
   list: () => api.get<PointRuleDto[]>("/configure/point-rules"),
-  update: (id: string, data: { label?: string; points: number; description?: string | null }) =>
-    api.put<PointRuleDto>(`/configure/point-rules/${id}`, data),
+  update: (
+    id: string,
+    data: { label?: string; points: number; description?: string | null }
+  ) => api.put<PointRuleDto>(`/configure/point-rules/${id}`, data),
 }
 
 // ─── Master Data: Schools ───────────────────────────────────────────────────
@@ -136,7 +148,6 @@ export const schoolsApi = {
     api.post<SchoolDto>("/schools", data),
   update: (id: string, data: Partial<Omit<SchoolDto, "id" | "userCount">>) =>
     api.put<SchoolDto>(`/schools/${id}`, data),
-  remove: (id: string) => api.delete<{ success: boolean; message: string }>(`/schools/${id}`),
+  remove: (id: string) =>
+    api.delete<{ success: boolean; message: string }>(`/schools/${id}`),
 }
-
-

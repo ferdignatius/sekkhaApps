@@ -16,6 +16,8 @@ import {
 } from "lucide-react"
 import { useAuth } from "@/modules/auth"
 import { api } from "@/lib/api"
+import { z } from "zod"
+
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
 import { ResponsiveFormModal } from "@/components/common/ResponsiveFormModal"
 import { EventCalendar } from "@/components/ui/EventCalendar"
@@ -31,6 +33,15 @@ import type {
   CreateEventPayload,
   AttendanceRecord,
 } from "../types"
+
+const EventsResponseSchema = z.array(
+  z
+    .object({
+      id: z.string(),
+      title: z.string(),
+    })
+    .passthrough()
+)
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -150,7 +161,9 @@ export function EventsPage() {
   async function loadEvents() {
     try {
       setLoadingEvents(true)
-      const data = await api.get<EventListItem[]>("/events")
+      const data = await api.get<EventListItem[]>("/events", {
+        schema: EventsResponseSchema,
+      })
       setEvents(data)
     } catch (err) {
       console.error("Failed to load events from server:", err)

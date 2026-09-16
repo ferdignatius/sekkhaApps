@@ -65,21 +65,22 @@ export function MemberDetailSheet({
   const cleanPhone = member.phone ? member.phone.replace(/[^0-9]/g, "") : null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3.5 sm:p-4 animate-in fade-in">
-      <div className="relative w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-[24px] border border-[#e5e5e5] bg-[#fffaf0] p-4 sm:p-6 shadow-2xl space-y-5 text-left">
-        
+    <div className="fixed inset-0 z-50 flex animate-in items-center justify-center bg-black/60 p-3.5 backdrop-blur-xs fade-in sm:p-4">
+      <div className="relative max-h-[90vh] w-full max-w-xl space-y-5 overflow-y-auto rounded-[24px] border border-[#e5e5e5] bg-[#fffaf0] p-4 text-left shadow-2xl sm:p-6">
         {/* Modal Header */}
         <div className="flex items-center justify-between border-b border-[#e5e5e5] pb-3.5">
           <div className="flex items-center gap-2.5">
             <span className="flex size-8 items-center justify-center rounded-[8px] bg-[#0a0a0a] text-white shadow-xs">
               <UserIcon className="size-4 text-[#e8b94a]" />
             </span>
-            <h2 className="text-base font-bold text-[#0a0a0a]">Member Profile & Details</h2>
+            <h2 className="text-base font-bold text-[#0a0a0a]">
+              Member Profile & Details
+            </h2>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full p-1.5 text-[#6a6a6a] hover:bg-[#faf5e8] cursor-pointer"
+            className="cursor-pointer rounded-full p-1.5 text-[#6a6a6a] hover:bg-[#faf5e8]"
             title="Close"
           >
             <XIcon className="size-5" />
@@ -87,26 +88,30 @@ export function MemberDetailSheet({
         </div>
 
         {/* Member Profile Banner */}
-        <div className="rounded-[20px] border border-[#e5e5e5] bg-[#faf5e8] p-4 sm:p-5 shadow-xs space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-3.5 min-w-0">
-              <div className="flex size-14 shrink-0 items-center justify-center rounded-[16px] bg-[#e8b94a] text-lg font-bold text-[#0a0a0a] shadow-xs uppercase">
+        <div className="space-y-4 rounded-[20px] border border-[#e5e5e5] bg-[#faf5e8] p-4 shadow-xs sm:p-5">
+          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+            <div className="flex min-w-0 items-center gap-3.5">
+              <div className="flex size-14 shrink-0 items-center justify-center rounded-[16px] bg-[#e8b94a] text-lg font-bold text-[#0a0a0a] uppercase shadow-xs">
                 {initials}
               </div>
               <div className="min-w-0 space-y-1">
-                <h3 className="text-base sm:text-lg font-bold text-[#0a0a0a] leading-tight break-words">
+                <h3 className="text-base leading-tight font-bold break-words text-[#0a0a0a] sm:text-lg">
                   {member.name}
                 </h3>
                 <div className="flex flex-wrap items-center gap-2">
                   {member.username && (
-                    <span className="font-mono text-xs font-bold text-[#1a3a3a] bg-[#1a3a3a]/10 px-2 py-0.5 rounded-[6px]">
+                    <span className="rounded-[6px] bg-[#1a3a3a]/10 px-2 py-0.5 font-mono text-xs font-bold text-[#1a3a3a]">
                       @{member.username}
                     </span>
                   )}
-                  <span className={`inline-block rounded-full border px-2.5 py-0.5 text-xs font-semibold capitalize ${roleBadgeStyle[member.role] || roleBadgeStyle.umat}`}>
+                  <span
+                    className={`inline-block rounded-full border px-2.5 py-0.5 text-xs font-semibold capitalize ${roleBadgeStyle[member.role] || roleBadgeStyle.umat}`}
+                  >
                     {member.role}
                   </span>
-                  <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full border ${member.is_claimed ? "bg-emerald-50 text-emerald-800 border-emerald-200" : "bg-amber-50 text-amber-800 border-amber-200"}`}>
+                  <span
+                    className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${member.is_claimed ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-amber-200 bg-amber-50 text-amber-800"}`}
+                  >
                     {member.is_claimed ? "Claimed Account" : "Unclaimed"}
                   </span>
                 </div>
@@ -115,46 +120,66 @@ export function MemberDetailSheet({
 
             {/* Member ID pill */}
             {member.user_number && (
-              <div className="flex sm:flex-col items-center sm:items-end justify-between border-t sm:border-t-0 border-[#e5e5e5] pt-2 sm:pt-0">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[#6a6a6a]">Member ID</span>
+              <div className="flex items-center justify-between border-t border-[#e5e5e5] pt-2 sm:flex-col sm:items-end sm:border-t-0 sm:pt-0">
+                <span className="text-[10px] font-bold tracking-wider text-[#6a6a6a] uppercase">
+                  Member ID
+                </span>
                 <button
                   type="button"
                   onClick={() => handleCopy(member.user_number)}
-                  className="flex items-center gap-1.5 font-mono text-xs font-bold text-[#0a0a0a] bg-[#fffaf0] hover:bg-[#f5f0e0] border border-[#e5e5e5] px-2.5 py-1 rounded-[8px] transition-colors cursor-pointer"
+                  className="flex cursor-pointer items-center gap-1.5 rounded-[8px] border border-[#e5e5e5] bg-[#fffaf0] px-2.5 py-1 font-mono text-xs font-bold text-[#0a0a0a] transition-colors hover:bg-[#f5f0e0]"
                   title="Click to copy ID"
                 >
                   <span>{member.user_number}</span>
-                  {copied ? <CheckIcon className="size-3 text-emerald-600" /> : <CopyIcon className="size-3 text-[#6a6a6a]" />}
+                  {copied ? (
+                    <CheckIcon className="size-3 text-emerald-600" />
+                  ) : (
+                    <CopyIcon className="size-3 text-[#6a6a6a]" />
+                  )}
                 </button>
               </div>
             )}
           </div>
 
           {/* Quick Stats Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-2 border-t border-[#e5e5e5]">
-            <div className="rounded-[12px] bg-[#fffaf0] border border-[#e5e5e5] p-2.5 text-center">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[#6a6a6a] block">Attendance</span>
-              <span className="text-base font-bold text-[#0a0a0a]">{member.total_attendance || 0} Events</span>
-            </div>
-            <div className="rounded-[12px] bg-[#fffaf0] border border-[#e5e5e5] p-2.5 text-center">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[#6a6a6a] block">Points Earned</span>
-              <span className="text-base font-bold text-[#0a0a0a]">{member.points || 0} Pts</span>
-            </div>
-            <div className="col-span-2 sm:col-span-1 rounded-[12px] bg-[#fffaf0] border border-[#e5e5e5] p-2.5 text-center">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[#6a6a6a] block">Gender</span>
+          <div className="grid grid-cols-2 gap-2.5 border-t border-[#e5e5e5] pt-2 sm:grid-cols-3">
+            <div className="rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] p-2.5 text-center">
+              <span className="block text-[10px] font-bold tracking-wider text-[#6a6a6a] uppercase">
+                Attendance
+              </span>
               <span className="text-base font-bold text-[#0a0a0a]">
-                {member.gender === "L" ? "Male" : member.gender === "P" ? "Female" : "Not set"}
+                {member.total_attendance || 0} Events
+              </span>
+            </div>
+            <div className="rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] p-2.5 text-center">
+              <span className="block text-[10px] font-bold tracking-wider text-[#6a6a6a] uppercase">
+                Points Earned
+              </span>
+              <span className="text-base font-bold text-[#0a0a0a]">
+                {member.points || 0} Pts
+              </span>
+            </div>
+            <div className="col-span-2 rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] p-2.5 text-center sm:col-span-1">
+              <span className="block text-[10px] font-bold tracking-wider text-[#6a6a6a] uppercase">
+                Gender
+              </span>
+              <span className="text-base font-bold text-[#0a0a0a]">
+                {member.gender === "L"
+                  ? "Male"
+                  : member.gender === "P"
+                    ? "Female"
+                    : "Not set"}
               </span>
             </div>
           </div>
         </div>
 
         {/* View Toggle Tabs */}
-        <div className="flex items-center gap-1 rounded-[12px] bg-[#faf5e8] p-1 border border-[#e5e5e5]">
+        <div className="flex items-center gap-1 rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] p-1">
           <button
             type="button"
             onClick={() => setActiveTab("profile")}
-            className={`flex-1 flex items-center justify-center gap-1.5 rounded-[8px] py-2 text-xs font-bold transition-all cursor-pointer ${
+            className={`flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-[8px] py-2 text-xs font-bold transition-all ${
               activeTab === "profile"
                 ? "bg-[#0a0a0a] text-white shadow-xs"
                 : "text-[#6a6a6a] hover:text-[#0a0a0a]"
@@ -166,7 +191,7 @@ export function MemberDetailSheet({
           <button
             type="button"
             onClick={() => setActiveTab("card")}
-            className={`flex-1 flex items-center justify-center gap-1.5 rounded-[8px] py-2 text-xs font-bold transition-all cursor-pointer ${
+            className={`flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-[8px] py-2 text-xs font-bold transition-all ${
               activeTab === "card"
                 ? "bg-[#0a0a0a] text-white shadow-xs"
                 : "text-[#6a6a6a] hover:text-[#0a0a0a]"
@@ -180,8 +205,7 @@ export function MemberDetailSheet({
         {/* Tab 1: Detailed Profile Info */}
         {activeTab === "profile" && (
           <div className="space-y-3">
-            <div className="rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0] divide-y divide-[#f0f0f0] overflow-hidden text-xs">
-              
+            <div className="divide-y divide-[#f0f0f0] overflow-hidden rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0] text-xs">
               {/* Phone / WhatsApp */}
               <div className="flex items-center justify-between p-3 sm:px-4">
                 <div className="flex items-center gap-2.5 text-[#6a6a6a]">
@@ -189,13 +213,15 @@ export function MemberDetailSheet({
                   <span className="font-semibold">Phone / WhatsApp</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="font-medium text-[#0a0a0a]">{member.phone || "—"}</span>
+                  <span className="font-medium text-[#0a0a0a]">
+                    {member.phone || "—"}
+                  </span>
                   {cleanPhone && (
                     <a
                       href={`https://wa.me/${cleanPhone}`}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-[6px] hover:bg-emerald-100 transition-colors"
+                      className="inline-flex items-center gap-1 rounded-[6px] bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-700 transition-colors hover:bg-emerald-100"
                       title="Open in WhatsApp"
                     >
                       <span>WhatsApp</span>
@@ -211,7 +237,9 @@ export function MemberDetailSheet({
                   <MailIcon className="size-4 text-[#0a0a0a]" />
                   <span className="font-semibold">Email</span>
                 </div>
-                <span className="font-medium text-[#0a0a0a]">{member.email || "—"}</span>
+                <span className="font-medium text-[#0a0a0a]">
+                  {member.email || "—"}
+                </span>
               </div>
 
               {/* School / College */}
@@ -220,7 +248,9 @@ export function MemberDetailSheet({
                   <SchoolIcon className="size-4 text-[#0a0a0a]" />
                   <span className="font-semibold">School / College</span>
                 </div>
-                <span className="font-medium text-[#0a0a0a]">{member.school || "—"}</span>
+                <span className="font-medium text-[#0a0a0a]">
+                  {member.school || "—"}
+                </span>
               </div>
 
               {/* Birth Date */}
@@ -256,7 +286,6 @@ export function MemberDetailSheet({
                     : "—"}
                 </span>
               </div>
-
             </div>
           </div>
         )}
@@ -264,18 +293,24 @@ export function MemberDetailSheet({
         {/* Tab 2: Digital ID Card & QR Code */}
         {activeTab === "card" && (
           <div className="space-y-3">
-            <div className="rounded-[20px] border border-[#e5e5e5] bg-[#faf5e8] p-4 sm:p-5 shadow-xs space-y-4">
+            <div className="space-y-4 rounded-[20px] border border-[#e5e5e5] bg-[#faf5e8] p-4 shadow-xs sm:p-5">
               <div className="flex items-center justify-between border-b border-[#e5e5e5] pb-2.5">
                 <div>
-                  <p className="text-xs font-bold text-[#0a0a0a]">Sekkha Community</p>
-                  <p className="text-[11px] font-medium text-[#6a6a6a]">Official Membership ID Card</p>
+                  <p className="text-xs font-bold text-[#0a0a0a]">
+                    Sekkha Community
+                  </p>
+                  <p className="text-[11px] font-medium text-[#6a6a6a]">
+                    Official Membership ID Card
+                  </p>
                 </div>
-                <span className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold capitalize ${roleBadgeStyle[member.role] || roleBadgeStyle.umat}`}>
+                <span
+                  className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold capitalize ${roleBadgeStyle[member.role] || roleBadgeStyle.umat}`}
+                >
                   {member.role}
                 </span>
               </div>
 
-              <div className="flex flex-col items-center justify-center py-2 space-y-3">
+              <div className="flex flex-col items-center justify-center space-y-3 py-2">
                 <div className="rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0] p-3.5 shadow-xs">
                   <QRCode
                     value={member.user_number || member.id}
@@ -285,15 +320,24 @@ export function MemberDetailSheet({
                   />
                 </div>
 
-                <div className="text-center space-y-0.5">
-                  <p className="text-sm sm:text-base font-bold text-[#0a0a0a]">{member.name}</p>
-                  <p className="font-mono text-xs font-bold text-[#1a3a3a]">{member.user_number || "—"}</p>
-                  {member.school && <p className="text-xs text-[#6a6a6a]">🏫 {member.school}</p>}
+                <div className="space-y-0.5 text-center">
+                  <p className="text-sm font-bold text-[#0a0a0a] sm:text-base">
+                    {member.name}
+                  </p>
+                  <p className="font-mono text-xs font-bold text-[#1a3a3a]">
+                    {member.user_number || "—"}
+                  </p>
+                  {member.school && (
+                    <p className="text-xs text-[#6a6a6a]">🏫 {member.school}</p>
+                  )}
                 </div>
               </div>
 
-              <div className="flex items-center justify-between text-xs text-[#6a6a6a] pt-2 border-t border-[#e5e5e5]">
-                <span>Status: {member.is_claimed ? "✅ Active Account" : "⚠️ Unclaimed"}</span>
+              <div className="flex items-center justify-between border-t border-[#e5e5e5] pt-2 text-xs text-[#6a6a6a]">
+                <span>
+                  Status:{" "}
+                  {member.is_claimed ? "✅ Active Account" : "⚠️ Unclaimed"}
+                </span>
                 <span>Total Attendance: {member.total_attendance || 0}x</span>
               </div>
             </div>
@@ -303,16 +347,20 @@ export function MemberDetailSheet({
               <button
                 type="button"
                 onClick={() => handleCopy(member.user_number)}
-                className="h-11 flex-1 flex items-center justify-center gap-1.5 rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] text-xs sm:text-sm font-semibold text-[#0a0a0a] hover:bg-[#faf5e8] transition-colors cursor-pointer"
+                className="flex h-11 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] text-xs font-semibold text-[#0a0a0a] transition-colors hover:bg-[#faf5e8] sm:text-sm"
               >
-                {copied ? <CheckIcon className="size-4 text-emerald-600" /> : <CopyIcon className="size-4 text-[#6a6a6a]" />}
+                {copied ? (
+                  <CheckIcon className="size-4 text-emerald-600" />
+                ) : (
+                  <CopyIcon className="size-4 text-[#6a6a6a]" />
+                )}
                 <span>{copied ? "Copied!" : "Copy Member ID"}</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => window.print()}
-                className="h-11 flex-1 flex items-center justify-center gap-1.5 rounded-[12px] bg-[#0a0a0a] text-xs sm:text-sm font-bold text-white shadow-xs hover:bg-[#1f1f1f] transition-all cursor-pointer"
+                className="flex h-11 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-[12px] bg-[#0a0a0a] text-xs font-bold text-white shadow-xs transition-all hover:bg-[#1f1f1f] sm:text-sm"
               >
                 <PrinterIcon className="size-4" />
                 <span>Print Card</span>
@@ -323,8 +371,8 @@ export function MemberDetailSheet({
 
         {/* Pengurus / Admin Management Actions Toolbar */}
         {isPengurusOrAdmin && (
-          <div className="space-y-2.5 pt-2 border-t border-[#e5e5e5]">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-[#6a6a6a]">
+          <div className="space-y-2.5 border-t border-[#e5e5e5] pt-2">
+            <p className="text-[11px] font-bold tracking-wider text-[#6a6a6a] uppercase">
               Administrative Actions
             </p>
             <div className="grid grid-cols-3 gap-2">
@@ -332,7 +380,7 @@ export function MemberDetailSheet({
               <button
                 type="button"
                 onClick={() => onResetPassword(member)}
-                className="h-11 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 rounded-[12px] border border-[#e8b94a]/50 bg-[#e8b94a]/15 px-2 text-xs font-bold text-[#0a0a0a] hover:bg-[#e8b94a]/25 transition-all cursor-pointer"
+                className="flex h-11 cursor-pointer flex-col items-center justify-center gap-1 rounded-[12px] border border-[#e8b94a]/50 bg-[#e8b94a]/15 px-2 text-xs font-bold text-[#0a0a0a] transition-all hover:bg-[#e8b94a]/25 sm:flex-row sm:gap-1.5"
                 title="Reset Password to default (Sekkha[4-digit]Puggala)"
               >
                 <KeyIcon className="size-3.5 text-[#0a0a0a]" />
@@ -343,7 +391,7 @@ export function MemberDetailSheet({
               <button
                 type="button"
                 onClick={() => onChangeRole(member)}
-                className="h-11 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-2 text-xs font-bold text-[#0a0a0a] hover:bg-[#faf5e8] transition-all cursor-pointer"
+                className="flex h-11 cursor-pointer flex-col items-center justify-center gap-1 rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-2 text-xs font-bold text-[#0a0a0a] transition-all hover:bg-[#faf5e8] sm:flex-row sm:gap-1.5"
                 title="Change Account Role"
               >
                 <ShieldCheckIcon className="size-3.5 text-[#0a0a0a]" />
@@ -354,7 +402,7 @@ export function MemberDetailSheet({
               <button
                 type="button"
                 onClick={() => onDeleteMember(member)}
-                className="h-11 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 rounded-[12px] border border-rose-200 bg-rose-50 px-2 text-xs font-bold text-rose-600 hover:bg-rose-100 transition-all cursor-pointer"
+                className="flex h-11 cursor-pointer flex-col items-center justify-center gap-1 rounded-[12px] border border-rose-200 bg-rose-50 px-2 text-xs font-bold text-rose-600 transition-all hover:bg-rose-100 sm:flex-row sm:gap-1.5"
                 title="Delete Member"
               >
                 <Trash2Icon className="size-3.5" />
@@ -363,7 +411,6 @@ export function MemberDetailSheet({
             </div>
           </div>
         )}
-
       </div>
     </div>
   )

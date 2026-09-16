@@ -68,7 +68,8 @@ describe("LandingFooter", () => {
     expect(elements.length).toBeGreaterThanOrEqual(1)
     // Verify the copyright <p> specifically contains "Sekkha"
     const copyrightEl = elements.find(
-      (el) => el.tagName.toLowerCase() === "p" && el.textContent?.includes("Sekkha")
+      (el) =>
+        el.tagName.toLowerCase() === "p" && el.textContent?.includes("Sekkha")
     )
     expect(copyrightEl).toBeDefined()
   })

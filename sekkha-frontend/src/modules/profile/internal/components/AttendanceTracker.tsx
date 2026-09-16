@@ -45,42 +45,48 @@ export function AttendanceTracker({
       {/* Header */}
       <div className="mb-5 flex items-center gap-2">
         <FlameIcon className={`size-5 ${flameColor}`} aria-hidden="true" />
-        <h2 className="text-body-sm-medium text-sekkha-ink">Streak & Kehadiran</h2>
+        <h2 className="text-body-sm-medium text-sekkha-ink">
+          Streak & Kehadiran
+        </h2>
       </div>
 
       {/* Stats row — proportional layout */}
       <div className="grid grid-cols-3 gap-3">
         {/* Current streak */}
-        <div className={`flex flex-col items-center justify-center rounded-xl ${flameBg} px-3 py-4`}>
-          <p className={`text-heading-3 font-semibold leading-none ${flameColor}`}>
+        <div
+          className={`flex flex-col items-center justify-center rounded-xl ${flameBg} px-3 py-4`}
+        >
+          <p
+            className={`text-heading-3 leading-none font-semibold ${flameColor}`}
+          >
             {currentStreak}
           </p>
-          <p className={`mt-1 text-caption ${flameColor}`}>🔥 Minggu</p>
-          <p className="mt-0.5 text-micro text-sekkha-slate">Streak aktif</p>
+          <p className={`text-caption mt-1 ${flameColor}`}>🔥 Minggu</p>
+          <p className="text-micro mt-0.5 text-sekkha-slate">Streak aktif</p>
         </div>
 
         {/* Longest streak */}
         <div className="flex flex-col items-center justify-center rounded-xl bg-sekkha-surface px-3 py-4">
-          <p className="text-heading-3 font-semibold leading-none text-sekkha-ink">
+          <p className="text-heading-3 leading-none font-semibold text-sekkha-ink">
             {longestStreak}
           </p>
-          <p className="mt-1 text-caption text-sekkha-slate">Minggu</p>
-          <p className="mt-0.5 text-micro text-sekkha-muted">Terpanjang</p>
+          <p className="text-caption mt-1 text-sekkha-slate">Minggu</p>
+          <p className="text-micro mt-0.5 text-sekkha-muted">Terpanjang</p>
         </div>
 
         {/* This month attendance rate */}
         <div className="flex flex-col items-center justify-center rounded-xl bg-sekkha-teal-light px-3 py-4">
-          <p className="text-heading-3 font-semibold leading-none text-sekkha-brand-blue">
+          <p className="text-heading-3 leading-none font-semibold text-sekkha-brand-blue">
             {attendedThisMonth}/{monthlyCheckins.length}
           </p>
-          <p className="mt-1 text-caption text-sekkha-brand-blue">Hadir</p>
-          <p className="mt-0.5 text-micro text-sekkha-slate">Bulan ini</p>
+          <p className="text-caption mt-1 text-sekkha-brand-blue">Hadir</p>
+          <p className="text-micro mt-0.5 text-sekkha-slate">Bulan ini</p>
         </div>
       </div>
 
       {/* Monthly check-in calendar (per week) */}
       <div className="mt-5">
-        <p className="mb-3 text-caption-bold text-sekkha-slate">{monthLabel}</p>
+        <p className="text-caption-bold mb-3 text-sekkha-slate">{monthLabel}</p>
         <div className="grid grid-cols-4 gap-3">
           {monthlyCheckins.map((checked, idx) => (
             <div
@@ -104,7 +110,9 @@ export function AttendanceTracker({
                   <span className="text-body-sm">—</span>
                 )}
               </div>
-              <span className={`text-caption ${checked ? "text-sekkha-brand-blue font-medium" : "text-sekkha-muted"}`}>
+              <span
+                className={`text-caption ${checked ? "font-medium text-sekkha-brand-blue" : "text-sekkha-muted"}`}
+              >
                 Minggu {idx + 1}
               </span>
             </div>

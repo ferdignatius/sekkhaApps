@@ -13,7 +13,11 @@ export { OnboardingPage } from "./internal/components/OnboardingPage"
 export { ForgotPasswordPage } from "./internal/components/ForgotPasswordPage"
 
 // ── Type exports ────────────────────────────────────────────────────────────
-export type { AuthState, AuthStatus, UserRole } from "./internal/context/authReducer"
+export type {
+  AuthState,
+  AuthStatus,
+  UserRole,
+} from "./internal/context/authReducer"
 export type { RouterContext } from "./internal/context/AuthContext"
 
 // ── Module Definition (untuk Registry) ──────────────────────────────────────

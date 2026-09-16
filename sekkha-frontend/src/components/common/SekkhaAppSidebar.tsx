@@ -33,9 +33,7 @@ const NAV_ITEMS = [
 
 // ─── Component ─────────────────────────────────────────────────────────────────
 
-export function SekkhaAppSidebar(
-  props: React.ComponentProps<typeof Sidebar>,
-) {
+export function SekkhaAppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const { logout } = useAuth()
   const { location } = useRouterState()
   const pathname = location.pathname
@@ -48,7 +46,7 @@ export function SekkhaAppSidebar(
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sekkha-brand-yellow">
             <span className="text-xs font-bold text-sekkha-ink">S</span>
           </div>
-          <span className="truncate text-body-sm-medium text-sekkha-ink group-data-[collapsible=icon]:hidden">
+          <span className="text-body-sm-medium truncate text-sekkha-ink group-data-[collapsible=icon]:hidden">
             Sekkha
           </span>
         </div>
@@ -65,11 +63,7 @@ export function SekkhaAppSidebar(
 
             return (
               <SidebarMenuItem key={to}>
-                <SidebarMenuButton
-                  asChild
-                  isActive={isActive}
-                  tooltip={label}
-                >
+                <SidebarMenuButton asChild isActive={isActive} tooltip={label}>
                   <Link to={to}>
                     <Icon className="size-4 shrink-0" />
                     <span>{label}</span>

@@ -1,13 +1,21 @@
-import { createFileRoute, lazyRouteComponent, redirect } from "@tanstack/react-router"
+import {
+  createFileRoute,
+  lazyRouteComponent,
+  redirect,
+} from "@tanstack/react-router"
 import { ConfigureSkeleton } from "@/components/common/PageSkeletons"
 
-export const Route = createFileRoute("/_authenticated/configure/master/event-time")({
+export const Route = createFileRoute(
+  "/_authenticated/configure/master/event-time"
+)({
   beforeLoad: ({ context }) => {
     const role = (context as any).authState.role
     if (role !== "pengurus" && role !== "admin") {
       throw redirect({ to: "/home" })
     }
   },
-  component: lazyRouteComponent(() => import("@/modules/configure").then(m => ({ default: m.EventTimePage }))),
+  component: lazyRouteComponent(() =>
+    import("@/modules/configure").then((m) => ({ default: m.EventTimePage }))
+  ),
   pendingComponent: ConfigureSkeleton,
 })

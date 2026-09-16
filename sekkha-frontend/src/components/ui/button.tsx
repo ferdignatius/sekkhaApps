@@ -9,13 +9,14 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-[#1f1f1f] active:bg-[#1f1f1f] shadow-xs",
+        default:
+          "bg-primary text-primary-foreground shadow-xs hover:bg-[#1f1f1f] active:bg-[#1f1f1f]",
         outline:
           "border-border bg-canvas text-ink hover:bg-surface-soft hover:text-ink aria-expanded:bg-surface-soft",
         secondary:
           "border border-border bg-canvas text-ink hover:bg-surface-soft hover:text-ink aria-expanded:bg-surface-card",
         "on-color":
-          "bg-canvas text-ink hover:bg-surface-soft active:bg-surface-card shadow-xs font-semibold",
+          "bg-canvas font-semibold text-ink shadow-xs hover:bg-surface-soft active:bg-surface-card",
         ghost:
           "hover:bg-surface-soft hover:text-ink aria-expanded:bg-surface-soft",
         destructive:
@@ -25,9 +26,9 @@ const buttonVariants = cva(
       size: {
         default:
           "h-11 gap-2 px-5 text-sm has-data-[icon=inline-end]:pr-4 has-data-[icon=inline-start]:pl-4",
-        xs: "h-7 gap-1 px-2.5 text-xs rounded-md has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2 [&_svg:not([class*='size-'])]:size-3",
-        sm: "h-9 gap-1.5 px-3.5 text-xs rounded-md has-data-[icon=inline-end]:pr-2.5 has-data-[icon=inline-start]:pl-2.5",
-        lg: "h-12 gap-2 px-6 text-base rounded-xl has-data-[icon=inline-end]:pr-5 has-data-[icon=inline-start]:pl-5",
+        xs: "h-7 gap-1 rounded-md px-2.5 text-xs has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2 [&_svg:not([class*='size-'])]:size-3",
+        sm: "h-9 gap-1.5 rounded-md px-3.5 text-xs has-data-[icon=inline-end]:pr-2.5 has-data-[icon=inline-start]:pl-2.5",
+        lg: "h-12 gap-2 rounded-xl px-6 text-base has-data-[icon=inline-end]:pr-5 has-data-[icon=inline-start]:pl-5",
         icon: "size-11 rounded-[12px]",
         "icon-xs": "size-7 rounded-md [&_svg:not([class*='size-'])]:size-3",
         "icon-sm": "size-9 rounded-md",

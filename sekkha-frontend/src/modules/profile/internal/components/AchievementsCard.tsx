@@ -26,16 +26,76 @@ interface AchievementsCardProps {
 // ─── Dummy badges (replace with API data) ────────────────────────────────────
 
 export const DUMMY_BADGES: Badge[] = [
-  { badge_id: "b1", name: "Pertama Hadir", icon_url: "🎯", description: "Hadir di kebaktian pertama kamu.", earned_at: "2025-01-19" },
-  { badge_id: "b2", name: "Streak 5", icon_url: "🔥", description: "Hadir 5 minggu berturut-turut.", earned_at: "2025-03-02" },
-  { badge_id: "b3", name: "Loyal", icon_url: "❤️", description: "Aktif selama 3 bulan tanpa putus.", earned_at: "2025-04-15" },
-  { badge_id: "b4", name: "Streak 10", icon_url: "⚡", description: "Hadir 10 minggu berturut-turut.", earned_at: "2025-06-01" },
-  { badge_id: "b5", name: "Rajin", icon_url: "📚", description: "Hadir 4 kali berturut-turut di event rutin.", earned_at: "2025-06-20" },
-  { badge_id: "b6", name: "100 Poin", icon_url: "⭐", description: "Kumpulkan total 100 poin.", earned_at: "2025-07-01" },
-  { badge_id: "b7", name: "Streak 20", icon_url: "💎", description: "Hadir 20 minggu berturut-turut.", earned_at: null },
-  { badge_id: "b8", name: "500 Poin", icon_url: "🏆", description: "Kumpulkan total 500 poin.", earned_at: null },
-  { badge_id: "b9", name: "1000 Poin", icon_url: "👑", description: "Kumpulkan total 1000 poin.", earned_at: null },
-  { badge_id: "b10", name: "Sosial", icon_url: "🤝", description: "Ikut 3 kegiatan bakti sosial.", earned_at: null },
+  {
+    badge_id: "b1",
+    name: "Pertama Hadir",
+    icon_url: "🎯",
+    description: "Hadir di kebaktian pertama kamu.",
+    earned_at: "2025-01-19",
+  },
+  {
+    badge_id: "b2",
+    name: "Streak 5",
+    icon_url: "🔥",
+    description: "Hadir 5 minggu berturut-turut.",
+    earned_at: "2025-03-02",
+  },
+  {
+    badge_id: "b3",
+    name: "Loyal",
+    icon_url: "❤️",
+    description: "Aktif selama 3 bulan tanpa putus.",
+    earned_at: "2025-04-15",
+  },
+  {
+    badge_id: "b4",
+    name: "Streak 10",
+    icon_url: "⚡",
+    description: "Hadir 10 minggu berturut-turut.",
+    earned_at: "2025-06-01",
+  },
+  {
+    badge_id: "b5",
+    name: "Rajin",
+    icon_url: "📚",
+    description: "Hadir 4 kali berturut-turut di event rutin.",
+    earned_at: "2025-06-20",
+  },
+  {
+    badge_id: "b6",
+    name: "100 Poin",
+    icon_url: "⭐",
+    description: "Kumpulkan total 100 poin.",
+    earned_at: "2025-07-01",
+  },
+  {
+    badge_id: "b7",
+    name: "Streak 20",
+    icon_url: "💎",
+    description: "Hadir 20 minggu berturut-turut.",
+    earned_at: null,
+  },
+  {
+    badge_id: "b8",
+    name: "500 Poin",
+    icon_url: "🏆",
+    description: "Kumpulkan total 500 poin.",
+    earned_at: null,
+  },
+  {
+    badge_id: "b9",
+    name: "1000 Poin",
+    icon_url: "👑",
+    description: "Kumpulkan total 1000 poin.",
+    earned_at: null,
+  },
+  {
+    badge_id: "b10",
+    name: "Sosial",
+    icon_url: "🤝",
+    description: "Ikut 3 kegiatan bakti sosial.",
+    earned_at: null,
+  },
 ]
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -77,7 +137,7 @@ export function BadgeItem({
         )}
       </div>
       <p
-        className={`w-full truncate text-center text-caption ${
+        className={`text-caption w-full truncate text-center ${
           isLocked ? "text-sekkha-muted" : "text-sekkha-ink"
         }`}
       >
@@ -111,7 +171,7 @@ export function BadgeDetailOverlay({
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-3 top-3 rounded-full p-1 text-sekkha-muted hover:bg-sekkha-surface"
+          className="absolute top-3 right-3 rounded-full p-1 text-sekkha-muted hover:bg-sekkha-surface"
           aria-label="Tutup"
         >
           <XIcon className="size-4" />
@@ -135,16 +195,21 @@ export function BadgeDetailOverlay({
             {badge.name}
           </h3>
 
-          <p className="text-center text-body-sm text-sekkha-slate">
+          <p className="text-body-sm text-center text-sekkha-slate">
             {badge.description}
           </p>
 
           {badge.earned_at ? (
-            <span className="rounded-full bg-sekkha-teal-light px-3 py-1 text-caption-bold text-sekkha-brand-blue">
-              Didapat {new Date(badge.earned_at).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
+            <span className="text-caption-bold rounded-full bg-sekkha-teal-light px-3 py-1 text-sekkha-brand-blue">
+              Didapat{" "}
+              {new Date(badge.earned_at).toLocaleDateString("id-ID", {
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+              })}
             </span>
           ) : (
-            <span className="rounded-full bg-sekkha-surface px-3 py-1 text-caption-bold text-sekkha-muted">
+            <span className="text-caption-bold rounded-full bg-sekkha-surface px-3 py-1 text-sekkha-muted">
               🔒 Belum didapatkan
             </span>
           )}
@@ -171,25 +236,35 @@ export function AchievementsCard({ badges }: AchievementsCardProps) {
       {/* Header */}
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <AwardIcon className="size-5 text-sekkha-brand-yellow" aria-hidden="true" />
-          <h2 id="achievements-heading" className="text-body-sm-medium text-sekkha-ink">
+          <AwardIcon
+            className="size-5 text-sekkha-brand-yellow"
+            aria-hidden="true"
+          />
+          <h2
+            id="achievements-heading"
+            className="text-body-sm-medium text-sekkha-ink"
+          >
             Achievements
           </h2>
         </div>
-        <span className="rounded-full bg-sekkha-surface px-2.5 py-0.5 text-caption-bold text-sekkha-slate">
+        <span className="text-caption-bold rounded-full bg-sekkha-surface px-2.5 py-0.5 text-sekkha-slate">
           {earnedCount}/{badges.length}
         </span>
       </div>
 
       {/* Progress indicator */}
-      <p className="mb-4 text-caption text-sekkha-muted">
+      <p className="text-caption mb-4 text-sekkha-muted">
         Terus hadir untuk membuka badge baru!
       </p>
 
       {/* Badge grid — preview */}
       <div className="grid grid-cols-4 gap-4">
         {previewBadges.map((badge) => (
-          <BadgeItem key={badge.badge_id} badge={badge} onSelect={setSelectedBadge} />
+          <BadgeItem
+            key={badge.badge_id}
+            badge={badge}
+            onSelect={setSelectedBadge}
+          />
         ))}
       </div>
 
@@ -197,16 +272,22 @@ export function AchievementsCard({ badges }: AchievementsCardProps) {
       {hasMore && (
         <Link
           to="/home/achievements"
-          className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-full border border-sekkha-hairline-strong py-2 text-body-sm-medium text-sekkha-ink transition-colors hover:bg-sekkha-surface active:bg-sekkha-hairline-soft"
+          className="text-body-sm-medium mt-4 flex w-full items-center justify-center gap-1.5 rounded-full border border-sekkha-hairline-strong py-2 text-sekkha-ink transition-colors hover:bg-sekkha-surface active:bg-sekkha-hairline-soft"
         >
           Lihat Semua ({badges.length})
-          <ChevronRightIcon className="size-4 text-sekkha-muted" aria-hidden="true" />
+          <ChevronRightIcon
+            className="size-4 text-sekkha-muted"
+            aria-hidden="true"
+          />
         </Link>
       )}
 
       {/* Badge detail overlay */}
       {selectedBadge && (
-        <BadgeDetailOverlay badge={selectedBadge} onClose={() => setSelectedBadge(null)} />
+        <BadgeDetailOverlay
+          badge={selectedBadge}
+          onClose={() => setSelectedBadge(null)}
+        />
       )}
     </section>
   )

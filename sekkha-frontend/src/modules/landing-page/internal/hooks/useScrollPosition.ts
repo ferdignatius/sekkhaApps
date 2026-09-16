@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState } from "react"
 
 /**
  * Hook that tracks the current vertical scroll position of the window.
@@ -17,10 +17,10 @@ export function useScrollPosition(): { scrollY: number } {
       setScrollY(window.scrollY)
     }
 
-    window.addEventListener('scroll', handleScroll, { passive: true })
+    window.addEventListener("scroll", handleScroll, { passive: true })
 
     return () => {
-      window.removeEventListener('scroll', handleScroll)
+      window.removeEventListener("scroll", handleScroll)
     }
   }, [])
 

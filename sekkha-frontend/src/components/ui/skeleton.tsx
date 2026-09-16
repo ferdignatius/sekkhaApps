@@ -7,7 +7,10 @@ function Skeleton({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="skeleton"
-      className={cn("animate-pulse rounded-2xl bg-[#ebe6d6]/60 dark:bg-muted", className)}
+      className={cn(
+        "animate-pulse rounded-2xl bg-[#ebe6d6]/60 dark:bg-muted",
+        className
+      )}
       {...props}
     />
   )
@@ -24,7 +27,13 @@ function SkeletonTableRow({ columns = 5 }: { columns?: number }) {
           <Skeleton
             className={cn(
               "h-4",
-              i === 0 ? "h-10 w-44 rounded-xl" : i === 1 ? "w-28" : i === 2 ? "w-20" : "w-16"
+              i === 0
+                ? "h-10 w-44 rounded-xl"
+                : i === 1
+                  ? "w-28"
+                  : i === 2
+                    ? "w-20"
+                    : "w-16"
             )}
           />
         </td>
@@ -40,19 +49,19 @@ function SkeletonCard({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        "rounded-2xl border border-sekkha-hairline bg-white/80 p-4 space-y-3 shadow-2xs",
+        "space-y-3 rounded-2xl border border-sekkha-hairline bg-white/80 p-4 shadow-2xs",
         className
       )}
     >
       <div className="flex items-center gap-3">
         <Skeleton className="size-11 rounded-xl" />
-        <div className="space-y-1.5 flex-1">
+        <div className="flex-1 space-y-1.5">
           <Skeleton className="h-4 w-32 rounded-md" />
           <Skeleton className="h-3 w-20 rounded-md" />
         </div>
         <Skeleton className="h-6 w-16 rounded-full" />
       </div>
-      <div className="pt-2 border-t border-sekkha-hairline flex items-center justify-between">
+      <div className="flex items-center justify-between border-t border-sekkha-hairline pt-2">
         <Skeleton className="h-3.5 w-24 rounded-md" />
         <Skeleton className="h-3.5 w-16 rounded-md" />
       </div>
@@ -65,7 +74,7 @@ function SkeletonCard({ className }: { className?: string }) {
  */
 function SkeletonMetricCard() {
   return (
-    <div className="rounded-2xl border border-sekkha-hairline bg-white p-3.5 space-y-2 shadow-2xs">
+    <div className="space-y-2 rounded-2xl border border-sekkha-hairline bg-white p-3.5 shadow-2xs">
       <div className="flex items-center justify-between">
         <Skeleton className="h-3.5 w-20 rounded-md" />
         <Skeleton className="size-6 rounded-lg" />

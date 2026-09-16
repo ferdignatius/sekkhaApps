@@ -71,9 +71,12 @@ export function ForgotPasswordPage() {
     setIsLoading(true)
 
     try {
-      await api.post<{ success: boolean; message: string }>("/auth/forgot-password/request", {
-        email: cleanEmail,
-      })
+      await api.post<{ success: boolean; message: string }>(
+        "/auth/forgot-password/request",
+        {
+          email: cleanEmail,
+        }
+      )
       setStep("otp")
       setResendCountdown(60)
     } catch (err: any) {
@@ -107,7 +110,10 @@ export function ForgotPasswordPage() {
     }
   }
 
-  function handleOtpKeyDown(index: number, e: React.KeyboardEvent<HTMLInputElement>) {
+  function handleOtpKeyDown(
+    index: number,
+    e: React.KeyboardEvent<HTMLInputElement>
+  ) {
     if (e.key === "Backspace" && !otpDigits[index] && index > 0) {
       otpInputsRef.current[index - 1]?.focus()
     } else if (e.key === "ArrowLeft" && index > 0) {
@@ -119,7 +125,10 @@ export function ForgotPasswordPage() {
 
   function handleOtpPaste(e: React.ClipboardEvent<HTMLInputElement>) {
     e.preventDefault()
-    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6)
+    const pasted = e.clipboardData
+      .getData("text")
+      .replace(/\D/g, "")
+      .slice(0, 6)
     if (!pasted) return
 
     const next = [...otpDigits]
@@ -141,10 +150,13 @@ export function ForgotPasswordPage() {
     setIsLoading(true)
 
     try {
-      await api.post<{ success: boolean; message: string }>("/auth/forgot-password/verify-otp", {
-        email: email.trim().toLowerCase(),
-        otp,
-      })
+      await api.post<{ success: boolean; message: string }>(
+        "/auth/forgot-password/verify-otp",
+        {
+          email: email.trim().toLowerCase(),
+          otp,
+        }
+      )
       setStep("new-password")
     } catch (err: any) {
       setError(err?.message || "Kode OTP salah atau telah kedaluwarsa.")
@@ -160,9 +172,12 @@ export function ForgotPasswordPage() {
     setResendSuccess(false)
 
     try {
-      await api.post<{ success: boolean; message: string }>("/auth/forgot-password/request", {
-        email: email.trim().toLowerCase(),
-      })
+      await api.post<{ success: boolean; message: string }>(
+        "/auth/forgot-password/request",
+        {
+          email: email.trim().toLowerCase(),
+        }
+      )
       setResendCountdown(60)
       setResendSuccess(true)
       setTimeout(() => setResendSuccess(false), 4000)
@@ -190,11 +205,14 @@ export function ForgotPasswordPage() {
     setIsLoading(true)
 
     try {
-      await api.post<{ success: boolean; message: string }>("/auth/forgot-password/reset", {
-        email: email.trim().toLowerCase(),
-        otp: otpDigits.join(""),
-        newPassword,
-      })
+      await api.post<{ success: boolean; message: string }>(
+        "/auth/forgot-password/reset",
+        {
+          email: email.trim().toLowerCase(),
+          otp: otpDigits.join(""),
+          newPassword,
+        }
+      )
       setStep("success")
     } catch (err: any) {
       setError(err?.message || "Gagal mereset kata sandi. Silakan coba lagi.")
@@ -204,7 +222,7 @@ export function ForgotPasswordPage() {
   }
 
   return (
-    <div className="relative min-h-screen w-full flex items-center justify-center p-4 py-12 bg-[#fffaf0] font-sans selection:bg-[#faf5e8] selection:text-[#0a0a0a]">
+    <div className="relative flex min-h-screen w-full items-center justify-center bg-[#fffaf0] p-4 py-12 font-sans selection:bg-[#faf5e8] selection:text-[#0a0a0a]">
       {/* Ambient background soft blobs */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -top-[15%] -left-[10%] size-96 rounded-full bg-[#faf5e8] opacity-60 blur-3xl" />
@@ -212,9 +230,9 @@ export function ForgotPasswordPage() {
         <div className="absolute -bottom-[10%] left-[20%] size-72 rounded-full bg-[#b8a4ed] opacity-15 blur-3xl" />
       </div>
 
-      <div className="relative z-10 w-full max-w-[460px] space-y-6 animate-in fade-in zoom-in-95 duration-200">
+      <div className="relative z-10 w-full max-w-[460px] animate-in space-y-6 duration-200 zoom-in-95 fade-in">
         {/* Brand Header */}
-        <div className="text-center space-y-2">
+        <div className="space-y-2 text-center">
           <div className="mx-auto flex size-12 items-center justify-center rounded-[16px] bg-[#0a0a0a] text-white shadow-xs">
             {step === "success" ? (
               <CheckCircle2Icon className="size-6 text-[#22c55e]" />
@@ -230,24 +248,27 @@ export function ForgotPasswordPage() {
             {step === "new-password" && "Buat Kata Sandi Baru"}
             {step === "success" && "Kata Sandi Diperbarui!"}
           </h1>
-          <p className="text-xs text-[#6a6a6a] max-w-xs mx-auto leading-relaxed">
-            {step === "email" && "Masukkan email terdaftar Anda untuk menerima kode OTP pemulihan kata sandi."}
+          <p className="mx-auto max-w-xs text-xs leading-relaxed text-[#6a6a6a]">
+            {step === "email" &&
+              "Masukkan email terdaftar Anda untuk menerima kode OTP pemulihan kata sandi."}
             {step === "otp" && (
               <>
                 Masukkan 6 digit kode OTP yang kami kirimkan ke{" "}
                 <span className="font-bold text-[#0a0a0a]">{email}</span>
               </>
             )}
-            {step === "new-password" && "Masukkan kata sandi baru Anda dengan minimal 8 karakter."}
-            {step === "success" && "Kata sandi akun Sekkha Anda berhasil diperbarui. Silakan masuk kembali."}
+            {step === "new-password" &&
+              "Masukkan kata sandi baru Anda dengan minimal 8 karakter."}
+            {step === "success" &&
+              "Kata sandi akun Sekkha Anda berhasil diperbarui. Silakan masuk kembali."}
           </p>
         </div>
 
         {/* Card Container */}
-        <div className="rounded-[24px] border border-[#e5e5e5] bg-white p-6 sm:p-8 shadow-xl shadow-[#0a0a0a]/5 space-y-5">
+        <div className="space-y-5 rounded-[24px] border border-[#e5e5e5] bg-white p-6 shadow-xl shadow-[#0a0a0a]/5 sm:p-8">
           {/* Error Banner */}
           {error && (
-            <div className="flex items-center gap-2 rounded-[12px] bg-[#ef4444]/10 p-3.5 border border-[#ef4444]/20 text-xs font-medium text-[#ef4444] animate-in fade-in">
+            <div className="flex animate-in items-center gap-2 rounded-[12px] border border-[#ef4444]/20 bg-[#ef4444]/10 p-3.5 text-xs font-medium text-[#ef4444] fade-in">
               <AlertCircleIcon className="size-4 shrink-0 text-[#ef4444]" />
               <span>{error}</span>
             </div>
@@ -255,7 +276,7 @@ export function ForgotPasswordPage() {
 
           {/* Resend Notice */}
           {resendSuccess && (
-            <div className="flex items-center gap-2 rounded-[12px] bg-[#22c55e]/10 p-3 border border-[#22c55e]/20 text-xs font-semibold text-[#22c55e] animate-in fade-in">
+            <div className="flex animate-in items-center gap-2 rounded-[12px] border border-[#22c55e]/20 bg-[#22c55e]/10 p-3 text-xs font-semibold text-[#22c55e] fade-in">
               <SparklesIcon className="size-4 shrink-0" />
               <span>Kode OTP baru telah dikirim ke email Anda!</span>
             </div>
@@ -263,13 +284,20 @@ export function ForgotPasswordPage() {
 
           {/* STEP 1: Input Email */}
           {step === "email" && (
-            <form onSubmit={handleEmailSubmit} noValidate className="space-y-4 text-left">
+            <form
+              onSubmit={handleEmailSubmit}
+              noValidate
+              className="space-y-4 text-left"
+            >
               <div className="space-y-1.5">
-                <label htmlFor="email" className="text-xs font-semibold text-[#0a0a0a]">
+                <label
+                  htmlFor="email"
+                  className="text-xs font-semibold text-[#0a0a0a]"
+                >
                   Email Akun Anda
                 </label>
                 <div className="relative">
-                  <MailIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-[#9a9a9a]" />
+                  <MailIcon className="absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[#9a9a9a]" />
                   <input
                     id="email"
                     type="email"
@@ -280,7 +308,7 @@ export function ForgotPasswordPage() {
                       if (error) setError(null)
                     }}
                     required
-                    className="w-full h-11 pl-10 pr-3.5 rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] text-xs font-medium text-[#0a0a0a] placeholder:text-[#9a9a9a] focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] outline-none transition-all"
+                    className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] pr-3.5 pl-10 text-xs font-medium text-[#0a0a0a] transition-all outline-none placeholder:text-[#9a9a9a] focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a]"
                   />
                 </div>
               </div>
@@ -288,14 +316,14 @@ export function ForgotPasswordPage() {
               <Button
                 type="submit"
                 disabled={isLoading || !email.trim()}
-                className="w-full h-11 rounded-[12px] bg-[#0a0a0a] text-white text-xs font-semibold hover:bg-[#1f1f1f] shadow-xs cursor-pointer flex items-center justify-center gap-2 transition-all disabled:opacity-40"
+                className="flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-[12px] bg-[#0a0a0a] text-xs font-semibold text-white shadow-xs transition-all hover:bg-[#1f1f1f] disabled:opacity-40"
               >
                 {isLoading ? (
                   <span>Mengirim Kode OTP...</span>
                 ) : (
                   <>
                     <span>Kirim Kode OTP Reset</span>
-                    <ArrowRightIcon className="size-4 ml-1" />
+                    <ArrowRightIcon className="ml-1 size-4" />
                   </>
                 )}
               </Button>
@@ -321,16 +349,16 @@ export function ForgotPasswordPage() {
                     onChange={(e) => handleChangeDigit(idx, e.target.value)}
                     onKeyDown={(e) => handleOtpKeyDown(idx, e)}
                     onPaste={handleOtpPaste}
-                    className="size-11 sm:size-13 rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] text-center font-mono text-lg sm:text-xl font-bold text-[#0a0a0a] shadow-2xs outline-none transition-all focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] focus:scale-105"
+                    className="size-11 rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] text-center font-mono text-lg font-bold text-[#0a0a0a] shadow-2xs transition-all outline-none focus:scale-105 focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] sm:size-13 sm:text-xl"
                   />
                 ))}
               </div>
 
               {/* Resend & Back Helper */}
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-2 pt-1 text-xs text-[#6a6a6a]">
+              <div className="flex flex-col items-center justify-between gap-2 pt-1 text-xs text-[#6a6a6a] sm:flex-row">
                 <span>Tidak menerima email?</span>
                 {resendCountdown > 0 ? (
-                  <span className="font-semibold text-[#0a0a0a] bg-[#faf5e8] px-2.5 py-0.5 rounded-full border border-[#e5e5e5]">
+                  <span className="rounded-full border border-[#e5e5e5] bg-[#faf5e8] px-2.5 py-0.5 font-semibold text-[#0a0a0a]">
                     Kirim ulang dalam {resendCountdown}d
                   </span>
                 ) : (
@@ -338,10 +366,14 @@ export function ForgotPasswordPage() {
                     type="button"
                     onClick={handleResendOtp}
                     disabled={isResending}
-                    className="inline-flex items-center gap-1 font-bold text-[#0a0a0a] hover:underline cursor-pointer disabled:opacity-50"
+                    className="inline-flex cursor-pointer items-center gap-1 font-bold text-[#0a0a0a] hover:underline disabled:opacity-50"
                   >
-                    <RefreshCwIcon className={`size-3 ${isResending ? "animate-spin" : ""}`} />
-                    <span>{isResending ? "Mengirim..." : "Kirim Ulang Kode OTP"}</span>
+                    <RefreshCwIcon
+                      className={`size-3 ${isResending ? "animate-spin" : ""}`}
+                    />
+                    <span>
+                      {isResending ? "Mengirim..." : "Kirim Ulang Kode OTP"}
+                    </span>
                   </button>
                 )}
               </div>
@@ -350,26 +382,26 @@ export function ForgotPasswordPage() {
                 type="button"
                 onClick={() => verifyOtpCode(otpDigits.join(""))}
                 disabled={otpDigits.some((d) => !d) || isLoading}
-                className="w-full h-11 rounded-[12px] bg-[#0a0a0a] text-white text-xs font-semibold hover:bg-[#1f1f1f] shadow-xs cursor-pointer flex items-center justify-center gap-2 transition-all disabled:opacity-40"
+                className="flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-[12px] bg-[#0a0a0a] text-xs font-semibold text-white shadow-xs transition-all hover:bg-[#1f1f1f] disabled:opacity-40"
               >
                 {isLoading ? (
                   <span>Memverifikasi Kode OTP...</span>
                 ) : (
                   <>
                     <span>Verifikasi Kode OTP</span>
-                    <ArrowRightIcon className="size-4 ml-1" />
+                    <ArrowRightIcon className="ml-1 size-4" />
                   </>
                 )}
               </Button>
 
-              <div className="pt-2 text-center border-t border-[#e5e5e5]">
+              <div className="border-t border-[#e5e5e5] pt-2 text-center">
                 <button
                   type="button"
                   onClick={() => {
                     setStep("email")
                     setError(null)
                   }}
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#6a6a6a] hover:text-[#0a0a0a] transition-colors cursor-pointer"
+                  className="inline-flex cursor-pointer items-center gap-1.5 text-xs font-semibold text-[#6a6a6a] transition-colors hover:text-[#0a0a0a]"
                 >
                   <ArrowLeftIcon className="size-3.5" />
                   <span>Ubah Alamat Email</span>
@@ -380,14 +412,21 @@ export function ForgotPasswordPage() {
 
           {/* STEP 3: Input New Password */}
           {step === "new-password" && (
-            <form onSubmit={handleResetSubmit} noValidate className="space-y-4 text-left">
+            <form
+              onSubmit={handleResetSubmit}
+              noValidate
+              className="space-y-4 text-left"
+            >
               {/* New Password */}
               <div className="space-y-1.5">
-                <label htmlFor="newPassword" className="text-xs font-semibold text-[#0a0a0a]">
+                <label
+                  htmlFor="newPassword"
+                  className="text-xs font-semibold text-[#0a0a0a]"
+                >
                   Kata Sandi Baru
                 </label>
                 <div className="relative">
-                  <LockIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-[#9a9a9a]" />
+                  <LockIcon className="absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[#9a9a9a]" />
                   <input
                     id="newPassword"
                     type={showPassword ? "text" : "password"}
@@ -395,25 +434,32 @@ export function ForgotPasswordPage() {
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     required
-                    className="w-full h-11 pl-10 pr-10 rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] text-xs font-medium text-[#0a0a0a] placeholder:text-[#9a9a9a] focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] outline-none transition-all"
+                    className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] pr-10 pl-10 text-xs font-medium text-[#0a0a0a] transition-all outline-none placeholder:text-[#9a9a9a] focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a]"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9a9a9a] hover:text-[#0a0a0a] cursor-pointer"
+                    className="absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer text-[#9a9a9a] hover:text-[#0a0a0a]"
                   >
-                    {showPassword ? <EyeOffIcon className="size-4" /> : <EyeIcon className="size-4" />}
+                    {showPassword ? (
+                      <EyeOffIcon className="size-4" />
+                    ) : (
+                      <EyeIcon className="size-4" />
+                    )}
                   </button>
                 </div>
               </div>
 
               {/* Confirm Password */}
               <div className="space-y-1.5">
-                <label htmlFor="confirmPassword" className="text-xs font-semibold text-[#0a0a0a]">
+                <label
+                  htmlFor="confirmPassword"
+                  className="text-xs font-semibold text-[#0a0a0a]"
+                >
                   Konfirmasi Kata Sandi Baru
                 </label>
                 <div className="relative">
-                  <LockIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-[#9a9a9a]" />
+                  <LockIcon className="absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[#9a9a9a]" />
                   <input
                     id="confirmPassword"
                     type={showConfirmPassword ? "text" : "password"}
@@ -421,14 +467,18 @@ export function ForgotPasswordPage() {
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     required
-                    className="w-full h-11 pl-10 pr-10 rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] text-xs font-medium text-[#0a0a0a] placeholder:text-[#9a9a9a] focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] outline-none transition-all"
+                    className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] pr-10 pl-10 text-xs font-medium text-[#0a0a0a] transition-all outline-none placeholder:text-[#9a9a9a] focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a]"
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9a9a9a] hover:text-[#0a0a0a] cursor-pointer"
+                    className="absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer text-[#9a9a9a] hover:text-[#0a0a0a]"
                   >
-                    {showConfirmPassword ? <EyeOffIcon className="size-4" /> : <EyeIcon className="size-4" />}
+                    {showConfirmPassword ? (
+                      <EyeOffIcon className="size-4" />
+                    ) : (
+                      <EyeIcon className="size-4" />
+                    )}
                   </button>
                 </div>
               </div>
@@ -436,14 +486,14 @@ export function ForgotPasswordPage() {
               <Button
                 type="submit"
                 disabled={isLoading || !newPassword || !confirmPassword}
-                className="w-full h-11 rounded-[12px] bg-[#0a0a0a] text-white text-xs font-semibold hover:bg-[#1f1f1f] shadow-xs cursor-pointer flex items-center justify-center gap-2 transition-all disabled:opacity-40"
+                className="flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-[12px] bg-[#0a0a0a] text-xs font-semibold text-white shadow-xs transition-all hover:bg-[#1f1f1f] disabled:opacity-40"
               >
                 {isLoading ? (
                   <span>Menyimpan Kata Sandi...</span>
                 ) : (
                   <>
                     <span>Simpan Kata Sandi Baru</span>
-                    <ArrowRightIcon className="size-4 ml-1" />
+                    <ArrowRightIcon className="ml-1 size-4" />
                   </>
                 )}
               </Button>
@@ -453,12 +503,13 @@ export function ForgotPasswordPage() {
           {/* STEP 4: Success State */}
           {step === "success" && (
             <div className="space-y-5 text-center">
-              <div className="rounded-[16px] bg-[#22c55e]/10 border border-[#22c55e]/20 p-4 text-xs font-medium text-[#15803d] leading-relaxed">
-                Kata sandi akun Anda berhasil diperbarui! Silakan gunakan kata sandi baru untuk masuk ke Sekkha Apps.
+              <div className="rounded-[16px] border border-[#22c55e]/20 bg-[#22c55e]/10 p-4 text-xs leading-relaxed font-medium text-[#15803d]">
+                Kata sandi akun Anda berhasil diperbarui! Silakan gunakan kata
+                sandi baru untuk masuk ke Sekkha Apps.
               </div>
 
               <Link to="/login" className="block w-full">
-                <Button className="w-full h-11 rounded-[12px] bg-[#0a0a0a] text-white text-xs font-semibold hover:bg-[#1f1f1f] shadow-xs cursor-pointer flex items-center justify-center gap-2">
+                <Button className="flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-[12px] bg-[#0a0a0a] text-xs font-semibold text-white shadow-xs hover:bg-[#1f1f1f]">
                   <span>Masuk ke Akun Anda</span>
                   <ArrowRightIcon className="size-4" />
                 </Button>
@@ -468,10 +519,10 @@ export function ForgotPasswordPage() {
 
           {/* Footer Back to Login Link */}
           {step !== "success" && (
-            <div className="pt-2 text-center border-t border-[#e5e5e5]">
+            <div className="border-t border-[#e5e5e5] pt-2 text-center">
               <Link
                 to="/login"
-                className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#6a6a6a] hover:text-[#0a0a0a] transition-colors"
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#6a6a6a] transition-colors hover:text-[#0a0a0a]"
               >
                 <ArrowLeftIcon className="size-3.5" />
                 <span>Kembali ke Halaman Masuk</span>
@@ -481,7 +532,7 @@ export function ForgotPasswordPage() {
         </div>
 
         {/* Sekkha Footer Brand */}
-        <p className="text-[11px] text-[#9a9a9a] text-center">
+        <p className="text-center text-[11px] text-[#9a9a9a]">
           © 2026 Komunitas Pemuda Vihara Sekkha.
         </p>
       </div>

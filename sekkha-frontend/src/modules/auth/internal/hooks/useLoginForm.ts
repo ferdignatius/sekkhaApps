@@ -132,13 +132,11 @@ export function useLoginForm(): UseLoginFormReturn {
       if (error instanceof AuthError) {
         switch (error.code) {
           case "INVALID_CREDENTIALS":
-            setApiError(
-              "Email atau password salah. Silakan coba lagi.",
-            )
+            setApiError("Email atau password salah. Silakan coba lagi.")
             break
           case "NETWORK_TIMEOUT":
             setApiError(
-              "Koneksi bermasalah. Periksa koneksi internet Anda dan coba lagi.",
+              "Koneksi bermasalah. Periksa koneksi internet Anda dan coba lagi."
             )
             break
           default:

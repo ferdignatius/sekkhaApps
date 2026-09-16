@@ -6,10 +6,7 @@ describe("DateTimePickerPopover", () => {
   it("renders trigger button with formatted display date", () => {
     const handleChange = vi.fn()
     render(
-      <DateTimePickerPopover
-        value="2026-07-26T09:00"
-        onChange={handleChange}
-      />
+      <DateTimePickerPopover value="2026-07-26T09:00" onChange={handleChange} />
     )
 
     expect(screen.getByText(/Sun, 26 Jul 2026 · 09:00/i)).toBeDefined()
@@ -19,10 +16,7 @@ describe("DateTimePickerPopover", () => {
   it("opens modal and displays date and time options", () => {
     const handleChange = vi.fn()
     render(
-      <DateTimePickerPopover
-        value="2026-07-26T09:00"
-        onChange={handleChange}
-      />
+      <DateTimePickerPopover value="2026-07-26T09:00" onChange={handleChange} />
     )
 
     fireEvent.click(screen.getByRole("button", { name: /(change|ubah)/i }))
@@ -35,10 +29,7 @@ describe("DateTimePickerPopover", () => {
   it("allows selecting quick time chip and applying changes", () => {
     const handleChange = vi.fn()
     render(
-      <DateTimePickerPopover
-        value="2026-07-26T09:00"
-        onChange={handleChange}
-      />
+      <DateTimePickerPopover value="2026-07-26T09:00" onChange={handleChange} />
     )
 
     fireEvent.click(screen.getByRole("button", { name: /(change|ubah)/i }))
@@ -48,7 +39,9 @@ describe("DateTimePickerPopover", () => {
     fireEvent.click(chip15)
 
     // Click Apply
-    const applyButton = screen.getByRole("button", { name: /(apply|terapkan)/i })
+    const applyButton = screen.getByRole("button", {
+      name: /(apply|terapkan)/i,
+    })
     fireEvent.click(applyButton)
 
     expect(handleChange).toHaveBeenCalledWith("2026-07-26T15:00")

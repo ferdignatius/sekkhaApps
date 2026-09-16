@@ -1,5 +1,11 @@
 import { useEffect } from "react"
-import { HeadContent, Scripts, createRootRoute, Outlet, useRouter } from "@tanstack/react-router"
+import {
+  HeadContent,
+  Scripts,
+  createRootRoute,
+  Outlet,
+  useRouter,
+} from "@tanstack/react-router"
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools"
 import { TanStackDevtools } from "@tanstack/react-devtools"
 import { AuthProvider, useAuth } from "@/modules/auth"
@@ -21,15 +27,33 @@ export const Route = createRootRoute({
       },
       {
         name: "description",
-        content: "Sekkha Vihara Community App — Fellowship attendance, points gamification, activity streaks, and member management platform.",
+        content:
+          "Sekkha Vihara Community App — Fellowship attendance, points gamification, activity streaks, and member management platform.",
       },
       {
         httpEquiv: "X-Content-Type-Options",
         content: "nosniff",
       },
       {
+        httpEquiv: "X-Frame-Options",
+        content: "DENY",
+      },
+      {
         httpEquiv: "Cross-Origin-Opener-Policy",
         content: "same-origin",
+      },
+      {
+        httpEquiv: "Cross-Origin-Embedder-Policy",
+        content: "credentialless",
+      },
+      {
+        httpEquiv: "Content-Security-Policy",
+        content:
+          "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' http://localhost:* ws://localhost:* https:; media-src 'self' blob:; frame-ancestors 'none';",
+      },
+      {
+        name: "permissions-policy",
+        content: "camera=(self), microphone=(), geolocation=()",
       },
       {
         name: "referrer",

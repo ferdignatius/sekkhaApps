@@ -64,11 +64,11 @@ export function AuthForm({
         aria-label={isSignUp ? "Sign Up Form" : "Log In Form"}
       >
         {/* Mode Switcher Tabs — Category pill tabs in Clay style */}
-        <div className="flex rounded-full bg-[#faf5e8] p-1 border border-[#e5e5e5]">
+        <div className="flex rounded-full border border-[#e5e5e5] bg-[#faf5e8] p-1">
           <Link
             to="/login"
             search={{ redirectTo: undefined }}
-            className={`flex-1 rounded-full py-2 text-center text-xs font-semibold transition-all cursor-pointer ${
+            className={`flex-1 cursor-pointer rounded-full py-2 text-center text-xs font-semibold transition-all ${
               !isSignUp
                 ? "bg-[#0a0a0a] text-white shadow-xs"
                 : "text-[#6a6a6a] hover:text-[#0a0a0a]"
@@ -78,7 +78,7 @@ export function AuthForm({
           </Link>
           <Link
             to="/sign-up"
-            className={`flex-1 rounded-full py-2 text-center text-xs font-semibold transition-all cursor-pointer ${
+            className={`flex-1 cursor-pointer rounded-full py-2 text-center text-xs font-semibold transition-all ${
               isSignUp
                 ? "bg-[#0a0a0a] text-white shadow-xs"
                 : "text-[#6a6a6a] hover:text-[#0a0a0a]"
@@ -98,7 +98,9 @@ export function AuthForm({
             id="email"
             label={isSignUp ? "Email Address" : "Email or Username"}
             type={isSignUp ? "email" : "text"}
-            placeholder={isSignUp ? "name@email.com" : "name@email.com or username"}
+            placeholder={
+              isSignUp ? "name@email.com" : "name@email.com or username"
+            }
             value={fields.email}
             onChange={(val) => handleChange("email", val)}
             onBlur={() => onFieldBlur("email")}
@@ -136,7 +138,7 @@ export function AuthForm({
             <div className="flex flex-col gap-1.5 pt-1 text-left">
               <label
                 htmlFor="agreeToPrivacy"
-                className="flex items-start gap-2.5 cursor-pointer text-xs text-[#3a3a3a] select-none"
+                className="flex cursor-pointer items-start gap-2.5 text-xs text-[#3a3a3a] select-none"
               >
                 <input
                   type="checkbox"
@@ -150,7 +152,7 @@ export function AuthForm({
                       handleChange("agreeToPrivacy", e.target.checked)
                     }
                   }}
-                  className="size-4 shrink-0 rounded-[4px] border border-[#e5e5e5] bg-[#fffaf0] accent-[#0a0a0a] cursor-pointer mt-0.5"
+                  className="mt-0.5 size-4 shrink-0 cursor-pointer rounded-[4px] border border-[#e5e5e5] bg-[#fffaf0] accent-[#0a0a0a]"
                 />
                 <span className="leading-relaxed">
                   Saya telah membaca dan menyetujui{" "}
@@ -161,16 +163,16 @@ export function AuthForm({
                       e.stopPropagation()
                       setShowPrivacyModal(true)
                     }}
-                    className="font-bold text-[#0a0a0a] underline underline-offset-2 hover:text-[#1a3a3a] cursor-pointer inline"
+                    className="inline cursor-pointer font-bold text-[#0a0a0a] underline underline-offset-2 hover:text-[#1a3a3a]"
                   >
                     Kebijakan Privasi Sekkha
                   </button>
-                  <span className="text-[#ef4444] ml-0.5">*</span>
+                  <span className="ml-0.5 text-[#ef4444]">*</span>
                 </span>
               </label>
 
               {errors.agreeToPrivacy && (
-                <p className="text-xs font-medium text-[#ef4444] animate-in fade-in pl-6.5">
+                <p className="animate-in pl-6.5 text-xs font-medium text-[#ef4444] fade-in">
                   {errors.agreeToPrivacy}
                 </p>
               )}
@@ -180,10 +182,10 @@ export function AuthForm({
 
         {/* "Forgot password?" link — Login only */}
         {!isSignUp && (
-          <div className="flex justify-end -mt-1">
+          <div className="-mt-1 flex justify-end">
             <Link
               to="/forgot-password"
-              className="text-xs font-semibold text-[#0a0a0a] hover:underline cursor-pointer"
+              className="cursor-pointer text-xs font-semibold text-[#0a0a0a] hover:underline"
             >
               Forgot password?
             </Link>
@@ -194,7 +196,7 @@ export function AuthForm({
         <Button
           type="submit"
           disabled={isLoading}
-          className="w-full h-11 rounded-[12px] bg-[#0a0a0a] text-white font-semibold hover:bg-[#1f1f1f] shadow-xs active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer transition-all"
+          className="flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-[12px] bg-[#0a0a0a] font-semibold text-white shadow-xs transition-all hover:bg-[#1f1f1f] active:scale-[0.99]"
         >
           {isLoading ? (
             <>
@@ -224,7 +226,7 @@ export function AuthForm({
           ) : (
             <>
               <span>{isSignUp ? "Create Account" : "Sign In"}</span>
-              <ArrowRightIcon className="size-4 ml-1" />
+              <ArrowRightIcon className="ml-1 size-4" />
             </>
           )}
         </Button>

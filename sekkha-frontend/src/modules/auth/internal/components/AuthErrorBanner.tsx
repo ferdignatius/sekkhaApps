@@ -10,10 +10,5 @@ interface AuthErrorBannerProps {
 export function AuthErrorBanner({ message }: AuthErrorBannerProps) {
   if (message === null) return null
 
-  return (
-    <Alert
-      variant="destructive"
-      description={message}
-    />
-  )
+  return <Alert variant="destructive" description={message} />
 }

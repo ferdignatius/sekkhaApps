@@ -74,9 +74,14 @@ export function authReducer(state: AuthState, action: AuthAction): AuthState {
     case "AUTH_UPDATE_USER":
       return {
         ...state,
-        name: action.payload.name !== undefined ? action.payload.name : state.name,
-        role: action.payload.role !== undefined ? action.payload.role : state.role,
-        email: action.payload.email !== undefined ? action.payload.email : state.email,
+        name:
+          action.payload.name !== undefined ? action.payload.name : state.name,
+        role:
+          action.payload.role !== undefined ? action.payload.role : state.role,
+        email:
+          action.payload.email !== undefined
+            ? action.payload.email
+            : state.email,
       }
 
     case "AUTH_LOGOUT":

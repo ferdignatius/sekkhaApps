@@ -18,12 +18,16 @@ declare global {
 
 export async function requireAuth(req: Request, res: Response, next: NextFunction) {
   const header = req.headers.authorization
-  if (!header?.startsWith("Bearer ")) {
+  const token = header?.startsWith("Bearer ")
+    ? header.slice(7)
+    : typeof req.query.token === "string" && req.query.token.trim()
+      ? req.query.token.trim()
+      : null
+
+  if (!token) {
     res.status(401).json({ error: "Token not found" })
     return
   }
-
-  const token = header.slice(7)
   const secret = process.env.JWT_SECRET
   if (!secret) {
     console.error("❌ JWT_SECRET is not configured in environment variables")

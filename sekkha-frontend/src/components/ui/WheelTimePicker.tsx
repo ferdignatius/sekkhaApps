@@ -14,18 +14,18 @@ import { ClockIcon, CheckIcon } from "lucide-react"
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const HOURS   = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"))
+const HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"))
 const MINUTES = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, "0"))
 
 // Pre-tripled arrays (rendered once, avoids re-creating on each render)
-const HOURS_3X   = [...HOURS,   ...HOURS,   ...HOURS]
+const HOURS_3X = [...HOURS, ...HOURS, ...HOURS]
 const MINUTES_3X = [...MINUTES, ...MINUTES, ...MINUTES]
 
 // ─── Infinite Drum Column ─────────────────────────────────────────────────────
 
 interface DrumProps {
-  items: string[]        // original list  (e.g. HOURS)
-  tripled: string[]      // items × 3      (e.g. HOURS_3X)
+  items: string[] // original list  (e.g. HOURS)
+  tripled: string[] // items × 3      (e.g. HOURS_3X)
   selected: string
   onSelect: (v: string) => void
   itemHeight?: number
@@ -40,16 +40,16 @@ function Drum({
   itemHeight = 40,
   visibleCount = 5,
 }: DrumProps) {
-  const ref      = useRef<HTMLDivElement>(null)
-  const timer    = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
-  const jumping  = useRef(false)       // guard against recursive scroll events
-  const isDown   = useRef(false)
-  const startY   = useRef(0)
-  const startST  = useRef(0)
+  const ref = useRef<HTMLDivElement>(null)
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const jumping = useRef(false) // guard against recursive scroll events
+  const isDown = useRef(false)
+  const startY = useRef(0)
+  const startST = useRef(0)
 
-  const pad       = Math.floor(visibleCount / 2)
-  const len       = items.length
-  const midOffset = len * itemHeight    // scroll position of the first item in middle copy
+  const pad = Math.floor(visibleCount / 2)
+  const len = items.length
+  const midOffset = len * itemHeight // scroll position of the first item in middle copy
 
   const selectedIdx = Math.max(0, items.indexOf(selected))
 
@@ -66,7 +66,10 @@ function Drum({
 
   // Snap to selected in the middle copy (no animation on mount / value change)
   useEffect(() => {
-    const t = setTimeout(() => scrollTo(midOffset + selectedIdx * itemHeight, false), 16)
+    const t = setTimeout(
+      () => scrollTo(midOffset + selectedIdx * itemHeight, false),
+      16
+    )
     return () => clearTimeout(t)
   }, [selectedIdx, midOffset, itemHeight, scrollTo])
 
@@ -103,7 +106,7 @@ function Drum({
       if (!el) return
 
       // Normalize scrollTop to an index within the original list
-      const rawIdx     = Math.round(el.scrollTop / itemHeight)
+      const rawIdx = Math.round(el.scrollTop / itemHeight)
       const normalized = ((rawIdx % len) + len) % len
 
       onSelect(items[normalized])
@@ -118,8 +121,8 @@ function Drum({
 
   // ── Pointer drag (mouse + touch) ────────────────────────────────────────
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    isDown.current  = true
-    startY.current  = e.clientY
+    isDown.current = true
+    startY.current = e.clientY
     startST.current = ref.current?.scrollTop ?? 0
     ;(e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId)
   }
@@ -134,23 +137,29 @@ function Drum({
 
   return (
     <div
-      className="relative overflow-hidden touch-pan-y select-none"
+      className="relative touch-pan-y overflow-hidden select-none"
       style={{ width: 76, height: itemHeight * visibleCount }}
     >
       {/* Selection highlight ring */}
       <div
-        className="pointer-events-none absolute inset-x-1.5 z-20 rounded-xl bg-sekkha-brand-blue/10 border border-sekkha-brand-blue/30"
+        className="pointer-events-none absolute inset-x-1.5 z-20 rounded-xl border border-sekkha-brand-blue/30 bg-sekkha-brand-blue/10"
         style={{ top: pad * itemHeight, height: itemHeight }}
       />
       {/* Top fade */}
       <div
         className="pointer-events-none absolute inset-x-0 top-0 z-10"
-        style={{ height: pad * itemHeight + 6, background: "linear-gradient(to bottom, white 40%, transparent)" }}
+        style={{
+          height: pad * itemHeight + 6,
+          background: "linear-gradient(to bottom, white 40%, transparent)",
+        }}
       />
       {/* Bottom fade */}
       <div
         className="pointer-events-none absolute inset-x-0 bottom-0 z-10"
-        style={{ height: pad * itemHeight + 6, background: "linear-gradient(to top, white 40%, transparent)" }}
+        style={{
+          height: pad * itemHeight + 6,
+          background: "linear-gradient(to top, white 40%, transparent)",
+        }}
       />
 
       {/* Infinite scroll list */}
@@ -161,7 +170,7 @@ function Drum({
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
-        className="absolute inset-0 overflow-y-scroll scrollbar-none select-none cursor-grab active:cursor-grabbing"
+        className="absolute inset-0 cursor-grab scrollbar-none overflow-y-scroll select-none active:cursor-grabbing"
       >
         {/* Top padding so first item can be centred */}
         <div style={{ height: pad * itemHeight }} />
@@ -177,10 +186,10 @@ function Drum({
                 const absIdx = i - pad
                 scrollTo(absIdx * itemHeight + pad * itemHeight, true)
               }}
-              className={`flex items-center justify-center cursor-pointer transition-all duration-100 ${
+              className={`flex cursor-pointer items-center justify-center transition-all duration-100 ${
                 active
-                  ? "text-sekkha-brand-blue font-extrabold text-xl sm:text-2xl scale-105"
-                  : "text-sekkha-slate/40 font-medium text-sm sm:text-base"
+                  ? "scale-105 text-xl font-extrabold text-sekkha-brand-blue sm:text-2xl"
+                  : "text-sm font-medium text-sekkha-slate/40 sm:text-base"
               }`}
             >
               {item}
@@ -198,7 +207,7 @@ function Drum({
 // ─── WheelTimePicker (bare) ───────────────────────────────────────────────────
 
 interface WheelTimePickerProps {
-  value: string      // "HH:mm"
+  value: string // "HH:mm"
   onChange: (v: string) => void
   itemHeight?: number
   visibleCount?: number
@@ -220,12 +229,18 @@ export function WheelTimePicker({
     <div className="flex flex-col items-center">
       {/* Labels row */}
       {showLabels && (
-        <div className="flex items-center mb-1">
-          <div className="text-center text-micro-bold uppercase tracking-widest text-sekkha-slate/60 select-none" style={{ width: 76 }}>
+        <div className="mb-1 flex items-center">
+          <div
+            className="text-micro-bold text-center tracking-widest text-sekkha-slate/60 uppercase select-none"
+            style={{ width: 76 }}
+          >
             Jam
           </div>
           <div style={{ width: 24 }} />
-          <div className="text-center text-micro-bold uppercase tracking-widest text-sekkha-slate/60 select-none" style={{ width: 76 }}>
+          <div
+            className="text-micro-bold text-center tracking-widest text-sekkha-slate/60 uppercase select-none"
+            style={{ width: 76 }}
+          >
             Menit
           </div>
         </div>
@@ -237,24 +252,26 @@ export function WheelTimePicker({
           items={HOURS}
           tripled={HOURS_3X}
           selected={hh}
-          onSelect={h => onChange(`${h}:${mm}`)}
+          onSelect={(h) => onChange(`${h}:${mm}`)}
           itemHeight={itemHeight}
           visibleCount={visibleCount}
         />
 
         {/* Colon: same height as drum, vertically centered */}
         <div
-          className="flex items-center justify-center select-none shrink-0"
+          className="flex shrink-0 items-center justify-center select-none"
           style={{ width: 24, height: itemHeight * visibleCount }}
         >
-          <span className="text-xl sm:text-2xl font-black text-sekkha-brand-blue">:</span>
+          <span className="text-xl font-black text-sekkha-brand-blue sm:text-2xl">
+            :
+          </span>
         </div>
 
         <Drum
           items={MINUTES}
           tripled={MINUTES_3X}
           selected={mm}
-          onSelect={m => onChange(`${hh}:${m}`)}
+          onSelect={(m) => onChange(`${hh}:${m}`)}
           itemHeight={itemHeight}
           visibleCount={visibleCount}
         />
@@ -295,53 +312,62 @@ export function WheelTimePickerTrigger({
       <button
         type="button"
         onClick={handleOpen}
-        className="w-full h-11 flex items-center gap-3 rounded-xl border border-sekkha-hairline bg-sekkha-canvas px-3.5 text-left transition-all hover:border-sekkha-brand-blue/50 hover:bg-white group"
+        className="group flex h-11 w-full items-center gap-3 rounded-xl border border-sekkha-hairline bg-sekkha-canvas px-3.5 text-left transition-all hover:border-sekkha-brand-blue/50 hover:bg-white"
       >
-        <ClockIcon className="size-4 text-sekkha-brand-blue shrink-0 group-hover:scale-110 transition-transform" />
-        <span className="flex-1 text-caption font-extrabold text-sekkha-ink tabular-nums">
-          {value} <span className="font-medium text-sekkha-slate text-micro">WIB</span>
+        <ClockIcon className="size-4 shrink-0 text-sekkha-brand-blue transition-transform group-hover:scale-110" />
+        <span className="text-caption flex-1 font-extrabold text-sekkha-ink tabular-nums">
+          {value}{" "}
+          <span className="text-micro font-medium text-sekkha-slate">WIB</span>
         </span>
-        <span className="text-micro font-bold text-sekkha-brand-blue">Ubah</span>
+        <span className="text-micro font-bold text-sekkha-brand-blue">
+          Ubah
+        </span>
       </button>
 
       {/* Sub-modal popup */}
       {open && (
         <div
-          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/30 backdrop-blur-xs p-4 animate-in fade-in-0"
-          onClick={e => { if (e.target === e.currentTarget) setOpen(false) }}
+          className="fixed inset-0 z-[200] flex animate-in items-center justify-center bg-black/30 p-4 backdrop-blur-xs fade-in-0"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setOpen(false)
+          }}
         >
-          <div className="w-full max-w-xs rounded-3xl bg-white shadow-2xl border border-sekkha-hairline animate-in zoom-in-95">
+          <div className="w-full max-w-xs animate-in rounded-3xl border border-sekkha-hairline bg-white shadow-2xl zoom-in-95">
             {/* Header */}
-            <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-sekkha-hairline-soft">
+            <div className="flex items-center justify-between border-b border-sekkha-hairline-soft px-5 pt-5 pb-4">
               <div className="flex items-center gap-2">
                 <ClockIcon className="size-4 text-sekkha-brand-blue" />
-                <span className="text-caption font-extrabold text-sekkha-ink">{label}</span>
+                <span className="text-caption font-extrabold text-sekkha-ink">
+                  {label}
+                </span>
               </div>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="size-7 rounded-full bg-sekkha-canvas flex items-center justify-center text-sekkha-slate hover:bg-sekkha-surface transition-colors text-sm"
-              >✕</button>
+                className="flex size-7 items-center justify-center rounded-full bg-sekkha-canvas text-sm text-sekkha-slate transition-colors hover:bg-sekkha-surface"
+              >
+                ✕
+              </button>
             </div>
 
             {/* Wheel */}
-            <div className="flex justify-center items-center px-6 py-5">
+            <div className="flex items-center justify-center px-6 py-5">
               <WheelTimePicker value={draft} onChange={setDraft} />
             </div>
 
             {/* Footer */}
-            <div className="flex gap-2 px-5 pb-5 pt-3 border-t border-sekkha-hairline-soft">
+            <div className="flex gap-2 border-t border-sekkha-hairline-soft px-5 pt-3 pb-5">
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="flex-1 h-11 rounded-2xl border border-sekkha-hairline text-caption font-bold text-sekkha-slate hover:bg-sekkha-canvas transition-colors"
+                className="text-caption h-11 flex-1 rounded-2xl border border-sekkha-hairline font-bold text-sekkha-slate transition-colors hover:bg-sekkha-canvas"
               >
                 Batal
               </button>
               <button
                 type="button"
                 onClick={handleConfirm}
-                className="flex-1 h-11 rounded-2xl bg-sekkha-brand-blue text-caption font-bold text-white hover:bg-sekkha-brand-blue/90 transition-colors flex items-center justify-center gap-1.5"
+                className="text-caption flex h-11 flex-1 items-center justify-center gap-1.5 rounded-2xl bg-sekkha-brand-blue font-bold text-white transition-colors hover:bg-sekkha-brand-blue/90"
               >
                 <CheckIcon className="size-4" />
                 Simpan {draft}

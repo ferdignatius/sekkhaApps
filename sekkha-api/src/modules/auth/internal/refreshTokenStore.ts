@@ -79,14 +79,12 @@ export async function verifyAndRotateRefreshToken(
   }
 
   // 2. Check in-memory store fallback
-  if (!userId) {
-    const item = localRefreshTokens.get(tokenHash)
-    if (item) {
-      if (item.expiresAt > Date.now()) {
-        userId = item.userId
-      }
-      localRefreshTokens.delete(tokenHash)
+  const item = localRefreshTokens.get(tokenHash)
+  if (item) {
+    if (!userId && item.expiresAt > Date.now()) {
+      userId = item.userId
     }
+    localRefreshTokens.delete(tokenHash)
   }
 
   // 3. Check DB fallback if available

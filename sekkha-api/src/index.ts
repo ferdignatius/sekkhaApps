@@ -216,9 +216,7 @@ app.use(errorHandler)
 
 // ─── Start ───────────────────────────────────────────────────────────────────
 
-app.listen(PORT, async () => {
-  // Connect Redis
-  await redis.connect().catch(() => console.warn("⚠️  Redis not available, caching disabled"))
+app.listen(PORT, () => {
   console.log(`🚀 Sekkha API running on http://localhost:${PORT}`)
   console.log(`📋 Health check: http://localhost:${PORT}/health`)
   console.log(`📦 Modules loaded: ${modules.map((m) => m.name).join(", ")}`)

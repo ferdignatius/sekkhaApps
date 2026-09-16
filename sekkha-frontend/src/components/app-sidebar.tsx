@@ -108,17 +108,30 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const mainNavItems = activeModules
     .flatMap((m) => m.navItems)
     .filter((item) => {
-      if (item.to === "/notifications" || item.to === "/home/profile") return false
+      if (item.to === "/notifications" || item.to === "/home/profile")
+        return false
       if (role === "umat" && item.to === "/teams") return false
       return true
     })
-  const pengurusNavItems = activeModules.flatMap((m) => m.pengurusNavItems ?? [])
-  const configureSections = activeModules.flatMap((m) => m.configureSections ?? [])
+  const pengurusNavItems = activeModules.flatMap(
+    (m) => m.pengurusNavItems ?? []
+  )
+  const configureSections = activeModules.flatMap(
+    (m) => m.configureSections ?? []
+  )
 
-  const roleLabel = role === "admin" ? "Admin" : role === "pengurus" ? "Organizer" : role === "aktivis" ? "Activist" : "Member"
+  const roleLabel =
+    role === "admin"
+      ? "Admin"
+      : role === "pengurus"
+        ? "Organizer"
+        : role === "aktivis"
+          ? "Activist"
+          : "Member"
   // Render blank when no real name is available — avoid flashing a default
   // (e.g. "Member") before the /users/me hydration completes.
-  const userName = authState.status === "authenticated" && authState.name ? authState.name : ""
+  const userName =
+    authState.status === "authenticated" && authState.name ? authState.name : ""
   const userInitials =
     userName
       .split(" ")
@@ -144,7 +157,11 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   }, [])
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-[#e5e5e5] font-sans bg-[#fffaf0]" {...props}>
+    <Sidebar
+      collapsible="icon"
+      className="border-r border-[#e5e5e5] bg-[#fffaf0] font-sans"
+      {...props}
+    >
       {/* Brand Header & Sidebar Toggle Button */}
       <SidebarHeader className="border-b border-[#e5e5e5] px-3.5 py-3.5">
         <div className="flex items-center justify-between gap-2">
@@ -152,17 +169,21 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
           <button
             type="button"
             onClick={toggleSidebar}
-            className="flex items-center gap-2.5 min-w-0 text-left cursor-pointer group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:w-full focus:outline-hidden"
+            className="flex min-w-0 cursor-pointer items-center gap-2.5 text-left group-data-[collapsible=icon]:w-full group-data-[collapsible=icon]:justify-center focus:outline-hidden"
             title={state === "collapsed" ? "Expand Sidebar" : undefined}
           >
             <div className="flex size-9 shrink-0 items-center justify-center transition-transform active:scale-95">
-              <img src="/sekkha_logo.svg" alt="Sekkha Logo" className="size-full object-contain" />
+              <img
+                src="/sekkha_logo.svg"
+                alt="Sekkha Logo"
+                className="size-full object-contain"
+              />
             </div>
-            <div className="flex flex-col min-w-0 group-data-[collapsible=icon]:hidden">
-              <span className="truncate text-sm font-bold text-[#0a0a0a] tracking-tight">
+            <div className="flex min-w-0 flex-col group-data-[collapsible=icon]:hidden">
+              <span className="truncate text-sm font-bold tracking-tight text-[#0a0a0a]">
                 Sekkha Apps
               </span>
-              <span className="truncate text-xs font-medium text-[#6a6a6a] flex items-center gap-1">
+              <span className="flex items-center gap-1 truncate text-xs font-medium text-[#6a6a6a]">
                 <ShieldCheckIcon className="size-3 text-[#1a3a3a]" />
                 <span>{roleLabel}</span>
               </span>
@@ -170,15 +191,15 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
           </button>
 
           {/* Toggle Sidebar Expand / Collapse Button */}
-          <SidebarTrigger className="shrink-0 text-[#6a6a6a] hover:bg-[#f5f0e0] hover:text-[#0a0a0a] cursor-pointer group-data-[collapsible=icon]:hidden rounded-[8px]" />
+          <SidebarTrigger className="shrink-0 cursor-pointer rounded-[8px] text-[#6a6a6a] group-data-[collapsible=icon]:hidden hover:bg-[#f5f0e0] hover:text-[#0a0a0a]" />
         </div>
       </SidebarHeader>
 
       {/* Navigation Content */}
-      <SidebarContent className="px-2.5 py-3 space-y-3">
+      <SidebarContent className="space-y-3 px-2.5 py-3">
         {/* Main nav — Menu Utama */}
         <SidebarGroup className="p-0">
-          <SidebarGroupLabel className="text-[11px] font-bold uppercase tracking-[1.5px] text-[#6a6a6a] px-2 py-1 group-data-[collapsible=icon]:hidden">
+          <SidebarGroupLabel className="px-2 py-1 text-[11px] font-bold tracking-[1.5px] text-[#6a6a6a] uppercase group-data-[collapsible=icon]:hidden">
             Main Navigation
           </SidebarGroupLabel>
           <SidebarMenu className="space-y-0.5">
@@ -196,13 +217,13 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                     isActive={isActive}
                     tooltip={label}
                     className={cn(
-                      "rounded-[12px] transition-all font-medium text-sm",
+                      "rounded-[12px] text-sm font-medium transition-all",
                       isActive
-                        ? "!bg-[#0a0a0a] !text-white font-semibold shadow-xs"
+                        ? "!bg-[#0a0a0a] font-semibold !text-white shadow-xs"
                         : "text-[#3a3a3a] hover:bg-[#f5f0e0] hover:text-[#0a0a0a]"
                     )}
                   >
-                    <Link to={to} className="flex items-center gap-2.5 w-full">
+                    <Link to={to} className="flex w-full items-center gap-2.5">
                       {Icon && (
                         <Icon
                           className={cn(
@@ -222,8 +243,8 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
 
         {/* Pengurus section — dari Registry */}
         {isPengurus && pengurusNavItems.length > 0 && (
-          <SidebarGroup className="pt-2.5 border-t border-[#e5e5e5] p-0">
-            <SidebarGroupLabel className="text-[11px] font-bold uppercase tracking-[1.5px] text-[#1a3a3a] px-2 py-1 group-data-[collapsible=icon]:hidden">
+          <SidebarGroup className="border-t border-[#e5e5e5] p-0 pt-2.5">
+            <SidebarGroupLabel className="px-2 py-1 text-[11px] font-bold tracking-[1.5px] text-[#1a3a3a] uppercase group-data-[collapsible=icon]:hidden">
               Admin & Organizer
             </SidebarGroupLabel>
             <SidebarMenu className="space-y-0.5">
@@ -237,13 +258,16 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                       isActive={isActive}
                       tooltip={label}
                       className={cn(
-                        "rounded-[12px] transition-all font-medium text-sm",
+                        "rounded-[12px] text-sm font-medium transition-all",
                         isActive
-                          ? "!bg-[#1a3a3a] !text-white font-semibold shadow-xs"
+                          ? "!bg-[#1a3a3a] font-semibold !text-white shadow-xs"
                           : "text-[#3a3a3a] hover:bg-[#f5f0e0] hover:text-[#0a0a0a]"
                       )}
                     >
-                      <Link to={to} className="flex items-center gap-2.5 w-full">
+                      <Link
+                        to={to}
+                        className="flex w-full items-center gap-2.5"
+                      >
                         {Icon && (
                           <Icon
                             className={cn(
@@ -264,15 +288,15 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
 
         {/* Configure Sections — dari Registry */}
         {isPengurus && configureSections.length > 0 && (
-          <SidebarGroup className="pt-2.5 border-t border-[#e5e5e5] p-0">
-            <SidebarGroupLabel className="text-[11px] font-bold uppercase tracking-[1.5px] text-[#6a6a6a] px-2 py-1 group-data-[collapsible=icon]:hidden">
+          <SidebarGroup className="border-t border-[#e5e5e5] p-0 pt-2.5">
+            <SidebarGroupLabel className="px-2 py-1 text-[11px] font-bold tracking-[1.5px] text-[#6a6a6a] uppercase group-data-[collapsible=icon]:hidden">
               System Configuration
             </SidebarGroupLabel>
             <SidebarMenu className="space-y-0.5">
               {configureSections.map((section) => {
                 const SectionIcon = iconMap[section.icon]
                 const isSectionActive = section.items.some((item) =>
-                  pathname.startsWith(item.to),
+                  pathname.startsWith(item.to)
                 )
 
                 return (
@@ -287,19 +311,21 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                         <SidebarMenuButton
                           tooltip={section.label}
                           className={cn(
-                            "rounded-[12px] transition-all text-sm font-medium",
+                            "rounded-[12px] text-sm font-medium transition-all",
                             isSectionActive
-                              ? "bg-[#faf5e8] text-[#0a0a0a] font-semibold border border-[#e5e5e5]/80"
+                              ? "border border-[#e5e5e5]/80 bg-[#faf5e8] font-semibold text-[#0a0a0a]"
                               : "text-[#3a3a3a] hover:bg-[#f5f0e0] hover:text-[#0a0a0a]"
                           )}
                         >
-                          {SectionIcon && <SectionIcon className="size-4 shrink-0 text-[#6a6a6a]" />}
+                          {SectionIcon && (
+                            <SectionIcon className="size-4 shrink-0 text-[#6a6a6a]" />
+                          )}
                           <span className="truncate">{section.label}</span>
                           <ChevronRightIcon className="ml-auto size-4 text-[#6a6a6a] transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                         </SidebarMenuButton>
                       </CollapsibleTrigger>
                       <CollapsibleContent>
-                        <SidebarMenuSub className="my-1 space-y-0.5 border-l border-[#e5e5e5] ml-4 pl-2.5">
+                        <SidebarMenuSub className="my-1 ml-4 space-y-0.5 border-l border-[#e5e5e5] pl-2.5">
                           {section.items.map((item) => {
                             const SubIcon = iconMap[item.icon]
                             const isSubActive = pathname.startsWith(item.to)
@@ -310,35 +336,49 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                                   asChild
                                   isActive={isSubActive}
                                   className={cn(
-                                    "rounded-[8px] py-1.5 transition-all text-xs font-medium",
+                                    "rounded-[8px] py-1.5 text-xs font-medium transition-all",
                                     isSubActive
-                                      ? "!bg-[#0a0a0a] !text-white font-semibold shadow-xs"
+                                      ? "!bg-[#0a0a0a] font-semibold !text-white shadow-xs"
                                       : "text-[#6a6a6a] hover:bg-[#f5f0e0] hover:text-[#0a0a0a]"
                                   )}
                                 >
                                   {item.hasRoute ? (
-                                    <Link to={item.to as "/"} className="flex items-center gap-2 w-full">
+                                    <Link
+                                      to={item.to as "/"}
+                                      className="flex w-full items-center gap-2"
+                                    >
                                       {SubIcon && (
                                         <SubIcon
                                           className={cn(
                                             "size-3.5 shrink-0",
-                                            isSubActive ? "!text-white" : "text-[#6a6a6a]"
+                                            isSubActive
+                                              ? "!text-white"
+                                              : "text-[#6a6a6a]"
                                           )}
                                         />
                                       )}
-                                      <span className="truncate">{item.label}</span>
+                                      <span className="truncate">
+                                        {item.label}
+                                      </span>
                                     </Link>
                                   ) : (
-                                    <a href={item.to} className="flex items-center gap-2 w-full">
+                                    <a
+                                      href={item.to}
+                                      className="flex w-full items-center gap-2"
+                                    >
                                       {SubIcon && (
                                         <SubIcon
                                           className={cn(
                                             "size-3.5 shrink-0",
-                                            isSubActive ? "!text-white" : "text-[#6a6a6a]"
+                                            isSubActive
+                                              ? "!text-white"
+                                              : "text-[#6a6a6a]"
                                           )}
                                         />
                                       )}
-                                      <span className="truncate">{item.label}</span>
+                                      <span className="truncate">
+                                        {item.label}
+                                      </span>
                                     </a>
                                   )}
                                 </SidebarMenuSubButton>
@@ -357,14 +397,17 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
       </SidebarContent>
 
       {/* Footer Unified User Profile Menu */}
-      <SidebarFooter ref={profileMenuRef} className="relative border-t border-[#e5e5e5] p-2.5 group-data-[collapsible=icon]:px-1 group-data-[collapsible=icon]:py-2">
+      <SidebarFooter
+        ref={profileMenuRef}
+        className="relative border-t border-[#e5e5e5] p-2.5 group-data-[collapsible=icon]:px-1 group-data-[collapsible=icon]:py-2"
+      >
         {/* Floating Options Dropdown Menu */}
         {showProfileMenu && userId && (
-          <div className="absolute bottom-full mb-2 left-2.5 right-2.5 z-50 rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0]/95 backdrop-blur-xl p-1.5 shadow-2xl space-y-0.5 animate-in fade-in-0 slide-in-from-bottom-2 group-data-[collapsible=icon]:w-48 group-data-[collapsible=icon]:left-12">
+          <div className="absolute right-2.5 bottom-full left-2.5 z-50 mb-2 animate-in space-y-0.5 rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0]/95 p-1.5 shadow-2xl backdrop-blur-xl fade-in-0 slide-in-from-bottom-2 group-data-[collapsible=icon]:left-12 group-data-[collapsible=icon]:w-48">
             <Link
               to="/home/profile"
               onClick={() => setShowProfileMenu(false)}
-              className="flex items-center gap-2.5 rounded-[10px] px-3 py-2 text-xs font-semibold text-[#0a0a0a] hover:bg-[#f5f0e0] transition-colors"
+              className="flex items-center gap-2.5 rounded-[10px] px-3 py-2 text-xs font-semibold text-[#0a0a0a] transition-colors hover:bg-[#f5f0e0]"
             >
               <UserIcon className="size-4 text-[#0a0a0a]" />
               <span>View Profile</span>
@@ -376,7 +419,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                 setShowProfileMenu(false)
                 setSettingsOpen(true)
               }}
-              className="flex w-full items-center gap-2.5 rounded-[10px] px-3 py-2 text-xs font-semibold text-[#0a0a0a] hover:bg-[#f5f0e0] transition-colors cursor-pointer"
+              className="flex w-full cursor-pointer items-center gap-2.5 rounded-[10px] px-3 py-2 text-xs font-semibold text-[#0a0a0a] transition-colors hover:bg-[#f5f0e0]"
             >
               <SettingsIcon className="size-4 text-[#6a6a6a]" />
               <span>Settings & Goals</span>
@@ -390,7 +433,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                 setShowProfileMenu(false)
                 logout()
               }}
-              className="flex w-full items-center gap-2.5 rounded-[10px] px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+              className="flex w-full cursor-pointer items-center gap-2.5 rounded-[10px] px-3 py-2 text-xs font-semibold text-rose-600 transition-colors hover:bg-rose-50"
             >
               <LogOutIcon className="size-4 text-rose-500" />
               <span>Sign Out</span>
@@ -405,18 +448,22 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
             onClick={() => setShowProfileMenu(!showProfileMenu)}
             title={roleLabel}
             className={cn(
-              "flex w-full items-center gap-2.5 rounded-[12px] transition-all cursor-pointer group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:border-none group-data-[collapsible=icon]:bg-transparent",
+              "flex w-full cursor-pointer items-center gap-2.5 rounded-[12px] transition-all group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:border-none group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:p-0",
               showProfileMenu
-                ? "ring-2 ring-[#0a0a0a]/15 bg-[#f5f0e0] border border-[#ebe6d6] p-2"
-                : "border border-[#e5e5e5] bg-[#fffaf0] p-2 hover:bg-[#f5f0e0] hover:border-[#ebe6d6]"
+                ? "border border-[#ebe6d6] bg-[#f5f0e0] p-2 ring-2 ring-[#0a0a0a]/15"
+                : "border border-[#e5e5e5] bg-[#fffaf0] p-2 hover:border-[#ebe6d6] hover:bg-[#f5f0e0]"
             )}
           >
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[#0a0a0a] text-xs text-white font-bold shadow-xs uppercase transition-transform active:scale-95">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[#0a0a0a] text-xs font-bold text-white uppercase shadow-xs transition-transform active:scale-95">
               {userInitials}
             </div>
-            <div className="flex flex-col min-w-0 flex-1 group-data-[collapsible=icon]:hidden text-left">
-              <span className="truncate text-xs text-[#0a0a0a] font-bold">{userName}</span>
-              <span className="truncate text-[11px] text-[#6a6a6a] font-medium">{roleLabel}</span>
+            <div className="flex min-w-0 flex-1 flex-col text-left group-data-[collapsible=icon]:hidden">
+              <span className="truncate text-xs font-bold text-[#0a0a0a]">
+                {userName}
+              </span>
+              <span className="truncate text-[11px] font-medium text-[#6a6a6a]">
+                {roleLabel}
+              </span>
             </div>
             <ChevronUpIcon
               className={cn(
@@ -434,7 +481,10 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
           title="Settings & Goals"
           maxWidth="max-w-md"
         >
-          <SettingsSection onLogout={logout} onClose={() => setSettingsOpen(false)} />
+          <SettingsSection
+            onLogout={logout}
+            onClose={() => setSettingsOpen(false)}
+          />
         </ResponsiveFormModal>
       </SidebarFooter>
 
@@ -442,4 +492,3 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
     </Sidebar>
   )
 }
-

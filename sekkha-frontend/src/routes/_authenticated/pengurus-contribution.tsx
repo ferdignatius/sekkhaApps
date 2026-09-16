@@ -1,4 +1,8 @@
-import { createFileRoute, lazyRouteComponent, redirect } from "@tanstack/react-router"
+import {
+  createFileRoute,
+  lazyRouteComponent,
+  redirect,
+} from "@tanstack/react-router"
 import { GenericSkeleton } from "@/components/common/PageSkeletons"
 
 export const Route = createFileRoute("/_authenticated/pengurus-contribution")({
@@ -8,6 +12,10 @@ export const Route = createFileRoute("/_authenticated/pengurus-contribution")({
       throw redirect({ to: "/home" })
     }
   },
-  component: lazyRouteComponent(() => import("@/modules/pengurus").then(m => ({ default: m.PengurusContributionPage }))),
+  component: lazyRouteComponent(() =>
+    import("@/modules/pengurus").then((m) => ({
+      default: m.PengurusContributionPage,
+    }))
+  ),
   pendingComponent: GenericSkeleton,
 })

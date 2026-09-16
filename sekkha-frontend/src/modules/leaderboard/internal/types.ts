@@ -6,7 +6,7 @@ export type LeaderboardMetric = "points" | "streak" | "attendance"
 
 export interface Season {
   year: number
-  half: 1 | 2  // 1 = Jan–Jun, 2 = Jul–Dec
+  half: 1 | 2 // 1 = Jan–Jun, 2 = Jul–Dec
 }
 
 export interface LeaderboardEntry {
@@ -61,9 +61,8 @@ export function prevSeason(s: Season): Season {
 
 export function nextSeason(s: Season): Season | null {
   const current = getCurrentSeason()
-  const next: Season = s.half === 2
-    ? { year: s.year + 1, half: 1 }
-    : { year: s.year, half: 2 }
+  const next: Season =
+    s.half === 2 ? { year: s.year + 1, half: 1 } : { year: s.year, half: 2 }
   // Can't go beyond current season
   if (next.year > current.year) return null
   if (next.year === current.year && next.half > current.half) return null

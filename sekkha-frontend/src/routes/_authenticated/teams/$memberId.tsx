@@ -1,4 +1,8 @@
-import { createFileRoute, lazyRouteComponent, redirect } from "@tanstack/react-router"
+import {
+  createFileRoute,
+  lazyRouteComponent,
+  redirect,
+} from "@tanstack/react-router"
 import { GenericSkeleton } from "@/components/common/PageSkeletons"
 
 export const Route = createFileRoute("/_authenticated/teams/$memberId")({
@@ -8,6 +12,8 @@ export const Route = createFileRoute("/_authenticated/teams/$memberId")({
       throw redirect({ to: "/home" })
     }
   },
-  component: lazyRouteComponent(() => import("@/modules/teams").then(m => ({ default: m.MemberDetailPage }))),
+  component: lazyRouteComponent(() =>
+    import("@/modules/teams").then((m) => ({ default: m.MemberDetailPage }))
+  ),
   pendingComponent: GenericSkeleton,
 })

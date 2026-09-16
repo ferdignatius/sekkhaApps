@@ -2,6 +2,20 @@
 
 All notable changes to Sekkha Apps. Semver (`MAJOR.MINOR.PATCH`); newest on top. Entries are curated for humans — see git log for the full history.
 
+## [1.4.1] - 2026-09-16
+
+### Added
+- Browser native EventSource (SSE) authentication support via `?token=` query parameter fallback on `requireAuth` middleware (`sekkha-api/src/middleware/auth.ts`).
+- Real-time live attendance feed on the organizer scanner page via SSE stream (`/api/events/:id/live-attendance`), automatically updating recent check-in queue, counts, and cache.
+- Dedicated Member QR Code card for members (`umat`) on the attendance scan page, allowing attendees to present their unique registered QR to organizers at check-in stations.
+- Strict Content-Security-Policy (CSP), `X-Frame-Options: DENY`, `Cross-Origin-Embedder-Policy: credentialless`, and Camera `Permissions-Policy` headers on the frontend root layout.
+- Runtime Zod response validation on `/events` and `/users/me` API queries to guarantee type and data contract safety.
+
+### Changed
+- Harmonized attendance flow with vihara domain model: members no longer self-scan event codes, avoiding 403 authorization errors and enforcing organizer-mediated check-in.
+- Cleaned up all ESLint warnings (`@typescript-eslint/require-await`, `no-shadow`) and unused variables across frontend test files and components.
+- Applied Prettier code formatting consistently across all frontend modules.
+
 ## [1.4.0] - 2026-09-15
 
 ### Added

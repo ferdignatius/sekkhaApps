@@ -20,12 +20,12 @@ import * as fc from "fast-check"
 function makeFetchResponse(
   status: number,
   body: unknown = {},
-  ok?: boolean,
+  ok?: boolean
 ): Response {
   return {
     ok: ok ?? (status >= 200 && status < 300),
     status,
-    json: async () => body,
+    json: () => Promise.resolve(body),
   } as Response
 }
 
@@ -52,9 +52,11 @@ describe("authService.login — success", () => {
     // Requirements: 4.2
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue(
-        makeFetchResponse(200, { accessToken: "tok-abc", userId: "user-1" }),
-      ),
+      vi
+        .fn()
+        .mockResolvedValue(
+          makeFetchResponse(200, { accessToken: "tok-abc", userId: "user-1" })
+        )
     )
 
     await service.login("user@example.com", "password123")
@@ -66,9 +68,11 @@ describe("authService.login — success", () => {
     // Requirements: 4.2
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue(
-        makeFetchResponse(200, { accessToken: "tok-abc", userId: "user-1" }),
-      ),
+      vi
+        .fn()
+        .mockResolvedValue(
+          makeFetchResponse(200, { accessToken: "tok-abc", userId: "user-1" })
+        )
     )
 
     await service.login("user@example.com", "password123")
@@ -76,7 +80,13 @@ describe("authService.login — success", () => {
     expect(dispatch).toHaveBeenCalledOnce()
     expect(dispatch).toHaveBeenCalledWith<[AuthAction]>({
       type: "AUTH_SUCCESS",
-      payload: { accessToken: "tok-abc", userId: "user-1", role: "umat", name: null, email: null },
+      payload: {
+        accessToken: "tok-abc",
+        userId: "user-1",
+        role: "umat",
+        name: null,
+        email: null,
+      },
     })
   })
 })
@@ -88,14 +98,14 @@ describe("authService.login — 401", () => {
     // Requirements: 4.2
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue(makeFetchResponse(401, {})),
+      vi.fn().mockResolvedValue(makeFetchResponse(401, {}))
     )
 
     await expect(
-      service.login("wrong@example.com", "badpass"),
+      service.login("wrong@example.com", "badpass")
     ).rejects.toSatisfy(
       (err: unknown) =>
-        err instanceof AuthError && err.code === "INVALID_CREDENTIALS",
+        err instanceof AuthError && err.code === "INVALID_CREDENTIALS"
     )
   })
 
@@ -103,7 +113,7 @@ describe("authService.login — 401", () => {
     // Requirements: 4.2
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue(makeFetchResponse(401, {})),
+      vi.fn().mockResolvedValue(makeFetchResponse(401, {}))
     )
 
     await service.login("wrong@example.com", "badpass").catch(() => {
@@ -121,9 +131,11 @@ describe("authService.register — success", () => {
     // Requirements: 4.1
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue(
-        makeFetchResponse(200, { accessToken: "reg-tok", userId: "user-2" }),
-      ),
+      vi
+        .fn()
+        .mockResolvedValue(
+          makeFetchResponse(200, { accessToken: "reg-tok", userId: "user-2" })
+        )
     )
 
     await service.register("new@example.com", "securePass1")
@@ -135,9 +147,11 @@ describe("authService.register — success", () => {
     // Requirements: 4.1
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue(
-        makeFetchResponse(200, { accessToken: "reg-tok", userId: "user-2" }),
-      ),
+      vi
+        .fn()
+        .mockResolvedValue(
+          makeFetchResponse(200, { accessToken: "reg-tok", userId: "user-2" })
+        )
     )
 
     await service.register("new@example.com", "securePass1")
@@ -145,7 +159,13 @@ describe("authService.register — success", () => {
     expect(dispatch).toHaveBeenCalledOnce()
     expect(dispatch).toHaveBeenCalledWith<[AuthAction]>({
       type: "AUTH_SUCCESS",
-      payload: { accessToken: "reg-tok", userId: "user-2", role: "umat", name: null, email: null },
+      payload: {
+        accessToken: "reg-tok",
+        userId: "user-2",
+        role: "umat",
+        name: null,
+        email: null,
+      },
     })
   })
 })
@@ -157,14 +177,14 @@ describe("authService.register — 409", () => {
     // Requirements: 4.1
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue(makeFetchResponse(409, {})),
+      vi.fn().mockResolvedValue(makeFetchResponse(409, {}))
     )
 
     await expect(
-      service.register("taken@example.com", "password123"),
+      service.register("taken@example.com", "password123")
     ).rejects.toSatisfy(
       (err: unknown) =>
-        err instanceof AuthError && err.code === "EMAIL_ALREADY_EXISTS",
+        err instanceof AuthError && err.code === "EMAIL_ALREADY_EXISTS"
     )
   })
 
@@ -172,12 +192,12 @@ describe("authService.register — 409", () => {
     // Requirements: 4.1
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue(makeFetchResponse(409, {})),
+      vi.fn().mockResolvedValue(makeFetchResponse(409, {}))
     )
 
-    await service
-      .register("taken@example.com", "password123")
-      .catch(() => { /* swallow */ })
+    await service.register("taken@example.com", "password123").catch(() => {
+      /* swallow */
+    })
 
     expect(dispatch).not.toHaveBeenCalled()
   })
@@ -190,7 +210,7 @@ describe("authService.verifyToken — 200", () => {
     // Requirements: 4.3, 4.4
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue(makeFetchResponse(200, {})),
+      vi.fn().mockResolvedValue(makeFetchResponse(200, {}))
     )
 
     await expect(service.verifyToken("valid-token")).resolves.toBeUndefined()
@@ -200,7 +220,7 @@ describe("authService.verifyToken — 200", () => {
     // Requirements: 4.3
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue(makeFetchResponse(200, {})),
+      vi.fn().mockResolvedValue(makeFetchResponse(200, {}))
     )
 
     await service.verifyToken("valid-token")
@@ -216,12 +236,12 @@ describe("authService.verifyToken — 401", () => {
     // Requirements: 4.5
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue(makeFetchResponse(401, {})),
+      vi.fn().mockResolvedValue(makeFetchResponse(401, {}))
     )
 
     await expect(service.verifyToken("expired-token")).rejects.toSatisfy(
       (err: unknown) =>
-        err instanceof AuthError && err.code === "INVALID_CREDENTIALS",
+        err instanceof AuthError && err.code === "INVALID_CREDENTIALS"
     )
   })
 })
@@ -236,15 +256,16 @@ describe("authService.verifyToken — network timeout", () => {
     // fetch never resolves; abort signal fires after 3000ms
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockImplementation((_url: string, opts: RequestInit) =>
-        new Promise<Response>((_resolve, reject) => {
-          opts?.signal?.addEventListener("abort", () =>
-            reject(
-              Object.assign(new Error("AbortError"), { name: "AbortError" }),
-            ),
-          )
-        }),
-      ),
+      vi.fn().mockImplementation(
+        (_url: string, opts: RequestInit) =>
+          new Promise<Response>((_resolve, reject) => {
+            opts?.signal?.addEventListener("abort", () =>
+              reject(
+                Object.assign(new Error("AbortError"), { name: "AbortError" })
+              )
+            )
+          })
+      )
     )
 
     const verifyPromise = service.verifyToken("some-token")
@@ -254,7 +275,7 @@ describe("authService.verifyToken — network timeout", () => {
 
     await expect(verifyPromise).rejects.toSatisfy(
       (err: unknown) =>
-        err instanceof AuthError && err.code === "NETWORK_TIMEOUT",
+        err instanceof AuthError && err.code === "NETWORK_TIMEOUT"
     )
 
     vi.useRealTimers()
@@ -285,7 +306,8 @@ describe("authService.logout", () => {
     // Requirements: 4.6
     service.logout()
 
-    const call = (dispatch as ReturnType<typeof vi.fn>).mock.calls[0]?.[0] as AuthAction
+    const call = (dispatch as ReturnType<typeof vi.fn>).mock
+      .calls[0]?.[0] as AuthAction
     expect(call.type).toBe("AUTH_LOGOUT")
   })
 })
@@ -300,69 +322,57 @@ describe("Property 5 — Token Round-Trip ke localStorage", () => {
     localStorage.clear()
   })
 
-  it(
-    "login: localStorage[STORAGE_KEY] identik dengan accessToken dari respons backend",
-    async () => {
-      // Validates: Requirements 4.2
-      await fc.assert(
-        fc.asyncProperty(
-          fc.string({ minLength: 1 }),
-          async (accessToken) => {
-            localStorage.clear()
-            const localDispatch = vi.fn()
-            const localService = createAuthService(localDispatch)
+  it("login: localStorage[STORAGE_KEY] identik dengan accessToken dari respons backend", async () => {
+    // Validates: Requirements 4.2
+    await fc.assert(
+      fc.asyncProperty(fc.string({ minLength: 1 }), async (accessToken) => {
+        localStorage.clear()
+        const localDispatch = vi.fn()
+        const localService = createAuthService(localDispatch)
 
-            vi.stubGlobal(
-              "fetch",
-              vi.fn().mockResolvedValue({
-                ok: true,
-                status: 200,
-                json: async () => ({ accessToken, userId: "user-prop5" }),
-              } as Response),
-            )
+        vi.stubGlobal(
+          "fetch",
+          vi.fn().mockResolvedValue({
+            ok: true,
+            status: 200,
+            json: () => Promise.resolve({ accessToken, userId: "user-prop5" }),
+          } as Response)
+        )
 
-            await localService.login("test@example.com", "password123")
+        await localService.login("test@example.com", "password123")
 
-            const stored = localStorage.getItem(STORAGE_KEY)
-            vi.restoreAllMocks()
-            return stored === accessToken
-          },
-        ),
-        { numRuns: 100 },
-      )
-    },
-  )
+        const stored = localStorage.getItem(STORAGE_KEY)
+        vi.restoreAllMocks()
+        return stored === accessToken
+      }),
+      { numRuns: 100 }
+    )
+  })
 
-  it(
-    "register: localStorage[STORAGE_KEY] identik dengan accessToken dari respons backend",
-    async () => {
-      // Validates: Requirements 4.1
-      await fc.assert(
-        fc.asyncProperty(
-          fc.string({ minLength: 1 }),
-          async (accessToken) => {
-            localStorage.clear()
-            const localDispatch = vi.fn()
-            const localService = createAuthService(localDispatch)
+  it("register: localStorage[STORAGE_KEY] identik dengan accessToken dari respons backend", async () => {
+    // Validates: Requirements 4.1
+    await fc.assert(
+      fc.asyncProperty(fc.string({ minLength: 1 }), async (accessToken) => {
+        localStorage.clear()
+        const localDispatch = vi.fn()
+        const localService = createAuthService(localDispatch)
 
-            vi.stubGlobal(
-              "fetch",
-              vi.fn().mockResolvedValue({
-                ok: true,
-                status: 200,
-                json: async () => ({ accessToken, userId: "user-prop5" }),
-              } as Response),
-            )
+        vi.stubGlobal(
+          "fetch",
+          vi.fn().mockResolvedValue({
+            ok: true,
+            status: 200,
+            json: () => Promise.resolve({ accessToken, userId: "user-prop5" }),
+          } as Response)
+        )
 
-            await localService.register("new@example.com", "password123")
+        await localService.register("new@example.com", "password123")
 
-            const stored = localStorage.getItem(STORAGE_KEY)
-            vi.restoreAllMocks()
-            return stored === accessToken
-          },
-        ),
-        { numRuns: 100 },
-      )
-    },
-  )
+        const stored = localStorage.getItem(STORAGE_KEY)
+        vi.restoreAllMocks()
+        return stored === accessToken
+      }),
+      { numRuns: 100 }
+    )
+  })
 })

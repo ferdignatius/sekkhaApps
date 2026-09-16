@@ -96,7 +96,7 @@ export function ProfileSummaryCard({
   const flame = getFlameConfig(currentStreak)
 
   return (
-    <div className="rounded-[20px] border border-[#e5e5e5] bg-[#fffaf0] p-5 shadow-xs font-sans text-left">
+    <div className="rounded-[20px] border border-[#e5e5e5] bg-[#fffaf0] p-5 text-left font-sans shadow-xs">
       <div className="flex items-center gap-4">
         {/* Avatar */}
         <div className="shrink-0">
@@ -119,12 +119,14 @@ export function ProfileSummaryCard({
         {/* Name + level */}
         <div className="min-w-0 flex-1">
           <p className="truncate text-base font-bold text-[#0a0a0a]">{name}</p>
-          <div className="mt-1 flex items-center gap-1.5 flex-wrap">
-            <span className="rounded-full bg-[#f5f0e0] border border-[#e5e5e5] px-2.5 py-0.5 text-xs font-bold text-[#0a0a0a]">
+          <div className="mt-1 flex flex-wrap items-center gap-1.5">
+            <span className="rounded-full border border-[#e5e5e5] bg-[#f5f0e0] px-2.5 py-0.5 text-xs font-bold text-[#0a0a0a]">
               Lv.{level}
             </span>
             <span className="text-xs text-[#6a6a6a]">·</span>
-            <span className="text-xs font-semibold text-[#1a3a3a]">{levelLabel}</span>
+            <span className="text-xs font-semibold text-[#1a3a3a]">
+              {levelLabel}
+            </span>
           </div>
         </div>
       </div>
@@ -137,10 +139,10 @@ export function ProfileSummaryCard({
         >
           <FlameIcon className={`shrink-0 ${flame.size} ${flame.colorClass}`} />
           <div className="min-w-0">
-            <p className={`text-lg font-bold leading-none ${flame.colorClass}`}>
+            <p className={`text-lg leading-none font-bold ${flame.colorClass}`}>
               {currentStreak}
             </p>
-            <p className="mt-1 text-[11px] font-medium text-[#6a6a6a] truncate">
+            <p className="mt-1 truncate text-[11px] font-medium text-[#6a6a6a]">
               {currentStreak === 1 ? "week streak" : "weeks streak"}
             </p>
           </div>
@@ -153,10 +155,12 @@ export function ProfileSummaryCard({
             aria-hidden="true"
           />
           <div className="min-w-0">
-            <p className="text-lg font-bold leading-none text-[#0a0a0a]">
+            <p className="text-lg leading-none font-bold text-[#0a0a0a]">
               {totalPoints.toLocaleString("en-US")}
             </p>
-            <p className="mt-1 text-[11px] font-medium text-[#6a6a6a] truncate">total points</p>
+            <p className="mt-1 truncate text-[11px] font-medium text-[#6a6a6a]">
+              total points
+            </p>
           </div>
         </div>
       </div>

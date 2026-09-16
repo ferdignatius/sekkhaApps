@@ -5,7 +5,13 @@
 import React from "react"
 import { describe, it, expect, afterEach, vi } from "vitest"
 import * as fc from "fast-check"
-import { render, cleanup, within, screen, fireEvent } from "@testing-library/react"
+import {
+  render,
+  cleanup,
+  within,
+  screen,
+  fireEvent,
+} from "@testing-library/react"
 import { AuthFormField } from "../components/AuthFormField"
 
 // ─── Property 12: Setiap Field Input Memiliki Label yang Terhubung ─────────────
@@ -38,11 +44,10 @@ describe("AuthFormField — Property 3: ARIA attributes with/without error", () 
    *   - No element with id="{id}-error" should exist in the rendered output
    */
   it("sets aria-invalid=true and aria-describedby when error is present", () => {
-
     fc.assert(
       fc.property(
-        fc.string({ minLength: 1 }),   // arbitrary non-empty error message
-        validIdArb,                    // arbitrary valid HTML id
+        fc.string({ minLength: 1 }), // arbitrary non-empty error message
+        validIdArb, // arbitrary valid HTML id
         (errorMsg, fieldId) => {
           const { container, unmount } = render(
             <AuthFormField
@@ -52,7 +57,7 @@ describe("AuthFormField — Property 3: ARIA attributes with/without error", () 
               value=""
               onChange={() => {}}
               error={errorMsg}
-            />,
+            />
           )
 
           // Use within() to scope queries to this container only
@@ -68,20 +73,20 @@ describe("AuthFormField — Property 3: ARIA attributes with/without error", () 
 
           // The error element with that id must exist inside the container
           expect(
-            container.ownerDocument.getElementById(expectedErrorId),
+            container.ownerDocument.getElementById(expectedErrorId)
           ).not.toBeNull()
 
           unmount()
-        },
+        }
       ),
-      { numRuns: 100 },
+      { numRuns: 100 }
     )
   }, 30000)
 
   it("sets aria-invalid=false and omits aria-describedby when error is absent", () => {
     fc.assert(
       fc.property(
-        validIdArb,                    // arbitrary valid HTML id
+        validIdArb, // arbitrary valid HTML id
         (fieldId) => {
           const { container, unmount } = render(
             <AuthFormField
@@ -91,7 +96,7 @@ describe("AuthFormField — Property 3: ARIA attributes with/without error", () 
               value=""
               onChange={() => {}}
               // no error prop → field is valid
-            />,
+            />
           )
 
           // Use within() to scope queries to this container only
@@ -107,13 +112,13 @@ describe("AuthFormField — Property 3: ARIA attributes with/without error", () 
 
           // No error element should exist inside the container
           expect(
-            container.ownerDocument.getElementById(errorElementId),
+            container.ownerDocument.getElementById(errorElementId)
           ).toBeNull()
 
           unmount()
-        },
+        }
       ),
-      { numRuns: 100 },
+      { numRuns: 100 }
     )
   })
 })
@@ -121,7 +126,15 @@ describe("AuthFormField — Property 3: ARIA attributes with/without error", () 
 // Mock @tanstack/react-router so AuthForm can render without a router context.
 // Link is replaced with a plain <a> to keep DOM assertions straightforward.
 vi.mock("@tanstack/react-router", () => ({
-  Link: ({ to, children, ...rest }: { to: string; children: React.ReactNode; [key: string]: unknown }) => (
+  Link: ({
+    to,
+    children,
+    ...rest
+  }: {
+    to: string
+    children: React.ReactNode
+    [key: string]: unknown
+  }) => (
     <a href={String(to)} {...rest}>
       {children}
     </a>
@@ -131,7 +144,9 @@ vi.mock("@tanstack/react-router", () => ({
 // Mock SocialAuthButton to avoid the AuthProvider/useAuth dependency — the
 // accessibility property test is about label↔input linkage, not OAuth.
 vi.mock("../components/SocialAuthButton", () => ({
-  SocialAuthButton: () => <button type="button">Lanjutkan dengan Google</button>,
+  SocialAuthButton: () => (
+    <button type="button">Lanjutkan dengan Google</button>
+  ),
 }))
 
 // Default props shared by all renders — no loading, no error, empty fields.
@@ -158,81 +173,81 @@ describe("AuthForm — Property 12: Setiap Field Input Memiliki Label yang Terhu
    */
   it("sign-up mode: every input has a label connected via htmlFor/id", () => {
     fc.assert(
-      fc.property(
-        fc.constant(undefined),
-        () => {
-          const { unmount, container } = render(
-            <AuthForm {...defaultFormProps} mode="sign-up" />,
-          )
+      fc.property(fc.constant(undefined), () => {
+        const { unmount, container } = render(
+          <AuthForm {...defaultFormProps} mode="sign-up" />
+        )
 
-          const inputs = Array.from(container.querySelectorAll("input"))
-          const labels = Array.from(container.querySelectorAll("label"))
+        const inputs = Array.from(container.querySelectorAll("input"))
+        const labels = Array.from(container.querySelectorAll("label"))
 
-          // Build a map of label.htmlFor → label element for fast lookup
-          const labelForMap = new Map(labels.map((lbl) => [lbl.htmlFor, lbl]))
+        // Build a map of label.htmlFor → label element for fast lookup
+        const labelForMap = new Map(labels.map((lbl) => [lbl.htmlFor, lbl]))
 
-          for (const input of inputs) {
-            const inputId = input.id
+        for (const input of inputs) {
+          const inputId = input.id
 
-            // Every input must have a non-empty id
-            expect(inputId.length > 0, `Input without id found: ${input.outerHTML}`).toBe(true)
-
-            // A label whose htmlFor equals the input id must exist
-            expect(
-              labelForMap.has(inputId),
-              `No <label htmlFor="${inputId}"> found for input id="${inputId}"`,
-            ).toBe(true)
-          }
-
-          // No orphaned input (input with an id that has no matching label)
-          const orphans = inputs.filter((inp) => !labelForMap.has(inp.id))
+          // Every input must have a non-empty id
           expect(
-            orphans.length,
-            `Orphaned inputs (no label): ${orphans.map((i) => i.id).join(", ")}`,
-          ).toBe(0)
+            inputId.length > 0,
+            `Input without id found: ${input.outerHTML}`
+          ).toBe(true)
 
-          unmount()
-        },
-      ),
-      { numRuns: 100 },
+          // A label whose htmlFor equals the input id must exist
+          expect(
+            labelForMap.has(inputId),
+            `No <label htmlFor="${inputId}"> found for input id="${inputId}"`
+          ).toBe(true)
+        }
+
+        // No orphaned input (input with an id that has no matching label)
+        const orphans = inputs.filter((inp) => !labelForMap.has(inp.id))
+        expect(
+          orphans.length,
+          `Orphaned inputs (no label): ${orphans.map((i) => i.id).join(", ")}`
+        ).toBe(0)
+
+        unmount()
+      }),
+      { numRuns: 100 }
     )
   })
 
   it("login mode: every input has a label connected via htmlFor/id", () => {
     fc.assert(
-      fc.property(
-        fc.constant(undefined),
-        () => {
-          const { unmount, container } = render(
-            <AuthForm {...defaultFormProps} mode="login" />,
-          )
+      fc.property(fc.constant(undefined), () => {
+        const { unmount, container } = render(
+          <AuthForm {...defaultFormProps} mode="login" />
+        )
 
-          const inputs = Array.from(container.querySelectorAll("input"))
-          const labels = Array.from(container.querySelectorAll("label"))
+        const inputs = Array.from(container.querySelectorAll("input"))
+        const labels = Array.from(container.querySelectorAll("label"))
 
-          const labelForMap = new Map(labels.map((lbl) => [lbl.htmlFor, lbl]))
+        const labelForMap = new Map(labels.map((lbl) => [lbl.htmlFor, lbl]))
 
-          for (const input of inputs) {
-            const inputId = input.id
+        for (const input of inputs) {
+          const inputId = input.id
 
-            expect(inputId.length > 0, `Input without id found: ${input.outerHTML}`).toBe(true)
-
-            expect(
-              labelForMap.has(inputId),
-              `No <label htmlFor="${inputId}"> found for input id="${inputId}"`,
-            ).toBe(true)
-          }
-
-          const orphans = inputs.filter((inp) => !labelForMap.has(inp.id))
           expect(
-            orphans.length,
-            `Orphaned inputs (no label): ${orphans.map((i) => i.id).join(", ")}`,
-          ).toBe(0)
+            inputId.length > 0,
+            `Input without id found: ${input.outerHTML}`
+          ).toBe(true)
 
-          unmount()
-        },
-      ),
-      { numRuns: 100 },
+          expect(
+            labelForMap.has(inputId),
+            `No <label htmlFor="${inputId}"> found for input id="${inputId}"`
+          ).toBe(true)
+        }
+
+        const orphans = inputs.filter((inp) => !labelForMap.has(inp.id))
+        expect(
+          orphans.length,
+          `Orphaned inputs (no label): ${orphans.map((i) => i.id).join(", ")}`
+        ).toBe(0)
+
+        unmount()
+      }),
+      { numRuns: 100 }
     )
   })
 })
@@ -252,63 +267,53 @@ describe("AuthForm — Property 4: Tombol Submit Selalu Disabled Selama Request 
    */
   it("sign-up mode: submit button is disabled iff isLoading is true", () => {
     fc.assert(
-      fc.property(
-        fc.boolean(),
-        (isLoading) => {
-          const { unmount, container } = render(
-            <AuthForm
-              {...defaultFormProps}
-              mode="sign-up"
-              isLoading={isLoading}
-            />,
-          )
+      fc.property(fc.boolean(), (isLoading) => {
+        const { unmount, container } = render(
+          <AuthForm
+            {...defaultFormProps}
+            mode="sign-up"
+            isLoading={isLoading}
+          />
+        )
 
-          const submitButton = container.querySelector<HTMLButtonElement>(
-            'button[type="submit"]',
-          )
-          expect(submitButton).not.toBeNull()
+        const submitButton = container.querySelector<HTMLButtonElement>(
+          'button[type="submit"]'
+        )
+        expect(submitButton).not.toBeNull()
 
-          if (isLoading) {
-            expect(submitButton!.disabled).toBe(true)
-          } else {
-            expect(submitButton!.disabled).toBe(false)
-          }
+        if (isLoading) {
+          expect(submitButton!.disabled).toBe(true)
+        } else {
+          expect(submitButton!.disabled).toBe(false)
+        }
 
-          unmount()
-        },
-      ),
-      { numRuns: 100 },
+        unmount()
+      }),
+      { numRuns: 100 }
     )
   })
 
   it("login mode: submit button is disabled iff isLoading is true", () => {
     fc.assert(
-      fc.property(
-        fc.boolean(),
-        (isLoading) => {
-          const { unmount, container } = render(
-            <AuthForm
-              {...defaultFormProps}
-              mode="login"
-              isLoading={isLoading}
-            />,
-          )
+      fc.property(fc.boolean(), (isLoading) => {
+        const { unmount, container } = render(
+          <AuthForm {...defaultFormProps} mode="login" isLoading={isLoading} />
+        )
 
-          const submitButton = container.querySelector<HTMLButtonElement>(
-            'button[type="submit"]',
-          )
-          expect(submitButton).not.toBeNull()
+        const submitButton = container.querySelector<HTMLButtonElement>(
+          'button[type="submit"]'
+        )
+        expect(submitButton).not.toBeNull()
 
-          if (isLoading) {
-            expect(submitButton!.disabled).toBe(true)
-          } else {
-            expect(submitButton!.disabled).toBe(false)
-          }
+        if (isLoading) {
+          expect(submitButton!.disabled).toBe(true)
+        } else {
+          expect(submitButton!.disabled).toBe(false)
+        }
 
-          unmount()
-        },
-      ),
-      { numRuns: 100 },
+        unmount()
+      }),
+      { numRuns: 100 }
     )
   })
 })
@@ -331,7 +336,7 @@ describe("AuthForm — Property 11: Auth_Error_Banner Hilang Saat Pengguna Mulai
   it("banner is visible and onInputChange is called on first keystroke (sign-up mode)", () => {
     fc.assert(
       fc.property(
-        fc.string({ minLength: 1 }),  // arbitrary non-empty error message
+        fc.string({ minLength: 1 }), // arbitrary non-empty error message
         (errorMessage) => {
           const onInputChange = vi.fn()
 
@@ -341,16 +346,24 @@ describe("AuthForm — Property 11: Auth_Error_Banner Hilang Saat Pengguna Mulai
               mode="sign-up"
               apiError={errorMessage}
               onInputChange={onInputChange}
-            />,
+            />
           )
 
           // The banner must be visible when apiError is non-null
           const banner = container.querySelector('[role="alert"]')
-          expect(banner, "Auth_Error_Banner should be rendered when apiError is set").not.toBeNull()
+          expect(
+            banner,
+            "Auth_Error_Banner should be rendered when apiError is set"
+          ).not.toBeNull()
 
           // Simulate the first keystroke on the email field
-          const emailInput = container.querySelector('input[id="email"]') as HTMLInputElement
-          expect(emailInput, "Email input should be present in the form").not.toBeNull()
+          const emailInput = container.querySelector(
+            'input[id="email"]'
+          ) as HTMLInputElement
+          expect(
+            emailInput,
+            "Email input should be present in the form"
+          ).not.toBeNull()
 
           fireEvent.change(emailInput, { target: { value: "a" } })
 
@@ -358,16 +371,16 @@ describe("AuthForm — Property 11: Auth_Error_Banner Hilang Saat Pengguna Mulai
           expect(onInputChange).toHaveBeenCalled()
 
           unmount()
-        },
+        }
       ),
-      { numRuns: 100 },
+      { numRuns: 100 }
     )
   })
 
   it("banner is visible and onInputChange is called on first keystroke (login mode)", () => {
     fc.assert(
       fc.property(
-        fc.string({ minLength: 1 }),  // arbitrary non-empty error message
+        fc.string({ minLength: 1 }), // arbitrary non-empty error message
         (errorMessage) => {
           const onInputChange = vi.fn()
 
@@ -377,16 +390,24 @@ describe("AuthForm — Property 11: Auth_Error_Banner Hilang Saat Pengguna Mulai
               mode="login"
               apiError={errorMessage}
               onInputChange={onInputChange}
-            />,
+            />
           )
 
           // The banner must be visible when apiError is non-null
           const banner = container.querySelector('[role="alert"]')
-          expect(banner, "Auth_Error_Banner should be rendered when apiError is set").not.toBeNull()
+          expect(
+            banner,
+            "Auth_Error_Banner should be rendered when apiError is set"
+          ).not.toBeNull()
 
           // Simulate the first keystroke on the email field
-          const emailInput = container.querySelector('input[id="email"]') as HTMLInputElement
-          expect(emailInput, "Email input should be present in the form").not.toBeNull()
+          const emailInput = container.querySelector(
+            'input[id="email"]'
+          ) as HTMLInputElement
+          expect(
+            emailInput,
+            "Email input should be present in the form"
+          ).not.toBeNull()
 
           fireEvent.change(emailInput, { target: { value: "a" } })
 
@@ -394,9 +415,9 @@ describe("AuthForm — Property 11: Auth_Error_Banner Hilang Saat Pengguna Mulai
           expect(onInputChange).toHaveBeenCalled()
 
           unmount()
-        },
+        }
       ),
-      { numRuns: 100 },
+      { numRuns: 100 }
     )
   })
 })
@@ -418,7 +439,7 @@ describe("AuthForm — unit tests (task 7.2)", () => {
         {...defaultFormProps}
         mode="sign-up"
         fields={{ email: "", password: "", confirmPassword: "" }}
-      />,
+      />
     )
 
     const inputs = container.querySelectorAll("input")
@@ -439,7 +460,7 @@ describe("AuthForm — unit tests (task 7.2)", () => {
    */
   it('mode "login" renders 2 fields: email and password only', () => {
     const { container, unmount } = render(
-      <AuthForm {...defaultFormProps} mode="login" />,
+      <AuthForm {...defaultFormProps} mode="login" />
     )
 
     const inputs = container.querySelectorAll("input")
@@ -514,7 +535,9 @@ describe("AuthForm — unit tests (task 7.2)", () => {
     const { unmount } = render(<SignUpHarness />)
 
     // Submit with all fields empty — find the form by its aria-label
-    const formEl = screen.getByRole("form", { name: /(sign up form|formulir pendaftaran)/i })
+    const formEl = screen.getByRole("form", {
+      name: /(sign up form|formulir pendaftaran)/i,
+    })
     fireEvent.submit(formEl)
 
     // Allow state updates to propagate
@@ -537,10 +560,12 @@ describe("AuthForm — unit tests (task 7.2)", () => {
    */
   it("submit button is disabled when isLoading=true", () => {
     const { container, unmount } = render(
-      <AuthForm {...defaultFormProps} mode="login" isLoading={true} />,
+      <AuthForm {...defaultFormProps} mode="login" isLoading={true} />
     )
 
-    const submitBtn = container.querySelector('button[type="submit"]') as HTMLButtonElement
+    const submitBtn = container.querySelector(
+      'button[type="submit"]'
+    ) as HTMLButtonElement
     expect(submitBtn).not.toBeNull()
     expect(submitBtn.disabled).toBe(true)
 
@@ -549,10 +574,12 @@ describe("AuthForm — unit tests (task 7.2)", () => {
 
   it("submit button is enabled when isLoading=false", () => {
     const { container, unmount } = render(
-      <AuthForm {...defaultFormProps} mode="login" isLoading={false} />,
+      <AuthForm {...defaultFormProps} mode="login" isLoading={false} />
     )
 
-    const submitBtn = container.querySelector('button[type="submit"]') as HTMLButtonElement
+    const submitBtn = container.querySelector(
+      'button[type="submit"]'
+    ) as HTMLButtonElement
     expect(submitBtn).not.toBeNull()
     expect(submitBtn.disabled).toBe(false)
 
@@ -572,7 +599,7 @@ describe("AuthForm — unit tests (task 7.2)", () => {
         mode="login"
         apiError="Terjadi kesalahan."
         onInputChange={onInputChangeSpy}
-      />,
+      />
     )
 
     // The error banner must be visible before typing
@@ -597,10 +624,12 @@ describe("AuthForm — unit tests (task 7.2)", () => {
         mode="login"
         apiError="Terjadi kesalahan."
         onInputChange={onInputChangeSpy}
-      />,
+      />
     )
 
-    const passwordInput = container.querySelector("#password") as HTMLInputElement
+    const passwordInput = container.querySelector(
+      "#password"
+    ) as HTMLInputElement
     fireEvent.change(passwordInput, { target: { value: "x" } })
 
     expect(onInputChangeSpy).toHaveBeenCalled()

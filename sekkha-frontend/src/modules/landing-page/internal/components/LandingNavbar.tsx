@@ -1,11 +1,11 @@
-import * as React from 'react'
-import { motion, AnimatePresence } from 'motion/react'
-import { Button } from '@/components/base/Button'
-import { cn } from '@/lib/utils'
+import * as React from "react"
+import { motion, AnimatePresence } from "motion/react"
+import { Button } from "@/components/base/Button"
+import { cn } from "@/lib/utils"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type AuthState = 'loading' | 'authenticated' | 'unauthenticated'
+type AuthState = "loading" | "authenticated" | "unauthenticated"
 
 interface NavLink {
   label: string
@@ -20,24 +20,24 @@ interface LandingNavbarProps {
 // ─── Nav links ────────────────────────────────────────────────────────────────
 
 const NAV_LINKS: NavLink[] = [
-  { label: 'Events', href: '#events' },
-  { label: 'Community', href: '#features' },
-  { label: 'Leaderboard', href: '#leaderboard' },
+  { label: "Events", href: "#events" },
+  { label: "Community", href: "#features" },
+  { label: "Leaderboard", href: "#leaderboard" },
 ]
 
 // ─── Desktop CTA (right side, desktop/tablet only) ───────────────────────────
 
 function DesktopCTA({ authState }: { authState: AuthState }) {
-  if (authState === 'loading') {
+  if (authState === "loading") {
     return (
-      <div className="hidden md:flex items-center gap-3">
+      <div className="hidden items-center gap-3 md:flex">
         <div
-          className="animate-pulse bg-sekkha-hairline rounded-md"
+          className="animate-pulse rounded-md bg-sekkha-hairline"
           style={{ width: 100, height: 40 }}
           aria-hidden="true"
         />
         <div
-          className="animate-pulse bg-sekkha-hairline rounded-md"
+          className="animate-pulse rounded-md bg-sekkha-hairline"
           style={{ width: 130, height: 40 }}
           aria-hidden="true"
         />
@@ -45,10 +45,14 @@ function DesktopCTA({ authState }: { authState: AuthState }) {
     )
   }
 
-  if (authState === 'authenticated') {
+  if (authState === "authenticated") {
     return (
-      <div className="hidden md:flex items-center">
-        <Button variant="primary" asChild className="rounded-[12px] h-[44px] px-5 bg-sekkha-primary text-white font-semibold">
+      <div className="hidden items-center md:flex">
+        <Button
+          variant="primary"
+          asChild
+          className="h-[44px] rounded-[12px] bg-sekkha-primary px-5 font-semibold text-white"
+        >
           <a href="/home">Dashboard</a>
         </Button>
       </div>
@@ -56,11 +60,19 @@ function DesktopCTA({ authState }: { authState: AuthState }) {
   }
 
   return (
-    <div className="hidden md:flex items-center gap-3">
-      <Button variant="secondary" asChild className="rounded-[12px] h-[44px] px-5 bg-sekkha-canvas border border-sekkha-hairline !text-sekkha-ink font-semibold hover:bg-sekkha-surface">
+    <div className="hidden items-center gap-3 md:flex">
+      <Button
+        variant="secondary"
+        asChild
+        className="h-[44px] rounded-[12px] border border-sekkha-hairline bg-sekkha-canvas px-5 font-semibold !text-sekkha-ink hover:bg-sekkha-surface"
+      >
         <a href="/login">Sign In</a>
       </Button>
-      <Button variant="primary" asChild className="rounded-[12px] h-[44px] px-5 bg-sekkha-primary hover:bg-[#1f1f1f] !text-white font-semibold shadow-xs">
+      <Button
+        variant="primary"
+        asChild
+        className="h-[44px] rounded-[12px] bg-sekkha-primary px-5 font-semibold !text-white shadow-xs hover:bg-[#1f1f1f]"
+      >
         <a href="/sign-up">Join for Free</a>
       </Button>
     </div>
@@ -70,26 +82,34 @@ function DesktopCTA({ authState }: { authState: AuthState }) {
 // ─── Mobile inline CTA (always visible on mobile, beside hamburger) ───────────
 
 function MobileInlineCTA({ authState }: { authState: AuthState }) {
-  if (authState === 'loading') {
+  if (authState === "loading") {
     return (
       <div
-        className="md:hidden animate-pulse bg-sekkha-hairline rounded-md"
+        className="animate-pulse rounded-md bg-sekkha-hairline md:hidden"
         style={{ width: 72, height: 36 }}
         aria-hidden="true"
       />
     )
   }
 
-  if (authState === 'authenticated') {
+  if (authState === "authenticated") {
     return (
-      <Button variant="primary" asChild className="md:hidden text-body-sm px-4 py-2 h-[38px] rounded-[10px] bg-sekkha-primary text-white font-semibold">
+      <Button
+        variant="primary"
+        asChild
+        className="text-body-sm h-[38px] rounded-[10px] bg-sekkha-primary px-4 py-2 font-semibold text-white md:hidden"
+      >
         <a href="/home">Dashboard</a>
       </Button>
     )
   }
 
   return (
-    <Button variant="primary" asChild className="md:hidden text-body-sm px-4 py-2 h-[38px] rounded-[10px] bg-sekkha-primary text-white font-semibold">
+    <Button
+      variant="primary"
+      asChild
+      className="text-body-sm h-[38px] rounded-[10px] bg-sekkha-primary px-4 py-2 font-semibold text-white md:hidden"
+    >
       <a href="/login">Sign In</a>
     </Button>
   )
@@ -116,8 +136,24 @@ function HamburgerIcon({ isOpen }: { isOpen: boolean }) {
             exit={{ opacity: 0, rotate: 45 }}
             transition={{ duration: 0.18 }}
           >
-            <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth={2} strokeLinecap="round" />
-            <line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" strokeWidth={2} strokeLinecap="round" />
+            <line
+              x1="6"
+              y1="6"
+              x2="18"
+              y2="18"
+              stroke="currentColor"
+              strokeWidth={2}
+              strokeLinecap="round"
+            />
+            <line
+              x1="18"
+              y1="6"
+              x2="6"
+              y2="18"
+              stroke="currentColor"
+              strokeWidth={2}
+              strokeLinecap="round"
+            />
           </motion.g>
         ) : (
           <motion.g
@@ -127,9 +163,33 @@ function HamburgerIcon({ isOpen }: { isOpen: boolean }) {
             exit={{ opacity: 0, rotate: -45 }}
             transition={{ duration: 0.18 }}
           >
-            <line x1="4" y1="7" x2="20" y2="7" stroke="currentColor" strokeWidth={2} strokeLinecap="round" />
-            <line x1="4" y1="12" x2="20" y2="12" stroke="currentColor" strokeWidth={2} strokeLinecap="round" />
-            <line x1="4" y1="17" x2="20" y2="17" stroke="currentColor" strokeWidth={2} strokeLinecap="round" />
+            <line
+              x1="4"
+              y1="7"
+              x2="20"
+              y2="7"
+              stroke="currentColor"
+              strokeWidth={2}
+              strokeLinecap="round"
+            />
+            <line
+              x1="4"
+              y1="12"
+              x2="20"
+              y2="12"
+              stroke="currentColor"
+              strokeWidth={2}
+              strokeLinecap="round"
+            />
+            <line
+              x1="4"
+              y1="17"
+              x2="20"
+              y2="17"
+              stroke="currentColor"
+              strokeWidth={2}
+              strokeLinecap="round"
+            />
           </motion.g>
         )}
       </AnimatePresence>
@@ -147,21 +207,27 @@ interface MobileDrawerProps {
   firstFocusableRef: React.RefObject<HTMLAnchorElement | null>
 }
 
-function MobileDrawer({ isOpen, onClose, authState, navLinks, firstFocusableRef }: MobileDrawerProps) {
+function MobileDrawer({
+  isOpen,
+  onClose,
+  authState,
+  navLinks,
+  firstFocusableRef,
+}: MobileDrawerProps) {
   const drawerRef = React.useRef<HTMLDivElement>(null)
 
   React.useEffect(() => {
     if (!isOpen) return
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+      if (e.key === "Escape") {
         onClose()
         return
       }
-      if (e.key !== 'Tab') return
+      if (e.key !== "Tab") return
       const drawer = drawerRef.current
       if (!drawer) return
       const focusables = drawer.querySelectorAll<HTMLElement>(
-        'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'
       )
       if (focusables.length === 0) return
       const first = focusables[0]
@@ -174,8 +240,8 @@ function MobileDrawer({ isOpen, onClose, authState, navLinks, firstFocusableRef 
         first.focus()
       }
     }
-    document.addEventListener('keydown', handleKeyDown)
-    return () => document.removeEventListener('keydown', handleKeyDown)
+    document.addEventListener("keydown", handleKeyDown)
+    return () => document.removeEventListener("keydown", handleKeyDown)
   }, [isOpen, onClose])
 
   return (
@@ -200,21 +266,24 @@ function MobileDrawer({ isOpen, onClose, authState, navLinks, firstFocusableRef 
             role="dialog"
             aria-modal="true"
             aria-label="Navigation menu"
-            className="fixed inset-x-0 top-16 z-50 bg-sekkha-canvas border-t border-sekkha-hairline shadow-lg max-h-[calc(100dvh-4rem)] overflow-y-auto"
+            className="fixed inset-x-0 top-16 z-50 max-h-[calc(100dvh-4rem)] overflow-y-auto border-t border-sekkha-hairline bg-sekkha-canvas shadow-lg"
             initial={{ opacity: 0, y: -12 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}
             transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
           >
-            <nav aria-label="Mobile navigation" className="flex flex-col px-6 py-6 gap-4">
+            <nav
+              aria-label="Mobile navigation"
+              className="flex flex-col gap-4 px-6 py-6"
+            >
               {navLinks.map((link, idx) => (
                 <a
                   key={link.href}
                   href={link.href}
                   ref={idx === 0 ? firstFocusableRef : undefined}
                   className={cn(
-                    'text-body-md text-sekkha-ink py-2 font-medium',
-                    'focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-sekkha-primary focus-visible:outline-none rounded-md',
+                    "text-body-md py-2 font-medium text-sekkha-ink",
+                    "rounded-md focus-visible:ring-2 focus-visible:ring-sekkha-primary focus-visible:ring-offset-2 focus-visible:outline-none"
                   )}
                   onClick={onClose}
                 >
@@ -223,20 +292,38 @@ function MobileDrawer({ isOpen, onClose, authState, navLinks, firstFocusableRef 
               ))}
 
               {/* Extra CTA in drawer */}
-              <div className="flex flex-col gap-3 pt-3 border-t border-sekkha-hairline">
-                {authState === 'unauthenticated' && (
+              <div className="flex flex-col gap-3 border-t border-sekkha-hairline pt-3">
+                {authState === "unauthenticated" && (
                   <>
-                    <Button variant="secondary" asChild className="h-11 rounded-[12px] bg-white border border-sekkha-hairline !text-sekkha-ink font-semibold">
-                      <a href="/login" onClick={onClose}>Sign In</a>
+                    <Button
+                      variant="secondary"
+                      asChild
+                      className="h-11 rounded-[12px] border border-sekkha-hairline bg-white font-semibold !text-sekkha-ink"
+                    >
+                      <a href="/login" onClick={onClose}>
+                        Sign In
+                      </a>
                     </Button>
-                    <Button variant="primary" asChild className="h-11 rounded-[12px] bg-sekkha-primary text-white font-semibold">
-                      <a href="/sign-up" onClick={onClose}>Join for Free</a>
+                    <Button
+                      variant="primary"
+                      asChild
+                      className="h-11 rounded-[12px] bg-sekkha-primary font-semibold text-white"
+                    >
+                      <a href="/sign-up" onClick={onClose}>
+                        Join for Free
+                      </a>
                     </Button>
                   </>
                 )}
-                {authState === 'authenticated' && (
-                  <Button variant="primary" asChild className="h-11 rounded-[12px] bg-sekkha-primary text-white font-semibold">
-                    <a href="/home" onClick={onClose}>Dashboard</a>
+                {authState === "authenticated" && (
+                  <Button
+                    variant="primary"
+                    asChild
+                    className="h-11 rounded-[12px] bg-sekkha-primary font-semibold text-white"
+                  >
+                    <a href="/home" onClick={onClose}>
+                      Dashboard
+                    </a>
                   </Button>
                 )}
               </div>
@@ -270,7 +357,9 @@ export function LandingNavbar({ authState, scrollY }: LandingNavbarProps) {
   // Focus management: move focus to first drawer link when drawer opens
   React.useEffect(() => {
     if (isDrawerOpen) {
-      const id = requestAnimationFrame(() => firstDrawerLinkRef.current?.focus())
+      const id = requestAnimationFrame(() =>
+        firstDrawerLinkRef.current?.focus()
+      )
       return () => cancelAnimationFrame(id)
     }
   }, [isDrawerOpen])
@@ -290,38 +379,41 @@ export function LandingNavbar({ authState, scrollY }: LandingNavbarProps) {
   return (
     <header
       className={cn(
-        'sticky top-0 z-50 h-16 bg-sekkha-canvas transition-all duration-300',
-        isScrolledPastNavbar && 'backdrop-blur-md bg-white/80 glass-nav',
-        hasScrolled && 'border-b border-sekkha-hairline shadow-sm',
+        "sticky top-0 z-50 h-16 bg-sekkha-canvas transition-all duration-300",
+        isScrolledPastNavbar && "glass-nav bg-white/80 backdrop-blur-md",
+        hasScrolled && "border-b border-sekkha-hairline shadow-sm"
       )}
     >
       <div className="mx-auto flex h-full w-full max-w-[1280px] items-center justify-between px-4 md:px-8">
-
         {/* Logo */}
         <a
           href="/"
           className={cn(
-            'flex items-center gap-2.5 text-heading-5 text-sekkha-ink shrink-0 font-bold',
-            'focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-sekkha-primary focus-visible:outline-none rounded-sm',
+            "text-heading-5 flex shrink-0 items-center gap-2.5 font-bold text-sekkha-ink",
+            "rounded-sm focus-visible:ring-2 focus-visible:ring-sekkha-primary focus-visible:ring-offset-2 focus-visible:outline-none"
           )}
           aria-label="Sekkha — Kembali ke beranda"
         >
-          <img src="/sekkha_logo.svg" alt="" className="size-7 object-contain" />
+          <img
+            src="/sekkha_logo.svg"
+            alt=""
+            className="size-7 object-contain"
+          />
           <span>Sekkha</span>
         </a>
 
         {/* Desktop nav links */}
         <nav
           aria-label="Main navigation"
-          className="hidden md:flex items-center gap-6"
+          className="hidden items-center gap-6 md:flex"
         >
           {NAV_LINKS.map((link) => (
             <a
               key={link.href}
               href={link.href}
               className={cn(
-                'text-body-sm-medium text-sekkha-ink',
-                'focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-sekkha-primary focus-visible:outline-none rounded-sm',
+                "text-body-sm-medium text-sekkha-ink",
+                "rounded-sm focus-visible:ring-2 focus-visible:ring-sekkha-primary focus-visible:ring-offset-2 focus-visible:outline-none"
               )}
             >
               {link.label}
@@ -333,19 +425,21 @@ export function LandingNavbar({ authState, scrollY }: LandingNavbarProps) {
         <DesktopCTA authState={authState} />
 
         {/* Mobile right cluster: inline login/home btn + hamburger */}
-        <div className="md:hidden flex items-center gap-2">
+        <div className="flex items-center gap-2 md:hidden">
           <MobileInlineCTA authState={authState} />
 
           <button
             ref={hamburgerRef}
             type="button"
-            aria-label={isDrawerOpen ? 'Tutup menu navigasi' : 'Buka menu navigasi'}
+            aria-label={
+              isDrawerOpen ? "Tutup menu navigasi" : "Buka menu navigasi"
+            }
             aria-expanded={isDrawerOpen}
             aria-controls="mobile-nav-drawer"
             onClick={isDrawerOpen ? closeDrawer : openDrawer}
             className={cn(
-              'flex items-center justify-center text-sekkha-ink p-1',
-              'focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-sekkha-primary focus-visible:outline-none rounded-sm',
+              "flex items-center justify-center p-1 text-sekkha-ink",
+              "rounded-sm focus-visible:ring-2 focus-visible:ring-sekkha-primary focus-visible:ring-offset-2 focus-visible:outline-none"
             )}
           >
             <HamburgerIcon isOpen={isDrawerOpen} />

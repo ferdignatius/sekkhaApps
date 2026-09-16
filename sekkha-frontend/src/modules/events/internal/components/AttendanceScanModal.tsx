@@ -81,7 +81,8 @@ export function AttendanceScanModal({
   onRecord,
   onClose,
 }: AttendanceScanModalProps) {
-  const isPengurus = role === "pengurus" || role === "admin" || role === "aktivis"
+  const isPengurus =
+    role === "pengurus" || role === "admin" || role === "aktivis"
 
   // Mode for Pengurus: 'camera' | 'search'
   const [pengurusMode, setPengurusMode] = useState<"camera" | "search">(
@@ -435,7 +436,7 @@ export function AttendanceScanModal({
   }
 
   // Umat Manual Submit
-  async function handleUmatManualSubmit(e: React.FormEvent) {
+  function handleUmatManualSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!codeInput.trim()) {
       setCodeError("Masukkan kode terlebih dahulu")

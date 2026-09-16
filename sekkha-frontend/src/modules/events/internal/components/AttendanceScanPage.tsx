@@ -6,7 +6,6 @@ import {
   CameraIcon,
   SearchIcon,
   AlertTriangleIcon,
-  KeyboardIcon,
   ListFilterIcon,
   ChevronDownIcon,
   ImageIcon,
@@ -15,7 +14,9 @@ import {
   XIcon,
 } from "lucide-react"
 import { useAuth } from "@/modules/auth"
-import { api } from "@/lib/api"
+import { api, API_BASE_URL } from "@/lib/api"
+import { safeStorage } from "@/lib/storage"
+import QRCode from "react-qr-code"
 import { teamsApi } from "@/modules/teams/internal/api/teamsApi"
 import type { MemberDto } from "@/modules/teams/internal/api/teamsApi"
 import type { EventListItem, AttendanceRecord, UserRole } from "../types"
@@ -61,7 +62,8 @@ export function AttendanceScanPage() {
 
   const { authState } = useAuth()
   const role: UserRole | null = authState.role ?? null
-  const isPengurus = role === "pengurus" || role === "admin" || role === "aktivis"
+  const isPengurus =
+    role === "pengurus" || role === "admin" || role === "aktivis"
 
   // Event and attendances data state
   const [event, setEvent] = useState<EventListItem | null>(null)
@@ -71,9 +73,6 @@ export function AttendanceScanPage() {
   const [pengurusMode, setPengurusMode] = useState<"camera" | "search">(
     "camera"
   )
-
-  // Mode for Umat: 'camera' | 'manual'
-  const [umatMode, setUmatMode] = useState<"camera" | "manual">("camera")
 
   // Camera Switcher state
   const [cameras, setCameras] = useState<Array<{ id: string; label: string }>>(
@@ -112,11 +111,6 @@ export function AttendanceScanPage() {
     subtitle: string
   } | null>(null)
   const feedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  // Manual input state
-  const [codeInput, setCodeInput] = useState("")
-  const [codeError, setCodeError] = useState("")
-  const [submitting, setSubmitting] = useState(false)
 
   // Photo upload ref
   const uploadInputRef = useRef<HTMLInputElement | null>(null)
@@ -160,6 +154,35 @@ export function AttendanceScanPage() {
       .finally(() => setLoadingEvent(false))
   }, [eventId])
 
+  // Member personal profile state (for Umat QR identification card)
+  const [memberProfile, setMemberProfile] = useState<{
+    name?: string
+    userNumber?: string | null
+    role?: string
+  } | null>(null)
+
+  useEffect(() => {
+    if (!isPengurus) {
+      api
+        .get<any>("/users/me")
+        .then((res) => {
+          if (res) {
+            setMemberProfile({
+              name:
+                res.profile?.name ||
+                res.name ||
+                authState.name ||
+                "Sahabat Sekkha",
+              userNumber:
+                res.userNumber || res.user_number || res.id || authState.userId,
+              role: res.role || authState.role || "umat",
+            })
+          }
+        })
+        .catch(() => {})
+    }
+  }, [isPengurus, authState])
+
   // Load People list for Pengurus manual search
   useEffect(() => {
     if (isPengurus) {
@@ -172,6 +195,70 @@ export function AttendanceScanPage() {
         .catch((err) => console.error("Gagal memuat People list:", err))
     }
   }, [isPengurus])
+
+  // FE-10: Connect to real-time Server-Sent Events (SSE) live attendance stream for organizers
+  useEffect(() => {
+    if (!eventId || !isPengurus) return
+
+    const token = safeStorage.getItem("sekkha_access_token")
+    if (!token) return
+
+    const streamUrl = `${API_BASE_URL}/events/${eventId}/live-attendance?token=${encodeURIComponent(token)}`
+    const sse = new EventSource(streamUrl)
+
+    sse.onmessage = (e) => {
+      try {
+        const payload = JSON.parse(e.data)
+        if (payload.type === "ATTENDANCE_RECORDED" && payload.data) {
+          const scan = payload.data
+          const attendeeId = scan.userId
+          if (attendeeId) {
+            setSessionAttendedIds((prev) => new Set(prev).add(attendeeId))
+            setSessionSuccessCount((prev) => prev + 1)
+            const timeStr = scan.scannedAt
+              ? new Date(scan.scannedAt).toLocaleTimeString("en-US", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  second: "2-digit",
+                })
+              : new Date().toLocaleTimeString("en-US", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  second: "2-digit",
+                })
+
+            setRecentScans((prev) => {
+              if (prev.some((item) => item.userId === attendeeId)) {
+                return prev
+              }
+              return [
+                {
+                  id: scan.attendanceId || String(Date.now()),
+                  userId: attendeeId,
+                  name: scan.name || "Anggota",
+                  userNumber: scan.userNumber,
+                  time: timeStr,
+                  status: "success",
+                  message: "Presensi tercatat (Live SSE)",
+                },
+                ...prev.slice(0, 19),
+              ]
+            })
+          }
+        }
+      } catch (err) {
+        console.error("Failed to parse live attendance SSE event:", err)
+      }
+    }
+
+    sse.onerror = () => {
+      // Browser EventSource automatically reconnects on network disconnect
+    }
+
+    return () => {
+      sse.close()
+    }
+  }, [eventId, isPengurus])
 
   function triggerFeedback(
     type: "success" | "duplicate" | "error",
@@ -221,7 +308,6 @@ export function AttendanceScanPage() {
 
   // ── Non-Blocking Background Async Process for Organizer (scanning Attendee's QR) ──
   function processPengurusQrText(rawText: string) {
-    setCodeError("")
     let parsedQuery = rawText.trim().toLowerCase()
 
     try {
@@ -426,124 +512,6 @@ export function AttendanceScanPage() {
     }
   }
 
-  // ── Non-Blocking Background Async Process for Member ──
-  async function processUmatQrText(rawText: string) {
-    setCodeError("")
-    let scannedCode = rawText.trim().toUpperCase()
-
-    try {
-      if (rawText.startsWith("{") && rawText.endsWith("}")) {
-        const parsed = JSON.parse(rawText)
-        scannedCode = (parsed.code || parsed.eventCode || rawText)
-          .toString()
-          .trim()
-          .toUpperCase()
-      }
-    } catch {}
-
-    if (
-      event?.qr_code?.code &&
-      scannedCode !== event.qr_code.code.toUpperCase()
-    ) {
-      playWarningChime()
-      setCodeError("QR Code does not match this event.")
-      return
-    }
-
-    if (eventId) {
-      setSubmitting(true)
-      try {
-        await api.post(`/events/${eventId}/attendance`, {
-          method: "qr",
-          qr_code: scannedCode,
-        })
-        triggerFeedback(
-          "success",
-          "Self Check-In Successful! 🎉",
-          "Your attendance has been recorded."
-        )
-      } catch (err: any) {
-        playWarningChime()
-        if (
-          err.message?.includes("already") ||
-          err.error === "DUPLICATE_ATTENDANCE"
-        ) {
-          triggerFeedback(
-            "duplicate",
-            "Already Checked In ⚠️",
-            "You are already recorded for this event."
-          )
-        } else if (
-          err.error?.includes("tidak valid") ||
-          err.message?.includes("tidak valid")
-        ) {
-          setCodeError("QR Code does not match this event.")
-        } else {
-          setCodeError(err.message || "Failed to record self attendance.")
-        }
-      } finally {
-        setSubmitting(false)
-      }
-    }
-  }
-
-  // Manual submission for Member
-  async function handleUmatManualSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setCodeError("")
-    const code = codeInput.trim()
-    if (!code) {
-      setCodeError("Please enter the event code.")
-      return
-    }
-
-    if (
-      event?.qr_code?.code &&
-      code.toUpperCase() !== event.qr_code.code.toUpperCase()
-    ) {
-      playWarningChime()
-      setCodeError("The entered code does not match the event code.")
-      return
-    }
-
-    try {
-      setSubmitting(true)
-      if (eventId) {
-        await api.post(`/events/${eventId}/attendance`, {
-          method: "qr",
-          qr_code: code,
-        })
-      }
-      triggerFeedback(
-        "success",
-        "Self Check-In Successful! 🎉",
-        "Your attendance has been recorded."
-      )
-      setCodeInput("")
-    } catch (err: any) {
-      playWarningChime()
-      if (
-        err.message?.includes("already") ||
-        err.error === "DUPLICATE_ATTENDANCE"
-      ) {
-        triggerFeedback(
-          "duplicate",
-          "Already Checked In ⚠️",
-          "You are already recorded for this event."
-        )
-      } else if (
-        err.error?.includes("tidak valid") ||
-        err.message?.includes("tidak valid")
-      ) {
-        setCodeError("The entered code does not match the event code.")
-      } else {
-        setCodeError(err.message || "Failed to record attendance.")
-      }
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
   // Filtered people for manual search
   const filteredPeople = searchQuery.trim()
     ? peopleList.filter(
@@ -595,8 +563,6 @@ export function AttendanceScanPage() {
         const decoded = await tempScanner.scanFile(file, true)
         if (isPengurus) {
           processPengurusQrText(decoded)
-        } else {
-          processUmatQrText(decoded)
         }
       } finally {
         try {
@@ -741,7 +707,7 @@ export function AttendanceScanPage() {
           pengurusMode === "camera" ? (
             <QrScannerCamera
               onScan={processPengurusQrText}
-              onError={(err) => setCodeError(err)}
+              onError={(err) => console.warn("Scanner error:", err)}
               isFullScreen={true}
               hideControls={true}
               onCamerasDetected={handleCamerasDetected}
@@ -828,71 +794,55 @@ export function AttendanceScanPage() {
               </div>
             </div>
           )
-        ) : umatMode === "camera" ? (
-          <QrScannerCamera
-            onScan={processUmatQrText}
-            onError={(err) => setCodeError(err)}
-            isFullScreen={true}
-            hideControls={true}
-            onCamerasDetected={handleCamerasDetected}
-            externalCameraId={activeCameraId}
-          />
         ) : (
-          /* Manual Code Form for Member */
+          /* Member View: Show Personal Member QR to present to Organizers (FE-04/XF-04 Harmonization) */
           <div className="mx-auto w-full max-w-sm animate-in space-y-5 p-4 duration-150 zoom-in-95 fade-in sm:p-6">
-            <div className="space-y-4 rounded-3xl border border-white/20 bg-zinc-950/85 p-5 shadow-2xl backdrop-blur-xl sm:p-6">
-              <div className="flex items-center gap-3">
-                <div className="flex size-10 items-center justify-center rounded-2xl border border-amber-500/30 bg-amber-500/20 text-amber-400">
-                  <KeyboardIcon className="size-5" />
-                </div>
-                <div>
-                  <h4 className="text-caption-bold sm:text-body-md text-white">
-                    Enter Event Code
-                  </h4>
-                  <p className="sm:text-caption text-[11px] text-zinc-400">
-                    Type the unique event QR code
-                  </p>
-                </div>
+            <div className="space-y-4 rounded-3xl border border-white/20 bg-zinc-950/90 p-5 text-center shadow-2xl backdrop-blur-xl sm:p-6">
+              <div className="space-y-1">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/40 bg-amber-500/20 px-3 py-1 text-[11px] font-bold text-amber-300">
+                  <CheckCircle2Icon className="size-3.5" />
+                  <span>Kartu Presensi Anggota</span>
+                </span>
+                <h4 className="text-body-md mt-2 font-extrabold text-white">
+                  {event?.title || "Presensi Acara Vihara"}
+                </h4>
+                <p className="text-caption text-zinc-400">
+                  Tunjukkan kode QR ini ke pengurus atau panitia di meja
+                  presensi.
+                </p>
               </div>
 
-              <form
-                onSubmit={handleUmatManualSubmit}
-                className="space-y-4 pt-2"
-              >
-                <div className="space-y-1.5">
-                  <input
-                    id="scan-code"
-                    type="text"
-                    value={codeInput}
-                    onChange={(e) => {
-                      setCodeInput(e.target.value)
-                      setCodeError("")
-                    }}
-                    placeholder={
-                      event?.qr_code?.code?.replace(/./g, "·") ?? "••••••"
-                    }
-                    className="text-title-sm sm:text-title-md w-full rounded-2xl border border-white/20 bg-black/60 px-4 py-3.5 text-center font-mono tracking-widest text-amber-300 uppercase outline-none placeholder:text-zinc-600 focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20"
-                    autoFocus
-                  />
-                  {codeError && (
-                    <p className="sm:text-caption flex items-center gap-1.5 rounded-xl border border-rose-500/30 bg-rose-950/60 p-2.5 text-[11px] font-semibold text-rose-400">
-                      <AlertTriangleIcon className="size-4 shrink-0" />
-                      <span>{codeError}</span>
-                    </p>
-                  )}
-                </div>
+              <div className="mx-auto w-fit rounded-2xl bg-white p-4 shadow-inner">
+                <QRCode
+                  value={
+                    memberProfile?.userNumber ||
+                    authState.userId ||
+                    "SEKKHA-MEMBER"
+                  }
+                  size={190}
+                  level="H"
+                />
+              </div>
 
+              <div className="space-y-0.5 pt-1">
+                <p className="text-caption-bold text-base text-white">
+                  {memberProfile?.name || authState.name || "Sahabat Sekkha"}
+                </p>
+                <p className="text-caption font-mono font-semibold tracking-wider text-amber-400">
+                  {memberProfile?.userNumber || "ID Anggota Terdaftar"}
+                </p>
+              </div>
+
+              <div className="pt-2">
                 <button
-                  type="submit"
-                  disabled={submitting || !codeInput.trim()}
-                  className="text-caption-bold sm:text-body-sm flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 py-3 font-black text-black shadow-lg transition-all hover:from-amber-300 hover:to-amber-400 active:scale-[0.98] disabled:opacity-50 sm:py-3.5"
+                  type="button"
+                  onClick={handleBack}
+                  className="text-caption-bold flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/10 py-3 text-white transition-all hover:bg-white/20 active:scale-[0.98]"
                 >
-                  <CheckCircle2Icon className="size-4 sm:size-5" />
-                  <span>
-                    {submitting ? "Verifying..." : "Confirm Attendance"}
-                  </span>
+                  <ArrowLeftIcon className="size-4" />
+                  <span>Kembali ke Daftar Acara</span>
                 </button>
-              </form>
+              </div>
             </div>
           </div>
         )}
@@ -1018,44 +968,13 @@ export function AttendanceScanPage() {
             </button>
           </>
         ) : (
-          <>
-            {/* Member Mode Toggle Button */}
-            <button
-              type="button"
-              onClick={() => {
-                setUmatMode((prev) => (prev === "camera" ? "manual" : "camera"))
-                setCodeError("")
-              }}
-              className={`sm:text-caption flex cursor-pointer items-center gap-1.5 rounded-full border px-3.5 py-2 text-[11px] font-bold shadow-lg backdrop-blur-xl transition-all active:scale-95 sm:gap-2 sm:px-4 sm:py-2.5 ${
-                umatMode === "manual"
-                  ? "border-amber-300 bg-amber-400 text-black"
-                  : "border-white/25 bg-black/75 text-white hover:bg-white/20"
-              }`}
-            >
-              {umatMode === "manual" ? (
-                <>
-                  <CameraIcon className="size-3.5 shrink-0 text-black sm:size-4" />
-                  <span>Open Camera</span>
-                </>
-              ) : (
-                <>
-                  <KeyboardIcon className="size-3.5 shrink-0 text-amber-300 sm:size-4" />
-                  <span>Enter Code Manually</span>
-                </>
-              )}
-            </button>
-
-            {/* Upload Photo Button for Member */}
-            <button
-              type="button"
-              onClick={() => uploadInputRef.current?.click()}
-              className="sm:text-caption flex cursor-pointer items-center gap-1.5 rounded-full border border-white/25 bg-black/75 px-3.5 py-2 text-[11px] font-bold text-white shadow-lg backdrop-blur-xl transition-all hover:bg-white/20 active:scale-95 sm:gap-2 sm:px-4 sm:py-2.5"
-              title="Scan from Photo / Screenshot"
-            >
-              <ImageIcon className="size-3.5 shrink-0 text-cyan-400 sm:size-4" />
-              <span>QR Image</span>
-            </button>
-          </>
+          <button
+            type="button"
+            onClick={() => navigate({ to: "/home/profile" })}
+            className="sm:text-caption flex cursor-pointer items-center gap-1.5 rounded-full border border-white/25 bg-black/75 px-4 py-2 text-[11px] font-bold text-white shadow-lg backdrop-blur-xl transition-all hover:bg-white/20 active:scale-95"
+          >
+            <span>Buka Profil Lengkap</span>
+          </button>
         )}
       </div>
 

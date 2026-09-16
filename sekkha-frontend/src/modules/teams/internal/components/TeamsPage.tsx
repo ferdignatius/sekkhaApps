@@ -229,35 +229,35 @@ function CommunityRoleChart({
 
         {/* Right: Interactive Role Chips */}
         <div className="grid w-full grid-cols-3 gap-1.5 sm:flex sm:w-auto sm:items-center sm:gap-2">
-          {roles.map((r) => {
-            const isSelected = activeFilter === r.id
+          {roles.map((roleItem) => {
+            const isSelected = activeFilter === roleItem.id
             return (
               <button
-                key={r.id}
+                key={roleItem.id}
                 type="button"
-                onClick={() => onFilterChange(isSelected ? "all" : r.id)}
+                onClick={() => onFilterChange(isSelected ? "all" : roleItem.id)}
                 className={`flex flex-1 cursor-pointer flex-col gap-1 rounded-[12px] border p-2 text-left transition-all select-none sm:flex-row sm:items-center sm:gap-2 sm:px-3 sm:py-2 ${
                   isSelected
                     ? "border-[#0a0a0a] bg-[#faf5e8] shadow-xs ring-1 ring-[#0a0a0a]"
                     : "border-[#e5e5e5] bg-[#fffaf0] hover:bg-[#faf5e8]"
                 }`}
-                title={`Filter by ${r.label}`}
+                title={`Filter by ${roleItem.label}`}
               >
                 <div className="flex items-center gap-1.5">
                   <span
                     className="size-2 shrink-0 rounded-full shadow-2xs"
-                    style={{ backgroundColor: r.colorHex }}
+                    style={{ backgroundColor: roleItem.colorHex }}
                   />
                   <span className="truncate text-[10px] font-bold text-[#6a6a6a] sm:text-xs">
-                    {r.shortLabel}
+                    {roleItem.shortLabel}
                   </span>
                 </div>
                 <div className="flex items-baseline gap-1">
                   <span className="text-xs font-extrabold text-[#0a0a0a] sm:text-sm">
-                    {r.count}
+                    {roleItem.count}
                   </span>
                   <span className="text-[9px] text-[#6a6a6a]">
-                    ({Math.round(r.pct)}%)
+                    ({Math.round(roleItem.pct)}%)
                   </span>
                 </div>
               </button>

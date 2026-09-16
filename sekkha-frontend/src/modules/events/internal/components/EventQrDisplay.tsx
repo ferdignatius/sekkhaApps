@@ -15,16 +15,26 @@ interface EventQrDisplayProps {
 function formatExpiry(iso: string | null): string {
   if (!iso) return "Tidak kedaluwarsa"
   return new Date(iso).toLocaleString("id-ID", {
-    day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
   })
 }
 
-export function EventQrDisplay({ eventTitle, qrCode, onRegenerate }: EventQrDisplayProps) {
+export function EventQrDisplay({
+  eventTitle,
+  qrCode,
+  onRegenerate,
+}: EventQrDisplayProps) {
   return (
     <div className="flex flex-col items-center gap-4">
       {/* Header */}
       <div className="flex w-full items-center gap-2">
-        <QrCodeIcon className="size-4 text-sekkha-brand-blue" aria-hidden="true" />
+        <QrCodeIcon
+          className="size-4 text-sekkha-brand-blue"
+          aria-hidden="true"
+        />
         <h3 className="text-body-sm-medium text-sekkha-ink">QR Absensi</h3>
       </div>
 
@@ -39,7 +49,7 @@ export function EventQrDisplay({ eventTitle, qrCode, onRegenerate }: EventQrDisp
         </div>
 
         {/* Code text */}
-        <p className="font-mono text-body-sm-medium text-sekkha-ink tracking-widest">
+        <p className="text-body-sm-medium font-mono tracking-widest text-sekkha-ink">
           {qrCode.code}
         </p>
         <p className="text-caption text-sekkha-muted">
@@ -51,7 +61,7 @@ export function EventQrDisplay({ eventTitle, qrCode, onRegenerate }: EventQrDisp
       <button
         type="button"
         onClick={onRegenerate}
-        className="flex w-full items-center justify-center gap-2 rounded-full border border-sekkha-hairline-strong py-2.5 text-body-sm-medium text-sekkha-ink transition-colors hover:bg-sekkha-surface"
+        className="text-body-sm-medium flex w-full items-center justify-center gap-2 rounded-full border border-sekkha-hairline-strong py-2.5 text-sekkha-ink transition-colors hover:bg-sekkha-surface"
       >
         <RefreshCwIcon className="size-3.5" aria-hidden="true" />
         Generate ulang QR

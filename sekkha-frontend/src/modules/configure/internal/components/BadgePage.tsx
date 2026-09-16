@@ -76,9 +76,15 @@ const CONDITION_OPTIONS = [
 
 export function BadgePage() {
   const { authState } = useAuth()
-  const isAdmin = authState.status === "authenticated" && authState.role === "admin"
+  const isAdmin =
+    authState.status === "authenticated" && authState.role === "admin"
 
-  const { items: badges, create: apiCreate, update: apiUpdate, remove: apiRemove } = useConfigureCrud<BadgeDto>(badgesApi, INITIAL_BADGES)
+  const {
+    items: badges,
+    create: apiCreate,
+    update: apiUpdate,
+    remove: apiRemove,
+  } = useConfigureCrud<BadgeDto>(badgesApi, INITIAL_BADGES)
   const [editing, setEditing] = useState<Badge | null>(null)
   const [showForm, setShowForm] = useState(false)
 
@@ -86,7 +92,8 @@ export function BadgePage() {
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")
   const [iconUrl, setIconUrl] = useState("")
-  const [conditionType, setConditionType] = useState<Badge["condition_type"]>("attendance")
+  const [conditionType, setConditionType] =
+    useState<Badge["condition_type"]>("attendance")
   const [conditionValue, setConditionValue] = useState("")
 
   function resetForm() {
@@ -128,16 +135,16 @@ export function BadgePage() {
     }
 
     if (editing) {
-      void apiUpdate(editing.id, payload).catch(() => { })
+      void apiUpdate(editing.id, payload).catch(() => {})
     } else {
-      void apiCreate(payload).catch(() => { })
+      void apiCreate(payload).catch(() => {})
     }
     resetForm()
   }
 
   function handleDelete(id: string) {
     if (!isAdmin) return
-    void apiRemove(id).catch(() => { })
+    void apiRemove(id).catch(() => {})
   }
 
   const conditionLabel: Record<Badge["condition_type"], string> = {
@@ -149,25 +156,35 @@ export function BadgePage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#fffaf0] pb-32 md:pb-12 font-sans text-left">
-      <PageBreadcrumb items={[{ label: "Configure" }, { label: "Gamification" }, { label: "Master Badges" }]} />
-      <div className="px-3.5 py-4 sm:px-6 sm:py-6 md:px-8 max-w-7xl mx-auto space-y-5">
+    <main className="min-h-screen bg-[#fffaf0] pb-32 text-left font-sans md:pb-12">
+      <PageBreadcrumb
+        items={[
+          { label: "Configure" },
+          { label: "Gamification" },
+          { label: "Master Badges" },
+        ]}
+      />
+      <div className="mx-auto max-w-7xl space-y-5 px-3.5 py-4 sm:px-6 sm:py-6 md:px-8">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#e5e5e5] pb-4">
+        <div className="flex flex-col justify-between gap-3 border-b border-[#e5e5e5] pb-4 sm:flex-row sm:items-center">
           <div className="flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-[12px] bg-[#0a0a0a] text-white shrink-0 shadow-xs">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-[12px] bg-[#0a0a0a] text-white shadow-xs">
               <AwardIcon className="size-5 text-[#e8b94a]" />
             </div>
             <div className="min-w-0">
-              <h1 className="text-base sm:text-xl font-bold text-[#0a0a0a]">Member Achievement Badges</h1>
-              <p className="text-xs text-[#6a6a6a]">Manage master badges and member gamification trigger conditions</p>
+              <h1 className="text-base font-bold text-[#0a0a0a] sm:text-xl">
+                Member Achievement Badges
+              </h1>
+              <p className="text-xs text-[#6a6a6a]">
+                Manage master badges and member gamification trigger conditions
+              </p>
             </div>
           </div>
           {isAdmin && (
             <button
               type="button"
               onClick={openCreate}
-              className="h-10 w-full sm:w-auto flex items-center justify-center gap-1.5 rounded-[12px] bg-[#0a0a0a] text-white px-4 text-xs font-bold hover:bg-[#1f1f1f] transition-all cursor-pointer shadow-xs shrink-0"
+              className="flex h-10 w-full shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-[12px] bg-[#0a0a0a] px-4 text-xs font-bold text-white shadow-xs transition-all hover:bg-[#1f1f1f] sm:w-auto"
             >
               <PlusIcon className="size-4" />
               <span>Add Badge</span>
@@ -177,31 +194,42 @@ export function BadgePage() {
 
         {/* Table */}
         <div className="overflow-hidden rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0] shadow-xs">
-          <div className="overflow-x-auto scrollbar-none">
-            <table className="w-full text-left text-xs font-sans">
+          <div className="scrollbar-none overflow-x-auto">
+            <table className="w-full text-left font-sans text-xs">
               <thead>
-                <tr className="border-b border-[#e5e5e5] bg-[#faf5e8] text-[#6a6a6a] font-bold">
-                  <th className="px-4 py-3 w-16">Icon</th>
+                <tr className="border-b border-[#e5e5e5] bg-[#faf5e8] font-bold text-[#6a6a6a]">
+                  <th className="w-16 px-4 py-3">Icon</th>
                   <th className="px-4 py-3">Badge Details</th>
-                  <th className="px-4 py-3 hidden sm:table-cell">Trigger Condition</th>
-                  <th className="px-4 py-3 hidden sm:table-cell">Threshold Value</th>
-                  {isAdmin && <th className="px-4 py-3 w-28 text-right">Actions</th>}
+                  <th className="hidden px-4 py-3 sm:table-cell">
+                    Trigger Condition
+                  </th>
+                  <th className="hidden px-4 py-3 sm:table-cell">
+                    Threshold Value
+                  </th>
+                  {isAdmin && (
+                    <th className="w-28 px-4 py-3 text-right">Actions</th>
+                  )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#f0f0f0]">
                 {badges.map((badge) => (
-                  <tr key={badge.id} className="hover:bg-[#faf5e8]/70 transition-colors">
+                  <tr
+                    key={badge.id}
+                    className="transition-colors hover:bg-[#faf5e8]/70"
+                  >
                     <td className="px-4 py-3 text-2xl">{badge.icon_url}</td>
                     <td className="px-4 py-3">
                       <p className="font-bold text-[#0a0a0a]">{badge.name}</p>
-                      <p className="text-xs text-[#6a6a6a]">{badge.description}</p>
+                      <p className="text-xs text-[#6a6a6a]">
+                        {badge.description}
+                      </p>
                     </td>
-                    <td className="px-4 py-3 hidden sm:table-cell">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-[6px] text-[11px] font-semibold bg-[#faf5e8] text-[#0a0a0a] border border-[#e5e5e5]">
+                    <td className="hidden px-4 py-3 sm:table-cell">
+                      <span className="inline-flex items-center rounded-[6px] border border-[#e5e5e5] bg-[#faf5e8] px-2.5 py-0.5 text-[11px] font-semibold text-[#0a0a0a]">
                         {conditionLabel[badge.condition_type]}
                       </span>
                     </td>
-                    <td className="px-4 py-3 hidden sm:table-cell font-mono font-bold text-[#0a0a0a]">
+                    <td className="hidden px-4 py-3 font-mono font-bold text-[#0a0a0a] sm:table-cell">
                       {badge.condition_value}
                     </td>
                     {isAdmin && (
@@ -210,7 +238,7 @@ export function BadgePage() {
                           <button
                             type="button"
                             onClick={() => openEdit(badge)}
-                            className="h-8 px-2.5 rounded-[8px] border border-[#e5e5e5] bg-[#fffaf0] hover:bg-[#faf5e8] text-xs font-bold text-[#0a0a0a] transition-colors cursor-pointer flex items-center gap-1"
+                            className="flex h-8 cursor-pointer items-center gap-1 rounded-[8px] border border-[#e5e5e5] bg-[#fffaf0] px-2.5 text-xs font-bold text-[#0a0a0a] transition-colors hover:bg-[#faf5e8]"
                             title="Edit Badge"
                           >
                             <PencilIcon className="size-3.5" />
@@ -219,7 +247,7 @@ export function BadgePage() {
                           <button
                             type="button"
                             onClick={() => handleDelete(badge.id)}
-                            className="size-8 flex items-center justify-center rounded-[8px] border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 transition-colors cursor-pointer"
+                            className="flex size-8 cursor-pointer items-center justify-center rounded-[8px] border border-rose-200 bg-rose-50 text-rose-700 transition-colors hover:bg-rose-100"
                             title="Delete Badge"
                           >
                             <TrashIcon className="size-3.5" />
@@ -246,76 +274,93 @@ export function BadgePage() {
           title={editing ? "Edit Badge" : "Add New Badge"}
           description="Configure achievement badge name, icon, and trigger condition."
         >
-          <form onSubmit={handleSubmit} className="space-y-4 text-left font-sans">
+          <form
+            onSubmit={handleSubmit}
+            className="space-y-4 text-left font-sans"
+          >
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-[#0a0a0a]">Badge Name *</label>
+                <label className="text-xs font-bold text-[#0a0a0a]">
+                  Badge Name *
+                </label>
                 <input
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. Streak 5"
-                  className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-xs sm:text-sm text-[#0a0a0a] placeholder:text-[#6a6a6a] outline-none shadow-xs focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] transition-all"
+                  className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-xs text-[#0a0a0a] shadow-xs transition-all outline-none placeholder:text-[#6a6a6a] focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] sm:text-sm"
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-[#0a0a0a]">Icon (Emoji / URL)</label>
+                <label className="text-xs font-bold text-[#0a0a0a]">
+                  Icon (Emoji / URL)
+                </label>
                 <input
                   value={iconUrl}
                   onChange={(e) => setIconUrl(e.target.value)}
                   placeholder="🔥"
-                  className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-xs sm:text-sm text-[#0a0a0a] placeholder:text-[#6a6a6a] outline-none shadow-xs focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] transition-all"
+                  className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-xs text-[#0a0a0a] shadow-xs transition-all outline-none placeholder:text-[#6a6a6a] focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] sm:text-sm"
                 />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-[#0a0a0a]">Description</label>
+              <label className="text-xs font-bold text-[#0a0a0a]">
+                Description
+              </label>
               <input
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Attend 5 consecutive weeks"
-                className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-xs sm:text-sm text-[#0a0a0a] placeholder:text-[#6a6a6a] outline-none shadow-xs focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] transition-all"
+                className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-xs text-[#0a0a0a] shadow-xs transition-all outline-none placeholder:text-[#6a6a6a] focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] sm:text-sm"
               />
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-[#0a0a0a]">Trigger Condition</label>
+                <label className="text-xs font-bold text-[#0a0a0a]">
+                  Trigger Condition
+                </label>
                 <select
                   value={conditionType}
-                  onChange={(e) => setConditionType(e.target.value as Badge["condition_type"])}
-                  className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3 text-xs sm:text-sm text-[#0a0a0a] outline-none shadow-xs focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] transition-all cursor-pointer"
+                  onChange={(e) =>
+                    setConditionType(e.target.value as Badge["condition_type"])
+                  }
+                  className="h-11 w-full cursor-pointer rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3 text-xs text-[#0a0a0a] shadow-xs transition-all outline-none focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] sm:text-sm"
                 >
-                  {CONDITION_OPTIONS.map(opt => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  {CONDITION_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
                   ))}
                 </select>
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-[#0a0a0a]">Target Value</label>
+                <label className="text-xs font-bold text-[#0a0a0a]">
+                  Target Value
+                </label>
                 <input
                   type="number"
                   value={conditionValue}
                   onChange={(e) => setConditionValue(e.target.value)}
                   placeholder="5"
-                  className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-xs sm:text-sm text-[#0a0a0a] placeholder:text-[#6a6a6a] outline-none shadow-xs focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] transition-all"
+                  className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-xs text-[#0a0a0a] shadow-xs transition-all outline-none placeholder:text-[#6a6a6a] focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] sm:text-sm"
                 />
               </div>
             </div>
 
-            <div className="flex gap-2 pt-2 justify-end border-t border-[#e5e5e5]">
+            <div className="flex justify-end gap-2 border-t border-[#e5e5e5] pt-2">
               <button
                 type="button"
                 onClick={resetForm}
-                className="h-10 px-4 rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] hover:bg-[#faf5e8] text-xs font-bold text-[#0a0a0a] transition-colors cursor-pointer"
+                className="h-10 cursor-pointer rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-4 text-xs font-bold text-[#0a0a0a] transition-colors hover:bg-[#faf5e8]"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="h-10 px-5 rounded-[12px] bg-[#0a0a0a] hover:bg-[#1f1f1f] text-xs font-bold text-white shadow-xs transition-colors cursor-pointer"
+                className="h-10 cursor-pointer rounded-[12px] bg-[#0a0a0a] px-5 text-xs font-bold text-white shadow-xs transition-colors hover:bg-[#1f1f1f]"
               >
                 {editing ? "Save Changes" : "Create Badge"}
               </button>

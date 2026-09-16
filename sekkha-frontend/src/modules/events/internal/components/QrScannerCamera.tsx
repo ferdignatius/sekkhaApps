@@ -20,14 +20,19 @@ interface QrScannerCameraProps {
   scanDelayMs?: number
   isFullScreen?: boolean
   hideControls?: boolean
-  onCamerasDetected?: (cameras: Array<{ id: string; label: string }>, selectedId: string) => void
+  onCamerasDetected?: (
+    cameras: Array<{ id: string; label: string }>,
+    selectedId: string
+  ) => void
   externalCameraId?: string
 }
 
 // Synthesize a pleasant beep chime using Web Audio API
 function playScanChime() {
   try {
-    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)()
+    const ctx = new (
+      window.AudioContext || (window as any).webkitAudioContext
+    )()
     const osc = ctx.createOscillator()
     const gain = ctx.createGain()
 
@@ -58,7 +63,9 @@ export function QrScannerCamera({
   onCamerasDetected,
   externalCameraId,
 }: QrScannerCameraProps) {
-  const containerId = useRef(`qr-scanner-${Math.random().toString(36).substring(2, 9)}`).current
+  const containerId = useRef(
+    `qr-scanner-${Math.random().toString(36).substring(2, 9)}`
+  ).current
   const scannerRef = useRef<Html5Qrcode | null>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
 
@@ -110,7 +117,9 @@ export function QrScannerCamera({
 
   // Start Camera Stream
   const startCamera = useCallback(
-    async (cameraIdOrFacing: string | { facingMode: "environment" | "user" }) => {
+    async (
+      cameraIdOrFacing: string | { facingMode: "environment" | "user" }
+    ) => {
       const element = document.getElementById(containerId)
       if (!element || !scannerRef.current) return
 
@@ -125,17 +134,25 @@ export function QrScannerCamera({
           } catch {}
         }
 
-        const isMobileScreen = typeof window !== "undefined" && window.innerWidth < 640
+        const isMobileScreen =
+          typeof window !== "undefined" && window.innerWidth < 640
 
         const config = {
           fps: 15,
           qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
-            const minEdge = Math.min(viewfinderWidth || 300, viewfinderHeight || 300)
+            const minEdge = Math.min(
+              viewfinderWidth || 300,
+              viewfinderHeight || 300
+            )
             const qrEdge = Math.floor(minEdge * 0.72)
             const edge = Math.max(180, Math.min(qrEdge, 300))
             return { width: edge, height: edge }
           },
-          aspectRatio: isFullScreen ? (isMobileScreen ? undefined : 16 / 9) : 1.0,
+          aspectRatio: isFullScreen
+            ? isMobileScreen
+              ? undefined
+              : 16 / 9
+            : 1.0,
         }
 
         await scannerRef.current.start(
@@ -151,16 +168,33 @@ export function QrScannerCamera({
         setIsInitializing(false)
       } catch (err: any) {
         console.error("Gagal memulai kamera scanner:", err)
-        let msg = "Gagal mengakses kamera. Pastikan izin kamera sudah diberikan di browser."
-        
-        if (err?.name === "NotAllowedError" || err?.message?.includes("Permission") || err?.name === "PermissionDeniedError") {
-          msg = "Izin kamera ditolak. Harap klik ikon gembok/pengaturan di samping URL browser Anda dan pilih 'Izinkan Kamera', lalu muat ulang halaman."
-        } else if (err?.name === "NotFoundError" || err?.name === "DevicesNotFoundError") {
+        let msg =
+          "Gagal mengakses kamera. Pastikan izin kamera sudah diberikan di browser."
+
+        if (
+          err?.name === "NotAllowedError" ||
+          err?.message?.includes("Permission") ||
+          err?.name === "PermissionDeniedError"
+        ) {
+          msg =
+            "Izin kamera ditolak. Harap klik ikon gembok/pengaturan di samping URL browser Anda dan pilih 'Izinkan Kamera', lalu muat ulang halaman."
+        } else if (
+          err?.name === "NotFoundError" ||
+          err?.name === "DevicesNotFoundError"
+        ) {
           msg = "Kamera tidak ditemukan pada perangkat Anda."
-        } else if (err?.name === "NotReadableError" || err?.name === "TrackStartError") {
-          msg = "Kamera sedang digunakan oleh aplikasi lain (misal Zoom, Meet, atau tab lain). Harap tutup aplikasi tersebut."
-        } else if (err?.message?.includes("secure context") || (typeof window !== "undefined" && !window.isSecureContext)) {
-          msg = "Browser hanya mengizinkan kamera pada localhost atau HTTPS. Jika mengakses via IP lokal (misal 192.168.x.x), browser memblokir kamera."
+        } else if (
+          err?.name === "NotReadableError" ||
+          err?.name === "TrackStartError"
+        ) {
+          msg =
+            "Kamera sedang digunakan oleh aplikasi lain (misal Zoom, Meet, atau tab lain). Harap tutup aplikasi tersebut."
+        } else if (
+          err?.message?.includes("secure context") ||
+          (typeof window !== "undefined" && !window.isSecureContext)
+        ) {
+          msg =
+            "Browser hanya mengizinkan kamera pada localhost atau HTTPS. Jika mengakses via IP lokal (misal 192.168.x.x), browser memblokir kamera."
         }
 
         setCameraError(msg)
@@ -177,7 +211,11 @@ export function QrScannerCamera({
     let isMounted = true
 
     // Check secure context
-    if (typeof window !== "undefined" && window.isSecureContext === false && window.location.hostname !== "localhost") {
+    if (
+      typeof window !== "undefined" &&
+      window.isSecureContext === false &&
+      window.location.hostname !== "localhost"
+    ) {
       setIsInsecureContext(true)
       setCameraError("Kamera memerlukan koneksi aman (HTTPS atau localhost).")
       setIsInitializing(false)
@@ -299,7 +337,9 @@ export function QrScannerCamera({
       handleDecoded(decodedText)
     } catch (err: any) {
       console.warn("Gagal membaca QR dari gambar:", err)
-      setCameraError("Tidak dapat menemukan atau membaca QR code dari gambar yang diunggah. Pastikan gambar jelas dan tidak buram.")
+      setCameraError(
+        "Tidak dapat menemukan atau membaca QR code dari gambar yang diunggah. Pastikan gambar jelas dan tidak buram."
+      )
     } finally {
       setProcessingFile(false)
       if (fileInputRef.current) fileInputRef.current.value = ""
@@ -307,47 +347,56 @@ export function QrScannerCamera({
   }
 
   return (
-    <div className={`relative flex flex-col items-center justify-center w-full max-w-full h-full max-h-full overflow-hidden ${
-      isFullScreen
-        ? "flex-1 bg-black p-0 border-0 rounded-none"
-        : "rounded-2xl border border-[#e5e5e5] bg-[#0a0a0a] p-2 shadow-inner"
-    }`}>
-      {/* Camera Video Viewport Container */}
-      <div className={`relative w-full max-w-full h-full max-h-full overflow-hidden bg-black flex items-center justify-center ${
+    <div
+      className={`relative flex h-full max-h-full w-full max-w-full flex-col items-center justify-center overflow-hidden ${
         isFullScreen
-          ? "flex-1 aspect-auto max-h-none rounded-none"
-          : "aspect-square max-h-[320px] rounded-xl"
-      }`}>
+          ? "flex-1 rounded-none border-0 bg-black p-0"
+          : "rounded-2xl border border-[#e5e5e5] bg-[#0a0a0a] p-2 shadow-inner"
+      }`}
+    >
+      {/* Camera Video Viewport Container */}
+      <div
+        className={`relative flex h-full max-h-full w-full max-w-full items-center justify-center overflow-hidden bg-black ${
+          isFullScreen
+            ? "aspect-auto max-h-none flex-1 rounded-none"
+            : "aspect-square max-h-[320px] rounded-xl"
+        }`}
+      >
         {/* Html5Qrcode target DOM element */}
         <div
           id={containerId}
-          className="w-full max-w-full h-full max-h-full overflow-hidden flex items-center justify-center [&_video]:!w-full [&_video]:!h-full [&_video]:!max-w-full [&_video]:!max-h-full [&_video]:!object-cover [&_canvas]:!hidden [&>div]:!border-none [&>div]:!shadow-none [&>div]:!w-full [&>div]:!max-w-full [&>div]:!h-full [&>div]:!overflow-hidden"
+          className="flex h-full max-h-full w-full max-w-full items-center justify-center overflow-hidden [&_canvas]:!hidden [&_video]:!h-full [&_video]:!max-h-full [&_video]:!w-full [&_video]:!max-w-full [&_video]:!object-cover [&>div]:!h-full [&>div]:!w-full [&>div]:!max-w-full [&>div]:!overflow-hidden [&>div]:!border-none [&>div]:!shadow-none"
         />
 
         {/* Loading Spinner */}
         {isInitializing && !cameraError && (
-          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-[#0a0a0a]/90 text-white gap-2 backdrop-blur-xs">
+          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 bg-[#0a0a0a]/90 text-white backdrop-blur-xs">
             <RefreshCwIcon className="size-8 animate-spin text-amber-400" />
-            <p className="text-caption font-medium">Menghubungkan ke kamera...</p>
+            <p className="text-caption font-medium">
+              Menghubungkan ke kamera...
+            </p>
           </div>
         )}
 
         {/* Insecure Context Warning */}
         {isInsecureContext && (
-          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-[#0a0a0a] p-6 text-center text-white space-y-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/30">
+          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center space-y-3 bg-[#0a0a0a] p-6 text-center text-white">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-amber-500/30 bg-amber-500/20 text-amber-400">
               <ShieldAlertIcon className="size-6" />
             </div>
             <div className="space-y-1">
-              <p className="text-caption-bold text-amber-300">Kamera Diblokir (Non-HTTPS)</p>
-              <p className="text-caption text-slate-300 max-w-xs leading-relaxed">
-                Browser hanya mengizinkan kamera pada <code>localhost</code> atau <code>https://</code>.
+              <p className="text-caption-bold text-amber-300">
+                Kamera Diblokir (Non-HTTPS)
+              </p>
+              <p className="text-caption max-w-xs leading-relaxed text-slate-300">
+                Browser hanya mengizinkan kamera pada <code>localhost</code>{" "}
+                atau <code>https://</code>.
               </p>
             </div>
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="flex items-center gap-1.5 rounded-xl bg-[#e8b94a] px-3.5 py-2 text-caption-bold text-[#0a0a0a] shadow-sm hover:bg-amber-400 transition-all cursor-pointer font-bold"
+              className="text-caption-bold flex cursor-pointer items-center gap-1.5 rounded-xl bg-[#e8b94a] px-3.5 py-2 font-bold text-[#0a0a0a] shadow-sm transition-all hover:bg-amber-400"
             >
               <ImageIcon className="size-4" />
               <span>Unggah Foto QR Code</span>
@@ -357,20 +406,24 @@ export function QrScannerCamera({
 
         {/* Camera Permission / Device Error */}
         {!isInsecureContext && cameraError && (
-          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-[#0a0a0a] p-5 text-center text-white space-y-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-rose-500/20 text-rose-400 border border-rose-500/30">
+          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center space-y-3 bg-[#0a0a0a] p-5 text-center text-white">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-rose-500/30 bg-rose-500/20 text-rose-400">
               <VideoOffIcon className="size-5" />
             </div>
             <div className="space-y-1">
-              <p className="text-caption-bold text-rose-300">Kamera Belum Terbuka</p>
-              <p className="text-[11px] text-slate-300 max-w-xs leading-relaxed">{cameraError}</p>
+              <p className="text-caption-bold text-rose-300">
+                Kamera Belum Terbuka
+              </p>
+              <p className="max-w-xs text-[11px] leading-relaxed text-slate-300">
+                {cameraError}
+              </p>
             </div>
-            
+
             <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
               <button
                 type="button"
                 onClick={handleRetry}
-                className="flex items-center gap-1.5 rounded-xl bg-white/15 px-3 py-1.5 text-caption font-semibold text-white shadow-xs hover:bg-white/25 transition-all cursor-pointer"
+                className="text-caption flex cursor-pointer items-center gap-1.5 rounded-xl bg-white/15 px-3 py-1.5 font-semibold text-white shadow-xs transition-all hover:bg-white/25"
               >
                 <RefreshCwIcon className="size-3.5" />
                 <span>Coba Lagi</span>
@@ -379,7 +432,7 @@ export function QrScannerCamera({
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="flex items-center gap-1.5 rounded-xl bg-[#e8b94a] px-3 py-1.5 text-caption font-bold text-[#0a0a0a] shadow-xs hover:bg-amber-400 transition-all cursor-pointer"
+                className="text-caption flex cursor-pointer items-center gap-1.5 rounded-xl bg-[#e8b94a] px-3 py-1.5 font-bold text-[#0a0a0a] shadow-xs transition-all hover:bg-amber-400"
               >
                 <ImageIcon className="size-3.5" />
                 <span>Pilih Foto QR</span>
@@ -390,9 +443,11 @@ export function QrScannerCamera({
 
         {/* Processing File Loader */}
         {processingFile && (
-          <div className="absolute inset-0 z-25 flex flex-col items-center justify-center bg-[#0a0a0a]/90 text-white gap-2 backdrop-blur-xs">
+          <div className="absolute inset-0 z-25 flex flex-col items-center justify-center gap-2 bg-[#0a0a0a]/90 text-white backdrop-blur-xs">
             <RefreshCwIcon className="size-7 animate-spin text-amber-400" />
-            <p className="text-caption font-medium">Membaca QR dari gambar...</p>
+            <p className="text-caption font-medium">
+              Membaca QR dari gambar...
+            </p>
           </div>
         )}
 
@@ -400,25 +455,27 @@ export function QrScannerCamera({
         {!isInitializing && !cameraError && isScanningActive && !isPaused && (
           <div className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center">
             {/* Viewfinder Target Box */}
-            <div className={`relative ${isFullScreen ? "size-52 xs:size-60 sm:size-72 max-w-[70vw] max-h-[70vw]" : "size-[65%] max-size-[220px]"} aspect-square rounded-3xl border-2 border-amber-400 shadow-[0_0_0_9999px_rgba(0,0,0,0.55)]`}>
+            <div
+              className={`relative ${isFullScreen ? "xs:size-60 size-52 max-h-[70vw] max-w-[70vw] sm:size-72" : "max-size-[220px] size-[65%]"} aspect-square rounded-3xl border-2 border-amber-400 shadow-[0_0_0_9999px_rgba(0,0,0,0.55)]`}
+            >
               {/* Golden Corner Accents */}
-              <div className="absolute -top-1.5 -left-1.5 size-6 border-t-4 border-l-4 border-amber-300 rounded-tl-xl" />
-              <div className="absolute -top-1.5 -right-1.5 size-6 border-t-4 border-r-4 border-amber-300 rounded-tr-xl" />
-              <div className="absolute -bottom-1.5 -left-1.5 size-6 border-b-4 border-l-4 border-amber-300 rounded-bl-xl" />
-              <div className="absolute -bottom-1.5 -right-1.5 size-6 border-b-4 border-r-4 border-amber-300 rounded-br-xl" />
+              <div className="absolute -top-1.5 -left-1.5 size-6 rounded-tl-xl border-t-4 border-l-4 border-amber-300" />
+              <div className="absolute -top-1.5 -right-1.5 size-6 rounded-tr-xl border-t-4 border-r-4 border-amber-300" />
+              <div className="absolute -bottom-1.5 -left-1.5 size-6 rounded-bl-xl border-b-4 border-l-4 border-amber-300" />
+              <div className="absolute -right-1.5 -bottom-1.5 size-6 rounded-br-xl border-r-4 border-b-4 border-amber-300" />
 
               {/* Animated Laser Scan Line */}
-              <div className="absolute left-1 right-1 h-0.5 bg-gradient-to-r from-transparent via-amber-300 to-transparent shadow-[0_0_12px_#fbbf24] animate-bounce" />
+              <div className="absolute right-1 left-1 h-0.5 animate-bounce bg-gradient-to-r from-transparent via-amber-300 to-transparent shadow-[0_0_12px_#fbbf24]" />
 
               {/* Center Watermark Crosshair */}
-              <div className="absolute inset-0 flex items-center justify-center opacity-25 text-white">
+              <div className="absolute inset-0 flex items-center justify-center text-white opacity-25">
                 <SparklesIcon className="size-6" />
               </div>
             </div>
 
             {/* Hint Tag under Viewfinder */}
             <div className="mt-4">
-              <span className="rounded-full bg-black/80 px-4 py-1.5 text-caption font-medium text-white/95 backdrop-blur-md border border-white/15 shadow-md">
+              <span className="text-caption rounded-full border border-white/15 bg-black/80 px-4 py-1.5 font-medium text-white/95 shadow-md backdrop-blur-md">
                 Arahkan QR ke dalam kotak
               </span>
             </div>
@@ -427,9 +484,11 @@ export function QrScannerCamera({
 
         {/* Scan Success Pulse Overlay */}
         {lastScannedText && (
-          <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-emerald-950/85 text-emerald-300 gap-2 backdrop-blur-xs animate-in fade-in zoom-in duration-200">
-            <CheckCircle2Icon className="size-14 text-emerald-400 animate-bounce" />
-            <p className="text-title-sm font-bold text-white">QR Berhasil Terdeteksi!</p>
+          <div className="absolute inset-0 z-30 flex animate-in flex-col items-center justify-center gap-2 bg-emerald-950/85 text-emerald-300 backdrop-blur-xs duration-200 fade-in zoom-in">
+            <CheckCircle2Icon className="size-14 animate-bounce text-emerald-400" />
+            <p className="text-title-sm font-bold text-white">
+              QR Berhasil Terdeteksi!
+            </p>
           </div>
         )}
       </div>
@@ -447,8 +506,11 @@ export function QrScannerCamera({
       {!hideControls && (
         <div className="mt-2 flex w-full items-center justify-between gap-2 px-1 text-white">
           {cameras.length > 1 ? (
-            <div className="flex flex-1 items-center gap-1.5 min-w-0">
-              <label htmlFor="camera-select" className="flex items-center gap-1 text-[11px] font-semibold text-slate-400 shrink-0">
+            <div className="flex min-w-0 flex-1 items-center gap-1.5">
+              <label
+                htmlFor="camera-select"
+                className="flex shrink-0 items-center gap-1 text-[11px] font-semibold text-slate-400"
+              >
                 <CameraIcon className="size-3.5" />
                 <span>Kamera:</span>
               </label>
@@ -456,7 +518,7 @@ export function QrScannerCamera({
                 id="camera-select"
                 value={selectedCameraId}
                 onChange={(e) => handleCameraChange(e.target.value)}
-                className="flex-1 rounded-lg border border-slate-700 bg-slate-900 px-2 py-1 text-[11px] text-slate-200 outline-none focus:border-amber-400 truncate"
+                className="flex-1 truncate rounded-lg border border-slate-700 bg-slate-900 px-2 py-1 text-[11px] text-slate-200 outline-none focus:border-amber-400"
               >
                 {cameras.map((cam, idx) => (
                   <option key={cam.id} value={cam.id}>
@@ -472,7 +534,7 @@ export function QrScannerCamera({
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="flex items-center gap-1 rounded-lg border border-slate-700 bg-slate-900 px-2 py-1 text-[11px] font-medium text-slate-300 hover:text-white hover:border-slate-500 transition-all shrink-0 cursor-pointer"
+            className="flex shrink-0 cursor-pointer items-center gap-1 rounded-lg border border-slate-700 bg-slate-900 px-2 py-1 text-[11px] font-medium text-slate-300 transition-all hover:border-slate-500 hover:text-white"
             title="Scan dari Foto / Screenshot QR"
           >
             <ImageIcon className="size-3.5 text-amber-400" />
@@ -483,4 +545,3 @@ export function QrScannerCamera({
     </div>
   )
 }
-

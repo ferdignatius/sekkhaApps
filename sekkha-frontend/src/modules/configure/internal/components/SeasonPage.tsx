@@ -15,8 +15,8 @@ import {
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
 import { ResponsiveFormModal } from "@/components/common/ResponsiveFormModal"
 import { useAuth } from "@/modules/auth"
-import { seasonsApi  } from "../api/configureApi"
-import type {SeasonDto} from "../api/configureApi";
+import { seasonsApi } from "../api/configureApi"
+import type { SeasonDto } from "../api/configureApi"
 
 interface SeasonSectionConfig {
   code: string
@@ -30,21 +30,24 @@ const HARDCODED_SEASONS: SeasonSectionConfig[] = [
   {
     code: "semester",
     label: "Semester Season (6 Months)",
-    subtitle: "Official 6-month vihara competition period for leaderboard rankings and community milestones.",
+    subtitle:
+      "Official 6-month vihara competition period for leaderboard rankings and community milestones.",
     badge: "Primary Default",
     icon: <SparklesIcon className="size-5 text-[#e8b94a]" />,
   },
   {
     code: "quarterly",
     label: "Quarterly Season (3 Months)",
-    subtitle: "Dynamic 3-month evaluation period per quarter (Q1, Q2, Q3, Q4) for seasonal milestones.",
+    subtitle:
+      "Dynamic 3-month evaluation period per quarter (Q1, Q2, Q3, Q4) for seasonal milestones.",
     badge: "Quarterly",
     icon: <LayersIcon className="size-5 text-[#b8a4ed]" />,
   },
   {
     code: "annual",
     label: "Annual Season (Full Year)",
-    subtitle: "Comprehensive full calendar year format for point recalculation and annual awards.",
+    subtitle:
+      "Comprehensive full calendar year format for point recalculation and annual awards.",
     badge: "Annual",
     icon: <TrophyIcon className="size-5 text-[#e8b94a]" />,
   },
@@ -53,7 +56,11 @@ const HARDCODED_SEASONS: SeasonSectionConfig[] = [
 function formatDateDisplay(iso: string) {
   try {
     const d = new Date(iso)
-    return d.toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" })
+    return d.toLocaleDateString("en-US", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    })
   } catch {
     return iso
   }
@@ -61,7 +68,8 @@ function formatDateDisplay(iso: string) {
 
 export function SeasonPage() {
   const { authState } = useAuth()
-  const isAdmin = authState.status === "authenticated" && authState.role === "admin"
+  const isAdmin =
+    authState.status === "authenticated" && authState.role === "admin"
 
   const [seasons, setSeasons] = useState<SeasonDto[]>([])
   const [loading, setLoading] = useState(true)
@@ -163,7 +171,7 @@ export function SeasonPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#fffaf0] pb-32 md:pb-12 font-sans text-left">
+    <main className="min-h-screen bg-[#fffaf0] pb-32 text-left font-sans md:pb-12">
       <PageBreadcrumb
         items={[
           { label: "Configure" },
@@ -172,45 +180,49 @@ export function SeasonPage() {
         ]}
       />
 
-      <div className="px-3.5 py-4 sm:px-6 sm:py-6 md:px-8 max-w-7xl mx-auto space-y-5">
-        
+      <div className="mx-auto max-w-7xl space-y-5 px-3.5 py-4 sm:px-6 sm:py-6 md:px-8">
         {/* Header Section */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-[#e5e5e5] pb-4">
+        <div className="flex flex-col gap-4 border-b border-[#e5e5e5] pb-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-[12px] bg-[#0a0a0a] text-white shrink-0 shadow-xs">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-[12px] bg-[#0a0a0a] text-white shadow-xs">
               <TrophyIcon className="size-5 text-[#e8b94a]" />
             </div>
             <div className="min-w-0">
-              <h1 className="text-base sm:text-xl font-bold text-[#0a0a0a]">
+              <h1 className="text-base font-bold text-[#0a0a0a] sm:text-xl">
                 Leaderboard Season Period Rules
               </h1>
               <p className="text-xs text-[#6a6a6a]">
-                Core 3 duration profiles: <strong>Semester</strong> (Default), <strong>Quarterly</strong>, and <strong>Annual</strong>
+                Core 3 duration profiles: <strong>Semester</strong> (Default),{" "}
+                <strong>Quarterly</strong>, and <strong>Annual</strong>
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 rounded-[12px] bg-[#faf5e8] border border-[#e5e5e5] px-3.5 py-2 text-xs font-bold text-[#0a0a0a] shrink-0">
+          <div className="flex shrink-0 items-center gap-2 rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] px-3.5 py-2 text-xs font-bold text-[#0a0a0a]">
             <ShieldCheckIcon className="size-4 text-[#0a0a0a]" />
             <span>3 Fixed Profiles</span>
           </div>
         </div>
 
         {/* Info Banner */}
-        <div className="flex items-start gap-3 rounded-[16px] bg-[#faf5e8] border border-[#e5e5e5] p-4 text-xs text-[#0a0a0a] shadow-xs">
-          <InfoIcon className="size-5 shrink-0 text-[#e8b94a] mt-0.5" />
+        <div className="flex items-start gap-3 rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] p-4 text-xs text-[#0a0a0a] shadow-xs">
+          <InfoIcon className="mt-0.5 size-5 shrink-0 text-[#e8b94a]" />
           <div className="space-y-0.5">
-            <p className="font-bold text-xs text-[#0a0a0a]">Active Season Mechanism</p>
-            <p className="text-xs text-[#6a6a6a] leading-relaxed">
-              Only <strong>one active season</strong> can be active at a time. Leaderboard rankings and community goals are filtered according to the active season's date range.
+            <p className="text-xs font-bold text-[#0a0a0a]">
+              Active Season Mechanism
+            </p>
+            <p className="text-xs leading-relaxed text-[#6a6a6a]">
+              Only <strong>one active season</strong> can be active at a time.
+              Leaderboard rankings and community goals are filtered according to
+              the active season's date range.
             </p>
           </div>
         </div>
 
         {/* Error Alert */}
         {error && (
-          <div className="flex items-center gap-2 rounded-[12px] bg-rose-50 p-4 border border-rose-200 text-xs font-bold text-rose-800">
-            <AlertCircleIcon className="size-5 text-rose-600 shrink-0" />
+          <div className="flex items-center gap-2 rounded-[12px] border border-rose-200 bg-rose-50 p-4 text-xs font-bold text-rose-800">
+            <AlertCircleIcon className="size-5 shrink-0 text-rose-600" />
             <span>{error}</span>
           </div>
         )}
@@ -219,7 +231,10 @@ export function SeasonPage() {
         {loading ? (
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-44 rounded-[20px] bg-[#fffaf0] border border-[#e5e5e5] animate-pulse p-6 shadow-xs" />
+              <div
+                key={i}
+                className="h-44 animate-pulse rounded-[20px] border border-[#e5e5e5] bg-[#fffaf0] p-6 shadow-xs"
+              />
             ))}
           </div>
         ) : (
@@ -233,7 +248,7 @@ export function SeasonPage() {
               return (
                 <div
                   key={cfg.code}
-                  className={`rounded-[20px] border bg-[#fffaf0] p-5 sm:p-6 shadow-xs space-y-4 transition-all relative overflow-hidden ${
+                  className={`relative space-y-4 overflow-hidden rounded-[20px] border bg-[#fffaf0] p-5 shadow-xs transition-all sm:p-6 ${
                     isActive
                       ? "border-[#0a0a0a] ring-2 ring-[#0a0a0a]/10"
                       : "border-[#e5e5e5] hover:border-[#0a0a0a]/30"
@@ -241,34 +256,34 @@ export function SeasonPage() {
                 >
                   {/* Active Header Ribbon */}
                   {isActive && (
-                    <div className="absolute top-0 right-0 rounded-bl-[16px] bg-[#0a0a0a] px-3.5 py-1 text-[11px] font-bold text-white shadow-xs flex items-center gap-1.5">
+                    <div className="absolute top-0 right-0 flex items-center gap-1.5 rounded-bl-[16px] bg-[#0a0a0a] px-3.5 py-1 text-[11px] font-bold text-white shadow-xs">
                       <SparklesIcon className="size-3 text-[#e8b94a]" />
                       <span>ACTIVE ON LEADERBOARD</span>
                     </div>
                   )}
 
                   {/* Section Title & Subtitle */}
-                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 border-b border-[#e5e5e5] pb-4">
-                    <div className="space-y-1 max-w-2xl">
+                  <div className="flex flex-col gap-3 border-b border-[#e5e5e5] pb-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="max-w-2xl space-y-1">
                       <div className="flex items-center gap-2.5">
-                        <div className="p-2 rounded-[10px] bg-[#faf5e8] border border-[#e5e5e5]">
+                        <div className="rounded-[10px] border border-[#e5e5e5] bg-[#faf5e8] p-2">
                           {cfg.icon}
                         </div>
-                        <h2 className="text-sm sm:text-base font-bold text-[#0a0a0a]">
+                        <h2 className="text-sm font-bold text-[#0a0a0a] sm:text-base">
                           {season.name}
                         </h2>
-                        <span className="rounded-full bg-[#faf5e8] border border-[#e5e5e5] px-2.5 py-0.5 text-[11px] font-bold text-[#0a0a0a]">
+                        <span className="rounded-full border border-[#e5e5e5] bg-[#faf5e8] px-2.5 py-0.5 text-[11px] font-bold text-[#0a0a0a]">
                           {cfg.badge}
                         </span>
                       </div>
-                      <p className="text-xs text-[#6a6a6a] leading-relaxed">
+                      <p className="text-xs leading-relaxed text-[#6a6a6a]">
                         {season.description || cfg.subtitle}
                       </p>
                     </div>
 
-                    <div className="shrink-0 flex items-center gap-2 pt-2 sm:pt-0">
+                    <div className="flex shrink-0 items-center gap-2 pt-2 sm:pt-0">
                       {isActive && (
-                        <span className="inline-flex items-center gap-1.5 rounded-[12px] bg-emerald-50 border border-emerald-200 px-3 py-1.5 text-xs font-bold text-emerald-800">
+                        <span className="inline-flex items-center gap-1.5 rounded-[12px] border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-800">
                           <CheckCircleIcon className="size-3.5 text-emerald-600" />
                           <span>Status: Active</span>
                         </span>
@@ -279,10 +294,14 @@ export function SeasonPage() {
                           type="button"
                           disabled={activatingId === season.id}
                           onClick={() => handleActivate(season)}
-                          className="h-10 px-4 flex items-center gap-1.5 rounded-[12px] bg-[#0a0a0a] text-xs font-bold text-white shadow-xs hover:bg-[#1f1f1f] transition-colors disabled:opacity-50 cursor-pointer"
+                          className="flex h-10 cursor-pointer items-center gap-1.5 rounded-[12px] bg-[#0a0a0a] px-4 text-xs font-bold text-white shadow-xs transition-colors hover:bg-[#1f1f1f] disabled:opacity-50"
                         >
                           <SparklesIcon className="size-3.5 text-[#e8b94a]" />
-                          <span>{activatingId === season.id ? "Activating..." : "Set as Active Season"}</span>
+                          <span>
+                            {activatingId === season.id
+                              ? "Activating..."
+                              : "Set as Active Season"}
+                          </span>
                         </button>
                       )}
 
@@ -290,7 +309,7 @@ export function SeasonPage() {
                         <button
                           type="button"
                           onClick={() => handleOpenEdit(season)}
-                          className="h-10 px-4 flex items-center gap-1.5 rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] text-xs font-bold text-[#0a0a0a] shadow-xs hover:bg-[#faf5e8] transition-colors cursor-pointer"
+                          className="flex h-10 cursor-pointer items-center gap-1.5 rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-4 text-xs font-bold text-[#0a0a0a] shadow-xs transition-colors hover:bg-[#faf5e8]"
                         >
                           <PencilIcon className="size-3.5" />
                           <span>Edit Configuration</span>
@@ -302,23 +321,24 @@ export function SeasonPage() {
                   {/* Season Metrics Grid */}
                   <div className="grid gap-3 sm:grid-cols-3">
                     {/* Period Date Range */}
-                    <div className="rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] p-3.5 space-y-1">
-                      <div className="flex items-center gap-1.5 text-[10px] font-bold text-[#6a6a6a] uppercase tracking-wider">
+                    <div className="space-y-1 rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] p-3.5">
+                      <div className="flex items-center gap-1.5 text-[10px] font-bold tracking-wider text-[#6a6a6a] uppercase">
                         <CalendarIcon className="size-3.5 text-[#0a0a0a]" />
                         <span>Period Range</span>
                       </div>
                       <p className="text-xs font-bold text-[#0a0a0a]">
-                        {formatDateDisplay(season.start_date)} – {formatDateDisplay(season.end_date)}
+                        {formatDateDisplay(season.start_date)} –{" "}
+                        {formatDateDisplay(season.end_date)}
                       </p>
                     </div>
 
                     {/* Community Target */}
-                    <div className="rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] p-3.5 space-y-1">
-                      <div className="flex items-center gap-1.5 text-[10px] font-bold text-[#6a6a6a] uppercase tracking-wider">
+                    <div className="space-y-1 rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] p-3.5">
+                      <div className="flex items-center gap-1.5 text-[10px] font-bold tracking-wider text-[#6a6a6a] uppercase">
                         <UsersIcon className="size-3.5 text-[#0a0a0a]" />
                         <span>Attendance Goal</span>
                       </div>
-                      <p className="text-xs font-bold text-[#0a0a0a] flex items-baseline gap-1.5">
+                      <p className="flex items-baseline gap-1.5 text-xs font-bold text-[#0a0a0a]">
                         <span>{season.target_attendance}</span>
                         <span className="text-[11px] font-normal text-[#6a6a6a]">
                           (Logged: {season.total_attendances || 0} attended)
@@ -327,8 +347,8 @@ export function SeasonPage() {
                     </div>
 
                     {/* Bonus Points */}
-                    <div className="rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] p-3.5 space-y-1">
-                      <div className="flex items-center gap-1.5 text-[10px] font-bold text-[#6a6a6a] uppercase tracking-wider">
+                    <div className="space-y-1 rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] p-3.5">
+                      <div className="flex items-center gap-1.5 text-[10px] font-bold tracking-wider text-[#6a6a6a] uppercase">
                         <FlameIcon className="size-3.5 text-[#e8b94a]" />
                         <span>End of Season Bonus</span>
                       </div>
@@ -342,7 +362,6 @@ export function SeasonPage() {
             })}
           </div>
         )}
-
       </div>
 
       {/* Edit Season Modal */}
@@ -354,92 +373,122 @@ export function SeasonPage() {
       >
         <form onSubmit={handleSubmit} className="space-y-4 text-left font-sans">
           {formError && (
-            <div className="flex items-center gap-2 rounded-[10px] bg-rose-50 p-3 border border-rose-200 text-xs font-bold text-rose-800">
-              <AlertCircleIcon className="size-4 text-rose-600 shrink-0" />
+            <div className="flex items-center gap-2 rounded-[10px] border border-rose-200 bg-rose-50 p-3 text-xs font-bold text-rose-800">
+              <AlertCircleIcon className="size-4 shrink-0 text-rose-600" />
               <span>{formError}</span>
             </div>
           )}
 
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-[#0a0a0a]">Season Name</label>
+            <label className="text-xs font-bold text-[#0a0a0a]">
+              Season Name
+            </label>
             <input
               type="text"
               required
               value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-xs sm:text-sm text-[#0a0a0a] outline-none shadow-xs focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] transition-all"
+              onChange={(e) =>
+                setFormData({ ...formData, name: e.target.value })
+              }
+              className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-xs text-[#0a0a0a] shadow-xs transition-all outline-none focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] sm:text-sm"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-[#0a0a0a]">Start Date</label>
+              <label className="text-xs font-bold text-[#0a0a0a]">
+                Start Date
+              </label>
               <input
                 type="date"
                 required
                 value={formData.start_date}
-                onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-xs sm:text-sm text-[#0a0a0a] outline-none shadow-xs focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] transition-all"
+                onChange={(e) =>
+                  setFormData({ ...formData, start_date: e.target.value })
+                }
+                className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-xs text-[#0a0a0a] shadow-xs transition-all outline-none focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] sm:text-sm"
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-[#0a0a0a]">End Date</label>
+              <label className="text-xs font-bold text-[#0a0a0a]">
+                End Date
+              </label>
               <input
                 type="date"
                 required
                 value={formData.end_date}
-                onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-xs sm:text-sm text-[#0a0a0a] outline-none shadow-xs focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] transition-all"
+                onChange={(e) =>
+                  setFormData({ ...formData, end_date: e.target.value })
+                }
+                className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-xs text-[#0a0a0a] shadow-xs transition-all outline-none focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] sm:text-sm"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-[#0a0a0a]">Attendance Goal</label>
+              <label className="text-xs font-bold text-[#0a0a0a]">
+                Attendance Goal
+              </label>
               <input
                 type="number"
                 min={1}
                 value={formData.target_attendance}
-                onChange={(e) => setFormData({ ...formData, target_attendance: Number(e.target.value) })}
-                className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-xs sm:text-sm text-[#0a0a0a] outline-none shadow-xs focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] transition-all"
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    target_attendance: Number(e.target.value),
+                  })
+                }
+                className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-xs text-[#0a0a0a] shadow-xs transition-all outline-none focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] sm:text-sm"
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-[#0a0a0a]">Completion Bonus Points</label>
+              <label className="text-xs font-bold text-[#0a0a0a]">
+                Completion Bonus Points
+              </label>
               <input
                 type="number"
                 min={0}
                 value={formData.bonus_points}
-                onChange={(e) => setFormData({ ...formData, bonus_points: Number(e.target.value) })}
-                className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-xs sm:text-sm text-[#0a0a0a] outline-none shadow-xs focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] transition-all"
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    bonus_points: Number(e.target.value),
+                  })
+                }
+                className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-xs text-[#0a0a0a] shadow-xs transition-all outline-none focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] sm:text-sm"
               />
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-[#0a0a0a]">Description / Theme</label>
+            <label className="text-xs font-bold text-[#0a0a0a]">
+              Description / Theme
+            </label>
             <textarea
               rows={3}
               value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, description: e.target.value })
+              }
               placeholder="Describe season theme or community focus..."
-              className="w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 py-2.5 text-xs sm:text-sm text-[#0a0a0a] outline-none shadow-xs focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] transition-all"
+              className="w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 py-2.5 text-xs text-[#0a0a0a] shadow-xs transition-all outline-none focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] sm:text-sm"
             />
           </div>
 
-          <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#e5e5e5]">
+          <div className="flex items-center justify-end gap-2 border-t border-[#e5e5e5] pt-3">
             <button
               type="button"
               onClick={() => setModalOpen(false)}
-              className="h-10 px-4 rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] hover:bg-[#faf5e8] text-xs font-bold text-[#0a0a0a] transition-colors cursor-pointer"
+              className="h-10 cursor-pointer rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-4 text-xs font-bold text-[#0a0a0a] transition-colors hover:bg-[#faf5e8]"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="h-10 px-5 rounded-[12px] bg-[#0a0a0a] hover:bg-[#1f1f1f] text-xs font-bold text-white shadow-xs transition-colors cursor-pointer disabled:opacity-50"
+              className="h-10 cursor-pointer rounded-[12px] bg-[#0a0a0a] px-5 text-xs font-bold text-white shadow-xs transition-colors hover:bg-[#1f1f1f] disabled:opacity-50"
             >
               {submitting ? "Saving..." : "Save Changes"}
             </button>

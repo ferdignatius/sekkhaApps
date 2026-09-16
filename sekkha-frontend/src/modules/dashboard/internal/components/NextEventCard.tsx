@@ -36,7 +36,7 @@ export function NextEventCard({ event }: NextEventCardProps) {
   return (
     <section
       aria-labelledby="next-event-heading"
-      className="rounded-[20px] border border-[#e5e5e5] bg-[#fffaf0] p-5 shadow-xs font-sans text-left"
+      className="rounded-[20px] border border-[#e5e5e5] bg-[#fffaf0] p-5 text-left font-sans shadow-xs"
     >
       {/* Header */}
       <div className="mb-4 flex items-center gap-2">
@@ -51,44 +51,53 @@ export function NextEventCard({ event }: NextEventCardProps) {
 
       {/* Content */}
       {!event ? (
-        <p className="text-xs font-medium text-[#6a6a6a] py-2">
+        <p className="py-2 text-xs font-medium text-[#6a6a6a]">
           No upcoming events scheduled.
         </p>
       ) : (
-        <div className="rounded-[16px] bg-[#faf5e8] border border-[#e5e5e5] p-4 space-y-3">
+        <div className="space-y-3 rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] p-4">
           {/* Event type badge + title */}
           <div className="flex items-start gap-2">
             <span
               className={`mt-0.5 shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-bold ${
                 event.event_type === "rutin"
-                  ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
-                  : "bg-[#ffb084]/25 text-[#0a0a0a] border border-[#ffb084]/50"
+                  ? "border border-emerald-200 bg-emerald-100 text-emerald-800"
+                  : "border border-[#ffb084]/50 bg-[#ffb084]/25 text-[#0a0a0a]"
               }`}
             >
               {event.event_type === "rutin" ? "Routine" : "Special"}
             </span>
-            <p className="text-sm font-bold text-[#0a0a0a] leading-snug">{event.title}</p>
+            <p className="text-sm leading-snug font-bold text-[#0a0a0a]">
+              {event.title}
+            </p>
           </div>
 
           {/* Date & time */}
           <div className="flex items-center gap-1.5 text-xs text-[#6a6a6a]">
-            <CalendarIcon className="size-3.5 text-[#6a6a6a]" aria-hidden="true" />
+            <CalendarIcon
+              className="size-3.5 text-[#6a6a6a]"
+              aria-hidden="true"
+            />
             <span>
-              {formatEventDate(event.event_date)} · {formatEventTime(event.event_date)}
+              {formatEventDate(event.event_date)} ·{" "}
+              {formatEventTime(event.event_date)}
             </span>
           </div>
 
           {/* Location */}
           <div className="flex items-center gap-1.5 text-xs text-[#6a6a6a]">
-            <MapPinIcon className="size-3.5 text-[#6a6a6a]" aria-hidden="true" />
+            <MapPinIcon
+              className="size-3.5 text-[#6a6a6a]"
+              aria-hidden="true"
+            />
             <span>{event.location}</span>
           </div>
 
           {/* Action button */}
-          <div className="pt-2 border-t border-[#e5e5e5]">
+          <div className="border-t border-[#e5e5e5] pt-2">
             <Link
               to="/events"
-              className="flex w-full items-center justify-center gap-2 rounded-[12px] bg-[#0a0a0a] py-2.5 px-4 text-xs font-bold text-white shadow-xs hover:bg-[#1f1f1f] transition-all active:scale-[0.99]"
+              className="flex w-full items-center justify-center gap-2 rounded-[12px] bg-[#0a0a0a] px-4 py-2.5 text-xs font-bold text-white shadow-xs transition-all hover:bg-[#1f1f1f] active:scale-[0.99]"
             >
               <span>View Event Details</span>
             </Link>

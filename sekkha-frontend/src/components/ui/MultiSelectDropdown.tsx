@@ -36,7 +36,10 @@ export function MultiSelectDropdown({
   // Close on outside click
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(e.target as Node)
+      ) {
         setOpen(false)
       }
     }
@@ -47,7 +50,7 @@ export function MultiSelectDropdown({
   function toggleOption(opt: MultiSelectOption) {
     if (value.includes(opt.value)) {
       if (!allowEmpty && value.length === 1) return // Prevent empty if not allowed
-      onChange(value.filter(v => v !== opt.value))
+      onChange(value.filter((v) => v !== opt.value))
     } else {
       onChange([...value, opt.value])
     }
@@ -59,25 +62,25 @@ export function MultiSelectDropdown({
   }
 
   function handleSelectAll() {
-    onChange(options.map(o => o.value))
+    onChange(options.map((o) => o.value))
   }
 
   function handleReset() {
     if (defaultValue) {
       onChange(defaultValue)
     } else {
-      onChange(options.map(o => o.value))
+      onChange(options.map((o) => o.value))
     }
   }
 
   function removeTag(v: string, e: React.MouseEvent) {
     e.stopPropagation()
     if (!allowEmpty && value.length === 1) return
-    onChange(value.filter(x => x !== v))
+    onChange(value.filter((x) => x !== v))
   }
 
   const isAllSelected = value.length === options.length
-  const selectedOptions = options.filter(o => value.includes(o.value))
+  const selectedOptions = options.filter((o) => value.includes(o.value))
 
   return (
     <div ref={containerRef} className="relative text-left font-sans">
@@ -85,21 +88,25 @@ export function MultiSelectDropdown({
       <div
         role="button"
         tabIndex={0}
-        onClick={() => setOpen(v => !v)}
-        onKeyDown={e => (e.key === "Enter" || e.key === " ") && setOpen(v => !v)}
-        className={`flex min-h-10 w-full cursor-pointer items-center gap-1.5 flex-wrap rounded-xl border bg-sekkha-canvas px-2.5 py-1.5 pr-8 text-caption transition-all relative ${
+        onClick={() => setOpen((v) => !v)}
+        onKeyDown={(e) =>
+          (e.key === "Enter" || e.key === " ") && setOpen((v) => !v)
+        }
+        className={`text-caption relative flex min-h-10 w-full cursor-pointer flex-wrap items-center gap-1.5 rounded-xl border bg-sekkha-canvas px-2.5 py-1.5 pr-8 transition-all ${
           open
-            ? "border-sekkha-brand-blue ring-2 ring-sekkha-brand-blue/20 bg-white"
+            ? "border-sekkha-brand-blue bg-white ring-2 ring-sekkha-brand-blue/20"
             : "border-sekkha-hairline hover:border-sekkha-hairline-strong hover:bg-white"
         }`}
       >
         {selectedOptions.length === 0 ? (
-          <span className="text-sekkha-slate/70 font-medium text-caption py-0.5 px-1">{placeholder}</span>
+          <span className="text-caption px-1 py-0.5 font-medium text-sekkha-slate/70">
+            {placeholder}
+          </span>
         ) : (
-          selectedOptions.map(opt => (
+          selectedOptions.map((opt) => (
             <span
               key={opt.value}
-              className="inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-micro-bold border"
+              className="text-micro-bold inline-flex items-center gap-1 rounded-lg border px-2 py-0.5"
               style={
                 opt.colorHex
                   ? {
@@ -109,13 +116,13 @@ export function MultiSelectDropdown({
                     }
                   : undefined
               }
-              onClick={e => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
             >
               <span>{opt.label}</span>
               <button
                 type="button"
-                onClick={e => removeTag(opt.value, e)}
-                className="rounded-full hover:bg-black/10 transition-colors p-0.5 -mr-0.5 cursor-pointer"
+                onClick={(e) => removeTag(opt.value, e)}
+                className="-mr-0.5 cursor-pointer rounded-full p-0.5 transition-colors hover:bg-black/10"
               >
                 <XIcon className="size-2.5" />
               </button>
@@ -124,7 +131,7 @@ export function MultiSelectDropdown({
         )}
 
         {/* Chevron icon */}
-        <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-sekkha-slate pointer-events-none">
+        <span className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-sekkha-slate">
           <ChevronDownIcon
             className={`size-4 transition-transform duration-150 ${open ? "rotate-180" : ""}`}
           />
@@ -133,21 +140,24 @@ export function MultiSelectDropdown({
 
       {/* ── Dropdown Panel ── */}
       {open && (
-        <div className="absolute z-[200] mt-1 w-full min-w-[200px] rounded-2xl border border-sekkha-hairline bg-white shadow-xl overflow-hidden animate-in fade-in-0 zoom-in-95 duration-100">
-          
+        <div className="absolute z-[200] mt-1 w-full min-w-[200px] animate-in overflow-hidden rounded-2xl border border-sekkha-hairline bg-white shadow-xl duration-100 fade-in-0 zoom-in-95">
           {/* Deselect All / Select All row */}
-          <div className="flex items-center justify-between px-3 py-2 border-b border-sekkha-hairline-soft bg-sekkha-canvas/60">
+          <div className="flex items-center justify-between border-b border-sekkha-hairline-soft bg-sekkha-canvas/60 px-3 py-2">
             <button
               type="button"
               onClick={isAllSelected ? handleDeselectAll : handleSelectAll}
-              className="flex items-center gap-1.5 text-micro-bold text-sekkha-brand-blue hover:underline cursor-pointer"
+              className="text-micro-bold flex cursor-pointer items-center gap-1.5 text-sekkha-brand-blue hover:underline"
             >
-              <div className={`h-4 w-4 rounded flex items-center justify-center border transition-all ${
-                isAllSelected
-                  ? "bg-sekkha-brand-blue border-sekkha-brand-blue"
-                  : "border-sekkha-hairline-strong bg-white"
-              }`}>
-                {isAllSelected && <CheckIcon className="size-2.5 text-white stroke-[3]" />}
+              <div
+                className={`flex h-4 w-4 items-center justify-center rounded border transition-all ${
+                  isAllSelected
+                    ? "border-sekkha-brand-blue bg-sekkha-brand-blue"
+                    : "border-sekkha-hairline-strong bg-white"
+                }`}
+              >
+                {isAllSelected && (
+                  <CheckIcon className="size-2.5 stroke-[3] text-white" />
+                )}
               </div>
               {isAllSelected ? "Batal Pilih Semua" : "Pilih Semua"}
             </button>
@@ -156,7 +166,7 @@ export function MultiSelectDropdown({
               <button
                 type="button"
                 onClick={handleReset}
-                className="text-micro-bold text-sekkha-slate hover:text-sekkha-ink cursor-pointer hover:underline"
+                className="text-micro-bold cursor-pointer text-sekkha-slate hover:text-sekkha-ink hover:underline"
               >
                 Reset
               </button>
@@ -164,24 +174,30 @@ export function MultiSelectDropdown({
           </div>
 
           {/* Options list */}
-          <div className="max-h-52 overflow-y-auto scrollbar-none py-1">
-            {options.map(opt => {
+          <div className="max-h-52 scrollbar-none overflow-y-auto py-1">
+            {options.map((opt) => {
               const isChecked = value.includes(opt.value)
               return (
                 <button
                   key={opt.value}
                   type="button"
                   onClick={() => toggleOption(opt)}
-                  className={`flex w-full items-center gap-2.5 px-3 py-2.5 text-caption font-semibold transition-colors cursor-pointer text-left ${
-                    isChecked ? "bg-sekkha-brand-blue/8 text-sekkha-ink" : "hover:bg-sekkha-surface text-sekkha-ink"
+                  className={`text-caption flex w-full cursor-pointer items-center gap-2.5 px-3 py-2.5 text-left font-semibold transition-colors ${
+                    isChecked
+                      ? "bg-sekkha-brand-blue/8 text-sekkha-ink"
+                      : "text-sekkha-ink hover:bg-sekkha-surface"
                   }`}
                 >
-                  <div className={`h-4 w-4 shrink-0 rounded flex items-center justify-center border transition-all ${
-                    isChecked
-                      ? "bg-sekkha-brand-blue border-sekkha-brand-blue"
-                      : "border-sekkha-hairline-strong bg-white"
-                  }`}>
-                    {isChecked && <CheckIcon className="size-2.5 text-white stroke-[3]" />}
+                  <div
+                    className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-all ${
+                      isChecked
+                        ? "border-sekkha-brand-blue bg-sekkha-brand-blue"
+                        : "border-sekkha-hairline-strong bg-white"
+                    }`}
+                  >
+                    {isChecked && (
+                      <CheckIcon className="size-2.5 stroke-[3] text-white" />
+                    )}
                   </div>
                   {opt.colorHex && (
                     <span
@@ -196,7 +212,7 @@ export function MultiSelectDropdown({
           </div>
 
           {/* Footer: count */}
-          <div className="border-t border-sekkha-hairline-soft px-3 py-2 bg-sekkha-canvas/60">
+          <div className="border-t border-sekkha-hairline-soft bg-sekkha-canvas/60 px-3 py-2">
             <p className="text-micro font-bold text-sekkha-slate">
               {value.length === 0
                 ? "Tidak ada yang dipilih"

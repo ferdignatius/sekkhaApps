@@ -1,4 +1,8 @@
-import { createFileRoute, lazyRouteComponent, redirect } from "@tanstack/react-router"
+import {
+  createFileRoute,
+  lazyRouteComponent,
+  redirect,
+} from "@tanstack/react-router"
 import { GenericSkeleton } from "@/components/common/PageSkeletons"
 
 export const Route = createFileRoute("/_authenticated/insight")({
@@ -8,6 +12,8 @@ export const Route = createFileRoute("/_authenticated/insight")({
       throw redirect({ to: "/home" })
     }
   },
-  component: lazyRouteComponent(() => import("@/modules/pengurus").then(m => ({ default: m.InsightPage }))),
+  component: lazyRouteComponent(() =>
+    import("@/modules/pengurus").then((m) => ({ default: m.InsightPage }))
+  ),
   pendingComponent: GenericSkeleton,
 })

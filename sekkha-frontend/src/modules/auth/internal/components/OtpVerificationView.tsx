@@ -72,7 +72,10 @@ export function OtpVerificationView({
     }
   }
 
-  function handleKeyDown(index: number, e: React.KeyboardEvent<HTMLInputElement>) {
+  function handleKeyDown(
+    index: number,
+    e: React.KeyboardEvent<HTMLInputElement>
+  ) {
     if (e.key === "Backspace" && !digits[index] && index > 0) {
       inputsRef.current[index - 1]?.focus()
     } else if (e.key === "ArrowLeft" && index > 0) {
@@ -84,7 +87,10 @@ export function OtpVerificationView({
 
   function handlePaste(e: React.ClipboardEvent<HTMLInputElement>) {
     e.preventDefault()
-    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6)
+    const pasted = e.clipboardData
+      .getData("text")
+      .replace(/\D/g, "")
+      .slice(0, 6)
     if (!pasted) return
 
     const next = [...digits]
@@ -125,19 +131,19 @@ export function OtpVerificationView({
   const isComplete = digits.every((d) => d !== "")
 
   return (
-    <div className="space-y-6 animate-in fade-in zoom-in-95 duration-150 font-sans text-left">
+    <div className="animate-in space-y-6 text-left font-sans duration-150 zoom-in-95 fade-in">
       {/* Header Info */}
-      <div className="text-center space-y-2">
+      <div className="space-y-2 text-center">
         <div className="mx-auto flex size-12 items-center justify-center rounded-[16px] bg-[#0a0a0a] text-white shadow-xs">
           <MailCheckIcon className="size-6 text-[#e8b94a]" />
         </div>
         <h2 className="text-xl font-bold tracking-tight text-[#0a0a0a]">
           Verifikasi Email Anda
         </h2>
-        <p className="text-xs text-[#6a6a6a] max-w-xs mx-auto leading-relaxed">
+        <p className="mx-auto max-w-xs text-xs leading-relaxed text-[#6a6a6a]">
           Masukkan 6 digit kode OTP yang kami kirimkan ke:
           <br />
-          <span className="font-bold text-[#0a0a0a] inline-block mt-0.5 bg-[#faf5e8] px-2.5 py-0.5 rounded-[6px] border border-[#e5e5e5]">
+          <span className="mt-0.5 inline-block rounded-[6px] border border-[#e5e5e5] bg-[#faf5e8] px-2.5 py-0.5 font-bold text-[#0a0a0a]">
             {email}
           </span>
         </p>
@@ -145,7 +151,7 @@ export function OtpVerificationView({
 
       {/* Error Message */}
       {error && (
-        <div className="flex items-center gap-2 rounded-[12px] bg-[#ef4444]/10 p-3.5 border border-[#ef4444]/20 text-xs font-medium text-[#ef4444] animate-in fade-in">
+        <div className="flex animate-in items-center gap-2 rounded-[12px] border border-[#ef4444]/20 bg-[#ef4444]/10 p-3.5 text-xs font-medium text-[#ef4444] fade-in">
           <AlertCircleIcon className="size-4 shrink-0 text-[#ef4444]" />
           <span>{error}</span>
         </div>
@@ -153,7 +159,7 @@ export function OtpVerificationView({
 
       {/* Resend Success Notice */}
       {resendSuccessNotice && (
-        <div className="flex items-center gap-2 rounded-[12px] bg-[#22c55e]/10 p-3 border border-[#22c55e]/20 text-xs font-semibold text-[#22c55e] animate-in fade-in">
+        <div className="flex animate-in items-center gap-2 rounded-[12px] border border-[#22c55e]/20 bg-[#22c55e]/10 p-3 text-xs font-semibold text-[#22c55e] fade-in">
           <SparklesIcon className="size-4 shrink-0" />
           <span>Kode OTP baru telah dikirim ke email Anda!</span>
         </div>
@@ -177,16 +183,16 @@ export function OtpVerificationView({
               onChange={(e) => handleChangeDigit(idx, e.target.value)}
               onKeyDown={(e) => handleKeyDown(idx, e)}
               onPaste={handlePaste}
-              className="size-11 sm:size-13 rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] text-center font-mono text-lg sm:text-xl font-bold text-[#0a0a0a] shadow-2xs outline-none transition-all focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] focus:scale-105"
+              className="size-11 rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] text-center font-mono text-lg font-bold text-[#0a0a0a] shadow-2xs transition-all outline-none focus:scale-105 focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] sm:size-13 sm:text-xl"
             />
           ))}
         </div>
 
         {/* Resend & Expiry Help */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-2 pt-1 text-xs text-[#6a6a6a]">
+        <div className="flex flex-col items-center justify-between gap-2 pt-1 text-xs text-[#6a6a6a] sm:flex-row">
           <span>Tidak menerima email?</span>
           {resendCountdown > 0 ? (
-            <span className="font-semibold text-[#0a0a0a] bg-[#faf5e8] px-2 py-0.5 rounded-full border border-[#e5e5e5]">
+            <span className="rounded-full border border-[#e5e5e5] bg-[#faf5e8] px-2 py-0.5 font-semibold text-[#0a0a0a]">
               Kirim ulang dalam {resendCountdown}d
             </span>
           ) : (
@@ -194,10 +200,14 @@ export function OtpVerificationView({
               type="button"
               onClick={handleResendClick}
               disabled={isResending}
-              className="inline-flex items-center gap-1 font-bold text-[#0a0a0a] hover:underline cursor-pointer disabled:opacity-50"
+              className="inline-flex cursor-pointer items-center gap-1 font-bold text-[#0a0a0a] hover:underline disabled:opacity-50"
             >
-              <RefreshCwIcon className={`size-3 ${isResending ? "animate-spin" : ""}`} />
-              <span>{isResending ? "Mengirim..." : "Kirim Ulang Kode OTP"}</span>
+              <RefreshCwIcon
+                className={`size-3 ${isResending ? "animate-spin" : ""}`}
+              />
+              <span>
+                {isResending ? "Mengirim..." : "Kirim Ulang Kode OTP"}
+              </span>
             </button>
           )}
         </div>
@@ -206,7 +216,7 @@ export function OtpVerificationView({
         <Button
           type="submit"
           disabled={!isComplete || isLoading}
-          className="w-full h-11 rounded-[12px] bg-[#0a0a0a] text-white text-xs font-semibold hover:bg-[#1f1f1f] shadow-xs active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer transition-all disabled:opacity-40"
+          className="flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-[12px] bg-[#0a0a0a] text-xs font-semibold text-white shadow-xs transition-all hover:bg-[#1f1f1f] active:scale-[0.99] disabled:opacity-40"
         >
           {isLoading ? (
             <>
@@ -236,17 +246,17 @@ export function OtpVerificationView({
           ) : (
             <>
               <span>Verifikasi & Selesaikan Pendaftaran</span>
-              <ArrowRightIcon className="size-4 ml-1" />
+              <ArrowRightIcon className="ml-1 size-4" />
             </>
           )}
         </Button>
 
         {/* Back to Form link */}
-        <div className="pt-2 text-center border-t border-[#e5e5e5]">
+        <div className="border-t border-[#e5e5e5] pt-2 text-center">
           <button
             type="button"
             onClick={onBack}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#6a6a6a] hover:text-[#0a0a0a] transition-colors cursor-pointer"
+            className="inline-flex cursor-pointer items-center gap-1.5 text-xs font-semibold text-[#6a6a6a] transition-colors hover:text-[#0a0a0a]"
           >
             <ArrowLeftIcon className="size-3.5" />
             <span>Salah memasukkan email? Ubah Email</span>

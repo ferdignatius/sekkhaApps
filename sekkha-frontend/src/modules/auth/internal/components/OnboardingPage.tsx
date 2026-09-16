@@ -18,8 +18,8 @@ import {
 import QRCode from "react-qr-code"
 import { api } from "@/lib/api"
 import { useAuth } from "@/modules/auth"
-import { SchoolCombobox  } from "@/components/ui/SchoolCombobox"
-import type {SchoolOption} from "@/components/ui/SchoolCombobox";
+import { SchoolCombobox } from "@/components/ui/SchoolCombobox"
+import type { SchoolOption } from "@/components/ui/SchoolCombobox"
 
 type OnboardingStep = "identity" | "academic" | "success"
 
@@ -65,7 +65,9 @@ export function OnboardingPage() {
   })
 
   // Selected school metadata
-  const [selectedSchoolType, setSelectedSchoolType] = useState<string | null>(null)
+  const [selectedSchoolType, setSelectedSchoolType] = useState<string | null>(
+    null
+  )
 
   // Stats for matching/similar users
   const [stats, setStats] = useState<SimilarUsersStats | null>(null)
@@ -93,26 +95,32 @@ export function OnboardingPage() {
     selectedSchoolType === "SMP"
       ? SMP_GRADE_OPTIONS
       : selectedSchoolType === "SMA" || selectedSchoolType === "SMK"
-      ? SMA_SMK_GRADE_OPTIONS
-      : []
+        ? SMA_SMK_GRADE_OPTIONS
+        : []
 
   // Prefill profile data on mount:
   // Autofill username, but keep name (fullname) EMPTY by default.
   useEffect(() => {
-    api.get<{
-      username?: string
-      name?: string
-      email?: string
-      phone?: string
-      school?: string
-      class_grade?: string
-      birth_date?: string
-      gender?: string
-    }>("/users/me")
+    api
+      .get<{
+        username?: string
+        name?: string
+        email?: string
+        phone?: string
+        school?: string
+        class_grade?: string
+        birth_date?: string
+        gender?: string
+      }>("/users/me")
       .then(async (u) => {
         const autoUsername =
           u.username ||
-          (u.email ? u.email.split("@")[0].toLowerCase().replace(/[^a-z0-9_.]/g, "") : "")
+          (u.email
+            ? u.email
+                .split("@")[0]
+                .toLowerCase()
+                .replace(/[^a-z0-9_.]/g, "")
+            : "")
 
         setProfileForm((prev) => ({
           ...prev,
@@ -122,7 +130,9 @@ export function OnboardingPage() {
           school: u.school || prev.school,
           class_grade: u.class_grade || prev.class_grade,
           gender: u.gender || prev.gender,
-          birth_date: u.birth_date ? u.birth_date.split("T")[0] : prev.birth_date,
+          birth_date: u.birth_date
+            ? u.birth_date.split("T")[0]
+            : prev.birth_date,
         }))
 
         // Look up school type if school is already set
@@ -194,7 +204,9 @@ export function OnboardingPage() {
       return
     }
     if (!/^[a-zA-Z0-9_.]+$/.test(cleanUsername)) {
-      setErrorMsg("Username hanya boleh berisi huruf, angka, titik (.), atau garis bawah (_).")
+      setErrorMsg(
+        "Username hanya boleh berisi huruf, angka, titik (.), atau garis bawah (_)."
+      )
       return
     }
 
@@ -247,7 +259,9 @@ export function OnboardingPage() {
     setErrorMsg(null)
 
     if (!profileForm.school.trim()) {
-      setErrorMsg("Silakan pilih asal sekolah atau kampus Anda dari master data.")
+      setErrorMsg(
+        "Silakan pilih asal sekolah atau kampus Anda dari master data."
+      )
       return
     }
 
@@ -272,14 +286,21 @@ export function OnboardingPage() {
         name: profileForm.name.trim(),
         phone: profileForm.phone.trim() || null,
         school: profileForm.school.trim() || null,
-        class_grade: hasGradeLevel && profileForm.class_grade ? profileForm.class_grade.trim() : null,
+        class_grade:
+          hasGradeLevel && profileForm.class_grade
+            ? profileForm.class_grade.trim()
+            : null,
         birth_date: profileForm.birth_date || null,
         gender: profileForm.gender || "L",
       })
 
       const finalName = res.name || profileForm.name.trim()
       updateUser({ name: finalName })
-      window.dispatchEvent(new CustomEvent("sekkha:profile_updated", { detail: { name: finalName } }))
+      window.dispatchEvent(
+        new CustomEvent("sekkha:profile_updated", {
+          detail: { name: finalName },
+        })
+      )
 
       setSuccessData({
         userNumber: res.user_number,
@@ -291,7 +312,9 @@ export function OnboardingPage() {
       setStep("success")
       window.scrollTo({ top: 0, behavior: "smooth" })
     } catch (err: any) {
-      setErrorMsg(err.message || "Gagal menyimpan data onboarding. Silakan coba lagi.")
+      setErrorMsg(
+        err.message || "Gagal menyimpan data onboarding. Silakan coba lagi."
+      )
     } finally {
       setSubmitting(false)
     }
@@ -308,21 +331,27 @@ export function OnboardingPage() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-[#fffaf0] p-4 py-10 font-sans selection:bg-[#f5f0e0] selection:text-[#0a0a0a]">
+    <main className="flex min-h-screen items-center justify-center bg-[#fffaf0] p-4 py-10 font-sans selection:bg-[#f5f0e0] selection:text-[#0a0a0a]">
       <div className="w-full max-w-xl space-y-6">
-
         {/* Brand Header */}
-        <div className="text-center space-y-2">
+        <div className="space-y-2 text-center">
           <div className="mx-auto flex size-14 items-center justify-center">
-            <img src="/sekkha_logo.svg" alt="Sekkha Logo" className="size-full object-contain" />
+            <img
+              src="/sekkha_logo.svg"
+              alt="Sekkha Logo"
+              className="size-full object-contain"
+            />
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#0a0a0a]">
+          <h1 className="text-2xl font-bold tracking-tight text-[#0a0a0a] sm:text-3xl">
             Selamat Datang di Sekkha
           </h1>
-          <p className="text-xs sm:text-sm text-[#6a6a6a] font-medium max-w-md mx-auto">
-            {step === "identity" && "Langkah 1: Lengkapi profil identitas Anda untuk penerbitan ID Anggota resmi"}
-            {step === "academic" && "Langkah 2: Lengkapi almamater Anda & temukan rekan sekomunitas"}
-            {step === "success" && "Akun & Kartu Anggota Digital Anda telah siap digunakan!"}
+          <p className="mx-auto max-w-md text-xs font-medium text-[#6a6a6a] sm:text-sm">
+            {step === "identity" &&
+              "Langkah 1: Lengkapi profil identitas Anda untuk penerbitan ID Anggota resmi"}
+            {step === "academic" &&
+              "Langkah 2: Lengkapi almamater Anda & temukan rekan sekomunitas"}
+            {step === "success" &&
+              "Akun & Kartu Anggota Digital Anda telah siap digunakan!"}
           </p>
         </div>
 
@@ -332,10 +361,10 @@ export function OnboardingPage() {
             <div className="flex items-center justify-between gap-2">
               {/* Step 1 Indicator */}
               <div
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-full transition-all text-xs font-semibold ${
+                className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold transition-all ${
                   step === "identity"
                     ? "bg-[#0a0a0a] text-white"
-                    : "bg-[#22c55e]/15 text-[#22c55e] border border-[#22c55e]/30"
+                    : "border border-[#22c55e]/30 bg-[#22c55e]/15 text-[#22c55e]"
                 }`}
               >
                 <span className="flex size-5 items-center justify-center rounded-full bg-current/20 text-[11px] font-bold">
@@ -345,7 +374,7 @@ export function OnboardingPage() {
               </div>
 
               {/* Progress Connector Line */}
-              <div className="h-0.5 flex-1 bg-[#e5e5e5] relative overflow-hidden rounded-full mx-1">
+              <div className="relative mx-1 h-0.5 flex-1 overflow-hidden rounded-full bg-[#e5e5e5]">
                 <div
                   className={`h-full bg-[#0a0a0a] transition-all duration-300 ${
                     step === "academic" ? "w-full" : "w-1/2"
@@ -355,10 +384,10 @@ export function OnboardingPage() {
 
               {/* Step 2 Indicator */}
               <div
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-full transition-all text-xs font-semibold ${
+                className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold transition-all ${
                   step === "academic"
                     ? "bg-[#0a0a0a] text-white"
-                    : "bg-[#faf5e8] text-[#6a6a6a] border border-[#e5e5e5]"
+                    : "border border-[#e5e5e5] bg-[#faf5e8] text-[#6a6a6a]"
                 }`}
               >
                 <span className="flex size-5 items-center justify-center rounded-full bg-current/20 text-[11px] font-bold">
@@ -373,11 +402,10 @@ export function OnboardingPage() {
         )}
 
         {/* Main Card */}
-        <div className="rounded-[24px] border border-[#e5e5e5] bg-[#ffffff] p-6 sm:p-8 shadow-xl shadow-[#0a0a0a]/5 space-y-6">
-
+        <div className="space-y-6 rounded-[24px] border border-[#e5e5e5] bg-[#ffffff] p-6 shadow-xl shadow-[#0a0a0a]/5 sm:p-8">
           {/* Error Alert */}
           {errorMsg && (
-            <div className="flex items-center gap-2 rounded-[12px] bg-[#ef4444]/10 p-3.5 border border-[#ef4444]/20 text-xs text-[#ef4444] font-medium animate-in fade-in">
+            <div className="flex animate-in items-center gap-2 rounded-[12px] border border-[#ef4444]/20 bg-[#ef4444]/10 p-3.5 text-xs font-medium text-[#ef4444] fade-in">
               <AlertTriangleIcon className="size-4 shrink-0 text-[#ef4444]" />
               <span>{errorMsg}</span>
             </div>
@@ -387,15 +415,18 @@ export function OnboardingPage() {
           {/* STEP 1: USERNAME, FULLNAME, TANGGAL LAHIR, NOMOR TELEPON            */}
           {/* ─────────────────────────────────────────────────────────────────── */}
           {step === "identity" && (
-            <form onSubmit={handleGoToStep2} className="space-y-4 animate-in fade-in">
+            <form
+              onSubmit={handleGoToStep2}
+              className="animate-in space-y-4 fade-in"
+            >
               <div className="flex items-center justify-between border-b border-[#e5e5e5] pb-3">
                 <div className="flex items-center gap-2">
                   <UserIcon className="size-4 text-[#0a0a0a]" />
-                  <span className="text-xs font-bold text-[#0a0a0a] uppercase tracking-wider">
+                  <span className="text-xs font-bold tracking-wider text-[#0a0a0a] uppercase">
                     Informasi Identitas Diri
                   </span>
                 </div>
-                <span className="rounded-full bg-[#faf5e8] border border-[#e5e5e5] px-2.5 py-0.5 text-[11px] font-semibold text-[#0a0a0a]">
+                <span className="rounded-full border border-[#e5e5e5] bg-[#faf5e8] px-2.5 py-0.5 text-[11px] font-semibold text-[#0a0a0a]">
                   Langkah 1 dari 2
                 </span>
               </div>
@@ -403,17 +434,17 @@ export function OnboardingPage() {
               {/* Username (Mandatory, Editable) */}
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-[#0a0a0a] flex items-center gap-1.5">
+                  <label className="flex items-center gap-1.5 text-xs font-bold text-[#0a0a0a]">
                     <AtSignIcon className="size-3.5 text-[#0a0a0a]" />
                     <span>Username</span>
                     <span className="text-[#ef4444]">*</span>
                   </label>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#0a0a0a] bg-[#faf5e8] border border-[#e5e5e5] px-2 py-0.5 rounded-full">
+                  <span className="rounded-full border border-[#e5e5e5] bg-[#faf5e8] px-2 py-0.5 text-[10px] font-bold tracking-wider text-[#0a0a0a] uppercase">
                     Wajib diisi & dapat diubah
                   </span>
                 </div>
                 <div className="relative flex items-center">
-                  <span className="absolute left-3.5 text-sm font-bold text-[#6a6a6a] select-none pointer-events-none">
+                  <span className="pointer-events-none absolute left-3.5 text-sm font-bold text-[#6a6a6a] select-none">
                     @
                   </span>
                   <input
@@ -424,20 +455,24 @@ export function OnboardingPage() {
                     onChange={(e) =>
                       setProfileForm({
                         ...profileForm,
-                        username: e.target.value.toLowerCase().replace(/[^a-z0-9_.]/g, ""),
+                        username: e.target.value
+                          .toLowerCase()
+                          .replace(/[^a-z0-9_.]/g, ""),
                       })
                     }
-                    className="w-full h-11 rounded-[12px] border border-[#0a0a0a] bg-[#fffaf0] pl-8 pr-3.5 py-2 text-sm font-bold text-[#0a0a0a] placeholder:text-[#9a9a9a] placeholder:font-medium outline-none focus:border-[#0a0a0a] focus:ring-2 focus:ring-[#0a0a0a] transition-all"
+                    className="h-11 w-full rounded-[12px] border border-[#0a0a0a] bg-[#fffaf0] py-2 pr-3.5 pl-8 text-sm font-bold text-[#0a0a0a] transition-all outline-none placeholder:font-medium placeholder:text-[#9a9a9a] focus:border-[#0a0a0a] focus:ring-2 focus:ring-[#0a0a0a]"
                   />
                 </div>
                 <p className="text-[11px] text-[#6a6a6a]">
-                  ID unik Anda untuk login & mention. Huruf kecil, angka, titik, dan underscore saja. Otomatis terisi dari email — silakan sesuaikan bila perlu.
+                  ID unik Anda untuk login & mention. Huruf kecil, angka, titik,
+                  dan underscore saja. Otomatis terisi dari email — silakan
+                  sesuaikan bila perlu.
                 </p>
               </div>
 
               {/* Nama Lengkap / Full Name (Empty by default, Mandatory) */}
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-[#0a0a0a] flex items-center gap-1">
+                <label className="flex items-center gap-1 text-xs font-semibold text-[#0a0a0a]">
                   <span>Nama Lengkap (Full Name)</span>
                   <span className="text-[#ef4444]">*</span>
                 </label>
@@ -446,18 +481,21 @@ export function OnboardingPage() {
                   required
                   placeholder="Ketik nama lengkap resmi Anda..."
                   value={profileForm.name}
-                  onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
-                  className="w-full h-11 rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 py-2 text-sm text-[#0a0a0a] placeholder:text-[#9a9a9a] outline-none focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] transition-all"
+                  onChange={(e) =>
+                    setProfileForm({ ...profileForm, name: e.target.value })
+                  }
+                  className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 py-2 text-sm text-[#0a0a0a] transition-all outline-none placeholder:text-[#9a9a9a] focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a]"
                 />
                 <p className="text-[11px] text-[#6a6a6a]">
-                  Wajib diisi sesuai identitas resmi untuk penerbitan Kartu Anggota.
+                  Wajib diisi sesuai identitas resmi untuk penerbitan Kartu
+                  Anggota.
                 </p>
               </div>
 
               {/* Tanggal Lahir & Jenis Kelamin */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-[#0a0a0a] flex items-center gap-1">
+                  <label className="flex items-center gap-1 text-xs font-semibold text-[#0a0a0a]">
                     <CalendarIcon className="size-3 text-[#6a6a6a]" />
                     <span>Tanggal Lahir</span>
                     <span className="text-[#ef4444]">*</span>
@@ -466,17 +504,26 @@ export function OnboardingPage() {
                     type="date"
                     required
                     value={profileForm.birth_date}
-                    onChange={(e) => setProfileForm({ ...profileForm, birth_date: e.target.value })}
-                    className="w-full h-11 rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 py-2 text-sm text-[#0a0a0a] placeholder:text-[#9a9a9a] outline-none focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] transition-all"
+                    onChange={(e) =>
+                      setProfileForm({
+                        ...profileForm,
+                        birth_date: e.target.value,
+                      })
+                    }
+                    className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 py-2 text-sm text-[#0a0a0a] transition-all outline-none placeholder:text-[#9a9a9a] focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a]"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-[#0a0a0a]">Jenis Kelamin</label>
+                  <label className="text-xs font-semibold text-[#0a0a0a]">
+                    Jenis Kelamin
+                  </label>
                   <select
                     value={profileForm.gender}
-                    onChange={(e) => setProfileForm({ ...profileForm, gender: e.target.value })}
-                    className="w-full h-11 rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 py-2 text-sm text-[#0a0a0a] outline-none focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] transition-all cursor-pointer"
+                    onChange={(e) =>
+                      setProfileForm({ ...profileForm, gender: e.target.value })
+                    }
+                    className="h-11 w-full cursor-pointer rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 py-2 text-sm text-[#0a0a0a] transition-all outline-none focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a]"
                   >
                     <option value="L">Laki-laki</option>
                     <option value="P">Perempuan</option>
@@ -486,7 +533,7 @@ export function OnboardingPage() {
 
               {/* Nomor Telepon */}
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-[#0a0a0a] flex items-center gap-1">
+                <label className="flex items-center gap-1 text-xs font-semibold text-[#0a0a0a]">
                   <PhoneIcon className="size-3 text-[#6a6a6a]" />
                   <span>Nomor HP / WhatsApp</span>
                   <span className="text-[#ef4444]">*</span>
@@ -496,8 +543,10 @@ export function OnboardingPage() {
                   required
                   placeholder="081234567890"
                   value={profileForm.phone}
-                  onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
-                  className="w-full h-11 rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 py-2 text-sm text-[#0a0a0a] placeholder:text-[#9a9a9a] outline-none focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] transition-all"
+                  onChange={(e) =>
+                    setProfileForm({ ...profileForm, phone: e.target.value })
+                  }
+                  className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 py-2 text-sm text-[#0a0a0a] transition-all outline-none placeholder:text-[#9a9a9a] focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a]"
                 />
                 <p className="text-[11px] text-[#6a6a6a]">
                   Digunakan untuk notifikasi jadwal kebaktian & pemulihan akun.
@@ -505,10 +554,10 @@ export function OnboardingPage() {
               </div>
 
               {/* Action Buttons */}
-              <div className="pt-3 space-y-2">
+              <div className="space-y-2 pt-3">
                 <button
                   type="submit"
-                  className="w-full h-11 flex items-center justify-center gap-2 rounded-[12px] bg-[#0a0a0a] text-sm font-semibold text-white shadow-xs hover:bg-[#1f1f1f] transition-all cursor-pointer"
+                  className="flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-[12px] bg-[#0a0a0a] text-sm font-semibold text-white shadow-xs transition-all hover:bg-[#1f1f1f]"
                 >
                   <span>Lanjut ke Almamater / Institusi</span>
                   <ArrowRightIcon className="size-4" />
@@ -517,7 +566,7 @@ export function OnboardingPage() {
                 <button
                   type="button"
                   onClick={handleFinish}
-                  className="w-full text-center text-xs font-semibold text-[#6a6a6a] hover:text-[#0a0a0a] py-2 transition-colors cursor-pointer"
+                  className="w-full cursor-pointer py-2 text-center text-xs font-semibold text-[#6a6a6a] transition-colors hover:text-[#0a0a0a]"
                 >
                   Lewati untuk sekarang →
                 </button>
@@ -529,15 +578,20 @@ export function OnboardingPage() {
           {/* STEP 2: SEKOLAH / ALMAMATER & KELAS (JIKA SMP/SMA/SMK)              */}
           {/* ─────────────────────────────────────────────────────────────────── */}
           {step === "academic" && (
-            <form onSubmit={handleCompleteOnboarding} className="space-y-4 animate-in fade-in">
+            <form
+              onSubmit={handleCompleteOnboarding}
+              className="animate-in space-y-4 fade-in"
+            >
               <div className="flex items-center justify-between border-b border-[#e5e5e5] pb-3">
                 <div className="flex items-center gap-2">
                   <GraduationCapIcon className="size-4 text-[#0a0a0a]" />
-                  <span className="text-xs font-bold text-[#0a0a0a] uppercase tracking-wider">
-                    {hasGradeLevel ? "Sekolah & Kelas" : "Almamater / Institusi"}
+                  <span className="text-xs font-bold tracking-wider text-[#0a0a0a] uppercase">
+                    {hasGradeLevel
+                      ? "Sekolah & Kelas"
+                      : "Almamater / Institusi"}
                   </span>
                 </div>
-                <span className="rounded-full bg-[#faf5e8] border border-[#e5e5e5] px-2.5 py-0.5 text-[11px] font-semibold text-[#0a0a0a]">
+                <span className="rounded-full border border-[#e5e5e5] bg-[#faf5e8] px-2.5 py-0.5 text-[11px] font-semibold text-[#0a0a0a]">
                   Langkah 2 dari 2
                 </span>
               </div>
@@ -545,11 +599,11 @@ export function OnboardingPage() {
               {/* Sekolah (Master Data Combobox) */}
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-semibold text-[#0a0a0a] flex items-center gap-1">
+                  <label className="flex items-center gap-1 text-xs font-semibold text-[#0a0a0a]">
                     <span>Asal Sekolah / Kampus / Institusi</span>
                     <span className="text-[#ef4444]">*</span>
                   </label>
-                  <span className="text-[10px] font-semibold text-[#6a6a6a] uppercase tracking-wider">
+                  <span className="text-[10px] font-semibold tracking-wider text-[#6a6a6a] uppercase">
                     Master Data
                   </span>
                 </div>
@@ -559,26 +613,32 @@ export function OnboardingPage() {
                   placeholder="Cari sekolah (misal: Dharma Widya, Tzu Chi, UI, Umum...)"
                 />
                 <p className="text-[11px] text-[#6a6a6a]">
-                  Pilih dari master data resmi. Untuk umum/pekerja, pilih opsi <span className="font-semibold text-[#0a0a0a]">"Umum"</span>.
+                  Pilih dari master data resmi. Untuk umum/pekerja, pilih opsi{" "}
+                  <span className="font-semibold text-[#0a0a0a]">"Umum"</span>.
                 </p>
               </div>
 
               {/* Kelas / Tingkat — HANYA TAMPIL UNTUK SMP, SMA, dan SMK */}
               {hasGradeLevel && (
-                <div className="space-y-1.5 animate-in fade-in duration-200">
+                <div className="animate-in space-y-1.5 duration-200 fade-in">
                   <div className="flex items-center justify-between">
-                    <label className="text-xs font-semibold text-[#0a0a0a] flex items-center gap-1">
+                    <label className="flex items-center gap-1 text-xs font-semibold text-[#0a0a0a]">
                       <span>Tingkat / Kelas</span>
                       <span className="text-[#ef4444]">*</span>
                     </label>
-                    <span className="text-[10px] font-semibold text-[#0a0a0a] bg-[#ebe6d6] px-1.5 py-0.2 rounded">
+                    <span className="py-0.2 rounded bg-[#ebe6d6] px-1.5 text-[10px] font-semibold text-[#0a0a0a]">
                       Jenjang {selectedSchoolType}
                     </span>
                   </div>
                   <select
                     value={profileForm.class_grade}
-                    onChange={(e) => setProfileForm({ ...profileForm, class_grade: e.target.value })}
-                    className="w-full h-11 rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 py-2 text-sm text-[#0a0a0a] outline-none focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] transition-all cursor-pointer"
+                    onChange={(e) =>
+                      setProfileForm({
+                        ...profileForm,
+                        class_grade: e.target.value,
+                      })
+                    }
+                    className="h-11 w-full cursor-pointer rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 py-2 text-sm text-[#0a0a0a] transition-all outline-none focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a]"
                   >
                     <option value="">Pilih Kelas Anda...</option>
                     {availableGradeOptions.map((opt) => (
@@ -588,7 +648,8 @@ export function OnboardingPage() {
                     ))}
                   </select>
                   <p className="text-[11px] text-[#6a6a6a]">
-                    Pilih tingkat kelas Anda saat ini untuk terhubung dengan teman seangkatan.
+                    Pilih tingkat kelas Anda saat ini untuk terhubung dengan
+                    teman seangkatan.
                   </p>
                 </div>
               )}
@@ -596,14 +657,14 @@ export function OnboardingPage() {
               {/* ─────────────────────────────────────────────────────────────── */}
               {/* SOCIAL PROOF WIDGET: "BERAPA USER MIRIP DENGAN ANDA"            */}
               {/* ─────────────────────────────────────────────────────────────── */}
-              <div className="rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] p-4 sm:p-5 shadow-2xs space-y-2.5 transition-all">
+              <div className="space-y-2.5 rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] p-4 shadow-2xs transition-all sm:p-5">
                 <div className="flex items-center justify-between">
-                  <span className="flex items-center gap-1.5 text-[10px] font-bold tracking-[1.5px] uppercase text-[#0a0a0a]">
+                  <span className="flex items-center gap-1.5 text-[10px] font-bold tracking-[1.5px] text-[#0a0a0a] uppercase">
                     <UsersIcon className="size-3.5 text-[#0a0a0a]" />
                     <span>Komunitas Almamater</span>
                   </span>
                   {stats && stats.totalInSchool > 0 && (
-                    <span className="rounded-full bg-[#22c55e]/15 border border-[#22c55e]/30 px-2 py-0.5 text-[10px] font-bold text-[#22c55e]">
+                    <span className="rounded-full border border-[#22c55e]/30 bg-[#22c55e]/15 px-2 py-0.5 text-[10px] font-bold text-[#22c55e]">
                       Aktif di Sekkha
                     </span>
                   )}
@@ -612,53 +673,67 @@ export function OnboardingPage() {
                 {/* Content based on selection state */}
                 {!profileForm.school ? (
                   <div className="flex items-center gap-3 py-1 text-xs text-[#6a6a6a]">
-                    <div className="size-8 rounded-full bg-[#ebe6d6] flex items-center justify-center shrink-0 text-[#0a0a0a]">
+                    <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#ebe6d6] text-[#0a0a0a]">
                       💡
                     </div>
                     <p className="leading-relaxed">
-                      Pilih sekolah atau institusi Anda di atas untuk melihat berapa banyak teman yang sudah aktif di Sekkha.
+                      Pilih sekolah atau institusi Anda di atas untuk melihat
+                      berapa banyak teman yang sudah aktif di Sekkha.
                     </p>
                   </div>
                 ) : loadingStats ? (
-                  <div className="flex items-center gap-3 py-2 text-xs text-[#6a6a6a] animate-pulse">
-                    <div className="size-8 rounded-full bg-[#ebe6d6] shrink-0" />
-                    <div className="space-y-1.5 flex-1">
-                      <div className="h-3 w-3/4 bg-[#ebe6d6] rounded" />
-                      <div className="h-2.5 w-1/2 bg-[#ebe6d6] rounded" />
+                  <div className="flex animate-pulse items-center gap-3 py-2 text-xs text-[#6a6a6a]">
+                    <div className="size-8 shrink-0 rounded-full bg-[#ebe6d6]" />
+                    <div className="flex-1 space-y-1.5">
+                      <div className="h-3 w-3/4 rounded bg-[#ebe6d6]" />
+                      <div className="h-2.5 w-1/2 rounded bg-[#ebe6d6]" />
                     </div>
                   </div>
                 ) : stats && stats.totalInSchool > 0 ? (
                   <div className="space-y-2 py-1">
                     <div className="flex items-start gap-3">
                       {/* Avatar Stack Illustration */}
-                      <div className="flex -space-x-2 shrink-0 pt-0.5">
-                        <div className="size-7 rounded-full bg-[#ffb084] border-2 border-white flex items-center justify-center text-[10px] font-bold text-[#0a0a0a]">
+                      <div className="flex shrink-0 -space-x-2 pt-0.5">
+                        <div className="flex size-7 items-center justify-center rounded-full border-2 border-white bg-[#ffb084] text-[10px] font-bold text-[#0a0a0a]">
                           🧑
                         </div>
-                        <div className="size-7 rounded-full bg-[#b8a4ed] border-2 border-white flex items-center justify-center text-[10px] font-bold text-[#0a0a0a]">
+                        <div className="flex size-7 items-center justify-center rounded-full border-2 border-white bg-[#b8a4ed] text-[10px] font-bold text-[#0a0a0a]">
                           👧
                         </div>
-                        <div className="size-7 rounded-full bg-[#a4d4c5] border-2 border-white flex items-center justify-center text-[10px] font-bold text-[#0a0a0a]">
-                          {stats.totalInSchool > 2 ? `+${stats.totalInSchool - 2}` : "✨"}
+                        <div className="flex size-7 items-center justify-center rounded-full border-2 border-white bg-[#a4d4c5] text-[10px] font-bold text-[#0a0a0a]">
+                          {stats.totalInSchool > 2
+                            ? `+${stats.totalInSchool - 2}`
+                            : "✨"}
                         </div>
                       </div>
 
                       <div className="space-y-1 text-xs">
-                        <p className="text-[#0a0a0a] font-medium leading-snug">
-                          Ada <span className="font-bold text-[#0a0a0a] text-sm bg-[#ebe6d6] px-1.5 py-0.2 rounded-[6px]">{stats.totalInSchool} rekan</span> dari{" "}
-                          <span className="font-semibold text-[#0a0a0a]">{profileForm.school}</span> yang sudah bergabung di Sekkha!
+                        <p className="leading-snug font-medium text-[#0a0a0a]">
+                          Ada{" "}
+                          <span className="py-0.2 rounded-[6px] bg-[#ebe6d6] px-1.5 text-sm font-bold text-[#0a0a0a]">
+                            {stats.totalInSchool} rekan
+                          </span>{" "}
+                          dari{" "}
+                          <span className="font-semibold text-[#0a0a0a]">
+                            {profileForm.school}
+                          </span>{" "}
+                          yang sudah bergabung di Sekkha!
                         </p>
 
-                        {hasGradeLevel && profileForm.class_grade && stats.totalInClass > 0 ? (
-                          <p className="text-[11px] text-[#22c55e] font-semibold flex items-center gap-1">
+                        {hasGradeLevel &&
+                        profileForm.class_grade &&
+                        stats.totalInClass > 0 ? (
+                          <p className="flex items-center gap-1 text-[11px] font-semibold text-[#22c55e]">
                             <SparklesIcon className="size-3 shrink-0" />
                             <span>
-                              {stats.totalInClass} di antaranya satu tingkat di {profileForm.class_grade}!
+                              {stats.totalInClass} di antaranya satu tingkat di{" "}
+                              {profileForm.class_grade}!
                             </span>
                           </p>
                         ) : hasGradeLevel && profileForm.class_grade ? (
                           <p className="text-[11px] text-[#6a6a6a]">
-                            Jadilah perwakilan pertama untuk tingkat {profileForm.class_grade}!
+                            Jadilah perwakilan pertama untuk tingkat{" "}
+                            {profileForm.class_grade}!
                           </p>
                         ) : null}
                       </div>
@@ -666,18 +741,22 @@ export function OnboardingPage() {
                   </div>
                 ) : (
                   <div className="flex items-center gap-3 py-1 text-xs text-[#6a6a6a]">
-                    <div className="size-8 rounded-full bg-[#e8b94a]/20 border border-[#e8b94a]/30 flex items-center justify-center shrink-0 text-sm">
+                    <div className="flex size-8 shrink-0 items-center justify-center rounded-full border border-[#e8b94a]/30 bg-[#e8b94a]/20 text-sm">
                       🌟
                     </div>
                     <p className="leading-relaxed">
-                      Belum ada rekan terdaftar dari <span className="font-semibold text-[#0a0a0a]">{profileForm.school}</span>. Jadilah pionir pertama dan ajak rekan-rekanmu bergabung!
+                      Belum ada rekan terdaftar dari{" "}
+                      <span className="font-semibold text-[#0a0a0a]">
+                        {profileForm.school}
+                      </span>
+                      . Jadilah pionir pertama dan ajak rekan-rekanmu bergabung!
                     </p>
                   </div>
                 )}
               </div>
 
               {/* Action Buttons */}
-              <div className="pt-3 space-y-2">
+              <div className="space-y-2 pt-3">
                 <div className="flex items-center gap-3">
                   <button
                     type="button"
@@ -685,7 +764,7 @@ export function OnboardingPage() {
                       setErrorMsg(null)
                       setStep("identity")
                     }}
-                    className="h-11 px-4 flex items-center justify-center gap-1.5 rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] text-sm font-semibold text-[#0a0a0a] hover:bg-[#faf5e8] transition-all cursor-pointer shrink-0"
+                    className="flex h-11 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-4 text-sm font-semibold text-[#0a0a0a] transition-all hover:bg-[#faf5e8]"
                   >
                     <ArrowLeftIcon className="size-4" />
                     <span>Kembali</span>
@@ -694,17 +773,19 @@ export function OnboardingPage() {
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="flex-1 h-11 flex items-center justify-center gap-2 rounded-[12px] bg-[#0a0a0a] text-sm font-semibold text-white shadow-xs hover:bg-[#1f1f1f] transition-all disabled:opacity-50 cursor-pointer"
+                    className="flex h-11 flex-1 cursor-pointer items-center justify-center gap-2 rounded-[12px] bg-[#0a0a0a] text-sm font-semibold text-white shadow-xs transition-all hover:bg-[#1f1f1f] disabled:opacity-50"
                   >
-                    {submitting ? "Menyimpan..." : "Simpan & Dapatkan ID Anggota"}
-                    <ArrowRightIcon className="size-4 ml-1" />
+                    {submitting
+                      ? "Menyimpan..."
+                      : "Simpan & Dapatkan ID Anggota"}
+                    <ArrowRightIcon className="ml-1 size-4" />
                   </button>
                 </div>
 
                 <button
                   type="button"
                   onClick={handleFinish}
-                  className="w-full text-center text-xs font-semibold text-[#6a6a6a] hover:text-[#0a0a0a] py-2 transition-colors cursor-pointer"
+                  className="w-full cursor-pointer py-2 text-center text-xs font-semibold text-[#6a6a6a] transition-colors hover:text-[#0a0a0a]"
                 >
                   Lewati untuk sekarang →
                 </button>
@@ -716,8 +797,8 @@ export function OnboardingPage() {
           {/* STEP 3: SUCCESS & DIGITAL ID CARD PREVIEW                          */}
           {/* ─────────────────────────────────────────────────────────────────── */}
           {step === "success" && successData && (
-            <div className="space-y-5 text-center animate-in fade-in">
-              <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-[#22c55e]/10 text-[#22c55e] border border-[#22c55e]/20 shadow-xs">
+            <div className="animate-in space-y-5 text-center fade-in">
+              <div className="mx-auto flex size-14 items-center justify-center rounded-full border border-[#22c55e]/20 bg-[#22c55e]/10 text-[#22c55e] shadow-xs">
                 <CheckCircleIcon className="size-8" />
               </div>
 
@@ -726,28 +807,33 @@ export function OnboardingPage() {
                   ID Anggota Anda Siap!
                 </h3>
                 <p className="text-xs text-[#6a6a6a]">
-                  Nomor ID resmi Vihara Sekkha Anda berhasil dibuat dan siap digunakan untuk presensi kebaktian.
+                  Nomor ID resmi Vihara Sekkha Anda berhasil dibuat dan siap
+                  digunakan untuk presensi kebaktian.
                 </p>
               </div>
 
               {/* Digital Card Preview — Clay Card Token */}
-              <div className="rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] p-5 text-left shadow-xs space-y-3">
+              <div className="space-y-3 rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] p-5 text-left shadow-xs">
                 <div className="flex items-center justify-between border-b border-[#e5e5e5] pb-2">
-                  <span className="text-[11px] font-bold uppercase tracking-[1.5px] text-[#0a0a0a]">
+                  <span className="text-[11px] font-bold tracking-[1.5px] text-[#0a0a0a] uppercase">
                     Kartu Anggota Sekkha
                   </span>
-                  <span className="rounded-full bg-[#22c55e]/10 border border-[#22c55e]/30 px-2 py-0.5 text-[11px] font-bold text-[#22c55e]">
+                  <span className="rounded-full border border-[#22c55e]/30 bg-[#22c55e]/10 px-2 py-0.5 text-[11px] font-bold text-[#22c55e]">
                     Aktif
                   </span>
                 </div>
 
                 <div className="flex items-center gap-4 py-1">
-                  <div className="rounded-[12px] border border-[#e5e5e5] bg-white p-2.5 shrink-0 shadow-2xs">
+                  <div className="shrink-0 rounded-[12px] border border-[#e5e5e5] bg-white p-2.5 shadow-2xs">
                     {successData.userNumber ? (
                       <QRCode
                         value={successData.userNumber}
                         size={90}
-                        style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+                        style={{
+                          height: "auto",
+                          maxWidth: "100%",
+                          width: "100%",
+                        }}
                         viewBox="0 0 256 256"
                       />
                     ) : (
@@ -760,23 +846,29 @@ export function OnboardingPage() {
                     )}
                   </div>
 
-                  <div className="space-y-1.5 min-w-0">
-                    <p className="text-sm font-bold text-[#0a0a0a] truncate">{successData.name}</p>
+                  <div className="min-w-0 space-y-1.5">
+                    <p className="truncate text-sm font-bold text-[#0a0a0a]">
+                      {successData.name}
+                    </p>
                     {successData.username && (
-                      <p className="text-[11px] font-semibold text-[#6a6a6a]">@{successData.username}</p>
+                      <p className="text-[11px] font-semibold text-[#6a6a6a]">
+                        @{successData.username}
+                      </p>
                     )}
-                    <p className="font-mono text-xs font-bold text-[#0a0a0a] bg-[#ebe6d6] px-2 py-0.5 rounded-[6px] inline-block">
+                    <p className="inline-block rounded-[6px] bg-[#ebe6d6] px-2 py-0.5 font-mono text-xs font-bold text-[#0a0a0a]">
                       {successData.userNumber}
                     </p>
 
                     {successData.school && (
-                      <p className="text-[11px] text-[#6a6a6a] font-medium truncate flex items-center gap-1">
+                      <p className="flex items-center gap-1 truncate text-[11px] font-medium text-[#6a6a6a]">
                         <span>🏫</span>
                         <span>{successData.school}</span>
                         {successData.classGrade && (
                           <>
                             <span>•</span>
-                            <span className="font-semibold text-[#0a0a0a]">{successData.classGrade}</span>
+                            <span className="font-semibold text-[#0a0a0a]">
+                              {successData.classGrade}
+                            </span>
                           </>
                         )}
                       </p>
@@ -786,10 +878,16 @@ export function OnboardingPage() {
                       <button
                         type="button"
                         onClick={() => handleCopy(successData.userNumber)}
-                        className="flex items-center gap-1.5 text-xs font-semibold text-[#6a6a6a] hover:text-[#0a0a0a] transition-colors cursor-pointer"
+                        className="flex cursor-pointer items-center gap-1.5 text-xs font-semibold text-[#6a6a6a] transition-colors hover:text-[#0a0a0a]"
                       >
-                        {copied ? <CheckIcon className="size-3.5 text-[#22c55e]" /> : <CopyIcon className="size-3.5" />}
-                        <span>{copied ? "ID Tersalin!" : "Salin ID Anggota"}</span>
+                        {copied ? (
+                          <CheckIcon className="size-3.5 text-[#22c55e]" />
+                        ) : (
+                          <CopyIcon className="size-3.5" />
+                        )}
+                        <span>
+                          {copied ? "ID Tersalin!" : "Salin ID Anggota"}
+                        </span>
                       </button>
                     </div>
                   </div>
@@ -799,16 +897,14 @@ export function OnboardingPage() {
               <button
                 type="button"
                 onClick={handleFinish}
-                className="w-full h-11 flex items-center justify-center gap-2 rounded-[12px] bg-[#0a0a0a] text-sm font-semibold text-white shadow-xs hover:bg-[#1f1f1f] transition-all cursor-pointer"
+                className="flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-[12px] bg-[#0a0a0a] text-sm font-semibold text-white shadow-xs transition-all hover:bg-[#1f1f1f]"
               >
                 <span>Masuk ke Dashboard Sekkha</span>
-                <ArrowRightIcon className="size-4 ml-1" />
+                <ArrowRightIcon className="ml-1 size-4" />
               </button>
             </div>
           )}
-
         </div>
-
       </div>
     </main>
   )

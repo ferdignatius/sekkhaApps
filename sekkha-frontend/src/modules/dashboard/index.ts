@@ -5,7 +5,5 @@ export { DashboardPage } from "./internal/components/DashboardPage"
 
 export const dashboardModule: ModuleDefinition = {
   name: "dashboard",
-  navItems: [
-    { label: "Home", to: "/home", icon: "LayoutDashboard" },
-  ],
+  navItems: [{ label: "Home", to: "/home", icon: "LayoutDashboard" }],
 }

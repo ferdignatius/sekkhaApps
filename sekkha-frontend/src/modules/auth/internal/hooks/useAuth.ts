@@ -19,12 +19,20 @@ export interface UseAuthReturn {
   authState: AuthState
   login: (email: string, password: string) => Promise<void>
   register: (email: string, password: string) => Promise<void>
-  requestRegisterOtp: (email: string, password: string, name?: string) => Promise<{ success: boolean; message: string }>
+  requestRegisterOtp: (
+    email: string,
+    password: string,
+    name?: string
+  ) => Promise<{ success: boolean; message: string }>
   verifyRegisterOtp: (email: string, otp: string) => Promise<void>
-  resendRegisterOtp: (email: string) => Promise<{ success: boolean; message: string }>
+  resendRegisterOtp: (
+    email: string
+  ) => Promise<{ success: boolean; message: string }>
   logout: () => void
   initiateGoogleOAuth: () => void
-  updateUser: (user: Partial<{ name: string | null; role: UserRole; email: string | null }>) => void
+  updateUser: (
+    user: Partial<{ name: string | null; role: UserRole; email: string | null }>
+  ) => void
   refreshUser: () => Promise<void>
 }
 
@@ -74,4 +82,3 @@ export function useAuth(): UseAuthReturn {
     refreshUser,
   }
 }
-

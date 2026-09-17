@@ -493,8 +493,8 @@ export function LeaderboardPage() {
       {/* ── Page Breadcrumb ── */}
       <PageBreadcrumb items={[{ label: "Leaderboard" }]} />
 
-      <div className="relative mx-auto max-w-6xl px-3.5 py-4 pb-32 sm:px-6 md:px-8 md:pb-12">
-        <div className="space-y-4 sm:space-y-5">
+      <div className="px-3.5 py-4 pb-32 sm:px-6 sm:py-6 md:px-8 md:pb-12 lg:px-12">
+        <div className="mx-auto max-w-7xl space-y-4 sm:space-y-5">
           {/* ── Top Header Banner: Compact & Sleek Clay Style ── */}
           <div className="rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] p-3 shadow-xs sm:rounded-[24px] sm:p-5">
             <div className="flex items-center justify-between gap-2.5">

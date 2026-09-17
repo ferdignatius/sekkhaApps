@@ -41,7 +41,7 @@ interface TierDesign {
   recommendation: string
 }
 
-const LEVEL_CONFIG: Record<AlertLevel, TierDesign> = {
+const LEVEL_CONFIG: Record<string, TierDesign> = {
   normal: {
     label: "Normal",
     shortLabel: "🟢 Normal",
@@ -88,6 +88,17 @@ const LEVEL_CONFIG: Record<AlertLevel, TierDesign> = {
     recommendation:
       "Direct contact by organizers or schedule pastoral care visit.",
   },
+  warning: {
+    label: "Warning",
+    shortLabel: "🟡 Warning",
+    badgeBg:
+      "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30",
+    cardBorder: "border-amber-200 dark:border-amber-900/40",
+    cardHoverBorder: "hover:border-amber-400/80",
+    dotColor: "bg-amber-500",
+    desc: "Missed 2 consecutive events",
+    recommendation: "Send friendly reminders for upcoming routine events.",
+  },
   churned: {
     label: "Lost",
     shortLabel: "🔴 Lost",
@@ -100,6 +111,24 @@ const LEVEL_CONFIG: Record<AlertLevel, TierDesign> = {
     recommendation:
       "Execute dedicated outreach before member completely disengages.",
   },
+  lost: {
+    label: "Lost",
+    shortLabel: "🔴 Lost",
+    badgeBg:
+      "bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/30",
+    cardBorder: "border-rose-200 dark:border-rose-900/40",
+    cardHoverBorder: "hover:border-rose-400/80",
+    dotColor: "bg-rose-500",
+    desc: "Missed 4+ consecutive events",
+    recommendation:
+      "Direct contact by organizers or schedule pastoral care visit.",
+  },
+}
+
+function getLevelConfig(level: string | undefined | null): TierDesign {
+  if (!level) return LEVEL_CONFIG.normal
+  const normalized = level.toLowerCase().trim()
+  return LEVEL_CONFIG[normalized] || LEVEL_CONFIG.normal
 }
 
 const ACTION_STATUS_OPTIONS = [
@@ -565,7 +594,7 @@ export function RecencyAlertsPage() {
               {paginatedMembers.map((m) => {
                 const overrideLevel = userStatusOverrides[m.userId]
                 const effectiveLevel = overrideLevel || m.level
-                const config = LEVEL_CONFIG[effectiveLevel]
+                const config = getLevelConfig(effectiveLevel)
 
                 const actionId =
                   userActionStatuses[m.userId] ||
@@ -733,7 +762,7 @@ export function RecencyAlertsPage() {
                   {paginatedMembers.map((m) => {
                     const overrideLevel = userStatusOverrides[m.userId]
                     const effectiveLevel = overrideLevel || m.level
-                    const config = LEVEL_CONFIG[effectiveLevel]
+                    const config = getLevelConfig(effectiveLevel)
 
                     const actionId =
                       userActionStatuses[m.userId] ||
@@ -1039,9 +1068,9 @@ export function RecencyAlertsPage() {
                     {(() => {
                       const curLevel =
                         draftOverrideLevel === "auto"
-                          ? memberDetail.member.level
+                          ? memberDetail.member?.level
                           : draftOverrideLevel
-                      const cfg = LEVEL_CONFIG[curLevel]
+                      const cfg = getLevelConfig(curLevel)
                       return (
                         <div className="flex flex-col items-end gap-1">
                           <span
@@ -1117,7 +1146,7 @@ export function RecencyAlertsPage() {
                       {[
                         {
                           id: "auto",
-                          label: `Auto System (${memberDetail.member.level})`,
+                          label: `Auto System (${memberDetail.member?.level || "normal"})`,
                         },
                         { id: "normal", label: "🟢 Normal" },
                         { id: "mulai_jarang", label: "🟡 Warning" },

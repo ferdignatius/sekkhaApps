@@ -289,6 +289,8 @@ pengurusRouter.get(
       if (levelFilter !== "all") {
         if (levelFilter === "lost") {
           filteredMembers = filteredMembers.filter((m) => m.level === "kemungkinan_hilang" || m.level === "churned")
+        } else if (levelFilter === "warning") {
+          filteredMembers = filteredMembers.filter((m) => m.level === "mulai_jarang")
         } else {
           filteredMembers = filteredMembers.filter((m) => m.level === levelFilter)
         }

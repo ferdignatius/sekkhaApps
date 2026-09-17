@@ -14,7 +14,7 @@ import {
   MailIcon,
   ShieldCheckIcon,
 } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/base/Button"
 import { api } from "@/lib/api"
 
 type ForgotStep = "email" | "otp" | "new-password" | "success"
@@ -314,9 +314,10 @@ export function ForgotPasswordPage() {
               </div>
 
               <Button
+                variant="filled"
                 type="submit"
                 disabled={isLoading || !email.trim()}
-                className="flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-[12px] bg-[#0a0a0a] text-xs font-semibold text-white shadow-xs transition-all hover:bg-[#1f1f1f] disabled:opacity-40"
+                className="w-full"
               >
                 {isLoading ? (
                   <span>Mengirim Kode OTP...</span>
@@ -379,10 +380,11 @@ export function ForgotPasswordPage() {
               </div>
 
               <Button
+                variant="filled"
                 type="button"
                 onClick={() => verifyOtpCode(otpDigits.join(""))}
                 disabled={otpDigits.some((d) => !d) || isLoading}
-                className="flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-[12px] bg-[#0a0a0a] text-xs font-semibold text-white shadow-xs transition-all hover:bg-[#1f1f1f] disabled:opacity-40"
+                className="w-full"
               >
                 {isLoading ? (
                   <span>Memverifikasi Kode OTP...</span>
@@ -484,9 +486,10 @@ export function ForgotPasswordPage() {
               </div>
 
               <Button
+                variant="filled"
                 type="submit"
                 disabled={isLoading || !newPassword || !confirmPassword}
-                className="flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-[12px] bg-[#0a0a0a] text-xs font-semibold text-white shadow-xs transition-all hover:bg-[#1f1f1f] disabled:opacity-40"
+                className="w-full"
               >
                 {isLoading ? (
                   <span>Menyimpan Kata Sandi...</span>
@@ -509,7 +512,7 @@ export function ForgotPasswordPage() {
               </div>
 
               <Link to="/login" className="block w-full">
-                <Button className="flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-[12px] bg-[#0a0a0a] text-xs font-semibold text-white shadow-xs hover:bg-[#1f1f1f]">
+                <Button variant="filled" className="w-full">
                   <span>Masuk ke Akun Anda</span>
                   <ArrowRightIcon className="size-4" />
                 </Button>

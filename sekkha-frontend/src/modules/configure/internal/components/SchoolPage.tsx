@@ -18,6 +18,12 @@ import { ResponsiveFormModal } from "@/components/common/ResponsiveFormModal"
 import { useAuth } from "@/modules/auth"
 import { schoolsApi } from "../api/configureApi"
 import type { SchoolDto } from "../api/configureApi"
+import { Button } from "@/components/base/Button"
+import { Card } from "@/components/base/Card"
+import { Chip } from "@/components/base/Chip"
+import { Badge } from "@/components/base/Badge"
+import { Input } from "@/components/base/Input"
+import { Select } from "@/components/base/Select"
 
 const SCHOOL_TYPES = ["SMP", "SMA", "SMK", "Universitas", "Umum"] as const
 
@@ -240,45 +246,44 @@ export function SchoolPage() {
           </div>
 
           {isPengurusOrAdmin && (
-            <button
-              type="button"
-              onClick={handleOpenCreate}
-              className="inline-flex h-10 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-[12px] bg-[#0a0a0a] px-4 text-xs font-semibold text-white shadow-xs transition-all hover:bg-[#1f1f1f]"
-            >
+            <Button type="button" onClick={handleOpenCreate} className="gap-2">
               <PlusIcon className="size-4" />
               <span>Tambah Sekolah</span>
-            </button>
+            </Button>
           )}
         </div>
 
         {/* Stats Row */}
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <div className="space-y-1 rounded-[16px] border border-[#e5e5e5] bg-[#ffffff] p-4 shadow-xs">
+          <Card variant="default" className="space-y-1 p-4">
             <p className="text-[11px] font-semibold tracking-wider text-[#6a6a6a] uppercase">
               Total Sekolah
             </p>
             <p className="text-2xl font-bold text-[#0a0a0a]">{stats.total}</p>
-          </div>
+          </Card>
 
-          <div className="space-y-1 rounded-[16px] border border-[#e5e5e5] bg-[#ffffff] p-4 shadow-xs">
+          <Card variant="default" className="space-y-1 p-4">
             <p className="text-[11px] font-semibold tracking-wider text-[#6a6a6a] uppercase">
               SMA & SMK
             </p>
             <p className="text-2xl font-bold text-[#0a0a0a]">
               {stats.totalSmaSmk}
             </p>
-          </div>
+          </Card>
 
-          <div className="space-y-1 rounded-[16px] border border-[#e5e5e5] bg-[#ffffff] p-4 shadow-xs">
+          <Card variant="default" className="space-y-1 p-4">
             <p className="text-[11px] font-semibold tracking-wider text-[#6a6a6a] uppercase">
               Perguruan Tinggi
             </p>
             <p className="text-2xl font-bold text-[#0a0a0a]">
               {stats.totalUniv}
             </p>
-          </div>
+          </Card>
 
-          <div className="space-y-1 rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] p-4 shadow-xs">
+          <Card
+            variant="soft"
+            className="space-y-1 border border-[#e8b94a]/30 bg-[#faf5e8] p-4"
+          >
             <p className="flex items-center gap-1 text-[11px] font-semibold tracking-wider text-[#6a6a6a] uppercase">
               <UsersIcon className="size-3 text-[#22c55e]" />
               <span>Umat Terhubung</span>
@@ -286,57 +291,49 @@ export function SchoolPage() {
             <p className="text-2xl font-bold text-[#0a0a0a]">
               {stats.totalUsers}
             </p>
-          </div>
+          </Card>
         </div>
 
         {/* Search & Filter Band */}
         <div className="flex flex-col items-stretch justify-between gap-3 sm:flex-row sm:items-center">
-          <div className="relative max-w-md flex-1">
-            <SearchIcon className="absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[#9a9a9a]" />
-            <input
+          <div className="max-w-md flex-1">
+            <Input
               type="text"
               placeholder="Cari nama sekolah atau kota..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="h-10 w-full rounded-[12px] border border-[#e5e5e5] bg-[#ffffff] pr-4 pl-10 text-xs font-medium text-[#0a0a0a] transition-all outline-none placeholder:text-[#9a9a9a] focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a]"
+              startIcon={<SearchIcon className="size-4" />}
+              className="h-10 bg-white"
             />
           </div>
 
           {/* Type Filter Pills */}
-          <div className="flex scrollbar-none items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
-            <button
-              type="button"
+          <div className="flex scrollbar-none items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
+            <Chip
+              variant="filter"
+              selected={typeFilter === "all"}
               onClick={() => setTypeFilter("all")}
-              className={`cursor-pointer rounded-full px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition-all ${
-                typeFilter === "all"
-                  ? "bg-[#0a0a0a] text-white"
-                  : "border border-[#e5e5e5] bg-[#ffffff] text-[#6a6a6a] hover:bg-[#faf5e8]"
-              }`}
             >
               Semua ({schools.length})
-            </button>
+            </Chip>
             {SCHOOL_TYPES.map((t) => {
               const count = schools.filter((s) => s.type === t).length
               return (
-                <button
+                <Chip
                   key={t}
-                  type="button"
+                  variant="filter"
+                  selected={typeFilter === t}
                   onClick={() => setTypeFilter(t)}
-                  className={`cursor-pointer rounded-full px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition-all ${
-                    typeFilter === t
-                      ? "bg-[#0a0a0a] text-white"
-                      : "border border-[#e5e5e5] bg-[#ffffff] text-[#6a6a6a] hover:bg-[#faf5e8]"
-                  }`}
                 >
                   {t} ({count})
-                </button>
+                </Chip>
               )
             })}
           </div>
         </div>
 
         {/* Schools Table Card */}
-        <div className="overflow-hidden rounded-[20px] border border-[#e5e5e5] bg-[#ffffff] shadow-sm">
+        <Card variant="default" className="overflow-hidden p-0 shadow-xs">
           {loading ? (
             <div className="space-y-2 py-16 text-center text-xs text-[#6a6a6a]">
               <div className="mx-auto size-6 animate-spin rounded-full border-2 border-[#0a0a0a] border-t-transparent" />
@@ -380,9 +377,9 @@ export function SchoolPage() {
                       </td>
 
                       <td className="px-4 py-3.5">
-                        <span className="inline-block rounded-full border border-[#e5e5e5] bg-[#f5f0e0] px-2.5 py-0.5 text-[10px] font-bold text-[#0a0a0a]">
+                        <Badge variant="secondary" size="sm">
                           {item.type || "Umum"}
-                        </span>
+                        </Badge>
                       </td>
 
                       <td className="px-4 py-3.5 font-medium text-[#6a6a6a]">
@@ -391,10 +388,13 @@ export function SchoolPage() {
 
                       <td className="px-4 py-3.5 text-center">
                         {item.userCount !== undefined && item.userCount > 0 ? (
-                          <span className="inline-flex items-center gap-1 rounded-full border border-[#22c55e]/30 bg-[#22c55e]/15 px-2.5 py-0.5 text-[11px] font-bold text-[#15803d]">
-                            <UsersIcon className="size-3" />
-                            <span>{item.userCount} Umat</span>
-                          </span>
+                          <Badge
+                            variant="emerald"
+                            size="sm"
+                            icon={<UsersIcon className="size-3" />}
+                          >
+                            {item.userCount} Umat
+                          </Badge>
                         ) : (
                           <span className="text-[11px] text-[#9a9a9a]">0</span>
                         )}
@@ -403,24 +403,28 @@ export function SchoolPage() {
                       {isPengurusOrAdmin && (
                         <td className="px-4 py-3.5 text-right">
                           <div className="inline-flex items-center gap-1">
-                            <button
+                            <Button
                               type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="size-8"
                               onClick={() => handleOpenEdit(item)}
-                              className="cursor-pointer rounded-[8px] p-1.5 text-[#6a6a6a] transition-colors hover:bg-[#faf5e8] hover:text-[#0a0a0a]"
                               title="Edit Sekolah"
                             >
                               <PencilIcon className="size-3.5" />
-                            </button>
+                            </Button>
 
                             {isAdmin && (
-                              <button
+                              <Button
                                 type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="size-8 text-[#ef4444] hover:bg-[#ef4444]/10 hover:text-[#ef4444]"
                                 onClick={() => handleDelete(item)}
-                                className="cursor-pointer rounded-[8px] p-1.5 text-[#ef4444] transition-colors hover:bg-[#ef4444]/10"
                                 title="Hapus Sekolah"
                               >
                                 <TrashIcon className="size-3.5" />
-                              </button>
+                              </Button>
                             )}
                           </div>
                         </td>
@@ -431,7 +435,7 @@ export function SchoolPage() {
               </table>
             </div>
           )}
-        </div>
+        </Card>
       </div>
 
       {/* Modal Form Tambah / Edit Sekolah */}
@@ -449,73 +453,46 @@ export function SchoolPage() {
           )}
 
           {/* Nama Sekolah */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-[#0a0a0a]">
-              Nama Sekolah / Kampus <span className="text-[#ef4444]">*</span>
-            </label>
-            <input
-              type="text"
-              required
-              placeholder="Contoh: SMA Dharma Widya"
-              value={formName}
-              onChange={(e) => setFormName(e.target.value)}
-              className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 py-2 text-sm text-[#0a0a0a] transition-all outline-none placeholder:text-[#9a9a9a] focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a]"
-            />
-          </div>
+          <Input
+            id="school-name"
+            label="Nama Sekolah / Kampus"
+            required
+            placeholder="Contoh: SMA Dharma Widya"
+            value={formName}
+            onChange={(e) => setFormName(e.target.value)}
+          />
 
           {/* Jenjang */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-[#0a0a0a]">
-              Jenjang / Kategori <span className="text-[#ef4444]">*</span>
-            </label>
-            <select
-              value={formType}
-              onChange={(e) => setFormType(e.target.value)}
-              className="h-11 w-full cursor-pointer rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 py-2 text-sm text-[#0a0a0a] transition-all outline-none focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a]"
-            >
-              {SCHOOL_TYPES.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
-          </div>
+          <Select
+            id="school-type"
+            label="Jenjang / Kategori"
+            value={formType}
+            onValueChange={(val) => setFormType(val)}
+            options={SCHOOL_TYPES.map((t) => ({ value: t, label: t }))}
+          />
 
           {/* Kota */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-[#0a0a0a]">
-              Kota / Wilayah <span className="text-[#ef4444]">*</span>
-            </label>
-            <input
-              type="text"
-              required
-              placeholder="Contoh: Tangerang, Jakarta Barat"
-              value={formCity}
-              onChange={(e) => setFormCity(e.target.value)}
-              className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 py-2 text-sm text-[#0a0a0a] transition-all outline-none placeholder:text-[#9a9a9a] focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a]"
-            />
-          </div>
+          <Input
+            id="school-city"
+            label="Kota / Wilayah"
+            required
+            placeholder="Contoh: Tangerang, Jakarta Barat"
+            value={formCity}
+            onChange={(e) => setFormCity(e.target.value)}
+          />
 
           {/* Buttons */}
           <div className="flex items-center justify-end gap-2.5 pt-2">
-            <button
-              type="button"
-              onClick={resetForm}
-              className="h-10 cursor-pointer rounded-[12px] border border-[#e5e5e5] bg-white px-4 text-xs font-semibold text-[#6a6a6a] transition-colors hover:bg-[#faf5e8] hover:text-[#0a0a0a]"
-            >
+            <Button type="button" variant="outline" onClick={resetForm}>
               Batal
-            </button>
-            <button
-              type="submit"
-              disabled={submitting}
-              className="h-10 cursor-pointer rounded-[12px] bg-[#0a0a0a] px-5 text-xs font-semibold text-white shadow-xs transition-all hover:bg-[#1f1f1f] disabled:opacity-50"
-            >
+            </Button>
+            <Button type="submit" variant="primary" disabled={submitting}>
               {submitting
                 ? "Menyimpan..."
                 : editingSchool
                   ? "Simpan Perubahan"
                   : "Tambah Sekolah"}
-            </button>
+            </Button>
           </div>
         </form>
       </ResponsiveFormModal>

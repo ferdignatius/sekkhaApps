@@ -24,6 +24,7 @@ import {
 import QRCode from "react-qr-code"
 import { useAuth } from "@/modules/auth"
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
+import { Button, Tabs, TabsList, TabsTrigger } from "@/components/base"
 import { Skeleton } from "@/components/ui/skeleton"
 import { teamsApi } from "../api/teamsApi"
 import type { MemberDetailDto } from "../api/teamsApi"
@@ -339,53 +340,35 @@ export function MemberDetailPage({
             </div>
 
             {/* ── 2. SEGMENTED TAB SWITCHER ── */}
-            <div className="flex items-center gap-1 rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] p-1">
-              <button
-                type="button"
-                onClick={() => setActiveTab("profile")}
-                className={`flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-[8px] px-1 py-2 text-[11px] font-bold whitespace-nowrap transition-all sm:text-xs ${
-                  activeTab === "profile"
-                    ? "bg-[#0a0a0a] text-white shadow-xs"
-                    : "text-[#6a6a6a] hover:text-[#0a0a0a]"
-                }`}
-              >
-                <UserIcon className="size-3.5 shrink-0" />
-                <span className="hidden sm:inline">Profile Information</span>
-                <span className="sm:hidden">Profile</span>
-              </button>
+            <Tabs
+              value={activeTab}
+              onValueChange={(val) => setActiveTab(val as any)}
+              variant="pill"
+            >
+              <TabsList className="w-full">
+                <TabsTrigger value="profile" className="flex-1">
+                  <UserIcon className="size-3.5 shrink-0" />
+                  <span className="hidden sm:inline">Profile Information</span>
+                  <span className="sm:hidden">Profile</span>
+                </TabsTrigger>
 
-              <button
-                type="button"
-                onClick={() => setActiveTab("card")}
-                className={`flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-[8px] px-1 py-2 text-[11px] font-bold whitespace-nowrap transition-all sm:text-xs ${
-                  activeTab === "card"
-                    ? "bg-[#0a0a0a] text-white shadow-xs"
-                    : "text-[#6a6a6a] hover:text-[#0a0a0a]"
-                }`}
-              >
-                <QrCodeIcon className="size-3.5 shrink-0" />
-                <span className="hidden sm:inline">Digital ID & QR Card</span>
-                <span className="sm:hidden">ID Card</span>
-              </button>
+                <TabsTrigger value="card" className="flex-1">
+                  <QrCodeIcon className="size-3.5 shrink-0" />
+                  <span className="hidden sm:inline">Digital ID & QR Card</span>
+                  <span className="sm:hidden">ID Card</span>
+                </TabsTrigger>
 
-              <button
-                type="button"
-                onClick={() => setActiveTab("attendance")}
-                className={`flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-[8px] px-1 py-2 text-[11px] font-bold whitespace-nowrap transition-all sm:text-xs ${
-                  activeTab === "attendance"
-                    ? "bg-[#0a0a0a] text-white shadow-xs"
-                    : "text-[#6a6a6a] hover:text-[#0a0a0a]"
-                }`}
-              >
-                <ClockIcon className="size-3.5 shrink-0" />
-                <span className="hidden sm:inline">
-                  Attendance ({member.attendances?.length || 0})
-                </span>
-                <span className="sm:hidden">
-                  History ({member.attendances?.length || 0})
-                </span>
-              </button>
-            </div>
+                <TabsTrigger value="attendance" className="flex-1">
+                  <ClockIcon className="size-3.5 shrink-0" />
+                  <span className="hidden sm:inline">
+                    Attendance ({member.attendances?.length || 0})
+                  </span>
+                  <span className="sm:hidden">
+                    History ({member.attendances?.length || 0})
+                  </span>
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
 
             {/* ── 3. TAB 1: PROFILE INFORMATION ── */}
             {activeTab === "profile" && (
@@ -735,21 +718,23 @@ export function MemberDetailPage({
               </p>
             </div>
             <div className="flex gap-2 border-t border-[#e5e5e5] pt-2">
-              <button
+              <Button
+                variant="outlined"
                 type="button"
                 onClick={() => setShowDeleteModal(false)}
-                className="h-11 flex-1 cursor-pointer rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] text-xs font-bold text-[#0a0a0a] hover:bg-[#faf5e8] sm:text-sm"
+                className="flex-1"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="danger"
                 type="button"
                 disabled={deleting}
                 onClick={handleDeleteMember}
-                className="h-11 flex-1 cursor-pointer rounded-[12px] bg-rose-600 text-xs font-bold text-white shadow-xs hover:bg-rose-700 disabled:opacity-50 sm:text-sm"
+                className="flex-1"
               >
                 {deleting ? "Deleting..." : "Delete"}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

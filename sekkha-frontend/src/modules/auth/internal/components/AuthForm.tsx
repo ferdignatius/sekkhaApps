@@ -4,7 +4,7 @@ import { ArrowRightIcon } from "lucide-react"
 import { AuthErrorBanner } from "./AuthErrorBanner"
 import { AuthFormField } from "./AuthFormField"
 import { PrivacyPolicyModal } from "./PrivacyPolicyModal"
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/base/Button"
 
 type AuthFormMode = "sign-up" | "login"
 
@@ -194,9 +194,10 @@ export function AuthForm({
 
         {/* Submit Button — Clay button-primary token */}
         <Button
+          variant="filled"
           type="submit"
           disabled={isLoading}
-          className="flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-[12px] bg-[#0a0a0a] font-semibold text-white shadow-xs transition-all hover:bg-[#1f1f1f] active:scale-[0.99]"
+          className="w-full"
         >
           {isLoading ? (
             <>

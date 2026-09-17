@@ -24,6 +24,7 @@ export interface SimpleSelectProps {
   defaultValue?: string
   options?: SelectOption[]
   onChange?: (value: string) => void
+  onValueChange?: (value: string) => void
   disabled?: boolean
   error?: string | null
   className?: string
@@ -41,6 +42,7 @@ export function Select({
   defaultValue,
   options,
   onChange,
+  onValueChange,
   disabled,
   error,
   className,
@@ -49,6 +51,7 @@ export function Select({
   const generatedId = React.useId()
   const selectId = id || generatedId
   const hasError = Boolean(error)
+  const handleValueChange = onValueChange || onChange
 
   // If children provided, render as primitive wrapper
   if (children && !options) {
@@ -65,7 +68,7 @@ export function Select({
         <ShadcnSelect
           value={value}
           defaultValue={defaultValue}
-          onValueChange={onChange}
+          onValueChange={handleValueChange}
           disabled={disabled}
         >
           {children}
@@ -92,7 +95,7 @@ export function Select({
       <ShadcnSelect
         value={value}
         defaultValue={defaultValue}
-        onValueChange={onChange}
+        onValueChange={handleValueChange}
         disabled={disabled}
       >
         <SelectTrigger

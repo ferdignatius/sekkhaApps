@@ -55,10 +55,10 @@ export function MobileDock() {
   const navItems = allNavItems.filter((item) => !item.hidden)
 
   return (
-    <div className="fixed right-3 bottom-3 left-3 z-50 mx-auto max-w-md font-sans md:hidden">
+    <div className="fixed right-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-3 z-50 mx-auto max-w-md font-sans md:hidden">
       <nav
         aria-label="Bottom Navigation"
-        className="flex items-center justify-around rounded-[20px] border border-[#e5e5e5] bg-[#fffaf0]/95 p-1.5 shadow-lg ring-1 ring-black/5 backdrop-blur-xl"
+        className="flex items-center justify-around rounded-[24px] border border-black/[0.06] bg-[#fffaf0]/90 p-1.5 shadow-[0_8px_32px_rgba(0,0,0,0.12)] ring-1 ring-white/70 backdrop-blur-2xl"
       >
         {navItems.map((item) => {
           const Icon = item.icon
@@ -67,16 +67,18 @@ export function MobileDock() {
               key={item.label}
               to={item.to}
               aria-current={item.isActive ? "page" : undefined}
-              className={`flex flex-col items-center gap-0.5 rounded-[12px] px-3 py-1.5 transition-all ${
+              className={`flex min-h-[44px] min-w-[50px] flex-col items-center justify-center gap-0.5 rounded-[16px] px-2.5 py-1.5 transition-all duration-150 active:scale-95 ${
                 item.isActive
-                  ? "scale-100 bg-[#0a0a0a] font-bold text-white shadow-xs"
+                  ? "bg-[#0a0a0a] font-bold text-white shadow-xs"
                   : "text-[#6a6a6a] hover:bg-[#faf5e8] hover:text-[#0a0a0a]"
               }`}
             >
               <Icon
-                className={`size-4.5 transition-transform ${item.isActive ? "scale-105 text-white" : ""}`}
+                className={`size-4.5 transition-transform duration-150 ${item.isActive ? "scale-105 text-white" : ""}`}
               />
-              <span className="text-[10px] font-semibold">{item.label}</span>
+              <span className="text-[10px] font-semibold tracking-tight">
+                {item.label}
+              </span>
             </Link>
           )
         })}

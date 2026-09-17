@@ -59,7 +59,7 @@ export function PageBreadcrumb({
             <button
               type="button"
               onClick={handleBack}
-              className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] shadow-2xs transition-all hover:border-[#9a9a9a] hover:bg-[#faf5e8] active:scale-95"
+              className="flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-full border border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] shadow-2xs transition-all hover:border-[#9a9a9a] hover:bg-[#faf5e8] active:scale-95"
               title="Back to previous page"
               aria-label="Back"
             >
@@ -123,7 +123,7 @@ export function PageBreadcrumb({
             ) : (
               <Link
                 to="/notifications"
-                className="relative flex h-10 w-10 items-center justify-center rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] shadow-2xs transition-all hover:border-[#9a9a9a] hover:bg-[#faf5e8] active:scale-95"
+                className="relative flex size-10 items-center justify-center rounded-full border border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] shadow-2xs transition-all hover:border-[#9a9a9a] hover:bg-[#faf5e8] active:scale-95"
                 title="Notifications"
               >
                 <NotificationBell />

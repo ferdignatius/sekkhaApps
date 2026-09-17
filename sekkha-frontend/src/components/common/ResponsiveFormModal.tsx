@@ -93,7 +93,7 @@ export function ResponsiveFormModal({
         <div
           onClick={(e) => e.stopPropagation()}
           className={cn(
-            "relative z-10 flex max-h-[92vh] w-full animate-in flex-col rounded-[24px] border border-[#e5e5e5] bg-[#fffaf0] p-5 text-[#0a0a0a] shadow-2xl transition-all zoom-in-95 sm:p-6",
+            "relative z-10 flex max-h-[92vh] w-full animate-in flex-col rounded-[28px] border border-[#e5e5e5] bg-[#fffaf0] p-5 text-[#0a0a0a] shadow-2xl transition-all zoom-in-95 sm:p-6",
             maxWidth
           )}
         >
@@ -109,7 +109,7 @@ export function ResponsiveFormModal({
             <button
               type="button"
               onClick={handleClose}
-              className="cursor-pointer rounded-[8px] p-1.5 text-[#6a6a6a] transition-colors hover:bg-[#faf5e8] hover:text-[#0a0a0a]"
+              className="flex size-9 cursor-pointer items-center justify-center rounded-full text-[#6a6a6a] transition-colors hover:bg-[#faf5e8] hover:text-[#0a0a0a]"
             >
               <XIcon className="size-4" />
             </button>
@@ -127,7 +127,7 @@ export function ResponsiveFormModal({
   // Mobile (<768px): Native Bottom Drawer Sheet
   return (
     <Drawer open={isModalOpen} onOpenChange={handleOpenChange}>
-      <DrawerContent className="z-[100] flex max-h-[88vh] flex-col overflow-hidden rounded-t-[24px] border-t border-[#e5e5e5] bg-[#fffaf0] p-0 font-sans">
+      <DrawerContent className="z-[100] flex max-h-[88vh] flex-col overflow-hidden rounded-t-[28px] border-t border-[#e5e5e5] bg-[#fffaf0] p-0 font-sans">
         {/* Sticky Drag Handle Header with Blur Background */}
         <div className="sticky top-0 z-20 flex shrink-0 items-center justify-center border-b border-[#e5e5e5]/60 bg-[#fffaf0]/90 py-3 backdrop-blur-md">
           <div className="h-1.5 w-12 rounded-full bg-[#6a6a6a]/30" />

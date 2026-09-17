@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react"
 import { ShieldCheckIcon, CheckCircle2Icon, ArrowDownIcon } from "lucide-react"
 import { ResponsiveFormModal } from "@/components/common/ResponsiveFormModal"
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/base/Button"
 
 interface PrivacyPolicyModalProps {
   isOpen: boolean
@@ -214,20 +214,15 @@ export function PrivacyPolicyModal({
 
         {/* Modal Action Buttons */}
         <div className="flex items-center justify-end gap-2.5 border-t border-[#e5e5e5] pt-2">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onClose}
-            className="h-10 cursor-pointer rounded-[12px] px-4 text-xs font-semibold text-[#6a6a6a] hover:text-[#0a0a0a]"
-          >
+          <Button type="button" variant="outlined" onClick={onClose}>
             Batal
           </Button>
 
           <Button
             type="button"
+            variant="filled"
             disabled={!hasScrolledToBottom}
             onClick={handleAccept}
-            className="flex h-10 cursor-pointer items-center gap-1.5 rounded-[12px] bg-[#0a0a0a] px-5 text-xs font-semibold text-white shadow-xs transition-all hover:bg-[#1f1f1f] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40"
           >
             <CheckCircle2Icon className="size-3.5" />
             <span>Saya Mengerti & Setujui</span>

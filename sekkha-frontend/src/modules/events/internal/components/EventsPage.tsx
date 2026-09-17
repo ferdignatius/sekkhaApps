@@ -20,6 +20,7 @@ import { z } from "zod"
 
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
 import { ResponsiveFormModal } from "@/components/common/ResponsiveFormModal"
+import { Button, Chip } from "@/components/base"
 import { EventCalendar } from "@/components/ui/EventCalendar"
 import type { EventDotItem } from "@/components/ui/EventCalendar"
 import { useDebounce } from "@/hooks/useDebounce"
@@ -70,6 +71,16 @@ function formatSelectedDate(key: string): string {
     weekday: "long",
     day: "numeric",
     month: "long",
+    year: "numeric",
+  })
+}
+
+function formatSelectedDateShort(key: string): string {
+  const d = new Date(key + "T00:00:00")
+  return d.toLocaleDateString("en-US", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
     year: "numeric",
   })
 }
@@ -462,218 +473,327 @@ export function EventsPage() {
       <div className="px-3.5 py-4 sm:px-6 sm:py-6 md:px-8 lg:px-12">
         <div className="mx-auto max-w-7xl space-y-4 sm:space-y-5">
           {/* ── Month & Year Title Header with Unified Controls & Category Filter ── */}
-          <div className="flex items-center justify-between gap-2">
-            {/* Left: Month/Year Title & Category Filter */}
-            <div className="flex min-w-0 items-center gap-2">
-              <div className="relative" ref={monthPickerRef}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (!selectedDate) {
-                      setPickerYear(activeMonth.getFullYear())
-                      setMonthPickerOpen(!monthPickerOpen)
-                    }
-                  }}
-                  className={`group flex items-center gap-1.5 text-base font-bold tracking-tight text-[#0a0a0a] sm:text-xl md:text-2xl ${
-                    !selectedDate ? "cursor-pointer hover:text-[#c28e20]" : ""
-                  }`}
-                  title={!selectedDate ? "Choose month and year" : undefined}
-                >
-                  <span className="truncate">
-                    {selectedDate
-                      ? formatSelectedDate(selectedDate)
-                      : formatMonthLabel(activeMonth)}
-                  </span>
-                  {!selectedDate && (
-                    <ChevronDownIcon
-                      className={`size-4 text-[#6a6a6a] transition-transform duration-200 group-hover:text-[#0a0a0a] sm:size-5 ${
-                        monthPickerOpen ? "rotate-180" : ""
-                      }`}
-                    />
-                  )}
-                </button>
+          <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+            {/* Top Bar: Month/Year Title & Controls */}
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex min-w-0 flex-1 items-center gap-2">
+                <div className="relative min-w-0" ref={monthPickerRef}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!selectedDate) {
+                        setPickerYear(activeMonth.getFullYear())
+                        setMonthPickerOpen(!monthPickerOpen)
+                      }
+                    }}
+                    className={`group flex min-w-0 items-center gap-1.5 text-base font-bold tracking-tight text-[#0a0a0a] sm:text-xl md:text-2xl ${
+                      !selectedDate ? "cursor-pointer hover:text-[#c28e20]" : ""
+                    }`}
+                    title={!selectedDate ? "Choose month and year" : undefined}
+                  >
+                    <span className="truncate">
+                      {selectedDate ? (
+                        <>
+                          <span className="hidden sm:inline">
+                            {formatSelectedDate(selectedDate)}
+                          </span>
+                          <span className="sm:hidden">
+                            {formatSelectedDateShort(selectedDate)}
+                          </span>
+                        </>
+                      ) : (
+                        formatMonthLabel(activeMonth)
+                      )}
+                    </span>
+                    {!selectedDate && (
+                      <ChevronDownIcon
+                        className={`size-4 shrink-0 text-[#6a6a6a] transition-transform duration-200 group-hover:text-[#0a0a0a] sm:size-5 ${
+                          monthPickerOpen ? "rotate-180" : ""
+                        }`}
+                      />
+                    )}
+                  </button>
 
-                {/* Clay Month/Year Picker Popover */}
-                {monthPickerOpen && !selectedDate && (
-                  <div className="absolute top-full left-0 z-40 mt-2 w-64 animate-in space-y-2.5 rounded-[20px] border border-[#e5e5e5] bg-[#fffaf0] p-3 shadow-xl fade-in-0 zoom-in-95">
-                    {/* Year Navigation Bar */}
-                    <div className="flex items-center justify-between border-b border-[#e5e5e5] px-1 pb-2">
-                      <span className="text-sm font-bold text-[#0a0a0a]">
-                        {pickerYear}
-                      </span>
-                      <div className="flex items-center gap-1">
-                        <button
-                          type="button"
-                          onClick={() => setPickerYear((y) => y - 1)}
-                          className="flex size-7 cursor-pointer items-center justify-center rounded-[8px] border border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] shadow-2xs transition-colors hover:bg-[#faf5e8]"
-                          title="Previous year"
-                        >
-                          <ChevronLeftIcon className="size-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setPickerYear((y) => y + 1)}
-                          className="flex size-7 cursor-pointer items-center justify-center rounded-[8px] border border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] shadow-2xs transition-colors hover:bg-[#faf5e8]"
-                          title="Next year"
-                        >
-                          <ChevronRightIcon className="size-3.5" />
-                        </button>
+                  {/* Clay Month/Year Picker Popover */}
+                  {monthPickerOpen && !selectedDate && (
+                    <div className="absolute top-full left-0 z-40 mt-2 w-64 animate-in space-y-2.5 rounded-[20px] border border-[#e5e5e5] bg-[#fffaf0] p-3 shadow-xl fade-in-0 zoom-in-95">
+                      {/* Year Navigation Bar */}
+                      <div className="flex items-center justify-between border-b border-[#e5e5e5] px-1 pb-2">
+                        <span className="text-sm font-bold text-[#0a0a0a]">
+                          {pickerYear}
+                        </span>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => setPickerYear((y) => y - 1)}
+                            className="flex size-7 cursor-pointer items-center justify-center rounded-[8px] border border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] shadow-2xs transition-colors hover:bg-[#faf5e8]"
+                            title="Previous year"
+                          >
+                            <ChevronLeftIcon className="size-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setPickerYear((y) => y + 1)}
+                            className="flex size-7 cursor-pointer items-center justify-center rounded-[8px] border border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] shadow-2xs transition-colors hover:bg-[#faf5e8]"
+                            title="Next year"
+                          >
+                            <ChevronRightIcon className="size-3.5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* 12 Months Grid */}
+                      <div className="grid grid-cols-3 gap-1.5 text-xs font-semibold">
+                        {MONTH_NAMES_SHORT.map((m, idx) => {
+                          const isSelected =
+                            activeMonth.getFullYear() === pickerYear &&
+                            activeMonth.getMonth() === idx
+                          return (
+                            <button
+                              key={m}
+                              type="button"
+                              onClick={() => {
+                                setActiveMonth(new Date(pickerYear, idx, 1))
+                                setSelectedDate(null)
+                                setMonthPickerOpen(false)
+                              }}
+                              className={`cursor-pointer rounded-[10px] py-2 text-center transition-all ${
+                                isSelected
+                                  ? "bg-[#0a0a0a] font-bold text-white shadow-xs"
+                                  : "text-[#3a3a3a] hover:bg-[#faf5e8] hover:text-[#0a0a0a]"
+                              }`}
+                            >
+                              {m}
+                            </button>
+                          )
+                        })}
                       </div>
                     </div>
+                  )}
+                </div>
 
-                    {/* 12 Months Grid */}
-                    <div className="grid grid-cols-3 gap-1.5 text-xs font-semibold">
-                      {MONTH_NAMES_SHORT.map((m, idx) => {
+                {selectedDate && (
+                  <Chip
+                    variant="assist"
+                    onClick={() => setSelectedDate(null)}
+                    title="View full month"
+                    className="hidden sm:inline-flex"
+                  >
+                    Full Month
+                  </Chip>
+                )}
+
+                {/* Custom Clay Category Filter Dropdown (Desktop Beside Title) */}
+                <div
+                  className="relative hidden shrink-0 sm:block"
+                  ref={categoryDropdownRef}
+                >
+                  <Chip
+                    variant="filter"
+                    selected={selectedCategoryTag !== "all"}
+                    onClick={() =>
+                      setCategoryDropdownOpen(!categoryDropdownOpen)
+                    }
+                    leadingIcon={
+                      selectedCategoryTag !== "all" && currentCategoryColor ? (
+                        <span
+                          className="size-2 shrink-0 rounded-full"
+                          style={{ backgroundColor: currentCategoryColor }}
+                        />
+                      ) : (
+                        <FilterIcon className="size-3.5 text-[#6a6a6a]" />
+                      )
+                    }
+                    trailingIcon={
+                      <ChevronDownIcon className="size-3 text-[#6a6a6a]" />
+                    }
+                    title={`Filter by category: ${currentCategoryLabel}`}
+                  >
+                    {currentCategoryLabel}
+                  </Chip>
+
+                  {/* Popover Menu */}
+                  {categoryDropdownOpen && (
+                    <div className="absolute top-full left-0 z-40 mt-1.5 w-52 animate-in space-y-0.5 rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0] p-1.5 text-left shadow-xl zoom-in-95 fade-in">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedCategoryTag("all")
+                          setCategoryDropdownOpen(false)
+                        }}
+                        className={`flex w-full cursor-pointer items-center justify-between rounded-[8px] px-3 py-2 text-xs font-semibold transition-colors ${
+                          selectedCategoryTag === "all"
+                            ? "bg-[#faf5e8] font-bold text-[#0a0a0a]"
+                            : "text-[#6a6a6a] hover:bg-[#faf5e8] hover:text-[#0a0a0a]"
+                        }`}
+                      >
+                        <span>All Categories</span>
+                        {selectedCategoryTag === "all" && (
+                          <CheckIcon className="size-3.5 text-[#0a0a0a]" />
+                        )}
+                      </button>
+
+                      <div className="my-1 h-px bg-[#e5e5e5]" />
+
+                      {accessibleCategories.map((cat) => {
                         const isSelected =
-                          activeMonth.getFullYear() === pickerYear &&
-                          activeMonth.getMonth() === idx
+                          selectedCategoryTag.toLowerCase() ===
+                          cat.tag.toLowerCase()
+                        const colorHex = cat.colorHex || "#1a3a3a"
                         return (
                           <button
-                            key={m}
+                            key={cat.id}
                             type="button"
                             onClick={() => {
-                              setActiveMonth(new Date(pickerYear, idx, 1))
-                              setSelectedDate(null)
-                              setMonthPickerOpen(false)
+                              setSelectedCategoryTag(cat.tag)
+                              setCategoryDropdownOpen(false)
                             }}
-                            className={`cursor-pointer rounded-[10px] py-2 text-center transition-all ${
+                            className={`flex w-full cursor-pointer items-center justify-between rounded-[8px] px-3 py-2 text-xs font-semibold transition-colors ${
                               isSelected
-                                ? "bg-[#0a0a0a] font-bold text-white shadow-xs"
-                                : "text-[#3a3a3a] hover:bg-[#faf5e8] hover:text-[#0a0a0a]"
+                                ? "bg-[#faf5e8] font-bold text-[#0a0a0a]"
+                                : "text-[#6a6a6a] hover:bg-[#faf5e8] hover:text-[#0a0a0a]"
                             }`}
                           >
-                            {m}
+                            <div className="flex items-center gap-2">
+                              <span
+                                className="h-2 w-2 shrink-0 rounded-full shadow-2xs"
+                                style={{ backgroundColor: colorHex }}
+                              />
+                              <span className="capitalize">{cat.name}</span>
+                            </div>
+                            {isSelected && (
+                              <CheckIcon className="size-3.5 text-[#0a0a0a]" />
+                            )}
                           </button>
                         )
                       })}
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
 
-              {selectedDate && (
-                <button
-                  type="button"
-                  onClick={() => setSelectedDate(null)}
-                  className="shrink-0 cursor-pointer rounded-[8px] border border-[#e5e5e5] bg-[#faf5e8] px-2 py-0.5 text-xs font-semibold text-[#0a0a0a] transition-colors hover:bg-[#f5f0e0]"
-                  title="View full month"
-                >
-                  Full Month
-                </button>
-              )}
-
-              {/* Custom Clay Category Filter Dropdown (Beside Title) */}
-              <div className="relative shrink-0" ref={categoryDropdownRef}>
-                <button
-                  type="button"
-                  onClick={() => setCategoryDropdownOpen(!categoryDropdownOpen)}
-                  className={`h-8 rounded-[10px] border ${
-                    selectedCategoryTag !== "all"
-                      ? "border-[#0a0a0a] bg-[#faf5e8]"
-                      : "border-[#e5e5e5] bg-[#fffaf0] hover:bg-[#faf5e8]"
-                  } relative flex cursor-pointer items-center justify-center gap-1 px-2 text-xs font-semibold text-[#0a0a0a] shadow-xs transition-all outline-none sm:h-8.5 sm:gap-1.5 sm:px-2.5`}
-                  title={`Filter by category: ${currentCategoryLabel}`}
-                  aria-label={`Filter by category: ${currentCategoryLabel}`}
-                >
-                  <div className="flex items-center gap-1 sm:gap-1.5">
-                    <div className="relative flex items-center justify-center">
-                      <FilterIcon className="size-3.5 text-[#6a6a6a]" />
-                      {selectedCategoryTag !== "all" && (
-                        <span
-                          className="absolute -top-1 -right-1 h-2 w-2 rounded-full ring-1 ring-white sm:hidden"
-                          style={{
-                            backgroundColor: currentCategoryColor ?? "#e8b94a",
-                          }}
-                        />
-                      )}
-                    </div>
-                    {selectedCategoryTag !== "all" && currentCategoryColor && (
-                      <span
-                        className="hidden h-2 w-2 shrink-0 rounded-full shadow-2xs sm:inline-block"
-                        style={{ backgroundColor: currentCategoryColor }}
-                      />
-                    )}
-                    <span className="hidden max-w-[90px] truncate capitalize sm:inline sm:max-w-[120px]">
-                      {currentCategoryLabel}
-                    </span>
-                  </div>
-                  <ChevronDownIcon className="size-3 shrink-0 text-[#6a6a6a]" />
-                </button>
-
-                {/* Popover Menu */}
-                {categoryDropdownOpen && (
-                  <div className="absolute top-full left-0 z-40 mt-1.5 w-52 animate-in space-y-0.5 rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0] p-1.5 text-left shadow-xl zoom-in-95 fade-in">
-                    <button
-                      type="button"
+              {/* Mobile-Only Action: Shows Full Month button if date selected, or Today + Prev/Next if browsing whole month */}
+              <div className="flex shrink-0 items-center gap-1 sm:hidden">
+                {selectedDate ? (
+                  <Button
+                    variant="outlined"
+                    size="sm"
+                    onClick={() => setSelectedDate(null)}
+                    className="h-8 shrink-0 gap-1 px-2.5 text-xs font-semibold"
+                    title="Show full month events"
+                  >
+                    <XIcon className="size-3" />
+                    <span>Full Month</span>
+                  </Button>
+                ) : (
+                  <>
+                    <Button
+                      variant="outlined"
+                      size="sm"
                       onClick={() => {
-                        setSelectedCategoryTag("all")
-                        setCategoryDropdownOpen(false)
+                        const now = new Date()
+                        setActiveMonth(now)
+                        setSelectedDate(toDateKey(now.toISOString()))
                       }}
-                      className={`flex w-full cursor-pointer items-center justify-between rounded-[8px] px-3 py-2 text-xs font-semibold transition-colors ${
-                        selectedCategoryTag === "all"
-                          ? "bg-[#faf5e8] font-bold text-[#0a0a0a]"
-                          : "text-[#6a6a6a] hover:bg-[#faf5e8] hover:text-[#0a0a0a]"
-                      }`}
+                      className="h-8 px-2.5 text-xs"
+                      title="Go to Today"
                     >
-                      <span>All Categories</span>
-                      {selectedCategoryTag === "all" && (
-                        <CheckIcon className="size-3.5 text-[#0a0a0a]" />
-                      )}
-                    </button>
+                      Today
+                    </Button>
 
-                    <div className="my-1 h-px bg-[#e5e5e5]" />
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveMonth(
+                            (prev) =>
+                              new Date(
+                                prev.getFullYear(),
+                                prev.getMonth() - 1,
+                                1
+                              )
+                          )
+                          setSelectedDate(null)
+                        }}
+                        className="flex size-8 cursor-pointer items-center justify-center rounded-full border border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] shadow-2xs transition-all hover:bg-[#faf5e8] active:scale-95"
+                        title="Previous month"
+                        aria-label="Previous month"
+                      >
+                        <ChevronLeftIcon className="size-4" />
+                      </button>
 
-                    {accessibleCategories.map((cat) => {
-                      const isSelected =
-                        selectedCategoryTag.toLowerCase() ===
-                        cat.tag.toLowerCase()
-                      const colorHex = cat.colorHex || "#1a3a3a"
-                      return (
-                        <button
-                          key={cat.id}
-                          type="button"
-                          onClick={() => {
-                            setSelectedCategoryTag(cat.tag)
-                            setCategoryDropdownOpen(false)
-                          }}
-                          className={`flex w-full cursor-pointer items-center justify-between rounded-[8px] px-3 py-2 text-xs font-semibold transition-colors ${
-                            isSelected
-                              ? "bg-[#faf5e8] font-bold text-[#0a0a0a]"
-                              : "text-[#6a6a6a] hover:bg-[#faf5e8] hover:text-[#0a0a0a]"
-                          }`}
-                        >
-                          <div className="flex items-center gap-2">
-                            <span
-                              className="h-2 w-2 shrink-0 rounded-full shadow-2xs"
-                              style={{ backgroundColor: colorHex }}
-                            />
-                            <span className="capitalize">{cat.name}</span>
-                          </div>
-                          {isSelected && (
-                            <CheckIcon className="size-3.5 text-[#0a0a0a]" />
-                          )}
-                        </button>
-                      )
-                    })}
-                  </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveMonth(
+                            (prev) =>
+                              new Date(
+                                prev.getFullYear(),
+                                prev.getMonth() + 1,
+                                1
+                              )
+                          )
+                          setSelectedDate(null)
+                        }}
+                        className="flex size-8 cursor-pointer items-center justify-center rounded-full border border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] shadow-2xs transition-all hover:bg-[#faf5e8] active:scale-95"
+                        title="Next month"
+                        aria-label="Next month"
+                      >
+                        <ChevronRightIcon className="size-4" />
+                      </button>
+                    </div>
+                  </>
                 )}
               </div>
             </div>
 
-            {/* Right: Unified Month Controls: Today, Prev, Next */}
-            <div className="flex shrink-0 items-center gap-1 sm:gap-1.5">
-              <button
-                type="button"
+            {/* Mobile-Only Row 2: Smooth Horizontal Scrollable Category Filter Chips */}
+            <div className="flex scrollbar-none items-center gap-1.5 overflow-x-auto pb-0.5 sm:hidden">
+              <Chip
+                variant="filter"
+                selected={selectedCategoryTag === "all"}
+                onClick={() => setSelectedCategoryTag("all")}
+              >
+                All Categories
+              </Chip>
+              {accessibleCategories.map((cat) => {
+                const isSelected =
+                  selectedCategoryTag.toLowerCase() === cat.tag.toLowerCase()
+                const colorHex = cat.colorHex || "#1a3a3a"
+                return (
+                  <Chip
+                    key={cat.id}
+                    variant="filter"
+                    selected={isSelected}
+                    onClick={() => setSelectedCategoryTag(cat.tag)}
+                    leadingIcon={
+                      <span
+                        className="size-2 shrink-0 rounded-full shadow-2xs"
+                        style={{ backgroundColor: colorHex }}
+                      />
+                    }
+                  >
+                    {cat.name}
+                  </Chip>
+                )
+              })}
+            </div>
+
+            {/* Desktop-Only Month Controls: Today, Prev, Next */}
+            <div className="hidden shrink-0 items-center gap-1 sm:flex sm:gap-1.5">
+              <Button
+                variant="outlined"
+                size="sm"
                 onClick={() => {
                   const now = new Date()
                   setActiveMonth(now)
                   setSelectedDate(toDateKey(now.toISOString()))
                 }}
-                className="h-8 cursor-pointer rounded-[10px] border border-[#e5e5e5] bg-[#fffaf0] px-2.5 text-xs font-bold text-[#0a0a0a] shadow-xs transition-all hover:bg-[#faf5e8] sm:h-8.5 sm:px-3"
+                className="h-8 px-3 text-xs"
                 title="Go to Today"
               >
                 Today
-              </button>
+              </Button>
 
               <div className="flex items-center gap-1">
                 <button
@@ -685,7 +805,7 @@ export function EventsPage() {
                     )
                     setSelectedDate(null)
                   }}
-                  className="flex size-8 cursor-pointer items-center justify-center rounded-[10px] border border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] shadow-xs transition-all hover:bg-[#faf5e8] active:scale-95 sm:size-8.5"
+                  className="flex size-8 cursor-pointer items-center justify-center rounded-full border border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] shadow-2xs transition-all hover:bg-[#faf5e8] active:scale-95"
                   title="Previous month"
                   aria-label="Previous month"
                 >
@@ -701,7 +821,7 @@ export function EventsPage() {
                     )
                     setSelectedDate(null)
                   }}
-                  className="flex size-8 cursor-pointer items-center justify-center rounded-[10px] border border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] shadow-xs transition-all hover:bg-[#faf5e8] active:scale-95 sm:size-8.5"
+                  className="flex size-8 cursor-pointer items-center justify-center rounded-full border border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] shadow-2xs transition-all hover:bg-[#faf5e8] active:scale-95"
                   title="Next month"
                   aria-label="Next month"
                 >
@@ -755,19 +875,19 @@ export function EventsPage() {
 
             {/* Create button for Pengurus */}
             {isPengurus && (
-              <button
-                type="button"
+              <Button
+                variant="filled"
                 onClick={() => {
                   setEditTarget(null)
                   setFormOpen(true)
                 }}
-                className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-[12px] bg-[#0a0a0a] px-0 text-xs font-bold text-white shadow-xs transition-all hover:bg-[#1f1f1f] active:scale-[0.98] sm:w-auto sm:px-4 sm:text-sm"
+                className="shrink-0"
                 title="Create New Event"
                 aria-label="Create New Event"
               >
                 <PlusIcon className="size-4" aria-hidden="true" />
                 <span className="hidden sm:inline">Create Event</span>
-              </button>
+              </Button>
             )}
           </div>
 

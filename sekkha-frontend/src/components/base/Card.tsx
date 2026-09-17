@@ -9,6 +9,9 @@ import {
 import { cn } from "@/lib/utils"
 
 export type CardVariant =
+  | "elevated"
+  | "filled"
+  | "outlined"
   | "default"
   | "canvas"
   | "cream"
@@ -26,6 +29,18 @@ export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 const cardVariantClasses: Record<CardVariant, string> = {
+  // ─── Material Design 3 Canonical Variants (Clay Material) ───
+  // 1. M3 Elevated Card: Surface with subtle elevation shadow
+  elevated:
+    "rounded-[16px] border border-[#e5e5e5]/70 bg-[#fffaf0] text-[#0a0a0a] shadow-xs hover:shadow-md transition-shadow",
+  // 2. M3 Filled Card: Tonal container surface, no border, no shadow
+  filled:
+    "rounded-[16px] border border-transparent bg-[#faf5e8] text-[#0a0a0a]",
+  // 3. M3 Outlined Card: Hairline border on canvas surface
+  outlined:
+    "rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a]",
+
+  // ─── Clay Design System Variants (DESIGN.md) ───
   // product-mockup-card & default card: #fffaf0 bg, 16px radius, hairline border
   default:
     "rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] shadow-xs",

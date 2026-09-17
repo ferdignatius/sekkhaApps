@@ -30,6 +30,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination"
+import { Button } from "@/components/base/Button"
 import {
   Select,
   SelectContent,
@@ -37,7 +38,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from "@/components/base/Select"
 import { teamsApi } from "../api/teamsApi"
 import type {
   MemberDto,
@@ -515,14 +516,14 @@ export function TeamsPage() {
               </div>
 
               {isAdmin && (
-                <button
-                  type="button"
+                <Button
+                  variant="filled"
                   onClick={() => setShowCreateModal(true)}
-                  className="flex h-9 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-[10px] bg-[#0a0a0a] px-3 text-xs font-bold text-white shadow-xs transition-all hover:bg-[#1f1f1f] active:scale-[0.98] sm:h-10 sm:rounded-[12px] sm:px-4 sm:text-sm"
+                  className="shrink-0"
                 >
                   <PlusIcon className="size-3.5 sm:size-4" />
                   <span className="hidden sm:inline">Add Member</span>
-                </button>
+                </Button>
               )}
             </div>
           </div>
@@ -1376,21 +1377,23 @@ export function TeamsPage() {
             </p>
 
             <div className="flex gap-2 pt-2">
-              <button
+              <Button
+                variant="outlined"
                 type="button"
                 onClick={() => setDeletingMember(null)}
-                className="h-11 flex-1 cursor-pointer rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] text-xs font-semibold text-[#0a0a0a] transition-colors hover:bg-[#faf5e8] sm:text-sm"
+                className="flex-1"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="danger"
                 type="button"
                 onClick={handleDeleteMember}
                 disabled={submitting}
-                className="h-11 flex-1 cursor-pointer rounded-[12px] bg-rose-600 text-xs font-bold text-white shadow-xs transition-all hover:bg-rose-700 disabled:opacity-50 sm:text-sm"
+                className="flex-1"
               >
                 {submitting ? "Deleting..." : "Delete"}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

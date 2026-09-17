@@ -29,7 +29,7 @@ export function DialogContent({
   return (
     <ShadcnDialogContent
       className={cn(
-        "rounded-[24px] border border-[#e5e5e5] bg-[#fffaf0] p-6 text-[#0a0a0a] shadow-2xl sm:max-w-lg",
+        "rounded-[28px] border border-[#e5e5e5] bg-[#fffaf0] p-6 text-[#0a0a0a] shadow-2xl sm:max-w-lg",
         className
       )}
       {...props}

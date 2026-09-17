@@ -46,6 +46,7 @@ import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ResponsiveFormModal } from "@/components/common/ResponsiveFormModal"
 import { SettingsSection } from "@/modules/profile/internal/components/SettingsSection"
+import { Button, Tabs, TabsList, TabsTrigger } from "@/components/base"
 
 const UserProfileResponseSchema = z
   .object({
@@ -606,23 +607,23 @@ export function ProfilePage() {
 
                 {/* Right: Action Buttons */}
                 <div className="flex shrink-0 items-stretch gap-2 pt-1 sm:flex-row lg:flex-col lg:pt-0">
-                  <button
-                    type="button"
+                  <Button
+                    variant="filled"
                     onClick={handleOpenEditModal}
-                    className="flex h-11 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-[12px] bg-[#0a0a0a] px-4 text-xs font-bold text-white shadow-xs transition-all hover:bg-[#1f1f1f] sm:text-sm"
+                    className="flex-1"
                   >
                     <PencilIcon className="size-3.5 sm:size-4" />
                     <span>Edit Profile</span>
-                  </button>
+                  </Button>
 
-                  <button
-                    type="button"
+                  <Button
+                    variant="outlined"
                     onClick={() => setShowPrintModal(true)}
-                    className="flex h-11 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-4 text-xs font-bold text-[#0a0a0a] shadow-xs transition-all hover:bg-[#faf5e8] sm:text-sm"
+                    className="flex-1"
                   >
                     <PrinterIcon className="size-3.5 sm:size-4" />
                     <span>Print Physical Card</span>
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
@@ -703,65 +704,40 @@ export function ProfilePage() {
             </div>
 
             {/* ── 3. INTERACTIVE SECTION TAB BAR ── */}
-            <div className="flex scrollbar-none items-center gap-1 overflow-x-auto rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] p-1">
-              <button
-                type="button"
-                onClick={() => setActiveTab("overview")}
-                className={`flex shrink-0 cursor-pointer items-center gap-1.5 rounded-[8px] px-3.5 py-2 text-xs font-bold transition-all ${
-                  activeTab === "overview"
-                    ? "bg-[#0a0a0a] text-white shadow-xs"
-                    : "text-[#6a6a6a] hover:text-[#0a0a0a]"
-                }`}
-              >
-                <SparklesIcon className="size-3.5" />
-                <span>Overview & Analytics</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActiveTab("badges")}
-                className={`flex shrink-0 cursor-pointer items-center gap-1.5 rounded-[8px] px-3.5 py-2 text-xs font-bold transition-all ${
-                  activeTab === "badges"
-                    ? "bg-[#0a0a0a] text-white shadow-xs"
-                    : "text-[#6a6a6a] hover:text-[#0a0a0a]"
-                }`}
-              >
-                <AwardIcon className="size-3.5" />
-                <span>Badges & Achievements</span>
-                <span
-                  className={`py-0.2 rounded-full px-1.5 text-[10px] font-bold ${activeTab === "badges" ? "bg-white/20 text-white" : "bg-[#f5f0e0] text-[#0a0a0a]"}`}
-                >
-                  {badges.filter((b) => Boolean(b.earned_at)).length}/
-                  {badges.length}
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActiveTab("card")}
-                className={`flex shrink-0 cursor-pointer items-center gap-1.5 rounded-[8px] px-3.5 py-2 text-xs font-bold transition-all ${
-                  activeTab === "card"
-                    ? "bg-[#0a0a0a] text-white shadow-xs"
-                    : "text-[#6a6a6a] hover:text-[#0a0a0a]"
-                }`}
-              >
-                <QrCodeIcon className="size-3.5" />
-                <span>Digital Member ID</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActiveTab("settings")}
-                className={`flex shrink-0 cursor-pointer items-center gap-1.5 rounded-[8px] px-3.5 py-2 text-xs font-bold transition-all ${
-                  activeTab === "settings"
-                    ? "bg-[#0a0a0a] text-white shadow-xs"
-                    : "text-[#6a6a6a] hover:text-[#0a0a0a]"
-                }`}
-              >
-                <SettingsIcon className="size-3.5" />
-                <span>Settings & Account</span>
-              </button>
-            </div>
+            <Tabs
+              value={activeTab}
+              onValueChange={(val) => setActiveTab(val as any)}
+              variant="pill"
+            >
+              <TabsList className="w-full justify-start overflow-x-auto">
+                <TabsTrigger value="overview">
+                  <SparklesIcon className="size-3.5" />
+                  <span>Overview & Analytics</span>
+                </TabsTrigger>
+                <TabsTrigger value="badges">
+                  <AwardIcon className="size-3.5" />
+                  <span>Badges & Achievements</span>
+                  <span
+                    className={`py-0.2 rounded-full px-1.5 text-[10px] font-bold ${
+                      activeTab === "badges"
+                        ? "bg-white/20 text-white"
+                        : "bg-[#f5f0e0] text-[#0a0a0a]"
+                    }`}
+                  >
+                    {badges.filter((b) => Boolean(b.earned_at)).length}/
+                    {badges.length}
+                  </span>
+                </TabsTrigger>
+                <TabsTrigger value="card">
+                  <QrCodeIcon className="size-3.5" />
+                  <span>Digital Member ID</span>
+                </TabsTrigger>
+                <TabsTrigger value="settings">
+                  <SettingsIcon className="size-3.5" />
+                  <span>Settings & Account</span>
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
 
             {/* ── 4. TAB CONTENTS ── */}
 
@@ -1562,17 +1538,19 @@ export function ProfilePage() {
 
               {/* Modal Actions */}
               <div className="flex gap-2 border-t border-[#e5e5e5] pt-3">
-                <button
+                <Button
+                  variant="outlined"
                   type="button"
                   onClick={() => setShowEditModal(false)}
-                  className="h-11 flex-1 cursor-pointer rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] text-xs font-bold text-[#0a0a0a] transition-colors hover:bg-[#faf5e8] sm:text-sm"
+                  className="flex-1"
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="filled"
                   type="submit"
                   disabled={savingProfile}
-                  className="flex h-11 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-[12px] bg-[#0a0a0a] text-xs font-bold text-white shadow-xs transition-all hover:bg-[#1f1f1f] disabled:opacity-50 sm:text-sm"
+                  className="flex-1"
                 >
                   {savingProfile ? (
                     <span>Saving...</span>
@@ -1582,7 +1560,7 @@ export function ProfilePage() {
                       <span>Save Changes</span>
                     </>
                   )}
-                </button>
+                </Button>
               </div>
             </form>
           </div>
@@ -1693,21 +1671,23 @@ export function ProfilePage() {
             </p>
 
             <div className="flex gap-2 border-t border-[#e5e5e5] pt-1">
-              <button
+              <Button
+                variant="outlined"
                 type="button"
                 onClick={() => setShowPrintModal(false)}
-                className="h-11 flex-1 cursor-pointer rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] text-xs font-bold text-[#0a0a0a] transition-colors hover:bg-[#faf5e8] sm:text-sm"
+                className="flex-1"
               >
                 Close
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="filled"
                 type="button"
                 onClick={handleTriggerPrint}
-                className="flex h-11 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-[12px] bg-[#0a0a0a] text-xs font-bold text-white shadow-xs transition-all hover:bg-[#1f1f1f] sm:text-sm"
+                className="flex-1"
               >
                 <PrinterIcon className="size-4" />
                 <span>Print Card Now</span>
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -1857,20 +1837,22 @@ export function ProfilePage() {
               </div>
 
               <div className="flex gap-2 border-t border-[#e5e5e5] pt-2">
-                <button
+                <Button
+                  variant="outlined"
                   type="button"
                   onClick={() => setShowChangePasswordModal(false)}
-                  className="h-11 flex-1 cursor-pointer rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] text-xs font-bold text-[#0a0a0a] transition-colors hover:bg-[#faf5e8] sm:text-sm"
+                  className="flex-1"
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="filled"
                   type="submit"
                   disabled={savingPassword}
-                  className="h-11 flex-1 cursor-pointer rounded-[12px] bg-[#0a0a0a] text-xs font-bold text-white shadow-xs transition-all hover:bg-[#1f1f1f] disabled:opacity-50 sm:text-sm"
+                  className="flex-1"
                 >
                   {savingPassword ? "Saving..." : "Save Password"}
-                </button>
+                </Button>
               </div>
             </form>
           </div>

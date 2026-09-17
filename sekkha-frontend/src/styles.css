@@ -141,14 +141,32 @@
     --color-clay-warning: #f59e0b;
     --color-clay-error: #ef4444;
 
-    /* Border Radii (DESIGN.md) */
+    /* Border Radii (DESIGN.md & M3 Shape Scale) */
     --radius-xs: 6px;
     --radius-sm: 8px;
     --radius-md: 12px;
     --radius-lg: 16px;
     --radius-xl: 24px;
+    --radius-2xl: 28px; /* M3 Extra Large (Dialogs & Large FAB) */
     --radius-pill: 9999px;
     --radius-full: 9999px;
+
+    /* Material Design 3 (Clay Material) Roles */
+    --color-md-primary: #0a0a0a;
+    --color-md-on-primary: #ffffff;
+    --color-md-primary-container: #faf5e8;
+    --color-md-on-primary-container: #0a0a0a;
+    --color-md-surface: #fffaf0;
+    --color-md-on-surface: #0a0a0a;
+    --color-md-surface-variant: #faf5e8;
+    --color-md-on-surface-variant: #6a6a6a;
+    --color-md-surface-container-lowest: #ffffff;
+    --color-md-surface-container-low: #fffaf0;
+    --color-md-surface-container: #faf5e8;
+    --color-md-surface-container-high: #f5f0e0;
+    --color-md-surface-container-highest: #ebe6d6;
+    --color-md-outline: #c5c0b4;
+    --color-md-outline-variant: #e5e5e5;
 
     /* Sekkha Compatible Theme Aliases mapped to Clay */
     --color-sekkha-primary: #0a0a0a;
@@ -180,6 +198,12 @@
     --spacing-section-lg: 96px;
     --spacing-section: 96px;
     --max-width-8xl: 1280px;
+
+    /* M3 Elevation Shadows */
+    --shadow-m3-1: 0 1px 3px 0 rgba(10, 10, 10, 0.06), 0 1px 2px -1px rgba(10, 10, 10, 0.04);
+    --shadow-m3-2: 0 3px 6px -1px rgba(10, 10, 10, 0.08), 0 2px 4px -2px rgba(10, 10, 10, 0.05);
+    --shadow-m3-3: 0 10px 20px -3px rgba(10, 10, 10, 0.1), 0 4px 6px -4px rgba(10, 10, 10, 0.06);
+    --shadow-m3-4: 0 14px 28px -4px rgba(10, 10, 10, 0.12), 0 8px 10px -6px rgba(10, 10, 10, 0.08);
 }
 
 @layer base {

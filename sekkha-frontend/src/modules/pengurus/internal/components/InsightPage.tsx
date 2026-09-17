@@ -32,7 +32,8 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
+  Chip,
+} from "@/components/base"
 import {
   ChartContainer,
   ChartTooltip,
@@ -497,20 +498,16 @@ export function InsightPage() {
                   { id: "aktivis", label: "Activists (38)" },
                   { id: "pengurus", label: "Organizers (12)" },
                 ].map((tab) => (
-                  <button
+                  <Chip
                     key={tab.id}
-                    type="button"
+                    variant="filter"
+                    selected={segmentFilter === tab.id}
                     onClick={() =>
                       setSegmentFilter(tab.id as RoleSegmentFilter)
                     }
-                    className={`text-micro-bold shrink-0 cursor-pointer rounded-lg px-2.5 py-1 font-bold transition ${
-                      segmentFilter === tab.id
-                        ? "bg-sekkha-brand-blue text-white shadow-xs"
-                        : "border border-sekkha-hairline-soft bg-sekkha-surface text-sekkha-slate hover:text-sekkha-ink"
-                    }`}
                   >
                     {tab.label}
-                  </button>
+                  </Chip>
                 ))}
               </div>
             </div>

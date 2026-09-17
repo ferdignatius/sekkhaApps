@@ -34,6 +34,10 @@ const sekkhaBadgeVariants = cva(
         sm: "px-2.5 py-0.5 text-xs",
         default: "px-3 py-1 text-[13px]",
         lg: "px-4 py-1.5 text-sm font-semibold",
+        // M3 Notification Badge Sizes
+        counter:
+          "h-[18px] min-w-[18px] rounded-full px-1 text-[10px] leading-none font-bold",
+        dot: "size-2.5 rounded-full p-0",
       },
     },
     defaultVariants: {

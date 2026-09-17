@@ -17,6 +17,7 @@ import {
   UserCheckIcon,
   ClipboardListIcon,
 } from "lucide-react"
+import { Chip } from "@/components/base"
 import {
   fetchContributions,
   CONTRIBUTION_PERIODS,
@@ -421,18 +422,14 @@ export function PengurusContributionTab() {
               label: `Activists (${summary.totalAktivis})`,
             },
           ].map((tab) => (
-            <button
+            <Chip
               key={tab.id}
-              type="button"
+              variant="filter"
+              selected={roleFilter === tab.id}
               onClick={() => setRoleFilter(tab.id)}
-              className={`text-micro-bold shrink-0 cursor-pointer rounded-lg px-2.5 py-1 font-bold transition ${
-                roleFilter === tab.id
-                  ? "bg-sekkha-brand-blue text-white shadow-xs"
-                  : "border border-sekkha-hairline-soft bg-sekkha-surface text-sekkha-slate hover:text-sekkha-ink"
-              }`}
             >
               {tab.label}
-            </button>
+            </Chip>
           ))}
         </div>
       </div>

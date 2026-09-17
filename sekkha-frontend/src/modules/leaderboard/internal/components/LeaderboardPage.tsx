@@ -15,11 +15,18 @@ import {
   UserIcon,
   ShieldCheckIcon,
   AwardIcon,
-  CheckIcon,
 } from "lucide-react"
 import { useAuth } from "@/modules/auth"
 import { api } from "@/lib/api"
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
+import {
+  Badge,
+  Card,
+  Chip,
+  Tabs,
+  TabsList,
+  TabsTrigger,
+} from "@/components/base"
 import { getCurrentSeason, seasonLabel } from "../types"
 import type { LeaderboardMetric, LeaderboardEntry } from "../types"
 
@@ -297,13 +304,13 @@ function LeaderboardRow({
             </span>
           )}
           {entry.role && entry.role !== "umat" && (
-            <span className="py-0.2 shrink-0 rounded-full border border-[#1a3a3a]/20 bg-[#1a3a3a]/10 px-2 text-[9px] font-bold text-[#1a3a3a] capitalize">
+            <Badge variant="teal" size="sm" className="capitalize">
               {entry.role === "admin"
                 ? "Admin"
                 : entry.role === "pengurus"
                   ? "Organizer"
                   : "Activist"}
-            </span>
+            </Badge>
           )}
         </div>
 
@@ -496,7 +503,8 @@ export function LeaderboardPage() {
       <div className="px-3.5 py-4 pb-32 sm:px-6 sm:py-6 md:px-8 md:pb-12 lg:px-12">
         <div className="mx-auto max-w-7xl space-y-4 sm:space-y-5">
           {/* ── Top Header Banner: Compact & Sleek Clay Style ── */}
-          <div className="rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] p-3 shadow-xs sm:rounded-[24px] sm:p-5">
+          {/* ── Top Header Banner: Compact & Sleek Clay Style ── */}
+          <Card variant="soft" className="p-3 sm:p-5">
             <div className="flex items-center justify-between gap-2.5">
               <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
                 <div className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-[#0a0a0a] text-white shadow-xs sm:size-12 sm:rounded-[12px]">
@@ -507,9 +515,9 @@ export function LeaderboardPage() {
                     <h1 className="truncate text-sm font-bold tracking-tight text-[#0a0a0a] sm:text-xl">
                       Leaderboard
                     </h1>
-                    <span className="py-0.2 shrink-0 rounded-[6px] border border-[#e8b94a]/40 bg-[#e8b94a]/20 px-2 text-[10px] font-extrabold text-[#0a0a0a] sm:rounded-[8px] sm:px-2.5 sm:py-0.5 sm:text-xs">
+                    <Badge variant="ochre" size="default">
                       {seasonData?.name || seasonLabel(season)}
-                    </span>
+                    </Badge>
                   </div>
                   {seasonData?.start_date && seasonData?.end_date && (
                     <span className="hidden text-xs font-medium text-[#6a6a6a] sm:inline">
@@ -529,7 +537,7 @@ export function LeaderboardPage() {
                 </div>
               </div>
 
-              <div className="flex shrink-0 items-center gap-1 rounded-[8px] border border-[#e5e5e5] bg-[#fffaf0] px-2.5 py-1 text-[11px] font-bold text-[#6a6a6a] shadow-xs sm:rounded-[10px] sm:text-xs">
+              <div className="flex shrink-0 items-center gap-1 rounded-full border border-[#e5e5e5] bg-[#fffaf0] px-3 py-1 text-[11px] font-bold text-[#6a6a6a] shadow-xs sm:text-xs">
                 <TimerIcon className="size-3.5 shrink-0 text-[#0a0a0a]" />
                 <span>
                   Ends in{" "}
@@ -539,31 +547,29 @@ export function LeaderboardPage() {
                 </span>
               </div>
             </div>
-          </div>
+          </Card>
 
           {/* ── Filters Bar: Metric & Role Filters ── */}
           <div className="flex flex-col justify-between gap-2.5 sm:gap-3 md:flex-row md:items-center">
             {/* Metric Filter Tabs */}
-            <div className="flex w-full items-center gap-1 rounded-[10px] border border-[#e5e5e5] bg-[#faf5e8] p-1 sm:rounded-[12px] md:w-auto">
-              {METRIC_OPTIONS.map((m) => {
-                const isActive = metric === m.value
-                return (
-                  <button
+            <Tabs
+              value={metric}
+              onValueChange={(val) => setMetric(val as LeaderboardMetric)}
+              variant="pill"
+            >
+              <TabsList className="w-full md:w-auto">
+                {METRIC_OPTIONS.map((m) => (
+                  <TabsTrigger
                     key={m.value}
-                    type="button"
-                    onClick={() => setMetric(m.value)}
-                    className={`flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-[7px] px-2.5 py-1.5 text-xs font-bold transition-all sm:rounded-[8px] sm:px-3.5 sm:py-2 md:flex-none ${
-                      isActive
-                        ? "bg-[#0a0a0a] text-white shadow-xs"
-                        : "text-[#6a6a6a] hover:text-[#0a0a0a]"
-                    }`}
+                    value={m.value}
+                    className="flex-1 md:flex-none"
                   >
                     {m.icon}
                     <span>{m.label}</span>
-                  </button>
-                )
-              })}
-            </div>
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
 
             {/* Role Filter Buttons */}
             {isPengurusOrAdmin && (
@@ -574,21 +580,15 @@ export function LeaderboardPage() {
                 {PENGURUS_ROLE_CHECKBOXES.map((r) => {
                   const isChecked = selectedRoles.includes(r.id)
                   return (
-                    <button
+                    <Chip
                       key={r.id}
-                      type="button"
+                      variant="filter"
+                      selected={isChecked}
                       onClick={() => toggleRole(r.id)}
-                      className={`flex cursor-pointer items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold transition-all select-none ${
-                        isChecked
-                          ? "border-[#0a0a0a] bg-[#faf5e8] font-bold text-[#0a0a0a] shadow-2xs"
-                          : "border-[#e5e5e5] bg-transparent text-[#8a8a8a] hover:border-[#bfbfbf] hover:text-[#0a0a0a]"
-                      }`}
+                      leadingIcon={isChecked ? undefined : r.icon}
                     >
-                      {isChecked && (
-                        <CheckIcon className="size-3 stroke-[2.5] text-[#0a0a0a]" />
-                      )}
-                      <span>{r.label}</span>
-                    </button>
+                      {r.label}
+                    </Chip>
                   )
                 })}
               </div>
@@ -602,21 +602,15 @@ export function LeaderboardPage() {
                 {AKTIVIS_ROLE_CHECKBOXES.map((r) => {
                   const isChecked = selectedRoles.includes(r.id)
                   return (
-                    <button
+                    <Chip
                       key={r.id}
-                      type="button"
+                      variant="filter"
+                      selected={isChecked}
                       onClick={() => toggleRole(r.id)}
-                      className={`flex cursor-pointer items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold transition-all select-none ${
-                        isChecked
-                          ? "border-[#0a0a0a] bg-[#faf5e8] font-bold text-[#0a0a0a] shadow-2xs"
-                          : "border-[#e5e5e5] bg-transparent text-[#8a8a8a] hover:border-[#bfbfbf] hover:text-[#0a0a0a]"
-                      }`}
+                      leadingIcon={isChecked ? undefined : r.icon}
                     >
-                      {isChecked && (
-                        <CheckIcon className="size-3 stroke-[2.5] text-[#0a0a0a]" />
-                      )}
-                      <span>{r.label}</span>
-                    </button>
+                      {r.label}
+                    </Chip>
                   )
                 })}
               </div>

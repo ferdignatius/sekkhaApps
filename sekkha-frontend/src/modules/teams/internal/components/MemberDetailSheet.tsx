@@ -17,6 +17,7 @@ import {
   ExternalLinkIcon,
 } from "lucide-react"
 import QRCode from "react-qr-code"
+import { Button, Tabs, TabsList, TabsTrigger } from "@/components/base"
 import type { MemberDto } from "../api/teamsApi"
 
 interface MemberDetailSheetProps {
@@ -175,32 +176,22 @@ export function MemberDetailSheet({
         </div>
 
         {/* View Toggle Tabs */}
-        <div className="flex items-center gap-1 rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] p-1">
-          <button
-            type="button"
-            onClick={() => setActiveTab("profile")}
-            className={`flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-[8px] py-2 text-xs font-bold transition-all ${
-              activeTab === "profile"
-                ? "bg-[#0a0a0a] text-white shadow-xs"
-                : "text-[#6a6a6a] hover:text-[#0a0a0a]"
-            }`}
-          >
-            <UserIcon className="size-3.5" />
-            <span>Profile Information</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab("card")}
-            className={`flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-[8px] py-2 text-xs font-bold transition-all ${
-              activeTab === "card"
-                ? "bg-[#0a0a0a] text-white shadow-xs"
-                : "text-[#6a6a6a] hover:text-[#0a0a0a]"
-            }`}
-          >
-            <QrCodeIcon className="size-3.5" />
-            <span>Digital ID & QR Card</span>
-          </button>
-        </div>
+        <Tabs
+          value={activeTab}
+          onValueChange={(val) => setActiveTab(val as any)}
+          variant="pill"
+        >
+          <TabsList className="w-full">
+            <TabsTrigger value="profile" className="flex-1">
+              <UserIcon className="size-3.5" />
+              <span>Profile Information</span>
+            </TabsTrigger>
+            <TabsTrigger value="card" className="flex-1">
+              <QrCodeIcon className="size-3.5" />
+              <span>Digital ID & QR Card</span>
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
 
         {/* Tab 1: Detailed Profile Info */}
         {activeTab === "profile" && (
@@ -344,10 +335,11 @@ export function MemberDetailSheet({
 
             {/* Print & Copy Card buttons */}
             <div className="flex gap-2">
-              <button
+              <Button
+                variant="outlined"
                 type="button"
                 onClick={() => handleCopy(member.user_number)}
-                className="flex h-11 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] text-xs font-semibold text-[#0a0a0a] transition-colors hover:bg-[#faf5e8] sm:text-sm"
+                className="flex-1"
               >
                 {copied ? (
                   <CheckIcon className="size-4 text-emerald-600" />
@@ -355,16 +347,17 @@ export function MemberDetailSheet({
                   <CopyIcon className="size-4 text-[#6a6a6a]" />
                 )}
                 <span>{copied ? "Copied!" : "Copy Member ID"}</span>
-              </button>
+              </Button>
 
-              <button
+              <Button
+                variant="filled"
                 type="button"
                 onClick={() => window.print()}
-                className="flex h-11 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-[12px] bg-[#0a0a0a] text-xs font-bold text-white shadow-xs transition-all hover:bg-[#1f1f1f] sm:text-sm"
+                className="flex-1"
               >
                 <PrinterIcon className="size-4" />
                 <span>Print Card</span>
-              </button>
+              </Button>
             </div>
           </div>
         )}

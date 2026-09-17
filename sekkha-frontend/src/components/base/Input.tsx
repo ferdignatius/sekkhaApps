@@ -49,11 +49,11 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
               hasError ? errorId : helperText ? helperId : undefined
             }
             className={cn(
-              "h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-4 py-2.5 text-sm text-[#0a0a0a] shadow-2xs transition-all outline-none placeholder:text-[#9a9a9a] focus:border-[#0a0a0a] focus:bg-[#fffaf0] focus:ring-1 focus:ring-[#0a0a0a] disabled:cursor-not-allowed disabled:bg-[#e5e5e5]/50 disabled:opacity-60",
+              "h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-4 py-2.5 text-sm text-[#0a0a0a] shadow-2xs transition-all outline-none placeholder:text-[#9a9a9a] hover:border-[#bfbfbf] focus:border-[#0a0a0a] focus:bg-[#fffaf0] focus:ring-2 focus:ring-[#0a0a0a]/15 disabled:cursor-not-allowed disabled:bg-[#e5e5e5]/50 disabled:opacity-60",
               startIcon && "pl-10",
               endIcon && "pr-10",
               hasError &&
-                "border-[#ef4444] bg-[#ef4444]/5 text-[#ef4444] focus:border-[#ef4444] focus:ring-[#ef4444]",
+                "border-[#ef4444] bg-[#ef4444]/5 text-[#ef4444] focus:border-[#ef4444] focus:ring-[#ef4444]/20",
               className
             )}
             {...props}

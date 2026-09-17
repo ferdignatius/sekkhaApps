@@ -7,7 +7,7 @@ import {
   AlertCircleIcon,
   SparklesIcon,
 } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/base/Button"
 
 interface OtpVerificationViewProps {
   email: string
@@ -214,9 +214,10 @@ export function OtpVerificationView({
 
         {/* Submit Button */}
         <Button
+          variant="filled"
           type="submit"
           disabled={!isComplete || isLoading}
-          className="flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-[12px] bg-[#0a0a0a] text-xs font-semibold text-white shadow-xs transition-all hover:bg-[#1f1f1f] active:scale-[0.99] disabled:opacity-40"
+          className="w-full"
         >
           {isLoading ? (
             <>

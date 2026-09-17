@@ -20,6 +20,7 @@ import {
   ListIcon,
 } from "lucide-react"
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
+import { Button, Tabs, TabsList, TabsTrigger, Chip } from "@/components/base"
 import { fetchRecencyAlerts, fetchMemberRecencyDetail } from "../api/recencyApi"
 import type {
   MemberRecency,
@@ -493,35 +494,22 @@ export function RecencyAlertsPage() {
             <div className="flex w-full flex-col gap-2 md:w-auto">
               <div className="flex w-full items-center justify-between gap-2">
                 {/* 1. View Mode Toggle */}
-                <div className="flex shrink-0 items-center rounded-xl border border-sekkha-hairline-soft bg-sekkha-surface p-1 shadow-2xs">
-                  <button
-                    type="button"
-                    onClick={() => setViewMode("grid")}
-                    className={`text-caption-bold flex cursor-pointer items-center justify-center rounded-lg p-1.5 transition sm:px-2.5 sm:py-1.5 ${
-                      viewMode === "grid"
-                        ? "bg-white font-bold text-sekkha-ink shadow-2xs"
-                        : "text-sekkha-slate hover:text-sekkha-ink"
-                    }`}
-                    title="Grid View (Cards)"
-                  >
-                    <LayoutGridIcon className="size-4" />
-                    <span className="ml-1 hidden sm:inline">Grid</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setViewMode("list")}
-                    className={`text-caption-bold flex cursor-pointer items-center justify-center rounded-lg p-1.5 transition sm:px-2.5 sm:py-1.5 ${
-                      viewMode === "list"
-                        ? "bg-white font-bold text-sekkha-ink shadow-2xs"
-                        : "text-sekkha-slate hover:text-sekkha-ink"
-                    }`}
-                    title="List View (Table)"
-                  >
-                    <ListIcon className="size-4" />
-                    <span className="ml-1 hidden sm:inline">List</span>
-                  </button>
-                </div>
+                <Tabs
+                  value={viewMode}
+                  onValueChange={(val) => setViewMode(val as any)}
+                  variant="pill"
+                >
+                  <TabsList>
+                    <TabsTrigger value="grid" title="Grid View (Cards)">
+                      <LayoutGridIcon className="size-4" />
+                      <span className="ml-1 hidden sm:inline">Grid</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="list" title="List View (Table)">
+                      <ListIcon className="size-4" />
+                      <span className="ml-1 hidden sm:inline">List</span>
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
 
                 {/* 2. Sort Dropdown */}
                 <div className="text-caption-bold flex min-w-0 flex-1 items-center gap-1 rounded-xl border border-sekkha-hairline-soft bg-sekkha-surface px-2.5 py-1.5 text-sekkha-ink sm:flex-none">
@@ -540,29 +528,31 @@ export function RecencyAlertsPage() {
                 </div>
 
                 {/* 3. Refresh Button */}
-                <button
+                <Button
+                  variant="outlined"
+                  size="sm"
                   onClick={() => loadData(true)}
                   disabled={isRefreshing}
-                  className="text-caption-bold flex shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-sekkha-hairline-soft bg-sekkha-surface p-2 font-bold text-sekkha-ink transition hover:bg-sekkha-hairline-soft disabled:opacity-50 sm:px-3 sm:py-1.5"
                   title="Refresh Data"
                 >
                   <RefreshCwIcon
                     className={`size-4 ${isRefreshing ? "animate-spin" : ""}`}
                   />
                   <span className="hidden sm:inline">Refresh</span>
-                </button>
+                </Button>
               </div>
 
               {/* Reset Level Filter Badge (If filter is active) */}
               {activeLevel !== "all" && (
                 <div className="flex items-center justify-end">
-                  <button
+                  <Chip
+                    variant="filter"
+                    selected={true}
                     onClick={() => setActiveLevel("all")}
-                    className="text-micro-bold inline-flex cursor-pointer items-center gap-1 rounded-lg bg-sekkha-brand-blue/10 px-2.5 py-1 font-bold text-sekkha-brand-blue transition hover:bg-sekkha-brand-blue/20"
+                    trailingIcon={<XIcon className="size-3" />}
                   >
-                    <span>Reset Filter ({activeLevel})</span>
-                    <XIcon className="size-3" />
-                  </button>
+                    Reset Filter ({activeLevel})
+                  </Chip>
                 </div>
               )}
             </div>

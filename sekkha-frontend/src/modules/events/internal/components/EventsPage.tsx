@@ -189,20 +189,58 @@ export function EventsPage() {
     Record<string, AttendanceRecord[]>
   >({})
 
-  // Auto-open event detail if URL contains ?eventId=...
+  function handleSelectEvent(ev: EventListItem) {
+    setSelected(ev)
+    setView("detail")
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href)
+      url.searchParams.set("eventId", ev.id)
+      window.history.pushState({ eventId: ev.id }, "", url.toString())
+    }
+  }
+
+  // Auto-open event detail if URL contains ?eventId=... and support browser Back/Forward
   useEffect(() => {
-    if (events.length > 0 && typeof window !== "undefined") {
+    if (typeof window === "undefined") return
+
+    function syncFromUrl() {
       const searchParams = new URLSearchParams(window.location.search)
       const eventIdParam = searchParams.get("eventId")
-      if (eventIdParam) {
+      if (!eventIdParam) {
+        setSelected(null)
+        setView("calendar")
+        return
+      }
+
+      if (events.length > 0) {
         const found = events.find((e) => e.id === eventIdParam)
         if (found) {
           setSelected(found)
           setView("detail")
+          return
         }
       }
+
+      // If not found in loaded events list (e.g. direct link), fetch directly from API
+      if (!loadingEvents) {
+        api
+          .get<EventListItem>(`/events/${eventIdParam}`)
+          .then((directEvent) => {
+            if (directEvent) {
+              setSelected(directEvent)
+              setView("detail")
+            }
+          })
+          .catch((err) => {
+            console.warn("Event from eventId param not found:", err)
+          })
+      }
     }
-  }, [events])
+
+    syncFromUrl()
+    window.addEventListener("popstate", syncFromUrl)
+    return () => window.removeEventListener("popstate", syncFromUrl)
+  }, [events, loadingEvents])
 
   useEffect(() => {
     if (selected?.id) {
@@ -349,117 +387,110 @@ export function EventsPage() {
         />
         <div className="px-3 py-4 pb-28 sm:px-6 sm:py-6 md:px-8 md:pb-12 lg:px-12">
           <div className="mx-auto max-w-5xl">
-            <Card
-              variant="soft"
-              glass
-              className="rounded-[26px] border border-[#e6decb]/80 bg-[#faf5e8]/80 p-3.5 shadow-xs ring-1 ring-black/[0.04] backdrop-blur-xl sm:rounded-[28px] sm:p-6"
-            >
-              <EventDetailSheet
-                event={selected}
-                role={role}
-                onClose={handleCloseDetail}
-                onEdit={
-                  isPengurus
-                    ? (ev) => {
-                        setEditTarget(ev)
-                        setFormOpen(true)
+            <EventDetailSheet
+              event={selected}
+              role={role}
+              onClose={handleCloseDetail}
+              onEdit={
+                isPengurus
+                  ? (ev) => {
+                      setEditTarget(ev)
+                      setFormOpen(true)
+                    }
+                  : undefined
+              }
+              onDelete={
+                isPengurus
+                  ? async (ev) => {
+                      if (
+                        !window.confirm(
+                          `Are you sure you want to delete "${ev.title}"?`
+                        )
+                      )
+                        return
+                      try {
+                        await api.delete(`/events/${ev.id}`)
+                        setEvents((prev) =>
+                          prev.filter((e) => e.id !== ev.id)
+                        )
+                        handleCloseDetail()
+                      } catch (err) {
+                        console.error("Failed to delete event:", err)
+                        alert("Failed to delete event from server.")
                       }
-                    : undefined
-                }
-                onDelete={
-                  isPengurus
-                    ? async (ev) => {
-                        if (
-                          !window.confirm(
-                            `Are you sure you want to delete "${ev.title}"?`
+                    }
+                  : undefined
+              }
+              onDuplicate={
+                isPengurus
+                  ? async (ev) => {
+                      try {
+                        const payload: CreateEventPayload = {
+                          title: `${ev.title} (Copy)`,
+                          description: ev.description ?? "",
+                          location: ev.location ?? "",
+                          event_date: ev.event_date,
+                          event_type: ev.event_type,
+                          tag: ev.tag,
+                        }
+                        const dup = await api.post<EventListItem>(
+                          "/events",
+                          payload
+                        )
+                        setEvents((prev) => [dup, ...prev])
+                        setSelected(dup)
+                      } catch (err) {
+                        console.error("Failed to duplicate event:", err)
+                        alert("Failed to duplicate event on server.")
+                      }
+                    }
+                  : undefined
+              }
+              onStatusChange={
+                isPengurus
+                  ? async (eventId, newStatus) => {
+                      try {
+                        setEvents((prev) =>
+                          prev.map((e) =>
+                            e.id === eventId ? { ...e, status: newStatus } : e
                           )
                         )
-                          return
-                        try {
-                          await api.delete(`/events/${ev.id}`)
-                          setEvents((prev) =>
-                            prev.filter((e) => e.id !== ev.id)
-                          )
-                          setSelected(null)
-                          setView("calendar")
-                        } catch (err) {
-                          console.error("Failed to delete event:", err)
-                          alert("Failed to delete event from server.")
-                        }
+                        setSelected((prev) =>
+                          prev && prev.id === eventId
+                            ? { ...prev, status: newStatus }
+                            : prev
+                        )
+                        await api.patch(`/events/${eventId}/status`, {
+                          status: newStatus,
+                        })
+                        await loadEvents()
+                      } catch (err) {
+                        console.error("Failed to update event status:", err)
+                        await loadEvents()
                       }
-                    : undefined
-                }
-                onDuplicate={
-                  isPengurus
-                    ? async (ev) => {
-                        try {
-                          const payload: CreateEventPayload = {
-                            title: `${ev.title} (Copy)`,
-                            description: ev.description ?? "",
-                            location: ev.location ?? "",
-                            event_date: ev.event_date,
-                            event_type: ev.event_type,
-                            tag: ev.tag,
-                          }
-                          const dup = await api.post<EventListItem>(
-                            "/events",
-                            payload
-                          )
-                          setEvents((prev) => [dup, ...prev])
-                          setSelected(dup)
-                        } catch (err) {
-                          console.error("Failed to duplicate event:", err)
-                          alert("Failed to duplicate event on server.")
-                        }
+                    }
+                  : undefined
+              }
+              attendances={attendances[selected.id] ?? []}
+              onRecordAttendance={handleRecordAttendance}
+              onDeleteAttendance={
+                isPengurus
+                  ? async (userId) => {
+                      try {
+                        await api.delete(
+                          `/events/${selected.id}/attendances/${userId}`
+                        )
+                        await loadEventAttendances(selected.id)
+                      } catch (err) {
+                        console.error(
+                          "Failed to remove attendance record:",
+                          err
+                        )
                       }
-                    : undefined
-                }
-                onStatusChange={
-                  isPengurus
-                    ? async (eventId, newStatus) => {
-                        try {
-                          setEvents((prev) =>
-                            prev.map((e) =>
-                              e.id === eventId ? { ...e, status: newStatus } : e
-                            )
-                          )
-                          setSelected((prev) =>
-                            prev && prev.id === eventId
-                              ? { ...prev, status: newStatus }
-                              : prev
-                          )
-                          await api.patch(`/events/${eventId}/status`, {
-                            status: newStatus,
-                          })
-                          await loadEvents()
-                        } catch (err) {
-                          console.error("Failed to update event status:", err)
-                          await loadEvents()
-                        }
-                      }
-                    : undefined
-                }
-                attendances={attendances[selected.id] ?? []}
-                onRecordAttendance={handleRecordAttendance}
-                onDeleteAttendance={
-                  isPengurus
-                    ? async (userId) => {
-                        try {
-                          await api.delete(
-                            `/events/${selected.id}/attendances/${userId}`
-                          )
-                          await loadEventAttendances(selected.id)
-                        } catch (err) {
-                          console.error(
-                            "Failed to remove attendance record:",
-                            err
-                          )
-                        }
-                      }
-                    : undefined
-                }
-              />
-            </Card>
+                    }
+                  : undefined
+              }
+            />
           </div>
         </div>
 
@@ -1031,10 +1062,7 @@ export function EventsPage() {
                       <EventCard
                         key={ev.id}
                         event={ev}
-                        onClick={() => {
-                          setSelected(ev)
-                          setView("detail")
-                        }}
+                        onClick={() => handleSelectEvent(ev)}
                       />
                     ))}
                   </div>

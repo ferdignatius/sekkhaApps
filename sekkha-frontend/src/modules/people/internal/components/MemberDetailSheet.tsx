@@ -18,7 +18,7 @@ import {
 } from "lucide-react"
 import QRCode from "react-qr-code"
 import { Button, Tabs, TabsList, TabsTrigger } from "@/components/base"
-import type { MemberDto } from "../api/teamsApi"
+import type { MemberDto } from "../api/peopleApi"
 
 interface MemberDetailSheetProps {
   member: MemberDto

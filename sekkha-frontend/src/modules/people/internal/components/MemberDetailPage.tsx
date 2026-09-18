@@ -26,8 +26,8 @@ import { useAuth } from "@/modules/auth"
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
 import { Button, Tabs, TabsList, TabsTrigger } from "@/components/base"
 import { Skeleton } from "@/components/ui/skeleton"
-import { teamsApi } from "../api/teamsApi"
-import type { MemberDetailDto } from "../api/teamsApi"
+import { peopleApi } from "../api/peopleApi"
+import type { MemberDetailDto } from "../api/peopleApi"
 
 export function formatRoleLabel(role?: string | null): string {
   if (!role) return "Member"
@@ -104,7 +104,7 @@ export function MemberDetailPage({
     if (!memberId) return
     setLoading(true)
     try {
-      const res = await teamsApi.getMember(memberId)
+      const res = await peopleApi.getMember(memberId)
       setMember(res)
       if (res.role) {
         setNewRole(res.role)
@@ -128,7 +128,7 @@ export function MemberDetailPage({
   async function handleResetPassword() {
     if (!member || !isAdmin) return
     try {
-      const res = await teamsApi.resetMemberPassword(member.id)
+      const res = await peopleApi.resetMemberPassword(member.id)
       setCredentialModalData({
         memberName: member.name,
         username:
@@ -150,7 +150,7 @@ export function MemberDetailPage({
     if (!member || !isAdmin) return
     setSavingRole(true)
     try {
-      await teamsApi.updateMember(member.id, { role: newRole })
+      await peopleApi.updateMember(member.id, { role: newRole })
       setMember((prev) => (prev ? { ...prev, role: newRole } : null))
       setShowRoleModal(false)
       showToast("Member role updated!")
@@ -165,10 +165,10 @@ export function MemberDetailPage({
     if (!member || !isAdmin) return
     setDeleting(true)
     try {
-      await teamsApi.deleteMember(member.id)
+      await peopleApi.deleteMember(member.id)
       showToast("Member deleted successfully!")
       setTimeout(() => {
-        navigate({ to: "/teams" })
+        navigate({ to: "/people" })
       }, 1000)
     } catch (err: any) {
       showToast(err.message || "Failed to delete member", "error")
@@ -196,7 +196,7 @@ export function MemberDetailPage({
     <main className="min-h-screen bg-[#fffaf0] text-left font-sans">
       <PageBreadcrumb
         items={[
-          { label: "People", href: "/teams" },
+          { label: "People", href: "/people" },
           { label: member?.name || "Member Details" },
         ]}
       />

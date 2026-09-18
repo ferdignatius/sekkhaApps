@@ -13,7 +13,7 @@ Setiap modul adalah fitur independen dengan **kontrak publik yang sempit** lewat
 | `profile` | `profile/` | Stats, badge, attendance tracker | Aktif |
 | `notifications` | `notifications/` | Inbox notifikasi | Aktif |
 | `configure` | `configure/` | Master data (admin) | Aktif |
-| `teams` | `teams/` | Daftar tim | Aktif |
+| `people` | `people/` | Daftar anggota | Aktif |
 | `pengurus` | `pengurus/` | Tools pengurus (event mgmt, analytics) | Aktif |
 | `landing-page` | `landing-page/` | Halaman publik (pre-login) | Aktif |
 

@@ -30,7 +30,7 @@ import { usersModule } from "./modules/users/module"
 import { eventsModule } from "./modules/events/module"
 import { configureModule } from "./modules/configure/module"
 import { leaderboardModule } from "./modules/leaderboard/module"
-import { teamsModule } from "./modules/teams/module"
+import { peopleModule } from "./modules/people/module"
 import { notificationsModule } from "./modules/notifications/module"
 import { pengurusModule } from "./modules/pengurus/module"
 import { schoolsModule } from "./modules/schools/module"
@@ -124,7 +124,7 @@ const linkingLimiter = rateLimit({
   passOnStoreError: true,
   message: { error: "Terlalu banyak percobaan penautan akun dari IP ini. Silakan tunggu 15 menit." },
 })
-app.use("/api/teams/link-legacy-account", linkingLimiter)
+app.use("/api/people/link-legacy-account", linkingLimiter)
 
 // 3d. Schools Stats Rate Limiter (F-12: prevent cheap decryption DoS)
 const schoolStatsLimiter = rateLimit({
@@ -193,7 +193,7 @@ const modules: AppModule[] = [
   eventsModule,
   configureModule,
   leaderboardModule,
-  teamsModule,
+  peopleModule,
   notificationsModule,
   pengurusModule,
   schoolsModule,

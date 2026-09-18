@@ -225,13 +225,13 @@ export function AttendanceListSheet({
                         <span
                           className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
                             rec.method === "qr"
-                              ? "border border-emerald-200 bg-emerald-100 text-emerald-800"
+                              ? "border border-[#1a3a3a]/20 bg-[#1a3a3a]/10 text-[#1a3a3a]"
                               : "border border-[#e5e5e5] bg-[#faf5e8] text-[#6a6a6a]"
                           }`}
                         >
                           {rec.method === "qr" ? (
                             <>
-                              <QrCodeIcon className="size-3" /> QR Scan
+                              <QrCodeIcon className="size-3 text-[#1a3a3a]" /> QR Scan
                             </>
                           ) : (
                             "Manual"
@@ -241,7 +241,7 @@ export function AttendanceListSheet({
 
                       {/* Col 5: Total Points */}
                       <td className="px-3 py-2.5 text-right font-bold whitespace-nowrap">
-                        <span className="inline-flex items-center gap-1 rounded-[8px] border border-[#e8b94a]/40 bg-[#e8b94a]/20 px-2.5 py-0.5 text-xs font-bold text-[#0a0a0a] shadow-2xs">
+                        <span className="inline-flex items-center gap-1 rounded-[8px] border border-[#e8b94a]/40 bg-[#e8b94a]/15 px-2.5 py-0.5 text-xs font-bold text-[#0a0a0a] shadow-2xs">
                           <SparklesIcon className="size-3 text-[#e8b94a]" />
                           <span>+{totalPoints} Pts</span>
                         </span>
@@ -265,7 +265,7 @@ export function AttendanceListSheet({
                                 className="inline-flex cursor-pointer items-center gap-1 rounded-[8px] border border-[#e5e5e5] bg-[#fffaf0] px-2.5 py-1 text-xs font-semibold text-[#0a0a0a] shadow-2xs transition-all hover:bg-[#faf5e8] active:scale-95"
                                 title="Manage Badges"
                               >
-                                <PlusIcon className="size-3" />
+                                <PlusIcon className="size-3 text-[#e8b94a]" />
                                 <span>Badge</span>
                               </button>
 
@@ -273,7 +273,7 @@ export function AttendanceListSheet({
                               <button
                                 type="button"
                                 onClick={() => handleRemoveUser(rec.user_id)}
-                                className="inline-flex cursor-pointer items-center justify-center rounded-[8px] border border-rose-200 bg-rose-50 p-1.5 text-rose-600 shadow-2xs transition-all hover:bg-rose-100 active:scale-95"
+                                className="inline-flex cursor-pointer items-center justify-center rounded-[8px] border border-[#e5e5e5] bg-[#fffaf0] p-1.5 text-[#6a6a6a] shadow-2xs transition-all hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700 active:scale-95"
                                 title="Remove Attendee"
                               >
                                 <Trash2Icon className="size-3.5" />
@@ -400,7 +400,7 @@ export function AttendanceListSheet({
                     Points Summary:
                   </td>
                   <td className="px-3 py-3 text-right font-extrabold whitespace-nowrap">
-                    <span className="inline-flex items-center gap-1 rounded-[8px] border border-[#e8b94a]/40 bg-[#e8b94a]/20 px-3 py-1 text-xs font-bold text-[#0a0a0a] shadow-2xs">
+                    <span className="inline-flex items-center gap-1 rounded-[8px] border border-[#e8b94a]/40 bg-[#e8b94a]/15 px-3 py-1 text-xs font-bold text-[#0a0a0a] shadow-2xs">
                       <SparklesIcon className="size-3.5 text-[#e8b94a]" />
                       <span>
                         Total +

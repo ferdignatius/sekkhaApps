@@ -497,6 +497,133 @@
     border-bottom: 1px solid rgba(224, 226, 232, 0.5);
   }
 
+  /* ─── Apple HIG Materials System (iOS 15+) ─── */
+  /* Ultra Thin Material - for overlays, sheets, popovers */
+  .material-ultra-thin {
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(10px) saturate(150%);
+    -webkit-backdrop-filter: blur(10px) saturate(150%);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+  }
+  .material-ultra-thin-dark {
+    background: rgba(28, 28, 30, 0.6);
+    backdrop-filter: blur(10px) saturate(150%);
+    -webkit-backdrop-filter: blur(10px) saturate(150%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  /* Thin Material - for navigation bars, toolbars */
+  .material-thin {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+  }
+  .material-thin-dark {
+    background: rgba(28, 28, 30, 0.7);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+  }
+
+  /* Regular Material - for cards, sheets, modals */
+  .material-regular {
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(30px) saturate(180%);
+    -webkit-backdrop-filter: blur(30px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 4px 8px -2px rgba(0, 0, 0, 0.03);
+  }
+  .material-regular-dark {
+    background: rgba(28, 28, 30, 0.85);
+    backdrop-filter: blur(30px) saturate(180%);
+    -webkit-backdrop-filter: blur(30px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2), 0 4px 8px -2px rgba(0, 0, 0, 0.15);
+  }
+
+  /* Thick Material - for prominent surfaces, sidebars */
+  .material-thick {
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(40px) saturate(180%);
+    -webkit-backdrop-filter: blur(40px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06), 0 8px 16px -4px rgba(0, 0, 0, 0.04);
+  }
+  .material-thick-dark {
+    background: rgba(28, 28, 30, 0.92);
+    backdrop-filter: blur(40px) saturate(180%);
+    -webkit-backdrop-filter: blur(40px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25), 0 8px 16px -4px rgba(0, 0, 0, 0.2);
+  }
+
+  /* Chrome Material - for navigation bars, tab bars (opaque) */
+  .material-chrome {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(50px) saturate(200%);
+    -webkit-backdrop-filter: blur(50px) saturate(200%);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  }
+  .material-chrome-dark {
+    background: rgba(28, 28, 30, 0.95);
+    backdrop-filter: blur(50px) saturate(200%);
+    -webkit-backdrop-filter: blur(50px) saturate(200%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  /* HIG-compliant corner radii (matches Clay DESIGN.md but aligned to 8pt grid) */
+  .radius-hig-xs { border-radius: 6px; }    /* 6pt - badges, small controls */
+  .radius-hig-sm { border-radius: 8px; }    /* 8pt - buttons, inputs */
+  .radius-hig-md { border-radius: 12px; }   /* 12pt - cards, sheets */
+  .radius-hig-lg { border-radius: 16px; }   /* 16pt - large cards, modals */
+  .radius-hig-xl { border-radius: 24px; }   /* 24pt - feature cards, hero */
+  .radius-hig-2xl { border-radius: 28px; }  /* 28pt - dialogs, large sheets */
+  .radius-hig-pill { border-radius: 9999px; } /* pill - tabs, chips */
+
+  /* HIG 8pt spacing system */
+  .space-hig-1 { gap: 4px; }   /* 4pt */
+  .space-hig-2 { gap: 8px; }   /* 8pt */
+  .space-hig-3 { gap: 12px; }  /* 12pt */
+  .space-hig-4 { gap: 16px; }  /* 16pt */
+  .space-hig-5 { gap: 20px; }  /* 20pt */
+  .space-hig-6 { gap: 24px; }  /* 24pt */
+  .space-hig-8 { gap: 32px; }  /* 32pt */
+  .space-hig-10 { gap: 40px; } /* 40pt */
+  .space-hig-12 { gap: 48px; } /* 48pt */
+  .space-hig-16 { gap: 64px; } /* 64pt */
+
+  /* Dynamic Type support - fluid typography that respects user preferences */
+  .text-hig-title1 { font-size: clamp(1.75rem, 2.5vw + 1rem, 2.25rem); font-weight: 400; line-height: 1.22; }
+  .text-hig-title2 { font-size: clamp(1.375rem, 2vw + 0.875rem, 1.75rem); font-weight: 400; line-height: 1.25; }
+  .text-hig-title3 { font-size: clamp(1.125rem, 1.5vw + 0.75rem, 1.375rem); font-weight: 400; line-height: 1.27; }
+  .text-hig-headline { font-size: clamp(1rem, 1.25vw + 0.625rem, 1.125rem); font-weight: 600; line-height: 1.33; }
+  .text-hig-body { font-size: clamp(1rem, 0.5vw + 0.875rem, 1rem); font-weight: 400; line-height: 1.5; }
+  .text-hig-callout { font-size: clamp(0.875rem, 0.5vw + 0.75rem, 0.875rem); font-weight: 400; line-height: 1.5; }
+  .text-hig-subheadline { font-size: clamp(0.875rem, 0.5vw + 0.75rem, 0.875rem); font-weight: 400; line-height: 1.43; }
+  .text-hig-footnote { font-size: clamp(0.8125rem, 0.25vw + 0.75rem, 0.8125rem); font-weight: 400; line-height: 1.38; }
+  .text-hig-caption1 { font-size: clamp(0.75rem, 0.25vw + 0.6875rem, 0.75rem); font-weight: 400; line-height: 1.33; }
+  .text-hig-caption2 { font-size: clamp(0.6875rem, 0.25vw + 0.625rem, 0.6875rem); font-weight: 400; line-height: 1.27; }
+
+  /* HIG Spring Animations */
+  .spring-bounce { animation: spring-bounce 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+  .spring-gentle { animation: spring-gentle 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
+  .spring-snappy { animation: spring-snappy 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+
+  @keyframes spring-bounce {
+    0% { transform: scale(0.95); opacity: 0; }
+    50% { transform: scale(1.02); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  @keyframes spring-gentle {
+    0% { transform: translateY(8px); opacity: 0; }
+    100% { transform: translateY(0); opacity: 1; }
+  }
+  @keyframes spring-snappy {
+    0% { transform: scale(0.97); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
   .animate-spin-slow {
     animation: spin 3s linear infinite;
   }

@@ -43,7 +43,7 @@ export function TabsList({
       className={cn(
         "inline-flex items-center",
         variant === "pill" &&
-          "w-fit gap-1 rounded-full border border-[#e5e5e5] bg-[#faf5e8] p-1",
+          "w-fit gap-1 rounded-full border border-black/[0.06] bg-[#faf5e8]/85 p-1 shadow-2xs ring-1 ring-white/60 backdrop-blur-xl",
         variant === "line" &&
           "w-full gap-4 border-b border-[#e5e5e5] bg-transparent pb-px",
         className

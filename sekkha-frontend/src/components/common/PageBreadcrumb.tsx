@@ -51,19 +51,19 @@ export function PageBreadcrumb({
   }
 
   return (
-    <div className="sticky top-0 z-40 border-b border-[#e5e5e5] bg-[#fffaf0]/95 font-sans shadow-2xs backdrop-blur-md transition-all">
-      <div className="px-4 py-2.5 sm:px-6 md:px-8 md:py-3 lg:px-12">
+    <div className="sticky top-0 z-40 border-b border-black/[0.05] bg-[#fffaf0]/80 font-sans shadow-2xs backdrop-blur-xl backdrop-saturate-150 transition-all">
+      <div className="px-4 py-2 sm:px-6 md:px-8 md:py-2.5 lg:px-12">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3">
           {/* ── Left: Back Button ── */}
           {shouldShowBack ? (
             <button
               type="button"
               onClick={handleBack}
-              className="flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-full border border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] shadow-2xs transition-all hover:border-[#9a9a9a] hover:bg-[#faf5e8] active:scale-95"
+              className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full border border-white/80 bg-[#faf5e8]/80 text-[#0a0a0a] shadow-2xs ring-1 ring-black/[0.04] backdrop-blur-xl transition-all hover:bg-[#faf5e8] active:scale-95"
               title="Back to previous page"
               aria-label="Back"
             >
-              <ArrowLeftIcon className="size-4 text-[#0a0a0a]" />
+              <ArrowLeftIcon className="size-4.5 text-[#0a0a0a]" />
             </button>
           ) : (
             <div className="w-1 shrink-0 md:hidden" />
@@ -123,7 +123,7 @@ export function PageBreadcrumb({
             ) : (
               <Link
                 to="/notifications"
-                className="relative flex size-10 items-center justify-center rounded-full border border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] shadow-2xs transition-all hover:border-[#9a9a9a] hover:bg-[#faf5e8] active:scale-95"
+                className="relative flex size-11 items-center justify-center rounded-full border border-white/80 bg-[#faf5e8]/80 text-[#0a0a0a] shadow-2xs ring-1 ring-black/[0.04] backdrop-blur-xl transition-all hover:bg-[#faf5e8] active:scale-95"
                 title="Notifications"
               >
                 <NotificationBell />

@@ -19,14 +19,7 @@ import {
 import { useAuth } from "@/modules/auth"
 import { api } from "@/lib/api"
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
-import {
-  Badge,
-  Card,
-  Chip,
-  Tabs,
-  TabsList,
-  TabsTrigger,
-} from "@/components/base"
+import { Badge, Chip, Tabs, TabsList, TabsTrigger } from "@/components/base"
 import { getCurrentSeason, seasonLabel } from "../types"
 import type { LeaderboardMetric, LeaderboardEntry } from "../types"
 
@@ -251,7 +244,7 @@ function ListAvatar({ initials, isMe }: { initials: string; isMe?: boolean }) {
       className={`flex size-9 shrink-0 items-center justify-center rounded-[10px] text-xs font-bold uppercase transition-transform sm:size-10 ${
         isMe
           ? "bg-[#0a0a0a] text-white shadow-xs"
-          : "bg-[#e8b94a] text-[#0a0a0a] shadow-2xs"
+          : "border border-[#e6decb]/80 bg-[#faf5e8]/90 text-[#0a0a0a] shadow-2xs backdrop-blur-sm"
       }`}
     >
       {initials}
@@ -274,10 +267,10 @@ function LeaderboardRow({
 
   return (
     <li
-      className={`flex items-center gap-2.5 rounded-[14px] border px-3.5 py-3 transition-all sm:gap-3.5 ${
+      className={`flex items-center gap-2.5 rounded-[14px] border px-3.5 py-3 backdrop-blur-sm transition-all sm:gap-3.5 ${
         isMe
-          ? "border-[#0a0a0a] bg-[#faf5e8] shadow-xs"
-          : "border-[#e5e5e5] bg-[#fffaf0] hover:bg-[#faf5e8]"
+          ? "border-[#e8b94a]/60 bg-[#faf5e8]/95 shadow-xs ring-1 ring-[#e8b94a]/20"
+          : "border-[#e6decb]/80 bg-[#fffaf0]/90 shadow-2xs hover:bg-[#faf5e8]/90"
       }`}
     >
       {/* Rank Number */}
@@ -496,7 +489,7 @@ export function LeaderboardPage() {
   )
 
   return (
-    <main className="relative min-h-screen bg-[#fffaf0] text-left font-sans">
+    <main className="relative min-h-screen bg-[#fffaf0] text-left font-sans antialiased">
       {/* ── Page Breadcrumb ── */}
       <PageBreadcrumb items={[{ label: "Leaderboard" }]} />
 
@@ -504,15 +497,18 @@ export function LeaderboardPage() {
         <div className="mx-auto max-w-7xl space-y-4 sm:space-y-5">
           {/* ── Top Header Banner: Compact & Sleek Clay Style ── */}
           {/* ── Top Header Banner: Compact & Sleek Clay Style ── */}
-          <Card variant="soft" className="p-3 sm:p-5">
+          {/* ── Header: Dark glass HIG banner ── */}
+          <div className="relative overflow-hidden rounded-[20px] border border-[#0a0a0a]/10 bg-[#0a0a0a]/90 p-3 shadow-lg backdrop-blur-xl sm:rounded-[24px] sm:p-5">
+            {/* Warm ochre glow accent */}
+            <div className="pointer-events-none absolute -top-8 -right-8 size-40 rounded-full bg-[#e8b94a]/20 blur-2xl" />
             <div className="flex items-center justify-between gap-2.5">
               <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
-                <div className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-[#0a0a0a] text-white shadow-xs sm:size-12 sm:rounded-[12px]">
-                  <TrophyIcon className="size-4.5 text-[#e8b94a] sm:size-6" />
+                <div className="flex size-9 shrink-0 items-center justify-center rounded-[12px] bg-[#e8b94a] shadow-md sm:size-12">
+                  <TrophyIcon className="size-4.5 text-[#0a0a0a] sm:size-6" />
                 </div>
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-1.5">
-                    <h1 className="truncate text-sm font-bold tracking-tight text-[#0a0a0a] sm:text-xl">
+                    <h1 className="truncate text-sm font-bold tracking-tight text-white sm:text-xl">
                       Leaderboard
                     </h1>
                     <Badge variant="ochre" size="default">
@@ -520,7 +516,7 @@ export function LeaderboardPage() {
                     </Badge>
                   </div>
                   {seasonData?.start_date && seasonData?.end_date && (
-                    <span className="hidden text-xs font-medium text-[#6a6a6a] sm:inline">
+                    <span className="hidden text-xs font-medium text-white/50 sm:inline">
                       (
                       {new Date(seasonData.start_date).toLocaleDateString(
                         "en-US",
@@ -537,17 +533,17 @@ export function LeaderboardPage() {
                 </div>
               </div>
 
-              <div className="flex shrink-0 items-center gap-1 rounded-full border border-[#e5e5e5] bg-[#fffaf0] px-3 py-1 text-[11px] font-bold text-[#6a6a6a] shadow-xs sm:text-xs">
-                <TimerIcon className="size-3.5 shrink-0 text-[#0a0a0a]" />
+              <div className="flex shrink-0 items-center gap-1 rounded-full border border-white/10 bg-white/10 px-3 py-1 text-[11px] font-bold text-white/70 backdrop-blur-sm sm:text-xs">
+                <TimerIcon className="size-3.5 shrink-0 text-[#e8b94a]" />
                 <span>
                   Ends in{" "}
-                  <strong className="text-[#0a0a0a]">
+                  <strong className="text-white">
                     {seasonData?.days_left ?? 14}d
                   </strong>
                 </span>
               </div>
             </div>
-          </Card>
+          </div>
 
           {/* ── Filters Bar: Metric & Role Filters ── */}
           <div className="flex flex-col justify-between gap-2.5 sm:gap-3 md:flex-row md:items-center">
@@ -617,7 +613,7 @@ export function LeaderboardPage() {
             )}
 
             {isUmatOnly && (
-              <div className="flex items-center gap-1.5 rounded-[10px] border border-[#e5e5e5] bg-[#faf5e8] px-3 py-1.5 text-xs font-semibold text-[#6a6a6a]">
+              <div className="flex items-center gap-1.5 rounded-[10px] border border-[#e6decb]/80 bg-[#faf5e8]/90 px-3 py-1.5 text-xs font-semibold text-[#6a6a6a] shadow-2xs backdrop-blur-sm">
                 <UserIcon className="size-3.5 text-[#0a0a0a]" />
                 <span>
                   Rankings:{" "}
@@ -632,11 +628,11 @@ export function LeaderboardPage() {
             {/* Main Content Area (Left 8 Cols) */}
             <div className="space-y-4 lg:col-span-8">
               {/* Leaderboard Card Container */}
-              <div className="space-y-3.5 rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0] p-3 shadow-xs sm:space-y-5 sm:rounded-[24px] sm:p-6">
+              <div className="space-y-3.5 rounded-[16px] border border-[#e6decb]/80 bg-[#fffaf0]/90 p-3 shadow-2xs backdrop-blur-md sm:space-y-5 sm:rounded-[24px] sm:p-6">
                 {/* Empty State */}
                 {filteredEntries.length === 0 ? (
                   <div className="space-y-3 px-4 py-12 text-center">
-                    <div className="mx-auto flex size-12 items-center justify-center rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] text-[#6a6a6a]">
+                    <div className="mx-auto flex size-12 items-center justify-center rounded-[12px] border border-[#e6decb]/80 bg-[#faf5e8]/90 text-[#6a6a6a] shadow-2xs backdrop-blur-sm">
                       <TrophyIcon className="size-6 text-[#e8b94a]" />
                     </div>
                     <div>
@@ -653,7 +649,7 @@ export function LeaderboardPage() {
                   <>
                     {/* Champions Podium Pillars (Supports 1, 2, or 3+ entries) */}
                     {podium.length > 0 && (
-                      <div className="rounded-[14px] border-b border-[#e5e5e5] bg-[#faf5e8] px-1.5 pt-2 pb-1.5 sm:rounded-[16px] sm:px-2 sm:pt-3 sm:pb-2">
+                      <div className="rounded-[14px] border border-[#e6decb]/80 bg-[#faf5e8]/90 px-1.5 pt-2 pb-1.5 shadow-2xs backdrop-blur-sm sm:rounded-[16px] sm:px-2 sm:pt-3 sm:pb-2">
                         <div
                           className={`mx-auto flex items-end justify-center gap-2 sm:gap-4 ${
                             podium.length === 1
@@ -713,7 +709,7 @@ export function LeaderboardPage() {
                                 className="flex items-center justify-center py-1 select-none"
                                 aria-hidden="true"
                               >
-                                <div className="flex items-center gap-1.5 rounded-full border border-[#e5e5e5] bg-[#faf5e8] px-3 py-0.5 text-[10px] font-bold text-[#8a8a8a]">
+                                <div className="flex items-center gap-1.5 rounded-full border border-[#e6decb]/80 bg-[#faf5e8]/90 px-3 py-0.5 text-[10px] font-bold text-[#8a8a8a] backdrop-blur-sm">
                                   <span className="size-1 rounded-full bg-[#8a8a8a]" />
                                   <span className="size-1 rounded-full bg-[#8a8a8a]" />
                                   <span className="size-1 rounded-full bg-[#8a8a8a]" />
@@ -739,7 +735,7 @@ export function LeaderboardPage() {
             {/* Right Sidebar Widgets (Desktop) */}
             <aside className="space-y-4 lg:col-span-4">
               {/* My Rank Sidebar Widget (Desktop) */}
-              <div className="hidden space-y-3 rounded-[20px] border border-[#e5e5e5] bg-[#faf5e8] p-4 shadow-xs sm:p-5 lg:block">
+              <div className="hidden space-y-3 rounded-[20px] border border-[#e6decb]/80 bg-[#faf5e8]/90 p-4 shadow-2xs backdrop-blur-md sm:p-5 lg:block">
                 <div className="flex items-center gap-3">
                   <div className="flex size-11 shrink-0 items-center justify-center rounded-[12px] bg-[#0a0a0a] text-xs font-bold text-white uppercase shadow-xs">
                     {myRankData?.initials || "AS"}
@@ -759,7 +755,7 @@ export function LeaderboardPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-center gap-4 rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] p-3 shadow-2xs">
+                <div className="flex items-center justify-center gap-4 rounded-[12px] border border-[#e6decb]/80 bg-[#fffaf0]/90 p-3 shadow-2xs backdrop-blur-sm">
                   <div className="flex-1 text-center">
                     <p className="text-base font-black text-[#0a0a0a]">
                       #{myRank}
@@ -781,10 +777,10 @@ export function LeaderboardPage() {
               </div>
 
               {/* Community Goal Progress Card */}
-              <div className="space-y-3 rounded-[20px] border border-[#e5e5e5] bg-[#fffaf0] p-4 shadow-xs sm:p-5">
+              <div className="space-y-3 rounded-[20px] border border-[#e6decb]/80 bg-[#fffaf0]/90 p-4 shadow-2xs backdrop-blur-md sm:p-5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <div className="flex size-8 items-center justify-center rounded-[8px] bg-[#faf5e8] text-[#0a0a0a]">
+                    <div className="flex size-8 items-center justify-center rounded-[8px] border border-[#e6decb]/80 bg-[#faf5e8]/90 text-[#0a0a0a] backdrop-blur-sm">
                       <UsersIcon className="size-4" aria-hidden="true" />
                     </div>
                     <h3 className="text-xs font-bold text-[#0a0a0a]">
@@ -795,7 +791,7 @@ export function LeaderboardPage() {
                           "Vihara Community Attendance Target"}
                     </h3>
                   </div>
-                  <span className="rounded-[6px] border border-[#e5e5e5] bg-[#faf5e8] px-2 py-0.5 text-xs font-extrabold text-[#0a0a0a]">
+                  <span className="rounded-[6px] border border-[#e6decb]/80 bg-[#faf5e8]/90 px-2 py-0.5 text-xs font-extrabold text-[#0a0a0a] backdrop-blur-sm">
                     {communityPct}%
                   </span>
                 </div>
@@ -814,7 +810,7 @@ export function LeaderboardPage() {
                   </div>
                 </div>
 
-                <div className="flex items-start gap-2 rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] p-3 text-xs font-medium text-[#6a6a6a]">
+                <div className="flex items-start gap-2 rounded-[12px] border border-[#e6decb]/80 bg-[#faf5e8]/90 p-3 text-xs font-medium text-[#6a6a6a] shadow-2xs backdrop-blur-sm">
                   <SparklesIcon className="mt-0.5 size-4 shrink-0 text-[#e8b94a]" />
                   <span>
                     When the target of{" "}

@@ -47,16 +47,16 @@ export function EventCard({ event, onClick }: EventCardProps) {
   const status = event.status ?? "published"
 
   return (
-    <div className="border-b border-[#f0f0f0] py-2 text-left font-sans first:pt-0 last:border-b-0 last:pb-0">
+    <div className="py-2 text-left font-sans first:pt-0 last:pb-0">
       <button
         type="button"
         onClick={onClick}
-        className="group relative w-full cursor-pointer overflow-hidden rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0] p-3.5 text-left transition-all hover:bg-[#faf5e8] hover:shadow-xs active:scale-[0.99] sm:p-4"
+        className="group relative w-full cursor-pointer overflow-hidden rounded-[20px] border border-[#e6decb]/80 bg-[#fffaf0]/90 p-3.5 text-left shadow-2xs ring-1 ring-black/[0.03] backdrop-blur-md transition-all hover:border-[#d9cfb8] hover:bg-[#faf5e8] hover:shadow-xs active:scale-[0.985] sm:p-4"
       >
         <div className="flex items-center gap-3.5">
           {/* Dynamic Color Accent Bar */}
           <div
-            className="h-11 w-1.5 shrink-0 rounded-full transition-all"
+            className="h-11 w-1.5 shrink-0 rounded-full shadow-2xs transition-all"
             style={colorInfo.dotStyle}
             aria-hidden="true"
           />
@@ -66,7 +66,7 @@ export function EventCard({ event, onClick }: EventCardProps) {
             {/* Type tag & Status Badges */}
             <div className="flex flex-wrap items-center gap-2">
               <span
-                className="rounded-full border px-2.5 py-0.5 text-xs font-semibold capitalize shadow-2xs"
+                className="rounded-full border border-black/[0.06] px-2.5 py-0.5 text-xs font-semibold capitalize shadow-2xs backdrop-blur-md"
                 style={colorInfo.bgStyle}
               >
                 {colorInfo.name}
@@ -74,45 +74,55 @@ export function EventCard({ event, onClick }: EventCardProps) {
 
               {/* Status: Active */}
               {status === "active" && (
-                <span className="inline-flex animate-pulse items-center gap-1 rounded-full border border-emerald-300 bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-800">
+                <Badge
+                  variant="emerald"
+                  glass
+                  className="animate-pulse font-semibold"
+                >
                   <span className="mr-0.5 h-1.5 w-1.5 rounded-full bg-emerald-600" />
                   Active Check-In
-                </span>
+                </Badge>
               )}
 
               {/* Status: Closed */}
               {(status === "closed" || status === "done") && (
-                <span className="inline-flex items-center gap-1 rounded-full border border-[#e5e5e5] bg-[#faf5e8] px-2.5 py-0.5 text-xs font-semibold text-[#6a6a6a]">
+                <Badge
+                  variant="secondary"
+                  glass
+                  className="font-semibold text-[#6a6a6a]"
+                >
                   <LockIcon className="mr-0.5 size-3 text-[#6a6a6a]" />
                   Completed
-                </span>
+                </Badge>
               )}
 
               {/* Status: Cancelled */}
               {status === "cancelled" && (
-                <Badge variant="destructive">Cancelled</Badge>
+                <Badge variant="destructive" glass>
+                  Cancelled
+                </Badge>
               )}
 
               {/* Status: Draft */}
               {status === "draft" && (
-                <span className="inline-flex items-center rounded-full border border-[#e5e5e5] bg-[#f5f0e0] px-2.5 py-0.5 text-xs font-semibold text-[#0a0a0a]">
+                <Badge variant="outline" glass>
                   Draft
-                </span>
+                </Badge>
               )}
 
               {/* Status: Published / Upcoming */}
               {status === "published" && !isLive && (
-                <span className="inline-flex items-center rounded-full border border-[#e5e5e5] bg-[#faf5e8] px-2.5 py-0.5 text-xs font-semibold text-[#0a0a0a]">
+                <Badge variant="secondary" glass>
                   Scheduled
-                </span>
+                </Badge>
               )}
 
               {/* Live today indicator */}
               {status === "published" && isLive && (
-                <span className="inline-flex items-center gap-1 rounded-full border border-[#e8b94a]/40 bg-[#e8b94a]/20 px-2.5 py-0.5 text-xs font-bold text-[#0a0a0a]">
-                  <span className="mr-0.5 h-1.5 w-1.5 rounded-full bg-[#e8b94a]" />
+                <Badge variant="ochre" glass className="font-bold">
+                  <span className="mr-1 h-1.5 w-1.5 rounded-full bg-[#e8b94a]" />
                   Today
-                </span>
+                </Badge>
               )}
             </div>
 
@@ -143,12 +153,12 @@ export function EventCard({ event, onClick }: EventCardProps) {
           </div>
 
           {/* Action — right */}
-          <div className="flex shrink-0 items-center gap-1.5 rounded-[10px] border border-[#e5e5e5] bg-[#faf5e8] px-2.5 py-1.5 transition-all group-hover:border-[#0a0a0a] group-hover:bg-[#0a0a0a] group-hover:text-white">
-            <span className="hidden text-xs font-bold group-hover:text-white sm:inline">
+          <div className="flex shrink-0 items-center gap-1.5 rounded-full border border-[#ded6c2] bg-[#faf5e8] px-3 py-1.5 text-xs font-semibold text-[#1a3a3a] shadow-2xs transition-all group-hover:border-[#0a0a0a] group-hover:bg-[#0a0a0a] group-hover:text-white sm:min-h-[36px]">
+            <span className="hidden font-bold group-hover:text-white sm:inline">
               Details
             </span>
             <ChevronRightIcon
-              className="size-4 text-[#6a6a6a] transition-transform group-hover:translate-x-0.5 group-hover:text-white"
+              className="size-3.5 text-[#6a6a6a] transition-transform group-hover:translate-x-0.5 group-hover:text-white"
               aria-hidden="true"
             />
           </div>

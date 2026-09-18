@@ -20,7 +20,7 @@ import { z } from "zod"
 
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
 import { ResponsiveFormModal } from "@/components/common/ResponsiveFormModal"
-import { Button, Chip } from "@/components/base"
+import { Button, Chip, Card, Badge } from "@/components/base"
 import { EventCalendar } from "@/components/ui/EventCalendar"
 import type { EventDotItem } from "@/components/ui/EventCalendar"
 import { useDebounce } from "@/hooks/useDebounce"
@@ -189,6 +189,21 @@ export function EventsPage() {
     Record<string, AttendanceRecord[]>
   >({})
 
+  // Auto-open event detail if URL contains ?eventId=...
+  useEffect(() => {
+    if (events.length > 0 && typeof window !== "undefined") {
+      const searchParams = new URLSearchParams(window.location.search)
+      const eventIdParam = searchParams.get("eventId")
+      if (eventIdParam) {
+        const found = events.find((e) => e.id === eventIdParam)
+        if (found) {
+          setSelected(found)
+          setView("detail")
+        }
+      }
+    }
+  }, [events])
+
   useEffect(() => {
     if (selected?.id) {
       loadEventAttendances(selected.id)
@@ -291,37 +306,58 @@ export function EventsPage() {
     }
   }
 
+  function handleCloseDetail() {
+    setSelected(null)
+    setView("calendar")
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href)
+      if (url.searchParams.has("eventId")) {
+        url.searchParams.delete("eventId")
+        window.history.replaceState(
+          {},
+          "",
+          url.pathname + (url.search ? url.search : "")
+        )
+      }
+    }
+  }
+
   // ── Detail View ──
   if (view === "detail" && selected) {
     return (
-      <main className="min-h-screen bg-[#fffaf0] text-left font-sans">
+      <main className="relative min-h-screen bg-[#fffaf0] text-left font-sans">
+        {/* Apple HIG Ambient Vibrancy Backdrop Mesh */}
+        <div
+          className="pointer-events-none fixed inset-0 -z-10 overflow-hidden"
+          aria-hidden="true"
+        >
+          <div className="absolute -top-32 right-1/4 size-96 rounded-full bg-[#e8b94a]/12 blur-3xl" />
+          <div className="absolute top-1/3 -left-24 size-96 rounded-full bg-[#ffb084]/12 blur-3xl" />
+          <div className="absolute right-12 -bottom-24 size-96 rounded-full bg-[#ff4d8b]/8 blur-3xl" />
+        </div>
+
         <PageBreadcrumb
           items={[
             {
               label: "Events",
               href: "/events",
-              onClick: () => {
-                setSelected(null)
-                setView("calendar")
-              },
+              onClick: handleCloseDetail,
             },
             { label: selected.title },
           ]}
-          onBack={() => {
-            setSelected(null)
-            setView("calendar")
-          }}
+          onBack={handleCloseDetail}
         />
         <div className="px-3 py-4 pb-28 sm:px-6 sm:py-6 md:px-8 md:pb-12 lg:px-12">
           <div className="mx-auto max-w-5xl">
-            <div className="rounded-[20px] border border-[#e5e5e5] bg-[#fffaf0] p-3.5 shadow-xs sm:rounded-[24px] sm:p-6">
+            <Card
+              variant="soft"
+              glass
+              className="rounded-[26px] border border-[#e6decb]/80 bg-[#faf5e8]/80 p-3.5 shadow-xs ring-1 ring-black/[0.04] backdrop-blur-xl sm:rounded-[28px] sm:p-6"
+            >
               <EventDetailSheet
                 event={selected}
                 role={role}
-                onClose={() => {
-                  setSelected(null)
-                  setView("calendar")
-                }}
+                onClose={handleCloseDetail}
                 onEdit={
                   isPengurus
                     ? (ev) => {
@@ -423,7 +459,7 @@ export function EventsPage() {
                     : undefined
                 }
               />
-            </div>
+            </Card>
           </div>
         </div>
 
@@ -467,7 +503,17 @@ export function EventsPage() {
 
   // ── Calendar + List View ──
   return (
-    <main className="min-h-screen bg-[#fffaf0] pb-32 text-left font-sans md:pb-12">
+    <main className="relative min-h-screen bg-[#fffaf0] pb-32 text-left font-sans md:pb-12">
+      {/* Apple HIG Ambient Vibrancy Backdrop Mesh */}
+      <div
+        className="pointer-events-none fixed inset-0 -z-10 overflow-hidden"
+        aria-hidden="true"
+      >
+        <div className="absolute -top-32 right-1/4 size-96 rounded-full bg-[#e8b94a]/12 blur-3xl" />
+        <div className="absolute top-1/3 -left-24 size-96 rounded-full bg-[#ffb084]/12 blur-3xl" />
+        <div className="absolute right-12 -bottom-24 size-96 rounded-full bg-[#ff4d8b]/8 blur-3xl" />
+      </div>
+
       <PageBreadcrumb items={[{ label: "Events" }]} />
 
       <div className="px-3.5 py-4 sm:px-6 sm:py-6 md:px-8 lg:px-12">
@@ -514,19 +560,19 @@ export function EventsPage() {
                     )}
                   </button>
 
-                  {/* Clay Month/Year Picker Popover */}
+                  {/* Apple HIG Month/Year Picker Popover */}
                   {monthPickerOpen && !selectedDate && (
-                    <div className="absolute top-full left-0 z-40 mt-2 w-64 animate-in space-y-2.5 rounded-[20px] border border-[#e5e5e5] bg-[#fffaf0] p-3 shadow-xl fade-in-0 zoom-in-95">
+                    <div className="absolute top-full left-0 z-40 mt-2 w-68 animate-in space-y-3 rounded-[24px] border border-[#ded5c0] bg-[#faf5e8]/95 p-3.5 shadow-[0_16px_40px_rgba(0,0,0,0.12)] ring-1 ring-black/[0.04] backdrop-blur-2xl zoom-in-95 fade-in">
                       {/* Year Navigation Bar */}
-                      <div className="flex items-center justify-between border-b border-[#e5e5e5] px-1 pb-2">
-                        <span className="text-sm font-bold text-[#0a0a0a]">
+                      <div className="flex items-center justify-between border-b border-black/[0.06] px-1 pb-2">
+                        <span className="text-sm font-bold tracking-tight text-[#0a0a0a]">
                           {pickerYear}
                         </span>
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1.5">
                           <button
                             type="button"
                             onClick={() => setPickerYear((y) => y - 1)}
-                            className="flex size-7 cursor-pointer items-center justify-center rounded-[8px] border border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] shadow-2xs transition-colors hover:bg-[#faf5e8]"
+                            className="flex size-8 cursor-pointer items-center justify-center rounded-full border border-[#ded6c2] bg-[#fffaf0] text-[#0a0a0a] shadow-2xs backdrop-blur-md transition-all hover:bg-[#f5efe0] active:scale-95"
                             title="Previous year"
                           >
                             <ChevronLeftIcon className="size-3.5" />
@@ -534,7 +580,7 @@ export function EventsPage() {
                           <button
                             type="button"
                             onClick={() => setPickerYear((y) => y + 1)}
-                            className="flex size-7 cursor-pointer items-center justify-center rounded-[8px] border border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] shadow-2xs transition-colors hover:bg-[#faf5e8]"
+                            className="flex size-8 cursor-pointer items-center justify-center rounded-full border border-[#ded6c2] bg-[#fffaf0] text-[#0a0a0a] shadow-2xs backdrop-blur-md transition-all hover:bg-[#f5efe0] active:scale-95"
                             title="Next year"
                           >
                             <ChevronRightIcon className="size-3.5" />
@@ -557,10 +603,10 @@ export function EventsPage() {
                                 setSelectedDate(null)
                                 setMonthPickerOpen(false)
                               }}
-                              className={`cursor-pointer rounded-[10px] py-2 text-center transition-all ${
+                              className={`cursor-pointer rounded-[14px] py-2 text-center transition-all ${
                                 isSelected
                                   ? "bg-[#0a0a0a] font-bold text-white shadow-xs"
-                                  : "text-[#3a3a3a] hover:bg-[#faf5e8] hover:text-[#0a0a0a]"
+                                  : "text-[#3a3a3a] hover:bg-[#f0e8d5] hover:text-[#0a0a0a]"
                               }`}
                             >
                               {m}
@@ -583,7 +629,7 @@ export function EventsPage() {
                   </Chip>
                 )}
 
-                {/* Custom Clay Category Filter Dropdown (Desktop Beside Title) */}
+                {/* Custom Category Filter Dropdown (Desktop Beside Title) */}
                 <div
                   className="relative hidden shrink-0 sm:block"
                   ref={categoryDropdownRef}
@@ -614,17 +660,17 @@ export function EventsPage() {
 
                   {/* Popover Menu */}
                   {categoryDropdownOpen && (
-                    <div className="absolute top-full left-0 z-40 mt-1.5 w-52 animate-in space-y-0.5 rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0] p-1.5 text-left shadow-xl zoom-in-95 fade-in">
+                    <div className="absolute top-full left-0 z-40 mt-1.5 w-56 animate-in space-y-0.5 rounded-[22px] border border-[#ded5c0] bg-[#faf5e8]/95 p-2 text-left shadow-[0_16px_40px_rgba(0,0,0,0.12)] ring-1 ring-black/[0.04] backdrop-blur-2xl zoom-in-95 fade-in">
                       <button
                         type="button"
                         onClick={() => {
                           setSelectedCategoryTag("all")
                           setCategoryDropdownOpen(false)
                         }}
-                        className={`flex w-full cursor-pointer items-center justify-between rounded-[8px] px-3 py-2 text-xs font-semibold transition-colors ${
+                        className={`flex w-full cursor-pointer items-center justify-between rounded-[12px] px-3 py-2 text-xs font-semibold transition-colors ${
                           selectedCategoryTag === "all"
-                            ? "bg-[#faf5e8] font-bold text-[#0a0a0a]"
-                            : "text-[#6a6a6a] hover:bg-[#faf5e8] hover:text-[#0a0a0a]"
+                            ? "bg-[#fffaf0] font-bold text-[#0a0a0a] shadow-2xs"
+                            : "text-[#6a6a6a] hover:bg-[#fffaf0]/80 hover:text-[#0a0a0a]"
                         }`}
                       >
                         <span>All Categories</span>
@@ -633,7 +679,7 @@ export function EventsPage() {
                         )}
                       </button>
 
-                      <div className="my-1 h-px bg-[#e5e5e5]" />
+                      <div className="my-1 h-px bg-black/[0.06]" />
 
                       {accessibleCategories.map((cat) => {
                         const isSelected =
@@ -648,10 +694,10 @@ export function EventsPage() {
                               setSelectedCategoryTag(cat.tag)
                               setCategoryDropdownOpen(false)
                             }}
-                            className={`flex w-full cursor-pointer items-center justify-between rounded-[8px] px-3 py-2 text-xs font-semibold transition-colors ${
+                            className={`flex w-full cursor-pointer items-center justify-between rounded-[12px] px-3 py-2 text-xs font-semibold transition-colors ${
                               isSelected
-                                ? "bg-[#faf5e8] font-bold text-[#0a0a0a]"
-                                : "text-[#6a6a6a] hover:bg-[#faf5e8] hover:text-[#0a0a0a]"
+                                ? "bg-[#fffaf0] font-bold text-[#0a0a0a] shadow-2xs"
+                                : "text-[#6a6a6a] hover:bg-[#fffaf0]/80 hover:text-[#0a0a0a]"
                             }`}
                           >
                             <div className="flex items-center gap-2">
@@ -679,7 +725,7 @@ export function EventsPage() {
                     variant="outlined"
                     size="sm"
                     onClick={() => setSelectedDate(null)}
-                    className="h-8 shrink-0 gap-1 px-2.5 text-xs font-semibold"
+                    className="h-9 shrink-0 gap-1 rounded-full border-[#ded6c2] bg-[#faf5e8] px-3 text-xs font-semibold shadow-2xs backdrop-blur-md hover:bg-[#f5efe0]"
                     title="Show full month events"
                   >
                     <XIcon className="size-3" />
@@ -695,7 +741,7 @@ export function EventsPage() {
                         setActiveMonth(now)
                         setSelectedDate(toDateKey(now.toISOString()))
                       }}
-                      className="h-8 px-2.5 text-xs"
+                      className="h-9 rounded-full border-[#ded6c2] bg-[#faf5e8] px-3 text-xs font-semibold shadow-2xs backdrop-blur-md hover:bg-[#f5efe0]"
                       title="Go to Today"
                     >
                       Today
@@ -715,7 +761,7 @@ export function EventsPage() {
                           )
                           setSelectedDate(null)
                         }}
-                        className="flex size-8 cursor-pointer items-center justify-center rounded-full border border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] shadow-2xs transition-all hover:bg-[#faf5e8] active:scale-95"
+                        className="flex size-9 cursor-pointer items-center justify-center rounded-full border border-[#ded6c2] bg-[#faf5e8] text-[#0a0a0a] shadow-2xs backdrop-blur-md transition-all hover:bg-[#f5efe0] active:scale-95"
                         title="Previous month"
                         aria-label="Previous month"
                       >
@@ -735,7 +781,7 @@ export function EventsPage() {
                           )
                           setSelectedDate(null)
                         }}
-                        className="flex size-8 cursor-pointer items-center justify-center rounded-full border border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] shadow-2xs transition-all hover:bg-[#faf5e8] active:scale-95"
+                        className="flex size-9 cursor-pointer items-center justify-center rounded-full border border-[#ded6c2] bg-[#faf5e8] text-[#0a0a0a] shadow-2xs backdrop-blur-md transition-all hover:bg-[#f5efe0] active:scale-95"
                         title="Next month"
                         aria-label="Next month"
                       >
@@ -780,7 +826,7 @@ export function EventsPage() {
             </div>
 
             {/* Desktop-Only Month Controls: Today, Prev, Next */}
-            <div className="hidden shrink-0 items-center gap-1 sm:flex sm:gap-1.5">
+            <div className="hidden shrink-0 items-center gap-1.5 sm:flex">
               <Button
                 variant="outlined"
                 size="sm"
@@ -789,7 +835,7 @@ export function EventsPage() {
                   setActiveMonth(now)
                   setSelectedDate(toDateKey(now.toISOString()))
                 }}
-                className="h-8 px-3 text-xs"
+                className="h-9 rounded-full border-[#ded6c2] bg-[#faf5e8] px-3.5 text-xs font-semibold shadow-2xs backdrop-blur-md hover:bg-[#f5efe0]"
                 title="Go to Today"
               >
                 Today
@@ -805,7 +851,7 @@ export function EventsPage() {
                     )
                     setSelectedDate(null)
                   }}
-                  className="flex size-8 cursor-pointer items-center justify-center rounded-full border border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] shadow-2xs transition-all hover:bg-[#faf5e8] active:scale-95"
+                  className="flex size-9 cursor-pointer items-center justify-center rounded-full border border-[#ded6c2] bg-[#faf5e8] text-[#0a0a0a] shadow-2xs backdrop-blur-md transition-all hover:bg-[#f5efe0] active:scale-95"
                   title="Previous month"
                   aria-label="Previous month"
                 >
@@ -821,7 +867,7 @@ export function EventsPage() {
                     )
                     setSelectedDate(null)
                   }}
-                  className="flex size-8 cursor-pointer items-center justify-center rounded-full border border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] shadow-2xs transition-all hover:bg-[#faf5e8] active:scale-95"
+                  className="flex size-9 cursor-pointer items-center justify-center rounded-full border border-[#ded6c2] bg-[#faf5e8] text-[#0a0a0a] shadow-2xs backdrop-blur-md transition-all hover:bg-[#f5efe0] active:scale-95"
                   title="Next month"
                   aria-label="Next month"
                 >
@@ -833,17 +879,23 @@ export function EventsPage() {
 
           {/* ── Mobile-Only: Calendar Mini Top Section ── */}
           <div className="w-full lg:hidden">
-            <EventCalendar
-              dots={dotMap}
-              selected={selectedDate}
-              onSelect={setSelectedDate}
-              month={activeMonth}
-              onMonthChange={(month) => {
-                setActiveMonth(month)
-                setSelectedDate(null)
-              }}
-              hideHeader={true}
-            />
+            <Card
+              variant="soft"
+              glass
+              className="rounded-[22px] border border-[#e6decb]/80 bg-[#faf5e8]/80 p-3.5 shadow-xs ring-1 ring-black/[0.04] backdrop-blur-xl"
+            >
+              <EventCalendar
+                dots={dotMap}
+                selected={selectedDate}
+                onSelect={setSelectedDate}
+                month={activeMonth}
+                onMonthChange={(month) => {
+                  setActiveMonth(month)
+                  setSelectedDate(null)
+                }}
+                hideHeader={true}
+              />
+            </Card>
           </div>
 
           {/* ── Search Bar + Create Button Controls Row ── */}
@@ -851,7 +903,7 @@ export function EventsPage() {
             {/* Search Input */}
             <div className="relative min-w-0 flex-1">
               <SearchIcon
-                className="pointer-events-none absolute top-1/2 left-3.5 z-10 size-4 -translate-y-1/2 text-[#6a6a6a]"
+                className="pointer-events-none absolute top-1/2 left-3.5 z-10 size-4 -translate-y-1/2 text-[#7a776a]"
                 aria-hidden="true"
               />
               <input
@@ -859,13 +911,13 @@ export function EventsPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search events..."
-                className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] pr-9 pl-10 text-xs text-[#0a0a0a] shadow-xs transition-all outline-none placeholder:text-[#6a6a6a] focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] sm:text-sm"
+                className="h-12 w-full rounded-[18px] border border-[#e5dec9] bg-[#faf5e8]/90 pr-10 pl-11 text-xs text-[#0a0a0a] shadow-xs ring-1 ring-black/[0.03] backdrop-blur-md transition-all outline-none placeholder:text-[#8a8678] focus:border-[#0a0a0a] focus:bg-[#fffaf0] focus:ring-1 focus:ring-[#0a0a0a] sm:text-sm"
               />
               {searchQuery && (
                 <button
                   type="button"
                   onClick={() => setSearchQuery("")}
-                  className="absolute top-1/2 right-3 flex h-5 w-5 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-[#e5e5e5] text-[#6a6a6a] transition-colors hover:bg-[#0a0a0a] hover:text-white"
+                  className="absolute top-1/2 right-3.5 flex size-5 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-black/[0.08] text-[#6a6a6a] transition-colors hover:bg-[#0a0a0a] hover:text-white"
                   title="Clear search"
                 >
                   <XIcon className="size-3" />
@@ -881,7 +933,7 @@ export function EventsPage() {
                   setEditTarget(null)
                   setFormOpen(true)
                 }}
-                className="shrink-0"
+                className="h-12 shrink-0 rounded-full px-5 font-bold shadow-xs active:scale-[0.98]"
                 title="Create New Event"
                 aria-label="Create New Event"
               >
@@ -895,22 +947,30 @@ export function EventsPage() {
           <div className="flex flex-col items-start gap-4 sm:gap-5 lg:flex-row">
             {/* ── Left: Event List Container ── */}
             <div className="w-full flex-1 lg:min-w-0">
-              <div className="relative rounded-[20px] border border-[#e5e5e5] bg-[#fffaf0] p-4 shadow-xs sm:rounded-[24px] sm:p-5">
+              <Card
+                variant="soft"
+                glass
+                className="relative rounded-[26px] border border-[#e6decb]/80 bg-[#faf5e8]/80 p-4 shadow-xs ring-1 ring-black/[0.04] backdrop-blur-xl sm:rounded-[28px] sm:p-6"
+              >
                 {/* Card Sub-header */}
-                <div className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-[#e5e5e5] pb-3">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="flex h-7 w-7 items-center justify-center rounded-[8px] bg-[#0a0a0a] text-white shadow-xs">
+                <div className="mb-3.5 flex flex-wrap items-center justify-between gap-2 border-b border-black/[0.06] pb-3">
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    <span className="flex size-8 items-center justify-center rounded-full bg-[#0a0a0a] text-white shadow-2xs">
                       <CalendarDaysIcon className="size-4 text-[#e8b94a]" />
                     </span>
-                    <h2 className="text-sm font-bold text-[#0a0a0a]">
+                    <h2 className="text-sm font-bold text-[#0a0a0a] sm:text-base">
                       {searchQuery.trim()
                         ? `Search: "${searchQuery}"`
                         : "Community Events"}
                     </h2>
-                    <span className="rounded-full border border-[#e5e5e5] bg-[#f5f0e0] px-2.5 py-0.5 text-xs font-bold text-[#0a0a0a]">
+                    <Badge
+                      variant="secondary"
+                      glass
+                      className="font-semibold text-[#0a0a0a]"
+                    >
                       {listedEvents.length}{" "}
                       {listedEvents.length === 1 ? "Event" : "Events"}
-                    </span>
+                    </Badge>
                   </div>
                   {(selectedDate || searchQuery.trim()) && (
                     <button
@@ -919,7 +979,7 @@ export function EventsPage() {
                         setSelectedDate(null)
                         setSearchQuery("")
                       }}
-                      className="cursor-pointer text-xs font-bold text-[#0a0a0a] hover:underline"
+                      className="cursor-pointer text-xs font-semibold text-[#1a3a3a] hover:underline"
                     >
                       {searchQuery.trim() ? "Clear Search" : "Show All"}
                     </button>
@@ -931,9 +991,9 @@ export function EventsPage() {
                     {Array.from({ length: 4 }).map((_, idx) => (
                       <div
                         key={idx}
-                        className="flex items-center gap-3.5 rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] p-3"
+                        className="flex items-center gap-3.5 rounded-[20px] border border-[#e6decb]/80 bg-[#fffaf0]/70 p-3.5 backdrop-blur-md"
                       >
-                        <Skeleton className="size-11 shrink-0 rounded-[12px]" />
+                        <Skeleton className="size-11 shrink-0 rounded-[14px]" />
                         <div className="min-w-0 flex-1 space-y-1.5">
                           <Skeleton className="h-4 w-40 rounded-md" />
                           <Skeleton className="h-3 w-24 rounded-md" />
@@ -959,14 +1019,14 @@ export function EventsPage() {
                       <button
                         type="button"
                         onClick={() => setSearchQuery("")}
-                        className="cursor-pointer rounded-[8px] border border-[#e5e5e5] bg-[#faf5e8] px-3 py-1.5 text-xs font-semibold text-[#0a0a0a] transition-colors hover:bg-[#f5f0e0]"
+                        className="cursor-pointer rounded-full border border-[#ded6c2] bg-[#fffaf0] px-4 py-2 text-xs font-semibold text-[#0a0a0a] shadow-2xs backdrop-blur-md transition-colors hover:bg-[#faf5e8]"
                       >
                         Clear Search Filter
                       </button>
                     )}
                   </div>
                 ) : (
-                  <div className="divide-y divide-[#f0f0f0]">
+                  <div className="divide-y divide-black/[0.04]">
                     {listedEvents.map((ev) => (
                       <EventCard
                         key={ev.id}
@@ -979,12 +1039,16 @@ export function EventsPage() {
                     ))}
                   </div>
                 )}
-              </div>
+              </Card>
             </div>
 
             {/* ── Right: Mini Calendar Card (Desktop Only lg+) ── */}
             <aside className="hidden w-full shrink-0 lg:block lg:w-80 xl:w-96">
-              <div className="relative sticky top-16 space-y-3 rounded-[20px] border border-[#e5e5e5] bg-[#fffaf0] p-4 shadow-xs sm:rounded-[24px]">
+              <Card
+                variant="soft"
+                glass
+                className="relative sticky top-16 space-y-3.5 rounded-[26px] border border-[#e6decb]/80 bg-[#faf5e8]/80 p-4 shadow-xs ring-1 ring-black/[0.04] backdrop-blur-xl sm:rounded-[28px] sm:p-5"
+              >
                 <EventCalendar
                   dots={dotMap}
                   selected={selectedDate}
@@ -998,7 +1062,7 @@ export function EventsPage() {
                 />
 
                 {/* Dynamic Master Data Category Legend */}
-                <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1.5 border-t border-[#e5e5e5] pt-3 text-xs">
+                <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1.5 border-t border-black/[0.06] pt-3 text-xs">
                   {accessibleCategories.map((cat) => {
                     const colorHex = cat.colorHex || "#1a3a3a"
                     return (
@@ -1014,7 +1078,7 @@ export function EventsPage() {
                     )
                   })}
                 </div>
-              </div>
+              </Card>
             </aside>
           </div>
         </div>

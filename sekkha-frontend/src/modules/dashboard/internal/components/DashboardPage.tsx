@@ -1,7 +1,4 @@
-// feature/dashboard/components/DashboardPage
-// 100% Clay Design System compliance (DESIGN.md): Warm canvas (#fffaf0), surface (#faf5e8 / #f5f0e0),
-// hairline borders (#e5e5e5), 6-color palette (pink, teal, lavender, peach, ochre, cream),
-// and generous 24px border radii.
+// ─── Imports ────────────────────────────────────────────────────────────────────
 
 import { useState, useEffect } from "react"
 import { useAuth } from "@/modules/auth"
@@ -13,7 +10,6 @@ import {
   MapPinIcon,
   QrCodeIcon,
   AwardIcon,
-  ArrowRightIcon,
   SearchIcon,
   BellIcon,
   SettingsIcon,
@@ -27,11 +23,13 @@ import {
   ClockIcon,
   XIcon,
   SparklesIcon,
+  ChevronRightIcon,
 } from "lucide-react"
 import { api } from "@/lib/api"
 import { DhammaWidget } from "./DhammaWidget"
 import { Link } from "@tanstack/react-router"
 import { ResponsiveFormModal } from "@/components/common/ResponsiveFormModal"
+import { Button, Card, Badge, Input } from "@/components/base"
 
 function formatEventDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-US", {
@@ -52,6 +50,9 @@ export function DashboardPage() {
   useEffect(() => {
     let isMounted = true
     async function loadDashboardData() {
+      // Guard: wait until auth state is resolved to avoid duplicate requests on status transition
+      if (authState.status === "loading") return
+
       const promises: Promise<any>[] = [api.get<any[]>("/events")]
       if (authState.status === "authenticated") {
         promises.push(api.get<any>("/users/me"))
@@ -160,7 +161,7 @@ export function DashboardPage() {
             icon: UsersIcon,
             bg: "bg-[#ffb084]",
             iconColor: "text-[#0a0a0a]",
-            href: "/teams",
+            href: "/people",
           },
         ]
       : []),
@@ -250,7 +251,7 @@ export function DashboardPage() {
                 icon: UsersIcon,
                 bg: "bg-[#ffb084]",
                 iconColor: "text-[#0a0a0a]",
-                href: "/teams",
+                href: "/people",
                 badge: "Directory",
                 keywords:
                   "people teams ministry fellowship community committees members direktori tim kepengurusan umat",
@@ -441,24 +442,24 @@ export function DashboardPage() {
   )
 
   const topBarActions = (
-    <div className="flex items-center gap-1.5 sm:gap-2">
+    <div className="flex items-center gap-2">
       <button
         type="button"
         onClick={() => setShowQrModal(true)}
         aria-label="Attendance QR Code"
-        className="flex size-9 cursor-pointer items-center justify-center rounded-[12px] bg-[#0a0a0a] text-white shadow-xs transition-all hover:bg-[#1f1f1f] active:scale-95 sm:size-10"
+        className="flex size-11 cursor-pointer items-center justify-center rounded-full border border-white/80 bg-[#faf5e8]/80 text-[#0a0a0a] shadow-2xs ring-1 ring-black/[0.04] backdrop-blur-xl transition-all hover:bg-[#faf5e8] active:scale-[0.95] active:opacity-75"
         title="Show Attendance QR Code"
       >
-        <TicketIcon className="size-4.5" />
+        <TicketIcon className="size-5" />
       </button>
 
       <Link
         to="/notifications"
         aria-label="Notifications"
-        className="relative flex size-9 items-center justify-center rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] shadow-2xs transition-all hover:border-[#9a9a9a] hover:bg-[#faf5e8] active:scale-95 sm:size-10"
+        className="relative flex size-11 items-center justify-center rounded-full border border-white/80 bg-[#faf5e8]/80 text-[#0a0a0a] shadow-2xs ring-1 ring-black/[0.04] backdrop-blur-xl transition-all hover:bg-[#faf5e8] active:scale-[0.95] active:opacity-75"
         title="Notifications"
       >
-        <BellIcon className="size-4.5 text-[#0a0a0a]" />
+        <BellIcon className="size-5 text-[#0a0a0a]" />
       </Link>
     </div>
   )
@@ -468,216 +469,306 @@ export function DashboardPage() {
       <PageBreadcrumb items={[{ label: "Home" }]} actions={topBarActions} />
 
       <div className="px-3.5 py-4 sm:px-6 sm:py-6 md:px-8 lg:px-12">
-        <div className="mx-auto max-w-7xl space-y-4 sm:space-y-6">
-          {/* ── 1. Profile Header Card (Clay Warm Canvas Style) ── */}
-          <div className="relative overflow-hidden rounded-[20px] border border-[#e5e5e5] bg-[#faf5e8] p-3.5 shadow-xs transition-all sm:rounded-[24px] sm:p-5 lg:p-6">
-            {/* Playful Subtle Decorative Glows */}
-            <div className="pointer-events-none absolute -top-10 -right-10 size-40 rounded-full bg-[#ffb084]/20 blur-2xl" />
-            <div className="pointer-events-none absolute -bottom-10 -left-10 size-40 rounded-full bg-[#1a3a3a]/10 blur-2xl" />
-
-            {/* Content Wrapper */}
-            <div className="relative z-10 flex flex-col gap-3 sm:gap-4">
-              {/* Top Row: Profile Info (Left) + Quick QR Button (Right) */}
-              <div className="flex min-w-0 items-center justify-between gap-3">
-                {/* Profile Picture + Name Info */}
-                <div className="flex min-w-0 flex-1 items-center gap-3 sm:gap-4">
-                  {/* Profile Picture */}
-                  <div className="flex size-12 shrink-0 items-center justify-center rounded-[14px] bg-[#e8b94a] text-base font-black text-[#0a0a0a] shadow-xs ring-2 ring-white sm:size-14 sm:rounded-[16px] sm:text-xl sm:ring-4 md:size-16">
-                    {displayName
-                      .split(" ")
-                      .slice(0, 2)
-                      .map((w: string) => w[0])
-                      .join("")}
-                  </div>
-
-                  {/* Text Info: Namo Buddhaya -> Name (Truncated with ...) -> Role & Member ID */}
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs leading-none font-medium text-[#6a6a6a] sm:text-sm">
-                      Namo Buddhaya
-                    </p>
-                    <h1
-                      className="mt-1 truncate text-base leading-tight font-bold tracking-tight text-[#0a0a0a] sm:text-xl md:text-2xl"
-                      title={displayName}
-                    >
-                      {displayName}
-                    </h1>
-                    <div className="mt-1 flex flex-wrap items-center gap-1.5 sm:gap-2">
-                      <span className="shrink-0 rounded-full border border-[#1a3a3a]/20 bg-[#1a3a3a]/10 px-2 py-0.5 text-[11px] font-semibold text-[#1a3a3a] capitalize sm:text-xs">
-                        {roleLabel}
-                      </span>
-                      <span className="shrink-0 font-mono text-[11px] text-[#6a6a6a] sm:text-xs">
-                        ID: {memberId}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Quick QR Action (Option B) */}
-                <button
-                  type="button"
-                  onClick={() => setShowQrModal(true)}
-                  className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-[12px] bg-[#0a0a0a] px-2.5 py-1.5 text-white shadow-xs transition-all hover:bg-[#1f1f1f] active:scale-95 sm:gap-2 sm:px-3.5 sm:py-2"
-                  title="Attendance QR Code"
-                  aria-label="Attendance QR Code"
-                >
-                  <QrCodeIcon className="size-4 shrink-0 text-white sm:size-4.5" />
-                  <span className="text-xs font-bold whitespace-nowrap sm:text-sm">
-                    QR Code
-                  </span>
-                </button>
-              </div>
-
-              {/* Bottom Row: Stats (Streak & Points) */}
-              <div className="grid grid-cols-2 gap-2 border-t border-[#e5e5e5]/80 pt-2.5 sm:gap-3 sm:pt-3">
-                <div className="flex items-center gap-2 rounded-[12px] border border-[#ffb084]/50 bg-[#ffb084]/25 px-3 py-1.5 shadow-2xs sm:gap-2.5 sm:px-4 sm:py-2.5">
-                  <FlameIcon className="size-4 shrink-0 text-[#ff4d8b] sm:size-4.5" />
-                  <div className="min-w-0 text-left">
-                    <p className="text-[10px] leading-none font-bold text-[#6a6a6a] uppercase sm:text-[11px]">
-                      Streak
-                    </p>
-                    <p className="mt-0.5 truncate text-xs leading-tight font-black whitespace-nowrap text-[#0a0a0a] sm:text-sm">
-                      {currentStreak}x Active
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 rounded-[12px] border border-[#e8b94a]/50 bg-[#e8b94a]/25 px-3 py-1.5 shadow-2xs sm:gap-2.5 sm:px-4 sm:py-2.5">
-                  <AwardIcon className="size-4 shrink-0 text-[#0a0a0a] sm:size-4.5" />
-                  <div className="min-w-0 text-left">
-                    <p className="text-[10px] leading-none font-bold text-[#6a6a6a] uppercase sm:text-[11px]">
-                      Points
-                    </p>
-                    <p className="mt-0.5 truncate text-xs leading-tight font-black whitespace-nowrap text-[#0a0a0a] sm:text-sm">
-                      {totalPoints.toLocaleString("en-US")} Pts
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* ── 2. Quick Access Feature Grid ── */}
-          <div className="rounded-[24px] border border-[#e5e5e5] bg-[#faf5e8] p-4 shadow-xs sm:p-6">
-            <div
-              className={
-                primaryQuickAccessItems.length <= 4
-                  ? "grid grid-cols-4 gap-x-2 gap-y-4 sm:gap-6"
-                  : primaryQuickAccessItems.length === 5
-                    ? "grid grid-cols-5 gap-x-2 gap-y-4 sm:gap-6"
-                    : primaryQuickAccessItems.length === 6
-                      ? "grid grid-cols-3 gap-x-2 gap-y-4 sm:grid-cols-6 sm:gap-6"
-                      : "grid grid-cols-4 gap-x-2 gap-y-4 sm:grid-cols-7 sm:gap-6"
-              }
+        <div className="mx-auto max-w-7xl space-y-6 sm:space-y-8">
+          {/* ── 1. Profile Section (iOS Contact & ID Widget with Apple HIG Material) ── */}
+          <section aria-labelledby="section-profile">
+            <h2 id="section-profile" className="sr-only">
+              Member Profile
+            </h2>
+            <Card
+              variant="material-regular"
+              className="relative overflow-hidden rounded-[28px] p-4 shadow-lg sm:p-5 lg:p-6"
             >
-              {primaryQuickAccessItems.map((item) => {
-                const Icon = item.icon
-                const content = (
-                  <div className="group flex cursor-pointer flex-col items-center text-center">
-                    {/* Saturated Clay Icon Badge */}
-                    <div
-                      className={`flex size-12 items-center justify-center rounded-[18px] sm:size-14 ${item.bg} ${item.iconColor} shadow-xs transition-transform duration-150 group-hover:scale-105 group-active:scale-95`}
-                    >
-                      <Icon className="size-6" />
+              {/* Subtle Ambient Radial Glows behind material */}
+              <div className="pointer-events-none absolute -top-12 -right-12 size-44 rounded-full bg-[#ffb084]/25 blur-3xl" />
+              <div className="pointer-events-none absolute -bottom-12 -left-12 size-44 rounded-full bg-[#1a3a3a]/15 blur-3xl" />
+
+              <div className="relative z-10 flex flex-col gap-4">
+                {/* Top Row: Profile Info (Left) + Quick QR Action (Right) */}
+                <div className="flex min-w-0 items-center justify-between gap-3">
+                  {/* Avatar & Details */}
+                  <div className="flex min-w-0 flex-1 items-center gap-3.5 sm:gap-4">
+                    {/* Avatar Squircle */}
+                    <div className="flex size-14 shrink-0 items-center justify-center rounded-[18px] bg-[#e8b94a] text-lg font-black text-[#0a0a0a] shadow-xs ring-2 ring-white sm:size-16 sm:text-xl md:size-[68px]">
+                      {displayName
+                        .split(" ")
+                        .slice(0, 2)
+                        .map((w: string) => w[0])
+                        .join("")}
                     </div>
-                    {/* Label */}
-                    <span className="mt-2 line-clamp-2 flex min-h-[2.4em] items-center justify-center text-center text-[11px] leading-tight font-semibold text-[#0a0a0a] sm:text-xs">
-                      {item.label}
-                    </span>
-                  </div>
-                )
 
-                if (item.onClick) {
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={item.onClick}
-                      className="w-full"
-                    >
-                      {content}
-                    </button>
-                  )
-                }
-
-                return (
-                  <Link key={item.id} to={item.href as "/"}>
-                    {content}
-                  </Link>
-                )
-              })}
-            </div>
-          </div>
-
-          {/* ── 3. Community Agenda & Dhamma Wisdom Grid ── */}
-          <div className="grid grid-cols-1 items-stretch gap-4 sm:gap-6 md:grid-cols-2">
-            {/* ── Upcoming Event Card ── */}
-            <div className="relative flex h-full flex-col justify-between overflow-hidden rounded-[20px] border border-[#e5e5e5] bg-[#fffaf0] p-4 shadow-xs transition-all sm:rounded-[24px] sm:p-5">
-              <div className="flex flex-1 flex-col">
-                {/* Header */}
-                <div className="mb-3 flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="flex h-7 w-7 items-center justify-center rounded-[8px] bg-[#0a0a0a] text-white shadow-xs">
-                      <CalendarIcon className="size-4 text-[#e8b94a]" />
-                    </span>
-                    <h2 className="text-sm font-bold text-[#0a0a0a]">
-                      Upcoming Event
-                    </h2>
-                  </div>
-                  <Link
-                    to="/events"
-                    className="flex items-center gap-1 text-xs font-bold text-[#0a0a0a] hover:underline"
-                  >
-                    <span>Full Schedule</span>{" "}
-                    <ArrowRightIcon className="size-3" />
-                  </Link>
-                </div>
-
-                {/* Event Status Card */}
-                <div className="flex min-h-[120px] flex-1 flex-col justify-center rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] p-3.5 sm:min-h-[140px] sm:p-4">
-                  {nextEvent ? (
-                    <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-                      <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-emerald-300 bg-emerald-100 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800">
-                            <span className="h-1.5 w-1.5 animate-ping rounded-full bg-emerald-500" />{" "}
-                            Next Event
-                          </span>
-                        </div>
-                        <h3 className="mt-1.5 text-base font-bold text-[#0a0a0a] sm:text-lg">
-                          {nextEvent.title}
-                        </h3>
-                        <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-[#6a6a6a]">
-                          <span className="flex items-center gap-1">
-                            <CalendarIcon className="size-3.5 text-[#1a3a3a]" />
-                            {formatEventDate(nextEvent.event_date)}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <MapPinIcon className="size-3.5 text-rose-600" />
-                            {nextEvent.location}
-                          </span>
-                        </div>
+                    {/* Typographic Hierarchy (iOS Large Title + Subheadline) */}
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-semibold tracking-tight text-[#8a8678]">
+                        Namo Buddhaya
+                      </p>
+                      <h1
+                        className="mt-0.5 truncate text-xl leading-tight font-bold tracking-tight text-[#0a0a0a] sm:text-2xl"
+                        title={displayName}
+                      >
+                        {displayName}
+                      </h1>
+                      <div className="mt-1.5 flex flex-wrap items-center gap-1.5 sm:gap-2">
+                        <Badge
+                          variant="teal"
+                          glass
+                          size="sm"
+                          className="rounded-full px-2.5 py-0.5 font-semibold capitalize"
+                        >
+                          {roleLabel}
+                        </Badge>
+                        <span className="shrink-0 font-mono text-[11px] text-[#7a776a] sm:text-xs">
+                          ID: {memberId}
+                        </span>
                       </div>
                     </div>
-                  ) : (
-                    <div className="flex flex-1 flex-col items-center justify-center py-6 text-center sm:py-8">
-                      <p className="text-xs font-medium text-[#6a6a6a] sm:text-sm">
-                        No upcoming events at the moment.
+                  </div>
+
+                  {/* Quick QR Action (iOS Prominent Capsule Button) */}
+                  <Button
+                    type="button"
+                    variant="primary"
+                    size="sm"
+                    onClick={() => setShowQrModal(true)}
+                    className="gap-2 rounded-full px-4 py-2 font-semibold shadow-xs active:scale-[0.98] active:opacity-85"
+                    title="Attendance QR Code"
+                    aria-label="Attendance QR Code"
+                  >
+                    <QrCodeIcon className="size-4 shrink-0 text-white sm:size-4.5" />
+                    <span className="text-xs font-semibold whitespace-nowrap sm:text-sm">
+                      QR Code
+                    </span>
+                  </Button>
+                </div>
+
+                {/* Bottom Row: iOS Activity / Fitness Summary Tiles (Frosted Glass) */}
+                <div className="grid grid-cols-2 gap-2.5 border-t border-black/[0.06] pt-3 sm:gap-3">
+                  <div className="flex items-center gap-2.5 rounded-[16px] border border-white/80 bg-[#fffaf0]/80 px-3.5 py-2 shadow-2xs ring-1 ring-black/[0.03] backdrop-blur-md sm:px-4 sm:py-2.5">
+                    <div className="flex size-9 shrink-0 items-center justify-center rounded-[12px] bg-[#ff4d8b]/15">
+                      <FlameIcon className="size-5 text-[#ff4d8b]" />
+                    </div>
+                    <div className="min-w-0 text-left">
+                      <p className="text-[10px] font-bold tracking-wider text-[#8a8678] uppercase sm:text-[11px]">
+                        Streak
+                      </p>
+                      <p className="mt-0.5 truncate text-xs leading-tight font-bold whitespace-nowrap text-[#0a0a0a] sm:text-sm">
+                        {currentStreak}x Active
                       </p>
                     </div>
-                  )}
+                  </div>
+
+                  <div className="flex items-center gap-2.5 rounded-[16px] border border-white/80 bg-[#fffaf0]/80 px-3.5 py-2 shadow-2xs ring-1 ring-black/[0.03] backdrop-blur-md sm:px-4 sm:py-2.5">
+                    <div className="flex size-9 shrink-0 items-center justify-center rounded-[12px] bg-[#e8b94a]/20">
+                      <AwardIcon className="size-5 text-[#0a0a0a]" />
+                    </div>
+                    <div className="min-w-0 text-left">
+                      <p className="text-[10px] font-bold tracking-wider text-[#8a8678] uppercase sm:text-[11px]">
+                        Points
+                      </p>
+                      <p className="mt-0.5 truncate text-xs leading-tight font-bold whitespace-nowrap text-[#0a0a0a] sm:text-sm">
+                        {totalPoints.toLocaleString("en-US")} Pts
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
+            </Card>
+          </section>
 
-            {/* ── Daily Wisdom / Dhamma Reflection ── */}
-            <div id="dhamma-wisdom-card" className="flex h-full flex-col">
-              <DhammaWidget />
+          {/* ── 2. Quick Access Section (iOS Springboard / App Icon Grid with Apple HIG Material) ── */}
+          <section aria-labelledby="section-quick-access" className="space-y-2">
+            <div className="flex items-center justify-between px-1">
+              <h2
+                id="section-quick-access"
+                className="text-[11px] font-bold tracking-wider text-[#7a776a] uppercase sm:text-xs"
+              >
+                Quick Access
+              </h2>
             </div>
-          </div>
+            <Card
+              variant="material-regular"
+              className="rounded-[28px] p-4 shadow-lg sm:p-6"
+            >
+              <div
+                className={
+                  primaryQuickAccessItems.length <= 4
+                    ? "grid grid-cols-4 gap-x-2 gap-y-4 sm:gap-6"
+                    : primaryQuickAccessItems.length === 5
+                      ? "grid grid-cols-5 gap-x-2 gap-y-4 sm:gap-6"
+                      : primaryQuickAccessItems.length === 6
+                        ? "grid grid-cols-3 gap-x-2 gap-y-4 sm:grid-cols-6 sm:gap-6"
+                        : "grid grid-cols-4 gap-x-2 gap-y-4 sm:grid-cols-7 sm:gap-6"
+                }
+              >
+                {primaryQuickAccessItems.map((item) => {
+                  const Icon = item.icon
+                  const content = (
+                    <div className="group flex cursor-pointer flex-col items-center text-center">
+                      {/* iOS Springboard App Icon Squircle */}
+                      <div
+                        className={`flex size-13 items-center justify-center rounded-[18px] sm:size-14 ${item.bg} ${item.iconColor} shadow-2xs transition-transform duration-150 group-hover:scale-105 group-active:scale-90 group-active:opacity-85`}
+                      >
+                        <Icon className="size-6" />
+                      </div>
+                      {/* Label */}
+                      <span className="mt-2 line-clamp-2 flex min-h-[2.4em] items-center justify-center text-center text-[11px] leading-tight font-medium text-[#0a0a0a] sm:text-xs">
+                        {item.label}
+                      </span>
+                    </div>
+                  )
+
+                  if (item.onClick) {
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={item.onClick}
+                        className="w-full"
+                      >
+                        {content}
+                      </button>
+                    )
+                  }
+
+                  return (
+                    <Link key={item.id} to={item.href as "/"}>
+                      {content}
+                    </Link>
+                  )
+                })}
+              </div>
+            </Card>
+          </section>
+
+          {/* ── 3. Highlights & Reflections (iOS Multi-Widget Grid with Apple HIG Material) ── */}
+          <section aria-labelledby="section-highlights" className="space-y-2">
+            <div className="flex items-center justify-between px-1">
+              <h2
+                id="section-highlights"
+                className="text-[11px] font-bold tracking-wider text-[#7a776a] uppercase sm:text-xs"
+              >
+                Today&apos;s Highlights
+              </h2>
+            </div>
+            <div className="grid grid-cols-1 items-stretch gap-4 sm:gap-6 md:grid-cols-2">
+              {/* Upcoming Event Widget with Apple HIG Material Regular */}
+              <Card
+                variant="material-regular"
+                aria-labelledby="upcoming-event-heading"
+                className="relative flex h-full flex-col justify-between overflow-hidden rounded-[28px] p-5 shadow-lg ring-1 ring-black/[0.03] sm:p-6"
+              >
+                {/* Decorative background watermark */}
+                <CalendarIcon className="pointer-events-none absolute -right-3 -bottom-3 size-24 rotate-12 text-[#e8b94a]/10" />
+
+                <div className="relative z-10 flex flex-1 flex-col">
+                  {/* Header: Title + HIG Circular Chevron Disclosure Button */}
+                  <div className="mb-4 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2.5">
+                      <span className="flex size-9 shrink-0 items-center justify-center rounded-[12px] bg-[#0a0a0a] text-[#e8b94a] shadow-xs">
+                        <CalendarIcon className="size-4.5" />
+                      </span>
+                      <div className="min-w-0">
+                        <h3
+                          id="upcoming-event-heading"
+                          className="truncate text-sm font-bold text-[#0a0a0a]"
+                        >
+                          Upcoming Event
+                        </h3>
+                        <p className="text-[11px] text-[#7a776a]">
+                          Temple Schedule
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Apple HIG Chevron Action */}
+                    <Link
+                      to={
+                        `/events${nextEvent ? `?eventId=${nextEvent.id}` : ""}` as "/"
+                      }
+                      aria-label={
+                        nextEvent
+                          ? `View ${nextEvent.title}`
+                          : "View full schedule"
+                      }
+                      title={
+                        nextEvent
+                          ? `View ${nextEvent.title}`
+                          : "View full schedule"
+                      }
+                      className="group flex size-9 items-center justify-center rounded-full border border-black/[0.06] bg-black/[0.03] text-[#7a776a] backdrop-blur-md transition-all hover:border-black/15 hover:bg-black/[0.06] hover:text-[#0a0a0a] active:scale-90"
+                    >
+                      <ChevronRightIcon className="size-4.5 transition-transform group-hover:translate-x-0.5" />
+                    </Link>
+                  </div>
+
+                  {/* Inner Status Card with Apple HIG Material Thin (Layered Material) */}
+                  <Card
+                    variant="material-thin"
+                    className="flex min-h-[130px] flex-1 flex-col justify-center rounded-[20px] p-4.5 shadow-xs sm:min-h-[145px]"
+                  >
+                    {nextEvent ? (
+                      <Link
+                        to={`/events?eventId=${nextEvent.id}` as "/"}
+                        className="group flex flex-col justify-between gap-3 text-left transition-opacity hover:opacity-90 sm:flex-row sm:items-center"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Badge
+                              variant="emerald"
+                              glass
+                              size="sm"
+                              className="gap-1.5 rounded-full px-2.5 py-0.5 font-semibold"
+                            >
+                              <span className="size-1.5 animate-ping rounded-full bg-emerald-500" />
+                              Next Event
+                            </Badge>
+                          </div>
+                          <h4 className="mt-2 text-base font-bold text-[#0a0a0a] transition-colors group-hover:text-black sm:text-lg">
+                            {nextEvent.title}
+                          </h4>
+                          <div className="mt-1.5 flex flex-wrap items-center gap-3 text-xs text-[#7a776a]">
+                            <span className="flex items-center gap-1">
+                              <CalendarIcon className="size-3.5 text-[#1a3a3a]" />
+                              {formatEventDate(nextEvent.event_date)}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <MapPinIcon className="size-3.5 text-rose-600" />
+                              {nextEvent.location}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* View Event Button Indicator */}
+                        <div className="flex shrink-0 items-center gap-1 self-start sm:self-center">
+                          <span className="text-xs font-semibold text-[#1a3a3a] transition-all group-hover:underline">
+                            View Event
+                          </span>
+                          <span className="flex size-7 items-center justify-center rounded-full border border-black/[0.06] bg-black/[0.03] text-[#0a0a0a] transition-all group-hover:translate-x-0.5 group-hover:border-black/20 group-hover:bg-black/[0.08]">
+                            <ChevronRightIcon className="size-3.5 text-[#0a0a0a]" />
+                          </span>
+                        </div>
+                      </Link>
+                    ) : (
+                      <div className="flex flex-1 flex-col items-center justify-center py-6 text-center sm:py-8">
+                        <p className="text-xs font-medium text-[#7a776a] sm:text-sm">
+                          No upcoming events at the moment.
+                        </p>
+                      </div>
+                    )}
+                  </Card>
+                </div>
+              </Card>
+
+              {/* Dhamma Wisdom Widget */}
+              <div id="dhamma-wisdom-card" className="flex h-full flex-col">
+                <DhammaWidget />
+              </div>
+            </div>
+          </section>
         </div>
       </div>
 
-      {/* ── See More / All Menus Modal with Search ── */}
+      {/* ── See More / All Menus Modal with Search (iOS Sheet Style) ── */}
       <ResponsiveFormModal
         open={showAllMenusModal}
         onOpenChange={(open) => {
@@ -687,30 +778,32 @@ export function DashboardPage() {
         title="All Menus & Features"
         maxWidth="max-w-4xl"
       >
-        <div className="space-y-4 pt-1 font-sans">
+        <div className="space-y-4 pt-0 font-sans">
+          {/* iOS Sheet Grabber Handle */}
+          <div className="mx-auto -mt-1 mb-2 h-1.5 w-12 rounded-full bg-[#d5cfbe]" />
+
           {/* Search bar inside modal / drawer */}
-          <div className="relative">
-            <SearchIcon className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[#6a6a6a]" />
-            <input
-              type="text"
-              value={menuSearchQuery}
-              onChange={(e) => setMenuSearchQuery(e.target.value)}
-              placeholder="Cari menu atau fitur..."
-              aria-label="Search menus and features"
-              autoFocus
-              className="w-full rounded-[14px] border border-[#e5e5e5] bg-[#fffaf0] py-2.5 pr-9 pl-10 text-xs text-[#0a0a0a] shadow-2xs transition-all placeholder:text-[#6a6a6a] focus:border-[#0a0a0a] focus:bg-white focus:ring-1 focus:ring-[#0a0a0a] focus:outline-none sm:text-sm"
-            />
-            {menuSearchQuery && (
-              <button
-                type="button"
-                onClick={() => setMenuSearchQuery("")}
-                className="absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer p-1 text-[#6a6a6a] hover:text-[#0a0a0a]"
-                aria-label="Clear search"
-              >
-                <XIcon className="size-3.5" />
-              </button>
-            )}
-          </div>
+          <Input
+            value={menuSearchQuery}
+            onChange={(e) => setMenuSearchQuery(e.target.value)}
+            placeholder="Search features or menus..."
+            aria-label="Search menus and features"
+            autoFocus
+            className="rounded-[14px]"
+            startIcon={<SearchIcon className="size-4 text-[#7a776a]" />}
+            endIcon={
+              menuSearchQuery ? (
+                <button
+                  type="button"
+                  onClick={() => setMenuSearchQuery("")}
+                  className="cursor-pointer p-0.5 text-[#7a776a] hover:text-[#0a0a0a]"
+                  aria-label="Clear search"
+                >
+                  <XIcon className="size-3.5" />
+                </button>
+              ) : undefined
+            }
+          />
 
           {/* Categorized and filtered items container */}
           <div className="max-h-[65vh] space-y-5 overflow-y-auto pr-1">
@@ -719,14 +812,14 @@ export function DashboardPage() {
                 <p className="text-sm font-semibold text-[#0a0a0a]">
                   No features found
                 </p>
-                <p className="text-xs text-[#6a6a6a]">
+                <p className="text-xs text-[#7a776a]">
                   No menus matching &quot;{menuSearchQuery}&quot;.
                 </p>
               </div>
             ) : (
               filteredModalSections.map((section) => (
                 <div key={section.category} className="space-y-2">
-                  <h4 className="px-1 text-[11px] font-bold tracking-wider text-[#6a6a6a] uppercase">
+                  <h4 className="px-1 text-[11px] font-bold tracking-wider text-[#7a776a] uppercase">
                     {section.category}
                   </h4>
                   <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-2.5 lg:grid-cols-3">
@@ -740,10 +833,11 @@ export function DashboardPage() {
                             <Icon className="size-4.5 sm:size-5" />
                           </div>
                           <div className="min-w-0 flex-1">
-                            <span className="block truncate text-xs font-bold text-[#0a0a0a] group-hover:text-black sm:text-sm">
+                            <span className="block truncate text-xs font-semibold text-[#0a0a0a] group-hover:text-black sm:text-sm">
                               {item.label}
                             </span>
                           </div>
+                          <ChevronRightIcon className="size-4 shrink-0 text-[#a09c8e] transition-transform group-hover:translate-x-0.5" />
                         </>
                       )
 
@@ -759,7 +853,7 @@ export function DashboardPage() {
                               setShowAllMenusModal(false)
                               ;(item as any).onClick()
                             }}
-                            className="group flex w-full cursor-pointer items-center gap-3 rounded-[14px] border border-[#e5e5e5] bg-[#faf5e8] px-3 py-2.5 text-left transition-all hover:border-[#0a0a0a]/20 hover:bg-[#f5f0e0]"
+                            className="group flex w-full cursor-pointer items-center gap-3 rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] px-3.5 py-3 text-left transition-all hover:border-[#0a0a0a]/20 hover:bg-[#f5f0e0] active:scale-[0.98]"
                           >
                             {content}
                           </button>
@@ -771,7 +865,7 @@ export function DashboardPage() {
                           key={item.id}
                           to={item.href as "/"}
                           onClick={() => setShowAllMenusModal(false)}
-                          className="group flex cursor-pointer items-center gap-3 rounded-[14px] border border-[#e5e5e5] bg-[#faf5e8] px-3 py-2.5 text-left transition-all hover:border-[#0a0a0a]/20 hover:bg-[#f5f0e0]"
+                          className="group flex cursor-pointer items-center gap-3 rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] px-3.5 py-3 text-left transition-all hover:border-[#0a0a0a]/20 hover:bg-[#f5f0e0] active:scale-[0.98]"
                         >
                           {content}
                         </Link>
@@ -785,23 +879,26 @@ export function DashboardPage() {
         </div>
       </ResponsiveFormModal>
 
-      {/* ── User Unique QR Code Modal ── */}
+      {/* ── User Unique QR Code Modal (iOS Alert Style with Apple HIG Material) ── */}
       {showQrModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0a0a0a]/50 p-4 backdrop-blur-xs">
-          <div className="w-full max-w-sm animate-in rounded-[24px] border border-[#e5e5e5] bg-[#fffaf0] p-5 text-center shadow-2xl zoom-in-95 fade-in sm:p-6">
-            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-[16px] bg-[#1a3a3a] text-white shadow-xs">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-md">
+          <Card
+            variant="material-regular"
+            className="w-full max-w-sm animate-in rounded-[28px] p-6 text-center shadow-2xl ring-1 ring-black/[0.05] zoom-in-95 fade-in"
+          >
+            <div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-[16px] bg-[#1a3a3a] text-white shadow-xs">
               <QrCodeIcon className="size-6" />
             </div>
-            <h3 className="text-base font-bold text-[#0a0a0a]">
+            <h3 className="text-base font-bold tracking-tight text-[#0a0a0a]">
               Your Attendance QR
             </h3>
-            <p className="mt-1 text-xs leading-relaxed text-[#6a6a6a]">
+            <p className="mt-1 text-xs leading-relaxed text-[#7a776a]">
               Show this QR Code to the Event Organizer at Vihara Tri Maha
               Dharma.
             </p>
 
             {/* Dynamic QR Code Graphic */}
-            <div className="mx-auto my-4 flex h-48 w-48 items-center justify-center rounded-[20px] border-2 border-[#1a3a3a]/20 bg-white p-3 shadow-xs">
+            <div className="mx-auto my-4 flex size-48 items-center justify-center rounded-[20px] border-2 border-[#1a3a3a]/15 bg-white p-3 shadow-xs">
               <div className="w-full text-center">
                 <div className="flex items-center justify-center bg-white p-1">
                   <QRCode
@@ -817,14 +914,15 @@ export function DashboardPage() {
               </div>
             </div>
 
-            <button
+            <Button
               type="button"
+              variant="primary"
               onClick={() => setShowQrModal(false)}
-              className="w-full cursor-pointer rounded-[12px] bg-[#0a0a0a] py-2.5 text-xs font-bold text-white shadow-xs transition-all hover:bg-[#1f1f1f]"
+              className="min-h-[44px] w-full rounded-full text-sm font-semibold active:scale-[0.98]"
             >
               Close
-            </button>
-          </div>
+            </Button>
+          </Card>
         </div>
       )}
     </main>

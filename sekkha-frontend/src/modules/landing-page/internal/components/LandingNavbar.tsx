@@ -380,7 +380,7 @@ export function LandingNavbar({ authState, scrollY }: LandingNavbarProps) {
     <header
       className={cn(
         "sticky top-0 z-50 h-16 bg-sekkha-canvas transition-all duration-300",
-        isScrolledPastNavbar && "glass-nav bg-white/80 backdrop-blur-md",
+        isScrolledPastNavbar && "material-thin border-b border-white/50",
         hasScrolled && "border-b border-sekkha-hairline shadow-sm"
       )}
     >

@@ -16,6 +16,7 @@ interface LandingFooterProps {
 
 /**
  * Landing Footer — bottom section of the Sekkha landing page.
+ * Apple HIG: Uses warm cream footer per DESIGN.md (not dark footer).
  * @requirements 7.1–7.7
  */
 export function LandingFooter({ navColumns }: LandingFooterProps) {
@@ -25,7 +26,7 @@ export function LandingFooter({ navColumns }: LandingFooterProps) {
       className="w-full border-t border-sekkha-hairline bg-sekkha-surface py-16 text-sekkha-ink md:py-20"
     >
       <div className="mx-auto w-full max-w-[1280px] px-4 md:px-8">
-        {/* Top area */}
+        {/* Top area - 8pt grid spacing */}
         <motion.div
           className="flex flex-col gap-10 md:flex-row md:justify-between"
           initial={{ opacity: 0, y: 20 }}
@@ -49,7 +50,7 @@ export function LandingFooter({ navColumns }: LandingFooterProps) {
             </p>
           </div>
 
-          {/* Nav columns */}
+          {/* Nav columns - 8pt grid */}
           <div className="grid grid-cols-2 gap-8 sm:grid-cols-3 md:gap-16">
             {navColumns.map((column) => (
               <div key={column.heading} className="flex flex-col gap-3.5">
@@ -73,7 +74,7 @@ export function LandingFooter({ navColumns }: LandingFooterProps) {
           </div>
         </motion.div>
 
-        {/* Divider + copyright */}
+        {/* Divider + copyright - 8pt grid spacing */}
         <div className="mt-14 flex flex-col items-start justify-between gap-4 border-t border-sekkha-hairline pt-8 md:flex-row md:items-center">
           <p className="text-micro text-sekkha-slate">
             © {new Date().getFullYear()} Vihara Tri Maha Dharma — Sekkha. All

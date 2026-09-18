@@ -6,8 +6,8 @@ interface AuthLayoutProps {
 
 /**
  * Clay-themed responsive layout wrapper for Sign Up and Login pages.
- * Strictly adheres to DESIGN.md: warm cream canvas floor (#fffaf0),
- * solid near-black brand header with Sekkha logo, and rounded-xl card container.
+ * Apple HIG + DESIGN.md: warm cream canvas floor (#fffaf0),
+ * Apple HIG Material Thick for card container, Clay brand colors.
  */
 export function AuthLayout({ children }: AuthLayoutProps) {
   return (
@@ -39,8 +39,8 @@ export function AuthLayout({ children }: AuthLayoutProps) {
           </div>
         </div>
 
-        {/* Card Container strictly following Clay Card token */}
-        <div className="rounded-[24px] border border-[#e5e5e5] bg-[#ffffff] p-6 shadow-xl shadow-[#0a0a0a]/5 transition-all sm:p-8">
+        {/* Card Container - Apple HIG Material Thick */}
+        <div className="rounded-[28px] border border-white/70 bg-white/90 p-6 shadow-[0_2px_6px_rgba(0,0,0,0.06),0_8px_16px_-4px_rgba(0,0,0,0.04)] ring-1 ring-black/[0.02] backdrop-blur-[40px] transition-all sm:p-8">
           {children}
         </div>
       </div>

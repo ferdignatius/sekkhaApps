@@ -1,4 +1,4 @@
-// feature/dashboard/components/LatestActivityCard
+// feature/home/components/LatestActivityCard
 // Shows the user's recent attendance history.
 // Data shape: GET /users/me/attendances
 

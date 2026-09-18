@@ -7,7 +7,7 @@
 // Import definisi publik dari setiap modul.
 // Menambah modul baru = buat folder + import di sini.
 
-import { dashboardModule } from "@/modules/dashboard"
+import { homeModule } from "@/modules/home"
 import { eventsModule } from "@/modules/events"
 import { leaderboardModule } from "@/modules/leaderboard"
 import { profileModule } from "@/modules/profile"
@@ -57,7 +57,7 @@ export interface ConfigureItem {
  * Urutan = urutan tampil di sidebar.
  */
 export const activeModules: ModuleDefinition[] = [
-  dashboardModule,
+  homeModule,
   eventsModule,
   leaderboardModule,
   profileModule,

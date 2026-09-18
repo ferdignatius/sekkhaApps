@@ -13,7 +13,7 @@ routes/
 ├── forgot-password.tsx        ← "/forgot-password"
 └── _authenticated/            ← layout group: butuh sesi aktif
     ├── _authenticated.tsx     ← layout (sidebar + outlet)
-    ├── home.tsx               ← "/home" → DashboardPage
+    ├── home.tsx               ← "/home" → HomePage
     ├── events.tsx             ← "/events" → EventsPage
     ├── ...                    ← route lain sesuai modul
 ```

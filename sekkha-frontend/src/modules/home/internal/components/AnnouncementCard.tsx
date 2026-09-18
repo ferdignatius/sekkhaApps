@@ -1,4 +1,4 @@
-// feature/dashboard/components/AnnouncementCard
+// feature/home/components/AnnouncementCard
 // Displays announcement items with Clay design system styling.
 
 import { MegaphoneIcon } from "lucide-react"

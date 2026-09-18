@@ -1,4 +1,4 @@
-// feature/dashboard/components/ProfileSummaryCard
+// feature/home/components/ProfileSummaryCard
 // Profile summary card: avatar/initials, name, tiered flame streak, total points.
 // Flame tier escalates at 4 / 8 / 12+ streaks — icon grows and changes color.
 

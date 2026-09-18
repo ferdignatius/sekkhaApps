@@ -74,11 +74,11 @@ export async function routeGuardBeforeLoad(
 
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
 
-function DashboardSkeleton() {
+function AuthenticatedSkeleton() {
   return (
     <div
       aria-busy="true"
-      aria-label="Memuat dashboard..."
+      aria-label="Memuat..."
       className="flex min-h-screen animate-pulse bg-sekkha-surface"
     >
       <div className="hidden w-64 shrink-0 border-r border-sekkha-hairline-soft bg-sekkha-canvas md:block" />
@@ -97,11 +97,11 @@ export const Route = createFileRoute("/_authenticated")({
   beforeLoad: async ({ context, location }) => {
     await routeGuardBeforeLoad(context as RouterContext, location.href)
   },
-  pendingComponent: DashboardSkeleton,
-  component: DashboardLayout,
+  pendingComponent: AuthenticatedSkeleton,
+  component: AuthenticatedLayout,
 })
 
-function DashboardLayout() {
+function AuthenticatedLayout() {
   const { location } = useRouterState()
   const isImmersivePage =
     location.pathname.includes("/scan") ||

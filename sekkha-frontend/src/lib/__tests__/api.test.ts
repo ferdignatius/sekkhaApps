@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
-import { api, apiFetch, clearApiCache } from "../api"
+import { api, clearApiCache } from "../api"
 
 describe("api client deduplication and caching", () => {
   beforeEach(() => {

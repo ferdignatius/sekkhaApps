@@ -12,7 +12,7 @@ import { AuthForm } from "./AuthForm"
 /**
  * Login page rendered at route `/login`.
  *
- * - Redirects to `/dashboard` if already authenticated (req 2.8)
+ * - Redirects to `/home` if already authenticated (req 2.8)
  * - Uses AuthLayout for responsive card centering (req 2.9)
  * - Displays app heading "Sekkha" above the card (req 2.10)
  * - Delegates form state to useLoginForm (req 2.11–2.13)

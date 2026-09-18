@@ -7,7 +7,7 @@ Setiap modul adalah fitur independen dengan **kontrak publik yang sempit** lewat
 | Modul | Path | Ekspos Utama | Status |
 |-------|------|--------------|--------|
 | `auth` | `auth/` | Login, register, sesi | Aktif |
-| `dashboard` | `dashboard/` | `DashboardPage` (Home) | Aktif |
+| `home` | `home/` | `HomePage` | Aktif |
 | `events` | `events/` | Kalender, RSVP, attendance | Aktif |
 | `leaderboard` | `leaderboard/` | Ranking, podium, streak | Aktif |
 | `profile` | `profile/` | Stats, badge, attendance tracker | Aktif |
@@ -36,7 +36,7 @@ modules/<nama>/
 
 1. **`internal/` benar-benar privat.** Modul lain TIDAK BOLEH import dari sini. Konvensi dijaga lewat `eslint-plugin-boundaries` (atau disiplin PR review).
 2. **`index.ts` adalah satu-satunya pintu.** Ekspos:
-   - Komponen publik (mis. `DashboardPage`)
+   - Komponen publik (mis. `HomePage`)
    - `ModuleDefinition` (untuk Shell)
    - Hook publik (kalau memang reusable)
 3. **Modul BUKAN tahu modul lain.** Cross-module frontend lewat:

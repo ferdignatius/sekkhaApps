@@ -20,7 +20,7 @@ import { z } from "zod"
 
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
 import { ResponsiveFormModal } from "@/components/common/ResponsiveFormModal"
-import { Button, Chip, Card, Badge } from "@/components/base"
+import { Button, Chip, Card, Badge, ConfirmDialog } from "@/components/base"
 import { EventCalendar } from "@/components/ui/EventCalendar"
 import type { EventDotItem } from "@/components/ui/EventCalendar"
 import { useDebounce } from "@/hooks/useDebounce"
@@ -128,6 +128,8 @@ export function EventsPage() {
   const categoryDropdownRef = useRef<HTMLDivElement>(null)
   const [monthPickerOpen, setMonthPickerOpen] = useState(false)
   const [pickerYear, setPickerYear] = useState<number>(new Date().getFullYear())
+  const [deleteEventTarget, setDeleteEventTarget] = useState<EventListItem | null>(null)
+  const [deletingEvent, setDeletingEvent] = useState(false)
   const monthPickerRef = useRef<HTMLDivElement>(null)
 
   // Dynamic Accessible Categories for logged in User Role
@@ -401,24 +403,7 @@ export function EventsPage() {
               }
               onDelete={
                 isPengurus
-                  ? async (ev) => {
-                      if (
-                        !window.confirm(
-                          `Are you sure you want to delete "${ev.title}"?`
-                        )
-                      )
-                        return
-                      try {
-                        await api.delete(`/events/${ev.id}`)
-                        setEvents((prev) =>
-                          prev.filter((e) => e.id !== ev.id)
-                        )
-                        handleCloseDetail()
-                      } catch (err) {
-                        console.error("Failed to delete event:", err)
-                        alert("Failed to delete event from server.")
-                      }
-                    }
+                  ? (ev) => setDeleteEventTarget(ev)
                   : undefined
               }
               onDuplicate={
@@ -518,6 +503,38 @@ export function EventsPage() {
             }}
           />
         </ResponsiveFormModal>
+
+        {/* Delete Event Confirmation Dialog */}
+        <ConfirmDialog
+          open={Boolean(deleteEventTarget)}
+          onOpenChange={(open) => !open && setDeleteEventTarget(null)}
+          title="Hapus Acara Ini?"
+          description={
+            deleteEventTarget
+              ? `Apakah Anda yakin ingin menghapus "${deleteEventTarget.title}"? Seluruh data presensi dan riwayat acara ini akan dihapus secara permanen.`
+              : ""
+          }
+          confirmLabel={deletingEvent ? "Menghapus..." : "Ya, Hapus Acara"}
+          cancelLabel="Batal"
+          variant="destructive"
+          isLoading={deletingEvent}
+          onConfirm={async () => {
+            if (!deleteEventTarget) return
+            try {
+              setDeletingEvent(true)
+              await api.delete(`/events/${deleteEventTarget.id}`)
+              setEvents((prev) =>
+                prev.filter((e) => e.id !== deleteEventTarget.id)
+              )
+              setDeleteEventTarget(null)
+              handleCloseDetail()
+            } catch (err) {
+              console.error("Failed to delete event:", err)
+            } finally {
+              setDeletingEvent(false)
+            }
+          }}
+        />
       </main>
     )
   }

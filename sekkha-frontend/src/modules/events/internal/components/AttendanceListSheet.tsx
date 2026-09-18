@@ -22,6 +22,7 @@ import {
 } from "lucide-react"
 import type { AttendanceRecord, UserRole, AttendanceBadge } from "../types"
 import { getMasterBadges } from "../masterdata"
+import { ConfirmDialog } from "@/components/base/AlertDialog"
 
 interface AttendanceListSheetProps {
   records: AttendanceRecord[]
@@ -60,6 +61,7 @@ export function AttendanceListSheet({
 
   const [localRecords, setLocalRecords] = useState<AttendanceRecord[]>(records)
   const [activePickerUser, setActivePickerUser] = useState<string | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<AttendanceRecord | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [filterMethod, setFilterMethod] = useState<"all" | "qr" | "manual">(
     "all"
@@ -446,15 +448,7 @@ export function AttendanceListSheet({
 
                           <button
                             type="button"
-                            onClick={() => {
-                              if (
-                                window.confirm(
-                                  `Hapus presensi ${rec.name} dari daftar?`
-                                )
-                              ) {
-                                handleRemoveUser(rec.user_id)
-                              }
-                            }}
+                            onClick={() => setDeleteTarget(rec)}
                             className="inline-flex min-h-[34px] cursor-pointer items-center justify-center rounded-full border border-[#e5e5e5] bg-[#fffaf0] px-2.5 py-1 text-[#6a6a6a] shadow-2xs transition-all hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700 active:scale-95"
                             title="Hapus presensi"
                           >
@@ -661,6 +655,27 @@ export function AttendanceListSheet({
           </div>
         </div>
       )}
+
+      {/* ── 6. Apple HIG Confirmation Dialog for Attendee Deletion ── */}
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title="Hapus Presensi Peserta?"
+        description={
+          deleteTarget
+            ? `Apakah Anda yakin ingin menghapus ${deleteTarget.name} dari daftar presensi acara ini? Perolehan poin seva sebesar ${(deleteTarget.base_points ?? 50) + (deleteTarget.badges ?? []).reduce((acc, b) => acc + b.points, 0)} Pts akan dibatalkan.`
+            : ""
+        }
+        confirmLabel="Ya, Hapus Presensi"
+        cancelLabel="Batal"
+        variant="destructive"
+        onConfirm={() => {
+          if (deleteTarget) {
+            handleRemoveUser(deleteTarget.user_id)
+            setDeleteTarget(null)
+          }
+        }}
+      />
     </div>
   )
 }

@@ -61,9 +61,9 @@ export function AttendanceListSheet({
   const [localRecords, setLocalRecords] = useState<AttendanceRecord[]>(records)
   const [activePickerUser, setActivePickerUser] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
-  const [filterMethod, setFilterMethod] = useState<
-    "all" | "qr" | "manual" | "badges"
-  >("all")
+  const [filterMethod, setFilterMethod] = useState<"all" | "qr" | "manual">(
+    "all"
+  )
   const [currentPage, setCurrentPage] = useState(1)
 
   useEffect(() => {
@@ -139,8 +139,6 @@ export function AttendanceListSheet({
     return displayRecords.filter((rec) => {
       if (filterMethod === "qr" && rec.method !== "qr") return false
       if (filterMethod === "manual" && rec.method !== "manual") return false
-      if (filterMethod === "badges" && (!rec.badges || rec.badges.length === 0))
-        return false
 
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim()
@@ -298,19 +296,6 @@ export function AttendanceListSheet({
               }`}
             >
               Manual ({metrics.manual})
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setFilterMethod("badges")}
-              className={`inline-flex min-h-[34px] cursor-pointer items-center gap-1 rounded-full px-3 py-1 text-xs font-bold transition-all ${
-                filterMethod === "badges"
-                  ? "bg-[#0a0a0a] text-white shadow-xs"
-                  : "border border-[#e5e5e5] bg-[#faf5e8] text-[#6a6a6a] hover:text-[#0a0a0a]"
-              }`}
-            >
-              <SparklesIcon className="size-3 text-[#e8b94a]" />
-              <span>Ada Badge</span>
             </button>
           </div>
         </div>

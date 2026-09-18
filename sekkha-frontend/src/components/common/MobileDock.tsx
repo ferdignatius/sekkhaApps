@@ -32,7 +32,7 @@ export function MobileDock() {
       isActive: pathname.startsWith("/events"),
     },
     {
-      label: "Ranking",
+      label: "Leaderboard",
       to: "/leaderboard" as const,
       icon: TrophyIcon,
       isActive: pathname.startsWith("/leaderboard"),

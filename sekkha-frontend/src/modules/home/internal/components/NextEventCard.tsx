@@ -1,4 +1,4 @@
-// feature/dashboard/components/NextEventCard
+// feature/home/components/NextEventCard
 // Shows the next upcoming event with direct action link.
 
 import { CalendarIcon, MapPinIcon } from "lucide-react"

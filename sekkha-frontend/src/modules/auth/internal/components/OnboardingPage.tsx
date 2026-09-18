@@ -899,7 +899,7 @@ export function OnboardingPage() {
                 onClick={handleFinish}
                 className="flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-[12px] bg-[#0a0a0a] text-sm font-semibold text-white shadow-xs transition-all hover:bg-[#1f1f1f]"
               >
-                <span>Masuk ke Dashboard Sekkha</span>
+                <span>Masuk ke Home</span>
                 <ArrowRightIcon className="ml-1 size-4" />
               </button>
             </div>

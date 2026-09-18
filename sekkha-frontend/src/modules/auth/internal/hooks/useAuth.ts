@@ -31,7 +31,12 @@ export interface UseAuthReturn {
   logout: () => void
   initiateGoogleOAuth: () => void
   updateUser: (
-    user: Partial<{ name: string | null; role: UserRole; email: string | null }>
+    user: Partial<{
+      userId: string | null
+      name: string | null
+      role: UserRole
+      email: string | null
+    }>
   ) => void
   refreshUser: () => Promise<void>
 }

@@ -66,26 +66,26 @@ describe("MobileDock", () => {
       "Home",
       "Events",
       "Leaderboard",
-      "Community",
+      "People",
       "Profile",
     ])
     expect(links.map((link) => link.getAttribute("href"))).toEqual([
       "/home",
       "/events",
       "/leaderboard",
-      "/teams",
+      "/people",
       "/home/profile",
     ])
   })
 
-  it("hides Community (/teams) when user role is 'umat' (matching sidebar)", () => {
+  it("hides People (/people) when user role is 'umat' (matching sidebar)", () => {
     renderDock("umat")
 
     const links = screen.getAllByRole("link")
     const labels = links.map((link) => link.textContent?.trim())
 
     expect(labels).toEqual(["Home", "Events", "Leaderboard", "Profile"])
-    expect(screen.queryByText("Community")).toBeNull()
+    expect(screen.queryByText("People")).toBeNull()
   })
 
   it("sets aria-current='page' on the active route", () => {

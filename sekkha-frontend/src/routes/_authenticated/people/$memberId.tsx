@@ -5,7 +5,7 @@ import {
 } from "@tanstack/react-router"
 import { GenericSkeleton } from "@/components/common/PageSkeletons"
 
-export const Route = createFileRoute("/_authenticated/teams/$memberId")({
+export const Route = createFileRoute("/_authenticated/people/$memberId")({
   beforeLoad: ({ context }) => {
     const role = (context as any).authState?.role
     if (!role || role === "umat") {
@@ -13,7 +13,7 @@ export const Route = createFileRoute("/_authenticated/teams/$memberId")({
     }
   },
   component: lazyRouteComponent(() =>
-    import("@/modules/teams").then((m) => ({ default: m.MemberDetailPage }))
+    import("@/modules/people").then((m) => ({ default: m.MemberDetailPage }))
   ),
   pendingComponent: GenericSkeleton,
 })

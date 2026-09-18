@@ -13,7 +13,7 @@ import { leaderboardModule } from "@/modules/leaderboard"
 import { profileModule } from "@/modules/profile"
 import { configureModule } from "@/modules/configure"
 import { pengurusModule } from "@/modules/pengurus"
-import { teamsModule } from "@/modules/teams"
+import { peopleModule } from "@/modules/people"
 import { notificationsModule } from "@/modules/notifications"
 
 export interface ModuleDefinition {
@@ -63,6 +63,6 @@ export const activeModules: ModuleDefinition[] = [
   profileModule,
   notificationsModule,
   configureModule,
-  teamsModule,
+  peopleModule,
   pengurusModule,
 ]

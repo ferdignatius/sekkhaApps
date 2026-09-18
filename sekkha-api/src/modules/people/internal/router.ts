@@ -11,7 +11,7 @@ import { generateUniqueUserNumber } from "../../../lib/userNumber"
 import { encrypt, decrypt, generateBlindIndex } from "../../../lib/crypto"
 import { auditLogger } from "../../../lib/auditLogger"
 
-export const teamsRouter: Router = Router()
+export const peopleRouter: Router = Router()
 
 // Helper: Generate high-entropy default password using CSPRNG (e.g. Sekkha-7f8a1b2c3d4e-Puggala)
 export function generateDefaultPassword(): string {
@@ -19,8 +19,8 @@ export function generateDefaultPassword(): string {
   return `Sekkha-${randHex}-Puggala`
 }
 
-// 1. GET /api/teams/members — List all members with filtering (pengurus/admin only)
-teamsRouter.get("/members", requireAuth, requireRole("pengurus", "admin"), async (req, res, next) => {
+// 1. GET /api/people/members — List all members with filtering (pengurus/admin only)
+peopleRouter.get("/members", requireAuth, requireRole("pengurus", "admin"), async (req, res, next) => {
   try {
     const isPrivileged = req.user?.role === "pengurus" || req.user?.role === "admin"
     const searchQuery = ((req.query.search as string) || "").toLowerCase().trim()
@@ -151,7 +151,7 @@ teamsRouter.get("/members", requireAuth, requireRole("pengurus", "admin"), async
 })
 
 // 2. GET /api/teams/members/:id — Get member detail (pengurus/admin only)
-teamsRouter.get("/members/:id", requireAuth, requireRole("pengurus", "admin"), async (req, res, next) => {
+peopleRouter.get("/members/:id", requireAuth, requireRole("pengurus", "admin"), async (req, res, next) => {
   try {
     const isPrivileged = req.user?.role === "pengurus" || req.user?.role === "admin"
     const isSelf = req.user?.userId === req.params.id
@@ -253,7 +253,7 @@ const CreateMemberSchema = z.object({
   default_password: z.string().min(8).max(128).optional(),
 })
 
-teamsRouter.post("/members", requireAuth, requireRole("admin"), async (req, res, next) => {
+peopleRouter.post("/members", requireAuth, requireRole("admin"), async (req, res, next) => {
   try {
     const data = CreateMemberSchema.parse(req.body)
 
@@ -407,7 +407,7 @@ const UpdateMemberSchema = z.object({
   role: z.enum(["umat", "aktivis", "pengurus", "admin"]).optional(),
 })
 
-teamsRouter.put("/members/:id", requireAuth, requireRole("pengurus", "admin"), async (req, res, next) => {
+peopleRouter.put("/members/:id", requireAuth, requireRole("pengurus", "admin"), async (req, res, next) => {
   try {
     const id = req.params.id as string
     const data = UpdateMemberSchema.parse(req.body)
@@ -512,7 +512,7 @@ teamsRouter.put("/members/:id", requireAuth, requireRole("pengurus", "admin"), a
 })
 
 // 5. DELETE /api/teams/members/:id — Delete member
-teamsRouter.delete("/members/:id", requireAuth, requireRole("admin"), async (req, res, next) => {
+peopleRouter.delete("/members/:id", requireAuth, requireRole("admin"), async (req, res, next) => {
   try {
     const id = req.params.id as string
     const currentUserId = req.user!.userId
@@ -544,7 +544,7 @@ teamsRouter.delete("/members/:id", requireAuth, requireRole("admin"), async (req
 })
 
 // 6. POST /api/teams/members/:id/reset-password — Admin resets a member's password to default
-teamsRouter.post("/members/:id/reset-password", requireAuth, requireRole("admin"), async (req, res, next) => {
+peopleRouter.post("/members/:id/reset-password", requireAuth, requireRole("admin"), async (req, res, next) => {
   try {
     const id = req.params.id as string
     const targetUser = await prisma.user.findUnique({
@@ -617,7 +617,7 @@ teamsRouter.post("/members/:id/reset-password", requireAuth, requireRole("admin"
 })
 
 // 7. POST /api/teams/members/:id/generate-claim-pin — Generate secure claim PIN for pre-provisioned member (pengurus/admin)
-teamsRouter.post("/members/:id/generate-claim-pin", requireAuth, requireRole("pengurus", "admin"), async (req, res, next) => {
+peopleRouter.post("/members/:id/generate-claim-pin", requireAuth, requireRole("pengurus", "admin"), async (req, res, next) => {
   try {
     const id = req.params.id as string
     const targetUser = await prisma.user.findUnique({
@@ -674,7 +674,7 @@ const LinkLegacyAccountSchema = z.object({
   claim_pin: z.string().trim().min(6, "PIN aktivasi minimal 6 karakter").max(20),
 })
 
-teamsRouter.post("/link-legacy-account", requireAuth, async (req, res, next) => {
+peopleRouter.post("/link-legacy-account", requireAuth, async (req, res, next) => {
   try {
     const { user_number, claim_pin } = LinkLegacyAccountSchema.parse(req.body)
     const cleanPin = claim_pin.replace(/[^0-9]/g, "").trim()

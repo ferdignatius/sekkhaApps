@@ -25,8 +25,8 @@ import { Route as AuthenticatedHomeIndexRouteImport } from './routes/_authentica
 import { Route as AuthenticatedHomeAchievementsRouteImport } from './routes/_authenticated/home/achievements'
 import { Route as AuthenticatedHomeProfileRouteImport } from './routes/_authenticated/home/profile'
 import { Route as AuthenticatedLeaderboardIndexRouteImport } from './routes/_authenticated/leaderboard/index'
-import { Route as AuthenticatedTeamsIndexRouteImport } from './routes/_authenticated/teams/index'
-import { Route as AuthenticatedTeamsMemberIdRouteImport } from './routes/_authenticated/teams/$memberId'
+import { Route as AuthenticatedPeopleIndexRouteImport } from './routes/_authenticated/people/index'
+import { Route as AuthenticatedPeopleMemberIdRouteImport } from './routes/_authenticated/people/$memberId'
 import { Route as AuthenticatedConfigureEarlyWarningThresholdRouteImport } from './routes/_authenticated/configure/early-warning/threshold'
 import { Route as AuthenticatedConfigureMasterAchievementRouteImport } from './routes/_authenticated/configure/master/achievement'
 import { Route as AuthenticatedConfigureMasterAttendanceBadgeRouteImport } from './routes/_authenticated/configure/master/attendance-badge'
@@ -125,15 +125,16 @@ const AuthenticatedLeaderboardIndexRoute =
     path: '/leaderboard/',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
-const AuthenticatedTeamsIndexRoute = AuthenticatedTeamsIndexRouteImport.update({
-  id: '/teams/',
-  path: '/teams/',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
-const AuthenticatedTeamsMemberIdRoute =
-  AuthenticatedTeamsMemberIdRouteImport.update({
-    id: '/teams/$memberId',
-    path: '/teams/$memberId',
+const AuthenticatedPeopleIndexRoute =
+  AuthenticatedPeopleIndexRouteImport.update({
+    id: '/people/',
+    path: '/people/',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedPeopleMemberIdRoute =
+  AuthenticatedPeopleMemberIdRouteImport.update({
+    id: '/people/$memberId',
+    path: '/people/$memberId',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedConfigureEarlyWarningThresholdRoute =
@@ -216,11 +217,11 @@ export interface FileRoutesByFullPath {
   '/events/scan': typeof AuthenticatedEventsScanRoute
   '/home/achievements': typeof AuthenticatedHomeAchievementsRoute
   '/home/profile': typeof AuthenticatedHomeProfileRoute
-  '/teams/$memberId': typeof AuthenticatedTeamsMemberIdRoute
+  '/people/$memberId': typeof AuthenticatedPeopleMemberIdRoute
   '/events/': typeof AuthenticatedEventsIndexRoute
   '/home/': typeof AuthenticatedHomeIndexRoute
   '/leaderboard/': typeof AuthenticatedLeaderboardIndexRoute
-  '/teams/': typeof AuthenticatedTeamsIndexRoute
+  '/people/': typeof AuthenticatedPeopleIndexRoute
   '/configure/early-warning/threshold': typeof AuthenticatedConfigureEarlyWarningThresholdRoute
   '/configure/master/achievement': typeof AuthenticatedConfigureMasterAchievementRoute
   '/configure/master/attendance-badge': typeof AuthenticatedConfigureMasterAttendanceBadgeRoute
@@ -246,11 +247,11 @@ export interface FileRoutesByTo {
   '/events/scan': typeof AuthenticatedEventsScanRoute
   '/home/achievements': typeof AuthenticatedHomeAchievementsRoute
   '/home/profile': typeof AuthenticatedHomeProfileRoute
-  '/teams/$memberId': typeof AuthenticatedTeamsMemberIdRoute
+  '/people/$memberId': typeof AuthenticatedPeopleMemberIdRoute
   '/events': typeof AuthenticatedEventsIndexRoute
   '/home': typeof AuthenticatedHomeIndexRoute
   '/leaderboard': typeof AuthenticatedLeaderboardIndexRoute
-  '/teams': typeof AuthenticatedTeamsIndexRoute
+  '/people': typeof AuthenticatedPeopleIndexRoute
   '/configure/early-warning/threshold': typeof AuthenticatedConfigureEarlyWarningThresholdRoute
   '/configure/master/achievement': typeof AuthenticatedConfigureMasterAchievementRoute
   '/configure/master/attendance-badge': typeof AuthenticatedConfigureMasterAttendanceBadgeRoute
@@ -278,11 +279,11 @@ export interface FileRoutesById {
   '/_authenticated/events/scan': typeof AuthenticatedEventsScanRoute
   '/_authenticated/home/achievements': typeof AuthenticatedHomeAchievementsRoute
   '/_authenticated/home/profile': typeof AuthenticatedHomeProfileRoute
-  '/_authenticated/teams/$memberId': typeof AuthenticatedTeamsMemberIdRoute
+  '/_authenticated/people/$memberId': typeof AuthenticatedPeopleMemberIdRoute
   '/_authenticated/events/': typeof AuthenticatedEventsIndexRoute
   '/_authenticated/home/': typeof AuthenticatedHomeIndexRoute
   '/_authenticated/leaderboard/': typeof AuthenticatedLeaderboardIndexRoute
-  '/_authenticated/teams/': typeof AuthenticatedTeamsIndexRoute
+  '/_authenticated/people/': typeof AuthenticatedPeopleIndexRoute
   '/_authenticated/configure/early-warning/threshold': typeof AuthenticatedConfigureEarlyWarningThresholdRoute
   '/_authenticated/configure/master/achievement': typeof AuthenticatedConfigureMasterAchievementRoute
   '/_authenticated/configure/master/attendance-badge': typeof AuthenticatedConfigureMasterAttendanceBadgeRoute
@@ -310,11 +311,11 @@ export interface FileRouteTypes {
     | '/events/scan'
     | '/home/achievements'
     | '/home/profile'
-    | '/teams/$memberId'
+    | '/people/$memberId'
     | '/events/'
     | '/home/'
     | '/leaderboard/'
-    | '/teams/'
+    | '/people/'
     | '/configure/early-warning/threshold'
     | '/configure/master/achievement'
     | '/configure/master/attendance-badge'
@@ -340,11 +341,11 @@ export interface FileRouteTypes {
     | '/events/scan'
     | '/home/achievements'
     | '/home/profile'
-    | '/teams/$memberId'
+    | '/people/$memberId'
     | '/events'
     | '/home'
     | '/leaderboard'
-    | '/teams'
+    | '/people'
     | '/configure/early-warning/threshold'
     | '/configure/master/achievement'
     | '/configure/master/attendance-badge'
@@ -371,11 +372,11 @@ export interface FileRouteTypes {
     | '/_authenticated/events/scan'
     | '/_authenticated/home/achievements'
     | '/_authenticated/home/profile'
-    | '/_authenticated/teams/$memberId'
+    | '/_authenticated/people/$memberId'
     | '/_authenticated/events/'
     | '/_authenticated/home/'
     | '/_authenticated/leaderboard/'
-    | '/_authenticated/teams/'
+    | '/_authenticated/people/'
     | '/_authenticated/configure/early-warning/threshold'
     | '/_authenticated/configure/master/achievement'
     | '/_authenticated/configure/master/attendance-badge'
@@ -511,18 +512,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedLeaderboardIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/teams/': {
-      id: '/_authenticated/teams/'
-      path: '/teams'
-      fullPath: '/teams/'
-      preLoaderRoute: typeof AuthenticatedTeamsIndexRouteImport
+    '/_authenticated/people/': {
+      id: '/_authenticated/people/'
+      path: '/people'
+      fullPath: '/people/'
+      preLoaderRoute: typeof AuthenticatedPeopleIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/teams/$memberId': {
-      id: '/_authenticated/teams/$memberId'
-      path: '/teams/$memberId'
-      fullPath: '/teams/$memberId'
-      preLoaderRoute: typeof AuthenticatedTeamsMemberIdRouteImport
+    '/_authenticated/people/$memberId': {
+      id: '/_authenticated/people/$memberId'
+      path: '/people/$memberId'
+      fullPath: '/people/$memberId'
+      preLoaderRoute: typeof AuthenticatedPeopleMemberIdRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/configure/early-warning/threshold': {
@@ -614,11 +615,11 @@ interface AuthenticatedRouteChildren {
   AuthenticatedEventsScanRoute: typeof AuthenticatedEventsScanRoute
   AuthenticatedHomeAchievementsRoute: typeof AuthenticatedHomeAchievementsRoute
   AuthenticatedHomeProfileRoute: typeof AuthenticatedHomeProfileRoute
-  AuthenticatedTeamsMemberIdRoute: typeof AuthenticatedTeamsMemberIdRoute
+  AuthenticatedPeopleMemberIdRoute: typeof AuthenticatedPeopleMemberIdRoute
   AuthenticatedEventsIndexRoute: typeof AuthenticatedEventsIndexRoute
   AuthenticatedHomeIndexRoute: typeof AuthenticatedHomeIndexRoute
   AuthenticatedLeaderboardIndexRoute: typeof AuthenticatedLeaderboardIndexRoute
-  AuthenticatedTeamsIndexRoute: typeof AuthenticatedTeamsIndexRoute
+  AuthenticatedPeopleIndexRoute: typeof AuthenticatedPeopleIndexRoute
   AuthenticatedConfigureEarlyWarningThresholdRoute: typeof AuthenticatedConfigureEarlyWarningThresholdRoute
   AuthenticatedConfigureMasterAchievementRoute: typeof AuthenticatedConfigureMasterAchievementRoute
   AuthenticatedConfigureMasterAttendanceBadgeRoute: typeof AuthenticatedConfigureMasterAttendanceBadgeRoute
@@ -642,11 +643,11 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedEventsScanRoute: AuthenticatedEventsScanRoute,
   AuthenticatedHomeAchievementsRoute: AuthenticatedHomeAchievementsRoute,
   AuthenticatedHomeProfileRoute: AuthenticatedHomeProfileRoute,
-  AuthenticatedTeamsMemberIdRoute: AuthenticatedTeamsMemberIdRoute,
+  AuthenticatedPeopleMemberIdRoute: AuthenticatedPeopleMemberIdRoute,
   AuthenticatedEventsIndexRoute: AuthenticatedEventsIndexRoute,
   AuthenticatedHomeIndexRoute: AuthenticatedHomeIndexRoute,
   AuthenticatedLeaderboardIndexRoute: AuthenticatedLeaderboardIndexRoute,
-  AuthenticatedTeamsIndexRoute: AuthenticatedTeamsIndexRoute,
+  AuthenticatedPeopleIndexRoute: AuthenticatedPeopleIndexRoute,
   AuthenticatedConfigureEarlyWarningThresholdRoute:
     AuthenticatedConfigureEarlyWarningThresholdRoute,
   AuthenticatedConfigureMasterAchievementRoute:

@@ -86,7 +86,7 @@ export interface ListPaginatedMembersParams extends ListMembersParams {
   limit?: number
 }
 
-export const teamsApi = {
+export const peopleApi = {
   listMembers: ((
     params?: ListMembersParams & { page?: number; limit?: number }
   ) => {
@@ -103,25 +103,25 @@ export const teamsApi = {
     const qs = searchParams.toString()
     if (params?.page !== undefined || params?.limit !== undefined) {
       return api.get<PaginatedMembersResponse>(
-        `/teams/members${qs ? `?${qs}` : ""}`
+        `/people/members${qs ? `?${qs}` : ""}`
       )
     }
-    return api.get<MemberDto[]>(`/teams/members${qs ? `?${qs}` : ""}`)
+    return api.get<MemberDto[]>(`/people/members${qs ? `?${qs}` : ""}`)
   }) as {
     (params: ListPaginatedMembersParams): Promise<PaginatedMembersResponse>
     (params?: ListMembersParams): Promise<MemberDto[]>
   },
 
-  getMember: (id: string) => api.get<MemberDetailDto>(`/teams/members/${id}`),
+  getMember: (id: string) => api.get<MemberDetailDto>(`/people/members/${id}`),
 
   createMember: (data: CreateMemberPayload) =>
-    api.post<MemberDto>("/teams/members", data),
+    api.post<MemberDto>("/people/members", data),
 
   updateMember: (id: string, data: UpdateMemberPayload) =>
-    api.put<MemberDto>(`/teams/members/${id}`, data),
+    api.put<MemberDto>(`/people/members/${id}`, data),
 
   deleteMember: (id: string) =>
-    api.delete<{ success: boolean; message: string }>(`/teams/members/${id}`),
+    api.delete<{ success: boolean; message: string }>(`/people/members/${id}`),
 
   resetMemberPassword: (id: string) =>
     api.post<{
@@ -131,7 +131,7 @@ export const teamsApi = {
       name: string
       default_password: string
       message: string
-    }>(`/teams/members/${id}/reset-password`),
+    }>(`/people/members/${id}/reset-password`),
 
   changePassword: (data: { current_password: string; new_password: string }) =>
     api.post<{ success: boolean; message: string }>(

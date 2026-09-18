@@ -3,9 +3,9 @@ import {
   lazyRouteComponent,
   redirect,
 } from "@tanstack/react-router"
-import { GenericSkeleton } from "@/components/common/PageSkeletons"
+import { PeopleSkeleton } from "@/components/common/PageSkeletons"
 
-export const Route = createFileRoute("/_authenticated/teams/")({
+export const Route = createFileRoute("/_authenticated/people/")({
   beforeLoad: ({ context }) => {
     const role = (context as any).authState?.role
     if (!role || role === "umat") {
@@ -13,7 +13,7 @@ export const Route = createFileRoute("/_authenticated/teams/")({
     }
   },
   component: lazyRouteComponent(() =>
-    import("@/modules/teams").then((m) => ({ default: m.TeamsPage }))
+    import("@/modules/people").then((m) => ({ default: m.PeoplePage }))
   ),
-  pendingComponent: GenericSkeleton,
+  pendingComponent: PeopleSkeleton,
 })

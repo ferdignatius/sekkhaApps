@@ -39,13 +39,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/base/Select"
-import { teamsApi } from "../api/teamsApi"
+import { peopleApi } from "../api/peopleApi"
 import type {
   MemberDto,
   CreateMemberPayload,
   UpdateMemberPayload,
   PaginatedMembersResponse,
-} from "../api/teamsApi"
+} from "../api/peopleApi"
 
 export function formatRoleLabel(role?: string | null): string {
   if (!role) return "Member"
@@ -116,7 +116,7 @@ function CommunityRoleChart({
   ]
 
   return (
-    <div className="rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0] p-3 shadow-xs sm:rounded-[20px] sm:p-4">
+    <div className="rounded-[16px] border border-[#e6decb]/80 bg-[#fffaf0]/90 p-3 shadow-2xs backdrop-blur-md sm:rounded-[20px] sm:p-4">
       <div className="flex flex-col items-center justify-between gap-3 sm:flex-row sm:gap-4">
         {/* Left: Donut Chart & Center Metric */}
         <div className="flex w-full items-center gap-3 sm:w-auto sm:gap-4">
@@ -237,10 +237,10 @@ function CommunityRoleChart({
                 key={roleItem.id}
                 type="button"
                 onClick={() => onFilterChange(isSelected ? "all" : roleItem.id)}
-                className={`flex flex-1 cursor-pointer flex-col gap-1 rounded-[12px] border p-2 text-left transition-all select-none sm:flex-row sm:items-center sm:gap-2 sm:px-3 sm:py-2 ${
+                className={`flex flex-1 cursor-pointer flex-col gap-1 rounded-[12px] border p-2 text-left backdrop-blur-sm transition-all select-none sm:flex-row sm:items-center sm:gap-2 sm:px-3 sm:py-2 ${
                   isSelected
-                    ? "border-[#0a0a0a] bg-[#faf5e8] shadow-xs ring-1 ring-[#0a0a0a]"
-                    : "border-[#e5e5e5] bg-[#fffaf0] hover:bg-[#faf5e8]"
+                    ? "border-[#e8b94a]/60 bg-[#faf5e8]/95 shadow-xs ring-1 ring-[#e8b94a]/20"
+                    : "border-[#e6decb]/80 bg-[#fffaf0]/90 hover:bg-[#faf5e8]/90"
                 }`}
                 title={`Filter by ${roleItem.label}`}
               >
@@ -345,7 +345,7 @@ export function TeamsPage() {
   async function loadData() {
     try {
       setLoading(true)
-      const res = (await teamsApi.listMembers({
+      const res = (await peopleApi.listMembers({
         search: debouncedSearchQuery.trim() || undefined,
         role: roleFilter,
         page: currentPage,
@@ -373,7 +373,7 @@ export function TeamsPage() {
 
     try {
       setSubmitting(true)
-      const created = await teamsApi.createMember({
+      const created = await peopleApi.createMember({
         ...createForm,
         name: createForm.name.trim(),
         username: createForm.username?.trim() || undefined,
@@ -419,7 +419,7 @@ export function TeamsPage() {
 
     try {
       setSubmitting(true)
-      await teamsApi.updateMember(editingMember.id, { role: updateForm.role })
+      await peopleApi.updateMember(editingMember.id, { role: updateForm.role })
       showToast(
         `Role for "${editingMember.name}" updated to ${updateForm.role?.toUpperCase()}`
       )
@@ -438,7 +438,7 @@ export function TeamsPage() {
 
     try {
       setSubmitting(true)
-      await teamsApi.deleteMember(deletingMember.id)
+      await peopleApi.deleteMember(deletingMember.id)
       showToast(`Member "${deletingMember.name}" successfully deleted`)
       setDeletingMember(null)
       await loadData()
@@ -470,7 +470,7 @@ export function TeamsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#fffaf0] text-left font-sans">
+    <main className="min-h-screen bg-[#fffaf0] text-left font-sans antialiased">
       <PageBreadcrumb items={[{ label: "People" }]} />
 
       {/* Toast Alert */}
@@ -494,22 +494,24 @@ export function TeamsPage() {
       <div className="px-3.5 py-4 pb-32 sm:px-6 sm:py-6 md:px-8 md:pb-12 lg:px-12">
         <div className="mx-auto max-w-7xl space-y-4 sm:space-y-5">
           {/* ── Top Header Banner: Sleek Clay Style ── */}
-          <div className="rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] p-3 shadow-xs sm:rounded-[24px] sm:p-5">
+          {/* Dark glass HIG header */}
+          <div className="relative overflow-hidden rounded-[20px] border border-[#0a0a0a]/10 bg-[#0a0a0a]/90 p-3 shadow-lg backdrop-blur-xl sm:rounded-[24px] sm:p-5">
+            <div className="pointer-events-none absolute -top-8 -right-8 size-40 rounded-full bg-[#e8b94a]/20 blur-2xl" />
             <div className="flex items-center justify-between gap-2.5">
               <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
-                <div className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-[#0a0a0a] text-white shadow-xs sm:size-12 sm:rounded-[12px]">
-                  <UsersIcon className="size-4.5 text-[#e8b94a] sm:size-6" />
+                <div className="flex size-9 shrink-0 items-center justify-center rounded-[12px] bg-[#e8b94a] shadow-md sm:size-12">
+                  <UsersIcon className="size-4.5 text-[#0a0a0a] sm:size-6" />
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <h1 className="truncate text-sm font-bold tracking-tight text-[#0a0a0a] sm:text-xl">
+                    <h1 className="truncate text-sm font-bold tracking-tight text-white sm:text-xl">
                       People Directory
                     </h1>
-                    <span className="shrink-0 rounded-[6px] border border-[#e8b94a]/40 bg-[#e8b94a]/20 px-2 py-0.5 text-[10px] font-extrabold text-[#0a0a0a] sm:rounded-[8px] sm:text-xs">
+                    <span className="shrink-0 rounded-[6px] border border-white/10 bg-white/10 px-2 py-0.5 text-[10px] font-extrabold text-white backdrop-blur-sm sm:rounded-[8px] sm:text-xs">
                       {stats.total} Members
                     </span>
                   </div>
-                  <p className="truncate text-[11px] text-[#6a6a6a] sm:text-xs">
+                  <p className="truncate text-[11px] text-white/50 sm:text-xs">
                     Member database, roles, and community directory
                   </p>
                 </div>
@@ -543,7 +545,7 @@ export function TeamsPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search name, @username, ID..."
-              className="h-10 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] pr-9 pl-10 text-xs text-[#0a0a0a] shadow-xs transition-all outline-none placeholder:text-[#6a6a6a] focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] sm:h-11 sm:text-sm"
+              className="h-10 w-full rounded-[12px] border border-[#e6decb]/80 bg-[#fffaf0]/90 pr-9 pl-10 text-xs text-[#0a0a0a] shadow-2xs backdrop-blur-sm transition-all outline-none placeholder:text-[#6a6a6a] focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] sm:h-11 sm:text-sm"
             />
             {searchQuery && (
               <button
@@ -590,13 +592,13 @@ export function TeamsPage() {
                   {Array.from({ length: 6 }).map((_, idx) => (
                     <div
                       key={idx}
-                      className="h-28 animate-pulse rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] p-3"
+                      className="h-28 animate-pulse rounded-[16px] border border-[#e6decb]/80 bg-[#faf5e8]/90 p-3 shadow-2xs backdrop-blur-sm"
                     />
                   ))}
                 </div>
 
                 {/* Desktop Skeleton Table */}
-                <div className="hidden overflow-hidden rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0] shadow-xs md:block">
+                <div className="hidden overflow-hidden rounded-[16px] border border-[#e6decb]/80 bg-[#fffaf0]/90 shadow-2xs backdrop-blur-md md:block">
                   <table className="w-full text-left">
                     <thead>
                       <tr className="border-b border-[#e5e5e5] bg-[#faf5e8]">
@@ -626,7 +628,7 @@ export function TeamsPage() {
                 </div>
               </>
             ) : members.length === 0 ? (
-              <div className="flex min-h-[260px] flex-col items-center justify-center rounded-[20px] border border-dashed border-[#e5e5e5] bg-[#fffaf0] p-8 text-center">
+              <div className="flex min-h-[260px] flex-col items-center justify-center rounded-[20px] border border-dashed border-[#e6decb]/80 bg-[#fffaf0]/90 p-8 text-center backdrop-blur-sm">
                 <UsersIcon className="mb-2 size-10 text-[#6a6a6a]/40" />
                 <p className="text-sm font-bold text-[#0a0a0a]">
                   No members found
@@ -652,11 +654,11 @@ export function TeamsPage() {
                         key={m.id}
                         onClick={() =>
                           navigate({
-                            to: "/teams/$memberId",
+                            to: "/people/$memberId",
                             params: { memberId: m.id },
                           })
                         }
-                        className="flex cursor-pointer flex-col justify-between rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0] p-3 shadow-2xs transition-all hover:border-[#0a0a0a]/30 hover:bg-[#faf5e8] active:scale-[0.98]"
+                        className="flex cursor-pointer flex-col justify-between rounded-[16px] border border-[#e6decb]/80 bg-[#fffaf0]/90 p-3 shadow-2xs backdrop-blur-sm transition-all hover:border-[#0a0a0a]/20 hover:bg-[#faf5e8]/90 active:scale-[0.98]"
                       >
                         <div>
                           {/* Top row: Avatar & Role badge */}
@@ -692,7 +694,7 @@ export function TeamsPage() {
                         </div>
 
                         {/* Bottom info snippet */}
-                        <div className="mt-2.5 flex items-center justify-between border-t border-[#e5e5e5]/80 pt-2 text-[10px] text-[#6a6a6a]">
+                        <div className="mt-2.5 flex items-center justify-between border-t border-[#e6decb]/60 pt-2 text-[10px] text-[#6a6a6a]">
                           <span className="truncate text-[#6a6a6a]">
                             {m.school || m.phone || m.email || "No details"}
                           </span>
@@ -704,11 +706,11 @@ export function TeamsPage() {
                 </div>
 
                 {/* 🖥️ DESKTOP VIEW: Structured Table (hidden on mobile, visible md+) */}
-                <div className="hidden overflow-hidden rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0] shadow-xs md:block">
+                <div className="hidden overflow-hidden rounded-[16px] border border-[#e6decb]/80 bg-[#fffaf0]/90 shadow-2xs backdrop-blur-md md:block">
                   <div className="overflow-x-auto">
                     <table className="w-full text-left font-sans text-xs">
                       <thead>
-                        <tr className="border-b border-[#e5e5e5] bg-[#faf5e8] font-bold text-[#6a6a6a]">
+                        <tr className="border-b border-[#e6decb]/80 bg-[#faf5e8]/90 font-bold text-[#6a6a6a]">
                           <th className="px-4 py-3">Member ID</th>
                           <th className="px-4 py-3">Name & Username</th>
                           <th className="px-4 py-3">Role</th>
@@ -716,7 +718,7 @@ export function TeamsPage() {
                           <th className="px-4 py-3 text-right">Actions</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-[#f0f0f0]">
+                      <tbody className="divide-y divide-[#e6decb]/50">
                         {members.map((m) => {
                           const initials =
                             m.name
@@ -730,7 +732,7 @@ export function TeamsPage() {
                               key={m.id}
                               onClick={() =>
                                 navigate({
-                                  to: "/teams/$memberId",
+                                  to: "/people/$memberId",
                                   params: { memberId: m.id },
                                 })
                               }
@@ -818,7 +820,7 @@ export function TeamsPage() {
                                   onClick={(e) => {
                                     e.stopPropagation()
                                     navigate({
-                                      to: "/teams/$memberId",
+                                      to: "/people/$memberId",
                                       params: { memberId: m.id },
                                     })
                                   }}
@@ -838,7 +840,7 @@ export function TeamsPage() {
 
                 {/* ── PAGINATION CONTROLS (ICONS-ONLY STYLE) ── */}
                 {totalItems > 0 && (
-                  <div className="flex flex-col gap-3 rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0] p-3 text-xs text-[#0a0a0a] shadow-xs sm:flex-row sm:items-center sm:justify-between sm:p-4">
+                  <div className="flex flex-col gap-3 rounded-[16px] border border-[#e6decb]/80 bg-[#fffaf0]/90 p-3 text-xs text-[#0a0a0a] shadow-2xs backdrop-blur-sm sm:flex-row sm:items-center sm:justify-between sm:p-4">
                     <Field orientation="horizontal" className="w-fit">
                       <FieldLabel htmlFor="select-rows-per-page">
                         Rows per page

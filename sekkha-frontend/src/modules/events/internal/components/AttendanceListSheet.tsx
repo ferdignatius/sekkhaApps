@@ -171,55 +171,99 @@ export function AttendanceListSheet({
 
   return (
     <div className="space-y-4 text-left font-sans">
-      {/* ── 1. Top Glanceable Summary Capsules (HIG Cards) ── */}
+      {/* ── 1. Top Glanceable Summary & Filter Capsules (HIG Interactive Cards) ── */}
       <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-        {/* Total Attendees */}
-        <div className="flex items-center gap-3 rounded-[18px] border border-[#e5e5e5] bg-[#fffaf0] p-3 shadow-2xs">
+        {/* Total Attendees (Filter: All) */}
+        <button
+          type="button"
+          onClick={() => setFilterMethod("all")}
+          className={`flex min-h-[64px] cursor-pointer items-center gap-3 rounded-[18px] p-3 text-left transition-all ${
+            filterMethod === "all"
+              ? "border-2 border-[#0a0a0a] bg-white shadow-xs ring-2 ring-[#0a0a0a]/10"
+              : "border border-[#e5e5e5] bg-[#fffaf0] hover:border-[#0a0a0a]/30 hover:bg-[#faf5e8]"
+          }`}
+          title="Tampilkan semua presensi"
+        >
           <div className="flex size-9 shrink-0 items-center justify-center rounded-[12px] bg-[#0a0a0a] text-white shadow-xs">
             <UsersIcon className="size-4" />
           </div>
-          <div className="min-w-0">
-            <p className="text-[10px] font-bold tracking-wider text-[#6a6a6a] uppercase">
-              Total Hadir
-            </p>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] font-bold tracking-wider text-[#6a6a6a] uppercase">
+                Total Hadir
+              </p>
+              {filterMethod === "all" && (
+                <span className="size-1.5 rounded-full bg-[#0a0a0a]" />
+              )}
+            </div>
             <p className="text-sm font-bold text-[#0a0a0a] sm:text-base">
               {metrics.total} Orang
             </p>
           </div>
-        </div>
+        </button>
 
-        {/* QR Scan Method */}
-        <div className="flex items-center gap-3 rounded-[18px] border border-[#e5e5e5] bg-[#fffaf0] p-3 shadow-2xs">
+        {/* QR Scan Method (Filter: QR) */}
+        <button
+          type="button"
+          onClick={() => setFilterMethod(filterMethod === "qr" ? "all" : "qr")}
+          className={`flex min-h-[64px] cursor-pointer items-center gap-3 rounded-[18px] p-3 text-left transition-all ${
+            filterMethod === "qr"
+              ? "border-2 border-[#1a3a3a] bg-white shadow-xs ring-2 ring-[#1a3a3a]/15"
+              : "border border-[#e5e5e5] bg-[#fffaf0] hover:border-[#1a3a3a]/40 hover:bg-[#faf5e8]"
+          }`}
+          title="Filter hanya presensi QR Scan"
+        >
           <div className="flex size-9 shrink-0 items-center justify-center rounded-[12px] bg-[#1a3a3a] text-white shadow-xs">
             <QrCodeIcon className="size-4" />
           </div>
-          <div className="min-w-0">
-            <p className="text-[10px] font-bold tracking-wider text-[#6a6a6a] uppercase">
-              QR Scan
-            </p>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] font-bold tracking-wider text-[#6a6a6a] uppercase">
+                QR Scan
+              </p>
+              {filterMethod === "qr" && (
+                <span className="size-1.5 rounded-full bg-[#1a3a3a]" />
+              )}
+            </div>
             <p className="text-sm font-bold text-[#0a0a0a] sm:text-base">
               {metrics.qr} Sesi
             </p>
           </div>
-        </div>
+        </button>
 
-        {/* Manual Check-in */}
-        <div className="flex items-center gap-3 rounded-[18px] border border-[#e5e5e5] bg-[#fffaf0] p-3 shadow-2xs">
+        {/* Manual Check-in (Filter: Manual) */}
+        <button
+          type="button"
+          onClick={() =>
+            setFilterMethod(filterMethod === "manual" ? "all" : "manual")
+          }
+          className={`flex min-h-[64px] cursor-pointer items-center gap-3 rounded-[18px] p-3 text-left transition-all ${
+            filterMethod === "manual"
+              ? "border-2 border-[#0a0a0a] bg-white shadow-xs ring-2 ring-[#0a0a0a]/10"
+              : "border border-[#e5e5e5] bg-[#fffaf0] hover:border-[#0a0a0a]/30 hover:bg-[#faf5e8]"
+          }`}
+          title="Filter hanya presensi Manual"
+        >
           <div className="flex size-9 shrink-0 items-center justify-center rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] text-[#0a0a0a] shadow-xs">
             <ClipboardListIcon className="size-4" />
           </div>
-          <div className="min-w-0">
-            <p className="text-[10px] font-bold tracking-wider text-[#6a6a6a] uppercase">
-              Manual
-            </p>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] font-bold tracking-wider text-[#6a6a6a] uppercase">
+                Manual
+              </p>
+              {filterMethod === "manual" && (
+                <span className="size-1.5 rounded-full bg-[#0a0a0a]" />
+              )}
+            </div>
             <p className="text-sm font-bold text-[#0a0a0a] sm:text-base">
               {metrics.manual} Sesi
             </p>
           </div>
-        </div>
+        </button>
 
-        {/* Total Merit Points */}
-        <div className="flex items-center gap-3 rounded-[18px] border border-[#e8b94a]/40 bg-[#faf5e8] p-3 shadow-2xs">
+        {/* Total Merit Points (Informative Metric) */}
+        <div className="flex min-h-[64px] items-center gap-3 rounded-[18px] border border-[#e8b94a]/40 bg-[#faf5e8] p-3 shadow-2xs">
           <div className="flex size-9 shrink-0 items-center justify-center rounded-[12px] bg-[#0a0a0a] text-[#e8b94a] shadow-xs">
             <SparklesIcon className="size-4" />
           </div>
@@ -234,71 +278,32 @@ export function AttendanceListSheet({
         </div>
       </div>
 
-      {/* ── 2. Live Search Bar & Quick Filter Chips ── */}
-      <div className="space-y-2.5 rounded-[20px] border border-[#e5e5e5] bg-[#fffaf0] p-3 shadow-2xs sm:p-3.5">
-        <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
-          {/* Instant Search Bar */}
-          <div className="relative flex-1">
-            <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-[#6a6a6a]" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Cari nama umat atau nomor ID..."
-              className="min-h-[40px] w-full rounded-full border border-[#e5e5e5] bg-[#faf5e8] pr-9 pl-9 text-xs text-[#0a0a0a] placeholder:text-[#9a9a9a] focus:border-[#0a0a0a] focus:bg-white focus:outline-none sm:text-sm"
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={() => setSearchQuery("")}
-                className="absolute top-1/2 right-2.5 flex size-5 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-[#e5e5e5] text-[#6a6a6a] hover:bg-[#0a0a0a] hover:text-white"
-                title="Clear search"
-              >
-                <XIcon className="size-3" />
-              </button>
-            )}
-          </div>
-
-          {/* Quick Filter Segmented Chips */}
-          <div className="flex flex-wrap items-center gap-1.5 overflow-x-auto">
-            <button
-              type="button"
-              onClick={() => setFilterMethod("all")}
-              className={`min-h-[34px] cursor-pointer rounded-full px-3 py-1 text-xs font-bold transition-all ${
-                filterMethod === "all"
-                  ? "bg-[#0a0a0a] text-white shadow-xs"
-                  : "border border-[#e5e5e5] bg-[#faf5e8] text-[#6a6a6a] hover:text-[#0a0a0a]"
-              }`}
-            >
-              Semua ({displayRecords.length})
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setFilterMethod("qr")}
-              className={`inline-flex min-h-[34px] cursor-pointer items-center gap-1 rounded-full px-3 py-1 text-xs font-bold transition-all ${
-                filterMethod === "qr"
-                  ? "bg-[#0a0a0a] text-white shadow-xs"
-                  : "border border-[#e5e5e5] bg-[#faf5e8] text-[#6a6a6a] hover:text-[#0a0a0a]"
-              }`}
-            >
-              <QrCodeIcon className="size-3" />
-              <span>QR ({metrics.qr})</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setFilterMethod("manual")}
-              className={`min-h-[34px] cursor-pointer rounded-full px-3 py-1 text-xs font-bold transition-all ${
-                filterMethod === "manual"
-                  ? "bg-[#0a0a0a] text-white shadow-xs"
-                  : "border border-[#e5e5e5] bg-[#faf5e8] text-[#6a6a6a] hover:text-[#0a0a0a]"
-              }`}
-            >
-              Manual ({metrics.manual})
-            </button>
-          </div>
-        </div>
+      {/* ── 2. Live Search Bar ── */}
+      <div className="relative">
+        <SearchIcon className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[#6a6a6a]" />
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder={
+            filterMethod === "qr"
+              ? `Cari nama atau ID di ${metrics.qr} presensi QR...`
+              : filterMethod === "manual"
+                ? `Cari nama atau ID di ${metrics.manual} presensi manual...`
+                : "Cari nama umat atau nomor ID..."
+          }
+          className="min-h-[42px] w-full rounded-full border border-[#e5e5e5] bg-[#fffaf0] pr-10 pl-10 text-xs text-[#0a0a0a] placeholder:text-[#9a9a9a] shadow-2xs focus:border-[#0a0a0a] focus:bg-white focus:outline-none sm:text-sm"
+        />
+        {searchQuery && (
+          <button
+            type="button"
+            onClick={() => setSearchQuery("")}
+            className="absolute top-1/2 right-3 flex size-5 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-[#e5e5e5] text-[#6a6a6a] hover:bg-[#0a0a0a] hover:text-white"
+            title="Hapus pencarian"
+          >
+            <XIcon className="size-3" />
+          </button>
+        )}
       </div>
 
       {/* ── 3. Apple HIG Inset Grouped List ── */}

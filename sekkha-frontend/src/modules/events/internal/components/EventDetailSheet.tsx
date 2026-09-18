@@ -194,15 +194,15 @@ export function EventDetailSheet({
       {/* ── 1. Apple HIG Hero Header Container ── */}
       <section
         aria-labelledby="event-hero-heading"
-        className="relative overflow-hidden rounded-[28px] border border-[#e5e5e5] bg-[#faf5e8]/85 p-5 shadow-xs backdrop-blur-md sm:p-7"
+        className="relative overflow-hidden rounded-[24px] border border-[#e5e5e5] bg-[#faf5e8]/85 p-4 shadow-xs backdrop-blur-md sm:rounded-[28px] sm:p-6 lg:p-7"
       >
         {/* Subtle Ambient Radial Accents */}
         <div className="pointer-events-none absolute -top-16 -right-16 size-56 rounded-full bg-[#e8b94a]/15 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-16 -left-16 size-56 rounded-full bg-[#1a3a3a]/10 blur-3xl" />
 
-        <div className="relative z-10 space-y-5">
+        <div className="relative z-10 space-y-4 sm:space-y-5">
           {/* Top Status & Category Badges Row */}
-          <div className="flex flex-wrap items-center justify-between gap-2.5">
+          <div className="flex items-center justify-between gap-2.5">
             <div className="flex flex-wrap items-center gap-2">
               <span
                 className="inline-flex items-center gap-1.5 rounded-full border border-black/[0.08] px-3 py-1 text-xs font-semibold capitalize shadow-2xs backdrop-blur-md"
@@ -251,7 +251,7 @@ export function EventDetailSheet({
             <button
               type="button"
               onClick={handleShare}
-              className="flex size-9 cursor-pointer items-center justify-center rounded-full border border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] shadow-xs transition-all hover:bg-[#f5f0e0] active:scale-95"
+              className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full border border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] shadow-xs transition-all hover:bg-[#f5f0e0] active:scale-95"
               title="Share event"
               aria-label="Share event"
             >
@@ -264,38 +264,38 @@ export function EventDetailSheet({
           </div>
 
           {/* Main Title with Calendar Date Squircle */}
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
+          <div className="flex items-start gap-3.5 sm:items-center sm:gap-6">
             {/* Apple HIG Calendar Date Squircle */}
-            <div className="flex size-20 shrink-0 flex-col items-center justify-between overflow-hidden rounded-[22px] border border-[#e5e5e5] bg-[#fffaf0] shadow-xs ring-1 ring-black/[0.04] sm:size-24">
-              <div className="w-full bg-[#0a0a0a] py-1 text-center text-[10px] font-bold tracking-wider text-white uppercase sm:text-[11px]">
+            <div className="flex size-16 shrink-0 flex-col items-center justify-between overflow-hidden rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0] shadow-xs ring-1 ring-black/[0.04] sm:size-24 sm:rounded-[22px]">
+              <div className="w-full bg-[#0a0a0a] py-0.5 text-center text-[9px] font-bold tracking-wider text-white uppercase sm:py-1 sm:text-[11px]">
                 {monthShort}
               </div>
-              <div className="my-auto text-2xl leading-none font-black tracking-tight text-[#0a0a0a] sm:text-3xl">
+              <div className="my-auto text-xl leading-none font-black tracking-tight text-[#0a0a0a] sm:text-3xl">
                 {dayNumber}
               </div>
-              <div className="w-full pb-1.5 text-center text-[10px] font-semibold text-[#6a6a6a] uppercase sm:text-[11px]">
+              <div className="w-full pb-1 text-center text-[9px] font-semibold text-[#6a6a6a] uppercase sm:pb-1.5 sm:text-[11px]">
                 {dayName.slice(0, 3)}
               </div>
             </div>
 
             {/* Title & Metadata */}
-            <div className="min-w-0 flex-1 space-y-2">
+            <div className="min-w-0 flex-1 space-y-1.5 sm:space-y-2">
               <h1
                 id="event-hero-heading"
-                className="text-xl leading-tight font-bold tracking-tight text-[#0a0a0a] sm:text-2xl lg:text-3xl"
+                className="text-lg leading-snug font-bold tracking-tight text-[#0a0a0a] sm:text-2xl lg:text-3xl"
               >
                 {event.title}
               </h1>
 
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-[#6a6a6a] sm:text-sm">
-                <span className="flex items-center gap-1.5">
-                  <ClockIcon className="size-4 text-[#1a3a3a]" />
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[#6a6a6a] sm:text-sm">
+                <span className="inline-flex items-center gap-1.5">
+                  <ClockIcon className="size-3.5 shrink-0 text-[#1a3a3a] sm:size-4" />
                   <span>
                     {dayName}, {timeStr} WIB
                   </span>
                 </span>
-                <span className="flex items-center gap-1.5">
-                  <MapPinIcon className="size-4 text-rose-600" />
+                <span className="inline-flex items-center gap-1.5">
+                  <MapPinIcon className="size-3.5 shrink-0 text-rose-600 sm:size-4" />
                   <span className="truncate">{event.location}</span>
                 </span>
               </div>
@@ -363,12 +363,12 @@ export function EventDetailSheet({
 
             {/* Right: Management Toolbar (Pengurus) / Action Links */}
             {isPengurus ? (
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="grid w-full grid-cols-3 gap-2 sm:flex sm:w-auto sm:items-center">
                 <button
                   type="button"
                   disabled={!canEdit}
                   onClick={() => canEdit && onEdit?.(event)}
-                  className={`flex min-h-[38px] items-center justify-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-semibold shadow-xs transition-all ${
+                  className={`flex min-h-[40px] items-center justify-center gap-1 rounded-full border px-2.5 py-1.5 text-xs font-semibold shadow-xs transition-all sm:min-h-[38px] sm:gap-1.5 sm:px-3.5 ${
                     canEdit
                       ? "cursor-pointer border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] hover:bg-[#faf5e8] active:scale-95"
                       : "cursor-not-allowed border-[#e5e5e5]/50 bg-black/[0.02] text-[#9a9a9a]"
@@ -382,7 +382,7 @@ export function EventDetailSheet({
                 <button
                   type="button"
                   onClick={() => onDuplicate?.(event)}
-                  className="flex min-h-[38px] cursor-pointer items-center justify-center gap-1.5 rounded-full border border-[#e5e5e5] bg-[#fffaf0] px-3.5 py-1.5 text-xs font-semibold text-[#0a0a0a] shadow-xs transition-all hover:bg-[#faf5e8] active:scale-95"
+                  className="flex min-h-[40px] cursor-pointer items-center justify-center gap-1 rounded-full border border-[#e5e5e5] bg-[#fffaf0] px-2.5 py-1.5 text-xs font-semibold text-[#0a0a0a] shadow-xs transition-all hover:bg-[#faf5e8] active:scale-95 sm:min-h-[38px] sm:gap-1.5 sm:px-3.5"
                   title="Duplicate Event"
                 >
                   <CopyIcon className="size-3.5 text-[#e8b94a]" />
@@ -392,7 +392,7 @@ export function EventDetailSheet({
                 <button
                   type="button"
                   onClick={() => onDelete?.(event)}
-                  className="flex min-h-[38px] cursor-pointer items-center justify-center gap-1.5 rounded-full border border-rose-200 bg-rose-50 px-3.5 py-1.5 text-xs font-semibold text-rose-700 shadow-xs transition-all hover:bg-rose-100 active:scale-95"
+                  className="flex min-h-[40px] cursor-pointer items-center justify-center gap-1 rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs font-semibold text-rose-700 shadow-xs transition-all hover:bg-rose-100 active:scale-95 sm:min-h-[38px] sm:gap-1.5 sm:px-3.5"
                   title="Delete Event"
                 >
                   <Trash2Icon className="size-3.5 text-rose-600" />
@@ -400,15 +400,15 @@ export function EventDetailSheet({
                 </button>
               </div>
             ) : (
-              <div className="flex items-center gap-2">
+              <div className="flex w-full items-center sm:w-auto">
                 <a
                   href={getGoogleCalendarUrl(event)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex min-h-[38px] cursor-pointer items-center gap-1.5 rounded-full border border-[#e5e5e5] bg-[#fffaf0] px-4 py-1.5 text-xs font-semibold text-[#0a0a0a] shadow-xs transition-all hover:bg-[#faf5e8] active:scale-95"
+                  className="flex min-h-[40px] w-full cursor-pointer items-center justify-center gap-1.5 rounded-full border border-[#e5e5e5] bg-[#fffaf0] px-4 py-1.5 text-xs font-semibold text-[#0a0a0a] shadow-xs transition-all hover:bg-[#faf5e8] active:scale-95 sm:min-h-[38px] sm:w-auto"
                 >
                   <CalendarIcon className="size-3.5 text-[#e8b94a]" />
-                  <span>Add to Calendar</span>
+                  <span>Add to Google Calendar</span>
                 </a>
               </div>
             )}
@@ -417,18 +417,18 @@ export function EventDetailSheet({
       </section>
 
       {/* ── 2. Apple HIG Segmented Control Tabs ── */}
-      <div className="flex justify-center sm:justify-start">
+      <div className="flex w-full justify-center sm:w-auto sm:justify-start">
         <div
           role="tablist"
           aria-label="Event detail sections"
-          className="inline-flex rounded-full border border-[#e5e5e5] bg-[#f5f0e0] p-1 shadow-2xs"
+          className="grid w-full grid-cols-2 rounded-full border border-[#e5e5e5] bg-[#f5f0e0] p-1 shadow-2xs sm:inline-flex sm:w-auto"
         >
           <button
             type="button"
             role="tab"
             aria-selected={activeTab === "overview"}
             onClick={() => setActiveTab("overview")}
-            className={`flex items-center gap-2 rounded-full px-5 py-2 text-xs font-bold transition-all sm:text-sm ${
+            className={`flex items-center justify-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition-all sm:px-5 sm:text-sm ${
               activeTab === "overview"
                 ? "bg-[#0a0a0a] text-white shadow-xs"
                 : "text-[#6a6a6a] hover:text-[#0a0a0a]"
@@ -443,7 +443,7 @@ export function EventDetailSheet({
             role="tab"
             aria-selected={activeTab === "attendance"}
             onClick={() => setActiveTab("attendance")}
-            className={`flex items-center gap-2 rounded-full px-5 py-2 text-xs font-bold transition-all sm:text-sm ${
+            className={`flex items-center justify-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition-all sm:px-5 sm:text-sm ${
               activeTab === "attendance"
                 ? "bg-[#0a0a0a] text-white shadow-xs"
                 : "text-[#6a6a6a] hover:text-[#0a0a0a]"
@@ -466,9 +466,9 @@ export function EventDetailSheet({
 
       {/* ── 3. Tab Contents ── */}
       {activeTab === "overview" && (
-        <div className="space-y-6">
-          {/* Key Details Bento Grid */}
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="space-y-5 sm:space-y-6">
+          {/* Key Details Bento Grid: Responsive 1 col on mobile, 2 col on tablet, 3 col on desktop */}
+          <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
             {/* Schedule Bento Card */}
             <div className="flex flex-col justify-between rounded-[22px] border border-[#e5e5e5] bg-[#faf5e8]/85 p-4 shadow-xs backdrop-blur-md">
               <div className="flex items-start gap-3">
@@ -533,8 +533,8 @@ export function EventDetailSheet({
               </div>
             </div>
 
-            {/* Merit Points Card */}
-            <div className="flex flex-col justify-between rounded-[22px] border border-[#e5e5e5] bg-[#faf5e8]/85 p-4 shadow-xs backdrop-blur-md">
+            {/* Merit Points Card (Spans full on tablet, 1 col on desktop) */}
+            <div className="flex flex-col justify-between rounded-[22px] border border-[#e5e5e5] bg-[#faf5e8]/85 p-4 shadow-xs backdrop-blur-md sm:col-span-2 lg:col-span-1">
               <div className="flex items-start gap-3">
                 <span className="flex size-10 shrink-0 items-center justify-center rounded-[14px] bg-[#e8b94a]/20 text-[#0a0a0a] shadow-2xs">
                   <AwardIcon className="size-5 text-[#b88015]" />
@@ -561,66 +561,77 @@ export function EventDetailSheet({
             </div>
           </div>
 
-          {/* Event Description Card */}
-          {event.description && (
-            <div className="space-y-3 rounded-[24px] border border-[#e5e5e5] bg-[#faf5e8]/85 p-5 shadow-xs backdrop-blur-md sm:p-6">
-              <h3 className="flex items-center gap-2 text-sm font-bold text-[#0a0a0a] sm:text-base">
-                <SparklesIcon className="size-4.5 text-[#e8b94a]" />
-                <span>About this Event</span>
-              </h3>
-              <p className="text-xs leading-relaxed text-[#3a3a3a] whitespace-pre-line sm:text-sm">
-                {event.description}
-              </p>
-            </div>
-          )}
-
-          {/* Attendee Guidelines Card */}
-          <div className="space-y-4 rounded-[24px] border border-[#e5e5e5] bg-[#faf5e8]/85 p-5 shadow-xs backdrop-blur-md sm:p-6">
-            <h3 className="flex items-center gap-2 text-sm font-bold text-[#0a0a0a] sm:text-base">
-              <ClipboardListIcon className="size-4.5 text-[#1a3a3a]" />
-              <span>Attendee Guidelines & Etiquette</span>
-            </h3>
-
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <div className="flex items-start gap-3 rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0]/90 p-3.5 shadow-2xs">
-                <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-[#1a3a3a] text-xs font-bold text-white">
-                  1
-                </span>
-                <div className="min-w-0">
-                  <p className="text-xs font-bold text-[#0a0a0a]">Dress Code</p>
-                  <p className="mt-0.5 text-xs text-[#6a6a6a]">
-                    Dress politely & respectfully (white or neat casual).
+          {/* 2-Column Responsive Layout for max-w-7xl: About (Col 7) + Guidelines (Col 5) */}
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
+            {/* Left Column: Event Description */}
+            <div className="space-y-4 lg:col-span-7">
+              <div className="space-y-3 rounded-[24px] border border-[#e5e5e5] bg-[#faf5e8]/85 p-4 shadow-xs backdrop-blur-md sm:p-6">
+                <h3 className="flex items-center gap-2 text-sm font-bold text-[#0a0a0a] sm:text-base">
+                  <SparklesIcon className="size-4 text-[#e8b94a]" />
+                  <span>About this Event</span>
+                </h3>
+                {event.description ? (
+                  <p className="text-xs leading-relaxed text-[#3a3a3a] whitespace-pre-line sm:text-sm">
+                    {event.description}
                   </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3 rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0]/90 p-3.5 shadow-2xs">
-                <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-[#1a3a3a] text-xs font-bold text-white">
-                  2
-                </span>
-                <div className="min-w-0">
-                  <p className="text-xs font-bold text-[#0a0a0a]">On-Time Presence</p>
-                  <p className="mt-0.5 text-xs text-[#6a6a6a]">
-                    Arrive 10 minutes prior for calm meditation preparation.
+                ) : (
+                  <p className="text-xs leading-relaxed text-[#6a6a6a] italic sm:text-sm">
+                    No description provided for this event. Please arrive on time at the scheduled venue.
                   </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3 rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0]/90 p-3.5 shadow-2xs">
-                <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-[#1a3a3a] text-xs font-bold text-white">
-                  3
-                </span>
-                <div className="min-w-0">
-                  <p className="text-xs font-bold text-[#0a0a0a]">QR Check-In</p>
-                  <p className="mt-0.5 text-xs text-[#6a6a6a]">
-                    Show your Member QR from Home to the team for check-in.
-                  </p>
-                </div>
+                )}
               </div>
             </div>
 
-            <div className="border-t border-[#e5e5e5] pt-3 text-xs text-[#6a6a6a]">
-              <span>Need special accommodations? Please contact the Vihara organizers.</span>
+            {/* Right Column: Guidelines & Etiquette */}
+            <div className="space-y-4 lg:col-span-5">
+              <div className="space-y-4 rounded-[24px] border border-[#e5e5e5] bg-[#faf5e8]/85 p-4 shadow-xs backdrop-blur-md sm:p-6">
+                <h3 className="flex items-center gap-2 text-sm font-bold text-[#0a0a0a] sm:text-base">
+                  <ClipboardListIcon className="size-4 text-[#1a3a3a]" />
+                  <span>Attendee Guidelines & Etiquette</span>
+                </h3>
+
+                <div className="space-y-2.5">
+                  <div className="flex items-start gap-3 rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0]/90 p-3 shadow-2xs">
+                    <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-[#1a3a3a] text-xs font-bold text-white">
+                      1
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-[#0a0a0a]">Dress Code</p>
+                      <p className="mt-0.5 text-xs text-[#6a6a6a]">
+                        Dress politely & respectfully (white or neat casual attire).
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3 rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0]/90 p-3 shadow-2xs">
+                    <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-[#1a3a3a] text-xs font-bold text-white">
+                      2
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-[#0a0a0a]">On-Time Presence</p>
+                      <p className="mt-0.5 text-xs text-[#6a6a6a]">
+                        Arrive 10 minutes early for peaceful meditation preparation.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3 rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0]/90 p-3 shadow-2xs">
+                    <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-[#1a3a3a] text-xs font-bold text-white">
+                      3
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-[#0a0a0a]">QR Check-In</p>
+                      <p className="mt-0.5 text-xs text-[#6a6a6a]">
+                        Present your personal Member QR code to the reception team.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border-t border-[#e5e5e5] pt-3 text-xs text-[#6a6a6a]">
+                  <span>Need special accommodations? Please speak with the Vihara seva team.</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -633,8 +644,8 @@ export function EventDetailSheet({
           {isPengurus && (
             <div>
               {isActive && (
-                <div className="flex flex-col items-center justify-between gap-4 rounded-[24px] border border-emerald-300 bg-emerald-50/90 p-5 shadow-xs sm:flex-row sm:p-6">
-                  <div className="space-y-1 text-center sm:text-left">
+                <div className="flex flex-col items-start justify-between gap-4 rounded-[24px] border border-emerald-300 bg-emerald-50/90 p-4 shadow-xs sm:flex-row sm:items-center sm:p-6">
+                  <div className="space-y-1 text-left">
                     <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-200/80 px-2.5 py-0.5 text-xs font-bold text-emerald-900">
                       <span className="size-2 animate-ping rounded-full bg-emerald-600" />
                       Live Attendance Scanning Active
@@ -684,7 +695,7 @@ export function EventDetailSheet({
           )}
 
           {/* Attendance Table Container */}
-          <div className="rounded-[24px] border border-[#e5e5e5] bg-[#faf5e8]/85 p-5 shadow-xs backdrop-blur-md sm:p-6">
+          <div className="rounded-[24px] border border-[#e5e5e5] bg-[#faf5e8]/85 p-3.5 shadow-xs backdrop-blur-md sm:p-6">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-[#e5e5e5] pb-3">
               <div className="flex items-center gap-2">
                 <ClipboardListIcon className="size-4.5 text-[#1a3a3a]" />
@@ -737,14 +748,14 @@ export function EventDetailSheet({
               <button
                 type="button"
                 onClick={() => setWarningModalOpen(false)}
-                className="min-h-[40px] cursor-pointer rounded-full border border-[#e5e5e5] bg-[#fffaf0] px-4 py-2 text-xs font-semibold text-[#6a6a6a] shadow-xs hover:bg-[#faf5e8]"
+                className="min-h-[40px] flex-1 sm:flex-initial cursor-pointer rounded-full border border-[#e5e5e5] bg-[#fffaf0] px-4 py-2 text-xs font-semibold text-[#6a6a6a] shadow-xs hover:bg-[#faf5e8]"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={() => executeStatusChange("active")}
-                className="min-h-[40px] cursor-pointer rounded-full bg-emerald-600 px-5 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 active:scale-95"
+                className="min-h-[40px] flex-1 sm:flex-initial cursor-pointer rounded-full bg-emerald-600 px-5 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 active:scale-95"
               >
                 Yes, Open Check-In
               </button>

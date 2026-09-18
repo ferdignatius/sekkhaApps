@@ -385,8 +385,8 @@ export function EventsPage() {
           ]}
           onBack={handleCloseDetail}
         />
-        <div className="px-3 py-4 pb-28 sm:px-6 sm:py-6 md:px-8 md:pb-12 lg:px-12">
-          <div className="mx-auto max-w-5xl">
+        <div className="px-3.5 py-4 pb-28 sm:px-6 sm:py-6 sm:pb-12 md:px-8 lg:px-12">
+          <div className="mx-auto max-w-7xl space-y-4 sm:space-y-5">
             <EventDetailSheet
               event={selected}
               role={role}

@@ -16,6 +16,9 @@ import {
   KeyIcon,
   Share2Icon,
   ChevronRightIcon,
+  PhoneIcon,
+  GraduationCapIcon,
+  LightbulbIcon,
 } from "lucide-react"
 import QRCode from "react-qr-code"
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
@@ -798,13 +801,15 @@ export function TeamsPage() {
                               <td className="px-4 py-3 text-xs text-[#6a6a6a]">
                                 <div className="space-y-0.5">
                                   {m.school && (
-                                    <p className="max-w-[160px] truncate">
-                                      🏫 {m.school}
+                                    <p className="flex max-w-[160px] items-center gap-1 truncate">
+                                      <GraduationCapIcon className="size-3 shrink-0" aria-hidden="true" />
+                                      <span>{m.school}</span>
                                     </p>
                                   )}
                                   {m.phone && (
-                                    <p className="text-[11px] text-[#6a6a6a]">
-                                      📞 {m.phone}
+                                    <p className="flex items-center gap-1 text-[11px] text-[#6a6a6a]">
+                                      <PhoneIcon className="size-2.5 shrink-0" aria-hidden="true" />
+                                      <span>{m.phone}</span>
                                     </p>
                                   )}
                                   {!m.school && !m.phone && (
@@ -1089,7 +1094,8 @@ export function TeamsPage() {
 
               <div className="space-y-1 rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] p-3 text-xs leading-relaxed text-[#0a0a0a]">
                 <p>
-                  💡 <strong>Default Password:</strong> New accounts are
+                  <LightbulbIcon className="mr-1 inline size-3.5 text-[#e8b94a]" />
+                  <strong>Default Password:</strong> New accounts are
                   assigned an auto-generated temporary password with format{" "}
                   <code className="rounded bg-[#f5f0e0] px-1.5 py-0.5 font-bold">
                     Sekkha[4-digit]Puggala
@@ -1307,17 +1313,28 @@ export function TeamsPage() {
                     {qrMember.user_number || "—"}
                   </p>
                   {qrMember.school && (
-                    <p className="text-xs text-[#6a6a6a]">
-                      🏫 {qrMember.school}
+                    <p className="flex items-center gap-1 text-xs text-[#6a6a6a]">
+                      <GraduationCapIcon className="size-3" aria-hidden="true" />
+                      <span>{qrMember.school}</span>
                     </p>
                   )}
                 </div>
               </div>
 
               <div className="flex items-center justify-between border-t border-[#e5e5e5] pt-2 text-xs text-[#6a6a6a]">
-                <span>
-                  Status:{" "}
-                  {qrMember.is_claimed ? "✅ Active Account" : "⚠️ Unclaimed"}
+                <span className="inline-flex items-center gap-1.5">
+                  <span>Status:</span>
+                  {qrMember.is_claimed ? (
+                    <span className="inline-flex items-center gap-1 font-semibold text-emerald-600">
+                      <CheckCircleIcon className="size-3.5" aria-hidden="true" />
+                      Active Account
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 font-semibold text-amber-600">
+                      <AlertTriangleIcon className="size-3.5" aria-hidden="true" />
+                      Unclaimed
+                    </span>
+                  )}
                 </span>
                 <span>Total Attendance: {qrMember.total_attendance || 0}x</span>
               </div>
@@ -1441,8 +1458,9 @@ export function TeamsPage() {
                   {credentialModalData.memberName}
                 </p>
                 {credentialModalData.phone && (
-                  <p className="text-xs text-[#6a6a6a]">
-                    📞 {credentialModalData.phone}
+                  <p className="flex items-center gap-1 text-xs text-[#6a6a6a]">
+                    <PhoneIcon className="size-3" aria-hidden="true" />
+                    <span>{credentialModalData.phone}</span>
                   </p>
                 )}
               </div>

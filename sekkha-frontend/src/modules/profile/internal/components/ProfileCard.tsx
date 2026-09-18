@@ -11,6 +11,7 @@ import {
   CheckIcon,
   PhoneIcon,
   MailIcon,
+  GraduationCapIcon,
 } from "lucide-react"
 
 interface ProfileCardProps {
@@ -145,7 +146,10 @@ export function ProfileCard({
               </div>
             )}
             {school && (
-              <span className="truncate font-medium">🏫 {school}</span>
+              <span className="inline-flex items-center gap-1 truncate font-medium">
+                <GraduationCapIcon className="size-3 text-sekkha-slate" />
+                <span>{school}</span>
+              </span>
             )}
           </div>
 

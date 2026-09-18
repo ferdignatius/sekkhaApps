@@ -61,7 +61,12 @@ export function AttendanceTracker({
           >
             {currentStreak}
           </p>
-          <p className={`text-caption mt-1 ${flameColor}`}>🔥 Minggu</p>
+          <p
+            className={`text-caption mt-1 flex items-center justify-center gap-1 ${flameColor}`}
+          >
+            <FlameIcon className="size-3.5" aria-hidden="true" />
+            <span>Minggu</span>
+          </p>
           <p className="text-micro mt-0.5 text-sekkha-slate">Streak aktif</p>
         </div>
 

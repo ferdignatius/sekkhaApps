@@ -15,6 +15,8 @@ import {
   PrinterIcon,
   SparklesIcon,
   ExternalLinkIcon,
+  CheckCircle2Icon,
+  AlertTriangleIcon,
 } from "lucide-react"
 import QRCode from "react-qr-code"
 import { Button, Tabs, TabsList, TabsTrigger } from "@/components/base"
@@ -319,15 +321,28 @@ export function MemberDetailSheet({
                     {member.user_number || "—"}
                   </p>
                   {member.school && (
-                    <p className="text-xs text-[#6a6a6a]">🏫 {member.school}</p>
+                    <p className="flex items-center gap-1 text-xs text-[#6a6a6a]">
+                      <SchoolIcon className="size-3" aria-hidden="true" />
+                      <span>{member.school}</span>
+                    </p>
                   )}
                 </div>
               </div>
 
               <div className="flex items-center justify-between border-t border-[#e5e5e5] pt-2 text-xs text-[#6a6a6a]">
-                <span>
-                  Status:{" "}
-                  {member.is_claimed ? "✅ Active Account" : "⚠️ Unclaimed"}
+                <span className="inline-flex items-center gap-1.5">
+                  <span>Status:</span>
+                  {member.is_claimed ? (
+                    <span className="inline-flex items-center gap-1 font-semibold text-emerald-600">
+                      <CheckCircle2Icon className="size-3.5" aria-hidden="true" />
+                      Active Account
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 font-semibold text-amber-600">
+                      <AlertTriangleIcon className="size-3.5" aria-hidden="true" />
+                      Unclaimed
+                    </span>
+                  )}
                 </span>
                 <span>Total Attendance: {member.total_attendance || 0}x</span>
               </div>

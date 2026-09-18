@@ -3,7 +3,7 @@
 // "Lihat Semua" navigates to a dedicated achievements page.
 // Clickable badges show detail overlay.
 
-import { AwardIcon, XIcon, ChevronRightIcon } from "lucide-react"
+import { AwardIcon, XIcon, ChevronRightIcon, LockIcon } from "lucide-react"
 import { useState } from "react"
 import { Link } from "@tanstack/react-router"
 
@@ -209,8 +209,9 @@ export function BadgeDetailOverlay({
               })}
             </span>
           ) : (
-            <span className="text-caption-bold rounded-full bg-sekkha-surface px-3 py-1 text-sekkha-muted">
-              🔒 Belum didapatkan
+            <span className="text-caption-bold inline-flex items-center gap-1.5 rounded-full bg-sekkha-surface px-3 py-1 text-sekkha-muted">
+              <LockIcon className="size-3.5" aria-hidden="true" />
+              <span>Belum didapatkan</span>
             </span>
           )}
         </div>

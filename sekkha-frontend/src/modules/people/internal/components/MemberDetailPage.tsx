@@ -508,9 +508,19 @@ export function MemberDetailPage({
                   </div>
 
                   <div className="flex items-center justify-between border-t border-[#e5e5e5] pt-2 text-xs text-[#6a6a6a]">
-                    <span>
-                      Status:{" "}
-                      {member.is_claimed ? "✅ Active Account" : "⚠️ Unclaimed"}
+                    <span className="inline-flex items-center gap-1.5">
+                      <span>Status:</span>
+                      {member.is_claimed ? (
+                        <span className="inline-flex items-center gap-1 font-semibold text-emerald-600">
+                          <CheckCircleIcon className="size-3.5" aria-hidden="true" />
+                          Active Account
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 font-semibold text-amber-600">
+                          <AlertTriangleIcon className="size-3.5" aria-hidden="true" />
+                          Unclaimed
+                        </span>
+                      )}
                     </span>
                     <span>
                       Total Attendance:{" "}

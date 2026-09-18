@@ -215,7 +215,8 @@ export function DhammaWidget() {
       {/* Action Footer */}
       <div className="mt-3.5 flex items-center justify-between text-xs">
         <span className="xs:inline hidden text-[11px] font-medium text-[#6a6a6a]">
-          Share this wisdom ✨
+          <SparklesIcon className="mr-1 inline size-3.5 text-[#e8b94a]" />
+          Share this wisdom
         </span>
 
         <div className="xs:w-auto flex w-full items-center justify-end gap-2">

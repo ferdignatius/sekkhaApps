@@ -274,7 +274,7 @@ export function AttendanceScanModal({
       playWarningChime()
       triggerFeedback(
         "duplicate",
-        "Sudah Tercatat Hadir! ⚠️",
+        "Sudah Tercatat Hadir!",
         `${matched.name} (${matched.user_number || "Umat"}) sudah presensi sebelumnya.`
       )
       setRecentScans((prev) => [
@@ -312,7 +312,7 @@ export function AttendanceScanModal({
 
     triggerFeedback(
       "success",
-      "Presensi Berhasil Dicatat! 🎉",
+      "Presensi Berhasil Dicatat!",
       `${matched.name} (${matched.user_number || "Umat"}) hadir.`
     )
 
@@ -404,7 +404,7 @@ export function AttendanceScanModal({
           }
           triggerFeedback(
             "success",
-            "Presensi Mandiri Berhasil! 🎉",
+            "Presensi Mandiri Berhasil!",
             "Kehadiranmu telah tercatat."
           )
           onRecord(result)
@@ -417,7 +417,7 @@ export function AttendanceScanModal({
           ) {
             triggerFeedback(
               "duplicate",
-              "Sudah Presensi ⚠️",
+              "Sudah Presensi",
               "Kamu sudah tercatat hadir di acara ini."
             )
           } else if (
@@ -480,7 +480,7 @@ export function AttendanceScanModal({
     }
 
     if (sessionAttendedIds.has(target.id)) {
-      setManualError(`⚠️ ${target.name} sudah tercatat hadir sebelumnya.`)
+      setManualError(`${target.name} sudah tercatat hadir sebelumnya.`)
       return
     }
 
@@ -505,7 +505,7 @@ export function AttendanceScanModal({
 
       triggerFeedback(
         "success",
-        "Presensi Berhasil Dicatat! 🎉",
+        "Presensi Berhasil Dicatat!",
         `${target.name} hadir via input People.`
       )
 
@@ -539,7 +539,7 @@ export function AttendanceScanModal({
       ) {
         setSessionAttendedIds((prev) => new Set(prev).add(target!.id))
         setManualError(
-          `⚠️ ${target.name} sudah tercatat hadir dalam kegiatan ini.`
+          `${target.name} sudah tercatat hadir dalam kegiatan ini.`
         )
       } else {
         setManualError(err.message || "Gagal mencatat presensi manual.")

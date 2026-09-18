@@ -228,13 +228,16 @@ export function DateTimePickerPopover({
                             {qt.day_of_week !== undefined &&
                               qt.day_of_week >= 0 && (
                                 <span
-                                  className={`mt-1 inline-block rounded-[4px] px-1.5 py-0.5 text-[10px] font-bold ${
+                                  className={`mt-1 inline-flex items-center gap-1 rounded-[4px] px-1.5 py-0.5 text-[10px] font-bold ${
                                     isSelected
                                       ? "bg-white/20 text-white"
                                       : "border border-[#b8a4ed]/50 bg-[#b8a4ed]/30 text-[#0a0a0a]"
                                   }`}
                                 >
-                                  📅 {DAY_NAMES[qt.day_of_week]} (Auto-date)
+                                  <CalendarIcon className="size-3" />
+                                  <span>
+                                    {DAY_NAMES[qt.day_of_week]} (Auto-date)
+                                  </span>
                                 </span>
                               )}
                           </div>

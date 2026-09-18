@@ -359,7 +359,7 @@ export function AttendanceScanPage() {
               playWarningChime()
               triggerFeedback(
                 "duplicate",
-                "Already Checked In! ⚠️",
+                "Already Checked In!",
                 `${returnedName} was already recorded earlier.`
               )
               return
@@ -381,7 +381,7 @@ export function AttendanceScanPage() {
             ])
             triggerFeedback(
               "success",
-              "Attendance Recorded! 🎉",
+              "Attendance Recorded!",
               `${returnedName} (${returnedUserNumber}) checked in.`
             )
           })
@@ -393,7 +393,7 @@ export function AttendanceScanPage() {
             ) {
               triggerFeedback(
                 "duplicate",
-                "Already Checked In! ⚠️",
+                "Already Checked In!",
                 err.message || "User is already checked in."
               )
             } else {
@@ -430,7 +430,7 @@ export function AttendanceScanPage() {
       playWarningChime()
       triggerFeedback(
         "duplicate",
-        "Already Checked In! ⚠️",
+        "Already Checked In!",
         `${matched.name} (${matched.user_number || "Member"}) has already checked in.`
       )
       setRecentScans((prev) => [
@@ -468,7 +468,7 @@ export function AttendanceScanPage() {
 
     triggerFeedback(
       "success",
-      "Attendance Recorded! 🎉",
+      "Attendance Recorded!",
       `${matched.name} (${matched.user_number || "Member"}) checked in.`
     )
 

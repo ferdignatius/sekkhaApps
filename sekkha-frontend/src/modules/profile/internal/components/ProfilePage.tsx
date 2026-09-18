@@ -27,6 +27,7 @@ import {
   CameraIcon,
   PencilIcon,
   KeyIcon,
+  LightbulbIcon,
 } from "lucide-react"
 import {
   ResponsiveContainer,
@@ -401,7 +402,7 @@ export function ProfilePage() {
         fullSubject: "Regular Attendance",
         score: attendanceScore,
         raw: `${totalAttended} Events`,
-        icon: "📅",
+        icon: CalendarIcon,
         color: "#1a3a3a",
       },
       {
@@ -409,7 +410,7 @@ export function ProfilePage() {
         fullSubject: "Weekly Streak",
         score: streakScore,
         raw: `${currentStreak}x Active`,
-        icon: "🔥",
+        icon: FlameIcon,
         color: "#e8b94a",
       },
       {
@@ -417,7 +418,7 @@ export function ProfilePage() {
         fullSubject: "Total Karma Points",
         score: pointsScore,
         raw: `${totalPoints} Pts`,
-        icon: "⭐",
+        icon: StarIcon,
         color: "#0a0a0a",
       },
       {
@@ -425,7 +426,7 @@ export function ProfilePage() {
         fullSubject: "Badges Unlocked",
         score: badgeScore,
         raw: `${earnedBadgesCount}/${totalBadgesCount}`,
-        icon: "🏆",
+        icon: TrophyIcon,
         color: "#b8a4ed",
       },
       {
@@ -433,7 +434,7 @@ export function ProfilePage() {
         fullSubject: "Special Participation",
         score: specialScore,
         raw: `${specialAttCount} Special`,
-        icon: "✨",
+        icon: SparklesIcon,
         color: "#ffb084",
       },
       {
@@ -441,7 +442,7 @@ export function ProfilePage() {
         fullSubject: "Dedication Index",
         score: dedicationScore,
         raw: `${dedicationScore}%`,
-        icon: "🛡️",
+        icon: ShieldCheckIcon,
         color: "#1a3a3a",
       },
     ]
@@ -763,9 +764,14 @@ export function ProfilePage() {
                     </div>
 
                     <p className="text-xs font-bold text-[#0a0a0a] sm:text-sm">
-                      {currentStreak > 0
-                        ? "🔥 Attendance Streak is Active!"
-                        : "No Active Streak Yet"}
+                      {currentStreak > 0 ? (
+                        <span className="inline-flex items-center gap-1.5">
+                          <FlameIcon className="size-4 text-orange-500" aria-hidden="true" />
+                          <span>Attendance Streak is Active!</span>
+                        </span>
+                      ) : (
+                        "No Active Streak Yet"
+                      )}
                     </p>
 
                     <p className="mx-auto max-w-md text-xs leading-relaxed text-[#6a6a6a]">
@@ -776,19 +782,25 @@ export function ProfilePage() {
                   </div>
 
                   <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
-                    <span className="rounded-full border border-[#e5e5e5] bg-[#fffaf0] px-3 py-1 text-xs font-bold text-[#0a0a0a] shadow-2xs">
-                      🏆 Longest Record: {longestStreak}x
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-[#e5e5e5] bg-[#fffaf0] px-3 py-1 text-xs font-bold text-[#0a0a0a] shadow-2xs">
+                      <TrophyIcon className="size-3.5 text-[#e8b94a]" aria-hidden="true" />
+                      <span>Longest Record: {longestStreak}x</span>
                     </span>
                     <span
-                      className={`rounded-full border px-3 py-1 text-xs font-bold shadow-2xs ${
+                      className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-bold shadow-2xs ${
                         currentStreak > 0
                           ? "border-emerald-200 bg-emerald-50 text-emerald-800"
                           : "border-[#e5e5e5] bg-[#fffaf0] text-[#6a6a6a]"
                       }`}
                     >
-                      {currentStreak > 0
-                        ? "✓ Checked in this week"
-                        : "Check-in needed this week"}
+                      {currentStreak > 0 ? (
+                        <>
+                          <CheckCircleIcon className="size-3.5 text-emerald-600" aria-hidden="true" />
+                          <span>Checked in this week</span>
+                        </>
+                      ) : (
+                        "Check-in needed this week"
+                      )}
                     </span>
                   </div>
                 </div>
@@ -927,7 +939,11 @@ export function ProfilePage() {
                       <div className="space-y-1 rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] p-3.5">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-1.5">
-                            <span>{strongestArea?.icon || "🌟"}</span>
+                            {strongestArea?.icon ? (
+                              <strongestArea.icon className="size-4 text-[#e8b94a]" aria-hidden="true" />
+                            ) : (
+                              <SparklesIcon className="size-4 text-[#e8b94a]" aria-hidden="true" />
+                            )}
                             <span className="text-xs font-bold text-[#0a0a0a]">
                               Strongest Dimension
                             </span>
@@ -951,7 +967,7 @@ export function ProfilePage() {
                           >
                             <div className="mb-1 flex items-center justify-between text-xs font-bold text-[#0a0a0a]">
                               <div className="flex items-center gap-1.5">
-                                <span>{item.icon}</span>
+                                <item.icon className="size-3.5 text-[#1a3a3a]" aria-hidden="true" />
                                 <span>{item.fullSubject}</span>
                               </div>
                               <div className="flex items-center gap-2 text-xs">
@@ -1052,9 +1068,12 @@ export function ProfilePage() {
                       community participation
                     </p>
                   </div>
-                  <span className="self-start rounded-[8px] border border-[#e5e5e5] bg-[#faf5e8] px-3 py-1 text-xs font-bold text-[#0a0a0a] sm:self-auto">
-                    🏆 {badges.filter((b) => Boolean(b.earned_at)).length} of{" "}
-                    {badges.length} Unlocked
+                  <span className="inline-flex items-center gap-1.5 self-start rounded-[8px] border border-[#e5e5e5] bg-[#faf5e8] px-3 py-1 text-xs font-bold text-[#0a0a0a] sm:self-auto">
+                    <TrophyIcon className="size-3.5 text-[#e8b94a]" aria-hidden="true" />
+                    <span>
+                      {badges.filter((b) => Boolean(b.earned_at)).length} of{" "}
+                      {badges.length} Unlocked
+                    </span>
                   </span>
                 </div>
 
@@ -1238,8 +1257,9 @@ export function ProfilePage() {
                           </p>
                         </div>
                         {school ? (
-                          <p className="truncate text-[9px] text-white/80">
-                            🏫 {school}
+                          <p className="flex items-center gap-1 truncate text-[9px] text-white/80">
+                            <GraduationCapIcon className="size-2.5 shrink-0 text-white/80" aria-hidden="true" />
+                            <span>{school}</span>
                           </p>
                         ) : null}
                       </div>
@@ -1666,8 +1686,8 @@ export function ProfilePage() {
             </div>
 
             <p className="text-center text-xs leading-relaxed text-[#6a6a6a]">
-              💡 When printing, only the official ID Card above will be sent to
-              the printer.
+              <LightbulbIcon className="mr-1 inline size-3.5 text-[#e8b94a]" />
+              When printing, only the official ID Card above will be sent to the printer.
             </p>
 
             <div className="flex gap-2 border-t border-[#e5e5e5] pt-1">

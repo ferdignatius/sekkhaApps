@@ -2,7 +2,7 @@
 // Profile summary card: avatar/initials, name, tiered flame streak, total points.
 // Flame tier escalates at 4 / 8 / 12+ streaks — icon grows and changes color.
 
-import { StarIcon } from "lucide-react"
+import { StarIcon, FlameIcon } from "lucide-react"
 
 interface ProfileSummaryCardProps {
   name: string
@@ -30,7 +30,6 @@ function getFlameConfig(streak: number): {
   colorClass: string
   bgClass: string
   label: string
-  emoji: string
 } {
   if (streak >= 12) {
     return {
@@ -38,7 +37,6 @@ function getFlameConfig(streak: number): {
       colorClass: "text-red-500",
       bgClass: "bg-red-50 border-red-200",
       label: "Blazing streak",
-      emoji: "🔥",
     }
   }
   if (streak >= 8) {
@@ -47,7 +45,6 @@ function getFlameConfig(streak: number): {
       colorClass: "text-orange-500",
       bgClass: "bg-orange-50 border-orange-200",
       label: "Hot streak",
-      emoji: "🔥",
     }
   }
   if (streak >= 4) {
@@ -56,7 +53,6 @@ function getFlameConfig(streak: number): {
       colorClass: "text-amber-500",
       bgClass: "bg-[#ffb084]/20 border-[#ffb084]/40",
       label: "Warming up",
-      emoji: "🔥",
     }
   }
   return {
@@ -64,25 +60,7 @@ function getFlameConfig(streak: number): {
     colorClass: "text-[#e8b94a]",
     bgClass: "bg-[#faf5e8] border-[#e5e5e5]",
     label: "Keep going",
-    emoji: "🔥",
   }
-}
-
-function FlameIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="currentColor"
-      className={className}
-      aria-hidden="true"
-    >
-      <path d="M12 2C12 2 9 7 9 10.5C9 12.4 10.3 14 12 14C13.7 14 15 12.4 15 10.5C15 10.5 16 12 16 14C16 17.3 14.2 20 12 20C9.8 20 8 17.3 8 14C8 9.5 12 2 12 2Z" />
-      <path
-        d="M12 14C10.3 14 9 12.4 9 10.5C9 10.5 8 12.5 8 14C8 17.3 9.8 20 12 20C14.2 20 16 17.3 16 14C16 12 15 10.5 15 10.5C15 12.4 13.7 14 12 14Z"
-        opacity="0.6"
-      />
-    </svg>
-  )
 }
 
 export function ProfileSummaryCard({

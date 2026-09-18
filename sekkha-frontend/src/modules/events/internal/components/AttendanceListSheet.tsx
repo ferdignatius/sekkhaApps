@@ -13,6 +13,7 @@ import {
   Trash2Icon,
   CheckSquareIcon,
   SquareIcon,
+  LockIcon,
 } from "lucide-react"
 import type { AttendanceRecord, UserRole, AttendanceBadge } from "../types"
 import { getMasterBadges } from "../masterdata"
@@ -279,8 +280,9 @@ export function AttendanceListSheet({
                               </button>
                             </div>
                           ) : (
-                            <span className="text-xs font-medium text-[#6a6a6a] italic">
-                              🔒 Locked
+                            <span className="inline-flex items-center gap-1 text-xs font-medium text-[#6a6a6a]">
+                              <LockIcon className="size-3.5" aria-hidden="true" />
+                              <span>Locked</span>
                             </span>
                           )}
 

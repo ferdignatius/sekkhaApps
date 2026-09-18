@@ -27,7 +27,7 @@ export interface ButtonProps extends React.ComponentProps<"button"> {
 }
 
 const BASE_CLASSES =
-  "group/button inline-flex shrink-0 cursor-pointer items-center justify-center whitespace-nowrap font-semibold transition-all select-none disabled:pointer-events-none disabled:bg-[#e5e5e5] disabled:text-[#6a6a6a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0a0a0a] focus-visible:ring-offset-2 active:scale-[0.97]"
+  "group/button inline-flex shrink-0 cursor-pointer items-center justify-center whitespace-nowrap font-semibold transition-all select-none disabled:pointer-events-none disabled:bg-[#e5e5e5] disabled:text-[#6a6a6a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0a0a0a] focus-visible:ring-offset-2 active:scale-[0.97] min-h-[44px]"
 
 const variantClasses: Record<SekkhaButtonVariant, string> = {
   // ─── Material Design 3 Canonical Variants (Clay Material) ───
@@ -66,12 +66,12 @@ const variantClasses: Record<SekkhaButtonVariant, string> = {
 }
 
 const sizeClasses: Record<SekkhaButtonSize, string> = {
-  // Standard Material Design 3 Pill Scale (40px standard height)
-  default: "h-10 rounded-full px-5 py-2.5 text-sm",
-  xs: "h-7 rounded-full px-3 text-xs",
-  sm: "h-8.5 rounded-full px-4 text-xs font-semibold",
-  lg: "h-12 rounded-full px-6 text-base",
-  icon: "size-10 rounded-full p-0",
+  // Apple HIG: minimum 44x44pt touch targets
+  default: "h-11 rounded-full px-5 py-2.5 text-sm", // 44px
+  xs: "h-9 rounded-full px-3 text-xs", // 36px - for dense UIs only
+  sm: "h-10 rounded-full px-4 text-xs font-semibold", // 40px - compact
+  lg: "h-12 rounded-full px-6 text-base", // 48px
+  icon: "size-11 rounded-full p-0", // 44x44pt minimum
 }
 
 /**

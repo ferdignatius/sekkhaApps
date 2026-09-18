@@ -1,6 +1,6 @@
 // common/MobileDock
 // Floating Apple-style bottom navigation dock for mobile screens (md and below).
-// Direct access navigation matching sidebar order: Home, Events, Leaderboard, Community, Profile.
+// Design: Apple HIG iOS dock — frosted glass, warm canvas tint, ochre active state.
 
 import { Link, useRouterState } from "@tanstack/react-router"
 import {
@@ -32,16 +32,16 @@ export function MobileDock() {
       isActive: pathname.startsWith("/events"),
     },
     {
-      label: "Leaderboard",
+      label: "Ranking",
       to: "/leaderboard" as const,
       icon: TrophyIcon,
       isActive: pathname.startsWith("/leaderboard"),
     },
     {
-      label: "Community",
-      to: "/teams" as const,
+      label: "People",
+      to: "/people" as const,
       icon: UsersIcon,
-      isActive: pathname.startsWith("/teams"),
+      isActive: pathname.startsWith("/people"),
       hidden: role === "umat",
     },
     {
@@ -55,10 +55,14 @@ export function MobileDock() {
   const navItems = allNavItems.filter((item) => !item.hidden)
 
   return (
+    /* Safe-area aware floating dock */
     <div className="fixed right-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-3 z-50 mx-auto max-w-md font-sans md:hidden">
+      {/* Outer glow for depth */}
+      <div className="absolute inset-0 -z-10 rounded-[28px] bg-[#e8b94a]/8 blur-xl" />
+
       <nav
         aria-label="Bottom Navigation"
-        className="flex items-center justify-around rounded-[24px] border border-black/[0.06] bg-[#fffaf0]/90 p-1.5 shadow-[0_8px_32px_rgba(0,0,0,0.12)] ring-1 ring-white/70 backdrop-blur-2xl"
+        className="flex items-center justify-around gap-0.5 rounded-[26px] border border-white/60 bg-white/80 px-1.5 py-1.5 shadow-[0_12px_40px_rgba(0,0,0,0.14),0_2px_8px_rgba(0,0,0,0.08)] ring-1 ring-black/[0.04] backdrop-blur-[30px]"
       >
         {navItems.map((item) => {
           const Icon = item.icon
@@ -67,16 +71,30 @@ export function MobileDock() {
               key={item.label}
               to={item.to}
               aria-current={item.isActive ? "page" : undefined}
-              className={`flex min-h-[44px] min-w-[50px] flex-col items-center justify-center gap-0.5 rounded-[16px] px-2.5 py-1.5 transition-all duration-150 active:scale-95 ${
+              className={`relative flex min-h-[48px] min-w-[52px] flex-1 flex-col items-center justify-center gap-0.5 rounded-[20px] px-2 py-2 transition-all duration-200 active:scale-90 ${
                 item.isActive
-                  ? "bg-[#0a0a0a] font-bold text-white shadow-xs"
-                  : "text-[#6a6a6a] hover:bg-[#faf5e8] hover:text-[#0a0a0a]"
+                  ? "bg-[#faf5e8] shadow-[0_1px_4px_rgba(0,0,0,0.10)] ring-1 ring-[#e8b94a]/30"
+                  : "hover:bg-[#faf5e8]/60"
               }`}
             >
+              {/* Active indicator dot */}
+              {item.isActive && (
+                <span className="absolute top-1.5 left-1/2 size-1 -translate-x-1/2 rounded-full bg-[#e8b94a]" />
+              )}
+
               <Icon
-                className={`size-4.5 transition-transform duration-150 ${item.isActive ? "scale-105 text-white" : ""}`}
+                className={`size-[22px] transition-all duration-200 ${
+                  item.isActive ? "scale-105 text-[#0a0a0a]" : "text-[#8a8a8a]"
+                }`}
+                strokeWidth={item.isActive ? 2.25 : 1.75}
               />
-              <span className="text-[10px] font-semibold tracking-tight">
+              <span
+                className={`text-[10px] tracking-tight transition-colors duration-200 ${
+                  item.isActive
+                    ? "font-bold text-[#0a0a0a]"
+                    : "font-medium text-[#8a8a8a]"
+                }`}
+              >
                 {item.label}
               </span>
             </Link>

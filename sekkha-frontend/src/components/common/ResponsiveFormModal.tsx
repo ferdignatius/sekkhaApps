@@ -86,14 +86,14 @@ export function ResponsiveFormModal({
       <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 font-sans">
         {/* Backdrop Overlay */}
         <div
-          className="absolute inset-0 animate-in cursor-pointer bg-[#0a0a0a]/50 backdrop-blur-sm transition-opacity fade-in-0"
+          className="absolute inset-0 animate-in cursor-pointer bg-black/40 backdrop-blur-md transition-opacity fade-in-0"
           onClick={handleClose}
         />
-        {/* Centered Compact Card Container */}
+        {/* Centered Compact Card Container - Apple HIG Material Regular */}
         <div
           onClick={(e) => e.stopPropagation()}
           className={cn(
-            "relative z-10 flex max-h-[92vh] w-full animate-in flex-col rounded-[28px] border border-[#e5e5e5] bg-[#fffaf0] p-5 text-[#0a0a0a] shadow-2xl transition-all zoom-in-95 sm:p-6",
+            "relative z-10 flex max-h-[92vh] w-full animate-in flex-col rounded-[28px] border border-white/60 bg-white/80 p-5 text-[#0a0a0a] shadow-2xl ring-1 ring-black/[0.05] backdrop-blur-[30px] transition-all zoom-in-95 sm:p-6",
             maxWidth
           )}
         >
@@ -124,18 +124,18 @@ export function ResponsiveFormModal({
       : desktopModal
   }
 
-  // Mobile (<768px): Native Bottom Drawer Sheet
+  // Mobile (<768px): Native Bottom Drawer Sheet - Apple HIG Material Thick
   return (
     <Drawer open={isModalOpen} onOpenChange={handleOpenChange}>
-      <DrawerContent className="z-[100] flex max-h-[88vh] flex-col overflow-hidden rounded-t-[28px] border-t border-[#e5e5e5] bg-[#fffaf0] p-0 font-sans">
+      <DrawerContent className="z-[100] flex max-h-[88vh] flex-col overflow-hidden rounded-t-[28px] border-t border-white/50 bg-white/90 p-0 font-sans backdrop-blur-[40px]">
         {/* Sticky Drag Handle Header with Blur Background */}
-        <div className="sticky top-0 z-20 flex shrink-0 items-center justify-center border-b border-[#e5e5e5]/60 bg-[#fffaf0]/90 py-3 backdrop-blur-md">
+        <div className="sticky top-0 z-20 flex shrink-0 items-center justify-center border-b border-white/30 bg-white/80 py-3 backdrop-blur-[30px]">
           <div className="h-1.5 w-12 rounded-full bg-[#6a6a6a]/30" />
         </div>
 
         {/* Scrollable Container */}
         <div className="flex-1 overflow-y-auto px-5 pt-3 pb-8">
-          <DrawerHeader className="mb-3 border-b border-[#e5e5e5] px-0 pt-0 pb-3 text-left">
+          <DrawerHeader className="mb-3 border-b border-white/30 px-0 pt-0 pb-3 text-left">
             <DrawerTitle className="text-sm font-bold text-[#0a0a0a]">
               {title}
             </DrawerTitle>

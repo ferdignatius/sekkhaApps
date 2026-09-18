@@ -1,5 +1,5 @@
 import { motion } from "motion/react"
-import { Button } from "@/components/base/Button"
+import { Button, Card } from "@/components/base"
 import { DashboardMockup } from "./DashboardMockup"
 
 interface HeroSectionProps {
@@ -20,14 +20,14 @@ export function HeroSection({ headline, subheadline }: HeroSectionProps) {
       <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-b from-sekkha-surface/70 via-sekkha-canvas to-sekkha-canvas" />
 
       <div className="relative z-10 mx-auto w-full max-w-[1280px] px-4 md:px-8">
-        {/* Badge */}
+        {/* Badge - Apple HIG Material Regular */}
         <motion.div
           className="mb-6 flex justify-center"
           initial={{ opacity: 0, y: 32 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: EASE, delay: 0 }}
         >
-          <span className="text-body-sm inline-flex items-center gap-2 rounded-full border border-sekkha-hairline bg-white px-4 py-1.5 font-medium text-sekkha-ink shadow-xs">
+          <span className="text-body-sm inline-flex items-center gap-2 rounded-full border border-white/60 bg-white/80 px-4 py-1.5 font-medium text-sekkha-ink shadow-xs ring-1 ring-black/[0.02] backdrop-blur-[30px]">
             ✨ Youth Digital Platform • Vihara Tri Maha Dharma
           </span>
         </motion.div>
@@ -88,8 +88,13 @@ export function HeroSection({ headline, subheadline }: HeroSectionProps) {
           </Button>
         </motion.div>
 
-        {/* Whiteboard Interactive Dashboard Mockup */}
-        <DashboardMockup />
+        {/* Whiteboard Interactive Dashboard Mockup - Apple HIG Material Regular */}
+        <Card
+          variant="material-regular"
+          className="mt-8 rounded-[28px] p-4 shadow-lg ring-1 ring-black/[0.02] backdrop-blur-[30px] sm:p-6"
+        >
+          <DashboardMockup />
+        </Card>
 
         {/* Glowing background ambient orbs */}
         <motion.div

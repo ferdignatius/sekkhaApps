@@ -19,7 +19,7 @@ export function Dialog({
 }
 
 /**
- * Sekkha base DialogContent — aligned strictly with DESIGN.md specifications.
+ * Sekkha base DialogContent — Apple HIG Material Thick (modal sheets)
  */
 export function DialogContent({
   className,
@@ -29,7 +29,7 @@ export function DialogContent({
   return (
     <ShadcnDialogContent
       className={cn(
-        "rounded-[28px] border border-[#e5e5e5] bg-[#fffaf0] p-6 text-[#0a0a0a] shadow-2xl sm:max-w-lg",
+        "rounded-[28px] border border-white/70 bg-white/90 p-6 text-[#0a0a0a] shadow-[0_2px_6px_rgba(0,0,0,0.06),0_8px_16px_-4px_rgba(0,0,0,0.04)] ring-1 ring-black/[0.02] backdrop-blur-[40px] sm:max-w-lg",
         className
       )}
       {...props}

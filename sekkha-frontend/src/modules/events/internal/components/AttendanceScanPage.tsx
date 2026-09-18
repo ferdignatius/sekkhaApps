@@ -17,8 +17,8 @@ import { useAuth } from "@/modules/auth"
 import { api, API_BASE_URL } from "@/lib/api"
 import { safeStorage } from "@/lib/storage"
 import QRCode from "react-qr-code"
-import { teamsApi } from "@/modules/teams/internal/api/teamsApi"
-import type { MemberDto } from "@/modules/teams/internal/api/teamsApi"
+import { peopleApi } from "@/modules/people/internal/api/peopleApi"
+import type { MemberDto } from "@/modules/people/internal/api/peopleApi"
 import type { EventListItem, AttendanceRecord, UserRole } from "../types"
 import { QrScannerCamera } from "./QrScannerCamera"
 
@@ -186,7 +186,7 @@ export function AttendanceScanPage() {
   // Load People list for Pengurus manual search
   useEffect(() => {
     if (isPengurus) {
-      teamsApi
+      peopleApi
         .listMembers({ limit: 100, page: 1 })
         .then((data: any) => {
           const items = Array.isArray(data) ? data : data?.items || []

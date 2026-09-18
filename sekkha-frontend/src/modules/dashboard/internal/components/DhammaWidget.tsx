@@ -12,6 +12,7 @@ import {
   BookOpenIcon,
   InfoIcon,
 } from "lucide-react"
+import { Button, Card, Badge } from "@/components/base"
 
 export interface DhammapadaVerse {
   chapterTitle: string
@@ -141,37 +142,43 @@ export function DhammaWidget() {
   }
 
   return (
-    <section
+    <Card
+      variant="glass"
       aria-labelledby="dhamma-heading"
-      className="relative flex h-full flex-col justify-between overflow-hidden rounded-[20px] border border-[#e5e5e5] bg-[#fffaf0] p-4 text-left font-sans shadow-xs transition-all sm:rounded-[24px] sm:p-5"
+      className="relative flex h-full flex-col justify-between overflow-hidden rounded-[26px] border border-white/80 bg-[#fffaf0]/80 p-5 text-left font-sans shadow-[0_8px_32px_rgba(0,0,0,0.04)] ring-1 ring-black/[0.04] backdrop-blur-2xl sm:p-6"
     >
       {/* Decorative background watermark */}
       <QuoteIcon className="pointer-events-none absolute -right-3 -bottom-3 size-24 rotate-12 text-[#e8b94a]/10" />
 
       <div>
         {/* Top Header Row */}
-        <div className="mb-3 flex items-center justify-between gap-2">
-          <div className="flex min-w-0 items-center gap-2">
-            <span className="flex size-7 shrink-0 items-center justify-center rounded-[8px] border border-[#e8b94a]/40 bg-[#e8b94a]/20 text-[#0a0a0a] shadow-xs">
-              <SparklesIcon className="size-4 text-[#e8b94a]" />
+        <div className="mb-4 flex items-center justify-between gap-2">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-[12px] border border-[#e8b94a]/40 bg-[#e8b94a]/20 text-[#0a0a0a] shadow-xs">
+              <SparklesIcon className="size-4.5 text-[#b88015]" />
             </span>
             <div className="min-w-0">
-              <h2
+              <h3
                 id="dhamma-heading"
                 className="truncate text-sm leading-tight font-bold text-[#0a0a0a]"
               >
                 Daily Dhamma Reflection
-              </h2>
-              <p className="text-[11px] text-[#6a6a6a]">
+              </h3>
+              <p className="text-[11px] text-[#7a776a]">
                 Dhammapada Inspiration
               </p>
             </div>
           </div>
 
           {/* Top Verse Number Badge */}
-          <span className="shrink-0 rounded-full border border-[#e5e5e5] bg-[#f5f0e0] px-2.5 py-0.5 font-mono text-[11px] font-bold text-[#0a0a0a] shadow-2xs">
+          <Badge
+            variant="secondary"
+            glass
+            size="sm"
+            className="rounded-full px-3 py-1 font-mono text-xs font-bold"
+          >
             Verse {currentQuote.no}
-          </span>
+          </Badge>
         </div>
 
         {/* Chapter Title Badge */}
@@ -180,25 +187,25 @@ export function DhammaWidget() {
           <span className="truncate">{currentQuote.chapterTitle}</span>
         </div>
 
-        {/* Quote Card Body */}
-        <blockquote className="relative my-1.5 rounded-[14px] border border-[#e5e5e5] bg-[#faf5e8] p-3.5 shadow-2xs transition-all">
+        {/* Quote Card Body with Frosted Glass */}
+        <blockquote className="relative my-2 rounded-[20px] border border-white/80 bg-[#faf5e8]/80 p-4.5 shadow-2xs ring-1 ring-black/[0.03] backdrop-blur-xl transition-all sm:p-5">
           <p className="text-xs leading-relaxed font-medium text-[#0a0a0a] italic sm:text-sm">
             &ldquo;{currentQuote.verse}&rdquo;
           </p>
 
           {/* Footnote (if available) */}
           {currentQuote.footnote && (
-            <div className="mt-2.5 border-t border-[#e5e5e5]/80 pt-2">
+            <div className="mt-3 border-t border-[#e5e5e5]/80 pt-2.5">
               <button
                 type="button"
                 onClick={() => setShowFootnote(!showFootnote)}
-                className="flex cursor-pointer items-center gap-1 text-[11px] font-semibold text-[#6a6a6a] transition-colors hover:text-[#0a0a0a]"
+                className="flex cursor-pointer items-center gap-1 text-[11px] font-semibold text-[#7a776a] transition-colors hover:text-[#0a0a0a]"
               >
                 <InfoIcon className="size-3 text-[#e8b94a]" />
                 <span>{showFootnote ? "Hide footnote" : "View footnote"}</span>
               </button>
               {showFootnote && (
-                <p className="mt-1.5 animate-in rounded-[8px] border border-[#e5e5e5] bg-[#fffaf0] p-2 text-[11px] leading-relaxed text-[#6a6a6a] duration-200 fade-in">
+                <p className="mt-1.5 animate-in rounded-[10px] border border-[#e5e5e5] bg-[#fffaf0] p-2.5 text-[11px] leading-relaxed text-[#7a776a] duration-200 fade-in">
                   {currentQuote.footnote}
                 </p>
               )}
@@ -208,45 +215,45 @@ export function DhammaWidget() {
       </div>
 
       {/* Action Footer */}
-      <div className="mt-3 flex items-center justify-between text-xs">
-        <span className="xs:inline hidden text-[11px] font-medium text-[#6a6a6a]">
+      <div className="mt-3.5 flex items-center justify-between text-xs">
+        <span className="xs:inline hidden text-[11px] font-medium text-[#7a776a]">
           Share this wisdom ✨
         </span>
 
-        <div className="xs:w-auto flex w-full items-center justify-end gap-1.5">
-          {/* Refresh / Shuffle Button */}
-          <button
+        <div className="xs:w-auto flex w-full items-center justify-end gap-2">
+          {/* Refresh / Shuffle Button with Frosted Glass */}
+          <Button
             type="button"
+            variant="outlined"
+            size="sm"
             onClick={handleRefresh}
-            className="flex cursor-pointer items-center gap-1 rounded-[8px] border border-[#e5e5e5] bg-[#fffaf0] px-2.5 py-1 text-xs font-semibold text-[#0a0a0a] shadow-2xs transition-all hover:border-[#0a0a0a]/30 hover:bg-[#faf5e8] active:scale-95"
+            className="min-h-[44px] gap-2 rounded-full border border-white/80 bg-[#faf5e8]/80 px-4 text-xs font-bold shadow-2xs ring-1 ring-black/[0.04] backdrop-blur-xl hover:bg-[#faf5e8] active:scale-95"
             title="Shuffle another verse"
           >
             <RotateCwIcon
-              className={`size-3 text-[#0a0a0a] transition-transform duration-300 ${isRefreshing ? "rotate-180 text-[#e8b94a]" : ""}`}
+              className={`size-4 text-[#0a0a0a] transition-transform duration-300 ${isRefreshing ? "rotate-180 text-[#e8b94a]" : ""}`}
             />
             <span>Shuffle</span>
-          </button>
+          </Button>
 
           {/* Share / Copy Button */}
-          <button
+          <Button
             type="button"
+            variant={copied ? "filled" : "primary"}
+            size="sm"
             onClick={handleShare}
-            className={`flex cursor-pointer items-center gap-1 rounded-[8px] px-2.5 py-1 text-xs font-semibold shadow-2xs transition-all active:scale-95 ${
-              copied
-                ? "bg-emerald-600 text-white"
-                : "bg-[#0a0a0a] text-white shadow-xs hover:bg-[#1f1f1f]"
-            }`}
+            className={`min-h-[44px] gap-2 rounded-full px-4 text-xs font-bold shadow-[0_4px_14px_rgba(26,58,58,0.2)] ring-1 ring-white/20 active:scale-95 ${copied ? "bg-emerald-600 hover:bg-emerald-700" : ""}`}
             title="Copy and share reflection"
           >
             {copied ? (
-              <CheckIcon className="size-3" />
+              <CheckIcon className="size-4" />
             ) : (
-              <Share2Icon className="size-3" />
+              <Share2Icon className="size-4" />
             )}
             <span>{copied ? "Copied!" : "Share"}</span>
-          </button>
+          </Button>
         </div>
       </div>
-    </section>
+    </Card>
   )
 }

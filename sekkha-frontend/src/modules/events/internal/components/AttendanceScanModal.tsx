@@ -19,8 +19,8 @@ import {
   UserPlusIcon,
 } from "lucide-react"
 import { api } from "@/lib/api"
-import { teamsApi } from "@/modules/teams/internal/api/teamsApi"
-import type { MemberDto } from "@/modules/teams/internal/api/teamsApi"
+import { peopleApi } from "@/modules/people/internal/api/peopleApi"
+import type { MemberDto } from "@/modules/people/internal/api/peopleApi"
 import type { AttendanceMethod, UserRole, AttendanceRecord } from "../types"
 import { QrScannerCamera } from "./QrScannerCamera"
 
@@ -183,7 +183,7 @@ export function AttendanceScanModal({
   useEffect(() => {
     if (isPengurus) {
       setLoadingPeople(true)
-      teamsApi
+      peopleApi
         .listMembers({ limit: 100, page: 1 })
         .then((data: any) => {
           const items = Array.isArray(data) ? data : data?.items || []

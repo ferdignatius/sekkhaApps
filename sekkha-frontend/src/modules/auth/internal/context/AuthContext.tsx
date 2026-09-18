@@ -45,7 +45,12 @@ export interface AuthContextValue {
   initiateGoogleOAuth: () => void
   /** Updates the in-memory authenticated user info (name, role, email). */
   updateUser: (
-    user: Partial<{ name: string | null; role: UserRole; email: string | null }>
+    user: Partial<{
+      userId: string | null
+      name: string | null
+      role: UserRole
+      email: string | null
+    }>
   ) => void
   /** Re-verifies session with backend to refresh latest user details. */
   refreshUser: () => Promise<void>
@@ -120,14 +125,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
         // Best effort: hydrate fresh profile from database
         api
-          .get<{ name?: string; role?: string }>("/users/me")
+          .get<{ id?: string; name?: string; role?: string; email?: string }>(
+            "/users/me"
+          )
           .then((u) => {
-            if (!cancelled && u?.name) {
+            if (!cancelled && u) {
               dispatch({
                 type: "AUTH_UPDATE_USER",
                 payload: {
-                  name: u.name,
+                  userId: u.id ?? null,
+                  name: u.name ?? null,
                   role: (u.role as UserRole) || undefined,
+                  email: u.email ?? null,
                 },
               })
             }
@@ -190,6 +199,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const updateUser = useCallback(
     (
       data: Partial<{
+        userId: string | null
         name: string | null
         role: UserRole
         email: string | null
@@ -205,6 +215,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     if (!token) return
     try {
       const res = await api.get<{
+        id?: string
         name?: string
         role?: UserRole
         email?: string
@@ -213,6 +224,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         dispatch({
           type: "AUTH_UPDATE_USER",
           payload: {
+            userId: res.id ?? null,
             name: res.name ?? null,
             role: (res.role as UserRole) || undefined,
             email: res.email ?? null,

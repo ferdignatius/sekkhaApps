@@ -35,6 +35,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
 import { useAuth } from "@/modules/auth"
+import type { UserRole } from "@/modules/auth"
 import { api } from "@/lib/api"
 import { ResponsiveFormModal } from "@/components/common/ResponsiveFormModal"
 import { SettingsSection } from "@/modules/profile/internal/components/SettingsSection"
@@ -80,18 +81,23 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
     }
   }, [])
 
-  // Initial / on-status-change API sync: fetch fresh profile from server.
+  // Initial / on-status-change API sync: fetch fresh profile from server if not already present.
   // Runs when status transitions to "authenticated" (e.g., after login or onboarding).
   useEffect(() => {
     if (authStateStatusRef.current !== "authenticated") return
+    if (authStateNameRef.current) return
     let cancelled = false
     api
-      .get<{ name?: string }>("/users/me")
+      .get<{ id?: string; name?: string; role?: string }>("/users/me")
       .then((u) => {
         if (cancelled) return
         const freshName = u?.name
         if (freshName && freshName !== authStateNameRef.current) {
-          updateUserRef.current({ name: freshName })
+          updateUserRef.current({
+            name: freshName,
+            userId: u?.id ?? null,
+            role: (u?.role as UserRole) || undefined,
+          })
         }
       })
       .catch(() => {})
@@ -110,7 +116,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
     .filter((item) => {
       if (item.to === "/notifications" || item.to === "/home/profile")
         return false
-      if (role === "umat" && item.to === "/teams") return false
+      if (role === "umat" && item.to === "/people") return false
       return true
     })
   const pengurusNavItems = activeModules.flatMap(
@@ -138,7 +144,12 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
       .filter(Boolean)
       .slice(0, 2)
       .map((w) => w[0].toUpperCase())
-      .join("") || ""
+      .join("") ||
+    (userId
+      ? userId.slice(-2).toUpperCase()
+      : authState.email
+        ? authState.email.slice(0, 2).toUpperCase()
+        : "U")
 
   // Close profile menu when clicking outside
   useEffect(() => {
@@ -399,56 +410,65 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
       {/* Footer Unified User Profile Menu */}
       <SidebarFooter
         ref={profileMenuRef}
-        className="relative border-t border-[#e5e5e5] p-2.5 group-data-[collapsible=icon]:px-1 group-data-[collapsible=icon]:py-2"
+        className={cn(
+          "relative border-t border-[#e5e5e5] p-2.5",
+          "group-data-[collapsible=icon]:px-1 group-data-[collapsible=icon]:py-2",
+          "group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:justify-center",
+          "group-data-[collapsible=icon]:border-t group-data-[collapsible=icon]:border-[#e5e5e5]"
+        )}
       >
         {/* Floating Options Dropdown Menu */}
-        {showProfileMenu && userId && (
-          <div className="absolute right-2.5 bottom-full left-2.5 z-50 mb-2 animate-in space-y-0.5 rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0]/95 p-1.5 shadow-2xl backdrop-blur-xl fade-in-0 slide-in-from-bottom-2 group-data-[collapsible=icon]:left-12 group-data-[collapsible=icon]:w-48">
-            <Link
-              to="/home/profile"
-              onClick={() => setShowProfileMenu(false)}
-              className="flex items-center gap-2.5 rounded-[10px] px-3 py-2 text-xs font-semibold text-[#0a0a0a] transition-colors hover:bg-[#f5f0e0]"
-            >
-              <UserIcon className="size-4 text-[#0a0a0a]" />
-              <span>View Profile</span>
-            </Link>
+        {showProfileMenu &&
+          (authState.status === "authenticated" || userId) && (
+            <div className="absolute right-2.5 bottom-full left-2.5 z-50 mb-2 animate-in space-y-0.5 rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0]/95 p-1.5 shadow-2xl backdrop-blur-xl fade-in-0 slide-in-from-bottom-2 group-data-[collapsible=icon]:left-12 group-data-[collapsible=icon]:w-48">
+              <Link
+                to="/home/profile"
+                onClick={() => setShowProfileMenu(false)}
+                className="flex items-center gap-2.5 rounded-[10px] px-3 py-2 text-xs font-semibold text-[#0a0a0a] transition-colors hover:bg-[#f5f0e0]"
+              >
+                <UserIcon className="size-4 text-[#0a0a0a]" />
+                <span>View Profile</span>
+              </Link>
 
-            <button
-              type="button"
-              onClick={() => {
-                setShowProfileMenu(false)
-                setSettingsOpen(true)
-              }}
-              className="flex w-full cursor-pointer items-center gap-2.5 rounded-[10px] px-3 py-2 text-xs font-semibold text-[#0a0a0a] transition-colors hover:bg-[#f5f0e0]"
-            >
-              <SettingsIcon className="size-4 text-[#6a6a6a]" />
-              <span>Settings & Goals</span>
-            </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowProfileMenu(false)
+                  setSettingsOpen(true)
+                }}
+                className="flex w-full cursor-pointer items-center gap-2.5 rounded-[10px] px-3 py-2 text-xs font-semibold text-[#0a0a0a] transition-colors hover:bg-[#f5f0e0]"
+              >
+                <SettingsIcon className="size-4 text-[#6a6a6a]" />
+                <span>Settings & Goals</span>
+              </button>
 
-            <div className="my-1 border-t border-[#e5e5e5]" />
+              <div className="my-1 border-t border-[#e5e5e5]" />
 
-            <button
-              type="button"
-              onClick={() => {
-                setShowProfileMenu(false)
-                logout()
-              }}
-              className="flex w-full cursor-pointer items-center gap-2.5 rounded-[10px] px-3 py-2 text-xs font-semibold text-rose-600 transition-colors hover:bg-rose-50"
-            >
-              <LogOutIcon className="size-4 text-rose-500" />
-              <span>Sign Out</span>
-            </button>
-          </div>
-        )}
+              <button
+                type="button"
+                onClick={() => {
+                  setShowProfileMenu(false)
+                  logout()
+                }}
+                className="flex w-full cursor-pointer items-center gap-2.5 rounded-[10px] px-3 py-2 text-xs font-semibold text-rose-600 transition-colors hover:bg-rose-50"
+              >
+                <LogOutIcon className="size-4 text-rose-500" />
+                <span>Sign Out</span>
+              </button>
+            </div>
+          )}
 
         {/* User Card Button Trigger */}
-        {userId && (
+        {(authState.status === "authenticated" || userId) && (
           <button
             type="button"
             onClick={() => setShowProfileMenu(!showProfileMenu)}
             title={roleLabel}
             className={cn(
-              "flex w-full cursor-pointer items-center gap-2.5 rounded-[12px] transition-all group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:border-none group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:p-0",
+              "flex w-full cursor-pointer items-center gap-2.5 rounded-[12px] transition-all",
+              "group-data-[collapsible=icon]:justify-center",
+              "group-data-[collapsible=icon]:border-none group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:p-0",
+              "group-data-[collapsible=icon]:hover:bg-transparent",
               showProfileMenu
                 ? "border border-[#ebe6d6] bg-[#f5f0e0] p-2 ring-2 ring-[#0a0a0a]/15"
                 : "border border-[#e5e5e5] bg-[#fffaf0] p-2 hover:border-[#ebe6d6] hover:bg-[#f5f0e0]"

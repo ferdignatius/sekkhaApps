@@ -43,6 +43,7 @@ export type AuthAction =
   | {
       type: "AUTH_UPDATE_USER"
       payload: Partial<{
+        userId: string | null
         name: string | null
         role: UserRole
         email: string | null
@@ -74,6 +75,10 @@ export function authReducer(state: AuthState, action: AuthAction): AuthState {
     case "AUTH_UPDATE_USER":
       return {
         ...state,
+        userId:
+          action.payload.userId !== undefined
+            ? action.payload.userId
+            : state.userId,
         name:
           action.payload.name !== undefined ? action.payload.name : state.name,
         role:

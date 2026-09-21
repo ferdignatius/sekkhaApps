@@ -55,7 +55,7 @@ export function ProfileCard({
   school,
   phone,
   email,
-  role = "umat",
+  role = "member",
   userNumber,
   joinedAt = "2025-07-01",
   onEditProfile,
@@ -71,16 +71,19 @@ export function ProfileCard({
 
   const roleLabel =
     role === "admin"
-      ? "Admin Vihara"
-      : role === "pengurus"
-        ? "Pengurus"
-        : role === "aktivis"
-          ? "Aktivis"
-          : "Umat"
+      ? "Admin"
+      : role === "organizer" || role === "pengurus"
+        ? "Organizer"
+        : role === "activist" || role === "aktivis"
+          ? "Activist"
+          : "Member"
   const roleBadgeStyle: Record<string, string> = {
     admin: "bg-red-50 text-red-700 border-red-200",
+    organizer: "bg-purple-50 text-purple-700 border-purple-200",
     pengurus: "bg-purple-50 text-purple-700 border-purple-200",
+    activist: "bg-blue-50 text-blue-700 border-blue-200",
     aktivis: "bg-blue-50 text-blue-700 border-blue-200",
+    member: "bg-emerald-50 text-emerald-700 border-emerald-200",
     umat: "bg-emerald-50 text-emerald-700 border-emerald-200",
   }
 

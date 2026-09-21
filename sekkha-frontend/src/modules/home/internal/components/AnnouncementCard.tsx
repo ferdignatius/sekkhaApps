@@ -64,7 +64,7 @@ export function AnnouncementCard({ announcements }: AnnouncementCardProps) {
                   <p className="mt-0.5 text-xs leading-relaxed text-[#6a6a6a]">
                     {item.body}
                   </p>
-                  <p className="mt-1 text-[11px] font-medium text-[#9a9a9a]">
+                  <p className="mt-1 text-[11px] font-medium text-[#6a6a6a]">
                     {item.date}
                   </p>
                 </div>

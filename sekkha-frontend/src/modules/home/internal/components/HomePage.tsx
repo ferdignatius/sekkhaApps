@@ -513,7 +513,7 @@ export function HomePage() {
                         >
                           {roleLabel}
                         </Badge>
-                        <span className="shrink-0 font-mono text-[11px] text-[#9a9a9a] sm:text-xs">
+                        <span className="shrink-0 font-mono text-[11px] text-[#6a6a6a] sm:text-xs">
                           ID: {memberId}
                         </span>
                       </div>
@@ -822,7 +822,7 @@ export function HomePage() {
                               {item.label}
                             </span>
                           </div>
-                          <ChevronRightIcon className="size-4 shrink-0 text-[#9a9a9a] transition-transform group-hover:translate-x-0.5" />
+                          <ChevronRightIcon className="size-4 shrink-0 text-[#6a6a6a] transition-transform group-hover:translate-x-0.5" />
                         </>
                       )
 

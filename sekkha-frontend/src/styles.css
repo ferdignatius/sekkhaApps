@@ -125,7 +125,11 @@
     --color-body: #3a3a3a;
     --color-body-strong: #1a1a1a;
     --color-text-muted: #6a6a6a;
-    --color-text-muted-soft: #9a9a9a;
+    /* muted-soft upgraded #9a9a9a → #767676 for WCAG AA (4.5:1) on cream canvas.
+       Use only for visible fine-print/captions. */
+    --color-text-muted-soft: #767676;
+    /* Decorative placeholders / disabled glyphs only (WCAG-exempt). */
+    --color-placeholder: #8a8a8a;
     --color-hairline: #e5e5e5;
     --color-hairline-soft: #f0f0f0;
 

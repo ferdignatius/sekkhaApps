@@ -316,7 +316,7 @@ export function ProfilePage() {
   }
 
   // 100% Real Calculated Values
-  const role = profile?.role || authState.role || "umat"
+  const role = profile?.role || authState.role || "member"
   // Render blank when no real name is available — avoid flashing a default
   // (e.g. capitalized role like "Umat") before hydration completes.
   const displayName = profile?.name || authState.name || ""
@@ -342,15 +342,18 @@ export function ProfilePage() {
   const roleLabel =
     role === "admin"
       ? "Admin"
-      : role === "pengurus"
+      : role === "organizer" || role === "pengurus"
         ? "Organizer"
-        : role === "aktivis"
+        : role === "activist" || role === "aktivis"
           ? "Activist"
           : "Member"
   const roleBadgeStyle: Record<string, string> = {
     admin: "bg-[#ff4d8b]/15 text-[#ff4d8b] border-[#ff4d8b]/30 font-semibold",
+    organizer: "bg-[#1a3a3a] text-white border-[#1a3a3a] font-semibold",
     pengurus: "bg-[#1a3a3a] text-white border-[#1a3a3a] font-semibold",
+    activist: "bg-[#b8a4ed]/30 text-[#0a0a0a] border-[#b8a4ed]/50 font-semibold",
     aktivis: "bg-[#b8a4ed]/30 text-[#0a0a0a] border-[#b8a4ed]/50 font-semibold",
+    member: "bg-[#f5f0e0] text-[#0a0a0a] border-[#e5e5e5] font-semibold",
     umat: "bg-[#f5f0e0] text-[#0a0a0a] border-[#e5e5e5] font-semibold",
   }
 
@@ -549,7 +552,7 @@ export function ProfilePage() {
                         {displayName}
                       </h1>
                       <span
-                        className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold capitalize ${roleBadgeStyle[role] || roleBadgeStyle.umat}`}
+                        className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold capitalize ${roleBadgeStyle[role] || roleBadgeStyle.member || roleBadgeStyle.umat}`}
                       >
                         <ShieldCheckIcon className="size-3" />
                         <span>{roleLabel}</span>
@@ -1148,7 +1151,7 @@ export function ProfilePage() {
                         />
                       ) : (
                         <div
-                          className="flex items-center justify-center text-[10px] font-semibold text-[#9a9a9a]"
+                          className="flex items-center justify-center text-[10px] font-semibold text-[#6a6a6a]"
                           style={{ height: "150px", width: "150px" }}
                         >
                           QR unavailable
@@ -1232,7 +1235,7 @@ export function ProfilePage() {
                           />
                         ) : (
                           <div
-                            className="flex items-center justify-center text-[8px] font-semibold text-[#9a9a9a]"
+                            className="flex items-center justify-center text-[8px] font-semibold text-[#6a6a6a]"
                             style={{ height: "70px", width: "70px" }}
                           >
                             —
@@ -1430,7 +1433,7 @@ export function ProfilePage() {
                   Account Role
                 </span>
                 <span
-                  className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase ${roleBadgeStyle[role] || roleBadgeStyle.umat}`}
+                  className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase ${roleBadgeStyle[role] || roleBadgeStyle.member || roleBadgeStyle.umat}`}
                 >
                   {role}
                 </span>
@@ -1639,7 +1642,7 @@ export function ProfilePage() {
                     />
                   ) : (
                     <div
-                      className="flex items-center justify-center text-[8px] font-semibold text-[#9a9a9a]"
+                      className="flex items-center justify-center text-[8px] font-semibold text-[#6a6a6a]"
                       style={{ height: "70px", width: "70px" }}
                     >
                       —
@@ -1915,7 +1918,7 @@ export function ProfilePage() {
               />
             ) : (
               <div
-                className="flex items-center justify-center text-[7.5px] font-semibold text-[#9a9a9a]"
+                className="flex items-center justify-center text-[7.5px] font-semibold text-[#6a6a6a]"
                 style={{ height: "64px", width: "64px" }}
               >
                 —

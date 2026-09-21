@@ -341,7 +341,7 @@ export function SchoolPage() {
             </div>
           ) : filteredSchools.length === 0 ? (
             <div className="space-y-2 px-4 py-16 text-center">
-              <Building2Icon className="mx-auto size-8 text-[#9a9a9a]" />
+              <Building2Icon className="mx-auto size-8 text-[#6a6a6a]" />
               <p className="text-sm font-bold text-[#0a0a0a]">
                 Tidak ada sekolah ditemukan
               </p>
@@ -396,7 +396,7 @@ export function SchoolPage() {
                             {item.userCount} Umat
                           </Badge>
                         ) : (
-                          <span className="text-[11px] text-[#9a9a9a]">0</span>
+                          <span className="text-[11px] text-[#6a6a6a]">0</span>
                         )}
                       </td>
 

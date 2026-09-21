@@ -8,7 +8,7 @@ import { GenericSkeleton } from "@/components/common/PageSkeletons"
 export const Route = createFileRoute("/_authenticated/recency-alerts")({
   beforeLoad: ({ context }) => {
     const role = (context as any).authState?.role
-    if (role !== "pengurus" && role !== "admin") {
+    if (role !== "organizer" && role !== "pengurus" && role !== "admin") {
       throw redirect({ to: "/home" })
     }
   },

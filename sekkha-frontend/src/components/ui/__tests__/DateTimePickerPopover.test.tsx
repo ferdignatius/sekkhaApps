@@ -22,8 +22,8 @@ describe("DateTimePickerPopover", () => {
     fireEvent.click(screen.getByRole("button", { name: /(change|ubah)/i }))
 
     expect(screen.getByText("Set Date & Time")).toBeDefined()
-    expect(screen.getByText("Event Date")).toBeDefined()
-    expect(screen.getByText("Event Time")).toBeDefined()
+    expect(screen.getByText("Date")).toBeDefined()
+    expect(screen.getByText("Time")).toBeDefined()
   })
 
   it("allows selecting quick time chip and applying changes", () => {

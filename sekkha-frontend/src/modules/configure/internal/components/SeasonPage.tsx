@@ -26,32 +26,44 @@ interface SeasonSectionConfig {
   icon: React.ReactNode
 }
 
-const HARDCODED_SEASONS: SeasonSectionConfig[] = [
-  {
-    code: "semester",
-    label: "Semester Season (6 Months)",
-    subtitle:
-      "Official 6-month vihara competition period for leaderboard rankings and community milestones.",
-    badge: "Primary Default",
-    icon: <SparklesIcon className="size-5 text-[#e8b94a]" />,
-  },
-  {
-    code: "quarterly",
-    label: "Quarterly Season (3 Months)",
-    subtitle:
-      "Dynamic 3-month evaluation period per quarter (Q1, Q2, Q3, Q4) for seasonal milestones.",
-    badge: "Quarterly",
-    icon: <LayersIcon className="size-5 text-[#b8a4ed]" />,
-  },
-  {
-    code: "annual",
-    label: "Annual Season (Full Year)",
-    subtitle:
-      "Comprehensive full calendar year format for point recalculation and annual awards.",
-    badge: "Annual",
-    icon: <TrophyIcon className="size-5 text-[#e8b94a]" />,
-  },
-]
+function getSeasonPresentation(season: SeasonDto): SeasonSectionConfig {
+  const code = (season.code || "").toLowerCase()
+  if (code.includes("semester")) {
+    return {
+      code: season.code || season.id,
+      label: "Semester Season (6 Months)",
+      subtitle:
+        "Official 6-month vihara competition period for leaderboard rankings and community milestones.",
+      badge: "Semester",
+      icon: <SparklesIcon className="size-5 text-[#e8b94a]" />,
+    }
+  }
+  if (code.includes("quarter") || code.includes("q")) {
+    return {
+      code: season.code || season.id,
+      label: "Quarterly Season (3 Months)",
+      subtitle: "Dynamic 3-month evaluation period for seasonal milestones.",
+      badge: "Quarterly",
+      icon: <LayersIcon className="size-5 text-[#b8a4ed]" />,
+    }
+  }
+  if (code.includes("annual") || code.includes("year")) {
+    return {
+      code: season.code || season.id,
+      label: "Annual Season (Full Year)",
+      subtitle: "Comprehensive full calendar year format for annual awards.",
+      badge: "Annual",
+      icon: <TrophyIcon className="size-5 text-[#e8b94a]" />,
+    }
+  }
+  return {
+    code: season.code || season.id,
+    label: season.name,
+    subtitle: "Custom season configured for the leaderboard.",
+    badge: "Configured",
+    icon: <CalendarIcon className="size-5 text-[#1a3a3a]" />,
+  }
+}
 
 function formatDateDisplay(iso: string) {
   try {
@@ -166,10 +178,6 @@ export function SeasonPage() {
     }
   }
 
-  function getSeasonByCode(code: string): SeasonDto | undefined {
-    return seasons.find((s) => s.code === code)
-  }
-
   return (
     <main className="min-h-screen bg-[#fffaf0] pb-32 text-left font-sans md:pb-12">
       <PageBreadcrumb
@@ -200,7 +208,7 @@ export function SeasonPage() {
 
           <div className="flex shrink-0 items-center gap-2 rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] px-3.5 py-2 text-xs font-bold text-[#0a0a0a]">
             <ShieldCheckIcon className="size-4 text-[#0a0a0a]" />
-            <span>3 Fixed Profiles</span>
+            <span>{seasons.length} Configured Seasons</span>
           </div>
         </div>
 
@@ -214,10 +222,24 @@ export function SeasonPage() {
             <p className="text-xs leading-relaxed text-[#6a6a6a]">
               Only <strong>one active season</strong> can be active at a time.
               Leaderboard rankings and community goals are filtered according to
-              the active season's date range.
+              the active season&apos;s date range.
             </p>
           </div>
         </div>
+
+        {!isAdmin && (
+          <div
+            role="status"
+            className="flex items-start gap-3 rounded-[16px] border border-[#e8b94a]/50 bg-[#e8b94a]/10 p-4 text-xs text-[#3a3a3a]"
+          >
+            <ShieldCheckIcon className="mt-0.5 size-5 shrink-0 text-[#855f05]" />
+            <p className="leading-relaxed">
+              <strong className="text-[#0a0a0a]">Read-only access.</strong> You
+              can view season settings, but only an Admin can edit dates,
+              targets, or activate a different season.
+            </p>
+          </div>
+        )}
 
         {/* Error Alert */}
         {error && (
@@ -227,7 +249,7 @@ export function SeasonPage() {
           </div>
         )}
 
-        {/* Hardcoded 3 Season Sections */}
+        {/* Seasons from the database — the same source used by Leaderboard */}
         {loading ? (
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
@@ -239,10 +261,8 @@ export function SeasonPage() {
           </div>
         ) : (
           <div className="space-y-4">
-            {HARDCODED_SEASONS.map((cfg) => {
-              const season = getSeasonByCode(cfg.code)
-              if (!season) return null
-
+            {seasons.map((season) => {
+              const cfg = getSeasonPresentation(season)
               const isActive = season.is_active
 
               return (

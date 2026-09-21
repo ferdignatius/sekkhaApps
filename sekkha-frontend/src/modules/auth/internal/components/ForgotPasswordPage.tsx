@@ -297,7 +297,7 @@ export function ForgotPasswordPage() {
                   Email Akun Anda
                 </label>
                 <div className="relative">
-                  <MailIcon className="absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[#9a9a9a]" />
+                  <MailIcon className="absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[#6a6a6a]" />
                   <input
                     id="email"
                     type="email"
@@ -308,7 +308,7 @@ export function ForgotPasswordPage() {
                       if (error) setError(null)
                     }}
                     required
-                    className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] pr-3.5 pl-10 text-xs font-medium text-[#0a0a0a] transition-all outline-none placeholder:text-[#9a9a9a] focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a]"
+                    className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] pr-3.5 pl-10 text-xs font-medium text-[#0a0a0a] transition-all outline-none placeholder:text-[#767676] focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a]"
                   />
                 </div>
               </div>
@@ -428,7 +428,7 @@ export function ForgotPasswordPage() {
                   Kata Sandi Baru
                 </label>
                 <div className="relative">
-                  <LockIcon className="absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[#9a9a9a]" />
+                  <LockIcon className="absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[#6a6a6a]" />
                   <input
                     id="newPassword"
                     type={showPassword ? "text" : "password"}
@@ -436,12 +436,12 @@ export function ForgotPasswordPage() {
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     required
-                    className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] pr-10 pl-10 text-xs font-medium text-[#0a0a0a] transition-all outline-none placeholder:text-[#9a9a9a] focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a]"
+                    className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] pr-10 pl-10 text-xs font-medium text-[#0a0a0a] transition-all outline-none placeholder:text-[#767676] focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a]"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer text-[#9a9a9a] hover:text-[#0a0a0a]"
+                    className="absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer text-[#6a6a6a] hover:text-[#0a0a0a]"
                   >
                     {showPassword ? (
                       <EyeOffIcon className="size-4" />
@@ -461,7 +461,7 @@ export function ForgotPasswordPage() {
                   Konfirmasi Kata Sandi Baru
                 </label>
                 <div className="relative">
-                  <LockIcon className="absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[#9a9a9a]" />
+                  <LockIcon className="absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[#6a6a6a]" />
                   <input
                     id="confirmPassword"
                     type={showConfirmPassword ? "text" : "password"}
@@ -469,12 +469,12 @@ export function ForgotPasswordPage() {
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     required
-                    className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] pr-10 pl-10 text-xs font-medium text-[#0a0a0a] transition-all outline-none placeholder:text-[#9a9a9a] focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a]"
+                    className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] pr-10 pl-10 text-xs font-medium text-[#0a0a0a] transition-all outline-none placeholder:text-[#767676] focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a]"
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer text-[#9a9a9a] hover:text-[#0a0a0a]"
+                    className="absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer text-[#6a6a6a] hover:text-[#0a0a0a]"
                   >
                     {showConfirmPassword ? (
                       <EyeOffIcon className="size-4" />
@@ -535,7 +535,7 @@ export function ForgotPasswordPage() {
         </div>
 
         {/* Sekkha Footer Brand */}
-        <p className="text-center text-[11px] text-[#9a9a9a]">
+        <p className="text-center text-[11px] text-[#6a6a6a]">
           © 2026 Komunitas Pemuda Vihara Sekkha.
         </p>
       </div>

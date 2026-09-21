@@ -5,8 +5,15 @@
 
 export type AuthStatus = "loading" | "authenticated" | "unauthenticated"
 
-// Role mirrors the API contract: umat | aktivis | pengurus | admin
-export type UserRole = "umat" | "aktivis" | "pengurus" | "admin"
+// Role mirrors the API contract: member | activist | organizer | admin
+export type UserRole =
+  | "member"
+  | "activist"
+  | "organizer"
+  | "admin"
+  | "umat"
+  | "aktivis"
+  | "pengurus"
 
 export interface AuthState {
   status: AuthStatus

@@ -35,48 +35,91 @@ export interface LeaderboardSnapshot {
 const METRICS = ["points", "streak", "attendance"] as const
 export type MetricType = (typeof METRICS)[number]
 
+function leaderboardCacheKey(metric: MetricType, season: { id: string; updatedAt: Date }) {
+  return CacheKeys.leaderboard(
+    metric,
+    `${season.id}:${season.updatedAt.getTime()}`
+  )
+}
+
+let leaderboardComputation: Promise<void> | null = null
+
 /**
- * Computes leaderboard snapshot from PostgreSQL strictly filtered by active Season range and caches in Redis for 7 days.
+ * Single source of truth for the active leaderboard season.
+ * The most recently updated active season wins if old data contains more than
+ * one active row; date-range fallback is only used when no row is flagged.
  */
-export async function computeAndCacheLeaderboard(): Promise<void> {
+export async function resolveActiveSeason(now = new Date()) {
+  const activeSeason = await prisma.season.findFirst({
+    where: { isActive: true },
+    orderBy: [{ updatedAt: "desc" }, { startDate: "desc" }],
+  })
+  if (activeSeason) {
+    await prisma.season.updateMany({
+      where: { isActive: true, id: { not: activeSeason.id } },
+      data: { isActive: false },
+    })
+    return activeSeason
+  }
+
+  const scheduledSeason = await prisma.season.findFirst({
+    where: {
+      startDate: { lte: now },
+      endDate: { gte: now },
+    },
+    orderBy: [{ startDate: "desc" }, { updatedAt: "desc" }],
+  })
+  if (scheduledSeason) {
+    await prisma.season.updateMany({ data: { isActive: false } })
+    return prisma.season.update({
+      where: { id: scheduledSeason.id },
+      data: { isActive: true },
+    })
+  }
+
+  const year = now.getFullYear()
+  const q = Math.floor(now.getMonth() / 3) + 1
+  return prisma.season.create({
+    data: {
+      name: `Season ${q} · ${year}`,
+      code: `S${year}-Q${q}`,
+      startDate: new Date(year, (q - 1) * 3, 1),
+      endDate: new Date(year, q * 3, 0, 23, 59, 59),
+      isActive: true,
+      targetAttendance: 500,
+      bonusPoints: 100,
+      description: `Season kuartal ${q} tahun ${year}`,
+    },
+  })
+}
+
+/**
+ * Coalesces concurrent refreshes into one database computation.
+ * Without this guard, a cache miss or admin refresh burst can start many
+ * identical full-season calculations at the same time.
+ */
+export function computeAndCacheLeaderboard(): Promise<void> {
+  if (leaderboardComputation) return leaderboardComputation
+
+  const computation = computeAndCacheLeaderboardInternal()
+  leaderboardComputation = computation
+  void computation
+    .finally(() => {
+      if (leaderboardComputation === computation) leaderboardComputation = null
+    })
+    .catch(() => {
+      // The original promise returned to the caller preserves the error.
+    })
+  return computation
+}
+
+/** Computes a fresh snapshot for each supported metric. */
+async function computeAndCacheLeaderboardInternal(): Promise<void> {
   try {
     const now = new Date()
 
-    // 1. Determine active season
-    let activeSeason = await prisma.season.findFirst({
-      where: { isActive: true },
-    })
-
-    if (!activeSeason) {
-      activeSeason = await prisma.season.findFirst({
-        where: {
-          startDate: { lte: now },
-          endDate: { gte: now },
-        },
-        orderBy: { startDate: "desc" },
-      })
-    }
-
-    // Default season if database has no seasons yet
-    if (!activeSeason) {
-      const year = now.getFullYear()
-      const q = Math.floor(now.getMonth() / 3) + 1
-      const qStart = new Date(year, (q - 1) * 3, 1)
-      const qEnd = new Date(year, q * 3, 0, 23, 59, 59)
-
-      activeSeason = await prisma.season.create({
-        data: {
-          name: `Season ${q} · ${year}`,
-          code: `S${year}-Q${q}`,
-          startDate: qStart,
-          endDate: qEnd,
-          isActive: true,
-          targetAttendance: 500,
-          bonusPoints: 100,
-          description: `Season kuartal ${q} tahun ${year}`,
-        },
-      })
-    }
+    // 1. Resolve the same active season used by configuration and events.
+    const activeSeason = await resolveActiveSeason(now)
 
     const attendanceWhere = {
       scannedAt: {
@@ -85,35 +128,46 @@ export async function computeAndCacheLeaderboard(): Promise<void> {
       },
     }
 
-    // 2. Fetch users and only their attendances within season date range
-    const [users, totalAttendances] = await Promise.all([
+    // Fetch lean user rows plus one grouped attendance result per user.
+    // Loading every attendance relation per user is prohibitively expensive at scale.
+    const [users, attendanceCounts, totalAttendances, pointTotals] = await Promise.all([
       prisma.user.findMany({
         select: {
           id: true,
           role: true,
-          userNumber: true,
           profile: {
             select: {
               name: true,
               avatarUrl: true,
             },
           },
-          stats: {
-            select: {
-              points: true,
-            },
-          },
-          attendances: {
-            where: attendanceWhere,
-            select: { scannedAt: true, eventId: true },
-            orderBy: { scannedAt: "asc" },
-          },
         },
+      }),
+      prisma.attendance.groupBy({
+        by: ["userId"],
+        where: attendanceWhere,
+        _count: { _all: true },
       }),
       prisma.attendance.count({
         where: attendanceWhere,
       }),
+      prisma.pointTransaction.groupBy({
+        by: ["userId"],
+        where: {
+          createdAt: {
+            gte: activeSeason.startDate,
+            lte: activeSeason.endDate,
+          },
+        },
+        _sum: { amount: true },
+      }),
     ])
+    const attendanceByUser = new Map(
+      attendanceCounts.map((row) => [row.userId, row._count._all])
+    )
+    const pointsByUser = new Map(
+      pointTotals.map((row) => [row.userId, row._sum.amount ?? 0])
+    )
 
     const nowIso = now.toISOString()
     const daysLeft = Math.max(
@@ -142,13 +196,13 @@ export async function computeAndCacheLeaderboard(): Promise<void> {
             .slice(0, 2)
             .map((w) => (w && w[0] ? w[0].toUpperCase() : ""))
             .join("") || "AS"
-          const attendanceCount = u.attendances.length
+          const attendanceCount = attendanceByUser.get(u.id) ?? 0
           const val =
             metric === "points"
-              ? (u.stats?.points ?? attendanceCount * 50)
+              ? (pointsByUser.get(u.id) ?? attendanceCount * 50)
               : metric === "streak"
-              ? Math.min(attendanceCount, 12)
-              : attendanceCount
+                ? Math.min(attendanceCount, 12)
+                : attendanceCount
 
           return {
             user_id: u.id,
@@ -158,7 +212,7 @@ export async function computeAndCacheLeaderboard(): Promise<void> {
             value: val,
             attendances_count: attendanceCount,
             avatar_url: u.profile?.avatarUrl,
-            role: u.role || "umat",
+            role: u.role || "member",
           }
         })
         .sort((a, b) => b.value - a.value)
@@ -174,7 +228,7 @@ export async function computeAndCacheLeaderboard(): Promise<void> {
         calculated_at: nowIso,
       }
 
-      const cacheKey = CacheKeys.leaderboard(metric, "weekly_snapshot")
+      const cacheKey = leaderboardCacheKey(metric, activeSeason)
       await redis.set(cacheKey, JSON.stringify(snapshot), "EX", 60 * 60 * 24 * 7)
     }
   } catch (err) {
@@ -186,8 +240,12 @@ export async function computeAndCacheLeaderboard(): Promise<void> {
 /**
  * Gets the pre-computed snapshot for a given metric. If missing or stale, computes immediately.
  */
-export async function getLeaderboardSnapshot(metric: MetricType, forceRefresh = false): Promise<LeaderboardSnapshot> {
-  const cacheKey = CacheKeys.leaderboard(metric, "weekly_snapshot")
+export async function getLeaderboardSnapshot(
+  metric: MetricType,
+  forceRefresh = false
+): Promise<LeaderboardSnapshot> {
+  const activeSeason = await resolveActiveSeason()
+  const cacheKey = leaderboardCacheKey(metric, activeSeason)
   if (!forceRefresh) {
     try {
       const raw = await redis.get(cacheKey)

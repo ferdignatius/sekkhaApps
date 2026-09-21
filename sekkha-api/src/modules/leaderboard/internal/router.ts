@@ -1,7 +1,7 @@
 import { Router } from "express"
 import { z } from "zod"
 import { prisma } from "../../../lib/prisma"
-import { requireAuth, requireRole } from "../../../middleware/auth"
+import { requireAuth, requireRole, optionalAuth } from "../../../middleware/auth"
 import { decrypt } from "../../../lib/crypto"
 import { getLeaderboardSnapshot, MetricType } from "./service"
 
@@ -39,39 +39,71 @@ leaderboardRouter.get("/debug", requireAuth, requireRole("admin"), async (req, r
 })
 
 // GET /api/leaderboard?metric=points|streak|attendance — serves pre-calculated weekly snapshot
-leaderboardRouter.get("/", requireAuth, async (req, res, next) => {
+leaderboardRouter.get("/", optionalAuth, async (req, res, next) => {
   try {
-    const { metric = "points", refresh } = z.object({
-      metric: z.enum(["points", "streak", "attendance"]).optional(),
-      refresh: z.enum(["true", "false", "1", "0"]).optional(),
-    }).parse(req.query)
+    const { metric = "points", refresh, roles, limit = 10 } = z
+      .object({
+        metric: z.enum(["points", "streak", "attendance"]).optional(),
+        refresh: z.enum(["true", "false", "1", "0"]).optional(),
+        roles: z.string().optional(),
+        limit: z.coerce.number().int().min(1).max(100).default(10),
+      })
+      .parse(req.query)
 
-    const userId = req.user!.userId
-    const isPrivileged = req.user?.role === "pengurus" || req.user?.role === "admin"
-    const forceRefresh = isPrivileged && (refresh === "true" || refresh === "1")
-    const snapshot = await getLeaderboardSnapshot(metric as MetricType, forceRefresh)
-    const safeEntries = snapshot.entries || []
+    const userId = req.user?.userId
+    const isPrivileged =
+      req.user?.role === "organizer" || req.user?.role === "admin"
+    const forceRefresh =
+      isPrivileged && (refresh === "true" || refresh === "1")
+    const snapshot = await getLeaderboardSnapshot(
+      metric as MetricType,
+      forceRefresh
+    )
 
-    const myIdx = safeEntries.findIndex((e) => e.user_id === userId)
+    const requestedRoles = new Set(
+      (roles || "")
+        .split(",")
+        .map((role) => role.trim().toLowerCase())
+        .filter(Boolean)
+    )
+    const scopedEntries = (snapshot.entries || [])
+      .filter((entry) => {
+        if (requestedRoles.size === 0) return true
+        const normalizedRole =
+          entry.role === "admin" || entry.role === "organizer" || entry.role === "pengurus"
+            ? "organizer"
+            : entry.role === "activist" || entry.role === "aktivis"
+              ? "activist"
+              : "member"
+        return requestedRoles.has(normalizedRole)
+      })
+      .map((entry, index) => ({
+        ...entry,
+        rank: index + 1,
+      }))
+    const visibleEntries = scopedEntries.slice(0, limit)
+    const myIdx = userId ? scopedEntries.findIndex((e) => e.user_id === userId) : -1
     const myRank =
       myIdx >= 0
         ? {
-            rank: safeEntries[myIdx].rank ?? myIdx + 1,
-            value: safeEntries[myIdx].value ?? 0,
+            rank: scopedEntries[myIdx].rank ?? myIdx + 1,
+            value: scopedEntries[myIdx].value ?? 0,
             is_in_top: myIdx < 20,
-            name: safeEntries[myIdx].name,
-            initials: safeEntries[myIdx].initials,
+            name: scopedEntries[myIdx].name,
+            initials: scopedEntries[myIdx].initials,
           }
-        : {
-            rank: safeEntries.length + 1,
-            value: 0,
-            is_in_top: false,
-            name: req.user?.userId ? "Kamu" : "Anggota Sekkha",
-            initials: "KM",
-          }
+        : userId
+          ? {
+              rank: scopedEntries.length + 1,
+              value: 0,
+              is_in_top: false,
+              name: "Kamu",
+              initials: "KM",
+            }
+          : null
 
     res.json({
-      entries: safeEntries,
+      entries: visibleEntries,
       my_rank: myRank,
       season: snapshot.season,
       community_goal: {

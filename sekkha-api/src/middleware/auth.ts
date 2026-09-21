@@ -103,3 +103,69 @@ export function requireRole(...roles: string[]) {
     res.status(403).json({ error: "Access denied" })
   }
 }
+
+/**
+ * Optional authentication middleware.
+ * If a valid Bearer token is provided, attaches req.user.
+ * If no token or invalid token is provided, proceeds without req.user instead of failing with 401.
+ */
+export async function optionalAuth(req: Request, res: Response, next: NextFunction) {
+  const header = req.headers.authorization
+  const token = header?.startsWith("Bearer ")
+    ? header.slice(7)
+    : typeof req.query.token === "string" && req.query.token.trim()
+      ? req.query.token.trim()
+      : null
+
+  if (!token) {
+    return next()
+  }
+
+  const secret = process.env.JWT_SECRET
+  if (!secret) {
+    return next()
+  }
+
+  try {
+    const revoked = await isTokenRevoked(token)
+    if (revoked) return next()
+
+    const payload = jwt.verify(token, secret, {
+      algorithms: ["HS256"],
+      issuer: "sekkha-api",
+      audience: "sekkha-app",
+    }) as {
+      userId: string
+      role: string
+      passwordChangedAt?: number
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: payload.userId },
+      select: {
+        id: true,
+        role: true,
+        passwordChangedAt: true,
+      },
+    })
+
+    if (!user) return next()
+
+    if (user.passwordChangedAt) {
+      const dbTimeSeconds = Math.floor(user.passwordChangedAt.getTime() / 1000)
+      if (!payload.passwordChangedAt || dbTimeSeconds > payload.passwordChangedAt) {
+        return next()
+      }
+    }
+
+    req.user = {
+      userId: user.id,
+      role: user.role,
+    }
+  } catch {
+    // Gracefully ignore expired or invalid token for optional auth
+  }
+
+  next()
+}
+

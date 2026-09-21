@@ -5,12 +5,15 @@
 //
 // To add more protected pages, create files under src/routes/_authenticated/.
 
+import { useEffect } from "react"
 import {
   createFileRoute,
   Outlet,
   redirect,
   useRouterState,
+  useNavigate,
 } from "@tanstack/react-router"
+import { useAuth } from "@/modules/auth"
 import type { RouterContext } from "@/modules/auth"
 import { AppSidebar } from "@/components/app-sidebar"
 import { MobileDock } from "@/components/common/MobileDock"
@@ -102,7 +105,23 @@ export const Route = createFileRoute("/_authenticated")({
 })
 
 function AuthenticatedLayout() {
+  const { authState } = useAuth()
+  const navigate = useNavigate()
   const { location } = useRouterState()
+
+  useEffect(() => {
+    if (authState.status === "unauthenticated") {
+      navigate({
+        to: "/login",
+        search: { redirectTo: location.href },
+      })
+    }
+  }, [authState.status, navigate, location.href])
+
+  if (authState.status === "loading") {
+    return <AuthenticatedSkeleton />
+  }
+
   const isImmersivePage =
     location.pathname.includes("/scan") ||
     location.pathname.startsWith("/onboarding")

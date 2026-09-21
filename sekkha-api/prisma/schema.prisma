@@ -11,9 +11,9 @@ datasource db {
 // ─── Enums ───────────────────────────────────────────────────────────────────
 
 enum Role {
-  umat
-  aktivis
-  pengurus
+  member
+  activist
+  organizer
   admin
 }
 
@@ -72,7 +72,7 @@ model User {
   email                 String?   @map("email") // Tier 2: AES-256-GCM ciphertext
   emailBindex           String?   @unique @map("email_bindex") // Tier 2: HMAC-SHA256 Blind Index for O(1) lookup & unique constraint
   password              String?
-  role                  Role      @default(umat)
+  role                  Role      @default(member)
   isClaimed             Boolean   @default(true) @map("is_claimed")
   claimedAt             DateTime? @map("claimed_at")
   claimedByUserId       String?   @map("claimed_by_user_id")
@@ -244,6 +244,7 @@ model Attendance {
 
   @@unique([userId, eventId])
   @@index([eventId, scannedAt])
+  @@index([scannedAt])
   @@index([userId, scannedAt(sort: Desc)])
   @@map("attendances")
 }
@@ -280,6 +281,7 @@ model PointTransaction {
   rule        PointRule?           @relation(fields: [ruleId], references: [id], onDelete: SetNull)
 
   @@index([userId, createdAt(sort: Desc)])
+  @@index([createdAt])
   @@index([type, createdAt])
   @@index([ruleId])
   @@index([referenceId])

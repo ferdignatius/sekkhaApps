@@ -30,25 +30,25 @@ const UpdateEventSchema = CreateEventSchema.partial()
 // GET /api/events — list with visibility authorization (F-10) and pagination bounds (F-13)
 eventsRouter.get("/", requireAuth, async (req, res, next) => {
   try {
-    const userRole = req.user?.role || "umat"
-    const isPrivileged = userRole === "pengurus" || userRole === "admin"
+    const userRole = req.user?.role || "member"
+    const isPrivileged = userRole === "organizer" || userRole === "admin"
     const page = Math.max(1, parseInt(req.query.page as string, 10) || 1)
     const limit = Math.min(50, Math.max(1, parseInt(req.query.limit as string, 10) || 20))
     const skip = (page - 1) * limit
 
     let whereClause: any = {}
-    if (userRole === "umat") {
+    if (userRole === "member") {
       whereClause = {
         status: { in: ["published", "active", "closed"] },
         visibility: { in: ["all", "umat"] },
       }
-    } else if (userRole === "aktivis") {
+    } else if (userRole === "activist") {
       whereClause = {
         status: { in: ["published", "active", "closed"] },
         visibility: { in: ["all", "umat", "aktivis"] },
       }
     } else {
-      // pengurus and admin can see all events
+      // organizer and admin can see all events
       whereClause = {}
     }
 
@@ -88,8 +88,8 @@ eventsRouter.get("/", requireAuth, async (req, res, next) => {
 eventsRouter.get("/:id", requireAuth, async (req, res, next) => {
   try {
     const id = req.params.id as string
-    const userRole = req.user?.role || "umat"
-    const isPrivileged = userRole === "pengurus" || userRole === "admin"
+    const userRole = req.user?.role || "member"
+    const isPrivileged = userRole === "organizer" || userRole === "admin"
 
     const event = await prisma.event.findUnique({
       where: { id },
@@ -109,7 +109,7 @@ eventsRouter.get("/:id", requireAuth, async (req, res, next) => {
         res.status(403).json({ error: "Event ini hanya untuk Pengurus." })
         return
       }
-      if (event.visibility === "aktivis" && userRole === "umat") {
+      if (event.visibility === "aktivis" && userRole === "member") {
         res.status(403).json({ error: "Event ini khusus untuk Aktivis dan Pengurus." })
         return
       }
@@ -132,8 +132,8 @@ eventsRouter.get("/:id", requireAuth, async (req, res, next) => {
   } catch (err) { next(err) }
 })
 
-// POST /api/events — create (pengurus/admin)
-eventsRouter.post("/", requireAuth, requireRole("pengurus", "admin"), async (req, res, next) => {
+// POST /api/events — create (organizer/admin)
+eventsRouter.post("/", requireAuth, requireRole("organizer", "admin"), async (req, res, next) => {
   try {
     const body = CreateEventSchema.parse(req.body)
     const qrCode = `EVT-${Date.now().toString(36).toUpperCase()}`
@@ -146,7 +146,10 @@ eventsRouter.post("/", requireAuth, requireRole("pengurus", "admin"), async (req
 
     let seasonId = body.season_id
     if (!seasonId) {
-      const activeSeason = await prisma.season.findFirst({ where: { isActive: true } })
+      const activeSeason = await prisma.season.findFirst({
+        where: { isActive: true },
+        orderBy: [{ updatedAt: "desc" }, { startDate: "desc" }],
+      })
       seasonId = activeSeason?.id
     }
 
@@ -186,8 +189,8 @@ eventsRouter.post("/", requireAuth, requireRole("pengurus", "admin"), async (req
   } catch (err) { next(err) }
 })
 
-// PUT /api/events/:id — update (pengurus/admin)
-eventsRouter.put("/:id", requireAuth, requireRole("pengurus", "admin"), async (req, res, next) => {
+// PUT /api/events/:id — update (organizer/admin)
+eventsRouter.put("/:id", requireAuth, requireRole("organizer", "admin"), async (req, res, next) => {
   try {
     const id = req.params.id as string
     const body = UpdateEventSchema.parse(req.body)
@@ -219,7 +222,7 @@ eventsRouter.put("/:id", requireAuth, requireRole("pengurus", "admin"), async (r
 })
 
 // PATCH /api/events/:id/status — update event lifecycle status with idempotent point award transaction (F-14)
-eventsRouter.patch("/:id/status", requireAuth, requireRole("pengurus", "admin"), async (req, res, next) => {
+eventsRouter.patch("/:id/status", requireAuth, requireRole("organizer", "admin"), async (req, res, next) => {
   try {
     const id = req.params.id as string
     const { status } = z.object({
@@ -318,7 +321,7 @@ async function handleRecordAttendance(req: Request, res: Response, next: NextFun
   try {
     const id = req.params.id as string
     const callerRole = req.user?.role
-    const isPrivileged = callerRole === "pengurus" || callerRole === "admin" || callerRole === "aktivis"
+    const isPrivileged = callerRole === "organizer" || callerRole === "admin" || callerRole === "activist"
 
     if (!isPrivileged) {
       res.status(403).json({ error: "Hanya Pengurus, Admin, atau Aktivis yang berhak mencatat presensi." })
@@ -448,11 +451,11 @@ async function handleRecordAttendance(req: Request, res: Response, next: NextFun
 }
 
 // POST /api/events/:id/attendances — F-06: scan / record attendance restricted to organizers
-eventsRouter.post("/:id/attendances", requireAuth, requireRole("pengurus", "admin", "aktivis"), handleRecordAttendance)
-eventsRouter.post("/:id/attendance", requireAuth, requireRole("pengurus", "admin", "aktivis"), handleRecordAttendance)
+eventsRouter.post("/:id/attendances", requireAuth, requireRole("organizer", "admin", "activist"), handleRecordAttendance)
+eventsRouter.post("/:id/attendance", requireAuth, requireRole("organizer", "admin", "activist"), handleRecordAttendance)
 
 // GET /api/events/:id/live-attendance — FE-10: SSE stream for real-time attendance scan events
-eventsRouter.get("/:id/live-attendance", requireAuth, requireRole("pengurus", "admin", "aktivis"), (req, res) => {
+eventsRouter.get("/:id/live-attendance", requireAuth, requireRole("organizer", "admin", "activist"), (req, res) => {
   const eventId = req.params.id as string
 
   res.setHeader("Content-Type", "text/event-stream")
@@ -470,7 +473,7 @@ eventsRouter.get("/:id/live-attendance", requireAuth, requireRole("pengurus", "a
 })
 
 // GET /api/events/:id/attendances — F-07: list attendees restricted to organizers with pagination
-eventsRouter.get("/:id/attendances", requireAuth, requireRole("pengurus", "admin", "aktivis"), async (req, res, next) => {
+eventsRouter.get("/:id/attendances", requireAuth, requireRole("organizer", "admin", "activist"), async (req, res, next) => {
   try {
     const id = req.params.id as string
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string, 10) || 50))
@@ -506,8 +509,8 @@ eventsRouter.get("/:id/attendances", requireAuth, requireRole("pengurus", "admin
   } catch (err) { next(err) }
 })
 
-// DELETE /api/events/:id/attendances/:userId — remove attendee record (pengurus/admin)
-eventsRouter.delete("/:id/attendances/:userId", requireAuth, requireRole("pengurus", "admin"), async (req, res, next) => {
+// DELETE /api/events/:id/attendances/:userId — remove attendee record (organizer/admin)
+eventsRouter.delete("/:id/attendances/:userId", requireAuth, requireRole("organizer", "admin"), async (req, res, next) => {
   try {
     const { id, userId } = req.params
     await prisma.attendance.delete({
@@ -529,7 +532,7 @@ eventsRouter.delete("/:id/attendances/:userId", requireAuth, requireRole("pengur
 })
 
 // DELETE /api/events/:id — delete event
-eventsRouter.delete("/:id", requireAuth, requireRole("pengurus", "admin"), async (req, res, next) => {
+eventsRouter.delete("/:id", requireAuth, requireRole("organizer", "admin"), async (req, res, next) => {
   try {
     const id = req.params.id as string
     await prisma.attendance.deleteMany({ where: { eventId: id } })

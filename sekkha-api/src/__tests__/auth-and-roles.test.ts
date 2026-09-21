@@ -13,7 +13,7 @@ process.env.JWT_SECRET = TEST_SECRET
 describe("Auth Security & JWT Safeguards (F-02, F-03)", () => {
   it("pins algorithm to HS256, issuer, and audience", () => {
     const token = jwt.sign(
-      { userId: "usr_test_123", role: "umat" },
+      { userId: "usr_test_123", role: "member" },
       TEST_SECRET,
       {
         algorithm: "HS256",
@@ -30,7 +30,7 @@ describe("Auth Security & JWT Safeguards (F-02, F-03)", () => {
     }) as any
 
     expect(decoded.userId).toBe("usr_test_123")
-    expect(decoded.role).toBe("umat")
+    expect(decoded.role).toBe("member")
     expect(decoded.iss).toBe("sekkha-api")
     expect(decoded.aud).toBe("sekkha-app")
   })

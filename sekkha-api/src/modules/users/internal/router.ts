@@ -1,6 +1,6 @@
 import { Router } from "express"
 import { z } from "zod"
-import bcrypt from "bcryptjs"
+import { hashPassword, verifyPassword, DEFAULT_BCRYPT_COST } from "../../../lib/password"
 import { prisma } from "../../../lib/prisma"
 import { cached, invalidate, CacheKeys } from "../../../lib/cache"
 import { requireAuth } from "../../../middleware/auth"
@@ -415,13 +415,13 @@ usersRouter.post("/change-password", requireAuth, async (req, res, next) => {
       return
     }
 
-    const isValid = await bcrypt.compare(body.current_password, user.password)
+    const isValid = await verifyPassword(body.current_password, user.password)
     if (!isValid) {
       res.status(400).json({ error: "Incorrect current password" })
       return
     }
 
-    const hashedPassword = await bcrypt.hash(body.new_password, 12)
+    const hashedPassword = await hashPassword(body.new_password, DEFAULT_BCRYPT_COST)
     await prisma.user.update({
       where: { id: userId },
       data: {
@@ -545,7 +545,7 @@ usersRouter.post("/me/delete-account", requireAuth, async (req, res, next) => {
       return
     }
 
-    const isValid = await bcrypt.compare(password, user.password)
+    const isValid = await verifyPassword(password, user.password)
     if (!isValid) {
       res.status(403).json({ error: "Kata sandi konfirmasi salah" })
       return

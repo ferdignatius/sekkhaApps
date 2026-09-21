@@ -1,7 +1,7 @@
 import { PrismaClient, Role } from "@prisma/client"
-import bcrypt from "bcryptjs"
 import dotenv from "dotenv"
 import { encrypt, generateBlindIndex } from "../src/lib/crypto"
+import { hashPassword, DEFAULT_BCRYPT_COST } from "../src/lib/password"
 
 dotenv.config()
 
@@ -165,7 +165,7 @@ async function main() {
   const adminEmail = process.env.DUMMY_ADMIN_EMAIL || "admin@sekkha.com"
   const adminPasswordRaw = process.env.DUMMY_ADMIN_PASSWORD || "password123"
 
-  const hash = async (pwd: string) => bcrypt.hash(pwd, 12)
+  const hash = async (pwd: string) => hashPassword(pwd, DEFAULT_BCRYPT_COST)
 
   // UMAT
   const umatUser = await prisma.user.create({
@@ -174,7 +174,7 @@ async function main() {
       emailBindex: generateBlindIndex(umatEmail),
       username: "umat",
       password: await hash(umatPasswordRaw),
-      role: Role.umat,
+      role: Role.member,
       userNumber: "26010101",
       profile: {
         create: {
@@ -205,7 +205,7 @@ async function main() {
       emailBindex: generateBlindIndex(aktivisEmail),
       username: "aktivis",
       password: await hash(aktivisPasswordRaw),
-      role: Role.aktivis,
+      role: Role.activist,
       userNumber: "26010102",
       profile: {
         create: {
@@ -236,7 +236,7 @@ async function main() {
       emailBindex: generateBlindIndex(pengurusEmail),
       username: "pengurus",
       password: await hash(pengurusPasswordRaw),
-      role: Role.pengurus,
+      role: Role.organizer,
       userNumber: "26010103",
       profile: {
         create: {
@@ -296,7 +296,7 @@ async function main() {
       emailBindex: generateBlindIndex("hendra@sekkha.local"),
       username: "hendra",
       password: await hash("admin"),
-      role: Role.umat,
+      role: Role.member,
       userNumber: "26010105",
       isClaimed: false,
       profile: {

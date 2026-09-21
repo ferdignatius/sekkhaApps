@@ -1,6 +1,6 @@
 import type { ModuleDefinition } from "@/shell/registry"
 
-export { TeamsPage as PeoplePage } from "./internal/components/TeamsPage"
+export { PeoplePage } from "./internal/components/PeoplePage"
 export { MemberDetailPage } from "./internal/components/MemberDetailPage"
 
 export const peopleModule: ModuleDefinition = {

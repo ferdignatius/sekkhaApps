@@ -1,5 +1,14 @@
 import { api } from "@/lib/api"
 
+export type PeopleRole =
+  | "member"
+  | "activist"
+  | "organizer"
+  | "admin"
+  | "umat"
+  | "aktivis"
+  | "pengurus"
+
 export interface MemberDto {
   id: string
   name: string
@@ -9,7 +18,7 @@ export interface MemberDto {
   school?: string | null
   birth_date?: string | null
   gender?: string | null
-  role: "umat" | "aktivis" | "pengurus" | "admin"
+  role: PeopleRole
   avatar_url?: string | null
   user_number?: string | null
   is_claimed: boolean
@@ -46,7 +55,7 @@ export interface CreateMemberPayload {
   school?: string
   birth_date?: string
   gender?: string
-  role?: "umat" | "aktivis" | "pengurus" | "admin"
+  role?: PeopleRole
   default_password?: string
 }
 
@@ -58,7 +67,7 @@ export interface UpdateMemberPayload {
   school?: string | null
   birth_date?: string | null
   gender?: string | null
-  role?: "umat" | "aktivis" | "pengurus" | "admin"
+  role?: PeopleRole
 }
 
 export interface PaginatedMembersResponse {
@@ -69,9 +78,12 @@ export interface PaginatedMembersResponse {
   totalPages: number
   stats?: {
     total: number
-    umat: number
-    aktivis: number
-    pengurus: number
+    member?: number
+    activist?: number
+    organizer?: number
+    umat?: number
+    aktivis?: number
+    pengurus?: number
   }
 }
 

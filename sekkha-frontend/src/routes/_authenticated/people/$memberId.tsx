@@ -8,7 +8,7 @@ import { GenericSkeleton } from "@/components/common/PageSkeletons"
 export const Route = createFileRoute("/_authenticated/people/$memberId")({
   beforeLoad: ({ context }) => {
     const role = (context as any).authState?.role
-    if (!role || role === "umat") {
+    if (!role || role === "member" || role === "umat") {
       throw redirect({ to: "/home" })
     }
   },

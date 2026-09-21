@@ -111,7 +111,8 @@ type View = "calendar" | "detail"
 export function EventsPage() {
   const { authState } = useAuth()
   const role = authState.status === "authenticated" ? authState.role : null
-  const isPengurus = role === "pengurus" || role === "admin"
+  const isPengurus =
+    role === "organizer" || role === "pengurus" || role === "admin"
 
   const [events, setEvents] = useState<EventListItem[]>([])
   const [loadingEvents, setLoadingEvents] = useState(true)
@@ -119,6 +120,8 @@ export function EventsPage() {
   const [selected, setSelected] = useState<EventListItem | null>(null)
   const [editTarget, setEditTarget] = useState<EventListItem | null>(null)
   const [formOpen, setFormOpen] = useState(false)
+  const [formSubmitting, setFormSubmitting] = useState(false)
+  const [formError, setFormError] = useState<string | null>(null)
   const [activeMonth, setActiveMonth] = useState<Date>(new Date())
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
@@ -128,7 +131,8 @@ export function EventsPage() {
   const categoryDropdownRef = useRef<HTMLDivElement>(null)
   const [monthPickerOpen, setMonthPickerOpen] = useState(false)
   const [pickerYear, setPickerYear] = useState<number>(new Date().getFullYear())
-  const [deleteEventTarget, setDeleteEventTarget] = useState<EventListItem | null>(null)
+  const [deleteEventTarget, setDeleteEventTarget] =
+    useState<EventListItem | null>(null)
   const [deletingEvent, setDeletingEvent] = useState(false)
   const monthPickerRef = useRef<HTMLDivElement>(null)
 
@@ -332,17 +336,25 @@ export function EventsPage() {
 
   async function handleFormSubmit(payload: CreateEventPayload) {
     try {
+      setFormSubmitting(true)
+      setFormError(null)
       if (editTarget) {
         await api.put(`/events/${editTarget.id}`, payload)
       } else {
         await api.post("/events", payload)
       }
       await loadEvents()
-    } catch (err) {
-      console.error("Failed to save event:", err)
-    } finally {
       setEditTarget(null)
       setFormOpen(false)
+    } catch (err) {
+      console.error("Failed to save event:", err)
+      setFormError(
+        err instanceof Error
+          ? err.message
+          : "Event could not be saved. Please try again."
+      )
+    } finally {
+      setFormSubmitting(false)
     }
   }
 
@@ -397,14 +409,13 @@ export function EventsPage() {
                 isPengurus
                   ? (ev) => {
                       setEditTarget(ev)
+                      setFormError(null)
                       setFormOpen(true)
                     }
                   : undefined
               }
               onDelete={
-                isPengurus
-                  ? (ev) => setDeleteEventTarget(ev)
-                  : undefined
+                isPengurus ? (ev) => setDeleteEventTarget(ev) : undefined
               }
               onDuplicate={
                 isPengurus
@@ -497,6 +508,8 @@ export function EventsPage() {
             initial={editTarget ?? undefined}
             initialDate={!editTarget && selectedDate ? selectedDate : undefined}
             onSubmit={handleFormSubmit}
+            isSubmitting={formSubmitting}
+            submissionError={formError}
             onCancel={() => {
               setEditTarget(null)
               setFormOpen(false)
@@ -979,6 +992,7 @@ export function EventsPage() {
                 variant="filled"
                 onClick={() => {
                   setEditTarget(null)
+                  setFormError(null)
                   setFormOpen(true)
                 }}
                 className="h-12 shrink-0 rounded-full px-5 font-bold shadow-xs active:scale-[0.98]"
@@ -1147,6 +1161,8 @@ export function EventsPage() {
           initial={editTarget ?? undefined}
           initialDate={!editTarget && selectedDate ? selectedDate : undefined}
           onSubmit={handleFormSubmit}
+          isSubmitting={formSubmitting}
+          submissionError={formError}
           onCancel={() => {
             setEditTarget(null)
             setFormOpen(false)

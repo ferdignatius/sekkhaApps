@@ -82,7 +82,11 @@ export function AttendanceScanModal({
   onClose,
 }: AttendanceScanModalProps) {
   const isPengurus =
-    role === "pengurus" || role === "admin" || role === "aktivis"
+    role === "organizer" ||
+    role === "pengurus" ||
+    role === "admin" ||
+    role === "activist" ||
+    role === "aktivis"
 
   // Mode for Pengurus: 'camera' | 'search'
   const [pengurusMode, setPengurusMode] = useState<"camera" | "search">(

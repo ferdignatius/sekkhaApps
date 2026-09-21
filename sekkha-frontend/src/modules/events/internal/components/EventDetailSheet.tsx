@@ -24,6 +24,7 @@ import {
 } from "lucide-react"
 import { AttendanceListSheet } from "./AttendanceListSheet"
 import { Badge } from "@/components/base/Badge"
+import { ConfirmDialog } from "@/components/base/AlertDialog"
 import type {
   EventListItem,
   UserRole,
@@ -101,11 +102,12 @@ function getGoogleCalendarUrl(event: EventListItem): string {
   const details = encodeURIComponent(
     `${event.description || "Acara Komunitas Vihara Tri Maha Dharma"}\n\n(via Sekkha App)`
   )
-  const location = encodeURIComponent(event.location || "Vihara Tri Maha Dharma")
+  const location = encodeURIComponent(
+    event.location || "Vihara Tri Maha Dharma"
+  )
   const startDate = new Date(event.event_date)
   const endDate = new Date(startDate.getTime() + 2 * 60 * 60 * 1000) // 2 hours default
-  const formatGCalDate = (d: Date) =>
-    d.toISOString().replace(/-|:|\.\d+/g, "")
+  const formatGCalDate = (d: Date) => d.toISOString().replace(/-|:|\.\d+/g, "")
   const dates = `${formatGCalDate(startDate)}/${formatGCalDate(endDate)}`
   return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}&location=${location}&dates=${dates}`
 }
@@ -127,10 +129,16 @@ export function EventDetailSheet({
   onDeleteAttendance,
 }: EventDetailSheetProps) {
   const navigate = useNavigate()
-  const isPengurus = role === "pengurus" || role === "admin"
-  const [activeTab, setActiveTab] = useState<"overview" | "attendance">("overview")
-  const [warningModalOpen, setWarningModalOpen] = useState(false)
+  const isPengurus =
+    role === "organizer" || role === "pengurus" || role === "admin"
+  const [activeTab, setActiveTab] = useState<"overview" | "attendance">(
+    "overview"
+  )
   const [copiedLink, setCopiedLink] = useState(false)
+
+  // Unified lifecycle confirmation dialog (activate / activate-early / close)
+  type LifecycleAction = "activate" | "activate-early" | "close" | null
+  const [pendingAction, setPendingAction] = useState<LifecycleAction>(null)
 
   // Status lifecycle
   const currentStatus: EventStatus = event.status ?? "published"
@@ -138,23 +146,18 @@ export function EventDetailSheet({
   const isClosed = currentStatus === "closed" || currentStatus === "done"
   const canEdit = isPengurus && !isActive && !isClosed
 
-  const { dayName, monthShort, dayNumber, dateStr, timeStr } = formatDateDetails(
-    event.event_date
-  )
+  const { dayName, monthShort, dayNumber, dateStr, timeStr } =
+    formatDateDetails(event.event_date)
   const tag = event.tag ?? event.event_type ?? "rutin"
   const colorInfo = getCategoryColor(tag)
   const pointsReward = event.event_type === "special" ? 100 : 50
 
-  // Handle Activation Trigger
+  // Handle Activation Trigger — confirm before opening check-in.
+  // If the scheduled time has not arrived, surface an early-activation warning.
   function handleActivateClick() {
     const eventTime = new Date(event.event_date).getTime()
     const nowTime = Date.now()
-
-    if (nowTime < eventTime) {
-      setWarningModalOpen(true)
-    } else {
-      executeStatusChange("active")
-    }
+    setPendingAction(nowTime < eventTime ? "activate-early" : "activate")
   }
 
   function executeStatusChange(newStatus: EventStatus) {
@@ -163,7 +166,7 @@ export function EventDetailSheet({
     } else {
       event.status = newStatus
     }
-    setWarningModalOpen(false)
+    setPendingAction(null)
   }
 
   async function handleShare() {
@@ -202,7 +205,7 @@ export function EventDetailSheet({
             <div className="flex flex-wrap items-center gap-2">
               <span
                 className="inline-flex items-center gap-1.5 rounded-full border border-black/[0.06] px-2.5 py-0.5 text-xs font-semibold capitalize shadow-2xs backdrop-blur-md"
-                style={colorInfo.bgStyle}
+                style={{ ...colorInfo.bgStyle, color: "#0a0a0a" }}
               >
                 <span
                   className="size-1.5 shrink-0 rounded-full"
@@ -250,7 +253,7 @@ export function EventDetailSheet({
             <button
               type="button"
               onClick={handleShare}
-              className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full border border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] shadow-xs transition-all hover:bg-[#faf5e8] active:scale-95"
+              className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full border border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] shadow-xs transition-all hover:bg-[#faf5e8] focus-visible:ring-2 focus-visible:ring-[#0a0a0a] focus-visible:ring-offset-2 focus-visible:outline-none active:scale-95"
               title="Share event"
               aria-label="Share event"
             >
@@ -320,12 +323,12 @@ export function EventDetailSheet({
               {isPengurus && isActive && (
                 <button
                   type="button"
-                  onClick={() => executeStatusChange("closed")}
+                  onClick={() => setPendingAction("close")}
                   className="flex min-h-[44px] w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-[#1a3a3a] px-6 py-2.5 text-xs font-bold text-white shadow-xs transition-all hover:bg-[#142e2e] active:scale-[0.98] sm:w-auto sm:text-sm"
                   title="Close & complete this event"
                 >
                   <LockIcon className="size-4 text-[#e8b94a]" />
-                  <span>Complete & Close Event</span>
+                  <span>Complete &amp; Close Event</span>
                 </button>
               )}
 
@@ -348,14 +351,17 @@ export function EventDetailSheet({
                   className="flex min-h-[44px] w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-[#0a0a0a] px-6 py-2.5 text-xs font-bold text-white shadow-xs transition-all hover:bg-[#1f1f1f] active:scale-[0.98] sm:w-auto sm:text-sm"
                 >
                   <CameraIcon className="size-4 text-[#e8b94a]" />
-                  <span>Self Check-in via QR</span>
+                  <span>Show My Check-in QR</span>
                 </button>
               )}
 
               {!isPengurus && !isActive && (
                 <div className="flex min-h-[44px] items-center gap-2 text-xs font-semibold text-[#6a6a6a]">
                   <ShieldCheckIcon className="size-4 text-[#e8b94a]" />
-                  <span>Check-in will open when the organizer activates the event</span>
+                  <span>
+                    Your check-in QR will be available when the organizer
+                    activates the event
+                  </span>
                 </div>
               )}
             </div>
@@ -367,12 +373,14 @@ export function EventDetailSheet({
                   type="button"
                   disabled={!canEdit}
                   onClick={() => canEdit && onEdit?.(event)}
-                  className={`flex min-h-[40px] items-center justify-center gap-1 rounded-full border px-2.5 py-1.5 text-xs font-semibold shadow-xs transition-all sm:min-h-[38px] sm:gap-1.5 sm:px-3.5 ${
+                  className={`flex min-h-[44px] items-center justify-center gap-1 rounded-full border px-2.5 py-1.5 text-xs font-semibold shadow-xs transition-all sm:min-h-[44px] sm:gap-1.5 sm:px-3.5 ${
                     canEdit
                       ? "cursor-pointer border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] hover:bg-[#faf5e8] active:scale-95"
-                      : "cursor-not-allowed border-[#e5e5e5]/50 bg-black/[0.02] text-[#9a9a9a]"
+                      : "cursor-not-allowed border-[#e5e5e5]/50 bg-black/[0.02] text-[#6a6a6a]"
                   }`}
-                  title={canEdit ? "Edit Event Details" : "Locked (Cannot edit)"}
+                  title={
+                    canEdit ? "Edit Event Details" : "Locked (Cannot edit)"
+                  }
                 >
                   <PencilIcon className="size-3.5" />
                   <span>Edit</span>
@@ -381,7 +389,7 @@ export function EventDetailSheet({
                 <button
                   type="button"
                   onClick={() => onDuplicate?.(event)}
-                  className="flex min-h-[40px] cursor-pointer items-center justify-center gap-1 rounded-full border border-[#e5e5e5] bg-[#fffaf0] px-2.5 py-1.5 text-xs font-semibold text-[#0a0a0a] shadow-xs transition-all hover:bg-[#faf5e8] active:scale-95 sm:min-h-[38px] sm:gap-1.5 sm:px-3.5"
+                  className="flex min-h-[44px] cursor-pointer items-center justify-center gap-1 rounded-full border border-[#e5e5e5] bg-[#fffaf0] px-2.5 py-1.5 text-xs font-semibold text-[#0a0a0a] shadow-xs transition-all hover:bg-[#faf5e8] active:scale-95 sm:min-h-[44px] sm:gap-1.5 sm:px-3.5"
                   title="Duplicate Event"
                 >
                   <CopyIcon className="size-3.5 text-[#e8b94a]" />
@@ -391,7 +399,7 @@ export function EventDetailSheet({
                 <button
                   type="button"
                   onClick={() => onDelete?.(event)}
-                  className="flex min-h-[40px] cursor-pointer items-center justify-center gap-1 rounded-full border border-[#e5e5e5] bg-[#fffaf0] px-2.5 py-1.5 text-xs font-semibold text-[#6a6a6a] shadow-xs transition-all hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700 active:scale-95 sm:min-h-[38px] sm:gap-1.5 sm:px-3.5"
+                  className="flex min-h-[44px] cursor-pointer items-center justify-center gap-1 rounded-full border border-[#e5e5e5] bg-[#fffaf0] px-2.5 py-1.5 text-xs font-semibold text-[#6a6a6a] shadow-xs transition-all hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700 active:scale-95 sm:min-h-[44px] sm:gap-1.5 sm:px-3.5"
                   title="Delete Event"
                 >
                   <Trash2Icon className="size-3.5" />
@@ -404,7 +412,7 @@ export function EventDetailSheet({
                   href={getGoogleCalendarUrl(event)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex min-h-[40px] w-full cursor-pointer items-center justify-center gap-1.5 rounded-full border border-[#e5e5e5] bg-[#fffaf0] px-4 py-1.5 text-xs font-semibold text-[#0a0a0a] shadow-xs transition-all hover:bg-[#faf5e8] active:scale-95 sm:min-h-[38px] sm:w-auto"
+                  className="flex min-h-[44px] w-full cursor-pointer items-center justify-center gap-1.5 rounded-full border border-[#e5e5e5] bg-[#fffaf0] px-4 py-1.5 text-xs font-semibold text-[#0a0a0a] shadow-xs transition-all hover:bg-[#faf5e8] active:scale-95 sm:min-h-[44px] sm:w-auto"
                 >
                   <CalendarIcon className="size-3.5 text-[#e8b94a]" />
                   <span>Add to Google Calendar</span>
@@ -423,11 +431,14 @@ export function EventDetailSheet({
           className="grid w-full grid-cols-2 rounded-full border border-[#e5e5e5] bg-[#faf5e8] p-1 shadow-2xs sm:inline-flex sm:w-auto"
         >
           <button
+            id="event-overview-tab"
             type="button"
             role="tab"
             aria-selected={activeTab === "overview"}
+            aria-controls="event-overview-panel"
+            tabIndex={activeTab === "overview" ? 0 : -1}
             onClick={() => setActiveTab("overview")}
-            className={`flex items-center justify-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition-all sm:px-5 sm:text-sm ${
+            className={`flex min-h-[44px] items-center justify-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition-all focus-visible:ring-2 focus-visible:ring-[#0a0a0a] focus-visible:ring-offset-2 focus-visible:outline-none sm:min-w-32 sm:px-5 sm:text-sm ${
               activeTab === "overview"
                 ? "bg-[#0a0a0a] text-white shadow-xs"
                 : "text-[#6a6a6a] hover:text-[#0a0a0a]"
@@ -438,11 +449,14 @@ export function EventDetailSheet({
           </button>
 
           <button
+            id="event-attendance-tab"
             type="button"
             role="tab"
             aria-selected={activeTab === "attendance"}
+            aria-controls="event-attendance-panel"
+            tabIndex={activeTab === "attendance" ? 0 : -1}
             onClick={() => setActiveTab("attendance")}
-            className={`flex items-center justify-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition-all sm:px-5 sm:text-sm ${
+            className={`flex min-h-[44px] items-center justify-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition-all focus-visible:ring-2 focus-visible:ring-[#0a0a0a] focus-visible:ring-offset-2 focus-visible:outline-none sm:min-w-32 sm:px-5 sm:text-sm ${
               activeTab === "attendance"
                 ? "bg-[#0a0a0a] text-white shadow-xs"
                 : "text-[#6a6a6a] hover:text-[#0a0a0a]"
@@ -465,7 +479,13 @@ export function EventDetailSheet({
 
       {/* ── 3. Tab Contents ── */}
       {activeTab === "overview" && (
-        <div className="space-y-5 sm:space-y-6">
+        <div
+          id="event-overview-panel"
+          role="tabpanel"
+          aria-labelledby="event-overview-tab"
+          tabIndex={0}
+          className="space-y-5 outline-none sm:space-y-6"
+        >
           {/* Key Details Bento Grid: Responsive 1 col on mobile, 2 col on tablet, 3 col on desktop */}
           <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
             {/* Schedule Bento Card */}
@@ -570,12 +590,13 @@ export function EventDetailSheet({
                   <span>About this Event</span>
                 </h3>
                 {event.description ? (
-                  <p className="text-xs leading-relaxed text-[#3a3a3a] whitespace-pre-line sm:text-sm">
+                  <p className="text-xs leading-relaxed whitespace-pre-line text-[#3a3a3a] sm:text-sm">
                     {event.description}
                   </p>
                 ) : (
                   <p className="text-xs leading-relaxed text-[#6a6a6a] italic sm:text-sm">
-                    No description provided for this event. Please arrive on time at the scheduled venue.
+                    No description provided for this event. Please arrive on
+                    time at the scheduled venue.
                   </p>
                 )}
               </div>
@@ -595,9 +616,12 @@ export function EventDetailSheet({
                       1
                     </span>
                     <div className="min-w-0">
-                      <p className="text-xs font-bold text-[#0a0a0a]">Dress Code</p>
+                      <p className="text-xs font-bold text-[#0a0a0a]">
+                        Dress Code
+                      </p>
                       <p className="mt-0.5 text-xs text-[#6a6a6a]">
-                        Dress politely & respectfully (white or neat casual attire).
+                        Dress politely & respectfully (white or neat casual
+                        attire).
                       </p>
                     </div>
                   </div>
@@ -607,9 +631,12 @@ export function EventDetailSheet({
                       2
                     </span>
                     <div className="min-w-0">
-                      <p className="text-xs font-bold text-[#0a0a0a]">On-Time Presence</p>
+                      <p className="text-xs font-bold text-[#0a0a0a]">
+                        On-Time Presence
+                      </p>
                       <p className="mt-0.5 text-xs text-[#6a6a6a]">
-                        Arrive 10 minutes early for peaceful meditation preparation.
+                        Arrive 10 minutes early for peaceful meditation
+                        preparation.
                       </p>
                     </div>
                   </div>
@@ -619,16 +646,22 @@ export function EventDetailSheet({
                       3
                     </span>
                     <div className="min-w-0">
-                      <p className="text-xs font-bold text-[#0a0a0a]">QR Check-In</p>
+                      <p className="text-xs font-bold text-[#0a0a0a]">
+                        QR Check-In
+                      </p>
                       <p className="mt-0.5 text-xs text-[#6a6a6a]">
-                        Present your personal Member QR code to the reception team.
+                        Present your personal Member QR code to the reception
+                        team.
                       </p>
                     </div>
                   </div>
                 </div>
 
                 <div className="border-t border-[#e5e5e5] pt-3 text-xs text-[#6a6a6a]">
-                  <span>Need special accommodations? Please speak with the Vihara seva team.</span>
+                  <span>
+                    Need special accommodations? Please speak with the Vihara
+                    seva team.
+                  </span>
                 </div>
               </div>
             </div>
@@ -638,7 +671,13 @@ export function EventDetailSheet({
 
       {/* ── Attendance Tab ── */}
       {activeTab === "attendance" && (
-        <div className="space-y-6">
+        <div
+          id="event-attendance-panel"
+          role="tabpanel"
+          aria-labelledby="event-attendance-tab"
+          tabIndex={0}
+          className="space-y-6 outline-none"
+        >
           {/* Active Session Scanner Callout (Pengurus & Aktivis) */}
           {isPengurus && (
             <div>
@@ -653,7 +692,8 @@ export function EventDetailSheet({
                       Ready to Scan Member QR Codes
                     </h3>
                     <p className="text-xs text-[#6a6a6a]">
-                      Point device camera to members&apos; personal attendance QR codes.
+                      Point device camera to members&apos; personal attendance
+                      QR codes.
                     </p>
                   </div>
 
@@ -678,8 +718,10 @@ export function EventDetailSheet({
                   <AlertTriangleIcon className="size-4 shrink-0 text-[#e8b94a]" />
                   <span>
                     Event check-in is currently idle. Click{" "}
-                    <strong className="font-semibold text-[#0a0a0a]">&quot;Activate Event Check-In&quot;</strong> in the header
-                    to begin scanning attendees.
+                    <strong className="font-semibold text-[#0a0a0a]">
+                      &quot;Activate Event Check-In&quot;
+                    </strong>{" "}
+                    in the header to begin scanning attendees.
                   </span>
                 </div>
               )}
@@ -687,7 +729,10 @@ export function EventDetailSheet({
               {isClosed && (
                 <div className="flex items-center gap-3 rounded-[20px] border border-[#e5e5e5] bg-[#faf5e8] p-4 text-xs text-[#6a6a6a] shadow-2xs">
                   <LockIcon className="size-4 shrink-0 text-[#6a6a6a]" />
-                  <span>Event has concluded. Attendance list is locked for archiving.</span>
+                  <span>
+                    Event has concluded. Attendance list is locked for
+                    archiving.
+                  </span>
                 </div>
               )}
             </div>
@@ -714,55 +759,79 @@ export function EventDetailSheet({
         </div>
       )}
 
-      {/* ── Warning Modal Alert (Early Activation Trigger) ── */}
-      {warningModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md animate-in space-y-4 rounded-[28px] border border-[#e5e5e5] bg-[#faf5e8] p-6 text-left font-sans shadow-2xl zoom-in-95 fade-in">
-            <div className="flex items-center gap-3">
-              <div className="flex size-12 shrink-0 items-center justify-center rounded-[16px] bg-[#0a0a0a] text-[#e8b94a] shadow-2xs">
-                <AlertTriangleIcon className="size-6" />
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-[#0a0a0a]">
-                  Early Activation Warning
-                </h3>
-                <p className="text-xs text-[#6a6a6a]">
-                  Scheduled event time has not arrived yet
-                </p>
-              </div>
-            </div>
+      {/* ── Lifecycle Confirmation Dialogs (Apple HIG AlertDialog) ── */}
+      {/* Activate check-in — normal (event time reached) */}
+      <ConfirmDialog
+        open={pendingAction === "activate"}
+        onOpenChange={(open) => !open && setPendingAction(null)}
+        variant="info"
+        icon={<PlayIcon className="size-6" />}
+        title="Open Attendance Check-In?"
+        description={
+          <>
+            Members will be able to self check-in via QR for{" "}
+            <strong className="font-semibold text-[#0a0a0a]">
+              {event.title}
+            </strong>{" "}
+            once activated. You can close check-in when the event ends.
+          </>
+        }
+        confirmLabel="Yes, Open Check-In"
+        cancelLabel="Cancel"
+        onConfirm={() => executeStatusChange("active")}
+      />
 
-            <p className="text-xs leading-relaxed text-[#3a3a3a] sm:text-sm">
-              The scheduled time for <strong>{event.title}</strong> is{" "}
-              <strong>
-                {dayName}, {dateStr} at {timeStr} WIB
-              </strong>
-              .
-              <br />
-              <br />
-              Are you sure you want to open attendance check-in now?
-            </p>
+      {/* Activate check-in — early (scheduled time not reached yet) */}
+      <ConfirmDialog
+        open={pendingAction === "activate-early"}
+        onOpenChange={(open) => !open && setPendingAction(null)}
+        variant="warning"
+        icon={<AlertTriangleIcon className="size-6" />}
+        title="Early Activation Warning"
+        description={
+          <>
+            The scheduled time for{" "}
+            <strong className="font-semibold text-[#0a0a0a]">
+              {event.title}
+            </strong>{" "}
+            is{" "}
+            <strong className="font-semibold text-[#0a0a0a]">
+              {dayName}, {dateStr} at {timeStr} WIB
+            </strong>
+            , which has not arrived yet. Are you sure you want to open
+            attendance check-in now?
+          </>
+        }
+        confirmLabel="Open Check-In Anyway"
+        cancelLabel="Not Yet"
+        onConfirm={() => executeStatusChange("active")}
+      />
 
-            <div className="flex items-center justify-end gap-2 border-t border-[#e5e5e5] pt-4">
-              <button
-                type="button"
-                onClick={() => setWarningModalOpen(false)}
-                className="min-h-[40px] flex-1 cursor-pointer rounded-full border border-[#e5e5e5] bg-[#fffaf0] px-4 py-2 text-xs font-semibold text-[#6a6a6a] shadow-xs transition-colors hover:bg-[#faf5e8] hover:text-[#0a0a0a] sm:flex-initial"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => executeStatusChange("active")}
-                className="flex min-h-[40px] flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-full bg-[#0a0a0a] px-5 py-2 text-xs font-bold text-white shadow-xs transition-all hover:bg-[#1f1f1f] active:scale-95 sm:flex-initial"
-              >
-                <PlayIcon className="size-3.5 fill-[#e8b94a] text-[#e8b94a]" />
-                <span>Yes, Open Check-In</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Complete & close — irreversible lock */}
+      <ConfirmDialog
+        open={pendingAction === "close"}
+        onOpenChange={(open) => !open && setPendingAction(null)}
+        variant="destructive"
+        icon={<LockIcon className="size-6" />}
+        title="Complete & Close Event?"
+        description={
+          <>
+            Closing{" "}
+            <strong className="font-semibold text-[#0a0a0a]">
+              {event.title}
+            </strong>{" "}
+            will lock the attendance list for archiving. Members can no longer
+            check in, and this action{" "}
+            <strong className="font-semibold text-[#0a0a0a]">
+              cannot be undone
+            </strong>
+            .
+          </>
+        }
+        confirmLabel="Complete & Close"
+        cancelLabel="Keep Open"
+        onConfirm={() => executeStatusChange("closed")}
+      />
     </div>
   )
 }

@@ -6,7 +6,14 @@ import type { AttendanceBadge } from "./types"
 
 // ─── 1. Kategori Event Master Data ────────────────────────────────────────────
 
-export type UserRoleName = "admin" | "pengurus" | "aktivis" | "umat"
+export type UserRoleName =
+  | "admin"
+  | "organizer"
+  | "activist"
+  | "member"
+  | "pengurus"
+  | "aktivis"
+  | "umat"
 
 export const ALL_USER_ROLES: {
   id: UserRoleName
@@ -16,19 +23,19 @@ export const ALL_USER_ROLES: {
 }[] = [
   { id: "admin", label: "Admin", bg: "bg-purple-100", text: "text-purple-800" },
   {
-    id: "pengurus",
+    id: "organizer",
     label: "Organizer",
     bg: "bg-blue-100",
     text: "text-blue-800",
   },
   {
-    id: "aktivis",
+    id: "activist",
     label: "Activist",
     bg: "bg-amber-100",
     text: "text-amber-800",
   },
   {
-    id: "umat",
+    id: "member",
     label: "Member",
     bg: "bg-emerald-100",
     text: "text-emerald-800",
@@ -368,10 +375,29 @@ export function getAccessibleCategories(
   activeOnly = true
 ): EventCategoryItem[] {
   const cats = getMasterCategories(activeOnly)
-  const role = (userRole || "umat").toLowerCase()
+  const role = (userRole || "member").toLowerCase()
+  const normalizedRole =
+    role === "umat"
+      ? "member"
+      : role === "aktivis"
+        ? "activist"
+        : role === "pengurus"
+          ? "organizer"
+          : role
   return cats.filter((c) => {
     if (!c.target_roles || c.target_roles.length === 0) return true
-    return c.target_roles.some((r) => r.toLowerCase() === role)
+    return c.target_roles.some((r) => {
+      const nr = r.toLowerCase()
+      const normalizedTarget =
+        nr === "umat"
+          ? "member"
+          : nr === "aktivis"
+            ? "activist"
+            : nr === "pengurus"
+              ? "organizer"
+              : nr
+      return normalizedTarget === normalizedRole
+    })
   })
 }
 

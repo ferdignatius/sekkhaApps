@@ -56,7 +56,8 @@ export function AttendanceListSheet({
   onUpdateBadges,
   onDeleteRecord,
 }: AttendanceListSheetProps) {
-  const isPengurus = role === "pengurus" || role === "admin"
+  const isPengurus =
+    role === "organizer" || role === "pengurus" || role === "admin"
   const isEditable = isPengurus && !isClosed
 
   const [localRecords, setLocalRecords] = useState<AttendanceRecord[]>(records)
@@ -294,7 +295,7 @@ export function AttendanceListSheet({
                 ? `Cari nama atau ID di ${metrics.manual} presensi manual...`
                 : "Cari nama umat atau nomor ID..."
           }
-          className="min-h-[42px] w-full rounded-full border border-[#e5e5e5] bg-[#fffaf0] pr-10 pl-10 text-xs text-[#0a0a0a] placeholder:text-[#9a9a9a] shadow-2xs focus:border-[#0a0a0a] focus:bg-white focus:outline-none sm:text-sm"
+          className="min-h-[42px] w-full rounded-full border border-[#e5e5e5] bg-[#fffaf0] pr-10 pl-10 text-xs text-[#0a0a0a] placeholder:text-[#767676] shadow-2xs focus:border-[#0a0a0a] focus:bg-white focus:outline-none sm:text-sm"
         />
         {searchQuery && (
           <button
@@ -312,7 +313,7 @@ export function AttendanceListSheet({
       {filteredRecords.length === 0 ? (
         <div className="rounded-[20px] border border-[#e5e5e5] bg-[#fffaf0] p-8 text-center shadow-xs">
           <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-[#faf5e8] text-[#6a6a6a]">
-            <SearchIcon className="size-6 text-[#9a9a9a]" />
+            <SearchIcon className="size-6 text-[#6a6a6a]" />
           </div>
           <h4 className="mt-3 text-sm font-bold text-[#0a0a0a]">
             {displayRecords.length === 0
@@ -405,7 +406,7 @@ export function AttendanceListSheet({
                   {/* Badges Chips */}
                   <div className="flex min-w-0 flex-wrap items-center gap-1.5">
                     {userBadges.length === 0 ? (
-                      <span className="text-[11px] text-[#9a9a9a] italic">
+                      <span className="text-[11px] text-[#6a6a6a] italic">
                         Belum ada bonus badge
                       </span>
                     ) : (
@@ -496,7 +497,7 @@ export function AttendanceListSheet({
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               className={`flex min-h-[34px] items-center gap-1 rounded-full border px-3 py-1 font-semibold transition-all ${
                 safePage <= 1
-                  ? "cursor-not-allowed border-transparent text-[#9a9a9a]"
+                  ? "cursor-not-allowed border-transparent text-[#6a6a6a]"
                   : "cursor-pointer border-[#e5e5e5] bg-[#faf5e8] text-[#0a0a0a] hover:bg-white active:scale-95"
               }`}
             >
@@ -514,7 +515,7 @@ export function AttendanceListSheet({
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               className={`flex min-h-[34px] items-center gap-1 rounded-full border px-3 py-1 font-semibold transition-all ${
                 safePage >= totalPages
-                  ? "cursor-not-allowed border-transparent text-[#9a9a9a]"
+                  ? "cursor-not-allowed border-transparent text-[#6a6a6a]"
                   : "cursor-pointer border-[#e5e5e5] bg-[#faf5e8] text-[#0a0a0a] hover:bg-white active:scale-95"
               }`}
             >
@@ -626,7 +627,7 @@ export function AttendanceListSheet({
                       {isChecked ? (
                         <CheckSquareIcon className="size-4.5 shrink-0 text-[#0a0a0a]" />
                       ) : (
-                        <SquareIcon className="size-4.5 shrink-0 text-[#9a9a9a]" />
+                        <SquareIcon className="size-4.5 shrink-0 text-[#6a6a6a]" />
                       )}
                       <div className="text-left">
                         <p className="font-bold text-[#0a0a0a]">{preset.name}</p>

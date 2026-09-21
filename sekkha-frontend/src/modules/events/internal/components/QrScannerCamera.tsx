@@ -214,7 +214,7 @@ export function QrScannerCamera({
     if (
       typeof window !== "undefined" &&
       window.isSecureContext === false &&
-      window.location.hostname !== "localhost"
+      !["localhost", "127.0.0.1", "[::1]"].includes(window.location.hostname)
     ) {
       setIsInsecureContext(true)
       setCameraError("Kamera memerlukan koneksi aman (HTTPS atau localhost).")
@@ -370,7 +370,11 @@ export function QrScannerCamera({
 
         {/* Loading Spinner */}
         {isInitializing && !cameraError && (
-          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 bg-[#0a0a0a]/90 text-white backdrop-blur-xs">
+          <div
+            role="status"
+            aria-live="polite"
+            className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 bg-[#0a0a0a]/90 text-white backdrop-blur-xs"
+          >
             <RefreshCwIcon className="size-8 animate-spin text-amber-400" />
             <p className="text-caption font-medium">
               Menghubungkan ke kamera...
@@ -396,7 +400,7 @@ export function QrScannerCamera({
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="text-caption-bold flex cursor-pointer items-center gap-1.5 rounded-xl bg-[#e8b94a] px-3.5 py-2 font-bold text-[#0a0a0a] shadow-sm transition-all hover:bg-amber-400"
+              className="text-caption-bold flex min-h-[44px] cursor-pointer items-center gap-1.5 rounded-[12px] bg-[#e8b94a] px-3.5 py-2 font-bold text-[#0a0a0a] shadow-sm transition-all hover:bg-amber-400 focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0a] focus-visible:outline-none"
             >
               <ImageIcon className="size-4" />
               <span>Unggah Foto QR Code</span>
@@ -406,7 +410,11 @@ export function QrScannerCamera({
 
         {/* Camera Permission / Device Error */}
         {!isInsecureContext && cameraError && (
-          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center space-y-3 bg-[#0a0a0a] p-5 text-center text-white">
+          <div
+            role="alert"
+            aria-live="assertive"
+            className="absolute inset-0 z-20 flex flex-col items-center justify-center space-y-3 bg-[#0a0a0a] p-5 text-center text-white"
+          >
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-rose-500/30 bg-rose-500/20 text-rose-400">
               <VideoOffIcon className="size-5" />
             </div>
@@ -423,7 +431,7 @@ export function QrScannerCamera({
               <button
                 type="button"
                 onClick={handleRetry}
-                className="text-caption flex cursor-pointer items-center gap-1.5 rounded-xl bg-white/15 px-3 py-1.5 font-semibold text-white shadow-xs transition-all hover:bg-white/25"
+                className="text-caption flex min-h-[44px] cursor-pointer items-center gap-1.5 rounded-[12px] bg-white/15 px-3 py-1.5 font-semibold text-white shadow-xs transition-all hover:bg-white/25 focus-visible:ring-2 focus-visible:ring-[#e8b94a] focus-visible:outline-none"
               >
                 <RefreshCwIcon className="size-3.5" />
                 <span>Coba Lagi</span>
@@ -432,7 +440,7 @@ export function QrScannerCamera({
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="text-caption flex cursor-pointer items-center gap-1.5 rounded-xl bg-[#e8b94a] px-3 py-1.5 font-bold text-[#0a0a0a] shadow-xs transition-all hover:bg-amber-400"
+                className="text-caption flex min-h-[44px] cursor-pointer items-center gap-1.5 rounded-[12px] bg-[#e8b94a] px-3 py-1.5 font-bold text-[#0a0a0a] shadow-xs transition-all hover:bg-amber-400 focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0a] focus-visible:outline-none"
               >
                 <ImageIcon className="size-3.5" />
                 <span>Pilih Foto QR</span>

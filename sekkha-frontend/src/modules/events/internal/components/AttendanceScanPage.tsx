@@ -63,11 +63,16 @@ export function AttendanceScanPage() {
   const { authState } = useAuth()
   const role: UserRole | null = authState.role ?? null
   const isPengurus =
-    role === "pengurus" || role === "admin" || role === "aktivis"
+    role === "organizer" ||
+    role === "pengurus" ||
+    role === "admin" ||
+    role === "activist" ||
+    role === "aktivis"
 
   // Event and attendances data state
   const [event, setEvent] = useState<EventListItem | null>(null)
   const [loadingEvent, setLoadingEvent] = useState(true)
+  const [eventError, setEventError] = useState<string | null>(null)
 
   // Mode for Pengurus: 'camera' | 'search'
   const [pengurusMode, setPengurusMode] = useState<"camera" | "search">(
@@ -131,27 +136,47 @@ export function AttendanceScanPage() {
 
   // Fetch Event details and Attendances list
   useEffect(() => {
-    if (!eventId) {
-      setLoadingEvent(false)
-      return
+    let cancelled = false
+
+    async function loadScannerContext() {
+      if (!eventId) {
+        setEventError("Pilih event terlebih dahulu untuk membuka scanner.")
+        setLoadingEvent(false)
+        return
+      }
+
+      setLoadingEvent(true)
+      setEventError(null)
+
+      try {
+        const [evData, attData] = await Promise.all([
+          api.get<EventListItem>(`/events/${eventId}`),
+          api
+            .get<AttendanceRecord[]>(`/events/${eventId}/attendances`)
+            .catch(() => []),
+        ])
+
+        if (cancelled) return
+        setEvent(evData)
+        setSessionAttendedIds(
+          new Set(attData.map((r) => r.user_id).filter(Boolean) as string[])
+        )
+      } catch (error) {
+        if (cancelled) return
+        console.error("Failed to prepare scanner context:", error)
+        setEvent(null)
+        setEventError(
+          "Detail event tidak dapat dimuat. Periksa koneksi lalu coba lagi."
+        )
+      } finally {
+        if (!cancelled) setLoadingEvent(false)
+      }
     }
 
-    setLoadingEvent(true)
-    Promise.all([
-      api.get<EventListItem>(`/events/${eventId}`).catch(() => null),
-      api
-        .get<AttendanceRecord[]>(`/events/${eventId}/attendance`)
-        .catch(() => []),
-    ])
-      .then(([evData, attData]) => {
-        if (evData) setEvent(evData)
-        if (attData) {
-          setSessionAttendedIds(
-            new Set(attData.map((r) => r.user_id).filter(Boolean) as string[])
-          )
-        }
-      })
-      .finally(() => setLoadingEvent(false))
+    void loadScannerContext()
+    return () => {
+      cancelled = true
+    }
   }, [eventId])
 
   // Member personal profile state (for Umat QR identification card)
@@ -175,7 +200,7 @@ export function AttendanceScanPage() {
                 "Sahabat Sekkha",
               userNumber:
                 res.userNumber || res.user_number || res.id || authState.userId,
-              role: res.role || authState.role || "umat",
+              role: res.role || authState.role || "member",
             })
           }
         })
@@ -591,11 +616,66 @@ export function AttendanceScanPage() {
 
   if (loadingEvent) {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-black text-white">
-        <RefreshCwIcon className="size-8 animate-spin text-amber-400" />
-        <p className="text-caption font-semibold">
-          Preparing Attendance Scanner...
-        </p>
+      <div
+        role="status"
+        aria-live="polite"
+        className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-[#fffaf0] px-6 text-center font-sans text-[#0a0a0a]"
+      >
+        <div className="flex size-14 items-center justify-center rounded-[20px] bg-[#0a0a0a] text-[#e8b94a] shadow-md">
+          <RefreshCwIcon className="size-7 animate-spin" aria-hidden="true" />
+        </div>
+        <div>
+          <p className="text-base font-semibold">Preparing attendance</p>
+          <p className="mt-1 text-sm text-[#6a6a6a]">
+            Loading event details and attendance status…
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  const isEventActive = event?.status === "active"
+  const unavailableTitle = eventError
+    ? "Scanner unavailable"
+    : event?.status === "closed" || event?.status === "done"
+      ? "Check-in is closed"
+      : "Check-in is not open yet"
+  const unavailableDescription = eventError
+    ? eventError
+    : event?.status === "closed" || event?.status === "done"
+      ? "This event has been completed. The attendance list is read-only."
+      : "The organizer must activate this event before attendance can be recorded."
+
+  if (eventError || !event || !isEventActive) {
+    return (
+      <div
+        role="alert"
+        className="fixed inset-0 z-50 flex items-center justify-center bg-[#fffaf0] px-5 py-8 font-sans text-[#0a0a0a]"
+      >
+        <div className="w-full max-w-md rounded-[28px] border border-[#e5e5e5] bg-[#faf5e8] p-6 text-center shadow-md sm:p-8">
+          <div className="mx-auto flex size-14 items-center justify-center rounded-[20px] bg-[#1a3a3a] text-[#e8b94a] shadow-sm">
+            <AlertTriangleIcon className="size-7" aria-hidden="true" />
+          </div>
+          <p className="mt-5 text-xl font-semibold tracking-tight">
+            {unavailableTitle}
+          </p>
+          {event?.title && (
+            <p className="mt-2 text-sm font-medium text-[#1a1a1a]">
+              {event.title}
+            </p>
+          )}
+          <p className="mt-2 text-sm leading-relaxed text-[#3a3a3a]">
+            {unavailableDescription}
+          </p>
+          <button
+            type="button"
+            onClick={handleBack}
+            className="mt-6 inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-[12px] bg-[#0a0a0a] px-5 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#1f1f1f] focus-visible:ring-2 focus-visible:ring-[#0a0a0a] focus-visible:ring-offset-2 focus-visible:outline-none sm:w-auto"
+          >
+            <ArrowLeftIcon className="size-4" aria-hidden="true" />
+            Back to Events
+          </button>
+        </div>
       </div>
     )
   }
@@ -613,21 +693,21 @@ export function AttendanceScanPage() {
           type="button"
           onClick={handleBack}
           aria-label="Back to Events"
-          className="sm:text-caption flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-white/20 bg-black/60 px-3 py-2 text-[11px] font-bold text-white shadow-lg backdrop-blur-md transition-all hover:bg-white/20 active:scale-95"
+          className="sm:text-caption flex min-h-[44px] shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-white/20 bg-black/60 px-3 py-2 text-[11px] font-bold text-white shadow-lg backdrop-blur-md transition-all hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black focus-visible:outline-none active:scale-95"
         >
           <ArrowLeftIcon className="size-4 sm:size-5" />
           <span className="xs:inline hidden">Back</span>
         </button>
 
         {/* Center: Live Counter / Title Pill */}
-        <div className="flex items-center gap-1.5 rounded-full border border-white/20 bg-black/70 px-3 py-1 shadow-lg backdrop-blur-md sm:gap-2 sm:px-4 sm:py-1.5">
+        <div className="flex max-w-[48vw] min-w-0 items-center gap-1.5 rounded-full border border-white/20 bg-black/70 px-3 py-1 shadow-lg backdrop-blur-md sm:max-w-md sm:gap-2 sm:px-4 sm:py-1.5">
           <span className="flex size-2 animate-pulse rounded-full bg-emerald-500 sm:size-2.5" />
-          <span className="sm:text-caption text-[11px] font-bold tracking-wide text-white">
+          <span className="sm:text-caption min-w-0 truncate text-[11px] font-bold tracking-wide text-white">
             {isPengurus
               ? `Scan QR • ${sessionAttendedIds.size} Attended`
               : event?.title
-                ? `Scan QR • ${event.title}`
-                : "Scan QR Check-In"}
+                ? `Member QR • ${event.title}`
+                : "Member Check-in QR"}
           </span>
           {isPengurus && sessionSuccessCount > 0 && (
             <span className="py-0.2 rounded-full bg-emerald-500/30 px-1.5 text-[9px] font-extrabold text-emerald-300 sm:text-[10px]">
@@ -641,7 +721,7 @@ export function AttendanceScanPage() {
           <button
             type="button"
             onClick={handleToggleCamera}
-            className="sm:text-caption flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-white/25 bg-black/75 px-3 py-1.5 text-[10px] font-bold text-white shadow-lg backdrop-blur-md transition-all hover:bg-white/25 active:scale-95 sm:px-3.5 sm:py-2"
+            className="sm:text-caption flex min-h-[44px] shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-white/25 bg-black/75 px-3 py-1.5 text-[10px] font-bold text-white shadow-lg backdrop-blur-md transition-all hover:bg-white/25 active:scale-95 sm:px-3.5 sm:py-2"
             title="Switch Camera (Rear / Front)"
           >
             <RefreshCwIcon className="size-3.5 shrink-0 text-amber-300 sm:size-4" />
@@ -657,7 +737,12 @@ export function AttendanceScanPage() {
 
       {/* ── 2. Floating Dynamic Feedback Banner ── */}
       {lastFeedback && (
-        <div className="absolute inset-x-2.5 top-16 z-40 mx-auto max-w-sm animate-in duration-200 fade-in slide-in-from-top-4 sm:inset-x-4 sm:top-20 sm:max-w-md">
+        <div
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+          className="absolute inset-x-2.5 top-16 z-40 mx-auto max-w-sm animate-in duration-200 fade-in slide-in-from-top-4 sm:inset-x-4 sm:top-20 sm:max-w-md"
+        >
           <div
             className={`flex items-start gap-2.5 rounded-2xl border p-3 shadow-2xl backdrop-blur-xl sm:gap-3 sm:p-4 ${
               lastFeedback.type === "success"
@@ -693,7 +778,7 @@ export function AttendanceScanPage() {
             <button
               type="button"
               onClick={() => setLastFeedback(null)}
-              className="cursor-pointer p-1 text-white/60 hover:text-white"
+              className="flex size-11 cursor-pointer items-center justify-center rounded-full text-white/60 hover:bg-white/10 hover:text-white"
             >
               <XIcon className="size-4" />
             </button>
@@ -725,7 +810,7 @@ export function AttendanceScanPage() {
                   <button
                     type="button"
                     onClick={() => setPengurusMode("camera")}
-                    className="text-caption cursor-pointer font-semibold text-amber-300 hover:text-amber-200"
+                    className="text-caption flex min-h-[44px] cursor-pointer items-center font-semibold text-amber-300 hover:text-amber-200"
                   >
                     Open Scanner
                   </button>
@@ -864,7 +949,7 @@ export function AttendanceScanPage() {
             <button
               type="button"
               onClick={() => setIsHistoryDrawerOpen(false)}
-              className="cursor-pointer p-1 text-zinc-400 hover:text-white"
+              className="flex size-11 cursor-pointer items-center justify-center rounded-full text-zinc-400 hover:bg-white/10 hover:text-white"
             >
               <ChevronDownIcon className="size-4" />
             </button>
@@ -923,7 +1008,7 @@ export function AttendanceScanPage() {
                 )
                 setIsHistoryDrawerOpen(false)
               }}
-              className={`sm:text-caption flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-2 text-[11px] font-bold shadow-lg backdrop-blur-xl transition-all active:scale-95 sm:gap-2 sm:px-4 sm:py-2.5 ${
+              className={`sm:text-caption flex min-h-[44px] cursor-pointer items-center gap-1.5 rounded-full border px-3 py-2 text-[11px] font-bold shadow-lg backdrop-blur-xl transition-all active:scale-95 sm:gap-2 sm:px-4 sm:py-2.5 ${
                 pengurusMode === "search"
                   ? "border-amber-300 bg-amber-400 text-black"
                   : "border-white/25 bg-black/75 text-white hover:bg-white/20"
@@ -946,7 +1031,7 @@ export function AttendanceScanPage() {
             <button
               type="button"
               onClick={() => setIsHistoryDrawerOpen((prev) => !prev)}
-              className={`sm:text-caption flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-2 text-[11px] font-bold shadow-lg backdrop-blur-xl transition-all active:scale-95 sm:gap-2 sm:px-4 sm:py-2.5 ${
+              className={`sm:text-caption flex min-h-[44px] cursor-pointer items-center gap-1.5 rounded-full border px-3 py-2 text-[11px] font-bold shadow-lg backdrop-blur-xl transition-all active:scale-95 sm:gap-2 sm:px-4 sm:py-2.5 ${
                 isHistoryDrawerOpen
                   ? "border-white bg-white text-black"
                   : "border-white/25 bg-black/75 text-white hover:bg-white/20"

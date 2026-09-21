@@ -1,5 +1,5 @@
 import type { AppModule } from "../../core/types"
-import { usersRouter } from "./internal/router"
+import { usersRouter } from "./routes"
 
 // ─── Users Module ────────────────────────────────────────────────────────────
 // Manages user profiles, badges, attendances, streaks, and levels.

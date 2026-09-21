@@ -1,5 +1,5 @@
 import type { AppModule } from "../../core/types"
-import { peopleRouter } from "./internal/router"
+import { peopleRouter } from "./routes"
 
 // ─── People Module ─────────────────────────────────────────────────────────────
 // Member management: CRUD, roles, invites, PIN claims, account linking.

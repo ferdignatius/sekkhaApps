@@ -1,0 +1,5 @@
+export { peopleModule } from "./module"
+export { peopleRouter } from "./routes"
+export { peopleControllers } from "./controllers"
+export { peopleServices, generateDefaultPassword } from "./services"
+export { peopleModels } from "./models"

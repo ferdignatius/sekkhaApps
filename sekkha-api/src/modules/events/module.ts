@@ -1,8 +1,8 @@
 import type { AppModule } from "../../core/types"
-import { eventsRouter } from "./internal/router"
+import { eventsRouter } from "./routes"
 import { eventbus, DomainEvents } from "../../core/eventbus"
 import type { UserRegisteredPayload } from "../../core/eventbus"
-import { onUserRegistered } from "./internal/subscribers"
+import { onUserRegistered } from "./subscribers"
 
 // ─── Events Module ───────────────────────────────────────────────────────────
 // Manages events, RSVPs, QR attendance, and attendance records.

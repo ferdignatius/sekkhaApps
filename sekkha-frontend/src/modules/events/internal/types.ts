@@ -3,7 +3,7 @@
 
 export type EventType = "rutin" | "special"
 export type EventStatus =
-  "draft" | "published" | "active" | "closed" | "done" | "cancelled"
+  "draft" | "scheduled" | "published" | "active" | "closed" | "done" | "cancelled"
 export type AttendanceMethod = "qr" | "manual"
 export type UserRole =
   | "member"

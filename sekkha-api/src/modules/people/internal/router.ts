@@ -1,7 +1,7 @@
 import { randomBytes, randomInt } from "crypto"
 import { Router } from "express"
 import { z } from "zod"
-import bcrypt from "bcryptjs"
+import { hashPassword, verifyPassword, DEFAULT_BCRYPT_COST } from "../../../lib/password"
 import { prisma } from "../../../lib/prisma"
 import { requireAuth, requireRole } from "../../../middleware/auth"
 import { generateUniqueUsername } from "../../auth/internal/repository"
@@ -19,10 +19,10 @@ export function generateDefaultPassword(): string {
   return `Sekkha-${randHex}-Puggala`
 }
 
-// 1. GET /api/people/members — List all members with filtering (pengurus/admin only)
-peopleRouter.get("/members", requireAuth, requireRole("pengurus", "admin"), async (req, res, next) => {
+// 1. GET /api/people/members — List all members with filtering (organizer/admin only)
+peopleRouter.get("/members", requireAuth, requireRole("organizer", "admin"), async (req, res, next) => {
   try {
-    const isPrivileged = req.user?.role === "pengurus" || req.user?.role === "admin"
+    const isPrivileged = req.user?.role === "organizer" || req.user?.role === "admin"
     const searchQuery = ((req.query.search as string) || "").toLowerCase().trim()
     const claimedStatus = (req.query.claimed_status as string) || "all"
     const roleFilter = (req.query.role as string) || "all"
@@ -36,8 +36,12 @@ peopleRouter.get("/members", requireAuth, requireRole("pengurus", "admin"), asyn
     }
 
     if (roleFilter !== "all") {
-      if (roleFilter === "pengurus") {
-        where.role = { in: ["pengurus", "admin"] }
+      if (roleFilter === "organizer" || roleFilter === "pengurus") {
+        where.role = { in: ["organizer", "admin"] }
+      } else if (roleFilter === "activist" || roleFilter === "aktivis") {
+        where.role = "activist"
+      } else if (roleFilter === "member" || roleFilter === "umat") {
+        where.role = "member"
       } else {
         where.role = roleFilter
       }
@@ -68,7 +72,7 @@ peopleRouter.get("/members", requireAuth, requireRole("pengurus", "admin"), asyn
     const skip = isPaginated ? (page - 1) * limit : 0
     const take = limit
 
-    const [totalMatching, rawMembers, totalAll, umatCount, aktivisCount, pengurusCount] = await Promise.all([
+    const [totalMatching, rawMembers, totalAll, memberCount, activistCount, organizerCount] = await Promise.all([
       prisma.user.count({ where }),
       prisma.user.findMany({
         where,
@@ -97,9 +101,9 @@ peopleRouter.get("/members", requireAuth, requireRole("pengurus", "admin"), asyn
         },
       }),
       prisma.user.count(),
-      prisma.user.count({ where: { role: "umat" } }),
-      prisma.user.count({ where: { role: "aktivis" } }),
-      prisma.user.count({ where: { role: { in: ["pengurus", "admin"] } } }),
+      prisma.user.count({ where: { role: "member" } }),
+      prisma.user.count({ where: { role: "activist" } }),
+      prisma.user.count({ where: { role: { in: ["organizer", "admin"] } } }),
     ])
 
     const members = rawMembers.map((m) => {
@@ -137,9 +141,13 @@ peopleRouter.get("/members", requireAuth, requireRole("pengurus", "admin"), asyn
         totalPages,
         stats: {
           total: totalAll,
-          umat: umatCount,
-          aktivis: aktivisCount,
-          pengurus: pengurusCount,
+          member: memberCount,
+          activist: activistCount,
+          organizer: organizerCount,
+          // Backward-compatibility aliases
+          umat: memberCount,
+          aktivis: activistCount,
+          pengurus: organizerCount,
         },
       })
     }
@@ -150,10 +158,10 @@ peopleRouter.get("/members", requireAuth, requireRole("pengurus", "admin"), asyn
   }
 })
 
-// 2. GET /api/teams/members/:id — Get member detail (pengurus/admin only)
-peopleRouter.get("/members/:id", requireAuth, requireRole("pengurus", "admin"), async (req, res, next) => {
+// 2. GET /api/teams/members/:id — Get member detail (organizer/admin only)
+peopleRouter.get("/members/:id", requireAuth, requireRole("organizer", "admin"), async (req, res, next) => {
   try {
-    const isPrivileged = req.user?.role === "pengurus" || req.user?.role === "admin"
+    const isPrivileged = req.user?.role === "organizer" || req.user?.role === "admin"
     const isSelf = req.user?.userId === req.params.id
     const canViewSensitive = isPrivileged || isSelf
 
@@ -249,7 +257,7 @@ const CreateMemberSchema = z.object({
     .optional()
     .or(z.literal("")),
   gender: z.string().trim().max(20).optional().or(z.literal("")),
-  role: z.enum(["umat", "aktivis", "pengurus", "admin"]).default("umat"),
+  role: z.enum(["member", "activist", "organizer", "admin"]).default("member"),
   default_password: z.string().min(8).max(128).optional(),
 })
 
@@ -278,7 +286,7 @@ peopleRouter.post("/members", requireAuth, requireRole("admin"), async (req, res
     }
 
     const defaultPassword = data.default_password || generateDefaultPassword()
-    const hashedPassword = await bcrypt.hash(defaultPassword, 12)
+    const hashedPassword = await hashPassword(defaultPassword, DEFAULT_BCRYPT_COST)
 
     let resolvedSchoolId = data.school_id
     if (!resolvedSchoolId && data.school) {
@@ -404,10 +412,10 @@ const UpdateMemberSchema = z.object({
   school_id: z.string().optional().nullable(),
   birth_date: z.string().optional().nullable(),
   gender: z.string().trim().max(20).optional().nullable(),
-  role: z.enum(["umat", "aktivis", "pengurus", "admin"]).optional(),
+  role: z.enum(["member", "activist", "organizer", "admin"]).optional(),
 })
 
-peopleRouter.put("/members/:id", requireAuth, requireRole("pengurus", "admin"), async (req, res, next) => {
+peopleRouter.put("/members/:id", requireAuth, requireRole("organizer", "admin"), async (req, res, next) => {
   try {
     const id = req.params.id as string
     const data = UpdateMemberSchema.parse(req.body)
@@ -566,7 +574,7 @@ peopleRouter.post("/members/:id/reset-password", requireAuth, requireRole("admin
     }
 
     const defaultPassword = generateDefaultPassword()
-    const hashedPassword = await bcrypt.hash(defaultPassword, 12)
+    const hashedPassword = await hashPassword(defaultPassword, DEFAULT_BCRYPT_COST)
 
     await prisma.user.update({
       where: { id },
@@ -616,8 +624,8 @@ peopleRouter.post("/members/:id/reset-password", requireAuth, requireRole("admin
   }
 })
 
-// 7. POST /api/teams/members/:id/generate-claim-pin — Generate secure claim PIN for pre-provisioned member (pengurus/admin)
-peopleRouter.post("/members/:id/generate-claim-pin", requireAuth, requireRole("pengurus", "admin"), async (req, res, next) => {
+// 7. POST /api/teams/members/:id/generate-claim-pin — Generate secure claim PIN for pre-provisioned member (organizer/admin)
+peopleRouter.post("/members/:id/generate-claim-pin", requireAuth, requireRole("organizer", "admin"), async (req, res, next) => {
   try {
     const id = req.params.id as string
     const targetUser = await prisma.user.findUnique({
@@ -637,8 +645,8 @@ peopleRouter.post("/members/:id/generate-claim-pin", requireAuth, requireRole("p
 
     // Tier 1: Generate 6-digit numeric PIN using CSPRNG
     const rawPin = randomInt(100000, 1000000).toString()
-    // Tier 1: Hash with bcrypt (12 rounds) before saving to DB
-    const hashedPin = await bcrypt.hash(rawPin, 12)
+    // Tier 1: Hash with bcrypt (cost 10) before saving to DB
+    const hashedPin = await hashPassword(rawPin, DEFAULT_BCRYPT_COST)
     const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // Valid for 30 days
 
     await prisma.user.update({
@@ -715,7 +723,7 @@ peopleRouter.post("/link-legacy-account", requireAuth, async (req, res, next) =>
     }
 
     // Verify PIN with bcrypt
-    const isPinValid = await bcrypt.compare(cleanPin, targetUser.claimPin)
+    const isPinValid = await verifyPassword(cleanPin, targetUser.claimPin)
     if (!isPinValid) {
       await prisma.user.update({
         where: { id: targetUser.id },

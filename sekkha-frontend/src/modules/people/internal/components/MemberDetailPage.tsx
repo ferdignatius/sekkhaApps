@@ -29,16 +29,19 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { peopleApi } from "../api/peopleApi"
 import type { MemberDetailDto } from "../api/peopleApi"
 
-export function formatRoleLabel(role?: string | null): string {
+function formatRoleLabel(role?: string | null): string {
   if (!role) return "Member"
   const r = role.toLowerCase()
   switch (r) {
     case "admin":
       return "Admin"
+    case "organizer":
     case "pengurus":
       return "Organizer"
+    case "activist":
     case "aktivis":
       return "Activist"
+    case "member":
     case "umat":
     default:
       return "Member"
@@ -68,8 +71,8 @@ export function MemberDetailPage({
   // Admin Modals
   const [showRoleModal, setShowRoleModal] = useState(false)
   const [newRole, setNewRole] = useState<
-    "umat" | "aktivis" | "pengurus" | "admin"
-  >("umat")
+    "member" | "activist" | "organizer" | "admin" | "umat" | "aktivis" | "pengurus"
+  >("member")
   const [savingRole, setSavingRole] = useState(false)
 
   const [showDeleteModal, setShowDeleteModal] = useState(false)
@@ -185,8 +188,11 @@ export function MemberDetailPage({
 
   const roleBadgeStyle: Record<string, string> = {
     admin: "bg-[#ff4d8b]/15 text-[#ff4d8b] border-[#ff4d8b]/30 font-semibold",
+    organizer: "bg-[#1a3a3a] text-white border-[#1a3a3a] font-semibold",
     pengurus: "bg-[#1a3a3a] text-white border-[#1a3a3a] font-semibold",
+    activist: "bg-[#b8a4ed]/30 text-[#0a0a0a] border-[#b8a4ed]/50 font-semibold",
     aktivis: "bg-[#b8a4ed]/30 text-[#0a0a0a] border-[#b8a4ed]/50 font-semibold",
+    member: "bg-[#f5f0e0] text-[#0a0a0a] border-[#e5e5e5] font-semibold",
     umat: "bg-[#f5f0e0] text-[#0a0a0a] border-[#e5e5e5] font-semibold",
   }
 
@@ -681,12 +687,10 @@ export function MemberDetailPage({
                   onChange={(e) => setNewRole(e.target.value as any)}
                   className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-xs text-[#0a0a0a] capitalize outline-none sm:text-sm"
                 >
-                  <option value="umat">Umat (Regular Member)</option>
-                  <option value="aktivis">
-                    Aktivis (Activist / Volunteer)
-                  </option>
-                  <option value="pengurus">Pengurus (Organizer)</option>
-                  <option value="admin">Admin Vihara (Superadmin)</option>
+                  <option value="member">Member</option>
+                  <option value="activist">Activist</option>
+                  <option value="organizer">Organizer</option>
+                  <option value="admin">Admin</option>
                 </select>
               </div>
 

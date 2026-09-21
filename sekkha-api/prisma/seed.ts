@@ -343,7 +343,7 @@ async function main() {
       eventType: "rutin",
       seasonId: activeSeason.id,
       tag: "rutin",
-      status: "published",
+      status: "scheduled",
       qrCode: "SEKKHA-EVT-001",
     },
   })
@@ -358,7 +358,7 @@ async function main() {
       eventType: "special",
       seasonId: activeSeason.id,
       tag: "meditasi",
-      status: "published",
+      status: "scheduled",
       qrCode: "SEKKHA-EVT-002",
     },
   })

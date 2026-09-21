@@ -14,7 +14,7 @@ describe("EventCard Business Component (FE-16)", () => {
     location: "Dhammasala Utama",
     tag: "meditasi",
     event_type: "rutin",
-    status: "published",
+    status: "scheduled",
   }
 
   it("renders event title, location, and category tag", () => {
@@ -23,7 +23,7 @@ describe("EventCard Business Component (FE-16)", () => {
 
     expect(screen.getByText("Kebaktian Minggu Pagi")).toBeTruthy()
     expect(screen.getByText("Dhammasala Utama")).toBeTruthy()
-    expect(screen.getByText("Meditation")).toBeTruthy()
+    expect(screen.getByText("meditasi")).toBeTruthy()
   })
 
   it("invokes onClick callback when the card is clicked", () => {
@@ -53,7 +53,7 @@ describe("EventCard Business Component (FE-16)", () => {
     }
     render(<EventCard event={cancelledEvent} onClick={vi.fn()} />)
 
-    expect(screen.getByText("Cancelled")).toBeTruthy()
+    expect(screen.getByText("Dibatalkan")).toBeTruthy()
   })
 
   it("renders Today indicator when event date is today", () => {

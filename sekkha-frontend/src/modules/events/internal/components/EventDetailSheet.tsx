@@ -141,7 +141,7 @@ export function EventDetailSheet({
   const [pendingAction, setPendingAction] = useState<LifecycleAction>(null)
 
   // Status lifecycle
-  const currentStatus: EventStatus = event.status ?? "published"
+  const currentStatus: EventStatus = event.status ?? "scheduled"
   const isActive = currentStatus === "active"
   const isClosed = currentStatus === "closed" || currentStatus === "done"
   const canEdit = isPengurus && !isActive && !isClosed

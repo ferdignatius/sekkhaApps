@@ -19,7 +19,7 @@ enum Role {
 
 enum EventStatus {
   draft
-  published
+  scheduled
   active
   closed
   cancelled
@@ -27,9 +27,9 @@ enum EventStatus {
 
 enum EventVisibility {
   all
-  umat
-  aktivis
-  pengurus_only
+  member
+  activist
+  organizer_only
 }
 
 enum AttendanceMethod {
@@ -210,7 +210,7 @@ model Event {
   eventType   String      @default("rutin") @map("event_type") // fallback string code: "rutin" | "special"
   seasonId    String?     @map("season_id")
   tag         String?     // "rutin" | "retreat" | "meditasi" | "sosial"
-  status      EventStatus     @default(published)
+  status      EventStatus     @default(scheduled)
   visibility  EventVisibility @default(all)
   qrCode      String?         @map("qr_code")
   createdAt   DateTime        @default(now()) @map("created_at")

@@ -5,7 +5,6 @@ import {
   CalendarIcon,
   MapPinIcon,
   ChevronRightIcon,
-  LockIcon,
 } from "lucide-react"
 import { Badge } from "@/components/base/Badge"
 import type { EventListItem } from "../types"
@@ -44,7 +43,7 @@ export function EventCard({ event, onClick }: EventCardProps) {
   const tag = event.tag ?? event.event_type ?? "rutin"
   const colorInfo = getCategoryColor(tag)
   const isLive = isTodayEvent(event.event_date)
-  const status = event.status ?? "published"
+  const status = event.status ?? "scheduled"
 
   return (
     <div className="py-2 text-left font-sans first:pt-0 last:pb-0">
@@ -58,48 +57,47 @@ export function EventCard({ event, onClick }: EventCardProps) {
           <div
             className="h-11 w-1.5 shrink-0 rounded-full shadow-2xs transition-all"
             style={colorInfo.dotStyle}
-            aria-hidden="true"
           />
 
-          {/* Content — left */}
+          {/* Main Info */}
           <div className="min-w-0 flex-1">
-            {/* Type tag & Status Badges */}
-            <div className="flex flex-wrap items-center gap-2">
-              <span
-                className="rounded-full border border-black/[0.06] px-2.5 py-0.5 text-xs font-semibold capitalize shadow-2xs backdrop-blur-md"
+            {/* Top row: Category + Status Badges */}
+            <div className="flex flex-wrap items-center gap-1.5">
+              <Badge
+                variant="outline"
+                className="gap-1.5 font-medium"
                 style={colorInfo.bgStyle}
               >
-                {colorInfo.name}
-              </span>
+                <span
+                  className="h-1.5 w-1.5 rounded-full"
+                  style={colorInfo.dotStyle}
+                />
+                {tag}
+              </Badge>
 
-              {/* Status: Active */}
+              {/* Status: Active / Live */}
               {status === "active" && (
                 <Badge
                   variant="emerald"
                   glass
                   className="animate-pulse font-semibold"
                 >
-                  <span className="mr-0.5 h-1.5 w-1.5 rounded-full bg-emerald-600" />
-                  Active Check-In
+                  <span className="mr-1 h-1.5 w-1.5 rounded-full bg-emerald-600" />
+                  Live Presensi
                 </Badge>
               )}
 
               {/* Status: Closed */}
-              {(status === "closed" || status === "done") && (
-                <Badge
-                  variant="secondary"
-                  glass
-                  className="font-semibold text-[#6a6a6a]"
-                >
-                  <LockIcon className="mr-0.5 size-3 text-[#6a6a6a]" />
-                  Completed
+              {status === "closed" && (
+                <Badge variant="secondary" glass>
+                  Selesai
                 </Badge>
               )}
 
               {/* Status: Cancelled */}
               {status === "cancelled" && (
                 <Badge variant="destructive" glass>
-                  Cancelled
+                  Dibatalkan
                 </Badge>
               )}
 
@@ -110,15 +108,15 @@ export function EventCard({ event, onClick }: EventCardProps) {
                 </Badge>
               )}
 
-              {/* Status: Published / Upcoming */}
-              {status === "published" && !isLive && (
+              {/* Status: Scheduled / Upcoming */}
+              {(status === "scheduled" || status === "published") && !isLive && (
                 <Badge variant="secondary" glass>
                   Scheduled
                 </Badge>
               )}
 
               {/* Live today indicator */}
-              {status === "published" && isLive && (
+              {(status === "scheduled" || status === "published") && isLive && (
                 <Badge variant="ochre" glass className="font-bold">
                   <span className="mr-1 h-1.5 w-1.5 rounded-full bg-[#e8b94a]" />
                   Today

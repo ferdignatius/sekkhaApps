@@ -1,5 +1,5 @@
 import { randomInt, randomBytes, createHash } from "crypto"
-import bcrypt from "bcryptjs"
+import { hashPassword, verifyPassword, DEFAULT_BCRYPT_COST } from "../../../lib/password"
 import jwt from "jsonwebtoken"
 import { eventbus, DomainEvents } from "../../../core/eventbus"
 import type { UserRegisteredPayload } from "../../../core/eventbus"
@@ -124,7 +124,7 @@ export async function requestRegisterOtp(input: RequestRegisterOtpInput) {
 
   // 3. Generate 6-digit OTP code with CSPRNG & password hash
   const otp = randomInt(100000, 1000000).toString()
-  const passwordHash = await bcrypt.hash(input.password, 12)
+  const passwordHash = await hashPassword(input.password, DEFAULT_BCRYPT_COST)
   const name = input.name || normalizedEmail.split("@")[0]
 
   // 4. Save to OTP cache store (TTL 5 minutes)
@@ -305,7 +305,7 @@ export async function registerUser(input: RegisterInput): Promise<AuthResult> {
     }
   }
 
-  const hashedPassword = await bcrypt.hash(input.password, 12)
+  const hashedPassword = await hashPassword(input.password, DEFAULT_BCRYPT_COST)
   const user = await repo.createUser({
     email: input.email,
     username: input.username ?? undefined,
@@ -367,7 +367,7 @@ export async function loginUser(input: LoginInput): Promise<AuthResult> {
     throw err
   }
 
-  const valid = await bcrypt.compare(input.password, user.password)
+  const valid = await verifyPassword(input.password, user.password)
   if (!valid) {
     auditLogger.log({
       actorId: user.id,
@@ -380,9 +380,15 @@ export async function loginUser(input: LoginInput): Promise<AuthResult> {
     throw err
   }
 
+  // Transparent background upgrade for legacy 12-round bcrypt hashes
+  if (user.password.startsWith("$2a$12$") || user.password.startsWith("$2b$12$")) {
+    hashPassword(input.password, DEFAULT_BCRYPT_COST)
+      .then((newHash) => repo.updateUserPassword(user.id, newHash))
+      .catch(() => {})
+  }
+
   const token = generateToken(user.id, user.role, user.name, user.passwordChangedAt)
   const refreshToken = randomBytes(32).toString("hex")
-  await saveRefreshToken(user.id, refreshToken, REFRESH_TOKEN_TTL_SECONDS)
 
   const userData = {
     id: user.id,
@@ -392,7 +398,10 @@ export async function loginUser(input: LoginInput): Promise<AuthResult> {
     role: user.role,
   }
 
-  await cacheUserSession(token, userData)
+  await Promise.all([
+    saveRefreshToken(user.id, refreshToken, REFRESH_TOKEN_TTL_SECONDS),
+    cacheUserSession(token, userData),
+  ])
 
   auditLogger.log({
     actorId: user.id,
@@ -632,7 +641,7 @@ export async function resetPassword(input: ResetPasswordInput) {
     throw err
   }
 
-  const hashedPassword = await bcrypt.hash(input.newPassword, 12)
+  const hashedPassword = await hashPassword(input.newPassword, DEFAULT_BCRYPT_COST)
   await repo.updateUserPassword(targetUserId, hashedPassword)
 
   auditLogger.log({

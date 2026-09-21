@@ -43,7 +43,7 @@ export async function findUserByIdentifier(identifier: string) {
         { username: clean },
       ],
     },
-    include: { profile: true, stats: true },
+    include: { profile: { select: { name: true } } },
   })
   if (!user) return null
   return {
@@ -83,7 +83,7 @@ export async function generateUniqueUsername(baseName: string): Promise<string> 
   const clean = baseName
     .toLowerCase()
     .replace(/[^a-z0-9]/g, "")
-    .slice(0, 15) || "umat"
+    .slice(0, 15) || "member"
 
   let username = clean
   let counter = 1

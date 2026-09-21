@@ -2,6 +2,7 @@
 // F-16 Remediation: Load environment variables before any module imports
 import "dotenv/config"
 
+
 import express from "express"
 import cors from "cors"
 import helmet from "helmet"
@@ -12,6 +13,7 @@ import { RedisStore } from "rate-limit-redis"
 import { errorHandler } from "./middleware/errorHandler"
 import { requestLogger } from "./middleware/requestLogger"
 import { redis } from "./lib/redis"
+import { prisma } from "./lib/prisma"
 import type { AppModule } from "./core/types"
 
 // ─── Distributed Rate Limiter Factory (F-09 Remediation) ──────────────────────
@@ -214,7 +216,11 @@ modules.forEach((m) => {
 
 app.use(errorHandler)
 
-// ─── Start ───────────────────────────────────────────────────────────────────
+// ─── Start & Warmup ───────────────────────────────────────────────────────────
+// Pre-warm Prisma connection pool to avoid first-request latency penalty
+prisma.$connect().catch((err) => {
+  console.warn("⚠️  Prisma database connection warmup failed:", err.message)
+})
 
 app.listen(PORT, () => {
   console.log(`🚀 Sekkha API running on http://localhost:${PORT}`)

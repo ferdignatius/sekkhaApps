@@ -87,7 +87,7 @@ const MONTH_NAMES = [
 pengurusRouter.get(
   "/recency-alerts",
   requireAuth,
-  requireRole("pengurus", "admin"),
+  requireRole("organizer", "admin"),
   async (req, res, next) => {
     try {
       const levelFilter = (req.query.level as string) || "all"
@@ -331,7 +331,7 @@ pengurusRouter.get(
 pengurusRouter.get(
   "/recency-alerts/:userId",
   requireAuth,
-  requireRole("pengurus", "admin"),
+  requireRole("organizer", "admin"),
   async (req, res, next) => {
     try {
       const userId = req.params.userId as string
@@ -499,7 +499,7 @@ pengurusRouter.get(
 pengurusRouter.get(
   "/insight",
   requireAuth,
-  requireRole("pengurus", "admin"),
+  requireRole("organizer", "admin"),
   async (req, res, next) => {
     try {
       const timeUnit = ((req.query.timeUnit as string) || "year") as "year" | "month"
@@ -757,7 +757,13 @@ pengurusRouter.get(
 
         // 6. Role Comparison Breakdown
         const getRoleDetail = (roleName: string) => {
-          const members = allUsers.filter((u) => u.role === roleName)
+          const members = allUsers.filter(
+            (u) =>
+              u.role === roleName ||
+              (roleName === "organizer" && (u.role as string) === "pengurus") ||
+              (roleName === "activist" && (u.role as string) === "aktivis") ||
+              (roleName === "member" && (u.role as string) === "umat")
+          )
           const memberIds = new Set(members.map((m) => m.id))
           const totalCount = members.length
           if (totalCount === 0) {
@@ -779,7 +785,12 @@ pengurusRouter.get(
             : 75
 
           const avgMonthlyEvents = Number((totalAtts / Math.max(1, primaryEvents.length)).toFixed(1))
-          const topStreak = roleName === "pengurus" ? 14 : roleName === "aktivis" ? 8 : 4
+          const topStreak =
+            roleName === "organizer" || roleName === "pengurus"
+              ? 14
+              : roleName === "activist" || roleName === "aktivis"
+                ? 8
+                : 4
 
           return {
             totalCount,
@@ -791,9 +802,13 @@ pengurusRouter.get(
         }
 
         const roleComparison = {
-          umat: getRoleDetail("umat"),
-          aktivis: getRoleDetail("aktivis"),
-          pengurus: getRoleDetail("pengurus"),
+          member: getRoleDetail("member"),
+          activist: getRoleDetail("activist"),
+          organizer: getRoleDetail("organizer"),
+          // Backward-compat keys
+          umat: getRoleDetail("member"),
+          aktivis: getRoleDetail("activist"),
+          pengurus: getRoleDetail("organizer"),
         }
 
         // 7. Event Category Metrics

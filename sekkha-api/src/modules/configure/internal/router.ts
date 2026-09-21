@@ -2,13 +2,16 @@ import { Router } from "express"
 import { z } from "zod"
 import { prisma } from "../../../lib/prisma"
 import { requireAuth, requireRole } from "../../../middleware/auth"
-import { computeAndCacheLeaderboard } from "../../leaderboard/internal/service"
+import {
+  computeAndCacheLeaderboard,
+  resolveActiveSeason,
+} from "../../leaderboard/internal/service"
 
 export const configureRouter: Router = Router()
 
 // All configure routes require auth and pengurus/admin role
 configureRouter.use(requireAuth)
-configureRouter.use(requireRole("pengurus", "admin"))
+configureRouter.use(requireRole("organizer", "admin"))
 
 // Read-only for pengurus: all mutating methods (POST, PUT, PATCH, DELETE) require admin role
 configureRouter.use((req, res, next) => {
@@ -283,55 +286,15 @@ const SeasonSchema = z.object({
   is_active: z.boolean().optional(),
   target_attendance: z.number().int().min(1).optional(),
   bonus_points: z.number().int().min(0).optional(),
-  description: z.string().optional(),
+  description: z.string().nullable().optional(),
 })
 
 configureRouter.get("/seasons", async (_req, res, next) => {
   try {
-    let seasons = await prisma.season.findMany({ orderBy: { createdAt: "asc" } })
-
-    // Auto-seed the 3 standard season types if empty or missing standard codes
-    const standardSeasons = [
-      {
-        code: "semester",
-        name: "Season Semester (6 Bulan)",
-        startDate: new Date("2026-01-01T00:00:00Z"),
-        endDate: new Date("2026-06-30T23:59:59Z"),
-        isActive: true, // Default active
-        targetAttendance: 500,
-        bonusPoints: 100,
-        description: "Season resmi semesteran 6 bulan untuk akumulasi poin & persaingan klasemen leaderboard.",
-      },
-      {
-        code: "quarterly",
-        name: "Season Kuartal (3 Bulan)",
-        startDate: new Date("2026-01-01T00:00:00Z"),
-        endDate: new Date("2026-03-31T23:59:59Z"),
-        isActive: false,
-        targetAttendance: 250,
-        bonusPoints: 50,
-        description: "Season 3 bulanan per kuartal (Q1, Q2, Q3, Q4) untuk evaluasi berkala.",
-      },
-      {
-        code: "annual",
-        name: "Season Tahunan (1 Tahun Penuh)",
-        startDate: new Date("2026-01-01T00:00:00Z"),
-        endDate: new Date("2026-12-31T23:59:59Z"),
-        isActive: false,
-        targetAttendance: 1000,
-        bonusPoints: 250,
-        description: "Season akbar tahunan selama 1 tahun kalender vihara penuh.",
-      },
-    ]
-
-    for (const def of standardSeasons) {
-      const exists = await prisma.season.findFirst({ where: { code: def.code } })
-      if (!exists) {
-        await prisma.season.create({ data: def })
-      }
-    }
-
-    seasons = await prisma.season.findMany({ orderBy: { createdAt: "asc" } })
+    await resolveActiveSeason()
+    const seasons = await prisma.season.findMany({
+      orderBy: [{ isActive: "desc" }, { startDate: "desc" }, { createdAt: "asc" }],
+    })
 
     const results = await Promise.all(
       seasons.map(async (s) => {

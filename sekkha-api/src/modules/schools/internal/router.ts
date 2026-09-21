@@ -145,7 +145,7 @@ const CreateSchoolSchema = z.object({
   city: z.string().max(50).optional(),
 })
 
-schoolsRouter.post("/", requireAuth, requireRole("admin", "pengurus"), async (req, res, next) => {
+schoolsRouter.post("/", requireAuth, requireRole("admin", "organizer"), async (req, res, next) => {
   try {
     const body = CreateSchoolSchema.parse(req.body)
 
@@ -187,7 +187,7 @@ const UpdateSchoolSchema = z.object({
   city: z.string().max(50).optional(),
 })
 
-schoolsRouter.put("/:id", requireAuth, requireRole("admin", "pengurus"), async (req, res, next) => {
+schoolsRouter.put("/:id", requireAuth, requireRole("admin", "organizer"), async (req, res, next) => {
   try {
     const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id
     if (!id) {

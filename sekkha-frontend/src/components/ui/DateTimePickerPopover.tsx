@@ -8,18 +8,17 @@ import {
   ClockIcon,
   XIcon,
   CheckIcon,
-  SparklesIcon,
   CalendarDaysIcon,
 } from "lucide-react"
 import { EventCalendar } from "./EventCalendar"
 import {
   getTimePresetsForCategory,
   getNextDateForDayOfWeek,
-  DAY_NAMES,
   type EventTimePresetItem,
 } from "@/modules/events/internal/masterdata"
 
 interface DateTimePickerPopoverProps {
+  id?: string
   value: string // ISO string "YYYY-MM-DDTHH:mm" or ""
   onChange: (value: string) => void
   error?: string
@@ -80,6 +79,7 @@ function formatDisplayDate(datePart: string, timePart: string) {
 }
 
 export function DateTimePickerPopover({
+  id,
   value,
   onChange,
   error,
@@ -119,13 +119,36 @@ export function DateTimePickerPopover({
     setOpen(false)
   }
 
+  const configuredTimes = new Set(presets.map((preset) => preset.time))
+  const suggestedTimes: Array<{
+    key: string
+    label: string
+    time: string
+    preset?: EventTimePresetItem
+  }> = [
+    ...presets.slice(0, 6).map((preset) => ({
+      key: preset.id || preset.time,
+      label: preset.label,
+      time: preset.time,
+      preset,
+    })),
+    ...QUICK_HOURS_LIST.filter((time) => !configuredTimes.has(time)).map(
+      (time) => ({ key: time, label: time, time })
+    ),
+  ].slice(0, 9)
+
   return (
     <div className="relative text-left font-sans">
       {/* ── Trigger Bar Button ────────────────────────────────────────────── */}
       <button
+        id={id}
         type="button"
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        aria-invalid={Boolean(error)}
+        aria-describedby={error && id ? `${id}-error` : undefined}
         onClick={handleOpenModal}
-        className={`flex h-11 w-full cursor-pointer items-center justify-between rounded-[12px] border bg-[#fffaf0] px-3.5 text-xs text-[#0a0a0a] transition-all duration-200 outline-none sm:text-sm ${
+        className={`flex min-h-[44px] w-full cursor-pointer items-center justify-between rounded-[12px] border bg-[#fffaf0] px-3.5 text-xs text-[#0a0a0a] transition-all duration-200 outline-none sm:text-sm ${
           error
             ? "border-rose-400 bg-rose-50/30 text-rose-900"
             : open
@@ -158,7 +181,7 @@ export function DateTimePickerPopover({
             if (e.target === e.currentTarget) setOpen(false)
           }}
         >
-          <div className="flex max-h-[93vh] w-full animate-in flex-col rounded-t-[24px] border-t border-[#e5e5e5] bg-[#fffaf0] font-sans shadow-2xl duration-200 slide-in-from-bottom-full sm:max-h-[88vh] sm:max-w-lg sm:rounded-[24px] sm:border sm:zoom-in-95">
+          <div className="flex max-h-[93vh] w-full animate-in flex-col rounded-t-[24px] border-t border-[#e5e5e5] bg-[#faf5e8] font-sans shadow-2xl duration-200 slide-in-from-bottom-full sm:max-h-[88vh] sm:max-w-lg sm:rounded-[24px] sm:border sm:zoom-in-95">
             {/* ── Drag Handle (Mobile) ── */}
             <div className="flex shrink-0 items-center justify-center pt-3 pb-1 sm:hidden">
               <div className="h-1.5 w-12 rounded-full bg-[#6a6a6a]/30" />
@@ -175,14 +198,14 @@ export function DateTimePickerPopover({
                     Set Date & Time
                   </h3>
                   <p className="text-xs text-[#6a6a6a]">
-                    Choose preset, date, and event time
+                    Choose the date and time for this event
                   </p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="ml-2 shrink-0 cursor-pointer rounded-[8px] p-1.5 text-[#6a6a6a] transition-colors hover:bg-[#faf5e8] hover:text-[#0a0a0a]"
+                className="ml-2 flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-[8px] text-[#6a6a6a] transition-colors hover:bg-[#faf5e8] hover:text-[#0a0a0a]"
               >
                 <XIcon className="size-4" />
               </button>
@@ -191,156 +214,139 @@ export function DateTimePickerPopover({
             {/* ── Scrollable Body ── */}
             <div className="flex-1 scrollbar-none space-y-4 overflow-y-auto px-5 py-4">
               {/* ── Section 1: Preset Waktu (category-filtered) ── */}
-              {presets.length > 0 && (
-                <div className="space-y-2">
-                  <p className="flex items-center gap-1.5 text-xs font-bold tracking-wider text-[#6a6a6a] uppercase">
-                    <SparklesIcon className="size-3.5 text-[#e8b94a]" />
-                    <span>Quick Vihara Presets</span>
-                    <span className="py-0.2 ml-1 rounded-full border border-[#e8b94a]/40 bg-[#e8b94a]/20 px-2 text-[10px] font-bold text-[#0a0a0a]">
-                      1-Click
+              <div className="space-y-5">
+                <section
+                  aria-labelledby="picker-date-heading"
+                  className="space-y-2.5"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <h4
+                        id="picker-date-heading"
+                        className="flex items-center gap-1.5 text-xs font-bold tracking-wide text-[#0a0a0a] uppercase"
+                      >
+                        <CalendarIcon
+                          className="size-3.5 text-[#1a3a3a]"
+                          aria-hidden="true"
+                        />
+                        Date
+                      </h4>
+                      <p className="mt-0.5 text-xs text-[#6a6a6a]">
+                        Choose the day for this event.
+                      </p>
+                    </div>
+                    {draftDate && (
+                      <span className="shrink-0 rounded-full bg-[#f5f0e0] px-2.5 py-1 text-xs font-semibold text-[#0a0a0a]">
+                        {(() => {
+                          const [y, m, d] = draftDate.split("-").map(Number)
+                          return new Date(
+                            y!,
+                            (m ?? 1) - 1,
+                            d
+                          ).toLocaleDateString("en-US", {
+                            weekday: "short",
+                            day: "numeric",
+                            month: "short",
+                          })
+                        })()}
+                      </span>
+                    )}
+                  </div>
+                  <div className="rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] p-2 sm:p-3">
+                    <EventCalendar
+                      month={calendarMonth}
+                      onMonthChange={setCalendarMonth}
+                      selected={draftDate}
+                      onSelect={(d) => d && setDraftDate(d)}
+                      compact={true}
+                    />
+                  </div>
+                </section>
+
+                <section
+                  aria-labelledby="picker-time-heading"
+                  className="space-y-2.5"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <h4
+                        id="picker-time-heading"
+                        className="flex items-center gap-1.5 text-xs font-bold tracking-wide text-[#0a0a0a] uppercase"
+                      >
+                        <ClockIcon
+                          className="size-3.5 text-[#1a3a3a]"
+                          aria-hidden="true"
+                        />
+                        Time
+                      </h4>
+                      <p className="mt-0.5 text-xs text-[#6a6a6a]">
+                        Select a suggested time or set your own.
+                      </p>
+                    </div>
+                    <span className="font-mono text-sm font-bold text-[#0a0a0a]">
+                      {draftTime}
                     </span>
-                  </p>
-                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                    {presets.map((qt) => {
-                      const isSelected = draftTime === qt.time
+                  </div>
+
+                  <div className="flex scrollbar-none gap-2 overflow-x-auto pb-1">
+                    {suggestedTimes.map((item) => {
+                      const isSelected = draftTime === item.time
                       return (
                         <button
-                          key={qt.id || qt.time}
+                          key={item.key}
                           type="button"
-                          onClick={() => handleSelectPreset(qt)}
-                          className={`flex cursor-pointer items-center justify-between rounded-[12px] border px-3.5 py-2.5 text-left text-xs font-semibold transition-all ${
+                          aria-pressed={isSelected}
+                          title={item.preset?.description || item.label}
+                          onClick={() =>
+                            item.preset
+                              ? handleSelectPreset(item.preset)
+                              : setDraftTime(item.time)
+                          }
+                          className={`flex min-h-[44px] shrink-0 items-center gap-2 rounded-[12px] border px-3 text-xs font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-[#0a0a0a] focus-visible:ring-offset-2 focus-visible:outline-none ${
                             isSelected
-                              ? "border-[#0a0a0a] bg-[#0a0a0a] font-bold text-white shadow-xs"
-                              : "border-[#e5e5e5] bg-[#faf5e8] text-[#0a0a0a] hover:bg-[#f5f0e0]"
+                              ? "border-[#0a0a0a] bg-[#0a0a0a] text-white"
+                              : "border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] hover:bg-[#f5f0e0]"
                           }`}
                         >
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-xs font-bold">
-                              {qt.label}
-                            </p>
-                            {qt.description && (
-                              <p
-                                className={`mt-0.5 truncate text-[11px] ${isSelected ? "text-white/80" : "text-[#6a6a6a]"}`}
-                              >
-                                {qt.description}
-                              </p>
-                            )}
-                            {qt.day_of_week !== undefined &&
-                              qt.day_of_week >= 0 && (
-                                <span
-                                  className={`mt-1 inline-flex items-center gap-1 rounded-[4px] px-1.5 py-0.5 text-[10px] font-bold ${
-                                    isSelected
-                                      ? "bg-white/20 text-white"
-                                      : "border border-[#b8a4ed]/50 bg-[#b8a4ed]/30 text-[#0a0a0a]"
-                                  }`}
-                                >
-                                  <CalendarIcon className="size-3" />
-                                  <span>
-                                    {DAY_NAMES[qt.day_of_week]} (Auto-date)
-                                  </span>
-                                </span>
-                              )}
-                          </div>
-                          <div className="ml-2 flex shrink-0 items-center gap-1.5">
+                          <span className="max-w-[8rem] truncate">
+                            {item.label}
+                          </span>
+                          {item.label !== item.time && (
                             <span
-                              className={`font-mono text-xs font-bold ${isSelected ? "text-[#e8b94a]" : "text-[#0a0a0a]"}`}
+                              className={`font-mono ${isSelected ? "text-[#e8b94a]" : "text-[#6a6a6a]"}`}
                             >
-                              {qt.time}
+                              {item.time}
                             </span>
-                            {isSelected && (
-                              <CheckIcon className="size-4 text-white" />
-                            )}
-                          </div>
+                          )}
+                          {isSelected && (
+                            <CheckIcon
+                              className="size-3.5 shrink-0"
+                              aria-hidden="true"
+                            />
+                          )}
                         </button>
                       )
                     })}
                   </div>
-                </div>
-              )}
 
-              {/* Divider if presets exist */}
-              {presets.length > 0 && (
-                <div className="flex items-center gap-2 text-xs text-[#6a6a6a]">
-                  <div className="h-px flex-1 bg-[#e5e5e5]" />
-                  <span>or select manually</span>
-                  <div className="h-px flex-1 bg-[#e5e5e5]" />
-                </div>
-              )}
-
-              {/* ── Section 2: Calendar Date Picker ── */}
-              <div className="space-y-2">
-                <p className="flex items-center gap-1.5 text-xs font-bold tracking-wider text-[#6a6a6a] uppercase">
-                  <CalendarIcon className="size-3.5 text-[#0a0a0a]" />
-                  <span>Event Date</span>
-                  {draftDate && (
-                    <span className="ml-auto text-xs font-bold tracking-normal text-[#0a0a0a] normal-case">
-                      {(() => {
-                        const [y, m, d] = draftDate.split("-").map(Number)
-                        const dt = new Date(y!, (m ?? 1) - 1, d)
-                        return dt.toLocaleDateString("en-US", {
-                          weekday: "short",
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                        })
-                      })()}
+                  <label
+                    htmlFor="picker-custom-time"
+                    className="flex items-center justify-between gap-3 rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] px-3 py-2"
+                  >
+                    <span className="text-xs font-semibold text-[#6a6a6a]">
+                      Custom time
                     </span>
-                  )}
-                </p>
-                <div className="rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] p-2 shadow-xs sm:p-3">
-                  <EventCalendar
-                    month={calendarMonth}
-                    onMonthChange={setCalendarMonth}
-                    selected={draftDate}
-                    onSelect={(d) => d && setDraftDate(d)}
-                    compact={true}
-                  />
-                </div>
-              </div>
-
-              {/* ── Section 3: Quick Time Chips ── */}
-              <div className="space-y-2 pb-2">
-                <p className="flex items-center gap-1.5 text-xs font-bold tracking-wider text-[#6a6a6a] uppercase">
-                  <ClockIcon className="size-3.5 text-[#0a0a0a]" />
-                  <span>Event Time</span>
-                  <span className="ml-auto font-mono text-xs font-bold tracking-normal text-[#0a0a0a] normal-case">
-                    {draftTime}
-                  </span>
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {QUICK_HOURS_LIST.map((t) => {
-                    const isSelected = draftTime === t
-                    return (
-                      <button
-                        key={t}
-                        type="button"
-                        onClick={() => setDraftTime(t)}
-                        className={`cursor-pointer rounded-[8px] border px-3 py-1.5 text-xs font-bold transition-all ${
-                          isSelected
-                            ? "border-[#0a0a0a] bg-[#0a0a0a] text-white shadow-xs"
-                            : "border-[#e5e5e5] bg-[#fffaf0] text-[#6a6a6a] hover:bg-[#faf5e8] hover:text-[#0a0a0a]"
-                        }`}
-                      >
-                        {t}
-                      </button>
-                    )
-                  })}
-                </div>
-                {/* Custom time input for non-standard hours */}
-                <div className="flex items-center gap-2 pt-1">
-                  <span className="shrink-0 text-xs font-semibold text-[#6a6a6a]">
-                    Other time:
-                  </span>
-                  <input
-                    type="time"
-                    value={draftTime}
-                    onChange={(e) => setDraftTime(e.target.value)}
-                    className="h-10 rounded-[10px] border border-[#e5e5e5] bg-[#fffaf0] px-3 font-mono text-xs font-bold text-[#0a0a0a] transition-all outline-none focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a]"
-                  />
-                </div>
+                    <input
+                      id="picker-custom-time"
+                      type="time"
+                      value={draftTime}
+                      onChange={(e) => setDraftTime(e.target.value)}
+                      className="h-11 rounded-[10px] border border-[#e5e5e5] bg-[#fffaf0] px-3 font-mono text-sm font-bold text-[#0a0a0a] outline-none focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a]"
+                    />
+                  </label>
+                </section>
               </div>
             </div>
-
             {/* ── Footer: Summary + Actions ── */}
             <div className="flex shrink-0 flex-col items-stretch gap-3 rounded-b-[24px] border-t border-[#e5e5e5] bg-[#faf5e8] px-5 py-3.5 sm:flex-row sm:items-center">
               {/* Summary */}
@@ -359,14 +365,14 @@ export function DateTimePickerPopover({
                 <button
                   type="button"
                   onClick={() => setOpen(false)}
-                  className="h-10 cursor-pointer rounded-[10px] border border-[#e5e5e5] bg-[#fffaf0] px-4 text-xs font-bold text-[#0a0a0a] transition-colors hover:bg-[#f5f0e0]"
+                  className="h-11 cursor-pointer rounded-[10px] border border-[#e5e5e5] bg-[#fffaf0] px-4 text-xs font-bold text-[#0a0a0a] transition-colors hover:bg-[#f5f0e0]"
                 >
                   Cancel
                 </button>
                 <button
                   type="button"
                   onClick={handleApply}
-                  className="h-10 cursor-pointer rounded-[10px] bg-[#0a0a0a] px-5 text-xs font-bold text-white shadow-xs transition-all hover:bg-[#1f1f1f]"
+                  className="h-11 cursor-pointer rounded-[10px] bg-[#0a0a0a] px-5 text-xs font-bold text-white shadow-xs transition-all hover:bg-[#1f1f1f]"
                 >
                   Apply
                 </button>

@@ -17,7 +17,7 @@ interface MemberQrCardProps {
 export function MemberQrCard({
   memberName = "Pengguna Sekkha",
   memberId = "SKH-8821",
-  role = "umat",
+  role = "member",
   school,
   viharaName = "Vihara Sekkha Jakarta",
 }: MemberQrCardProps) {
@@ -37,12 +37,12 @@ export function MemberQrCard({
 
   const roleLabel =
     role === "admin"
-      ? "Admin Vihara"
-      : role === "pengurus"
-        ? "Pengurus"
-        : role === "aktivis"
-          ? "Aktivis"
-          : "Umat"
+      ? "Admin"
+      : role === "organizer" || role === "pengurus"
+        ? "Organizer"
+        : role === "activist" || role === "aktivis"
+          ? "Activist"
+          : "Member"
 
   return (
     <>

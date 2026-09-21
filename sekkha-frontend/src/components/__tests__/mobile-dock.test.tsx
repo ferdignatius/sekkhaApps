@@ -78,8 +78,8 @@ describe("MobileDock", () => {
     ])
   })
 
-  it("hides People (/people) when user role is 'umat' (matching sidebar)", () => {
-    renderDock("umat")
+  it("hides People (/people) when user role is 'member' (matching sidebar)", () => {
+    renderDock("member")
 
     const links = screen.getAllByRole("link")
     const labels = links.map((link) => link.textContent?.trim())

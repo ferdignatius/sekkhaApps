@@ -198,7 +198,7 @@ export function SchoolCombobox({
               )}
             </div>
           ) : (
-            <span className="truncate text-[#9a9a9a]">{placeholder}</span>
+            <span className="truncate text-[#6a6a6a]">{placeholder}</span>
           )}
         </div>
 
@@ -243,13 +243,13 @@ export function SchoolCombobox({
                 onChange={(e) => setSearch(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Ketik nama sekolah atau kota..."
-                className="h-9 w-full rounded-[8px] border border-[#e5e5e5] bg-white pr-8 pl-9 text-xs font-medium text-[#0a0a0a] transition-all outline-none placeholder:text-[#9a9a9a] focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a]"
+                className="h-9 w-full rounded-[8px] border border-[#e5e5e5] bg-white pr-8 pl-9 text-xs font-medium text-[#0a0a0a] transition-all outline-none placeholder:text-[#767676] focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a]"
               />
               {search && (
                 <button
                   type="button"
                   onClick={() => setSearch("")}
-                  className="absolute right-2.5 rounded-full p-0.5 text-[#9a9a9a] hover:text-[#0a0a0a]"
+                  className="absolute right-2.5 rounded-full p-0.5 text-[#6a6a6a] hover:text-[#0a0a0a]"
                 >
                   <X className="size-3" />
                 </button>
@@ -313,7 +313,7 @@ export function SchoolCombobox({
                         <span className="text-[10px] font-medium text-[#6a6a6a]">
                           {item.city}
                         </span>
-                        <span className="text-[10px] text-[#9a9a9a]">•</span>
+                        <span className="text-[10px] text-[#6a6a6a]">•</span>
                         <span className="py-0.2 rounded-[4px] bg-[#ebe6d6] px-1.5 text-[9px] font-bold text-[#0a0a0a]">
                           {item.type}
                         </span>

@@ -460,7 +460,7 @@ export function OnboardingPage() {
                           .replace(/[^a-z0-9_.]/g, ""),
                       })
                     }
-                    className="h-11 w-full rounded-[12px] border border-[#0a0a0a] bg-[#fffaf0] py-2 pr-3.5 pl-8 text-sm font-bold text-[#0a0a0a] transition-all outline-none placeholder:font-medium placeholder:text-[#9a9a9a] focus:border-[#0a0a0a] focus:ring-2 focus:ring-[#0a0a0a]"
+                    className="h-11 w-full rounded-[12px] border border-[#0a0a0a] bg-[#fffaf0] py-2 pr-3.5 pl-8 text-sm font-bold text-[#0a0a0a] transition-all outline-none placeholder:font-medium placeholder:text-[#767676] focus:border-[#0a0a0a] focus:ring-2 focus:ring-[#0a0a0a]"
                   />
                 </div>
                 <p className="text-[11px] text-[#6a6a6a]">
@@ -484,7 +484,7 @@ export function OnboardingPage() {
                   onChange={(e) =>
                     setProfileForm({ ...profileForm, name: e.target.value })
                   }
-                  className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 py-2 text-sm text-[#0a0a0a] transition-all outline-none placeholder:text-[#9a9a9a] focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a]"
+                  className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 py-2 text-sm text-[#0a0a0a] transition-all outline-none placeholder:text-[#767676] focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a]"
                 />
                 <p className="text-[11px] text-[#6a6a6a]">
                   Wajib diisi sesuai identitas resmi untuk penerbitan Kartu
@@ -510,7 +510,7 @@ export function OnboardingPage() {
                         birth_date: e.target.value,
                       })
                     }
-                    className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 py-2 text-sm text-[#0a0a0a] transition-all outline-none placeholder:text-[#9a9a9a] focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a]"
+                    className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 py-2 text-sm text-[#0a0a0a] transition-all outline-none placeholder:text-[#767676] focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a]"
                   />
                 </div>
 
@@ -546,7 +546,7 @@ export function OnboardingPage() {
                   onChange={(e) =>
                     setProfileForm({ ...profileForm, phone: e.target.value })
                   }
-                  className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 py-2 text-sm text-[#0a0a0a] transition-all outline-none placeholder:text-[#9a9a9a] focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a]"
+                  className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 py-2 text-sm text-[#0a0a0a] transition-all outline-none placeholder:text-[#767676] focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a]"
                 />
                 <p className="text-[11px] text-[#6a6a6a]">
                   Digunakan untuk notifikasi jadwal kebaktian & pemulihan akun.
@@ -838,7 +838,7 @@ export function OnboardingPage() {
                       />
                     ) : (
                       <div
-                        className="flex items-center justify-center text-[10px] font-semibold text-[#9a9a9a]"
+                        className="flex items-center justify-center text-[10px] font-semibold text-[#6a6a6a]"
                         style={{ height: "90px", width: "90px" }}
                       >
                         QR unavailable

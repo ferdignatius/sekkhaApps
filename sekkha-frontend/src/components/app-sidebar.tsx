@@ -108,7 +108,8 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
 
   const userId = authState.status === "authenticated" ? authState.userId : null
   const role = authState.status === "authenticated" ? authState.role : null
-  const isPengurus = role === "pengurus" || role === "admin"
+  const isPengurus =
+    role === "organizer" || role === "pengurus" || role === "admin"
 
   // ── Build nav items dari Registry (Exclude notifications & profile as it's in user dropdown) ─────
   const mainNavItems = activeModules
@@ -116,7 +117,8 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
     .filter((item) => {
       if (item.to === "/notifications" || item.to === "/home/profile")
         return false
-      if (role === "umat" && item.to === "/people") return false
+      if ((role === "member" || role === "umat") && item.to === "/people")
+        return false
       return true
     })
   const pengurusNavItems = activeModules.flatMap(
@@ -129,9 +131,9 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const roleLabel =
     role === "admin"
       ? "Admin"
-      : role === "pengurus"
+      : role === "organizer" || role === "pengurus"
         ? "Organizer"
-        : role === "aktivis"
+        : role === "activist" || role === "aktivis"
           ? "Activist"
           : "Member"
   // Render blank when no real name is available — avoid flashing a default

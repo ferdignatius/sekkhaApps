@@ -42,7 +42,7 @@ export function MobileDock() {
       to: "/people" as const,
       icon: UsersIcon,
       isActive: pathname.startsWith("/people"),
-      hidden: role === "umat",
+      hidden: role === "member" || role === "umat",
     },
     {
       label: "Profile",

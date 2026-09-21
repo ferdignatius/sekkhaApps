@@ -1,5 +1,5 @@
 import type { AppModule } from "../../core/types"
-import { notificationsRouter } from "./internal/router"
+import { notificationsRouter } from "./routes"
 
 // ─── Notifications Module ─────────────────────────────────────────────────────
 // Real-time user notifications.

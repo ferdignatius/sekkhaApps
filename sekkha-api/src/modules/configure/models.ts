@@ -1,0 +1,131 @@
+import { prisma } from "../../lib/prisma"
+
+export const DEFAULT_POINT_RULES = [
+  {
+    code: "attendance_rutin",
+    label: "Poin Presensi Kegiatan Rutin",
+    points: 50,
+    category: "attendance",
+    description: "Poin standar yang didapatkan umat saat melakukan presensi pada kebaktian rutin mingguan.",
+  },
+  {
+    code: "attendance_special",
+    label: "Poin Presensi Kegiatan Khusus",
+    points: 100,
+    category: "attendance",
+    description: "Poin untuk kehadiran pada acara spesial seperti perayaan hari besar (Waisak, Kathina, Asadha) atau retreat.",
+  },
+  {
+    code: "streak_weekly_bonus",
+    label: "Bonus Konsistensi (Streak Mingguan)",
+    points: 30,
+    category: "streak",
+    description: "Bonus poin tambahan yang diberikan saat umat mempertahankan kehadiran berturut-turut tanpa terputus.",
+  },
+  {
+    code: "first_attendance_bonus",
+    label: "Bonus Presensi Pertama Kali",
+    points: 25,
+    category: "general",
+    description: "Poin sambutan perdana bagi umat baru yang baru pertama kali mencatatkan presensi di vihara.",
+  },
+]
+
+export const configureModels = {
+  // Badges & Achievements (same Badge model)
+  findBadges() {
+    return prisma.badge.findMany({ orderBy: { name: "asc" } })
+  },
+  createBadge(data: any) {
+    return prisma.badge.create({ data })
+  },
+  updateBadge(id: string, data: any) {
+    return prisma.badge.update({ where: { id }, data })
+  },
+  deleteBadge(id: string) {
+    return prisma.badge.delete({ where: { id } })
+  },
+
+  // Levels
+  findLevels() {
+    return prisma.level.findMany({ orderBy: { level: "asc" } })
+  },
+  createLevel(data: any) {
+    return prisma.level.create({ data })
+  },
+  updateLevel(id: string, data: any) {
+    return prisma.level.update({ where: { id }, data })
+  },
+  deleteLevel(id: string) {
+    return prisma.level.delete({ where: { id } })
+  },
+
+  // Event Types
+  findEventTypes() {
+    return prisma.eventType.findMany({ orderBy: { label: "asc" } })
+  },
+  createEventType(data: any) {
+    return prisma.eventType.create({ data })
+  },
+  updateEventType(id: string, data: any) {
+    return prisma.eventType.update({ where: { id }, data })
+  },
+  deleteEventType(id: string) {
+    return prisma.eventType.delete({ where: { id } })
+  },
+
+  // Seasons
+  findSeasons() {
+    return prisma.season.findMany({
+      orderBy: [{ isActive: "desc" }, { startDate: "desc" }, { createdAt: "asc" }],
+    })
+  },
+  countSeasonAttendances(startDate: Date, endDate: Date) {
+    return prisma.attendance.count({
+      where: {
+        scannedAt: {
+          gte: startDate,
+          lte: endDate,
+        },
+      },
+    })
+  },
+  findSeasonById(id: string) {
+    return prisma.season.findUnique({ where: { id } })
+  },
+  deactivateOtherSeasons(excludeId?: string) {
+    return prisma.season.updateMany({
+      where: excludeId ? { id: { not: excludeId } } : undefined,
+      data: { isActive: false },
+    })
+  },
+  createSeason(data: any) {
+    return prisma.season.create({ data })
+  },
+  updateSeason(id: string, data: any) {
+    return prisma.season.update({ where: { id }, data })
+  },
+  deleteSeason(id: string) {
+    return prisma.season.delete({ where: { id } })
+  },
+
+  // Point Rules
+  async findPointRules() {
+    const pointRuleModel = (prisma as any).pointRule
+    let rules = await pointRuleModel.findMany({ orderBy: { category: "asc" } })
+    if (rules.length === 0) {
+      for (const def of DEFAULT_POINT_RULES) {
+        await pointRuleModel.upsert({
+          where: { code: def.code },
+          update: {},
+          create: def,
+        })
+      }
+      rules = await pointRuleModel.findMany({ orderBy: { category: "asc" } })
+    }
+    return rules
+  },
+  updatePointRule(id: string, data: any) {
+    return (prisma as any).pointRule.update({ where: { id }, data })
+  },
+}

@@ -1,5 +1,5 @@
 import crypto from "crypto"
-import { redis } from "../../lib/redis"
+import { redis } from "../../../lib/redis"
 
 export interface RegistrationOtpPayload {
   otpHashed: string

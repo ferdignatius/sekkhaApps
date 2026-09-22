@@ -5,8 +5,8 @@ import { hashPassword, verifyPassword, DEFAULT_BCRYPT_COST } from "../../lib/pas
 import { generateUniqueUserNumber } from "../../lib/userNumber"
 import { prisma } from "../../lib/prisma"
 import { redis } from "../../lib/redis"
-import { revokeToken } from "../auth/tokenRevocation"
-import { calculateWeeklyStreak } from "./utils"
+import { revokeToken } from "../auth"
+import { calculateWeeklyStreak } from "./internal/utils"
 
 export interface UpdateProfileInput {
   name?: string

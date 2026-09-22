@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from "express"
 import { z } from "zod"
 import { eventServices } from "./services"
-import { registerSseClient } from "./sse"
+import { registerSseClient } from "./internal/sse"
 
 export const CreateEventSchema = z.object({
   title: z.string().trim().min(1, "Judul event wajib diisi").max(200, "Judul maksimal 200 karakter"),

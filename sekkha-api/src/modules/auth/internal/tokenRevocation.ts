@@ -1,6 +1,6 @@
 import crypto from "crypto"
 import jwt from "jsonwebtoken"
-import { redis } from "../../lib/redis"
+import { redis } from "../../../lib/redis"
 
 /**
  * In-memory fallback map for revoked tokens when Redis is offline or unavailable.

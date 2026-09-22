@@ -1,5 +1,5 @@
 import { schoolModels } from "./models"
-import { INITIAL_SCHOOLS } from "./schoolsData"
+import { INITIAL_SCHOOLS } from "./internal/schoolsData"
 import { cached } from "../../lib/cache"
 import { decrypt } from "../../lib/crypto"
 

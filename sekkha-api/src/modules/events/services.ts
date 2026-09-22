@@ -2,7 +2,7 @@ import { eventModels } from "./models"
 import { prisma } from "../../lib/prisma"
 import { invalidatePattern, invalidate, CacheKeys } from "../../lib/cache"
 import { auditLogger } from "../../lib/auditLogger"
-import { broadcastAttendanceScan } from "./sse"
+import { broadcastAttendanceScan } from "./internal/sse"
 
 export const eventServices = {
   async listEvents(userRole: string, isPrivileged: boolean, page = 1, limit = 20) {

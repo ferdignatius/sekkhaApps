@@ -1,4 +1,4 @@
-import type { UserRegisteredPayload } from "../../core/eventbus"
+import type { UserRegisteredPayload } from "../../../core/eventbus"
 
 // ─── Event Subscribers ───────────────────────────────────────────────────────
 // Handlers that react to domain events from other modules.

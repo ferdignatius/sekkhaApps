@@ -16,7 +16,7 @@ import type {
   ForgotPasswordRequestInput,
   ForgotPasswordVerifyOtpInput,
   ResetPasswordInput,
-} from "./validation"
+} from "./internal/validation"
 import {
   saveRegistrationOtp,
   getRegistrationOtp,
@@ -29,14 +29,14 @@ import {
   savePasswordResetToken,
   verifyAndConsumePasswordResetToken,
   hashOtp,
-} from "./otpStore"
+} from "./internal/otpStore"
 import {
   saveRefreshToken,
   verifyAndRotateRefreshToken,
   revokeRefreshToken,
-} from "./refreshTokenStore"
-import { sendRegisterOtpEmail, sendForgotPasswordOtpEmail } from "./email"
-import { revokeToken, isTokenRevoked } from "./tokenRevocation"
+} from "./internal/refreshTokenStore"
+import { sendRegisterOtpEmail, sendForgotPasswordOtpEmail } from "./internal/email"
+import { revokeToken, isTokenRevoked } from "./internal/tokenRevocation"
 
 // ─── Service ─────────────────────────────────────────────────────────────────
 // Business logic layer. Orchestrates repository calls + publishes domain events.

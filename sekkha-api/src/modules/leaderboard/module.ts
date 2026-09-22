@@ -1,6 +1,6 @@
 import type { AppModule } from "../../core/types"
 import { leaderboardRouter } from "./routes"
-import { initLeaderboardCron } from "./cron"
+import { initLeaderboardCron } from "./internal/cron"
 
 // ─── Leaderboard Module ──────────────────────────────────────────────────────
 // Season-based ranking, podium, community goals with weekly cron calculation.

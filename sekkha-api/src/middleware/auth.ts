@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from "express"
 import jwt from "jsonwebtoken"
 import { prisma } from "../lib/prisma"
-import { isTokenRevoked } from "../modules/auth/tokenRevocation"
+import { isTokenRevoked } from "../modules/auth"
 
 export interface AuthPayload {
   userId: string

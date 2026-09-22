@@ -1,41 +1,18 @@
 # `src/modules/` — Modul-modul Backend
 
-Setiap modul adalah fitur backend independen dengan entry point `module.ts` yang mengekspor `AppModule` (lihat `src/core/types.ts`). Folder `internal/` privat dan tidak boleh diakses langsung dari modul lain.
+Setiap modul adalah fitur backend independen berbasis arsitektur MVC Modular. File standar MVC ditaruh langsung di root setiap modul, sedangkan file helper/utilitas privat khusus milik modul tersebut ditaruh di folder `internal/`.
 
-## Daftar Modul Aktif
-
-| Modul | Path | Domain | Status |
-|-------|------|--------|--------|
-| `auth` | `auth/` | Registrasi, login, JWT | Aktif |
-| `users` | `users/` | Profil, role, badge, attendance | Aktif |
-| `events` | `events/` | Event, RSVP, attendance | Aktif |
-| `leaderboard` | `leaderboard/` | Ranking, season, streak | Aktif |
-| `configure` | `configure/` | Master data (admin) | Aktif |
-| `notifications` | `notifications/` | Notifikasi in-app | Aktif |
-| `teams` | `teams/` | Daftar tim & anggota | Aktif |
-| `pengurus` | `pengurus/` | Tools pengurus (analytics, broadcast) | Aktif |
-| `schools` | `schools/` | School combobox (master data) | Aktif |
-
-Daftar modul yang dimuat didefinisikan di `src/index.ts`:
-
-```ts
-const modules: AppModule[] = [
-  authModule, usersModule, eventsModule, /* ... */
-]
-```
-
-## Struktur Setiap Modul
+## Struktur Standar Setiap Modul
 
 ```
 modules/<nama>/
-├── module.ts                  ← PUBLIK: AppModule (wajib)
-└── internal/                  ← PRIVAT (jangan di-import dari luar)
-    ├── router.ts              # Express router definitions
-    ├── handler.ts             # Request handlers (tipis: parse → delegate → respond)
-    ├── service.ts             # Business logic + eventbus.publish()
-    ├── repository.ts          # Prisma queries only (no logic)
-    ├── validation.ts          # Zod schemas
-    └── subscribers.ts         # EventBus handlers (kalau perlu)
+├── controllers.ts             # Request controllers (validasi request, panggil service, kirim response)
+├── models.ts                  # Tipe data, interface & skema model modul
+├── routes.ts                  # Express route definitions
+├── services.ts                # Logika bisnis utama modul & akses data Prisma
+├── module.ts                  # Entry point AppModule (register route & subscribe eventbus)
+├── index.ts                   # Public barrel export modul
+└── internal/                  # (Opsional) Helper / utilitas privat khusus modul tsb (cth: sse, cron, utils)
 ```
 
 ## Aturan Backend Module

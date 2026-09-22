@@ -1,6 +1,6 @@
 import crypto from "crypto"
-import { redis } from "../../lib/redis"
-import { prisma } from "../../lib/prisma"
+import { redis } from "../../../lib/redis"
+import { prisma } from "../../../lib/prisma"
 
 // In-memory fallback map for active refresh tokens when Redis/DB is offline
 // Key: tokenHash, Value: { userId: string, expiresAt: number }

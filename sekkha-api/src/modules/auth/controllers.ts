@@ -9,7 +9,7 @@ import {
   ForgotPasswordRequestSchema,
   ForgotPasswordVerifyOtpSchema,
   ResetPasswordSchema,
-} from "./validation"
+} from "./internal/validation"
 import * as service from "./services"
 
 // ─── Handlers ────────────────────────────────────────────────────────────────

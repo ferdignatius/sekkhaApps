@@ -1,11 +1,12 @@
 import { describe, it, expect, beforeEach } from "bun:test"
 import jwt from "jsonwebtoken"
-import { revokeToken, isTokenRevoked } from "../modules/auth/tokenRevocation"
 import {
+  revokeToken,
+  isTokenRevoked,
   saveRefreshToken,
   verifyAndRotateRefreshToken,
   revokeRefreshToken,
-} from "../modules/auth/refreshTokenStore"
+} from "../modules/auth"
 
 const TEST_SECRET = "test-super-secret-key-that-is-at-least-32-chars-long"
 process.env.JWT_SECRET = TEST_SECRET

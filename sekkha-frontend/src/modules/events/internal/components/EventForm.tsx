@@ -346,7 +346,7 @@ export function EventForm({
             Vihara Sekkha when left blank.
           </p>
         </div>
-        <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-2">
+        <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-[1.15fr_0.85fr]">
           {/* Date & Time Input (Mandatory) */}
           <div className="flex w-full flex-col gap-1.5">
             <label

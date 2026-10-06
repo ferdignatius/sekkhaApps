@@ -181,7 +181,7 @@ export function DateTimePickerPopover({
             if (e.target === e.currentTarget) setOpen(false)
           }}
         >
-          <div className="flex max-h-[93vh] w-full animate-in flex-col rounded-t-[24px] border-t border-[#e5e5e5] bg-[#faf5e8] font-sans shadow-2xl duration-200 slide-in-from-bottom-full sm:max-h-[88vh] sm:max-w-lg sm:rounded-[24px] sm:border sm:zoom-in-95">
+          <div className="flex max-h-[93vh] w-full animate-in flex-col rounded-t-[24px] border-t border-[#e5e5e5] bg-[#faf5e8] font-sans shadow-2xl duration-200 slide-in-from-bottom-full sm:max-h-[88vh] sm:max-w-2xl sm:rounded-[24px] sm:border sm:zoom-in-95">
             {/* ── Drag Handle (Mobile) ── */}
             <div className="flex shrink-0 items-center justify-center pt-3 pb-1 sm:hidden">
               <div className="h-1.5 w-12 rounded-full bg-[#6a6a6a]/30" />
@@ -212,9 +212,9 @@ export function DateTimePickerPopover({
             </div>
 
             {/* ── Scrollable Body ── */}
-            <div className="flex-1 scrollbar-none space-y-4 overflow-y-auto px-5 py-4">
+            <div className="flex-1 scrollbar-none space-y-4 overflow-y-auto px-5 py-4 sm:px-6">
               {/* ── Section 1: Preset Waktu (category-filtered) ── */}
-              <div className="space-y-5">
+              <div className="grid gap-5 sm:grid-cols-[1.05fr_0.95fr] sm:items-start">
                 <section
                   aria-labelledby="picker-date-heading"
                   className="space-y-2.5"

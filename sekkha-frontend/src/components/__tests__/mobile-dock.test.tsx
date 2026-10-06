@@ -56,7 +56,7 @@ function renderDock(role: UserRole = "aktivis") {
 }
 
 describe("MobileDock", () => {
-  it("renders navigation items in the same order as sidebar: Home, Events, Leaderboard, Community, Profile", () => {
+  it("renders navigation items from the registry in order", () => {
     renderDock("aktivis")
 
     const links = screen.getAllByRole("link")
@@ -66,15 +66,15 @@ describe("MobileDock", () => {
       "Home",
       "Events",
       "Leaderboard",
-      "People",
       "Profile",
+      "People",
     ])
     expect(links.map((link) => link.getAttribute("href"))).toEqual([
       "/home",
       "/events",
       "/leaderboard",
-      "/people",
       "/home/profile",
+      "/people",
     ])
   })
 

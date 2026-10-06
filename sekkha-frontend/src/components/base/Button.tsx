@@ -3,20 +3,20 @@ import { Slot } from "radix-ui"
 import { cn } from "@/lib/utils"
 
 export type SekkhaButtonVariant =
-  | "filled"
-  | "tonal"
-  | "elevated"
-  | "outlined"
   | "outline"
-  | "text"
   | "primary"
   | "secondary"
-  | "on-color"
-  | "on-dark"
   | "ghost"
   | "destructive"
-  | "danger"
   | "link"
+  | "filled"
+  | "outlined"
+  | "tonal"
+  | "elevated"
+  | "text"
+  | "on-color"
+  | "on-dark"
+  | "danger"
 
 export type SekkhaButtonSize = "default" | "xs" | "sm" | "lg" | "icon"
 
@@ -67,10 +67,10 @@ const variantClasses: Record<SekkhaButtonVariant, string> = {
 
 const sizeClasses: Record<SekkhaButtonSize, string> = {
   // Apple HIG: minimum 44x44pt touch targets
-  default: "h-11 rounded-full px-5 py-2.5 text-sm", // 44px
+  default: "h-11 rounded-md px-5 py-2.5 text-sm", // 44px
   xs: "h-9 rounded-full px-3 text-xs", // 36px - for dense UIs only
   sm: "h-10 rounded-full px-4 text-xs font-semibold", // 40px - compact
-  lg: "h-12 rounded-full px-6 text-base", // 48px
+  lg: "h-12 rounded-md px-6 text-base", // 48px
   icon: "size-11 rounded-full p-0", // 44x44pt minimum
 }
 

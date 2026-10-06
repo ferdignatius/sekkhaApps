@@ -134,7 +134,7 @@ function AuthenticatedLayout() {
     <TooltipProvider>
       <SidebarProvider>
         <AppSidebar className="hidden md:flex" />
-        <SidebarInset className="min-h-screen bg-[#fffaf0]">
+        <SidebarInset className="min-h-screen bg-canvas">
           <Outlet />
         </SidebarInset>
         <MobileDock />

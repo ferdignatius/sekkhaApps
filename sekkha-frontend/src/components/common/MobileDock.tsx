@@ -3,14 +3,9 @@
 // Design: Apple HIG iOS dock — frosted glass, warm canvas tint, ochre active state.
 
 import { Link, useRouterState } from "@tanstack/react-router"
-import {
-  HomeIcon,
-  CalendarDaysIcon,
-  UsersIcon,
-  TrophyIcon,
-  UserIcon,
-} from "lucide-react"
 import { useAuth } from "@/modules/auth"
+import { activeModules } from "@/shell/registry"
+import { iconMap } from "@/shell/icon-map"
 
 export function MobileDock() {
   const { location } = useRouterState()
@@ -18,39 +13,18 @@ export function MobileDock() {
   const { authState } = useAuth()
   const role = authState.status === "authenticated" ? authState.role : null
 
-  const allNavItems = [
-    {
-      label: "Home",
-      to: "/home" as const,
-      icon: HomeIcon,
-      isActive: pathname === "/home" || pathname === "/home/",
-    },
-    {
-      label: "Events",
-      to: "/events" as const,
-      icon: CalendarDaysIcon,
-      isActive: pathname.startsWith("/events"),
-    },
-    {
-      label: "Leaderboard",
-      to: "/leaderboard" as const,
-      icon: TrophyIcon,
-      isActive: pathname.startsWith("/leaderboard"),
-    },
-    {
-      label: "People",
-      to: "/people" as const,
-      icon: UsersIcon,
-      isActive: pathname.startsWith("/people"),
-      hidden: role === "member" || role === "umat",
-    },
-    {
-      label: "Profile",
-      to: "/home/profile" as const,
-      icon: UserIcon,
-      isActive: pathname.startsWith("/home/profile"),
-    },
-  ]
+  const allNavItems = activeModules.flatMap((module) =>
+    module.navItems.map((item) => ({
+      ...item,
+      icon: iconMap[item.icon],
+      isActive:
+        item.to === "/home"
+          ? pathname === "/home" || pathname === "/home/"
+          : pathname.startsWith(item.to),
+      hidden:
+        (role === "member" || role === "umat") && item.to === "/people",
+    }))
+  )
 
   const navItems = allNavItems.filter((item) => !item.hidden)
 
@@ -66,6 +40,7 @@ export function MobileDock() {
       >
         {navItems.map((item) => {
           const Icon = item.icon
+          if (!Icon) return null
           return (
             <Link
               key={item.label}

@@ -145,10 +145,6 @@ export const userModels = {
           orderBy: { createdAt: "desc" },
           take: 100,
         },
-        notifications: {
-          orderBy: { createdAt: "desc" },
-          take: 50,
-        },
       },
     })
   },

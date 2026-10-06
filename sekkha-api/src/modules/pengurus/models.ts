@@ -98,7 +98,7 @@ export const pengurusModels = {
                 title: true,
                 location: true,
                 eventDate: true,
-                eventType: true,
+                type: { select: { code: true } },
                 status: true,
               },
             },
@@ -134,6 +134,7 @@ export const pengurusModels = {
         status: { in: ["scheduled", "active", "closed"] },
       },
       include: {
+        type: { select: { code: true } },
         attendances: {
           select: {
             id: true,

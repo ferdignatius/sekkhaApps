@@ -110,7 +110,6 @@ async function main() {
     data: [
       { code: "attendance_special", label: "Hadir Acara Khusus", points: 100, category: "attendance" },
       { code: "streak_bonus", label: "Bonus Streak 4 Minggu", points: 100, category: "streak" },
-      { code: "season_bonus", label: "Bonus Akhir Musim", points: 200, category: "general" },
     ],
     skipDuplicates: true,
   })
@@ -340,7 +339,6 @@ async function main() {
       location: "Dhammasala Utama Vihara",
       eventDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
       eventTypeId: eventTypeRutin.id,
-      eventType: "rutin",
       seasonId: activeSeason.id,
       tag: "rutin",
       status: "scheduled",
@@ -355,7 +353,6 @@ async function main() {
       location: "Ruang Meditasi Lt. 2",
       eventDate: new Date(Date.now() + 9 * 24 * 60 * 60 * 1000),
       eventTypeId: eventTypeSpecial.id,
-      eventType: "special",
       seasonId: activeSeason.id,
       tag: "meditasi",
       status: "scheduled",

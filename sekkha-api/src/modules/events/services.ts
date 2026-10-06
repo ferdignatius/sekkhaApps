@@ -32,7 +32,7 @@ export const eventServices = {
       description: e.description,
       location: e.location,
       event_date: typeof e.eventDate === "string" ? e.eventDate : new Date(e.eventDate).toISOString(),
-      event_type: e.type?.code || e.eventType,
+      event_type: e.type?.code || "rutin",
       event_type_id: e.eventTypeId,
       season_id: e.seasonId,
       tag: e.tag || "Umum",
@@ -56,7 +56,7 @@ export const eventServices = {
         error.statusCode = 403
         throw error
       }
-      if (event.visibility === "organizer_only") {
+      if (event.visibility === "organizer") {
         const error = new Error("Event ini hanya untuk Pengurus.") as any
         error.statusCode = 403
         throw error
@@ -74,7 +74,7 @@ export const eventServices = {
       description: event.description,
       location: event.location,
       event_date: typeof event.eventDate === "string" ? event.eventDate : new Date(event.eventDate).toISOString(),
-      event_type: event.type?.code || event.eventType,
+      event_type: event.type?.code || "rutin",
       event_type_id: event.eventTypeId,
       season_id: event.seasonId,
       tag: event.tag || "Umum",
@@ -87,6 +87,10 @@ export const eventServices = {
 
   async createEvent(actorId: string, actorRole: string, body: any) {
     let eventTypeId = body.event_type_id
+    if (!eventTypeId && body.event_type) {
+      const typeByCode = await prisma.eventType.findUnique({ where: { code: body.event_type } })
+      if (typeByCode) eventTypeId = typeByCode.id
+    }
     if (!eventTypeId) {
       const defaultType = await eventModels.findDefaultEventType()
       eventTypeId = defaultType?.id
@@ -106,7 +110,6 @@ export const eventServices = {
         description: body.description,
         location: body.location,
         eventDate: new Date(body.event_date),
-        eventType: body.event_type || "rutin",
         eventTypeId: eventTypeId || null,
         seasonId: seasonId || null,
         tag: body.tag,
@@ -170,7 +173,7 @@ export const eventServices = {
 
   async updateEventStatus(actorId: string, actorRole: string, id: string, status: string) {
     const event = await prisma.$transaction(async (tx) => {
-      const currentEvent = await tx.event.findUnique({ where: { id } })
+      const currentEvent = await tx.event.findUnique({ where: { id }, include: { type: true } })
       if (!currentEvent) {
         const err = new Error("Event tidak ditemukan") as any
         err.statusCode = 404
@@ -189,9 +192,10 @@ export const eventServices = {
       if (status === "closed") {
         const attendees = await tx.attendance.findMany({ where: { eventId: id } })
         if (attendees.length > 0) {
-          const ruleCode = currentEvent.eventType === "special" ? "attendance_special" : "attendance_rutin"
+          const typeCode = currentEvent.type?.code || "rutin"
+          const ruleCode = typeCode === "special" ? "attendance_special" : "attendance_rutin"
           const activeRule = await tx.pointRule.findUnique({ where: { code: ruleCode } }).catch(() => null)
-          const defaultPoints = activeRule?.points ?? (currentEvent.eventType === "special" ? 100 : 50)
+          const defaultPoints = activeRule?.points ?? (typeCode === "special" ? 100 : 50)
 
           const existingTxs = await tx.pointTransaction.findMany({
             where: { referenceId: { in: attendees.map((a) => a.id) } },
@@ -212,8 +216,8 @@ export const eventServices = {
 
             await tx.pointTransaction.createMany({ data: pointTxData, skipDuplicates: true })
 
-            for (const att of pendingAttendees) {
-              await tx.userStats.upsert({
+            await Promise.all(pendingAttendees.map((att) =>
+              tx.userStats.upsert({
                 where: { userId: att.userId },
                 update: {
                   points: { increment: att.pointsEarned || defaultPoints },
@@ -229,7 +233,7 @@ export const eventServices = {
                   lastActivityAt: att.scannedAt,
                 },
               })
-            }
+            ))
           }
         }
       }
@@ -305,7 +309,8 @@ export const eventServices = {
       }
     }
 
-    const pointsEarned = event.eventType === "special" ? 100 : 50
+    const typeCode = event.type?.code || "rutin"
+    const pointsEarned = typeCode === "special" ? 100 : 50
 
     const attendance = await eventModels.createAttendance({
       userId: user.id,

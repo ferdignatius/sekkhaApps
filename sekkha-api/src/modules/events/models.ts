@@ -28,7 +28,13 @@ export const eventModels = {
   findEventBasic(id: string) {
     return prisma.event.findUnique({
       where: { id },
-      select: { id: true, title: true, eventType: true, status: true, qrCode: true },
+      select: {
+        id: true,
+        title: true,
+        type: { select: { code: true } },
+        status: true,
+        qrCode: true,
+      },
     })
   },
 

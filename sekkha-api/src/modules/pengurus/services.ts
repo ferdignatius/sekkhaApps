@@ -462,7 +462,7 @@ export const pengurusServices = {
         if (selectedCategories.includes("all") && (eventCategoryFilter === "all" || !eventCategoryFilter)) {
           return true
         }
-        const evCat = (ev.tag || ev.eventType || "").toLowerCase()
+        const evCat = (ev.tag || ev.type?.code || "").toLowerCase()
         if (eventCategoryFilter !== "all" && evCat !== eventCategoryFilter.toLowerCase()) {
           return false
         }
@@ -488,6 +488,22 @@ export const pengurusServices = {
 
       const primaryEvents = getPeriodEvents(primaryYear, primaryMonth)
       const compareEvents = getPeriodEvents(compareYear, compareMonth)
+
+      const attendanceByBucket = new Map<string, number>()
+      const addAttendance = (bucket: string) => {
+        attendanceByBucket.set(bucket, (attendanceByBucket.get(bucket) || 0) + 1)
+      }
+      for (const ev of filteredEvents) {
+        const date = new Date(ev.eventDate)
+        const year = date.getFullYear()
+        const month = date.getMonth()
+        const week = Math.min(5, Math.floor((date.getDate() - 1) / 7) + 1)
+        for (const att of ev.attendances) {
+          if (!targetUserIds.has(att.userId)) continue
+          addAttendance(`${year}-${month}`)
+          addAttendance(`${year}-${month}-w${week}`)
+        }
+      }
 
       // Active Members in Period (members who attended >= 1 event)
       const getActiveUserIds = (evList: typeof events) => {
@@ -552,15 +568,7 @@ export const pengurusServices = {
           const row: any = { label: mName.slice(0, 3) }
           for (const period of selectedPeriods) {
             const yr = parseInt(period, 10) || primaryYear
-            const mEvents = filteredEvents.filter((ev) => {
-              const d = new Date(ev.eventDate)
-              return d.getFullYear() === yr && d.getMonth() === mIdx
-            })
-            let attCount = 0
-            for (const ev of mEvents) {
-              attCount += ev.attendances.filter((att) => targetUserIds.has(att.userId)).length
-            }
-            row[period] = attCount
+            row[period] = attendanceByBucket.get(`${yr}-${mIdx}`) || 0
           }
           return row
         })
@@ -575,19 +583,7 @@ export const pengurusServices = {
             const mIdx = MONTH_NAMES.findIndex((mn) => mn.toLowerCase() === (mName || "").toLowerCase())
             const targetMonth = mIdx >= 0 ? mIdx : primaryMonth - 1
 
-            const mEvents = filteredEvents.filter((ev) => {
-              const d = new Date(ev.eventDate)
-              if (d.getFullYear() !== yr || d.getMonth() !== targetMonth) return false
-              const day = d.getDate()
-              const weekNum = Math.min(5, Math.floor((day - 1) / 7) + 1)
-              return weekNum === wIdx + 1
-            })
-
-            let attCount = 0
-            for (const ev of mEvents) {
-              attCount += ev.attendances.filter((att) => targetUserIds.has(att.userId)).length
-            }
-            row[period] = attCount
+            row[period] = attendanceByBucket.get(`${yr}-${targetMonth}-w${wIdx + 1}`) || 0
           }
           return row
         })
@@ -678,7 +674,7 @@ export const pengurusServices = {
       }
 
       for (const ev of primaryEvents) {
-        const catKey = (ev.tag || ev.eventType || "puja_bhakti").toLowerCase()
+        const catKey = (ev.tag || ev.type?.code || "puja_bhakti").toLowerCase()
         const key = categoryMap[catKey] ? catKey : "puja_bhakti"
         categoryMap[key].count += 1
         categoryMap[key].attendances += ev.attendances.filter((att) => targetUserIds.has(att.userId)).length

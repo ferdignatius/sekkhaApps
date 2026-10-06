@@ -17,7 +17,6 @@ import { eventsModule } from "./modules/events/module"
 import { configureModule } from "./modules/configure/module"
 import { leaderboardModule } from "./modules/leaderboard/module"
 import { peopleModule } from "./modules/people/module"
-import { notificationsModule } from "./modules/notifications/module"
 import { pengurusModule } from "./modules/pengurus/module"
 import { schoolsModule } from "./modules/schools/module"
 
@@ -38,7 +37,6 @@ export const modules: AppModule[] = [
   configureModule,
   leaderboardModule,
   peopleModule,
-  notificationsModule,
   pengurusModule,
   schoolsModule,
 ]

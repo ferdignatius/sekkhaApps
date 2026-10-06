@@ -399,12 +399,34 @@ export function LeaderboardPage() {
     target: 500,
     label: "Community Attendance Target",
   })
+  const leaderboardCacheRef = useRef(
+    new Map<
+      string,
+      {
+        entries: LeaderboardEntry[]
+        myRankData: any
+        seasonData: typeof seasonData
+        communityGoal: typeof communityGoal
+      }
+    >()
+  )
 
   useEffect(() => {
     let cancelled = false
 
     async function fetchLeaderboard() {
-      setIsLoading(true)
+      const cacheKey = `${metric}:${roleScope}`
+      const cached = leaderboardCacheRef.current.get(cacheKey)
+      if (cached && !forceRefreshRef.current) {
+        setEntries(cached.entries)
+        setMyRankData(cached.myRankData)
+        setSeasonData(cached.seasonData)
+        setCommunityGoal(cached.communityGoal)
+        setIsLoading(false)
+        return
+      }
+
+      setIsLoading(!cached)
       setLoadError(null)
 
       try {
@@ -425,6 +447,16 @@ export function LeaderboardPage() {
         setMyRankData(res.my_rank ?? null)
         if (res.season) setSeasonData(res.season)
         if (res.community_goal) setCommunityGoal(res.community_goal)
+        leaderboardCacheRef.current.set(cacheKey, {
+          entries: res.entries ?? [],
+          myRankData: res.my_rank ?? null,
+          seasonData: res.season ?? null,
+          communityGoal: res.community_goal ?? {
+            current: 0,
+            target: 500,
+            label: "Community Attendance Target",
+          },
+        })
       } catch (err) {
         if (cancelled) return
         console.error("Failed to load leaderboard:", err)

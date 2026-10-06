@@ -47,6 +47,15 @@ export const leaderboardControllers = {
         (roles || "")
           .split(",")
           .map((role) => role.trim().toLowerCase())
+          .map((role) =>
+            role === "umat"
+              ? "member"
+              : role === "aktivis"
+                ? "activist"
+                : role === "pengurus"
+                  ? "organizer"
+                  : role
+          )
           .filter(Boolean)
       )
 

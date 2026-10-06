@@ -26,7 +26,7 @@ describe("DateTimePickerPopover", () => {
     expect(screen.getByText("Time")).toBeDefined()
   })
 
-  it("allows selecting quick time chip and applying changes", () => {
+  it("allows entering a custom time and applying changes", () => {
     const handleChange = vi.fn()
     render(
       <DateTimePickerPopover value="2026-07-26T09:00" onChange={handleChange} />
@@ -34,9 +34,9 @@ describe("DateTimePickerPopover", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /(change|ubah)/i }))
 
-    // Click 15:00 WIB chip
-    const chip15 = screen.getByText("15:00")
-    fireEvent.click(chip15)
+    fireEvent.change(screen.getByLabelText("Event time"), {
+      target: { value: "15:00" },
+    })
 
     // Click Apply
     const applyButton = screen.getByRole("button", {

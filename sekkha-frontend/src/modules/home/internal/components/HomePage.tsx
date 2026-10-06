@@ -11,7 +11,6 @@ import {
   QrCodeIcon,
   AwardIcon,
   SearchIcon,
-  BellIcon,
   SettingsIcon,
   TicketIcon,
   HeartHandshakeIcon,
@@ -276,19 +275,6 @@ export function HomePage() {
           keywords:
             "profile settings account user preferences security password akun profil",
         },
-        {
-          id: "notifications",
-          label: "Notifications",
-          description:
-            "Temple announcements, event reminders, and community alerts",
-          icon: BellIcon,
-          bg: "bg-[#e8b94a]",
-          iconColor: "text-[#0a0a0a]",
-          href: "/notifications",
-          badge: "Alerts",
-          keywords:
-            "notifications alerts messages announcements reminders notifikasi pemberitahuan",
-        },
       ],
     },
     ...(isPengurus
@@ -452,15 +438,6 @@ export function HomePage() {
       >
         <TicketIcon className="size-5" />
       </button>
-
-      <Link
-        to="/notifications"
-        aria-label="Notifications"
-        className="relative flex size-11 items-center justify-center rounded-full border border-[#e5e5e5] bg-[#faf5e8]/90 text-[#0a0a0a] shadow-xs backdrop-blur-md transition-all hover:bg-[#f5f0e0] active:scale-[0.95] active:opacity-75"
-        title="Notifications"
-      >
-        <BellIcon className="size-5 text-[#0a0a0a]" />
-      </Link>
     </div>
   )
 

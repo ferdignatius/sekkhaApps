@@ -1,5 +1,0 @@
-export { notificationsModule } from "./module"
-export { notificationsRouter } from "./routes"
-export { notificationControllers } from "./controllers"
-export { notificationServices } from "./services"
-export { notificationModels } from "./models"

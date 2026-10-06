@@ -967,11 +967,7 @@ export function LeaderboardPage() {
                   <p className="flex items-start gap-2 text-xs leading-relaxed text-[#6a6a6a]">
                     <SparklesIcon className="mt-0.5 size-4 shrink-0 text-[#e8b94a]" />
                     <span>
-                      Reach the target to unlock{" "}
-                      <strong className="text-[#0a0a0a]">
-                        +{seasonData?.bonus_points ?? 100} bonus points
-                      </strong>{" "}
-                      for the community.
+                      Work together to achieve our community attendance target this season.
                     </span>
                   </p>
                 </div>
@@ -1021,14 +1017,11 @@ export function LeaderboardPage() {
                 <div className="flex items-start gap-2 rounded-[12px] border border-[#e6decb]/80 bg-[#faf5e8]/90 p-3 text-xs font-medium text-[#6a6a6a] shadow-2xs backdrop-blur-sm">
                   <SparklesIcon className="mt-0.5 size-4 shrink-0 text-[#e8b94a]" />
                   <span>
-                    When the target of{" "}
-                    {seasonData?.target_attendance ?? communityGoal.target}{" "}
-                    check-ins is met, all community members will receive an
-                    extra{" "}
+                    Together as a community, let&apos;s achieve the target of{" "}
                     <strong className="text-[#0a0a0a]">
-                      +{seasonData?.bonus_points ?? 100} bonus points
-                    </strong>
-                    !
+                      {seasonData?.target_attendance ?? communityGoal.target} check-ins
+                    </strong>{" "}
+                    this season!
                   </span>
                 </div>
               </div>

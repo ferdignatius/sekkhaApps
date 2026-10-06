@@ -5,6 +5,13 @@ export const peopleModels = {
     return prisma.user.count({ where })
   },
 
+  countByRole() {
+    return prisma.user.groupBy({
+      by: ["role"],
+      _count: { _all: true },
+    })
+  },
+
   findMany(where: any, take: number, skip: number) {
     return prisma.user.findMany({
       where,

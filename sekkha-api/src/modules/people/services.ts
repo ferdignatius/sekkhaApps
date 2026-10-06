@@ -74,14 +74,22 @@ export const peopleServices = {
     const skip = isPaginated ? (page - 1) * limit : 0
     const take = limit
 
-    const [totalMatching, rawMembers, totalAll, memberCount, activistCount, organizerCount] = await Promise.all([
+    const [totalMatching, rawMembers, roleCounts] = await Promise.all([
       peopleModels.count(where),
       peopleModels.findMany(where, take, skip),
-      peopleModels.count(),
-      peopleModels.count({ role: "member" }),
-      peopleModels.count({ role: "activist" }),
-      peopleModels.count({ role: { in: ["organizer", "admin"] } }),
+      peopleModels.countByRole(),
     ])
+
+    const counts = roleCounts.reduce(
+      (result, row) => {
+        result.total += row._count._all
+        if (row.role === "member") result.member = row._count._all
+        if (row.role === "activist") result.activist = row._count._all
+        if (row.role === "organizer" || row.role === "admin") result.organizer += row._count._all
+        return result
+      },
+      { total: 0, member: 0, activist: 0, organizer: 0 }
+    )
 
     const members = rawMembers.map((m) => {
       const isSelf = currentUser?.userId === m.id
@@ -119,14 +127,14 @@ export const peopleServices = {
           total: totalMatching,
           totalPages,
           stats: {
-            total: totalAll,
-            member: memberCount,
-            activist: activistCount,
-            organizer: organizerCount,
+            total: counts.total,
+            member: counts.member,
+            activist: counts.activist,
+            organizer: counts.organizer,
             // Backward-compatibility aliases
-            umat: memberCount,
-            aktivis: activistCount,
-            pengurus: organizerCount,
+            umat: counts.member,
+            aktivis: counts.activist,
+            pengurus: counts.organizer,
           },
         },
       }
@@ -614,9 +622,12 @@ export const peopleServices = {
 
       for (const b of targetBadges) {
         if (!existingBadgeIds.has(b.badgeId)) {
-          await tx.userBadge.update({
-            where: { id: b.id },
-            data: { userId: currentUserId },
+          await tx.userBadge.create({
+            data: {
+              userId: currentUserId,
+              badgeId: b.badgeId,
+              earnedAt: b.earnedAt,
+            },
           })
         }
       }

@@ -12,7 +12,6 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
-import { NotificationBell } from "@/modules/notifications"
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -116,20 +115,12 @@ export function PageBreadcrumb({
             </h1>
           </div>
 
-          {/* ── Right: Custom Actions or Notification Bell ── */}
-          <div className="flex shrink-0 items-center gap-2">
-            {actions ? (
-              actions
-            ) : (
-              <Link
-                to="/notifications"
-                className="relative flex size-11 items-center justify-center rounded-full border border-white/80 bg-[#faf5e8]/80 text-[#0a0a0a] shadow-2xs ring-1 ring-black/[0.04] backdrop-blur-xl transition-all hover:bg-[#faf5e8] active:scale-95"
-                title="Notifications"
-              >
-                <NotificationBell />
-              </Link>
-            )}
-          </div>
+          {/* ── Right: Custom Actions ── */}
+          {actions ? (
+            <div className="flex shrink-0 items-center gap-2">
+              {actions}
+            </div>
+          ) : null}
         </div>
       </div>
     </div>

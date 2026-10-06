@@ -14,7 +14,6 @@ import { profileModule } from "@/modules/profile"
 import { configureModule } from "@/modules/configure"
 import { pengurusModule } from "@/modules/pengurus"
 import { peopleModule } from "@/modules/people"
-import { notificationsModule } from "@/modules/notifications"
 
 export interface ModuleDefinition {
   /** Identifier unik modul */
@@ -61,7 +60,6 @@ export const activeModules: ModuleDefinition[] = [
   eventsModule,
   leaderboardModule,
   profileModule,
-  notificationsModule,
   configureModule,
   peopleModule,
   pengurusModule,

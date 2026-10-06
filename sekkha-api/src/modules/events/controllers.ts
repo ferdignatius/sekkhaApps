@@ -13,7 +13,7 @@ export const CreateEventSchema = z.object({
   season_id: z.string().optional(),
   tag: z.string().max(50).optional(),
   status: z.enum(["draft", "scheduled", "active", "closed", "cancelled"]).optional(),
-  visibility: z.enum(["all", "member", "activist", "organizer_only"]).optional(),
+  visibility: z.enum(["all", "member", "activist", "organizer"]).optional(),
 })
 
 export const UpdateEventSchema = CreateEventSchema.partial()

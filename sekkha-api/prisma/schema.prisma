@@ -29,7 +29,7 @@ enum EventVisibility {
   all
   member
   activist
-  organizer_only
+  organizer
 }
 
 enum AttendanceMethod {
@@ -39,7 +39,6 @@ enum AttendanceMethod {
 
 enum PointTransactionType {
   attendance
-  season_bonus
   manual
   reward
   system
@@ -53,21 +52,12 @@ enum BadgeConditionType {
   manual
 }
 
-enum NotificationStatus {
-  unread
-  read
-}
-
-enum NotificationType {
-  role_invitation
-  general
-  system
-}
 
 // ─── Core Identity & Authentication (Lean Table) ─────────────────────────────
 
 model User {
   id                    String    @id @default(cuid())
+  userNumber            String?   @unique @map("user_number")
   username              String?   @unique @map("username")
   email                 String?   @map("email") // Tier 2: AES-256-GCM ciphertext
   emailBindex           String?   @unique @map("email_bindex") // Tier 2: HMAC-SHA256 Blind Index for O(1) lookup & unique constraint
@@ -81,7 +71,6 @@ model User {
   failedClaimAttempts   Int       @default(0) @map("failed_claim_attempts")
   passwordChangedByUser Boolean   @default(false) @map("password_changed_by_user")
   passwordChangedAt     DateTime? @map("password_changed_at")
-  userNumber            String?   @unique @map("user_number")
   createdAt             DateTime  @default(now()) @map("created_at")
   updatedAt             DateTime  @updatedAt @map("updated_at")
 
@@ -93,7 +82,6 @@ model User {
   attendances           Attendance[]
   pointTransactions     PointTransaction[]
   badges                UserBadge[]
-  notifications         Notification[]
 
   @@index([role])
   @@index([isClaimed])
@@ -104,8 +92,7 @@ model User {
 // ─── User Profile (Personal & Academic Data) ─────────────────────────────────
 
 model UserProfile {
-  id         String    @id @default(cuid())
-  userId     String    @unique @map("user_id")
+  userId     String    @id @map("user_id")
   name       String
   phone      String?   @map("phone") // Tier 2: AES-256-GCM ciphertext
   schoolId   String?   @map("school_id")
@@ -113,7 +100,6 @@ model UserProfile {
   birthDate  String?   @map("birth_date") // Tier 2: AES-256-GCM ciphertext of ISO date string
   gender     String?   @map("gender") // Tier 2: AES-256-GCM ciphertext ("pria" | "wanita")
   avatarUrl  String?   @map("avatar_url")
-  createdAt  DateTime  @default(now()) @map("created_at")
   updatedAt  DateTime  @updatedAt @map("updated_at")
 
   user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -127,15 +113,13 @@ model UserProfile {
 // ─── User Stats (Gamification & Engagement Counters) ─────────────────────────
 
 model UserStats {
-  id                String    @id @default(cuid())
-  userId            String    @unique @map("user_id")
+  userId            String    @id @map("user_id")
   points            Int       @default(0)
   consecutiveMissed Int       @default(0) @map("consecutive_missed")
   lastActivityAt    DateTime? @map("last_activity_at")
   totalAttendances  Int       @default(0) @map("total_attendances")
   currentStreak     Int       @default(0) @map("current_streak")
   levelId           String?   @map("level_id")
-  createdAt         DateTime  @default(now()) @map("created_at")
   updatedAt         DateTime  @updatedAt @map("updated_at")
 
   user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -207,7 +191,6 @@ model Event {
   location    String
   eventDate   DateTime    @map("event_date")
   eventTypeId String?     @map("event_type_id")
-  eventType   String      @default("rutin") @map("event_type") // fallback string code: "rutin" | "special"
   seasonId    String?     @map("season_id")
   tag         String?     // "rutin" | "retreat" | "meditasi" | "sosial"
   status      EventStatus     @default(scheduled)
@@ -222,6 +205,7 @@ model Event {
   attendances Attendance[]
 
   @@index([status, eventDate])
+  @@index([status, visibility, eventDate])
   @@index([status, visibility])
   @@index([visibility, eventDate])
   @@index([seasonId, eventDate])
@@ -306,7 +290,6 @@ model Badge {
 }
 
 model UserBadge {
-  id       String   @id @default(cuid())
   userId   String   @map("user_id")
   badgeId  String   @map("badge_id")
   earnedAt DateTime @default(now()) @map("earned_at")
@@ -314,7 +297,7 @@ model UserBadge {
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   badge    Badge    @relation(fields: [badgeId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, badgeId])
+  @@id([userId, badgeId])
   @@map("user_badges")
 }
 
@@ -327,22 +310,4 @@ model Level {
   userStats UserStats[]
 
   @@map("levels")
-}
-
-// ─── Teams & Notifications ───────────────────────────────────────────────────
-
-model Notification {
-  id        String             @id @default(cuid())
-  userId    String             @map("user_id")
-  title     String
-  message   String
-  type      NotificationType   @default(general)
-  status    NotificationStatus @default(unread)
-  data      Json?              // metadata pendukung (misal: { invitationId: "..." })
-  createdAt DateTime           @default(now()) @map("created_at")
-
-  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, status, createdAt(sort: Desc)])
-  @@map("notifications")
 }

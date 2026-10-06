@@ -1,4 +1,6 @@
 import React from "react"
+import { Link } from "@tanstack/react-router"
+import { ArrowLeft } from "lucide-react"
 
 interface AuthLayoutProps {
   children: React.ReactNode
@@ -38,6 +40,14 @@ export function AuthLayout({ children }: AuthLayoutProps) {
             </p>
           </div>
         </div>
+
+        <Link
+          to="/"
+          className="mx-auto flex w-fit items-center gap-2 text-sm font-medium text-[#6a6a6a] transition-colors hover:text-[#0a0a0a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0a0a0a]/20 focus-visible:ring-offset-2"
+        >
+          <ArrowLeft className="size-4" aria-hidden="true" />
+          Kembali ke halaman utama
+        </Link>
 
         {/* Card Container - Apple HIG Material Thick */}
         <div className="rounded-[28px] border border-white/70 bg-white/90 p-6 shadow-[0_2px_6px_rgba(0,0,0,0.06),0_8px_16px_-4px_rgba(0,0,0,0.04)] ring-1 ring-black/[0.02] backdrop-blur-[40px] transition-all sm:p-8">

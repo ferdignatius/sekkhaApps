@@ -5,7 +5,6 @@ export { BadgePage } from "./internal/components/BadgePage"
 export { LevelPage } from "./internal/components/LevelPage"
 export { EventTypePage } from "./internal/components/EventTypePage"
 export { AchievementPage } from "./internal/components/AchievementPage"
-export { EventTimePage } from "./internal/components/EventTimePage"
 export { AttendanceBadgePage } from "./internal/components/AttendanceBadgePage"
 export { ThresholdPage } from "./internal/components/ThresholdPage"
 export { SeasonPage } from "./internal/components/SeasonPage"
@@ -31,12 +30,6 @@ export const configureModule: ModuleDefinition = {
           label: "Event Categories",
           to: "/configure/master/event-type",
           icon: "Tag",
-          hasRoute: true,
-        },
-        {
-          label: "Time Presets",
-          to: "/configure/master/event-time",
-          icon: "Clock",
           hasRoute: true,
         },
         {

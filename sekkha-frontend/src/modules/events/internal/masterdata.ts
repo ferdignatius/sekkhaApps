@@ -258,106 +258,10 @@ export const DEFAULT_BADGES: AttendanceBadge[] = [
   },
 ]
 
-// ─── 3. Preset Jam Vihara Master Data ───────────────────────────────────────
-
-export interface EventTimePresetItem {
-  id: string
-  label: string
-  time: string
-  day_of_week?: number // 0 = Sunday, 1 = Monday, ..., 6 = Saturday, -1/undefined = Any Day
-  description?: string
-  is_active?: boolean
-  target_category_tags?: string[] // Many-to-many: category tags this preset is applicable for (empty = all)
-}
-
-export const DAY_NAMES = [
-  "Sunday",
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
-] as const
-
-export const DEFAULT_TIME_PRESETS: EventTimePresetItem[] = [
-  {
-    id: "etp-1",
-    label: "08:00 (Morning Puja)",
-    time: "08:00",
-    day_of_week: -1,
-    description: "Morning Puja service for members & youth",
-    is_active: true,
-    target_category_tags: [],
-  },
-  {
-    id: "etp-2",
-    label: "14:00 (Afternoon Service)",
-    time: "14:00",
-    day_of_week: 0,
-    description: "General service & Sunday School (Sunday)",
-    is_active: true,
-    target_category_tags: [],
-  },
-  {
-    id: "etp-3",
-    label: "18:30 (Evening Puja)",
-    time: "18:30",
-    day_of_week: -1,
-    description: "Evening Puja & Meditation session",
-    is_active: true,
-    target_category_tags: [],
-  },
-  {
-    id: "etp-4",
-    label: "19:00 (Dhamma Discussion)",
-    time: "19:00",
-    day_of_week: 4,
-    description: "Dhammasakaccha & Dhamma Study (Thursday)",
-    is_active: true,
-    target_category_tags: [],
-  },
-]
-
-export function getNextDateForDayOfWeek(
-  dayOfWeek?: number,
-  targetTimeStr: string = "08:00",
-  fromDate: Date = new Date()
-): string {
-  const y = fromDate.getFullYear()
-  const m = String(fromDate.getMonth() + 1).padStart(2, "0")
-  const d = String(fromDate.getDate()).padStart(2, "0")
-
-  if (dayOfWeek === undefined || dayOfWeek === null || dayOfWeek < 0) {
-    return `${y}-${m}-${d}`
-  }
-
-  const currentDay = fromDate.getDay()
-  let daysUntil = (dayOfWeek - currentDay + 7) % 7
-
-  if (daysUntil === 0) {
-    const [h, min] = targetTimeStr.split(":").map(Number)
-    const targetTimeToday = new Date(fromDate)
-    targetTimeToday.setHours(h ?? 0, min ?? 0, 0, 0)
-
-    if (fromDate.getTime() >= targetTimeToday.getTime()) {
-      daysUntil = 7
-    }
-  }
-
-  const targetDate = new Date(fromDate)
-  targetDate.setDate(fromDate.getDate() + daysUntil)
-  const ty = targetDate.getFullYear()
-  const tm = String(targetDate.getMonth() + 1).padStart(2, "0")
-  const td = String(targetDate.getDate()).padStart(2, "0")
-  return `${ty}-${tm}-${td}`
-}
-
 // Local Storage Helper for Master Data persistence
 const STORAGE_KEYS = {
   CATEGORIES: "sekkha_master_categories",
   BADGES: "sekkha_master_badges",
-  TIMES: "sekkha_master_times",
 }
 
 export function getMasterCategories(activeOnly = false): EventCategoryItem[] {
@@ -445,37 +349,4 @@ export function getMasterBadges(activeOnly = false): AttendanceBadge[] {
   } catch {}
   if (activeOnly) return res.filter((b) => b.is_active !== false)
   return res
-}
-
-export function getMasterTimePresets(
-  activeOnly = false
-): EventTimePresetItem[] {
-  let res = DEFAULT_TIME_PRESETS
-  try {
-    const raw = localStorage.getItem(STORAGE_KEYS.TIMES)
-    if (raw) res = JSON.parse(raw)
-  } catch {}
-  if (activeOnly) return res.filter((t) => t.is_active !== false)
-  return res
-}
-
-/** Get time presets filtered by event category tag (empty target_category_tags = applicable to all) */
-export function getTimePresetsForCategory(
-  categoryTag?: string | null,
-  activeOnly = true
-): EventTimePresetItem[] {
-  const all = getMasterTimePresets(activeOnly)
-  if (!categoryTag) return all
-  const tag = categoryTag.toLowerCase()
-  return all.filter((t) => {
-    if (!t.target_category_tags || t.target_category_tags.length === 0)
-      return true
-    return t.target_category_tags.some((ct) => ct.toLowerCase() === tag)
-  })
-}
-
-export function saveMasterTimePresets(items: EventTimePresetItem[]): void {
-  try {
-    localStorage.setItem(STORAGE_KEYS.TIMES, JSON.stringify(items))
-  } catch {}
 }

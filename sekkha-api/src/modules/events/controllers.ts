@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from "express"
 import { z } from "zod"
 import { eventServices } from "./services"
 import { registerSseClient } from "./internal/sse"
+import { canRecordAttendance } from "./policy"
 
 export const CreateEventSchema = z.object({
   title: z.string().trim().min(1, "Judul event wajib diisi").max(200, "Judul maksimal 200 karakter"),
@@ -101,7 +102,7 @@ export const eventControllers = {
     try {
       const id = req.params.id as string
       const callerRole = req.user?.role
-      const isPrivileged = callerRole === "organizer" || callerRole === "admin" || callerRole === "activist"
+      const isPrivileged = canRecordAttendance(callerRole ?? "")
 
       if (!isPrivileged) {
         res.status(403).json({ error: "Hanya Pengurus, Admin, atau Aktivis yang berhak mencatat presensi." })
@@ -156,7 +157,9 @@ export const eventControllers = {
   async listAttendances(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const id = req.params.id as string
-      const result = await eventServices.listAttendances(id)
+      const page = Math.max(1, parseInt(req.query.page as string, 10) || 1)
+      const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string, 10) || 50))
+      const result = await eventServices.listAttendances(id, page, limit)
       res.json(result)
     } catch (err) {
       next(err)

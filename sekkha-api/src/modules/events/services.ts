@@ -3,6 +3,25 @@ import { prisma } from "../../lib/prisma"
 import { invalidatePattern, invalidate, CacheKeys } from "../../lib/cache"
 import { auditLogger } from "../../lib/auditLogger"
 import { broadcastAttendanceScan } from "./internal/sse"
+import crypto from "crypto"
+import { Prisma } from "@prisma/client"
+import { AppError } from "../../lib/AppError"
+import type { Prisma as PrismaTypes } from "@prisma/client"
+import { canViewEvent } from "./policy"
+
+type CreateEventInput = {
+  title: string
+  description?: string
+  location?: string
+  event_date: string
+  event_type?: "rutin" | "special"
+  event_type_id?: string
+  season_id?: string
+  tag?: string
+  status?: "draft" | "scheduled" | "active" | "closed" | "cancelled"
+  visibility?: "all" | "member" | "activist" | "organizer"
+}
+type UpdateEventInput = Partial<CreateEventInput>
 
 export const eventServices = {
   async listEvents(userRole: string, isPrivileged: boolean, page = 1, limit = 20) {
@@ -10,7 +29,7 @@ export const eventServices = {
     const validLimit = Math.min(50, Math.max(1, limit))
     const skip = (validPage - 1) * validLimit
 
-    let whereClause: any = {}
+    let whereClause: PrismaTypes.EventWhereInput = {}
     if (userRole === "member") {
       whereClause = {
         status: { in: ["scheduled", "active", "closed"] },
@@ -45,27 +64,11 @@ export const eventServices = {
   async getEventDetail(id: string, userRole: string, isPrivileged: boolean) {
     const event = await eventModels.findEventById(id)
     if (!event) {
-      const error = new Error("Event tidak ditemukan") as any
-      error.statusCode = 404
-      throw error
+      throw new AppError("Event tidak ditemukan", 404, "EVENT_NOT_FOUND")
     }
 
-    if (!isPrivileged) {
-      if (event.status === "draft" || event.status === "cancelled") {
-        const error = new Error("Event tidak dapat diakses.") as any
-        error.statusCode = 403
-        throw error
-      }
-      if (event.visibility === "organizer") {
-        const error = new Error("Event ini hanya untuk Pengurus.") as any
-        error.statusCode = 403
-        throw error
-      }
-      if (event.visibility === "activist" && userRole === "member") {
-        const error = new Error("Event ini khusus untuk Aktivis dan Pengurus.") as any
-        error.statusCode = 403
-        throw error
-      }
+    if (!canViewEvent(userRole, event.status, event.visibility)) {
+      throw new AppError("Event tidak dapat diakses.", 403, "EVENT_FORBIDDEN")
     }
 
     return {
@@ -85,7 +88,7 @@ export const eventServices = {
     }
   },
 
-  async createEvent(actorId: string, actorRole: string, body: any) {
+  async createEvent(actorId: string, actorRole: string, body: CreateEventInput) {
     let eventTypeId = body.event_type_id
     if (!eventTypeId && body.event_type) {
       const typeByCode = await prisma.eventType.findUnique({ where: { code: body.event_type } })
@@ -102,13 +105,13 @@ export const eventServices = {
       seasonId = activeSeason?.id
     }
 
-    const qrCode = `SEKKHA-EVT-${Date.now()}`
+    const qrCode = crypto.randomBytes(32).toString("base64url")
 
     const event = await prisma.event.create({
       data: {
         title: body.title,
         description: body.description,
-        location: body.location,
+        location: body.location ?? "",
         eventDate: new Date(body.event_date),
         eventTypeId: eventTypeId || null,
         seasonId: seasonId || null,
@@ -144,7 +147,7 @@ export const eventServices = {
     }
   },
 
-  async updateEvent(actorId: string, actorRole: string, id: string, body: any) {
+  async updateEvent(actorId: string, actorRole: string, id: string, body: UpdateEventInput) {
     const event = await prisma.event.update({
       where: { id },
       data: {
@@ -162,6 +165,15 @@ export const eventServices = {
 
     await invalidatePattern("events:*")
     await invalidate(CacheKeys.events())
+
+    auditLogger.log({
+      actorId,
+      actorRole,
+      action: "EVENT_UPDATED",
+      targetId: event.id,
+      status: "SUCCESS",
+      details: { title: event.title, visibility: event.visibility },
+    })
 
     return {
       id: event.id,
@@ -202,9 +214,9 @@ export const eventServices = {
             select: { referenceId: true },
           })
           const processedAttIds = new Set(existingTxs.map((t) => t.referenceId))
-          const pendingAttendees = attendees.filter((a) => !processedAttIds.has(a.id))
+            const pendingAttendees = attendees.filter((a) => !processedAttIds.has(a.id))
 
-          if (pendingAttendees.length > 0) {
+            if (pendingAttendees.length > 0) {
             const pointTxData = pendingAttendees.map((att) => ({
               userId: att.userId,
               ruleId: activeRule?.id || null,
@@ -214,26 +226,39 @@ export const eventServices = {
               referenceId: att.id,
             }))
 
-            await tx.pointTransaction.createMany({ data: pointTxData, skipDuplicates: true })
+              await tx.pointTransaction.createMany({ data: pointTxData, skipDuplicates: true })
 
-            await Promise.all(pendingAttendees.map((att) =>
-              tx.userStats.upsert({
-                where: { userId: att.userId },
+            const statsByUser = new Map<string, { points: number; count: number; scannedAt: Date }>()
+            for (const att of pendingAttendees) {
+              const current = statsByUser.get(att.userId)
+              const points = att.pointsEarned || defaultPoints
+              if (current) {
+                current.points += points
+                current.count += 1
+                if (att.scannedAt > current.scannedAt) current.scannedAt = att.scannedAt
+              } else {
+                statsByUser.set(att.userId, { points, count: 1, scannedAt: att.scannedAt })
+              }
+            }
+
+            for (const [userId, stats] of statsByUser) {
+              await tx.userStats.upsert({
+                where: { userId },
                 update: {
-                  points: { increment: att.pointsEarned || defaultPoints },
-                  totalAttendances: { increment: 1 },
+                  points: { increment: stats.points },
+                  totalAttendances: { increment: stats.count },
                   consecutiveMissed: 0,
-                  lastActivityAt: att.scannedAt,
+                  lastActivityAt: stats.scannedAt,
                 },
                 create: {
-                  userId: att.userId,
-                  points: att.pointsEarned || defaultPoints,
-                  totalAttendances: 1,
+                  userId,
+                  points: stats.points,
+                  totalAttendances: stats.count,
                   consecutiveMissed: 0,
-                  lastActivityAt: att.scannedAt,
+                  lastActivityAt: stats.scannedAt,
                 },
               })
-            ))
+            }
           }
         }
       }
@@ -278,7 +303,7 @@ export const eventServices = {
       throw error
     }
 
-    if (method === "qr" && qrCodeParam && event.qrCode && qrCodeParam !== event.qrCode) {
+    if (method === "qr" && (!qrCodeParam || !event.qrCode || qrCodeParam !== event.qrCode)) {
       const error = new Error("Kode QR tidak valid atau tidak cocok dengan event ini.") as any
       error.statusCode = 400
       throw error
@@ -312,14 +337,47 @@ export const eventServices = {
     const typeCode = event.type?.code || "rutin"
     const pointsEarned = typeCode === "special" ? 100 : 50
 
-    const attendance = await eventModels.createAttendance({
-      userId: user.id,
-      eventId,
-      method,
-      pointsEarned,
-    })
+    let attendance
+    try {
+      attendance = await eventModels.createAttendance({
+        userId: user.id,
+        eventId,
+        method,
+        pointsEarned,
+      })
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+        const duplicate = await eventModels.findExistingAttendance(eventId, user.id)
+        if (duplicate) {
+          return {
+            alreadyRecorded: true,
+            attendance: {
+              id: duplicate.id,
+              event_id: eventId,
+              user_id: user.id,
+              user_number: user.userNumber,
+              name: user.profile?.name ?? "Anggota Sekkha",
+              role: user.role,
+              points_earned: duplicate.pointsEarned,
+              scanned_at: duplicate.scannedAt.toISOString(),
+              message: "Umat ini sudah tercatat presensinya sebelumnya.",
+            },
+          }
+        }
+      }
+      throw error
+    }
 
     const attendeeName = user.profile?.name ?? "Anggota Sekkha"
+
+    auditLogger.log({
+      actorId,
+      actorRole: "attendance_operator",
+      action: "ATTENDANCE_RECORDED",
+      targetId: attendance.id,
+      status: "SUCCESS",
+      details: { eventId, userId: user.id, method },
+    })
 
     broadcastAttendanceScan({
       eventId,
@@ -347,8 +405,10 @@ export const eventServices = {
     }
   },
 
-  async listAttendances(eventId: string) {
-    const attendances = await eventModels.findEventAttendances(eventId)
+  async listAttendances(eventId: string, page = 1, limit = 50) {
+    const safePage = Math.max(1, page)
+    const safeLimit = Math.min(100, Math.max(1, limit))
+    const attendances = await eventModels.findEventAttendances(eventId, (safePage - 1) * safeLimit, safeLimit)
     return attendances.map((a) => ({
       id: a.id,
       user_id: a.userId,
@@ -361,14 +421,44 @@ export const eventServices = {
   },
 
   async deleteAttendance(actorId: string, eventId: string, userId: string) {
-    await eventModels.deleteAttendance(eventId, userId)
+    try {
+      await eventModels.deleteAttendance(eventId, userId)
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
+        throw new AppError("Presensi tidak ditemukan.", 404, "ATTENDANCE_NOT_FOUND")
+      }
+      throw error
+    }
+    auditLogger.log({
+      actorId,
+      actorRole: "attendance_operator",
+      action: "ATTENDANCE_DELETED",
+      targetId: userId,
+      status: "SUCCESS",
+      details: { eventId },
+    })
     return { success: true }
   },
 
   async deleteEvent(actorId: string, actorRole: string, id: string) {
-    await eventModels.deleteEvent(id)
+    try {
+      await eventModels.deleteEvent(id)
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
+        throw new AppError("Event tidak ditemukan.", 404, "EVENT_NOT_FOUND")
+      }
+      throw error
+    }
     await invalidatePattern("events:*")
     await invalidate(CacheKeys.events())
+
+    auditLogger.log({
+      actorId,
+      actorRole,
+      action: "EVENT_DELETED",
+      targetId: id,
+      status: "SUCCESS",
+    })
     return { success: true }
   },
 }

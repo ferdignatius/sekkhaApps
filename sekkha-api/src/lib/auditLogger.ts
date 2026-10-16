@@ -17,6 +17,7 @@ export interface AuditLogEntry {
     | "ATTENDANCE_RECORDED"
     | "ATTENDANCE_DELETED"
     | "EVENT_CREATED"
+    | "EVENT_UPDATED"
     | "EVENT_STATUS_CHANGED"
     | "EVENT_DELETED"
     | "SYSTEM_SECURITY_ALERT"

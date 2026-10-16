@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
@@ -7,219 +8,161 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ─── Auth ────────────────────────────────────────────────────────────────────
+// ─── Enums ───────────────────────────────────────────────────────────────────
 
 enum Role {
-  umat
-  aktivis
-  pengurus
+  member
+  activist
+  organizer
   admin
 }
 
-model User {
-  id        String   @id @default(cuid())
-  username  String?  @unique @map("username")
-  email     String?  @unique
-  password  String?
-  name      String
-  phone     String?  @map("phone")
-  school    String?
-  birthDate DateTime? @map("birth_date")
-  gender    String?  @map("gender")
-  avatarUrl String?  @map("avatar_url")
-  role      Role     @default(umat)
-  googleId  String?  @unique @map("google_id")
-  isClaimed Boolean  @default(true) @map("is_claimed")
-  claimedAt DateTime? @map("claimed_at")
-  claimPin  String?  @map("claim_pin")
-  claimPinExpiresAt DateTime? @map("claim_pin_expires_at")
-  lastActivityAt DateTime? @map("last_activity_at")
-  consecutiveMissed Int    @default(0) @map("consecutive_missed")
-  userNumber String?  @unique @map("user_number")
-  points     Int      @default(0)
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  // Relations
-  attendances Attendance[]
-  pointTransactions PointTransaction[]
-  rsvps       Rsvp[]
-  badges      UserBadge[]
-  notifications   Notification[]
-  sentInvitations RoleInvitation[] @relation("SentInvitations")
-
-  @@index([points(sort: Desc)])
-  @@index([role])
-  @@index([consecutiveMissed])
-  @@index([createdAt(sort: Desc)])
-  @@map("users")
-}
-
-// ─── Events ──────────────────────────────────────────────────────────────────
-
 enum EventStatus {
   draft
-  published
+  scheduled
   active
   closed
   cancelled
 }
 
-model Event {
-  id          String      @id @default(cuid())
-  title       String
-  description String?
-  location    String
-  eventDate   DateTime    @map("event_date")
-  eventType   String      @map("event_type") // "rutin" | "special"
-  tag         String?     // "rutin" | "retreat" | "meditasi" | "sosial"
-  status      EventStatus @default(published)
-  qrCode      String?     @map("qr_code")
-  createdAt   DateTime    @default(now()) @map("created_at")
-  updatedAt   DateTime    @updatedAt @map("updated_at")
+enum EventVisibility {
+  all
+  member
+  activist
+  organizer
+}
+
+enum AttendanceMethod {
+  qr
+  manual
+}
+
+enum PointTransactionType {
+  attendance
+  manual
+  reward
+  system
+}
+
+enum BadgeConditionType {
+  streak
+  attendance
+  points
+  event_count
+  manual
+}
+
+
+// ─── Core Identity & Authentication (Lean Table) ─────────────────────────────
+
+model User {
+  id                    String    @id @default(cuid())
+  userNumber            String?   @unique @map("user_number")
+  username              String?   @unique @map("username")
+  email                 String?   @map("email") // Tier 2: AES-256-GCM ciphertext
+  emailBindex           String?   @unique @map("email_bindex") // Tier 2: HMAC-SHA256 Blind Index for O(1) lookup & unique constraint
+  password              String?
+  role                  Role      @default(member)
+  isClaimed             Boolean   @default(true) @map("is_claimed")
+  claimedAt             DateTime? @map("claimed_at")
+  claimedByUserId       String?   @map("claimed_by_user_id")
+  claimPin              String?   @map("claim_pin") // Tier 1: One-way bcrypt hash (12 rounds) — never exposed via API
+  claimPinExpiresAt     DateTime? @map("claim_pin_expires_at")
+  failedClaimAttempts   Int       @default(0) @map("failed_claim_attempts")
+  passwordChangedByUser Boolean   @default(false) @map("password_changed_by_user")
+  passwordChangedAt     DateTime? @map("password_changed_at")
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+
+  // 1:1 Normalized Relations
+  profile               UserProfile?
+  stats                 UserStats?
 
   // Relations
-  attendances Attendance[]
-  rsvps       Rsvp[]
+  attendances           Attendance[]
+  pointTransactions     PointTransaction[]
+  badges                UserBadge[]
 
-  @@index([status, eventDate])
-  @@index([eventType])
-  @@map("events")
+  @@index([role])
+  @@index([isClaimed])
+  @@index([createdAt(sort: Desc)])
+  @@map("users")
 }
 
-model Rsvp {
-  id      String @id @default(cuid())
-  userId  String @map("user_id")
-  eventId String @map("event_id")
-  status  String // "hadir" | "tidak_hadir"
+// ─── User Profile (Personal & Academic Data) ─────────────────────────────────
 
-  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+model UserProfile {
+  userId     String    @id @map("user_id")
+  name       String
+  phone      String?   @map("phone") // Tier 2: AES-256-GCM ciphertext
+  schoolId   String?   @map("school_id")
+  classGrade String?   @map("class_grade") // Tier 2: AES-256-GCM ciphertext
+  birthDate  String?   @map("birth_date") // Tier 2: AES-256-GCM ciphertext of ISO date string
+  gender     String?   @map("gender") // Tier 2: AES-256-GCM ciphertext ("pria" | "wanita")
+  avatarUrl  String?   @map("avatar_url")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
 
-  @@unique([userId, eventId])
-  @@map("rsvps")
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  school     School?   @relation(fields: [schoolId], references: [id], onDelete: SetNull)
+
+  @@index([schoolId])
+  @@index([name])
+  @@map("user_profiles")
 }
 
-model Attendance {
-  id           String   @id @default(cuid())
-  userId       String   @map("user_id")
-  eventId      String   @map("event_id")
-  method       String   // "qr" | "manual"
-  pointsEarned Int      @default(50) @map("points_earned")
-  scannedAt    DateTime @default(now()) @map("scanned_at")
+// ─── User Stats (Gamification & Engagement Counters) ─────────────────────────
 
-  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+model UserStats {
+  userId            String    @id @map("user_id")
+  points            Int       @default(0)
+  consecutiveMissed Int       @default(0) @map("consecutive_missed")
+  lastActivityAt    DateTime? @map("last_activity_at")
+  totalAttendances  Int       @default(0) @map("total_attendances")
+  currentStreak     Int       @default(0) @map("current_streak")
+  levelId           String?   @map("level_id")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
 
-  @@unique([userId, eventId])
-  @@index([eventId, scannedAt])
-  @@index([userId, scannedAt])
-  @@map("attendances")
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  level             Level?    @relation(fields: [levelId], references: [id], onDelete: SetNull)
+
+  @@index([points(sort: Desc)])
+  @@index([consecutiveMissed])
+  @@index([levelId])
+  @@map("user_stats")
 }
 
-model PointTransaction {
-  id          String   @id @default(cuid())
-  userId      String   @map("user_id")
-  amount      Int      // e.g. +50, +100, -50
-  type        String   // "attendance" | "season_bonus" | "manual" | "reward"
-  description String?
-  referenceId String?  @map("reference_id") // e.g. attendanceId or eventId
-  createdAt   DateTime @default(now()) @map("created_at")
+// ─── Master Data: Schools ───────────────────────────────────────────────────
 
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+model School {
+  id        String        @id @default(cuid())
+  name      String        @unique
+  type      String?       // "SMP" | "SMA" | "SMK" | "Universitas" | "Lainnya"
+  city      String?
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @default(now()) @updatedAt @map("updated_at")
 
-  @@index([userId, createdAt(sort: Desc)])
-  @@map("point_transactions")
+  profiles  UserProfile[]
+
+  @@map("schools")
 }
 
-// ─── Gamification ────────────────────────────────────────────────────────────
-
-model Badge {
-  id             String @id @default(cuid())
-  name           String
-  description    String
-  iconUrl        String @map("icon_url") // emoji or URL
-  conditionType  String @map("condition_type") // "streak" | "attendance" | "points" | "event_count" | "manual"
-  conditionValue Int    @map("condition_value")
-  isActive       Boolean @default(true) @map("is_active")
-
-  // Relations
-  users UserBadge[]
-
-  @@map("badges")
-}
-
-model UserBadge {
-  id       String   @id @default(cuid())
-  userId   String   @map("user_id")
-  badgeId  String   @map("badge_id")
-  earnedAt DateTime @default(now()) @map("earned_at")
-
-  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  badge Badge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, badgeId])
-  @@map("user_badges")
-}
-
-model Level {
-  id        String @id @default(cuid())
-  level     Int    @unique
-  label     String
-  minPoints Int    @map("min_points")
-
-  @@map("levels")
-}
+// ─── Master Data: Event Types ────────────────────────────────────────────────
 
 model EventType {
-  id        String  @id @default(cuid())
-  code      String  @unique
+  id        String   @id @default(cuid())
+  code      String   @unique
   label     String
   color     String
-  isDefault Boolean @default(false) @map("is_default")
+  isDefault Boolean  @default(false) @map("is_default")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  events    Event[]
 
   @@map("event_types")
 }
 
-// ─── Teams & Notifications ───────────────────────────────────────────────────
-
-enum InvitationStatus {
-  pending
-  accepted
-  rejected
-}
-
-model RoleInvitation {
-  id          String           @id @default(cuid())
-  email       String           // Email user yang diundang
-  role        Role             // Target role: aktivis atau pengurus
-  status      InvitationStatus @default(pending)
-  invitedById String           @map("invited_by_id")
-  createdAt   DateTime         @default(now()) @map("created_at")
-  updatedAt   DateTime         @updatedAt @map("updated_at")
-
-  invitedBy   User             @relation("SentInvitations", fields: [invitedById], references: [id], onDelete: Cascade)
-
-  @@map("role_invitations")
-}
-
-model Notification {
-  id        String   @id @default(cuid())
-  userId    String   @map("user_id")
-  title     String
-  message   String
-  type      String   // e.g. "role_invitation", "general"
-  status    String   @default("unread") // "unread" | "read"
-  data      Json?    // metadata pendukung (misal: { invitationId: "..." })
-  createdAt DateTime @default(now()) @map("created_at")
-
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, status, createdAt(sort: Desc)])
-  @@map("notifications")
-}
-
-// ─── Gamifikasi: Season Management ───────────────────────────────────────────
+// ─── Master Data: Seasons ────────────────────────────────────────────────────
 
 model Season {
   id               String    @id @default(cuid())
@@ -234,20 +177,136 @@ model Season {
   createdAt        DateTime  @default(now()) @map("created_at")
   updatedAt        DateTime  @updatedAt @map("updated_at")
 
+  events           Event[]
+
   @@map("seasons")
 }
 
-// ─── Rules: Points Configuration ─────────────────────────────────────────────
+// ─── Events ──────────────────────────────────────────────────────────────────
+
+model Event {
+  id          String      @id @default(cuid())
+  title       String
+  description String?
+  location    String
+  eventDate   DateTime    @map("event_date")
+  eventTypeId String?     @map("event_type_id")
+  seasonId    String?     @map("season_id")
+  tag         String?     // "rutin" | "retreat" | "meditasi" | "sosial"
+  status      EventStatus     @default(scheduled)
+  visibility  EventVisibility @default(all)
+  qrCode      String?         @map("qr_code")
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+
+  // Relations
+  type        EventType?      @relation(fields: [eventTypeId], references: [id], onDelete: SetNull)
+  season      Season?         @relation(fields: [seasonId], references: [id], onDelete: SetNull)
+  attendances Attendance[]
+
+  @@index([status, eventDate])
+  @@index([status, visibility])
+  @@index([visibility, eventDate])
+  @@index([seasonId, eventDate])
+  @@index([eventTypeId])
+  @@map("events")
+}
+
+// ─── Attendances ─────────────────────────────────────────────────────────────
+
+model Attendance {
+  id           String           @id @default(cuid())
+  userId       String           @map("user_id")
+  eventId      String           @map("event_id")
+  method       AttendanceMethod @default(qr)
+  pointsEarned Int              @default(50) @map("points_earned")
+  scannedAt    DateTime         @default(now()) @map("scanned_at")
+
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event        Event            @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, eventId])
+  @@index([eventId, scannedAt])
+  @@index([scannedAt])
+  @@index([userId, scannedAt(sort: Desc)])
+  @@map("attendances")
+}
+
+// ─── Master Data: Point Rules ────────────────────────────────────────────────
 
 model PointRule {
-  id          String   @id @default(cuid())
-  code        String   @unique // e.g. "attendance_rutin", "attendance_special", "streak_bonus", "minimum_gap"
-  label       String
-  points      Int      @default(50)
-  description String?
-  category    String   @default("attendance") // "attendance" | "streak" | "general"
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id           String             @id @default(cuid())
+  code         String             @unique // e.g. "attendance_rutin", "attendance_special", "streak_bonus"
+  label        String
+  points       Int                @default(50)
+  description  String?
+  category     String             @default("attendance") // "attendance" | "streak" | "general"
+  updatedAt    DateTime           @updatedAt @map("updated_at")
+
+  transactions PointTransaction[]
 
   @@map("point_rules")
 }
 
+// ─── Point Transactions ──────────────────────────────────────────────────────
+
+model PointTransaction {
+  id          String               @id @default(cuid())
+  userId      String               @map("user_id")
+  ruleId      String?              @map("rule_id")
+  amount      Int                  // e.g. +50, +100, -50
+  type        PointTransactionType @default(attendance)
+  description String?
+  referenceId String?              @map("reference_id") // e.g. attendanceId or eventId
+  createdAt   DateTime             @default(now()) @map("created_at")
+
+  user        User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rule        PointRule?           @relation(fields: [ruleId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([createdAt])
+  @@index([type, createdAt])
+  @@index([ruleId])
+  @@index([referenceId])
+  @@unique([userId, referenceId, type])
+  @@map("point_transactions")
+}
+
+// ─── Gamification: Badges & Levels ───────────────────────────────────────────
+
+model Badge {
+  id             String             @id @default(cuid())
+  name           String
+  description    String
+  iconUrl        String             @map("icon_url") // emoji or URL
+  conditionType  BadgeConditionType @default(attendance) @map("condition_type")
+  conditionValue Int                @map("condition_value")
+  isActive       Boolean            @default(true) @map("is_active")
+
+  users          UserBadge[]
+
+  @@map("badges")
+}
+
+model UserBadge {
+  userId   String   @map("user_id")
+  badgeId  String   @map("badge_id")
+  earnedAt DateTime @default(now()) @map("earned_at")
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge    Badge    @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  @@id([userId, badgeId])
+  @@map("user_badges")
+}
+
+model Level {
+  id        String      @id @default(cuid())
+  level     Int         @unique
+  label     String
+  minPoints Int         @map("min_points")
+
+  userStats UserStats[]
+
+  @@map("levels")
+}

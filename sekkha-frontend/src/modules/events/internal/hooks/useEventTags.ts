@@ -16,7 +16,9 @@ interface EventTypeFromApi {
 }
 
 export function useEventTags() {
-  const [tagColors, setTagColors] = useState<Record<string, TagColors>>(DEFAULT_EVENT_TAG_COLORS)
+  const [tagColors, setTagColors] = useState<Record<string, TagColors>>(
+    DEFAULT_EVENT_TAG_COLORS
+  )
   const [tags, setTags] = useState<EventTypeFromApi[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -46,7 +48,9 @@ export function useEventTags() {
     }
 
     void fetchTags()
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   return { tagColors, tags, loading }

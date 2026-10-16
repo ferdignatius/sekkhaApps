@@ -6,4 +6,3 @@ export const Route = createFileRoute("/_authenticated/configure/master/badge")({
   },
   component: () => null,
 })
-

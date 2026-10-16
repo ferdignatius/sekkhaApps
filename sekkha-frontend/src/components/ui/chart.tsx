@@ -43,7 +43,7 @@ const ChartContainer = React.forwardRef<
         data-chart={chartId}
         ref={ref}
         className={cn(
-          "flex aspect-video justify-center text-xs [&_.recharts-cartesian-axis-tick_text]:fill-muted-foreground [&_.recharts-cartesian-grid_line]:stroke-border/50 [&_.recharts-curve.recharts-tooltip-cursor]:stroke-border [&_.recharts-dot[aria-selected=true]]:stroke-background [&_.recharts-dot[aria-selected=true]]:stroke-2 [&_.recharts-layer]:outline-none [&_.recharts-polar-grid_[stroke='#ccc']]:stroke-border [&_.recharts-radial-bar-background-sector]:fill-muted [&_.recharts-rectangle.recharts-tooltip-cursor]:fill-muted/30 [&_.recharts-reference-line_[stroke='#ccc']]:stroke-border [&_.recharts-sector[aria-selected=true]]:stroke-background [&_.recharts-sector[aria-selected=true]]:stroke-2 [&_.recharts-sector]:outline-none [&_.recharts-surface]:outline-none",
+          "flex aspect-video justify-center text-xs [&_.recharts-cartesian-axis-tick_text]:fill-muted-foreground [&_.recharts-cartesian-grid_line]:stroke-border/50 [&_.recharts-curve.recharts-tooltip-cursor]:stroke-border [&_.recharts-dot[aria-selected=true]]:stroke-background [&_.recharts-dot[aria-selected=true]]:stroke-2 [&_.recharts-layer]:outline-none [&_.recharts-polar-grid_[stroke='#ccc']]:stroke-border [&_.recharts-radial-bar-background-sector]:fill-muted [&_.recharts-rectangle.recharts-tooltip-cursor]:fill-muted/30 [&_.recharts-reference-line_[stroke='#ccc']]:stroke-border [&_.recharts-sector]:outline-none [&_.recharts-sector[aria-selected=true]]:stroke-background [&_.recharts-sector[aria-selected=true]]:stroke-2 [&_.recharts-surface]:outline-none",
           className
         )}
         {...props}
@@ -73,7 +73,9 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
         __html: Object.entries(config)
           .map(([key, itemConfig]) => {
             const color = itemConfig.color || itemConfig.theme?.light
-            return color ? `[data-chart=${id}] { --color-${key}: ${color}; }` : ""
+            return color
+              ? `[data-chart=${id}] { --color-${key}: ${color}; }`
+              : ""
           })
           .join("\n"),
       }}
@@ -94,7 +96,13 @@ export interface ChartTooltipContentProps extends React.HTMLAttributes<HTMLDivEl
   labelKey?: string
   labelFormatter?: (value: any, payload: any[]) => React.ReactNode
   labelClassName?: string
-  formatter?: (value: any, name: any, item: any, index: number, payload: any) => React.ReactNode
+  formatter?: (
+    value: any,
+    name: any,
+    item: any,
+    index: number,
+    payload: any
+  ) => React.ReactNode
   color?: string
 }
 
@@ -197,8 +205,8 @@ const ChartTooltipContent = React.forwardRef<
                           "shrink-0 rounded-[2px] border-[--color-border] bg-[--color-bg]",
                           {
                             "h-2.5 w-2.5 rounded-full": indicator === "dot",
-                            "w-1 h-3": indicator === "line",
-                            "w-0 border-r-2 border-dashed h-3":
+                            "h-3 w-1": indicator === "line",
+                            "h-3 w-0 border-r-2 border-dashed":
                               indicator === "dashed",
                           }
                         )}
@@ -211,7 +219,7 @@ const ChartTooltipContent = React.forwardRef<
                       />
                     )}
                     <div className="flex flex-1 justify-between gap-3 leading-none">
-                      <span className="text-muted-foreground font-medium">
+                      <span className="font-medium text-muted-foreground">
                         {itemConfig?.label || item.name}
                       </span>
                       {item.value !== undefined && (
@@ -270,9 +278,4 @@ function getPayloadConfigFromPayload(
     : config[key as keyof typeof config]
 }
 
-export {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-  ChartContext,
-}
+export { ChartContainer, ChartTooltip, ChartTooltipContent, ChartContext }

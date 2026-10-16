@@ -3,7 +3,7 @@
 // Requirements: 4.1, 4.2, 4.6
 
 import { useAuthContext } from "../context/AuthContext"
-import type { AuthState } from "../context/authReducer"
+import type { AuthState, UserRole } from "../context/authReducer"
 
 // ─── Return Interface ─────────────────────────────────────────────────────────
 
@@ -19,11 +19,26 @@ export interface UseAuthReturn {
   authState: AuthState
   login: (email: string, password: string) => Promise<void>
   register: (email: string, password: string) => Promise<void>
-  requestRegisterOtp: (email: string, password: string, name?: string) => Promise<{ success: boolean; message: string }>
+  requestRegisterOtp: (
+    email: string,
+    password: string,
+    name?: string
+  ) => Promise<{ success: boolean; message: string }>
   verifyRegisterOtp: (email: string, otp: string) => Promise<void>
-  resendRegisterOtp: (email: string) => Promise<{ success: boolean; message: string }>
+  resendRegisterOtp: (
+    email: string
+  ) => Promise<{ success: boolean; message: string }>
   logout: () => void
   initiateGoogleOAuth: () => void
+  updateUser: (
+    user: Partial<{
+      userId: string | null
+      name: string | null
+      role: UserRole
+      email: string | null
+    }>
+  ) => void
+  refreshUser: () => Promise<void>
 }
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
@@ -55,6 +70,8 @@ export function useAuth(): UseAuthReturn {
     resendRegisterOtp,
     logout,
     initiateGoogleOAuth,
+    updateUser,
+    refreshUser,
   } = useAuthContext()
 
   return {
@@ -66,5 +83,7 @@ export function useAuth(): UseAuthReturn {
     resendRegisterOtp,
     logout,
     initiateGoogleOAuth,
+    updateUser,
+    refreshUser,
   }
 }

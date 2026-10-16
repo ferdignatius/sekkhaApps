@@ -24,6 +24,7 @@ export interface SimpleSelectProps {
   defaultValue?: string
   options?: SelectOption[]
   onChange?: (value: string) => void
+  onValueChange?: (value: string) => void
   disabled?: boolean
   error?: string | null
   className?: string
@@ -41,6 +42,7 @@ export function Select({
   defaultValue,
   options,
   onChange,
+  onValueChange,
   disabled,
   error,
   className,
@@ -49,26 +51,30 @@ export function Select({
   const generatedId = React.useId()
   const selectId = id || generatedId
   const hasError = Boolean(error)
+  const handleValueChange = onValueChange || onChange
 
   // If children provided, render as primitive wrapper
   if (children && !options) {
     return (
-      <div className="flex flex-col gap-1.5 w-full text-left font-sans">
+      <div className="flex w-full flex-col gap-1.5 text-left font-sans">
         {label && (
-          <label htmlFor={selectId} className="text-xs font-semibold text-[#0a0a0a] tracking-tight">
+          <label
+            htmlFor={selectId}
+            className="text-xs font-semibold tracking-tight text-[#0a0a0a]"
+          >
             {label}
           </label>
         )}
         <ShadcnSelect
           value={value}
           defaultValue={defaultValue}
-          onValueChange={onChange}
+          onValueChange={handleValueChange}
           disabled={disabled}
         >
           {children}
         </ShadcnSelect>
         {hasError && (
-          <p className="text-xs font-medium text-[#ef4444] animate-in fade-in">
+          <p className="animate-in text-xs font-medium text-[#ef4444] fade-in">
             {error}
           </p>
         )}
@@ -77,36 +83,39 @@ export function Select({
   }
 
   return (
-    <div className="flex flex-col gap-1.5 w-full text-left font-sans">
+    <div className="flex w-full flex-col gap-1.5 text-left font-sans">
       {label && (
-        <label htmlFor={selectId} className="text-xs font-semibold text-[#0a0a0a] tracking-tight">
+        <label
+          htmlFor={selectId}
+          className="text-xs font-semibold tracking-tight text-[#0a0a0a]"
+        >
           {label}
         </label>
       )}
       <ShadcnSelect
         value={value}
         defaultValue={defaultValue}
-        onValueChange={onChange}
+        onValueChange={handleValueChange}
         disabled={disabled}
       >
         <SelectTrigger
           id={selectId}
           className={cn(
-            "w-full h-11 rounded-[12px] bg-[#fffaf0] px-4 py-2.5 text-sm text-[#0a0a0a] border border-[#e5e5e5] outline-none shadow-2xs hover:bg-[#faf5e8] focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a]",
+            "h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-4 py-2.5 text-sm text-[#0a0a0a] shadow-2xs outline-none hover:bg-[#faf5e8] focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a]",
             hasError && "border-[#ef4444] bg-[#ef4444]/5 text-[#ef4444]",
             className
           )}
         >
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
-        <SelectContent className="rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] p-1 shadow-lg text-[#0a0a0a]">
+        <SelectContent className="rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] p-1 text-[#0a0a0a] shadow-lg">
           <SelectGroup>
             {options?.map((opt) => (
               <SelectItem
                 key={opt.value}
                 value={opt.value}
                 disabled={opt.disabled}
-                className="rounded-[8px] hover:bg-[#f5f0e0] text-sm py-2 px-3 text-[#0a0a0a] focus:bg-[#f5f0e0]"
+                className="rounded-[8px] px-3 py-2 text-sm text-[#0a0a0a] hover:bg-[#f5f0e0] focus:bg-[#f5f0e0]"
               >
                 {opt.label}
               </SelectItem>
@@ -115,7 +124,7 @@ export function Select({
         </SelectContent>
       </ShadcnSelect>
       {hasError && (
-        <p className="text-xs font-medium text-[#ef4444] animate-in fade-in">
+        <p className="animate-in text-xs font-medium text-[#ef4444] fade-in">
           {error}
         </p>
       )}
@@ -132,4 +141,3 @@ export {
   SelectTrigger,
   SelectValue,
 }
-

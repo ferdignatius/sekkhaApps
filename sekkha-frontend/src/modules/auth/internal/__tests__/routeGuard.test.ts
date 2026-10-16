@@ -9,6 +9,12 @@ import { render, act, waitFor } from "@testing-library/react"
 import type { RouterContext } from "../context/AuthContext"
 import type { AuthState } from "../context/authReducer"
 
+// ─── Import the functions under test ───────────────────────────────────────────
+
+import type * as ReactRouter from "@tanstack/react-router"
+import { routeGuardBeforeLoad } from "../../../../routes/_authenticated"
+import { LoginPage } from "../components/LoginPage"
+
 // ─── Module-level mocks ────────────────────────────────────────────────────────
 // vi.mock hoisting requires these to be at the top level of the file.
 // navigateMock is declared here and referenced inside the mock factory.
@@ -16,7 +22,7 @@ import type { AuthState } from "../context/authReducer"
 const navigateMock = vi.fn().mockResolvedValue(undefined)
 
 vi.mock("@tanstack/react-router", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@tanstack/react-router")>()
+  const actual = await importOriginal<typeof ReactRouter>()
   return {
     ...actual,
     useNavigate: () => navigateMock,
@@ -55,10 +61,17 @@ vi.mock("../hooks/useLoginForm", () => ({
 function makeContext(
   status: AuthState["status"],
   accessToken: string | null = null,
-  userId: string | null = null,
+  userId: string | null = null
 ): RouterContext {
   return {
-    authState: { status, accessToken, userId, role: null, name: null, email: null },
+    authState: {
+      status,
+      accessToken,
+      userId,
+      role: null,
+      name: null,
+      email: null,
+    },
   }
 }
 
@@ -67,7 +80,7 @@ function makeContext(
  * The redirect target lives in the `options` property on that Response.
  */
 function getRedirectOptions(
-  err: unknown,
+  err: unknown
 ): { to: string; search?: Record<string, unknown> } | null {
   if (typeof err !== "object" || err === null) return null
   const e = err as Record<string, unknown>
@@ -95,11 +108,6 @@ function getRedirectToParam(err: unknown): string | undefined {
   const opts = getRedirectOptions(err)
   return opts?.search?.redirectTo as string | undefined
 }
-
-// ─── Import the functions under test ───────────────────────────────────────────
-
-import { routeGuardBeforeLoad } from "../../../../routes/_authenticated"
-import { LoginPage } from "../components/LoginPage"
 
 // ─── Unit Tests: Route Guard (unauthenticated → redirect to /login) ─────────────
 
@@ -157,7 +165,7 @@ describe("Route Guard — authenticated user accessing /dashboard", () => {
     const ctx = makeContext("authenticated", "tok-123", "user-1")
 
     await expect(
-      routeGuardBeforeLoad(ctx, "/dashboard"),
+      routeGuardBeforeLoad(ctx, "/dashboard")
     ).resolves.toBeUndefined()
   })
 
@@ -166,7 +174,7 @@ describe("Route Guard — authenticated user accessing /dashboard", () => {
     const ctx = makeContext("authenticated", "tok-abc", "user-2")
 
     await expect(
-      routeGuardBeforeLoad(ctx, "/dashboard/settings"),
+      routeGuardBeforeLoad(ctx, "/dashboard/settings")
     ).resolves.toBeUndefined()
   })
 })
@@ -185,7 +193,7 @@ describe("LoginPage — authenticated user accessing /login", () => {
   it("calls navigate({ to: '/dashboard' }) when auth status is 'authenticated'", async () => {
     // Requirements: 5.7, 2.8
     // LoginPage uses useEffect + navigate({ to: "/dashboard" }) when authenticated.
-    await act(async () => {
+    act(() => {
       render(React.createElement(LoginPage))
     })
 
@@ -199,36 +207,33 @@ describe("LoginPage — authenticated user accessing /login", () => {
 // Feature: auth-flow, Property 8: Route Guard Selalu Memblokir Protected Route dari Pengguna Unauthenticated
 
 describe("Property 8: Route Guard Selalu Memblokir Protected Route dari Pengguna Unauthenticated", () => {
-  it(
-    "setiap URL di bawah /dashboard yang diakses saat unauthenticated → redirect ke /login dengan redirectTo yang sesuai",
-    async () => {
-      // Validates: Requirements 5.1, 5.2
-      await fc.assert(
-        fc.asyncProperty(
-          // Generate paths that start with "/" — arbitrary URL under /dashboard prefix
-          fc.string().filter((s) => s.startsWith("/")),
-          async (path) => {
-            const ctx = makeContext("unauthenticated")
+  it("setiap URL di bawah /dashboard yang diakses saat unauthenticated → redirect ke /login dengan redirectTo yang sesuai", async () => {
+    // Validates: Requirements 5.1, 5.2
+    await fc.assert(
+      fc.asyncProperty(
+        // Generate paths that start with "/" — arbitrary URL under /dashboard prefix
+        fc.string().filter((s) => s.startsWith("/")),
+        async (path) => {
+          const ctx = makeContext("unauthenticated")
 
-            let thrown: unknown = null
-            try {
-              await routeGuardBeforeLoad(ctx, path)
-            } catch (err) {
-              thrown = err
-            }
+          let thrown: unknown = null
+          try {
+            await routeGuardBeforeLoad(ctx, path)
+          } catch (err) {
+            thrown = err
+          }
 
-            // Must always throw a redirect (req 5.1)
-            expect(thrown).not.toBeNull()
+          // Must always throw a redirect (req 5.1)
+          expect(thrown).not.toBeNull()
 
-            // Must redirect to /login (req 5.1)
-            expect(isRedirectTo(thrown, "/login")).toBe(true)
+          // Must redirect to /login (req 5.1)
+          expect(isRedirectTo(thrown, "/login")).toBe(true)
 
-            // redirectTo param must equal the original path (req 5.2)
-            expect(getRedirectToParam(thrown)).toBe(path)
-          },
-        ),
-        { numRuns: 100 },
-      )
-    },
-  )
+          // redirectTo param must equal the original path (req 5.2)
+          expect(getRedirectToParam(thrown)).toBe(path)
+        }
+      ),
+      { numRuns: 100 }
+    )
+  })
 })

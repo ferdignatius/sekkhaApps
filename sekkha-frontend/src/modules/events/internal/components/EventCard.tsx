@@ -1,7 +1,11 @@
 // feature/events/components/EventCard
 // Event card in the list adhering strictly to Clay Design System tokens.
 
-import { CalendarIcon, MapPinIcon, ChevronRightIcon, LockIcon } from "lucide-react"
+import {
+  CalendarIcon,
+  MapPinIcon,
+  ChevronRightIcon,
+} from "lucide-react"
 import { Badge } from "@/components/base/Badge"
 import type { EventListItem } from "../types"
 import { getCategoryColor } from "../masterdata"
@@ -14,7 +18,11 @@ interface EventCardProps {
 function formatDate(iso: string) {
   const d = new Date(iso)
   return {
-    day: d.toLocaleDateString("en-US", { weekday: "short", day: "numeric", month: "short" }),
+    day: d.toLocaleDateString("en-US", {
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+    }),
     time: d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
   }
 }
@@ -35,105 +43,120 @@ export function EventCard({ event, onClick }: EventCardProps) {
   const tag = event.tag ?? event.event_type ?? "rutin"
   const colorInfo = getCategoryColor(tag)
   const isLive = isTodayEvent(event.event_date)
-  const status = event.status ?? "published"
+  const status = event.status ?? "scheduled"
 
   return (
-    <div className="py-2 first:pt-0 last:pb-0 border-b border-[#f0f0f0] last:border-b-0 text-left font-sans">
+    <div className="py-2 text-left font-sans first:pt-0 last:pb-0">
       <button
         type="button"
         onClick={onClick}
-        className="group relative w-full overflow-hidden rounded-[16px] bg-[#fffaf0] hover:bg-[#faf5e8] p-3.5 sm:p-4 text-left transition-all hover:shadow-xs active:scale-[0.99] border border-[#e5e5e5] cursor-pointer"
+        className="group relative w-full cursor-pointer overflow-hidden rounded-[20px] border border-[#e6decb]/80 bg-[#fffaf0]/90 p-3.5 text-left shadow-2xs ring-1 ring-black/[0.03] backdrop-blur-md transition-all hover:border-[#d9cfb8] hover:bg-[#faf5e8] hover:shadow-xs active:scale-[0.985] sm:p-4"
       >
         <div className="flex items-center gap-3.5">
           {/* Dynamic Color Accent Bar */}
           <div
-            className="h-11 w-1.5 shrink-0 rounded-full transition-all"
+            className="h-11 w-1.5 shrink-0 rounded-full shadow-2xs transition-all"
             style={colorInfo.dotStyle}
-            aria-hidden="true"
           />
 
-          {/* Content — left */}
+          {/* Main Info */}
           <div className="min-w-0 flex-1">
-            {/* Type tag & Status Badges */}
-            <div className="flex flex-wrap items-center gap-2">
-              <span
-                className="rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize border shadow-2xs"
+            {/* Top row: Category + Status Badges */}
+            <div className="flex flex-wrap items-center gap-1.5">
+              <Badge
+                variant="outline"
+                className="gap-1.5 font-medium"
                 style={colorInfo.bgStyle}
               >
-                {colorInfo.name}
-              </span>
+                <span
+                  className="h-1.5 w-1.5 rounded-full"
+                  style={colorInfo.dotStyle}
+                />
+                {tag}
+              </Badge>
 
-              {/* Status: Active */}
+              {/* Status: Active / Live */}
               {status === "active" && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 border border-emerald-300 px-2.5 py-0.5 text-xs font-semibold text-emerald-800 animate-pulse">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-600 mr-0.5" />
-                  Active Check-In
-                </span>
+                <Badge
+                  variant="emerald"
+                  glass
+                  className="animate-pulse font-semibold"
+                >
+                  <span className="mr-1 h-1.5 w-1.5 rounded-full bg-emerald-600" />
+                  Live Presensi
+                </Badge>
               )}
 
               {/* Status: Closed */}
-              {(status === "closed" || status === "done") && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-[#faf5e8] border border-[#e5e5e5] px-2.5 py-0.5 text-xs font-semibold text-[#6a6a6a]">
-                  <LockIcon className="size-3 text-[#6a6a6a] mr-0.5" />
-                  Completed
-                </span>
+              {status === "closed" && (
+                <Badge variant="secondary" glass>
+                  Selesai
+                </Badge>
               )}
 
               {/* Status: Cancelled */}
               {status === "cancelled" && (
-                <Badge variant="destructive">
-                  Cancelled
+                <Badge variant="destructive" glass>
+                  Dibatalkan
                 </Badge>
               )}
 
               {/* Status: Draft */}
               {status === "draft" && (
-                <span className="inline-flex items-center rounded-full bg-[#f5f0e0] border border-[#e5e5e5] px-2.5 py-0.5 text-xs font-semibold text-[#0a0a0a]">
+                <Badge variant="outline" glass>
                   Draft
-                </span>
+                </Badge>
               )}
 
-              {/* Status: Published / Upcoming */}
-              {status === "published" && !isLive && (
-                <span className="inline-flex items-center rounded-full bg-[#faf5e8] border border-[#e5e5e5] px-2.5 py-0.5 text-xs font-semibold text-[#0a0a0a]">
+              {/* Status: Scheduled / Upcoming */}
+              {(status === "scheduled" || status === "published") && !isLive && (
+                <Badge variant="secondary" glass>
                   Scheduled
-                </span>
+                </Badge>
               )}
 
               {/* Live today indicator */}
-              {status === "published" && isLive && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-[#e8b94a]/20 border border-[#e8b94a]/40 px-2.5 py-0.5 text-xs font-bold text-[#0a0a0a]">
-                  <span className="h-1.5 w-1.5 rounded-full bg-[#e8b94a] mr-0.5" />
+              {(status === "scheduled" || status === "published") && isLive && (
+                <Badge variant="ochre" glass className="font-bold">
+                  <span className="mr-1 h-1.5 w-1.5 rounded-full bg-[#e8b94a]" />
                   Today
-                </span>
+                </Badge>
               )}
             </div>
 
             {/* Title */}
-            <h3 className="mt-1 text-sm sm:text-base font-bold text-[#0a0a0a] group-hover:text-[#1a3a3a] transition-colors truncate">
+            <h3 className="mt-1 truncate text-sm font-bold text-[#0a0a0a] transition-colors group-hover:text-[#1a3a3a] sm:text-base">
               {event.title}
             </h3>
 
             {/* Meta row */}
             <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[#6a6a6a]">
               <div className="flex items-center gap-1.5 font-medium">
-                <CalendarIcon className="size-3.5 shrink-0 text-[#1a3a3a]" aria-hidden="true" />
-                <span>{day} · {time}</span>
+                <CalendarIcon
+                  className="size-3.5 shrink-0 text-[#1a3a3a]"
+                  aria-hidden="true"
+                />
+                <span>
+                  {day} · {time}
+                </span>
               </div>
               <div className="flex items-center gap-1.5 font-medium">
-                <MapPinIcon className="size-3.5 shrink-0 text-[#6a6a6a]" aria-hidden="true" />
+                <MapPinIcon
+                  className="size-3.5 shrink-0 text-[#6a6a6a]"
+                  aria-hidden="true"
+                />
                 <span className="truncate">{event.location}</span>
               </div>
             </div>
           </div>
 
           {/* Action — right */}
-          <div className="flex shrink-0 items-center gap-1.5 rounded-[10px] bg-[#faf5e8] border border-[#e5e5e5] px-2.5 py-1.5 transition-all group-hover:bg-[#0a0a0a] group-hover:text-white group-hover:border-[#0a0a0a]">
-            <span className="hidden text-xs font-bold sm:inline group-hover:text-white">
+          <div className="flex shrink-0 items-center gap-1.5 rounded-full border border-[#ded6c2] bg-[#faf5e8] px-3 py-1.5 text-xs font-semibold text-[#1a3a3a] shadow-2xs transition-all group-hover:border-[#0a0a0a] group-hover:bg-[#0a0a0a] group-hover:text-white sm:min-h-[36px]">
+            <span className="hidden font-bold group-hover:text-white sm:inline">
               Details
             </span>
             <ChevronRightIcon
-              className="size-4 text-[#6a6a6a] transition-transform group-hover:translate-x-0.5 group-hover:text-white"
+              className="size-3.5 text-[#6a6a6a] transition-transform group-hover:translate-x-0.5 group-hover:text-white"
               aria-hidden="true"
             />
           </div>

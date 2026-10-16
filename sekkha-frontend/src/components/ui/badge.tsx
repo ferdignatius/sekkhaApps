@@ -9,7 +9,7 @@ const badgeVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-surface-card text-ink border-hairline",
+        default: "border-hairline bg-surface-card text-ink",
         primary: "bg-primary text-primary-foreground",
         secondary: "bg-surface-soft text-ink",
         pink: "bg-clay-pink text-white",
@@ -18,9 +18,9 @@ const badgeVariants = cva(
         peach: "bg-clay-peach text-ink",
         ochre: "bg-clay-ochre text-ink",
         mint: "bg-clay-mint text-ink",
-        outline: "border-hairline text-ink bg-transparent",
+        outline: "border-hairline bg-transparent text-ink",
         destructive: "bg-destructive text-white",
-        ghost: "hover:bg-surface-soft text-text-muted hover:text-ink",
+        ghost: "text-text-muted hover:bg-surface-soft hover:text-ink",
         link: "text-ink underline-offset-4 hover:underline",
       },
     },

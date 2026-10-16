@@ -5,8 +5,15 @@
 
 export type AuthStatus = "loading" | "authenticated" | "unauthenticated"
 
-// Role mirrors the API contract: umat | aktivis | pengurus | admin
-export type UserRole = "umat" | "aktivis" | "pengurus" | "admin"
+// Role mirrors the API contract: member | activist | organizer | admin
+export type UserRole =
+  | "member"
+  | "activist"
+  | "organizer"
+  | "admin"
+  | "umat"
+  | "aktivis"
+  | "pengurus"
 
 export interface AuthState {
   status: AuthStatus
@@ -34,11 +41,20 @@ export type AuthAction =
       type: "AUTH_SUCCESS"
       payload: {
         accessToken: string
-        userId: string
-        role: UserRole
+        userId: string | null
+        role: UserRole | null
         name?: string | null
         email?: string | null
       }
+    }
+  | {
+      type: "AUTH_UPDATE_USER"
+      payload: Partial<{
+        userId: string | null
+        name: string | null
+        role: UserRole
+        email: string | null
+      }>
     }
   | { type: "AUTH_LOGOUT" }
   | { type: "AUTH_VERIFY_FAILED" }
@@ -61,6 +77,23 @@ export function authReducer(state: AuthState, action: AuthAction): AuthState {
         role: action.payload.role,
         name: action.payload.name ?? state.name,
         email: action.payload.email ?? state.email,
+      }
+
+    case "AUTH_UPDATE_USER":
+      return {
+        ...state,
+        userId:
+          action.payload.userId !== undefined
+            ? action.payload.userId
+            : state.userId,
+        name:
+          action.payload.name !== undefined ? action.payload.name : state.name,
+        role:
+          action.payload.role !== undefined ? action.payload.role : state.role,
+        email:
+          action.payload.email !== undefined
+            ? action.payload.email
+            : state.email,
       }
 
     case "AUTH_LOGOUT":

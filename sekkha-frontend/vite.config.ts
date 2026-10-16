@@ -1,4 +1,4 @@
-import { defineConfig } from "vitest/config"
+import { defineConfig } from "vite"
 import { devtools } from "@tanstack/devtools-vite"
 import { tanstackStart } from "@tanstack/react-start/plugin/vite"
 import viteReact from "@vitejs/plugin-react"
@@ -6,6 +6,7 @@ import viteTsConfigPaths from "vite-tsconfig-paths"
 import tailwindcss from "@tailwindcss/vite"
 import { nitro } from "nitro/vite"
 
+// FE-13 Remediation: Deduplicate React instances explicitly in Vite SSR configuration
 const config = defineConfig({
   plugins: [
     devtools(),
@@ -20,16 +21,6 @@ const config = defineConfig({
   ],
   resolve: {
     dedupe: ["react", "react-dom"],
-  },
-  test: {
-    environment: "jsdom",
-    globals: true,
-    setupFiles: ["./src/test-setup.ts"],
-    poolOptions: {
-      forks: {
-        isolate: false,
-      },
-    },
   },
 })
 

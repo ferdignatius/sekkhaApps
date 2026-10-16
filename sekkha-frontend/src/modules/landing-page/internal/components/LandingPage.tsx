@@ -1,18 +1,18 @@
-import * as React from 'react'
-import { useRouter } from '@tanstack/react-router'
+import * as React from "react"
+import { useRouter } from "@tanstack/react-router"
 
-import { useAuthState } from '../hooks/useAuthState'
-import { useScrollPosition } from '../hooks/useScrollPosition'
-import { landingContent } from '../data/landingContent'
+import { useAuthState } from "../hooks/useAuthState"
+import { useScrollPosition } from "../hooks/useScrollPosition"
+import { landingContent } from "../data/landingContent"
 
-import { LandingNavbar } from './LandingNavbar'
-import { HeroSection } from './HeroSection'
-import { FeatureSection } from './FeatureSection'
-import { StatsSection } from './StatsSection'
-import { LeaderboardSection } from './LeaderboardSection'
-import { EventsSection } from './EventsSection'
-import { CTABanner } from './CTABanner'
-import { LandingFooter } from './LandingFooter'
+import { LandingNavbar } from "./LandingNavbar"
+import { HeroSection } from "./HeroSection"
+import { FeatureSection } from "./FeatureSection"
+import { StatsSection } from "./StatsSection"
+import { LeaderboardSection } from "./LeaderboardSection"
+import { EventsSection } from "./EventsSection"
+import { CTABanner } from "./CTABanner"
+import { LandingFooter } from "./LandingFooter"
 
 /**
  * LandingPage — halaman utama Sekkha (Komunitas Remaja Vihara Tri Maha Dharma).
@@ -39,9 +39,9 @@ export function LandingPage() {
 
   const handleSignUpNavigate = async () => {
     try {
-      await router.navigate({ to: '/sign-up' as string })
+      await router.navigate({ to: "/sign-up" as string })
     } catch {
-      setErrorMessage('Halaman pendaftaran tidak tersedia saat ini.')
+      setErrorMessage("Halaman pendaftaran tidak tersedia saat ini.")
     }
   }
 
@@ -50,7 +50,7 @@ export function LandingPage() {
       {/* Skip link */}
       <a
         href="#main-content"
-        className="sr-only focus-visible:not-sr-only focus-visible:absolute focus-visible:z-[100] focus-visible:top-4 focus-visible:left-4 focus-visible:px-4 focus-visible:py-2 focus-visible:bg-sekkha-canvas focus-visible:text-sekkha-ink focus-visible:rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-sekkha-primary"
+        className="sr-only focus-visible:not-sr-only focus-visible:absolute focus-visible:top-4 focus-visible:left-4 focus-visible:z-[100] focus-visible:rounded-md focus-visible:bg-sekkha-canvas focus-visible:px-4 focus-visible:py-2 focus-visible:text-sekkha-ink focus-visible:ring-2 focus-visible:ring-sekkha-primary focus-visible:ring-offset-2 focus-visible:outline-none"
       >
         Skip to main content
       </a>
@@ -60,7 +60,7 @@ export function LandingPage() {
         <div
           role="alert"
           aria-live="assertive"
-          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[200] bg-sekkha-ink text-sekkha-on-dark px-6 py-3 rounded-xl shadow-lg text-body-sm"
+          className="text-body-sm fixed bottom-6 left-1/2 z-[200] -translate-x-1/2 rounded-xl bg-sekkha-ink px-6 py-3 text-sekkha-on-dark shadow-lg"
         >
           {errorMessage}
         </div>

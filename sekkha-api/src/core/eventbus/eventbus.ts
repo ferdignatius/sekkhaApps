@@ -14,11 +14,27 @@ type EventHandler<T = unknown> = (payload: T) => void | Promise<void>
 class EventBus {
   private emitter = new EventEmitter()
 
+  private sanitizePayload(payload: any): any {
+    if (!payload || typeof payload !== "object") return payload
+    const safe: Record<string, any> = Array.isArray(payload) ? [...payload] : { ...payload }
+    const sensitiveKeys = ["email", "phone", "password", "token", "passwordHash"]
+    for (const key of Object.keys(safe)) {
+      if (sensitiveKeys.includes(key)) {
+        safe[key] = "***"
+      }
+    }
+    return safe
+  }
+
   /**
    * Publish a domain event. Fire-and-forget — publisher doesn't wait.
    */
   publish<T>(event: string, payload: T): void {
-    console.log(`📢 EventBus: ${event}`, JSON.stringify(payload))
+    if (process.env.NODE_ENV === "production") {
+      console.log(`📢 EventBus: ${event}`)
+    } else {
+      console.log(`📢 EventBus: ${event}`, JSON.stringify(this.sanitizePayload(payload)))
+    }
     // Run async handlers without blocking the publisher
     this.emitter.emit(event, payload)
   }

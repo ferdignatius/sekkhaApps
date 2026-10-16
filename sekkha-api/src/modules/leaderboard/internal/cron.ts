@@ -1,5 +1,5 @@
 import cron from "node-cron"
-import { computeAndCacheLeaderboard } from "./service"
+import { computeAndCacheLeaderboard } from "../services"
 
 /**
  * Initializes the weekly leaderboard cron job.

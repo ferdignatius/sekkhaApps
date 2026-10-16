@@ -47,15 +47,17 @@ Sistem Sekkha mendukung 4 (empat) tingkatan role pengguna:
 
 * **Endpoint Backend**: `POST /v1/auth/register`
 * **Form Inputs** *(hanya 4 field)*:
-  * `name` (string, wajib) — Nama Lengkap
+  * `name` (string, wajib) — Nama Lengkap. **Default kosong** (tidak ada placeholder, tidak ada prefilled dari Google/Autofill); user wajib mengetik sendiri.
   * `email` (string, wajib)
   * `password` (string, wajib)
   * `confirm_password` (string, wajib — validasi khusus frontend, tidak dikirim ke backend)
 
 #### Aturan Validasi Frontend (Client-Side):
 1. **Nama Lengkap**:
-   * Tidak boleh kosong (`"Nama lengkap wajib diisi"`).
+   * Wajib diisi (tidak boleh kosong — error: `"Nama lengkap wajib diisi"`).
+   * Default state field **kosong** (tidak ada placeholder, tidak ada default value, tidak auto-fill dari Google/Autofill browser).
    * Minimal 2 karakter (`"Nama terlalu pendek"`).
+   * **Alasan**: data nama harus explicit input oleh user untuk akurasi & konsistensi di database.
 2. **Email**:
    * Tidak boleh kosong (`"Email wajib diisi"`).
    * Harus memenuhi regex format email standar (`"Format email tidak valid"`).
@@ -314,3 +316,4 @@ Setiap user yang terdaftar (baik via manual registrasi, Google OAuth, maupun pre
 | **AC-11** | Mengakses protected route (`/insight`) tanpa token | System otomatis meredirect pengguna ke `/login?redirectTo=/insight`. |
 | **AC-12** | Pengguna menekan tombol "Logout" | Token dihapus dari storage, state reset ke `unauthenticated`, redirect ke `/login`. |
 | **AC-13** | `confirm_password` berbeda dari `password` saat sign-up | Validasi frontend mencegah submit, tampilkan pesan `"Konfirmasi password tidak cocok"`. |
+| **AC-14** | Form sign-up dibuka (baik manual maupun setelah pre-fill OAuth/Autofill browser) | Field `name` **kosong** (tidak ada nilai default, tidak ada placeholder, tidak auto-terisi) — user wajib mengetik manual |

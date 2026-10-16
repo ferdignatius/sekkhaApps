@@ -4,17 +4,16 @@
 import React, {
   createContext,
   useContext,
+  useCallback,
   useEffect,
   useMemo,
   useReducer,
 } from "react"
-import {
-  authReducer,
-  initialAuthState,
-  type AuthState,
-  type UserRole,
-} from "./authReducer"
+import { authReducer, initialAuthState } from "./authReducer"
+import type { AuthState, UserRole } from "./authReducer"
 import { createAuthService, STORAGE_KEY } from "../api/authService"
+import { api } from "@/lib/api"
+import { safeStorage } from "@/lib/storage"
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
@@ -29,15 +28,32 @@ export interface AuthContextValue {
   /** Creates a new account with email + password + optional name. */
   register: (email: string, password: string, name?: string) => Promise<void>
   /** Requests a 6-digit OTP code sent to user email for registration. */
-  requestRegisterOtp: (email: string, password: string, name?: string) => Promise<{ success: boolean; message: string }>
+  requestRegisterOtp: (
+    email: string,
+    password: string,
+    name?: string
+  ) => Promise<{ success: boolean; message: string }>
   /** Verifies 6-digit OTP code and creates account. */
   verifyRegisterOtp: (email: string, otp: string) => Promise<void>
   /** Resends 6-digit OTP code to user email. */
-  resendRegisterOtp: (email: string) => Promise<{ success: boolean; message: string }>
+  resendRegisterOtp: (
+    email: string
+  ) => Promise<{ success: boolean; message: string }>
   /** Clears the session and sets auth state to unauthenticated. */
   logout: () => void
   /** Initiates the Google OAuth flow by redirecting to the backend OAuth entry point. */
   initiateGoogleOAuth: () => void
+  /** Updates the in-memory authenticated user info (name, role, email). */
+  updateUser: (
+    user: Partial<{
+      userId: string | null
+      name: string | null
+      role: UserRole
+      email: string | null
+    }>
+  ) => void
+  /** Re-verifies session with backend to refresh latest user details. */
+  refreshUser: () => Promise<void>
 }
 
 // ─── Context ───────────────────────────────────────────────────────────────────
@@ -62,18 +78,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     async function initAuth() {
       // 1. Check if token is present in URL query parameters (Google OAuth callback redirect)
-      const urlParams = new URLSearchParams(window.location.search)
-      const urlToken = urlParams.get("token")
+      const urlParams =
+        typeof window !== "undefined"
+          ? new URLSearchParams(window.location.search)
+          : null
+      const urlToken = urlParams?.get("token")
 
-      let token = localStorage.getItem(STORAGE_KEY)
+      let token = safeStorage.getItem(STORAGE_KEY)
 
       if (urlToken) {
-        localStorage.setItem(STORAGE_KEY, urlToken)
+        safeStorage.setItem(STORAGE_KEY, urlToken)
         token = urlToken
 
         // Clean query parameter from URL to keep it pristine
-        const cleanUrl = window.location.pathname + window.location.hash
-        window.history.replaceState({}, document.title, cleanUrl)
+        if (typeof window !== "undefined") {
+          const cleanUrl = window.location.pathname + window.location.hash
+          window.history.replaceState({}, document.title, cleanUrl)
+        }
       }
 
       // No token → immediately unauthenticated, no server request needed (requirement 4.8)
@@ -89,44 +110,44 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
         if (cancelled) return
 
-        // 200 OK — try to get userId from the response (best-effort decode)
-        // For init we re-read the response body; since verifyToken returns void,
-        // we decode userId and role from the JWT payload as a fallback.
-        let userId: string = "unknown"
-        let role: string = "umat"
-        let name: string | null = null
-        let email: string | null = null
-        try {
-          // Attempt lightweight JWT decode (no signature verification needed here)
-          const parts = token.split(".")
-          if (parts.length === 3) {
-            const payload = JSON.parse(atob(parts[1])) as {
-              sub?: string
-              userId?: string
-              id?: string
-              role?: string
-              name?: string
-              email?: string
-            }
-            userId = payload.sub ?? payload.userId ?? payload.id ?? "unknown"
-            role = payload.role ?? "umat"
-            name = payload.name ?? null
-            email = payload.email ?? null
-          }
-        } catch {
-          // JWT decode failed
-        }
-
+        // FE-14 Remediation: Do not perform unverified client-side atob JWT decoding.
+        // Trust only verified response from backend. Set authenticated session, then hydrate.
         dispatch({
           type: "AUTH_SUCCESS",
-          payload: { accessToken: token, userId, role: role as UserRole, name, email },
+          payload: {
+            accessToken: token,
+            userId: null,
+            role: null,
+            name: null,
+            email: null,
+          },
         })
+
+        // Best effort: hydrate fresh profile from database
+        api
+          .get<{ id?: string; name?: string; role?: string; email?: string }>(
+            "/users/me"
+          )
+          .then((u) => {
+            if (!cancelled && u) {
+              dispatch({
+                type: "AUTH_UPDATE_USER",
+                payload: {
+                  userId: u.id ?? null,
+                  name: u.name ?? null,
+                  role: (u.role as UserRole) || undefined,
+                  email: u.email ?? null,
+                },
+              })
+            }
+          })
+          .catch(() => {})
       } catch {
         if (cancelled) return
 
         // verifyToken threw (NETWORK_TIMEOUT, INVALID_CREDENTIALS, or UNKNOWN_ERROR)
         // In all cases: remove stale token and set unauthenticated (requirements 4.5, 4.7)
-        localStorage.removeItem(STORAGE_KEY)
+        safeStorage.removeItem(STORAGE_KEY)
         dispatch({ type: "AUTH_VERIFY_FAILED" })
       }
     }
@@ -159,7 +180,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
     authService.initiateGoogleOAuth()
   }
 
-  const requestRegisterOtp = async (email: string, password: string, name?: string) => {
+  const requestRegisterOtp = async (
+    email: string,
+    password: string,
+    name?: string
+  ) => {
     return await authService.requestRegisterOtp(email, password, name)
   }
 
@@ -171,6 +196,46 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return await authService.resendRegisterOtp(email)
   }
 
+  const updateUser = useCallback(
+    (
+      data: Partial<{
+        userId: string | null
+        name: string | null
+        role: UserRole
+        email: string | null
+      }>
+    ) => {
+      dispatch({ type: "AUTH_UPDATE_USER", payload: data })
+    },
+    [dispatch]
+  )
+
+  const refreshUser = async (): Promise<void> => {
+    const token = safeStorage.getItem(STORAGE_KEY)
+    if (!token) return
+    try {
+      const res = await api.get<{
+        id?: string
+        name?: string
+        role?: UserRole
+        email?: string
+      }>("/users/me")
+      if (res) {
+        dispatch({
+          type: "AUTH_UPDATE_USER",
+          payload: {
+            userId: res.id ?? null,
+            name: res.name ?? null,
+            role: (res.role as UserRole) || undefined,
+            email: res.email ?? null,
+          },
+        })
+      }
+    } catch {
+      // Non-blocking
+    }
+  }
+
   const value: AuthContextValue = {
     authState,
     login,
@@ -180,38 +245,25 @@ export function AuthProvider({ children }: AuthProviderProps) {
     resendRegisterOtp,
     logout,
     initiateGoogleOAuth,
+    updateUser,
+    refreshUser,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
 // ─── RouterContext Integration ─────────────────────────────────────────────────
-// Expose authState to TanStack Router's context so route guards (task 9) can
-// read it via `context.authState` inside `beforeLoad`.
-//
-// Usage in router.tsx (task 11.2):
-//
-//   import { useAuth } from "@/modules/auth"
-//   const router = getRouter()
-//   router.options.context = { authState: useAuth().authState }
-//
-// The RouterContext interface declaration lives in router.tsx alongside the
-// router instance (where it has access to the router type). This file only
-// provides the shape that the context consumer expects.
-
 export interface RouterContext {
   authState: AuthState
 }
 
-// ─── Internal useAuthContext hook (not exported from feature/index) ───────────
-// Public consumers should import `useAuth` from `@/modules/auth/hooks/useAuth`.
-
+// ─── Internal useAuthContext hook ───────────────────────────────────────────
 export function useAuthContext(): AuthContextValue {
   const ctx = useContext(AuthContext)
   if (ctx === null) {
     throw new Error(
       "useAuthContext must be used inside an <AuthProvider>. " +
-        "Make sure <AuthProvider> wraps your component tree (see src/routes/__root.tsx).",
+        "Make sure <AuthProvider> wraps your component tree (see src/routes/__root.tsx)."
     )
   }
   return ctx

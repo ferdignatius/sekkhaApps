@@ -23,7 +23,14 @@ export function getRouter() {
     // Default context — overridden at runtime once AuthProvider has initialized.
     // Starting with "loading" means the route guard will wait for resolution.
     context: {
-      authState: { status: "loading", accessToken: null, userId: null, role: null, name: null, email: null },
+      authState: {
+        status: "loading",
+        accessToken: null,
+        userId: null,
+        role: null,
+        name: null,
+        email: null,
+      },
     } satisfies RouterContext,
   })
 

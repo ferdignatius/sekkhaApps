@@ -1,22 +1,29 @@
 // Dummy data for season-based leaderboard.
-import type { LeaderboardFilter, LeaderboardResponse, LeaderboardMetric } from "../types"
+import type {
+  LeaderboardFilter,
+  LeaderboardResponse,
+  LeaderboardMetric,
+} from "../types"
 
 const USERS = [
-  { user_id: "u1",  name: "Budi Santoso",   initials: "BS" },
-  { user_id: "u2",  name: "Rina Kartika",   initials: "RK" },
-  { user_id: "u3",  name: "Aryo Wibowo",    initials: "AW" },
-  { user_id: "u4",  name: "Sari Indah",     initials: "SI" },
-  { user_id: "u5",  name: "Dedi Pratama",   initials: "DP" },
-  { user_id: "u6",  name: "Maya Putri",     initials: "MP" },
-  { user_id: "u7",  name: "Hendra Kurnia",  initials: "HK" },
-  { user_id: "u8",  name: "Lina Susanti",   initials: "LS" },
-  { user_id: "u9",  name: "Fajar Ramadan",  initials: "FR" },
-  { user_id: "u10", name: "Nita Rahayu",    initials: "NR" },
+  { user_id: "u1", name: "Budi Santoso", initials: "BS" },
+  { user_id: "u2", name: "Rina Kartika", initials: "RK" },
+  { user_id: "u3", name: "Aryo Wibowo", initials: "AW" },
+  { user_id: "u4", name: "Sari Indah", initials: "SI" },
+  { user_id: "u5", name: "Dedi Pratama", initials: "DP" },
+  { user_id: "u6", name: "Maya Putri", initials: "MP" },
+  { user_id: "u7", name: "Hendra Kurnia", initials: "HK" },
+  { user_id: "u8", name: "Lina Susanti", initials: "LS" },
+  { user_id: "u9", name: "Fajar Ramadan", initials: "FR" },
+  { user_id: "u10", name: "Nita Rahayu", initials: "NR" },
 ]
 
 function seededRandom(seed: number): () => number {
   let s = seed
-  return () => { s = (s * 16807 + 0) % 2147483647; return (s - 1) / 2147483646 }
+  return () => {
+    s = (s * 16807 + 0) % 2147483647
+    return (s - 1) / 2147483646
+  }
 }
 
 function makeLabel(metric: LeaderboardMetric, value: number): string {
@@ -26,13 +33,17 @@ function makeLabel(metric: LeaderboardMetric, value: number): string {
 }
 
 const MAX_VALUES: Record<LeaderboardMetric, [number, number]> = {
-  points:     [80, 600],
-  streak:     [1,  16],
-  attendance: [1,  24],
+  points: [80, 600],
+  streak: [1, 16],
+  attendance: [1, 24],
 }
 
-export function getLeaderboardData(filter: LeaderboardFilter, myUserId: string): LeaderboardResponse {
-  const seed = filter.season.year * 100 + filter.season.half * 10 + filter.metric.length
+export function getLeaderboardData(
+  filter: LeaderboardFilter,
+  myUserId: string
+): LeaderboardResponse {
+  const seed =
+    filter.season.year * 100 + filter.season.half * 10 + filter.metric.length
   const rng = seededRandom(seed)
   const [minVal, maxVal] = MAX_VALUES[filter.metric]
 
@@ -59,7 +70,7 @@ export function getLeaderboardData(filter: LeaderboardFilter, myUserId: string):
     label: makeLabel(filter.metric, u.value),
   }))
 
-  const myEntry = entries.find(e => e.user_id === myUserId) ?? entries[1]
+  const myEntry = entries.find((e) => e.user_id === myUserId) ?? entries[1]
 
   return {
     season: filter.season,

@@ -7,7 +7,5 @@ export type { EventListItem, EventType } from "./internal/types"
 
 export const eventsModule: ModuleDefinition = {
   name: "events",
-  navItems: [
-    { label: "Events", to: "/events", icon: "CalendarDays" },
-  ],
+  navItems: [{ label: "Events", to: "/events", icon: "CalendarDays" }],
 }

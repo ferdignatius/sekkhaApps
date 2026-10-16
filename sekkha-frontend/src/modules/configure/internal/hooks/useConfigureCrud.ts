@@ -12,7 +12,7 @@ interface CrudApi<T> {
 
 export function useConfigureCrud<T extends { id: string }>(
   apiService: CrudApi<T>,
-  fallbackData: T[] = [],
+  fallbackData: T[] = []
 ) {
   const [items, setItems] = useState<T[]>(fallbackData)
   const [loading, setLoading] = useState(true)
@@ -45,7 +45,7 @@ export function useConfigureCrud<T extends { id: string }>(
     } catch (err) {
       // Optimistic: add locally
       const newItem = { ...data, id: `temp-${Date.now()}` } as T
-      setItems(prev => [...prev, newItem])
+      setItems((prev) => [...prev, newItem])
       throw err
     }
   }
@@ -57,7 +57,9 @@ export function useConfigureCrud<T extends { id: string }>(
       return result
     } catch (err) {
       // Optimistic: update locally
-      setItems(prev => prev.map(item => item.id === id ? { ...item, ...data } : item))
+      setItems((prev) =>
+        prev.map((item) => (item.id === id ? { ...item, ...data } : item))
+      )
       throw err
     }
   }
@@ -65,13 +67,22 @@ export function useConfigureCrud<T extends { id: string }>(
   const remove = async (id: string) => {
     try {
       await apiService.remove(id)
-      setItems(prev => prev.filter(item => item.id !== id))
+      setItems((prev) => prev.filter((item) => item.id !== id))
     } catch (err) {
       // Optimistic: remove locally anyway
-      setItems(prev => prev.filter(item => item.id !== id))
+      setItems((prev) => prev.filter((item) => item.id !== id))
       throw err
     }
   }
 
-  return { items, setItems, loading, error, create, update, remove, refetch: fetchItems }
+  return {
+    items,
+    setItems,
+    loading,
+    error,
+    create,
+    update,
+    remove,
+    refetch: fetchItems,
+  }
 }

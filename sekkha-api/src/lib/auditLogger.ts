@@ -28,10 +28,17 @@ export interface AuditLogEntry {
 
 export const auditLogger = {
   log(entry: AuditLogEntry): void {
+    const details = entry.details ? { ...entry.details } : undefined
+    if (details && "identifier" in details) {
+      details.identifier = typeof details.identifier === "string"
+        ? `${details.identifier.slice(0, 2)}***`
+        : "[redacted]"
+    }
     const logRecord = {
       timestamp: new Date().toISOString(),
       type: "SECURITY_AUDIT",
       ...entry,
+      ...(details ? { details } : {}),
     }
     // Output single-line structured JSON for log aggregators (ELK, CloudWatch, Datadog)
     console.info(`🛡️ [AUDIT] ${JSON.stringify(logRecord)}`)

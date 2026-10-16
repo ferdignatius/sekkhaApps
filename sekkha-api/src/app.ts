@@ -70,7 +70,7 @@ export function createApp(): Application {
     standardHeaders: true,
     legacyHeaders: false,
     store: createRateLimitStore("global"),
-    passOnStoreError: true,
+    passOnStoreError: false,
     message: { error: "Too many requests from this IP. Please try again later." },
   })
   app.use(globalLimiter)
@@ -82,7 +82,7 @@ export function createApp(): Application {
     standardHeaders: true,
     legacyHeaders: false,
     store: createRateLimitStore("auth"),
-    passOnStoreError: true,
+    passOnStoreError: false,
     message: { error: "Terlalu banyak percobaan autentikasi. Silakan tunggu 15 menit." },
   })
   app.use("/api/auth/login", authLimiter)
@@ -97,7 +97,7 @@ export function createApp(): Application {
     standardHeaders: true,
     legacyHeaders: false,
     store: createRateLimitStore("otp"),
-    passOnStoreError: true,
+    passOnStoreError: false,
     message: { error: "Terlalu banyak permintaan OTP dari IP ini. Silakan tunggu 15 menit." },
   })
   app.use("/api/auth/register-request", otpLimiter)
@@ -114,7 +114,7 @@ export function createApp(): Application {
     standardHeaders: true,
     legacyHeaders: false,
     store: createRateLimitStore("linking"),
-    passOnStoreError: true,
+    passOnStoreError: false,
     message: { error: "Terlalu banyak percobaan penautan akun dari IP ini. Silakan tunggu 15 menit." },
   })
   app.use("/api/people/link-legacy-account", linkingLimiter)
@@ -126,7 +126,7 @@ export function createApp(): Application {
     standardHeaders: true,
     legacyHeaders: false,
     store: createRateLimitStore("schools"),
-    passOnStoreError: true,
+    passOnStoreError: false,
     message: { error: "Terlalu banyak permintaan statistik sekolah. Silakan tunggu sebentar." },
   })
   app.use("/api/schools/stats", schoolStatsLimiter)

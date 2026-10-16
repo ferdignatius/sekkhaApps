@@ -2,11 +2,21 @@ import crypto from "crypto"
 import { redis } from "../../../lib/redis"
 import { prisma } from "../../../lib/prisma"
 
-// In-memory fallback map for active refresh tokens when Redis/DB is offline
+// Development-only fallback. Production must use shared Redis or DB storage.
 // Key: tokenHash, Value: { userId: string, expiresAt: number }
 const localRefreshTokens = new Map<string, { userId: string; expiresAt: number }>()
 
 const REFRESH_TOKEN_TTL_SECONDS = 7 * 24 * 60 * 60 // 7 days
+
+const REFRESH_CONSUME_SCRIPT = `
+local value = redis.call('GET', KEYS[1])
+if value then redis.call('DEL', KEYS[1]) end
+return value
+`
+
+function requireSharedStore(): boolean {
+  return process.env.NODE_ENV === "production"
+}
 
 function hashToken(token: string): string {
   return crypto.createHash("sha256").update(token.trim()).digest("hex")
@@ -24,7 +34,9 @@ export async function saveRefreshToken(
   const expiresAt = Date.now() + ttlSeconds * 1000
 
   // 1. In-memory map fallback
-  localRefreshTokens.set(tokenHash, { userId, expiresAt })
+  if (!requireSharedStore()) {
+    localRefreshTokens.set(tokenHash, { userId, expiresAt })
+  }
 
   // 2. Redis store
   try {
@@ -32,7 +44,7 @@ export async function saveRefreshToken(
       await redis.set(`auth:refresh:${tokenHash}`, JSON.stringify({ userId, expiresAt }), "EX", ttlSeconds)
     }
   } catch {
-    // Graceful fallback
+    if (requireSharedStore()) throw new Error("Refresh token store unavailable")
   }
 
   // 3. Best-effort DB persistence if RefreshToken table exists
@@ -65,26 +77,31 @@ export async function verifyAndRotateRefreshToken(
   // 1. Check Redis first
   try {
     if (redis.status === "ready" || redis.status === "connect") {
-      const raw = await redis.get(`auth:refresh:${tokenHash}`)
+      const raw = (await redis.eval(
+        REFRESH_CONSUME_SCRIPT,
+        1,
+        `auth:refresh:${tokenHash}`
+      )) as string | null
       if (raw) {
         const parsed = JSON.parse(raw) as { userId: string; expiresAt: number }
         if (parsed.expiresAt > Date.now()) {
           userId = parsed.userId
         }
-        await redis.del(`auth:refresh:${tokenHash}`)
       }
     }
   } catch {
-    // Fallback
+    if (requireSharedStore()) throw new Error("Refresh token store unavailable")
   }
 
-  // 2. Check in-memory store fallback
-  const item = localRefreshTokens.get(tokenHash)
-  if (item) {
-    if (!userId && item.expiresAt > Date.now()) {
-      userId = item.userId
+  // 2. Development-only fallback
+  if (!requireSharedStore()) {
+    const item = localRefreshTokens.get(tokenHash)
+    if (item) {
+      if (!userId && item.expiresAt > Date.now()) {
+        userId = item.userId
+      }
+      localRefreshTokens.delete(tokenHash)
     }
-    localRefreshTokens.delete(tokenHash)
   }
 
   // 3. Check DB fallback if available
@@ -113,6 +130,7 @@ export async function verifyAndRotateRefreshToken(
     }
   }
 
+  if (!userId && requireSharedStore()) return null
   return userId
 }
 

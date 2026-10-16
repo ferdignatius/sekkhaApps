@@ -30,7 +30,6 @@ import { Route as AuthenticatedConfigureEarlyWarningThresholdRouteImport } from 
 import { Route as AuthenticatedConfigureMasterAchievementRouteImport } from './routes/_authenticated/configure/master/achievement'
 import { Route as AuthenticatedConfigureMasterAttendanceBadgeRouteImport } from './routes/_authenticated/configure/master/attendance-badge'
 import { Route as AuthenticatedConfigureMasterBadgeRouteImport } from './routes/_authenticated/configure/master/badge'
-import { Route as AuthenticatedConfigureMasterEventTimeRouteImport } from './routes/_authenticated/configure/master/event-time'
 import { Route as AuthenticatedConfigureMasterEventTypeRouteImport } from './routes/_authenticated/configure/master/event-type'
 import { Route as AuthenticatedConfigureMasterLevelRouteImport } from './routes/_authenticated/configure/master/level'
 import { Route as AuthenticatedConfigureMasterSchoolRouteImport } from './routes/_authenticated/configure/master/school'
@@ -154,12 +153,6 @@ const AuthenticatedConfigureMasterBadgeRoute =
     path: '/configure/master/badge',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
-const AuthenticatedConfigureMasterEventTimeRoute =
-  AuthenticatedConfigureMasterEventTimeRouteImport.update({
-    id: '/configure/master/event-time',
-    path: '/configure/master/event-time',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
 const AuthenticatedConfigureMasterEventTypeRoute =
   AuthenticatedConfigureMasterEventTypeRouteImport.update({
     id: '/configure/master/event-type',
@@ -218,7 +211,6 @@ export interface FileRoutesByFullPath {
   '/configure/master/achievement': typeof AuthenticatedConfigureMasterAchievementRoute
   '/configure/master/attendance-badge': typeof AuthenticatedConfigureMasterAttendanceBadgeRoute
   '/configure/master/badge': typeof AuthenticatedConfigureMasterBadgeRoute
-  '/configure/master/event-time': typeof AuthenticatedConfigureMasterEventTimeRoute
   '/configure/master/event-type': typeof AuthenticatedConfigureMasterEventTypeRoute
   '/configure/master/level': typeof AuthenticatedConfigureMasterLevelRoute
   '/configure/master/school': typeof AuthenticatedConfigureMasterSchoolRoute
@@ -247,7 +239,6 @@ export interface FileRoutesByTo {
   '/configure/master/achievement': typeof AuthenticatedConfigureMasterAchievementRoute
   '/configure/master/attendance-badge': typeof AuthenticatedConfigureMasterAttendanceBadgeRoute
   '/configure/master/badge': typeof AuthenticatedConfigureMasterBadgeRoute
-  '/configure/master/event-time': typeof AuthenticatedConfigureMasterEventTimeRoute
   '/configure/master/event-type': typeof AuthenticatedConfigureMasterEventTypeRoute
   '/configure/master/level': typeof AuthenticatedConfigureMasterLevelRoute
   '/configure/master/school': typeof AuthenticatedConfigureMasterSchoolRoute
@@ -278,7 +269,6 @@ export interface FileRoutesById {
   '/_authenticated/configure/master/achievement': typeof AuthenticatedConfigureMasterAchievementRoute
   '/_authenticated/configure/master/attendance-badge': typeof AuthenticatedConfigureMasterAttendanceBadgeRoute
   '/_authenticated/configure/master/badge': typeof AuthenticatedConfigureMasterBadgeRoute
-  '/_authenticated/configure/master/event-time': typeof AuthenticatedConfigureMasterEventTimeRoute
   '/_authenticated/configure/master/event-type': typeof AuthenticatedConfigureMasterEventTypeRoute
   '/_authenticated/configure/master/level': typeof AuthenticatedConfigureMasterLevelRoute
   '/_authenticated/configure/master/school': typeof AuthenticatedConfigureMasterSchoolRoute
@@ -309,7 +299,6 @@ export interface FileRouteTypes {
     | '/configure/master/achievement'
     | '/configure/master/attendance-badge'
     | '/configure/master/badge'
-    | '/configure/master/event-time'
     | '/configure/master/event-type'
     | '/configure/master/level'
     | '/configure/master/school'
@@ -338,7 +327,6 @@ export interface FileRouteTypes {
     | '/configure/master/achievement'
     | '/configure/master/attendance-badge'
     | '/configure/master/badge'
-    | '/configure/master/event-time'
     | '/configure/master/event-type'
     | '/configure/master/level'
     | '/configure/master/school'
@@ -368,7 +356,6 @@ export interface FileRouteTypes {
     | '/_authenticated/configure/master/achievement'
     | '/_authenticated/configure/master/attendance-badge'
     | '/_authenticated/configure/master/badge'
-    | '/_authenticated/configure/master/event-time'
     | '/_authenticated/configure/master/event-type'
     | '/_authenticated/configure/master/level'
     | '/_authenticated/configure/master/school'
@@ -534,13 +521,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedConfigureMasterBadgeRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/configure/master/event-time': {
-      id: '/_authenticated/configure/master/event-time'
-      path: '/configure/master/event-time'
-      fullPath: '/configure/master/event-time'
-      preLoaderRoute: typeof AuthenticatedConfigureMasterEventTimeRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
     '/_authenticated/configure/master/event-type': {
       id: '/_authenticated/configure/master/event-type'
       path: '/configure/master/event-type'
@@ -603,7 +583,6 @@ interface AuthenticatedRouteChildren {
   AuthenticatedConfigureMasterAchievementRoute: typeof AuthenticatedConfigureMasterAchievementRoute
   AuthenticatedConfigureMasterAttendanceBadgeRoute: typeof AuthenticatedConfigureMasterAttendanceBadgeRoute
   AuthenticatedConfigureMasterBadgeRoute: typeof AuthenticatedConfigureMasterBadgeRoute
-  AuthenticatedConfigureMasterEventTimeRoute: typeof AuthenticatedConfigureMasterEventTimeRoute
   AuthenticatedConfigureMasterEventTypeRoute: typeof AuthenticatedConfigureMasterEventTypeRoute
   AuthenticatedConfigureMasterLevelRoute: typeof AuthenticatedConfigureMasterLevelRoute
   AuthenticatedConfigureMasterSchoolRoute: typeof AuthenticatedConfigureMasterSchoolRoute
@@ -634,8 +613,6 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
     AuthenticatedConfigureMasterAttendanceBadgeRoute,
   AuthenticatedConfigureMasterBadgeRoute:
     AuthenticatedConfigureMasterBadgeRoute,
-  AuthenticatedConfigureMasterEventTimeRoute:
-    AuthenticatedConfigureMasterEventTimeRoute,
   AuthenticatedConfigureMasterEventTypeRoute:
     AuthenticatedConfigureMasterEventTypeRoute,
   AuthenticatedConfigureMasterLevelRoute:
@@ -664,3 +641,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}

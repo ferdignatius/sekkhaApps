@@ -205,7 +205,6 @@ model Event {
   attendances Attendance[]
 
   @@index([status, eventDate])
-  @@index([status, visibility, eventDate])
   @@index([status, visibility])
   @@index([visibility, eventDate])
   @@index([seasonId, eventDate])

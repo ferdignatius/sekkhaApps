@@ -40,8 +40,14 @@ const EventsResponseSchema = z.array(
     .object({
       id: z.string(),
       title: z.string(),
+      description: z.string().nullable().optional(),
+      location: z.string().default(""),
+      event_date: z.string().datetime(),
+      event_type: z.string().default("rutin"),
+      tag: z.string().optional(),
+      status: z.string(),
+      qr_code: z.object({ code: z.string(), expires_at: z.string().nullable() }).nullable().optional(),
     })
-    .passthrough()
 )
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -50,9 +56,16 @@ function toDateKey(iso?: string): string {
   if (!iso) return ""
   const d = new Date(iso)
   if (isNaN(d.getTime())) return ""
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, "0")
-  const day = String(d.getDate()).padStart(2, "0")
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Jakarta",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(d)
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]))
+  const y = values.year
+  const m = values.month
+  const day = values.day
   return `${y}-${m}-${day}`
 }
 

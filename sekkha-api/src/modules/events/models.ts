@@ -84,7 +84,7 @@ export const eventModels = {
     })
   },
 
-  findEventAttendances(eventId: string) {
+  findEventAttendances(eventId: string, skip = 0, take = 50) {
     return prisma.attendance.findMany({
       where: { eventId },
       include: {
@@ -97,6 +97,8 @@ export const eventModels = {
         },
       },
       orderBy: { scannedAt: "desc" },
+      skip,
+      take,
     })
   },
 

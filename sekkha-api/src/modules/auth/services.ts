@@ -20,10 +20,12 @@ import type {
 import {
   saveRegistrationOtp,
   getRegistrationOtp,
+  consumeRegistrationOtp,
   deleteRegistrationOtp,
   incrementRegistrationOtpAttempts,
   saveForgotPasswordOtp,
   getForgotPasswordOtp,
+  consumeForgotPasswordOtp,
   deleteForgotPasswordOtp,
   incrementForgotPasswordOtpAttempts,
   savePasswordResetToken,
@@ -156,7 +158,8 @@ export async function requestRegisterOtp(input: RequestRegisterOtpInput) {
  */
 export async function verifyRegisterOtp(input: VerifyRegisterOtpInput): Promise<AuthResult> {
   const normalizedEmail = input.email.toLowerCase().trim()
-  const payload = await getRegistrationOtp(normalizedEmail)
+  const consumed = await consumeRegistrationOtp(normalizedEmail, input.otp)
+  const payload = consumed || await getRegistrationOtp(normalizedEmail)
 
   if (!payload) {
     const err = new Error("Kode OTP telah kedaluwarsa atau belum diminta. Silakan daftar kembali.") as Error & { status: number }
@@ -164,7 +167,7 @@ export async function verifyRegisterOtp(input: VerifyRegisterOtpInput): Promise<
     throw err
   }
 
-  if (payload.otpHashed !== hashOtp(input.otp)) {
+  if (!consumed && payload.otpHashed !== hashOtp(input.otp)) {
     const attempts = await incrementRegistrationOtpAttempts(normalizedEmail)
     if (attempts >= 5) {
       const err = new Error(
@@ -627,7 +630,8 @@ export async function resetPassword(input: ResetPasswordInput) {
     }
   } else if (input.otp) {
     // Backwards-compatible fallback
-    const payload = await getForgotPasswordOtp(normalizedEmail)
+    const consumed = await consumeForgotPasswordOtp(normalizedEmail, input.otp)
+    const payload = consumed || await getForgotPasswordOtp(normalizedEmail)
     if (!payload || payload.otpHashed !== hashOtp(input.otp)) {
       const err = new Error("Kode OTP salah atau sesi telah kedaluwarsa.") as Error & { status: number }
       err.status = 400

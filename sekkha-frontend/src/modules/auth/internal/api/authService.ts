@@ -43,6 +43,7 @@ export async function fetchWithTimeout(
   try {
     const response = await fetch(url, {
       ...options,
+      credentials: "include",
       signal: controller.signal,
     })
     return response

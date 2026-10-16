@@ -12,6 +12,11 @@ import {
 } from "./internal/validation"
 import * as service from "./services"
 
+function publicAuthResult(result: service.AuthResult) {
+  const { refreshToken: _refreshToken, ...publicResult } = result
+  return publicResult
+}
+
 // ─── Handlers ────────────────────────────────────────────────────────────────
 // Thin request handlers. Parse input → delegate to service → send response.
 
@@ -21,7 +26,7 @@ function setRefreshCookie(res: Response, refreshToken?: string) {
   res.cookie("sekkha_refresh_token", refreshToken, {
     httpOnly: true,
     secure: isProduction,
-    sameSite: isProduction ? "none" : "lax",
+    sameSite: isProduction ? "strict" : "lax",
     path: "/api/auth",
     maxAge: 7 * 24 * 60 * 60 * 1000,
   })
@@ -51,7 +56,7 @@ export async function handleRegisterVerifyOtp(req: Request, res: Response, next:
     const body = VerifyRegisterOtpSchema.parse(req.body)
     const result = await service.verifyRegisterOtp(body)
     setRefreshCookie(res, result.refreshToken)
-    res.status(201).json(result)
+    res.status(201).json(publicAuthResult(result))
   } catch (err) {
     next(err)
   }
@@ -74,7 +79,7 @@ export async function handleRegister(req: Request, res: Response, next: NextFunc
     const body = RegisterSchema.parse(req.body)
     const result = await service.registerUser(body)
     setRefreshCookie(res, result.refreshToken)
-    res.status(201).json(result)
+    res.status(201).json(publicAuthResult(result))
   } catch (err) {
     next(err)
   }
@@ -86,7 +91,7 @@ export async function handleLogin(req: Request, res: Response, next: NextFunctio
     const body = LoginSchema.parse(req.body)
     const result = await service.loginUser(body)
     setRefreshCookie(res, result.refreshToken)
-    res.json(result)
+    res.json(publicAuthResult(result))
   } catch (err) {
     next(err)
   }
@@ -95,10 +100,7 @@ export async function handleLogin(req: Request, res: Response, next: NextFunctio
 /** POST /api/auth/refresh (Refreshes session via refresh token rotation) */
 export async function handleRefreshSession(req: Request, res: Response, next: NextFunction) {
   try {
-    const refreshToken =
-      req.cookies?.sekkha_refresh_token ||
-      req.body?.refresh_token ||
-      (req.headers["x-refresh-token"] as string)
+    const refreshToken = req.cookies?.sekkha_refresh_token
 
     if (!refreshToken) {
       res.status(401).json({ error: "Refresh token tidak ditemukan" })
@@ -107,7 +109,7 @@ export async function handleRefreshSession(req: Request, res: Response, next: Ne
 
     const result = await service.refreshSession(refreshToken)
     setRefreshCookie(res, result.refreshToken)
-    res.json(result)
+    res.json(publicAuthResult(result))
   } catch (err) {
     clearRefreshCookie(res)
     next(err)
@@ -180,10 +182,7 @@ export async function handleLogout(req: Request, res: Response, next: NextFuncti
   try {
     const header = req.headers.authorization
     const token = header?.startsWith("Bearer ") ? header.slice(7) : undefined
-    const refreshToken =
-      req.cookies?.sekkha_refresh_token ||
-      req.body?.refresh_token ||
-      (req.headers["x-refresh-token"] as string)
+    const refreshToken = req.cookies?.sekkha_refresh_token
 
     if (token || refreshToken) {
       await service.logoutUser(token, req.user?.userId, refreshToken)

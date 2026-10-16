@@ -26,8 +26,34 @@ const OTP_TTL_SECONDS = 300 // 5 minutes
 const RESET_TOKEN_TTL_SECONDS = 600 // 10 minutes
 export const MAX_OTP_ATTEMPTS = 5
 
+const CONSUME_OTP_SCRIPT = `
+local raw = redis.call('GET', KEYS[1])
+if not raw then return nil end
+local expected = ARGV[1]
+local marker = '"otpHashed":"' .. expected .. '"'
+if string.find(raw, marker, 1, true) then
+  redis.call('DEL', KEYS[1])
+  return raw
+end
+return false
+`
+
 export function hashOtp(otp: string): string {
   return crypto.createHash("sha256").update(otp.trim()).digest("hex")
+}
+
+async function consumeOtp<T>(key: string, otp: string): Promise<T | false | null> {
+  if (redis.status !== "ready" && redis.status !== "connect") return null
+  const raw = (await redis.eval(CONSUME_OTP_SCRIPT, 1, key, hashOtp(otp))) as string | boolean | null
+  return typeof raw === "string" ? (JSON.parse(raw) as T) : raw === false ? false : null
+}
+
+export function consumeRegistrationOtp(email: string, otp: string) {
+  return consumeOtp<RegistrationOtpPayload>(`otp:register:${email.toLowerCase().trim()}`, otp)
+}
+
+export function consumeForgotPasswordOtp(email: string, otp: string) {
+  return consumeOtp<ForgotPasswordOtpPayload>(`otp:forgot:${email.toLowerCase().trim()}`, otp)
 }
 
 // ─── Registration OTP Store ──────────────────────────────────────────────────

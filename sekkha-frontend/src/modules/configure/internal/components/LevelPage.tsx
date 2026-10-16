@@ -34,9 +34,15 @@ const INITIAL_LEVELS: Level[] = [
 
 export function LevelPage() {
   const { authState } = useAuth()
-  const isAdmin = authState.status === "authenticated" && authState.role === "admin"
+  const isAdmin =
+    authState.status === "authenticated" && authState.role === "admin"
 
-  const { items: levels, create: apiCreate, update: apiUpdate, remove: apiRemove } = useConfigureCrud<LevelDto>(levelsApi, INITIAL_LEVELS as any)
+  const {
+    items: levels,
+    create: apiCreate,
+    update: apiUpdate,
+    remove: apiRemove,
+  } = useConfigureCrud<LevelDto>(levelsApi, INITIAL_LEVELS as any)
   const [editing, setEditing] = useState<Level | null>(null)
   const [showForm, setShowForm] = useState(false)
 
@@ -70,40 +76,55 @@ export function LevelPage() {
     e.preventDefault()
     if (!label.trim() || !isAdmin) return
 
-    const payload = { level: Number(levelNum), label, min_points: Number(minPoints) || 0 }
+    const payload = {
+      level: Number(levelNum),
+      label,
+      min_points: Number(minPoints) || 0,
+    }
 
     if (editing) {
-      void apiUpdate(editing.id, payload).catch(() => { })
+      void apiUpdate(editing.id, payload).catch(() => {})
     } else {
-      void apiCreate(payload as any).catch(() => { })
+      void apiCreate(payload as any).catch(() => {})
     }
     resetForm()
   }
 
   function handleDelete(id: string) {
     if (!isAdmin) return
-    void apiRemove(id).catch(() => { })
+    void apiRemove(id).catch(() => {})
   }
 
   return (
-    <main className="min-h-screen bg-[#fffaf0] pb-32 md:pb-12 font-sans text-left">
-      <PageBreadcrumb items={[{ label: "Configure" }, { label: "Gamification" }, { label: "Member Levels" }]} />
-      <div className="px-3.5 py-4 sm:px-6 sm:py-6 md:px-8 max-w-7xl mx-auto space-y-5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#e5e5e5] pb-4">
+    <main className="min-h-screen bg-[#fffaf0] pb-32 text-left font-sans md:pb-12">
+      <PageBreadcrumb
+        items={[
+          { label: "Configure" },
+          { label: "Gamification" },
+          { label: "Member Levels" },
+        ]}
+      />
+      <div className="mx-auto max-w-7xl space-y-5 px-3.5 py-4 sm:px-6 sm:py-6 md:px-8">
+        <div className="flex flex-col justify-between gap-3 border-b border-[#e5e5e5] pb-4 sm:flex-row sm:items-center">
           <div className="flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-[12px] bg-[#0a0a0a] text-white shrink-0 shadow-xs">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-[12px] bg-[#0a0a0a] text-white shadow-xs">
               <ZapIcon className="size-5 text-[#e8b94a]" />
             </div>
             <div className="min-w-0">
-              <h1 className="text-base sm:text-xl font-bold text-[#0a0a0a]">Member Progression Levels</h1>
-              <p className="text-xs text-[#6a6a6a]">Manage member level tiers and minimum required points per progression rank</p>
+              <h1 className="text-base font-bold text-[#0a0a0a] sm:text-xl">
+                Member Progression Levels
+              </h1>
+              <p className="text-xs text-[#6a6a6a]">
+                Manage member level tiers and minimum required points per
+                progression rank
+              </p>
             </div>
           </div>
           {isAdmin && (
             <button
               type="button"
               onClick={openCreate}
-              className="h-10 w-full sm:w-auto flex items-center justify-center gap-1.5 rounded-[12px] bg-[#0a0a0a] text-white px-4 text-xs font-bold hover:bg-[#1f1f1f] transition-all cursor-pointer shadow-xs shrink-0"
+              className="flex h-10 w-full shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-[12px] bg-[#0a0a0a] px-4 text-xs font-bold text-white shadow-xs transition-all hover:bg-[#1f1f1f] sm:w-auto"
             >
               <PlusIcon className="size-4" />
               <span>Add Level</span>
@@ -113,28 +134,35 @@ export function LevelPage() {
 
         {/* Table */}
         <div className="overflow-hidden rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0] shadow-xs">
-          <div className="overflow-x-auto scrollbar-none">
-            <table className="w-full text-left text-xs font-sans">
+          <div className="scrollbar-none overflow-x-auto">
+            <table className="w-full text-left font-sans text-xs">
               <thead>
-                <tr className="border-b border-[#e5e5e5] bg-[#faf5e8] text-[#6a6a6a] font-bold">
-                  <th className="px-4 py-3 w-28">Tier Badge</th>
+                <tr className="border-b border-[#e5e5e5] bg-[#faf5e8] font-bold text-[#6a6a6a]">
+                  <th className="w-28 px-4 py-3">Tier Badge</th>
                   <th className="px-4 py-3">Level Rank Label</th>
                   <th className="px-4 py-3">Min. Required Points</th>
-                  {isAdmin && <th className="px-4 py-3 w-28 text-right">Actions</th>}
+                  {isAdmin && (
+                    <th className="w-28 px-4 py-3 text-right">Actions</th>
+                  )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#f0f0f0]">
                 {levels.map((lvl) => (
-                  <tr key={lvl.id} className="hover:bg-[#faf5e8]/70 transition-colors">
+                  <tr
+                    key={lvl.id}
+                    className="transition-colors hover:bg-[#faf5e8]/70"
+                  >
                     <td className="px-4 py-3">
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[6px] text-[11px] font-bold bg-[#b8a4ed]/30 text-[#0a0a0a] border border-[#b8a4ed]/50">
+                      <span className="inline-flex items-center gap-1 rounded-[6px] border border-[#b8a4ed]/50 bg-[#b8a4ed]/30 px-2.5 py-0.5 text-[11px] font-bold text-[#0a0a0a]">
                         <ZapIcon className="size-3 text-[#0a0a0a]" />
                         Level {lvl.level}
                       </span>
                     </td>
-                    <td className="px-4 py-3 font-bold text-[#0a0a0a]">{lvl.label}</td>
+                    <td className="px-4 py-3 font-bold text-[#0a0a0a]">
+                      {lvl.label}
+                    </td>
                     <td className="px-4 py-3 font-mono font-bold text-[#0a0a0a]">
-                      <span className="bg-[#faf5e8] border border-[#e5e5e5] px-2 py-0.5 rounded-[6px]">
+                      <span className="rounded-[6px] border border-[#e5e5e5] bg-[#faf5e8] px-2 py-0.5">
                         {lvl.min_points} Pts
                       </span>
                     </td>
@@ -144,7 +172,7 @@ export function LevelPage() {
                           <button
                             type="button"
                             onClick={() => openEdit(lvl)}
-                            className="h-8 px-2.5 rounded-[8px] border border-[#e5e5e5] bg-[#fffaf0] hover:bg-[#faf5e8] text-xs font-bold text-[#0a0a0a] transition-colors cursor-pointer flex items-center gap-1"
+                            className="flex h-8 cursor-pointer items-center gap-1 rounded-[8px] border border-[#e5e5e5] bg-[#fffaf0] px-2.5 text-xs font-bold text-[#0a0a0a] transition-colors hover:bg-[#faf5e8]"
                             title="Edit Level"
                           >
                             <PencilIcon className="size-3.5" />
@@ -153,7 +181,7 @@ export function LevelPage() {
                           <button
                             type="button"
                             onClick={() => handleDelete(lvl.id)}
-                            className="size-8 flex items-center justify-center rounded-[8px] border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 transition-colors cursor-pointer"
+                            className="flex size-8 cursor-pointer items-center justify-center rounded-[8px] border border-rose-200 bg-rose-50 text-rose-700 transition-colors hover:bg-rose-100"
                             title="Delete Level"
                           >
                             <TrashIcon className="size-3.5" />
@@ -180,52 +208,61 @@ export function LevelPage() {
           title={editing ? "Edit Level" : "Add New Level"}
           description="Configure level progression tier, title label, and minimum points required."
         >
-          <form onSubmit={handleSubmit} className="space-y-4 text-left font-sans">
+          <form
+            onSubmit={handleSubmit}
+            className="space-y-4 text-left font-sans"
+          >
             <div className="grid gap-3 sm:grid-cols-3">
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-[#0a0a0a]">Level (Number) *</label>
+                <label className="text-xs font-bold text-[#0a0a0a]">
+                  Level (Number) *
+                </label>
                 <input
                   type="number"
                   required
                   value={levelNum}
                   onChange={(e) => setLevelNum(e.target.value)}
                   placeholder="1"
-                  className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-xs sm:text-sm text-[#0a0a0a] placeholder:text-[#6a6a6a] outline-none shadow-xs focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] transition-all"
+                  className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-xs text-[#0a0a0a] shadow-xs transition-all outline-none placeholder:text-[#6a6a6a] focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] sm:text-sm"
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-[#0a0a0a]">Level Label *</label>
+                <label className="text-xs font-bold text-[#0a0a0a]">
+                  Level Label *
+                </label>
                 <input
                   required
                   value={label}
                   onChange={(e) => setLabel(e.target.value)}
                   placeholder="Active Member"
-                  className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-xs sm:text-sm text-[#0a0a0a] placeholder:text-[#6a6a6a] outline-none shadow-xs focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] transition-all"
+                  className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-xs text-[#0a0a0a] shadow-xs transition-all outline-none placeholder:text-[#6a6a6a] focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] sm:text-sm"
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-[#0a0a0a]">Min. Points *</label>
+                <label className="text-xs font-bold text-[#0a0a0a]">
+                  Min. Points *
+                </label>
                 <input
                   type="number"
                   required
                   value={minPoints}
                   onChange={(e) => setMinPoints(e.target.value)}
-                  className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-xs sm:text-sm text-[#0a0a0a] placeholder:text-[#6a6a6a] outline-none shadow-xs focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] transition-all"
+                  className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-xs text-[#0a0a0a] shadow-xs transition-all outline-none placeholder:text-[#6a6a6a] focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] sm:text-sm"
                 />
               </div>
             </div>
 
-            <div className="flex gap-2 pt-2 justify-end border-t border-[#e5e5e5]">
+            <div className="flex justify-end gap-2 border-t border-[#e5e5e5] pt-2">
               <button
                 type="button"
                 onClick={resetForm}
-                className="h-10 px-4 rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] hover:bg-[#faf5e8] text-xs font-bold text-[#0a0a0a] transition-colors cursor-pointer"
+                className="h-10 cursor-pointer rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-4 text-xs font-bold text-[#0a0a0a] transition-colors hover:bg-[#faf5e8]"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="h-10 px-5 rounded-[12px] bg-[#0a0a0a] hover:bg-[#1f1f1f] text-xs font-bold text-white shadow-xs transition-colors cursor-pointer"
+                className="h-10 cursor-pointer rounded-[12px] bg-[#0a0a0a] px-5 text-xs font-bold text-white shadow-xs transition-colors hover:bg-[#1f1f1f]"
               >
                 {editing ? "Save Changes" : "Create Level"}
               </button>

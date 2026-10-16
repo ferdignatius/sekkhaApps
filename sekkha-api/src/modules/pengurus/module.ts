@@ -1,5 +1,5 @@
 import type { AppModule } from "../../core/types"
-import { pengurusRouter } from "./internal/router"
+import { pengurusRouter } from "./routes"
 
 // ─── Pengurus Module ─────────────────────────────────────────────────────────
 

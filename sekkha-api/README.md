@@ -81,17 +81,17 @@ docker run -d \
   --network data-tier \
   -e NODE_ENV="production" \
   -e PORT=4000 \
-  -e DATABASE_URL="postgresql://ferdipostgree:postgresbosferdi100105@core-postgres-master-1:5432/sekkha_db?schema=public" \
-  -e REDIS_URL="redis://core-redis-1:6379" \
-  -e JWT_SECRET="sekkha-production-super-secret-key-2026" \
+  -e DATABASE_URL="postgresql://<DB_USER>:<DB_PASSWORD>@<DB_HOST>:5432/<DB_NAME>?schema=public" \
+  -e REDIS_URL="redis://<REDIS_HOST>:6379" \
+  -e JWT_SECRET="<SECURE_JWT_SECRET_MIN_32_CHARS>" \
   -e DUMMY_UMAT_EMAIL="umat@sekkha.com" \
-  -e DUMMY_UMAT_PASSWORD="password123" \
+  -e DUMMY_UMAT_PASSWORD="<SET_STRONG_PASSWORD>" \
   -e DUMMY_AKTIVIS_EMAIL="aktivis@sekkha.com" \
-  -e DUMMY_AKTIVIS_PASSWORD="password123" \
+  -e DUMMY_AKTIVIS_PASSWORD="<SET_STRONG_PASSWORD>" \
   -e DUMMY_PENGURUS_EMAIL="pengurus@sekkha.com" \
-  -e DUMMY_PENGURUS_PASSWORD="password123" \
+  -e DUMMY_PENGURUS_PASSWORD="<SET_STRONG_PASSWORD>" \
   -e DUMMY_ADMIN_EMAIL="admin@sekkha.com" \
-  -e DUMMY_ADMIN_PASSWORD="password123" \
+  -e DUMMY_ADMIN_PASSWORD="<SET_STRONG_PASSWORD>" \
   sekkha-api:latest
 ```
 

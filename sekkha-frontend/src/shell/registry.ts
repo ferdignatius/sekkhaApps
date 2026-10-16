@@ -3,6 +3,18 @@
 // Shell (App, Sidebar) hanya membaca registry ini untuk menentukan
 // rute dan menu apa saja yang harus dimuat — tanpa tahu implementasi modul.
 
+// ─── Module Registration ─────────────────────────────────────────────────────
+// Import definisi publik dari setiap modul.
+// Menambah modul baru = buat folder + import di sini.
+
+import { homeModule } from "@/modules/home"
+import { eventsModule } from "@/modules/events"
+import { leaderboardModule } from "@/modules/leaderboard"
+import { profileModule } from "@/modules/profile"
+import { configureModule } from "@/modules/configure"
+import { pengurusModule } from "@/modules/pengurus"
+import { peopleModule } from "@/modules/people"
+
 export interface ModuleDefinition {
   /** Identifier unik modul */
   name: string
@@ -38,31 +50,17 @@ export interface ConfigureItem {
   hasRoute: boolean
 }
 
-// ─── Module Registration ─────────────────────────────────────────────────────
-// Import definisi publik dari setiap modul.
-// Menambah modul baru = buat folder + import di sini.
-
-import { dashboardModule } from "@/modules/dashboard"
-import { eventsModule } from "@/modules/events"
-import { leaderboardModule } from "@/modules/leaderboard"
-import { profileModule } from "@/modules/profile"
-import { configureModule } from "@/modules/configure"
-import { pengurusModule } from "@/modules/pengurus"
-import { teamsModule } from "@/modules/teams"
-import { notificationsModule } from "@/modules/notifications"
-
 /**
  * Daftar semua modul frontend yang aktif.
  * Shell membaca array ini untuk build sidebar dan routing.
  * Urutan = urutan tampil di sidebar.
  */
 export const activeModules: ModuleDefinition[] = [
-  dashboardModule,
+  homeModule,
   eventsModule,
   leaderboardModule,
   profileModule,
-  notificationsModule,
   configureModule,
-  teamsModule,
+  peopleModule,
   pengurusModule,
 ]

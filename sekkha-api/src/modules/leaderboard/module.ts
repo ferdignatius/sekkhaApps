@@ -1,5 +1,5 @@
 import type { AppModule } from "../../core/types"
-import { leaderboardRouter } from "./internal/router"
+import { leaderboardRouter } from "./routes"
 import { initLeaderboardCron } from "./internal/cron"
 
 // ─── Leaderboard Module ──────────────────────────────────────────────────────

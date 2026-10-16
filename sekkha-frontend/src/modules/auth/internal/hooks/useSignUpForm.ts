@@ -128,16 +128,18 @@ export function useSignUpForm(): UseSignUpFormReturn {
         switch (error.code) {
           case "EMAIL_ALREADY_EXISTS":
             setApiError(
-              "Email sudah digunakan. Silakan gunakan email lain atau masuk ke akun Anda.",
+              "Email sudah digunakan. Silakan gunakan email lain atau masuk ke akun Anda."
             )
             break
           case "NETWORK_TIMEOUT":
             setApiError(
-              "Koneksi bermasalah. Periksa koneksi internet Anda dan coba lagi.",
+              "Koneksi bermasalah. Periksa koneksi internet Anda dan coba lagi."
             )
             break
           default:
-            setApiError(error.message || "Terjadi kesalahan saat mengirim kode OTP.")
+            setApiError(
+              error.message || "Terjadi kesalahan saat mengirim kode OTP."
+            )
         }
       } else {
         setApiError("Terjadi kesalahan. Silakan coba beberapa saat lagi.")

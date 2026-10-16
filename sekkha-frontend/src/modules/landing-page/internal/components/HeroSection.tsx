@@ -1,6 +1,6 @@
-import { motion } from 'motion/react'
-import { Button } from '@/components/base/Button'
-import { DashboardMockup } from './DashboardMockup'
+import { motion } from "motion/react"
+import { Button, Card } from "@/components/base"
+import { DashboardMockup } from "./DashboardMockup"
 
 interface HeroSectionProps {
   headline: string
@@ -12,20 +12,22 @@ const EASE = "easeOut"
 
 export function HeroSection({ headline, subheadline }: HeroSectionProps) {
   return (
-    <section aria-labelledby="hero-heading" className="relative w-full py-[120px] overflow-hidden">
-      {/* Background ambient mesh gradient */}
-      <div className="absolute inset-0 -z-10 bg-gradient-to-b from-amber-50/40 via-teal-50/20 to-white pointer-events-none" />
+    <section
+      aria-labelledby="hero-heading"
+      className="relative w-full overflow-hidden py-16 md:py-24"
+    >
+      {/* Background ambient mesh gradient — cream canvas per DESIGN.md */}
+      <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-b from-sekkha-surface/70 via-sekkha-canvas to-sekkha-canvas" />
 
-      <div className="mx-auto w-full max-w-[1280px] px-4 md:px-8 relative z-10">
-
-        {/* Badge */}
+      <div className="relative z-10 mx-auto w-full max-w-[1280px] px-4 md:px-8">
+        {/* Badge - Apple HIG Material Regular */}
         <motion.div
-          className="flex justify-center mb-6"
+          className="mb-6 flex justify-center"
           initial={{ opacity: 0, y: 32 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: EASE, delay: 0 }}
         >
-          <span className="inline-flex items-center gap-2 rounded-full glass-pill px-4 py-1.5 text-body-sm text-sekkha-ink font-medium shadow-sm">
+          <span className="text-body-sm inline-flex items-center gap-2 rounded-full border border-white/60 bg-white/80 px-4 py-1.5 font-medium text-sekkha-ink shadow-xs ring-1 ring-black/[0.02] backdrop-blur-[30px]">
             ✨ Youth Digital Platform • Vihara Tri Maha Dharma
           </span>
         </motion.div>
@@ -33,7 +35,7 @@ export function HeroSection({ headline, subheadline }: HeroSectionProps) {
         {/* Headline */}
         <motion.h1
           id="hero-heading"
-          className="text-display-xl text-sekkha-ink max-w-[860px] mx-auto text-center font-medium tracking-[-1.5px] sm:tracking-[-2px] md:tracking-[-2.5px] text-4xl sm:text-5xl md:text-[68px] lg:text-[72px] leading-[1.05]"
+          className="md:text-display-xl mx-auto max-w-[860px] text-center text-4xl leading-[1.05] font-medium tracking-[-1.5px] text-sekkha-ink sm:text-5xl sm:tracking-[-2px] md:tracking-[-2.5px]"
           initial={{ opacity: 0, y: 32 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: EASE, delay: 0.1 }}
@@ -43,7 +45,7 @@ export function HeroSection({ headline, subheadline }: HeroSectionProps) {
 
         {/* Subheadline */}
         <motion.p
-          className="text-body-md text-sekkha-slate max-w-[640px] mx-auto text-center mt-6 text-base md:text-lg leading-relaxed font-normal"
+          className="text-body-md mx-auto mt-6 max-w-[640px] text-center leading-relaxed font-normal text-sekkha-slate md:text-lg"
           initial={{ opacity: 0, y: 32 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: EASE, delay: 0.2 }}
@@ -53,47 +55,60 @@ export function HeroSection({ headline, subheadline }: HeroSectionProps) {
 
         {/* CTA Group */}
         <motion.div
-          className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-8 w-full sm:w-auto"
+          className="mt-8 flex w-full flex-col items-center justify-center gap-4 sm:w-auto sm:flex-row"
           initial={{ opacity: 0, y: 32 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: EASE, delay: 0.35 }}
         >
           <Button
             variant="primary"
-            className="w-full sm:w-auto h-[44px] px-6 rounded-[12px] bg-sekkha-primary hover:bg-[#1f1f1f] text-white font-semibold shadow-xs"
+            className="h-[44px] w-full rounded-[12px] bg-sekkha-primary px-6 font-semibold text-white shadow-xs hover:bg-[#1f1f1f] sm:w-auto"
             asChild
           >
-            <a href="/sign-up" role="button" className="!text-white font-semibold">
+            <a
+              href="/sign-up"
+              role="button"
+              className="font-semibold !text-white"
+            >
               Join for Free
             </a>
           </Button>
           <Button
             variant="secondary"
-            className="w-full sm:w-auto h-[44px] px-6 rounded-[12px] bg-sekkha-canvas border border-sekkha-hairline hover:bg-sekkha-surface text-sekkha-ink font-semibold shadow-xs"
+            className="h-[44px] w-full rounded-[12px] border border-sekkha-hairline bg-sekkha-canvas px-6 font-semibold text-sekkha-ink shadow-xs hover:bg-sekkha-surface sm:w-auto"
             asChild
           >
-            <a href="#events" role="button" className="!text-sekkha-ink font-semibold">
+            <a
+              href="#events"
+              role="button"
+              className="font-semibold !text-sekkha-ink"
+            >
               Explore Events
             </a>
           </Button>
         </motion.div>
 
-        {/* Whiteboard Interactive Dashboard Mockup */}
-        <DashboardMockup />
+        {/* Whiteboard Interactive Dashboard Mockup - Apple HIG Material Regular */}
+        <Card
+          variant="material-regular"
+          className="mt-8 rounded-[28px] p-4 shadow-lg ring-1 ring-black/[0.02] backdrop-blur-[30px] sm:p-6"
+        >
+          <DashboardMockup />
+        </Card>
 
         {/* Glowing background ambient orbs */}
         <motion.div
-          className="pointer-events-none absolute left-[10%] top-[15%] -z-10 h-96 w-96 rounded-full bg-sekkha-brand-yellow/20 blur-3xl animate-pulse-slow"
+          className="animate-pulse-slow pointer-events-none absolute top-[15%] left-[10%] -z-10 h-40 w-40 rounded-full bg-sekkha-brand-yellow/20 blur-3xl sm:h-96 sm:w-96"
           initial={{ opacity: 0, scale: 0.6 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 1.4, delay: 0.2, ease: 'easeOut' }}
+          transition={{ duration: 1.4, delay: 0.2, ease: "easeOut" }}
           aria-hidden="true"
         />
         <motion.div
-          className="pointer-events-none absolute right-[10%] top-[25%] -z-10 h-80 w-80 rounded-full bg-sekkha-teal-light/40 blur-3xl animate-float"
+          className="animate-float pointer-events-none absolute top-[25%] right-[10%] -z-10 h-32 w-32 rounded-full bg-sekkha-teal-light/40 blur-3xl sm:h-80 sm:w-80"
           initial={{ opacity: 0, scale: 0.6 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 1.4, delay: 0.4, ease: 'easeOut' }}
+          transition={{ duration: 1.4, delay: 0.4, ease: "easeOut" }}
           aria-hidden="true"
         />
       </div>

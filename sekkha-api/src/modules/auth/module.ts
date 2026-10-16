@@ -1,5 +1,5 @@
 import type { AppModule } from "../../core/types"
-import { authRouter } from "./internal/router"
+import { authRouter } from "./routes"
 
 // ─── Auth Module ─────────────────────────────────────────────────────────────
 // Handles user registration, login, and token verification.

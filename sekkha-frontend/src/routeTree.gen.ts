@@ -15,7 +15,6 @@ import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as SignUpRouteImport } from './routes/sign-up'
 import { Route as AuthenticatedInsightRouteImport } from './routes/_authenticated/insight'
-import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated/notifications'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
 import { Route as AuthenticatedPengurusContributionRouteImport } from './routes/_authenticated/pengurus-contribution'
 import { Route as AuthenticatedRecencyAlertsRouteImport } from './routes/_authenticated/recency-alerts'
@@ -25,15 +24,15 @@ import { Route as AuthenticatedHomeIndexRouteImport } from './routes/_authentica
 import { Route as AuthenticatedHomeAchievementsRouteImport } from './routes/_authenticated/home/achievements'
 import { Route as AuthenticatedHomeProfileRouteImport } from './routes/_authenticated/home/profile'
 import { Route as AuthenticatedLeaderboardIndexRouteImport } from './routes/_authenticated/leaderboard/index'
-import { Route as AuthenticatedTeamsIndexRouteImport } from './routes/_authenticated/teams/index'
-import { Route as AuthenticatedTeamsMemberIdRouteImport } from './routes/_authenticated/teams/$memberId'
+import { Route as AuthenticatedPeopleIndexRouteImport } from './routes/_authenticated/people/index'
+import { Route as AuthenticatedPeopleMemberIdRouteImport } from './routes/_authenticated/people/$memberId'
 import { Route as AuthenticatedConfigureEarlyWarningThresholdRouteImport } from './routes/_authenticated/configure/early-warning/threshold'
 import { Route as AuthenticatedConfigureMasterAchievementRouteImport } from './routes/_authenticated/configure/master/achievement'
 import { Route as AuthenticatedConfigureMasterAttendanceBadgeRouteImport } from './routes/_authenticated/configure/master/attendance-badge'
 import { Route as AuthenticatedConfigureMasterBadgeRouteImport } from './routes/_authenticated/configure/master/badge'
-import { Route as AuthenticatedConfigureMasterEventTimeRouteImport } from './routes/_authenticated/configure/master/event-time'
 import { Route as AuthenticatedConfigureMasterEventTypeRouteImport } from './routes/_authenticated/configure/master/event-type'
 import { Route as AuthenticatedConfigureMasterLevelRouteImport } from './routes/_authenticated/configure/master/level'
+import { Route as AuthenticatedConfigureMasterSchoolRouteImport } from './routes/_authenticated/configure/master/school'
 import { Route as AuthenticatedConfigureMasterSeasonRouteImport } from './routes/_authenticated/configure/master/season'
 import { Route as AuthenticatedConfigureRulesPointsRouteImport } from './routes/_authenticated/configure/rules/points'
 import { Route as AuthenticatedConfigureRulesSeasonRouteImport } from './routes/_authenticated/configure/rules/season'
@@ -67,12 +66,6 @@ const AuthenticatedInsightRoute = AuthenticatedInsightRouteImport.update({
   path: '/insight',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedNotificationsRoute =
-  AuthenticatedNotificationsRouteImport.update({
-    id: '/notifications',
-    path: '/notifications',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
 const AuthenticatedOnboardingRoute = AuthenticatedOnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
@@ -124,15 +117,16 @@ const AuthenticatedLeaderboardIndexRoute =
     path: '/leaderboard/',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
-const AuthenticatedTeamsIndexRoute = AuthenticatedTeamsIndexRouteImport.update({
-  id: '/teams/',
-  path: '/teams/',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
-const AuthenticatedTeamsMemberIdRoute =
-  AuthenticatedTeamsMemberIdRouteImport.update({
-    id: '/teams/$memberId',
-    path: '/teams/$memberId',
+const AuthenticatedPeopleIndexRoute =
+  AuthenticatedPeopleIndexRouteImport.update({
+    id: '/people/',
+    path: '/people/',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedPeopleMemberIdRoute =
+  AuthenticatedPeopleMemberIdRouteImport.update({
+    id: '/people/$memberId',
+    path: '/people/$memberId',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedConfigureEarlyWarningThresholdRoute =
@@ -159,12 +153,6 @@ const AuthenticatedConfigureMasterBadgeRoute =
     path: '/configure/master/badge',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
-const AuthenticatedConfigureMasterEventTimeRoute =
-  AuthenticatedConfigureMasterEventTimeRouteImport.update({
-    id: '/configure/master/event-time',
-    path: '/configure/master/event-time',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
 const AuthenticatedConfigureMasterEventTypeRoute =
   AuthenticatedConfigureMasterEventTypeRouteImport.update({
     id: '/configure/master/event-type',
@@ -175,6 +163,12 @@ const AuthenticatedConfigureMasterLevelRoute =
   AuthenticatedConfigureMasterLevelRouteImport.update({
     id: '/configure/master/level',
     path: '/configure/master/level',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedConfigureMasterSchoolRoute =
+  AuthenticatedConfigureMasterSchoolRouteImport.update({
+    id: '/configure/master/school',
+    path: '/configure/master/school',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedConfigureMasterSeasonRoute =
@@ -202,25 +196,24 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/sign-up': typeof SignUpRoute
   '/insight': typeof AuthenticatedInsightRoute
-  '/notifications': typeof AuthenticatedNotificationsRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/pengurus-contribution': typeof AuthenticatedPengurusContributionRoute
   '/recency-alerts': typeof AuthenticatedRecencyAlertsRoute
   '/events/scan': typeof AuthenticatedEventsScanRoute
   '/home/achievements': typeof AuthenticatedHomeAchievementsRoute
   '/home/profile': typeof AuthenticatedHomeProfileRoute
-  '/teams/$memberId': typeof AuthenticatedTeamsMemberIdRoute
+  '/people/$memberId': typeof AuthenticatedPeopleMemberIdRoute
   '/events/': typeof AuthenticatedEventsIndexRoute
   '/home/': typeof AuthenticatedHomeIndexRoute
   '/leaderboard/': typeof AuthenticatedLeaderboardIndexRoute
-  '/teams/': typeof AuthenticatedTeamsIndexRoute
+  '/people/': typeof AuthenticatedPeopleIndexRoute
   '/configure/early-warning/threshold': typeof AuthenticatedConfigureEarlyWarningThresholdRoute
   '/configure/master/achievement': typeof AuthenticatedConfigureMasterAchievementRoute
   '/configure/master/attendance-badge': typeof AuthenticatedConfigureMasterAttendanceBadgeRoute
   '/configure/master/badge': typeof AuthenticatedConfigureMasterBadgeRoute
-  '/configure/master/event-time': typeof AuthenticatedConfigureMasterEventTimeRoute
   '/configure/master/event-type': typeof AuthenticatedConfigureMasterEventTypeRoute
   '/configure/master/level': typeof AuthenticatedConfigureMasterLevelRoute
+  '/configure/master/school': typeof AuthenticatedConfigureMasterSchoolRoute
   '/configure/master/season': typeof AuthenticatedConfigureMasterSeasonRoute
   '/configure/rules/points': typeof AuthenticatedConfigureRulesPointsRoute
   '/configure/rules/season': typeof AuthenticatedConfigureRulesSeasonRoute
@@ -231,25 +224,24 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/sign-up': typeof SignUpRoute
   '/insight': typeof AuthenticatedInsightRoute
-  '/notifications': typeof AuthenticatedNotificationsRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/pengurus-contribution': typeof AuthenticatedPengurusContributionRoute
   '/recency-alerts': typeof AuthenticatedRecencyAlertsRoute
   '/events/scan': typeof AuthenticatedEventsScanRoute
   '/home/achievements': typeof AuthenticatedHomeAchievementsRoute
   '/home/profile': typeof AuthenticatedHomeProfileRoute
-  '/teams/$memberId': typeof AuthenticatedTeamsMemberIdRoute
+  '/people/$memberId': typeof AuthenticatedPeopleMemberIdRoute
   '/events': typeof AuthenticatedEventsIndexRoute
   '/home': typeof AuthenticatedHomeIndexRoute
   '/leaderboard': typeof AuthenticatedLeaderboardIndexRoute
-  '/teams': typeof AuthenticatedTeamsIndexRoute
+  '/people': typeof AuthenticatedPeopleIndexRoute
   '/configure/early-warning/threshold': typeof AuthenticatedConfigureEarlyWarningThresholdRoute
   '/configure/master/achievement': typeof AuthenticatedConfigureMasterAchievementRoute
   '/configure/master/attendance-badge': typeof AuthenticatedConfigureMasterAttendanceBadgeRoute
   '/configure/master/badge': typeof AuthenticatedConfigureMasterBadgeRoute
-  '/configure/master/event-time': typeof AuthenticatedConfigureMasterEventTimeRoute
   '/configure/master/event-type': typeof AuthenticatedConfigureMasterEventTypeRoute
   '/configure/master/level': typeof AuthenticatedConfigureMasterLevelRoute
+  '/configure/master/school': typeof AuthenticatedConfigureMasterSchoolRoute
   '/configure/master/season': typeof AuthenticatedConfigureMasterSeasonRoute
   '/configure/rules/points': typeof AuthenticatedConfigureRulesPointsRoute
   '/configure/rules/season': typeof AuthenticatedConfigureRulesSeasonRoute
@@ -262,25 +254,24 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/sign-up': typeof SignUpRoute
   '/_authenticated/insight': typeof AuthenticatedInsightRoute
-  '/_authenticated/notifications': typeof AuthenticatedNotificationsRoute
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
   '/_authenticated/pengurus-contribution': typeof AuthenticatedPengurusContributionRoute
   '/_authenticated/recency-alerts': typeof AuthenticatedRecencyAlertsRoute
   '/_authenticated/events/scan': typeof AuthenticatedEventsScanRoute
   '/_authenticated/home/achievements': typeof AuthenticatedHomeAchievementsRoute
   '/_authenticated/home/profile': typeof AuthenticatedHomeProfileRoute
-  '/_authenticated/teams/$memberId': typeof AuthenticatedTeamsMemberIdRoute
+  '/_authenticated/people/$memberId': typeof AuthenticatedPeopleMemberIdRoute
   '/_authenticated/events/': typeof AuthenticatedEventsIndexRoute
   '/_authenticated/home/': typeof AuthenticatedHomeIndexRoute
   '/_authenticated/leaderboard/': typeof AuthenticatedLeaderboardIndexRoute
-  '/_authenticated/teams/': typeof AuthenticatedTeamsIndexRoute
+  '/_authenticated/people/': typeof AuthenticatedPeopleIndexRoute
   '/_authenticated/configure/early-warning/threshold': typeof AuthenticatedConfigureEarlyWarningThresholdRoute
   '/_authenticated/configure/master/achievement': typeof AuthenticatedConfigureMasterAchievementRoute
   '/_authenticated/configure/master/attendance-badge': typeof AuthenticatedConfigureMasterAttendanceBadgeRoute
   '/_authenticated/configure/master/badge': typeof AuthenticatedConfigureMasterBadgeRoute
-  '/_authenticated/configure/master/event-time': typeof AuthenticatedConfigureMasterEventTimeRoute
   '/_authenticated/configure/master/event-type': typeof AuthenticatedConfigureMasterEventTypeRoute
   '/_authenticated/configure/master/level': typeof AuthenticatedConfigureMasterLevelRoute
+  '/_authenticated/configure/master/school': typeof AuthenticatedConfigureMasterSchoolRoute
   '/_authenticated/configure/master/season': typeof AuthenticatedConfigureMasterSeasonRoute
   '/_authenticated/configure/rules/points': typeof AuthenticatedConfigureRulesPointsRoute
   '/_authenticated/configure/rules/season': typeof AuthenticatedConfigureRulesSeasonRoute
@@ -293,25 +284,24 @@ export interface FileRouteTypes {
     | '/login'
     | '/sign-up'
     | '/insight'
-    | '/notifications'
     | '/onboarding'
     | '/pengurus-contribution'
     | '/recency-alerts'
     | '/events/scan'
     | '/home/achievements'
     | '/home/profile'
-    | '/teams/$memberId'
+    | '/people/$memberId'
     | '/events/'
     | '/home/'
     | '/leaderboard/'
-    | '/teams/'
+    | '/people/'
     | '/configure/early-warning/threshold'
     | '/configure/master/achievement'
     | '/configure/master/attendance-badge'
     | '/configure/master/badge'
-    | '/configure/master/event-time'
     | '/configure/master/event-type'
     | '/configure/master/level'
+    | '/configure/master/school'
     | '/configure/master/season'
     | '/configure/rules/points'
     | '/configure/rules/season'
@@ -322,25 +312,24 @@ export interface FileRouteTypes {
     | '/login'
     | '/sign-up'
     | '/insight'
-    | '/notifications'
     | '/onboarding'
     | '/pengurus-contribution'
     | '/recency-alerts'
     | '/events/scan'
     | '/home/achievements'
     | '/home/profile'
-    | '/teams/$memberId'
+    | '/people/$memberId'
     | '/events'
     | '/home'
     | '/leaderboard'
-    | '/teams'
+    | '/people'
     | '/configure/early-warning/threshold'
     | '/configure/master/achievement'
     | '/configure/master/attendance-badge'
     | '/configure/master/badge'
-    | '/configure/master/event-time'
     | '/configure/master/event-type'
     | '/configure/master/level'
+    | '/configure/master/school'
     | '/configure/master/season'
     | '/configure/rules/points'
     | '/configure/rules/season'
@@ -352,25 +341,24 @@ export interface FileRouteTypes {
     | '/login'
     | '/sign-up'
     | '/_authenticated/insight'
-    | '/_authenticated/notifications'
     | '/_authenticated/onboarding'
     | '/_authenticated/pengurus-contribution'
     | '/_authenticated/recency-alerts'
     | '/_authenticated/events/scan'
     | '/_authenticated/home/achievements'
     | '/_authenticated/home/profile'
-    | '/_authenticated/teams/$memberId'
+    | '/_authenticated/people/$memberId'
     | '/_authenticated/events/'
     | '/_authenticated/home/'
     | '/_authenticated/leaderboard/'
-    | '/_authenticated/teams/'
+    | '/_authenticated/people/'
     | '/_authenticated/configure/early-warning/threshold'
     | '/_authenticated/configure/master/achievement'
     | '/_authenticated/configure/master/attendance-badge'
     | '/_authenticated/configure/master/badge'
-    | '/_authenticated/configure/master/event-time'
     | '/_authenticated/configure/master/event-type'
     | '/_authenticated/configure/master/level'
+    | '/_authenticated/configure/master/school'
     | '/_authenticated/configure/master/season'
     | '/_authenticated/configure/rules/points'
     | '/_authenticated/configure/rules/season'
@@ -426,13 +414,6 @@ declare module '@tanstack/react-router' {
       path: '/insight'
       fullPath: '/insight'
       preLoaderRoute: typeof AuthenticatedInsightRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/notifications': {
-      id: '/_authenticated/notifications'
-      path: '/notifications'
-      fullPath: '/notifications'
-      preLoaderRoute: typeof AuthenticatedNotificationsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/onboarding': {
@@ -498,18 +479,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedLeaderboardIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/teams/': {
-      id: '/_authenticated/teams/'
-      path: '/teams'
-      fullPath: '/teams/'
-      preLoaderRoute: typeof AuthenticatedTeamsIndexRouteImport
+    '/_authenticated/people/': {
+      id: '/_authenticated/people/'
+      path: '/people'
+      fullPath: '/people/'
+      preLoaderRoute: typeof AuthenticatedPeopleIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/teams/$memberId': {
-      id: '/_authenticated/teams/$memberId'
-      path: '/teams/$memberId'
-      fullPath: '/teams/$memberId'
-      preLoaderRoute: typeof AuthenticatedTeamsMemberIdRouteImport
+    '/_authenticated/people/$memberId': {
+      id: '/_authenticated/people/$memberId'
+      path: '/people/$memberId'
+      fullPath: '/people/$memberId'
+      preLoaderRoute: typeof AuthenticatedPeopleMemberIdRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/configure/early-warning/threshold': {
@@ -540,13 +521,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedConfigureMasterBadgeRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/configure/master/event-time': {
-      id: '/_authenticated/configure/master/event-time'
-      path: '/configure/master/event-time'
-      fullPath: '/configure/master/event-time'
-      preLoaderRoute: typeof AuthenticatedConfigureMasterEventTimeRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
     '/_authenticated/configure/master/event-type': {
       id: '/_authenticated/configure/master/event-type'
       path: '/configure/master/event-type'
@@ -559,6 +533,13 @@ declare module '@tanstack/react-router' {
       path: '/configure/master/level'
       fullPath: '/configure/master/level'
       preLoaderRoute: typeof AuthenticatedConfigureMasterLevelRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/configure/master/school': {
+      id: '/_authenticated/configure/master/school'
+      path: '/configure/master/school'
+      fullPath: '/configure/master/school'
+      preLoaderRoute: typeof AuthenticatedConfigureMasterSchoolRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/configure/master/season': {
@@ -587,25 +568,24 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteChildren {
   AuthenticatedInsightRoute: typeof AuthenticatedInsightRoute
-  AuthenticatedNotificationsRoute: typeof AuthenticatedNotificationsRoute
   AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
   AuthenticatedPengurusContributionRoute: typeof AuthenticatedPengurusContributionRoute
   AuthenticatedRecencyAlertsRoute: typeof AuthenticatedRecencyAlertsRoute
   AuthenticatedEventsScanRoute: typeof AuthenticatedEventsScanRoute
   AuthenticatedHomeAchievementsRoute: typeof AuthenticatedHomeAchievementsRoute
   AuthenticatedHomeProfileRoute: typeof AuthenticatedHomeProfileRoute
-  AuthenticatedTeamsMemberIdRoute: typeof AuthenticatedTeamsMemberIdRoute
+  AuthenticatedPeopleMemberIdRoute: typeof AuthenticatedPeopleMemberIdRoute
   AuthenticatedEventsIndexRoute: typeof AuthenticatedEventsIndexRoute
   AuthenticatedHomeIndexRoute: typeof AuthenticatedHomeIndexRoute
   AuthenticatedLeaderboardIndexRoute: typeof AuthenticatedLeaderboardIndexRoute
-  AuthenticatedTeamsIndexRoute: typeof AuthenticatedTeamsIndexRoute
+  AuthenticatedPeopleIndexRoute: typeof AuthenticatedPeopleIndexRoute
   AuthenticatedConfigureEarlyWarningThresholdRoute: typeof AuthenticatedConfigureEarlyWarningThresholdRoute
   AuthenticatedConfigureMasterAchievementRoute: typeof AuthenticatedConfigureMasterAchievementRoute
   AuthenticatedConfigureMasterAttendanceBadgeRoute: typeof AuthenticatedConfigureMasterAttendanceBadgeRoute
   AuthenticatedConfigureMasterBadgeRoute: typeof AuthenticatedConfigureMasterBadgeRoute
-  AuthenticatedConfigureMasterEventTimeRoute: typeof AuthenticatedConfigureMasterEventTimeRoute
   AuthenticatedConfigureMasterEventTypeRoute: typeof AuthenticatedConfigureMasterEventTypeRoute
   AuthenticatedConfigureMasterLevelRoute: typeof AuthenticatedConfigureMasterLevelRoute
+  AuthenticatedConfigureMasterSchoolRoute: typeof AuthenticatedConfigureMasterSchoolRoute
   AuthenticatedConfigureMasterSeasonRoute: typeof AuthenticatedConfigureMasterSeasonRoute
   AuthenticatedConfigureRulesPointsRoute: typeof AuthenticatedConfigureRulesPointsRoute
   AuthenticatedConfigureRulesSeasonRoute: typeof AuthenticatedConfigureRulesSeasonRoute
@@ -613,7 +593,6 @@ interface AuthenticatedRouteChildren {
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedInsightRoute: AuthenticatedInsightRoute,
-  AuthenticatedNotificationsRoute: AuthenticatedNotificationsRoute,
   AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,
   AuthenticatedPengurusContributionRoute:
     AuthenticatedPengurusContributionRoute,
@@ -621,11 +600,11 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedEventsScanRoute: AuthenticatedEventsScanRoute,
   AuthenticatedHomeAchievementsRoute: AuthenticatedHomeAchievementsRoute,
   AuthenticatedHomeProfileRoute: AuthenticatedHomeProfileRoute,
-  AuthenticatedTeamsMemberIdRoute: AuthenticatedTeamsMemberIdRoute,
+  AuthenticatedPeopleMemberIdRoute: AuthenticatedPeopleMemberIdRoute,
   AuthenticatedEventsIndexRoute: AuthenticatedEventsIndexRoute,
   AuthenticatedHomeIndexRoute: AuthenticatedHomeIndexRoute,
   AuthenticatedLeaderboardIndexRoute: AuthenticatedLeaderboardIndexRoute,
-  AuthenticatedTeamsIndexRoute: AuthenticatedTeamsIndexRoute,
+  AuthenticatedPeopleIndexRoute: AuthenticatedPeopleIndexRoute,
   AuthenticatedConfigureEarlyWarningThresholdRoute:
     AuthenticatedConfigureEarlyWarningThresholdRoute,
   AuthenticatedConfigureMasterAchievementRoute:
@@ -634,12 +613,12 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
     AuthenticatedConfigureMasterAttendanceBadgeRoute,
   AuthenticatedConfigureMasterBadgeRoute:
     AuthenticatedConfigureMasterBadgeRoute,
-  AuthenticatedConfigureMasterEventTimeRoute:
-    AuthenticatedConfigureMasterEventTimeRoute,
   AuthenticatedConfigureMasterEventTypeRoute:
     AuthenticatedConfigureMasterEventTypeRoute,
   AuthenticatedConfigureMasterLevelRoute:
     AuthenticatedConfigureMasterLevelRoute,
+  AuthenticatedConfigureMasterSchoolRoute:
+    AuthenticatedConfigureMasterSchoolRoute,
   AuthenticatedConfigureMasterSeasonRoute:
     AuthenticatedConfigureMasterSeasonRoute,
   AuthenticatedConfigureRulesPointsRoute:

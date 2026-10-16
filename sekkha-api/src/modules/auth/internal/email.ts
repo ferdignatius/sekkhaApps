@@ -30,16 +30,49 @@ function getMailTransporter() {
 }
 
 /**
+ * Helper to determine whether OTP should be printed to console for local development.
+ * Strictly forbidden in production or when real SMTP credentials are provided.
+ */
+function shouldLogOtpDev(): boolean {
+  const isProduction = process.env.NODE_ENV === "production"
+  const isSmtpConfigured = Boolean(process.env.SMTP_USER && process.env.SMTP_PASS)
+  return !isProduction && !isSmtpConfigured
+}
+
+/**
+ * Masks an email address for safe logging without exposing PII (e.g. j***e@example.com).
+ */
+function maskEmail(email: string): string {
+  const atIndex = email.indexOf("@")
+  if (atIndex <= 1) return "***"
+  const local = email.slice(0, atIndex)
+  const domain = email.slice(atIndex)
+  const visible = local.length > 3 ? `${local.slice(0, 2)}***` : `${local.slice(0, 1)}***`
+  return `${visible}${domain}`
+}
+
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;")
+}
+
+/**
  * Sends a registration OTP email via Gmail SMTP (Nodemailer).
  */
 export async function sendRegisterOtpEmail({ to, otp, name }: SendOtpParams): Promise<{ success: boolean; error?: string }> {
-  // Always log OTP in terminal for immediate developer convenience
-  console.log(`\n======================================================`)
-  console.log(`🔑 [SEKKHA OTP SERVICE] Registration OTP for: ${to}`)
-  console.log(`👉 OTP CODE: ${otp} (Valid for 5 minutes)`)
-  console.log(`======================================================\n`)
+  // Only log OTP in non-production environment when SMTP is not configured
+  if (shouldLogOtpDev()) {
+    console.log(`\n======================================================`)
+    console.log(`🔑 [DEV ONLY - SMTP Unconfigured] Registration OTP for: ${to}`)
+    console.log(`👉 OTP CODE: ${otp} (Valid for 5 minutes)`)
+    console.log(`======================================================\n`)
+  }
 
-  const recipientName = name ? name : "Sahabat Sekkha"
+  const recipientName = escapeHtml(name ? name : "Sahabat Sekkha")
   const fromEmail = process.env.EMAIL_FROM || `Sekkha Apps <${process.env.SMTP_USER || "noreply@sekkha.com"}>`
 
   const htmlContent = `
@@ -126,16 +159,19 @@ export async function sendRegisterOtpEmail({ to, otp, name }: SendOtpParams): Pr
       const info = await transporter.sendMail({
         from: fromEmail,
         to,
-        subject: `${otp} adalah Kode Verifikasi Pendaftaran Sekkha Anda`,
+        subject: "Kode Verifikasi Pendaftaran Akun Sekkha",
         html: htmlContent,
       })
-      console.log(`✅ [Gmail SMTP Success] Email sent to ${to}. Message ID:`, info.messageId)
+      const recipientLog = process.env.NODE_ENV === "production" ? maskEmail(to) : to
+      console.log(`✅ [Gmail SMTP Success] Email sent to ${recipientLog}. Message ID:`, info.messageId)
       return { success: true }
     } catch (err: any) {
       console.warn(`⚠️ [Gmail SMTP Error]:`, err?.message || err)
     }
-  } else {
-    console.log(`ℹ️ [Gmail SMTP Info] SMTP_PASS not set in .env yet. OTP logged above for development.`)
+  } else if (shouldLogOtpDev()) {
+    console.log(`ℹ️ [Gmail SMTP Info] SMTP credentials not set in .env. OTP logged above for development.`)
+  } else if (process.env.NODE_ENV === "production") {
+    console.warn(`⚠️ [Mail Warning] SMTP credentials not configured in production.`)
   }
 
   return { success: true }
@@ -145,13 +181,15 @@ export async function sendRegisterOtpEmail({ to, otp, name }: SendOtpParams): Pr
  * Sends a password reset OTP email via Gmail SMTP (Nodemailer).
  */
 export async function sendForgotPasswordOtpEmail({ to, otp, name }: SendOtpParams): Promise<{ success: boolean; error?: string }> {
-  // Always log OTP in terminal for immediate developer convenience
-  console.log(`\n======================================================`)
-  console.log(`🔑 [SEKKHA RESET PASSWORD SERVICE] Reset OTP for: ${to}`)
-  console.log(`👉 OTP CODE: ${otp} (Valid for 5 minutes)`)
-  console.log(`======================================================\n`)
+  // Only log OTP in non-production environment when SMTP is not configured
+  if (shouldLogOtpDev()) {
+    console.log(`\n======================================================`)
+    console.log(`🔑 [DEV ONLY - SMTP Unconfigured] Password Reset OTP for: ${to}`)
+    console.log(`👉 OTP CODE: ${otp} (Valid for 5 minutes)`)
+    console.log(`======================================================\n`)
+  }
 
-  const recipientName = name ? name : "Sahabat Sekkha"
+  const recipientName = escapeHtml(name ? name : "Sahabat Sekkha")
   const fromEmail = process.env.EMAIL_FROM || `Sekkha Apps <${process.env.SMTP_USER || "noreply@sekkha.com"}>`
 
   const htmlContent = `
@@ -236,15 +274,65 @@ export async function sendForgotPasswordOtpEmail({ to, otp, name }: SendOtpParam
       const info = await transporter.sendMail({
         from: fromEmail,
         to,
-        subject: `${otp} adalah Kode Reset Kata Sandi Sekkha Anda`,
+        subject: "Kode Pemulihan Kata Sandi Sekkha",
         html: htmlContent,
       })
-      console.log(`✅ [Gmail SMTP Success] Forgot password OTP sent to ${to}. Message ID:`, info.messageId)
+      const recipientLog = process.env.NODE_ENV === "production" ? maskEmail(to) : to
+      console.log(`✅ [Gmail SMTP Success] Forgot password OTP sent to ${recipientLog}. Message ID:`, info.messageId)
       return { success: true }
     } catch (err: any) {
       console.warn(`⚠️ [Gmail SMTP Error]:`, err?.message || err)
     }
+  } else if (shouldLogOtpDev()) {
+    console.log(`ℹ️ [Gmail SMTP Info] SMTP credentials not set in .env. OTP logged above for development.`)
+  } else if (process.env.NODE_ENV === "production") {
+    console.warn(`⚠️ [Mail Warning] SMTP credentials not configured in production.`)
   }
 
   return { success: true }
 }
+
+interface SendTempPasswordParams {
+  to: string
+  tempPassword: string
+  name?: string
+}
+
+/**
+ * Sends temporary credentials to member email after administrative reset.
+ */
+export async function sendTemporaryPasswordEmail({ to, tempPassword, name }: SendTempPasswordParams): Promise<{ success: boolean; error?: string }> {
+  const recipientName = escapeHtml(name || "Sahabat Sekkha")
+  const safePassword = escapeHtml(tempPassword)
+  const fromEmail = process.env.EMAIL_FROM || `Sekkha Apps <${process.env.SMTP_USER || "noreply@sekkha.com"}>`
+  const transporter = getMailTransporter()
+
+  if (transporter) {
+    try {
+      const info = await transporter.sendMail({
+        from: fromEmail,
+        to,
+        subject: "Kata Sandi Sementara Akun Sekkha Apps Anda",
+        html: `
+          <div style="font-family: sans-serif; padding: 20px; color: #111;">
+            <h2>Halo, ${recipientName}</h2>
+            <p>Pengurus/Admin telah mengatur ulang kata sandi akun Sekkha Apps Anda.</p>
+            <p>Kata sandi sementara akun Anda adalah: <strong style="font-size: 18px; color: #0b57d0;">${safePassword}</strong></p>
+            <p>Demi keamanan, silakan segera masuk dan ubah kata sandi Anda melalui menu Profil & Pengaturan Akun.</p>
+            <p>© 2026 Komunitas Pemuda Vihara Sekkha.</p>
+          </div>
+        `,
+      })
+      const recipientLog = process.env.NODE_ENV === "production" ? maskEmail(to) : to
+      console.log(`✅ [Gmail SMTP Success] Temporary password sent to ${recipientLog}. Message ID:`, info.messageId)
+      return { success: true }
+    } catch (err: any) {
+      console.warn(`⚠️ [Gmail SMTP Error]:`, err?.message || err)
+    }
+  } else if (shouldLogOtpDev()) {
+    console.log(`🔑 [DEV ONLY - SMTP Unconfigured] Temporary password for ${to}: ${tempPassword}`)
+  }
+
+  return { success: true }
+}
+

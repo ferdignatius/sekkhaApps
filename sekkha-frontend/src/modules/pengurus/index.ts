@@ -11,7 +11,11 @@ export const pengurusModule: ModuleDefinition = {
   // Pengurus-only nav items (Community Insights, Contributor Insights & Recency Alerts)
   pengurusNavItems: [
     { label: "Community Insights", to: "/insight", icon: "BarChart3" },
-    { label: "Contributor Insights", to: "/pengurus-contribution", icon: "Award" },
+    {
+      label: "Contributor Insights",
+      to: "/pengurus-contribution",
+      icon: "Award",
+    },
     { label: "Recency Alerts", to: "/recency-alerts", icon: "AlertTriangle" },
   ],
 }

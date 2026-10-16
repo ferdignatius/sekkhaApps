@@ -3,17 +3,16 @@
 // Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 7.1, 7.2, 7.3, 7.4
 
 import type { Dispatch } from "react"
-import type { AuthAction } from "../context/authReducer"
 import { AuthError } from "../context/authReducer"
+import type { AuthAction, UserRole } from "../context/authReducer"
 import { API_BASE_URL } from "@/lib/api"
+import { safeStorage } from "@/lib/storage"
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
 export const STORAGE_KEY = "sekkha_access_token" as const
 
 // ─── Backend Response Types ────────────────────────────────────────────────────
-
-import type { UserRole } from "../context/authReducer"
 
 interface AuthSuccessResponse {
   accessToken: string
@@ -36,7 +35,7 @@ interface AuthSuccessResponse {
 export async function fetchWithTimeout(
   url: string,
   options: RequestInit,
-  timeoutMs: number,
+  timeoutMs: number
 ): Promise<Response> {
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
@@ -51,7 +50,7 @@ export async function fetchWithTimeout(
     if (error instanceof Error && error.name === "AbortError") {
       throw new AuthError(
         "NETWORK_TIMEOUT",
-        "Koneksi bermasalah. Periksa koneksi internet Anda dan coba lagi.",
+        "Koneksi bermasalah. Periksa koneksi internet Anda dan coba lagi."
       )
     }
     throw error
@@ -93,26 +92,29 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email, password }),
         },
-        10_000,
+        10_000
       )
     } catch (error) {
       // Re-throw AuthError (NETWORK_TIMEOUT) or unknown errors
       if (error instanceof AuthError) throw error
       throw new AuthError(
         "UNKNOWN_ERROR",
-        "Terjadi kesalahan. Silakan coba beberapa saat lagi.",
+        "Terjadi kesalahan. Silakan coba beberapa saat lagi."
       )
     }
 
     if (response.ok) {
       const data = (await response.json()) as AuthSuccessResponse
-      localStorage.setItem(STORAGE_KEY, data.accessToken)
+      safeStorage.setItem(STORAGE_KEY, data.accessToken)
       dispatch({
         type: "AUTH_SUCCESS",
         payload: {
           accessToken: data.accessToken,
           userId: data.user?.id ?? (data as any).userId ?? "user-1",
-          role: (data.user?.role as UserRole) ?? ((data as any).role as UserRole) ?? "umat",
+          role:
+            (data.user?.role as UserRole) ??
+            ((data as any).role as UserRole) ??
+            "umat",
           name: data.user?.name ?? null,
           email: data.user?.email ?? null,
         },
@@ -123,14 +125,14 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
     if (response.status === 401) {
       throw new AuthError(
         "INVALID_CREDENTIALS",
-        "Email atau password salah. Silakan coba lagi.",
+        "Email atau password salah. Silakan coba lagi."
       )
     }
 
     // 500 or any other unexpected status
     throw new AuthError(
       "UNKNOWN_ERROR",
-      "Terjadi kesalahan. Silakan coba beberapa saat lagi.",
+      "Terjadi kesalahan. Silakan coba beberapa saat lagi."
     )
   }
 
@@ -138,7 +140,11 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
   /**
    * POST /auth/register-request — Validates input and triggers 6-digit OTP email.
    */
-  async function requestRegisterOtp(email: string, password: string, name?: string): Promise<{ success: boolean; message: string }> {
+  async function requestRegisterOtp(
+    email: string,
+    password: string,
+    name?: string
+  ): Promise<{ success: boolean; message: string }> {
     let response: Response
 
     try {
@@ -147,15 +153,19 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password, name: name?.trim() || email.split("@")[0] }),
+          body: JSON.stringify({
+            email,
+            password,
+            name: name?.trim() || email.split("@")[0],
+          }),
         },
-        10_000,
+        10_000
       )
     } catch (error) {
       if (error instanceof AuthError) throw error
       throw new AuthError(
         "UNKNOWN_ERROR",
-        "Terjadi kesalahan koneksi. Silakan coba beberapa saat lagi.",
+        "Terjadi kesalahan koneksi. Silakan coba beberapa saat lagi."
       )
     }
 
@@ -167,14 +177,14 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
     if (response.status === 409) {
       throw new AuthError(
         "EMAIL_ALREADY_EXISTS",
-        "Email sudah digunakan. Silakan gunakan email lain atau masuk ke akun Anda.",
+        "Email sudah digunakan. Silakan gunakan email lain atau masuk ke akun Anda."
       )
     }
 
     const errData = await response.json().catch(() => null)
     throw new AuthError(
       "UNKNOWN_ERROR",
-      errData?.error || "Gagal mengirim kode OTP. Silakan periksa data Anda.",
+      errData?.error || "Gagal mengirim kode OTP. Silakan periksa data Anda."
     )
   }
 
@@ -193,25 +203,28 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email, otp }),
         },
-        10_000,
+        10_000
       )
     } catch (error) {
       if (error instanceof AuthError) throw error
       throw new AuthError(
         "UNKNOWN_ERROR",
-        "Koneksi bermasalah. Periksa koneksi internet Anda dan coba lagi.",
+        "Koneksi bermasalah. Periksa koneksi internet Anda dan coba lagi."
       )
     }
 
     if (response.ok) {
       const data = (await response.json()) as AuthSuccessResponse
-      localStorage.setItem(STORAGE_KEY, data.accessToken)
+      safeStorage.setItem(STORAGE_KEY, data.accessToken)
       dispatch({
         type: "AUTH_SUCCESS",
         payload: {
           accessToken: data.accessToken,
           userId: data.user?.id ?? (data as any).userId ?? "user-1",
-          role: (data.user?.role as UserRole) ?? ((data as any).role as UserRole) ?? "umat",
+          role:
+            (data.user?.role as UserRole) ??
+            ((data as any).role as UserRole) ??
+            "umat",
           name: data.user?.name ?? null,
           email: data.user?.email ?? null,
         },
@@ -222,7 +235,8 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
     const errData = await response.json().catch(() => null)
     throw new AuthError(
       "INVALID_CREDENTIALS",
-      errData?.error || "Kode OTP salah atau telah kedaluwarsa. Silakan periksa kembali.",
+      errData?.error ||
+        "Kode OTP salah atau telah kedaluwarsa. Silakan periksa kembali."
     )
   }
 
@@ -230,7 +244,9 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
   /**
    * POST /auth/resend-otp — Resends fresh OTP to the email.
    */
-  async function resendRegisterOtp(email: string): Promise<{ success: boolean; message: string }> {
+  async function resendRegisterOtp(
+    email: string
+  ): Promise<{ success: boolean; message: string }> {
     let response: Response
 
     try {
@@ -241,13 +257,13 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email }),
         },
-        10_000,
+        10_000
       )
     } catch (error) {
       if (error instanceof AuthError) throw error
       throw new AuthError(
         "UNKNOWN_ERROR",
-        "Koneksi bermasalah. Silakan coba beberapa saat lagi.",
+        "Koneksi bermasalah. Silakan coba beberapa saat lagi."
       )
     }
 
@@ -259,7 +275,7 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
     const errData = await response.json().catch(() => null)
     throw new AuthError(
       "UNKNOWN_ERROR",
-      errData?.error || "Gagal mengirim ulang kode OTP.",
+      errData?.error || "Gagal mengirim ulang kode OTP."
     )
   }
 
@@ -272,7 +288,11 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
    *
    * Requirements: 4.1, 7.2, 7.3, 7.4
    */
-  async function register(email: string, password: string, name?: string): Promise<void> {
+  async function register(
+    email: string,
+    password: string,
+    name?: string
+  ): Promise<void> {
     let response: Response
 
     try {
@@ -281,27 +301,34 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password, name: name?.trim() || email.split("@")[0] }),
+          body: JSON.stringify({
+            email,
+            password,
+            name: name?.trim() || email.split("@")[0],
+          }),
         },
-        10_000,
+        10_000
       )
     } catch (error) {
       if (error instanceof AuthError) throw error
       throw new AuthError(
         "UNKNOWN_ERROR",
-        "Terjadi kesalahan. Silakan coba beberapa saat lagi.",
+        "Terjadi kesalahan. Silakan coba beberapa saat lagi."
       )
     }
 
     if (response.ok) {
       const data = (await response.json()) as AuthSuccessResponse
-      localStorage.setItem(STORAGE_KEY, data.accessToken)
+      safeStorage.setItem(STORAGE_KEY, data.accessToken)
       dispatch({
         type: "AUTH_SUCCESS",
         payload: {
           accessToken: data.accessToken,
           userId: data.user?.id ?? (data as any).userId ?? "user-1",
-          role: (data.user?.role as UserRole) ?? ((data as any).role as UserRole) ?? "umat",
+          role:
+            (data.user?.role as UserRole) ??
+            ((data as any).role as UserRole) ??
+            "umat",
           name: data.user?.name ?? null,
           email: data.user?.email ?? null,
         },
@@ -312,13 +339,13 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
     if (response.status === 409) {
       throw new AuthError(
         "EMAIL_ALREADY_EXISTS",
-        "Email sudah digunakan. Silakan gunakan email lain atau masuk ke akun Anda.",
+        "Email sudah digunakan. Silakan gunakan email lain atau masuk ke akun Anda."
       )
     }
 
     throw new AuthError(
       "UNKNOWN_ERROR",
-      "Terjadi kesalahan. Silakan coba beberapa saat lagi.",
+      "Terjadi kesalahan. Silakan coba beberapa saat lagi."
     )
   }
 
@@ -340,14 +367,14 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
           method: "GET",
           headers: { Authorization: `Bearer ${token}` },
         },
-        3_000,
+        3_000
       )
     } catch (error) {
       // NETWORK_TIMEOUT propagates as-is; other errors become UNKNOWN_ERROR
       if (error instanceof AuthError) throw error
       throw new AuthError(
         "UNKNOWN_ERROR",
-        "Terjadi kesalahan. Silakan coba beberapa saat lagi.",
+        "Terjadi kesalahan. Silakan coba beberapa saat lagi."
       )
     }
 
@@ -359,13 +386,13 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
     if (response.status === 401 || response.status === 403) {
       throw new AuthError(
         "INVALID_CREDENTIALS",
-        "Sesi tidak valid. Silakan login kembali.",
+        "Sesi tidak valid. Silakan login kembali."
       )
     }
 
     throw new AuthError(
       "UNKNOWN_ERROR",
-      "Terjadi kesalahan. Silakan coba beberapa saat lagi.",
+      "Terjadi kesalahan. Silakan coba beberapa saat lagi."
     )
   }
 
@@ -376,7 +403,19 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
    * Requirements: 4.6
    */
   function logout(): void {
-    localStorage.removeItem(STORAGE_KEY)
+    const token = safeStorage.getItem(STORAGE_KEY)
+    if (token) {
+      try {
+        fetch(`${API_BASE_URL}/auth/logout`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }).catch(() => {})
+      } catch {}
+    }
+    safeStorage.removeItem(STORAGE_KEY)
     dispatch({ type: "AUTH_LOGOUT" })
   }
 
@@ -392,11 +431,11 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
    */
   function initiateGoogleOAuth(): void {
     try {
-      window.location.href = "http://localhost:4000/api/auth/google"
+      window.location.href = `${API_BASE_URL}/auth/google`
     } catch {
       throw new AuthError(
         "OAUTH_FAILED",
-        "Autentikasi dengan Google gagal. Silakan coba lagi.",
+        "Autentikasi dengan Google gagal. Silakan coba lagi."
       )
     }
   }

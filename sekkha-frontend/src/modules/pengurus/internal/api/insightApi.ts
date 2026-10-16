@@ -5,7 +5,13 @@ import { api } from "@/lib/api"
 
 export type TimeUnit = "year" | "month"
 export type RoleSegmentFilter = "all" | "umat" | "aktivis" | "pengurus"
-export type EventCategoryFilter = "all" | "puja_bhakti" | "dhammasakaccha" | "meditasi" | "bakti_sosial" | "sekolah_minggu"
+export type EventCategoryFilter =
+  | "all"
+  | "puja_bhakti"
+  | "dhammasakaccha"
+  | "meditasi"
+  | "bakti_sosial"
+  | "sekolah_minggu"
 
 export const MONTH_NAMES = [
   "January",
@@ -22,7 +28,10 @@ export const MONTH_NAMES = [
   "December",
 ]
 
-export const MASTER_EVENT_CATEGORIES: { id: EventCategoryFilter; label: string }[] = [
+export const MASTER_EVENT_CATEGORIES: {
+  id: EventCategoryFilter
+  label: string
+}[] = [
   { id: "all", label: "All Event Categories" },
   { id: "puja_bhakti", label: "Sunday Service" },
   { id: "dhammasakaccha", label: "Dhamma Discussion" },
@@ -124,10 +133,13 @@ export async function fetchInsightMetricsParams(
     const query = new URLSearchParams()
     query.set("timeUnit", params.timeUnit)
     if (params.primaryYear) query.set("primaryYear", String(params.primaryYear))
-    if (params.primaryMonth) query.set("primaryMonth", String(params.primaryMonth))
+    if (params.primaryMonth)
+      query.set("primaryMonth", String(params.primaryMonth))
     if (params.compareYear) query.set("compareYear", String(params.compareYear))
-    if (params.compareMonth) query.set("compareMonth", String(params.compareMonth))
-    if (params.isComparisonEnabled !== undefined) query.set("isComparisonEnabled", String(params.isComparisonEnabled))
+    if (params.compareMonth)
+      query.set("compareMonth", String(params.compareMonth))
+    if (params.isComparisonEnabled !== undefined)
+      query.set("isComparisonEnabled", String(params.isComparisonEnabled))
     query.set("segmentFilter", params.segmentFilter || "all")
     query.set("eventCategoryFilter", params.eventCategoryFilter || "all")
 
@@ -138,7 +150,9 @@ export async function fetchInsightMetricsParams(
       query.set("selectedPeriods", params.selectedPeriods.join(","))
     }
 
-    const res = await api.get<InsightMetricsResponse>(`/pengurus/insight?${query.toString()}`)
+    const res = await api.get<InsightMetricsResponse>(
+      `/pengurus/insight?${query.toString()}`
+    )
     return res
   } catch (err) {
     console.error("API /pengurus/insight error:", err)

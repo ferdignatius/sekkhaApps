@@ -65,42 +65,18 @@ Buat DNS / Tunnel Route baru di Cloudflare:
 
 ---
 
-### 3. Build & Run Container `sekkha-api`
+### 3. Deploy dengan Docker Compose
+Cukup siapkan file `.env` di folder `sekkha-api` yang mengarah ke container PostgreSQL & Redis Anda (lihat `.env.example`), lalu jalankan:
 
-#### A. Build Docker Image
-Di folder `sekkha-api`, jalankan build:
 ```bash
-docker build -t sekkha-api:latest .
+docker compose up -d --build
 ```
 
-#### B. Run Container di Network `data-tier`
-```bash
-docker run -d \
-  --name sekkha-api \
-  --restart unless-stopped \
-  --network data-tier \
-  -e NODE_ENV="production" \
-  -e PORT=4000 \
-  -e DATABASE_URL="postgresql://<DB_USER>:<DB_PASSWORD>@<DB_HOST>:5432/<DB_NAME>?schema=public" \
-  -e REDIS_URL="redis://<REDIS_HOST>:6379" \
-  -e JWT_SECRET="<SECURE_JWT_SECRET_MIN_32_CHARS>" \
-  -e DUMMY_UMAT_EMAIL="umat@sekkha.com" \
-  -e DUMMY_UMAT_PASSWORD="<SET_STRONG_PASSWORD>" \
-  -e DUMMY_AKTIVIS_EMAIL="aktivis@sekkha.com" \
-  -e DUMMY_AKTIVIS_PASSWORD="<SET_STRONG_PASSWORD>" \
-  -e DUMMY_PENGURUS_EMAIL="pengurus@sekkha.com" \
-  -e DUMMY_PENGURUS_PASSWORD="<SET_STRONG_PASSWORD>" \
-  -e DUMMY_ADMIN_EMAIL="admin@sekkha.com" \
-  -e DUMMY_ADMIN_PASSWORD="<SET_STRONG_PASSWORD>" \
-  sekkha-api:latest
-```
-
----
-
-### 4. Hubungkan Container ke Proxy Network (`proxy-tier`)
-```bash
-docker network connect proxy-tier sekkha-api
-```
+Compose akan otomatis:
+- Mem-build image `sekkha-api`
+- Menghubungkan container ke network `data-tier` (akses PostgreSQL & Redis)
+- Menghubungkan container ke network `proxy-tier` (akses Nginx Proxy Manager)
+- Menerapkan batasan resource CPU/Memory dan logging
 
 ---
 

@@ -102,3 +102,34 @@ Folder ini sedang dalam proses migrasi dari **Radix UI** ke **Base UI** sebagai 
 ## Backend Reference
 
 Kontrak API ada di `../sekkha-api-contract.md` (sumber kebenaran untuk endpoint, payload, response).
+
+---
+
+## Deployment
+
+### Opsi A: Docker di VPS (bersama Nginx Proxy Manager)
+
+1. Buat file `.env` di `sekkha-frontend/`:
+   ```bash
+   cp .env.example .env
+   # Set VITE_API_URL="https://api-sekkha.domainanda.com/api"
+   ```
+
+2. Jalankan container via docker compose:
+   ```bash
+   docker compose up -d --build
+   ```
+   Container akan berjalan di port `3000` dan terhubung ke external network `proxy-tier`.
+
+3. Di Nginx Proxy Manager (NPM), arahkan domain frontend (contoh `sekkha.domainanda.com`) ke:
+   - **Forward Hostname**: `sekkha-frontend`
+   - **Forward Port**: `3000`
+   - **Websockets Support**: Enabled
+
+### Opsi B: Vercel / Cloudflare Pages
+
+1. Import repositori GitHub ke Vercel / Cloudflare Pages.
+2. Set **Root Directory**: `sekkha-frontend`.
+3. Tambahkan Environment Variable:
+   - `VITE_API_URL`: URL Backend API publik (contoh: `https://api-sekkha.domainanda.com/api`).
+4. Deploy!

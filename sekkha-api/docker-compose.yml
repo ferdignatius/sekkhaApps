@@ -2,10 +2,12 @@ version: "3.8"
 
 services:
   sekkha-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
     image: ferdignatius/sekkha-api:latest
     container_name: sekkha-api
     restart: unless-stopped
-
 
     env_file:
       - .env
@@ -33,5 +35,3 @@ networks:
     external: true
   data-tier:
     external: true
-
-

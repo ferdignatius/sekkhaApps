@@ -156,7 +156,12 @@ function CommunityRoleChart({
                       r={r}
                       fill="none"
                       stroke="#1a3a3a"
-                      strokeWidth={activeFilter === "organizer" || activeFilter === "pengurus" ? 12 : 10}
+                      strokeWidth={
+                        activeFilter === "organizer" ||
+                        activeFilter === "pengurus"
+                          ? 12
+                          : 10
+                      }
                       strokeDasharray={`${organizerLen} ${c}`}
                       strokeDashoffset={organizerOffset}
                       className="cursor-pointer transition-all duration-300 hover:opacity-85"
@@ -174,12 +179,18 @@ function CommunityRoleChart({
                       r={r}
                       fill="none"
                       stroke="#e8b94a"
-                      strokeWidth={activeFilter === "member" || activeFilter === "umat" ? 12 : 10}
+                      strokeWidth={
+                        activeFilter === "member" || activeFilter === "umat"
+                          ? 12
+                          : 10
+                      }
                       strokeDasharray={`${memberLen} ${c}`}
                       strokeDashoffset={memberOffset}
                       className="cursor-pointer transition-all duration-300 hover:opacity-85"
                       onClick={() =>
-                        onFilterChange(activeFilter === "member" ? "all" : "member")
+                        onFilterChange(
+                          activeFilter === "member" ? "all" : "member"
+                        )
                       }
                     />
                   )}
@@ -190,7 +201,12 @@ function CommunityRoleChart({
                       r={r}
                       fill="none"
                       stroke="#8b5cf6"
-                      strokeWidth={activeFilter === "activist" || activeFilter === "aktivis" ? 12 : 10}
+                      strokeWidth={
+                        activeFilter === "activist" ||
+                        activeFilter === "aktivis"
+                          ? 12
+                          : 10
+                      }
                       strokeDasharray={`${activistLen} ${c}`}
                       strokeDashoffset={activistOffset}
                       className="cursor-pointer transition-all duration-300 hover:opacity-85"
@@ -527,7 +543,8 @@ export function PeoplePage() {
   const roleBadgeStyle: Record<string, string> = {
     admin: "bg-[#ff4d8b]/15 text-[#ff4d8b] border-[#ff4d8b]/30 font-semibold",
     organizer: "bg-[#1a3a3a] text-white border-[#1a3a3a] font-semibold",
-    activist: "bg-[#b8a4ed]/30 text-[#0a0a0a] border-[#b8a4ed]/50 font-semibold",
+    activist:
+      "bg-[#b8a4ed]/30 text-[#0a0a0a] border-[#b8a4ed]/50 font-semibold",
     member: "bg-[#f5f0e0] text-[#0a0a0a] border-[#e5e5e5] font-semibold",
     // Backward-compat aliases
     pengurus: "bg-[#1a3a3a] text-white border-[#1a3a3a] font-semibold",
@@ -633,7 +650,7 @@ export function PeoplePage() {
                 {Array.from({ length: 8 }).map((_, idx) => (
                   <div
                     key={idx}
-                    className="flex h-[135px] sm:h-[180px] animate-pulse flex-col justify-between rounded-[16px] border border-[#e6decb]/80 bg-[#faf5e8]/90 p-3.5 shadow-2xs backdrop-blur-sm sm:p-4"
+                    className="flex h-[135px] animate-pulse flex-col justify-between rounded-[16px] border border-[#e6decb]/80 bg-[#faf5e8]/90 p-3.5 shadow-2xs backdrop-blur-sm sm:h-[180px] sm:p-4"
                   >
                     <div className="space-y-3">
                       <div className="flex items-start justify-between">

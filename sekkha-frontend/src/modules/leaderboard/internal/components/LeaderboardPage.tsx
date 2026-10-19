@@ -999,7 +999,8 @@ export function LeaderboardPage() {
                   <p className="flex items-start gap-2 text-xs leading-relaxed text-[#6a6a6a]">
                     <SparklesIcon className="mt-0.5 size-4 shrink-0 text-[#e8b94a]" />
                     <span>
-                      Work together to achieve our community attendance target this season.
+                      Work together to achieve our community attendance target
+                      this season.
                     </span>
                   </p>
                 </div>
@@ -1051,7 +1052,8 @@ export function LeaderboardPage() {
                   <span>
                     Together as a community, let&apos;s achieve the target of{" "}
                     <strong className="text-[#0a0a0a]">
-                      {seasonData?.target_attendance ?? communityGoal.target} check-ins
+                      {seasonData?.target_attendance ?? communityGoal.target}{" "}
+                      check-ins
                     </strong>{" "}
                     this season!
                   </span>

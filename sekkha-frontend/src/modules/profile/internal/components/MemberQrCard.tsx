@@ -4,7 +4,13 @@
 
 import { useState } from "react"
 import QRCode from "react-qr-code"
-import { PrinterIcon, DownloadIcon, CheckIcon, XIcon, LightbulbIcon } from "lucide-react"
+import {
+  PrinterIcon,
+  DownloadIcon,
+  CheckIcon,
+  XIcon,
+  LightbulbIcon,
+} from "lucide-react"
 
 interface MemberQrCardProps {
   memberName?: string
@@ -260,7 +266,7 @@ export function MemberQrCard({
             </div>
 
             <p className="text-micro text-center leading-relaxed text-sekkha-slate">
-              <LightbulbIcon className="inline size-3.5 mr-1 text-[#e8b94a]" />
+              <LightbulbIcon className="mr-1 inline size-3.5 text-[#e8b94a]" />
               Saat mencetak, browser hanya akan mencetak{" "}
               <strong>Kartu Fisik Vihara</strong> ini saja (halaman web lainnya
               otomatis disembunyikan).

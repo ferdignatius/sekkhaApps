@@ -71,7 +71,13 @@ export function MemberDetailPage({
   // Admin Modals
   const [showRoleModal, setShowRoleModal] = useState(false)
   const [newRole, setNewRole] = useState<
-    "member" | "activist" | "organizer" | "admin" | "umat" | "aktivis" | "pengurus"
+    | "member"
+    | "activist"
+    | "organizer"
+    | "admin"
+    | "umat"
+    | "aktivis"
+    | "pengurus"
   >("member")
   const [savingRole, setSavingRole] = useState(false)
 
@@ -190,7 +196,8 @@ export function MemberDetailPage({
     admin: "bg-[#ff4d8b]/15 text-[#ff4d8b] border-[#ff4d8b]/30 font-semibold",
     organizer: "bg-[#1a3a3a] text-white border-[#1a3a3a] font-semibold",
     pengurus: "bg-[#1a3a3a] text-white border-[#1a3a3a] font-semibold",
-    activist: "bg-[#b8a4ed]/30 text-[#0a0a0a] border-[#b8a4ed]/50 font-semibold",
+    activist:
+      "bg-[#b8a4ed]/30 text-[#0a0a0a] border-[#b8a4ed]/50 font-semibold",
     aktivis: "bg-[#b8a4ed]/30 text-[#0a0a0a] border-[#b8a4ed]/50 font-semibold",
     member: "bg-[#f5f0e0] text-[#0a0a0a] border-[#e5e5e5] font-semibold",
     umat: "bg-[#f5f0e0] text-[#0a0a0a] border-[#e5e5e5] font-semibold",
@@ -518,12 +525,18 @@ export function MemberDetailPage({
                       <span>Status:</span>
                       {member.is_claimed ? (
                         <span className="inline-flex items-center gap-1 font-semibold text-emerald-600">
-                          <CheckCircleIcon className="size-3.5" aria-hidden="true" />
+                          <CheckCircleIcon
+                            className="size-3.5"
+                            aria-hidden="true"
+                          />
                           Active Account
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 font-semibold text-amber-600">
-                          <AlertTriangleIcon className="size-3.5" aria-hidden="true" />
+                          <AlertTriangleIcon
+                            className="size-3.5"
+                            aria-hidden="true"
+                          />
                           Unclaimed
                         </span>
                       )}

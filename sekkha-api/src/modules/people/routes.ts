@@ -10,8 +10,8 @@ peopleRouter.get("/members", requireAuth, requireRole("organizer", "admin"), peo
 // 2. Member detail (organizer/admin only)
 peopleRouter.get("/members/:id", requireAuth, requireRole("organizer", "admin"), peopleControllers.getMemberDetail)
 
-// 3. Add new member (admin only)
-peopleRouter.post("/members", requireAuth, requireRole("admin"), peopleControllers.createMember)
+// 3. Add new member (organizer/admin)
+peopleRouter.post("/members", requireAuth, requireRole("organizer", "admin"), peopleControllers.createMember)
 
 // 4. Update member (organizer/admin only; role change requires admin handled in service)
 peopleRouter.put("/members/:id", requireAuth, requireRole("organizer", "admin"), peopleControllers.updateMember)

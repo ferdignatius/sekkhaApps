@@ -350,13 +350,13 @@ export function QrScannerCamera({
     <div
       className={`relative flex h-full max-h-full w-full max-w-full flex-col items-center justify-center overflow-hidden ${
         isFullScreen
-          ? "flex-1 rounded-none border-0 bg-black p-0"
-          : "rounded-2xl border border-[#e5e5e5] bg-[#0a0a0a] p-2 shadow-inner"
+          ? "flex-1 rounded-none border-0 bg-[#1a3a3a] p-0"
+          : "rounded-2xl border border-[#e5e5e5] bg-[#102828] p-2 shadow-inner"
       }`}
     >
       {/* Camera Video Viewport Container */}
       <div
-        className={`relative flex h-full max-h-full w-full max-w-full items-center justify-center overflow-hidden bg-black ${
+        className={`relative flex h-full max-h-full w-full max-w-full items-center justify-center overflow-hidden bg-[#1a3a3a] ${
           isFullScreen
             ? "aspect-auto max-h-none flex-1 rounded-none"
             : "aspect-square max-h-[320px] rounded-xl"
@@ -373,7 +373,7 @@ export function QrScannerCamera({
           <div
             role="status"
             aria-live="polite"
-            className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 bg-[#0a0a0a]/90 text-white backdrop-blur-xs"
+            className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 bg-[#102828]/95 text-white backdrop-blur-xs"
           >
             <RefreshCwIcon className="size-8 animate-spin text-amber-400" />
             <p className="text-caption font-medium">
@@ -384,7 +384,7 @@ export function QrScannerCamera({
 
         {/* Insecure Context Warning */}
         {isInsecureContext && (
-          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center space-y-3 bg-[#0a0a0a] p-6 text-center text-white">
+          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center space-y-3 bg-[#102828] p-6 text-center text-white">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-amber-500/30 bg-amber-500/20 text-amber-400">
               <ShieldAlertIcon className="size-6" />
             </div>
@@ -400,7 +400,7 @@ export function QrScannerCamera({
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="text-caption-bold flex min-h-[44px] cursor-pointer items-center gap-1.5 rounded-[12px] bg-[#e8b94a] px-3.5 py-2 font-bold text-[#0a0a0a] shadow-sm transition-all hover:bg-amber-400 focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0a] focus-visible:outline-none"
+              className="text-caption-bold flex min-h-[44px] cursor-pointer items-center gap-1.5 rounded-[12px] bg-[#e8b94a] px-3.5 py-2 font-bold text-[#1a3a3a] shadow-sm transition-all hover:bg-amber-400 focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#102828] focus-visible:outline-none"
             >
               <ImageIcon className="size-4" />
               <span>Unggah Foto QR Code</span>
@@ -413,7 +413,7 @@ export function QrScannerCamera({
           <div
             role="alert"
             aria-live="assertive"
-            className="absolute inset-0 z-20 flex flex-col items-center justify-center space-y-3 bg-[#0a0a0a] p-5 text-center text-white"
+            className="absolute inset-0 z-20 flex flex-col items-center justify-center space-y-3 bg-[#102828] p-5 text-center text-white"
           >
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-rose-500/30 bg-rose-500/20 text-rose-400">
               <VideoOffIcon className="size-5" />
@@ -440,7 +440,7 @@ export function QrScannerCamera({
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="text-caption flex min-h-[44px] cursor-pointer items-center gap-1.5 rounded-[12px] bg-[#e8b94a] px-3 py-1.5 font-bold text-[#0a0a0a] shadow-xs transition-all hover:bg-amber-400 focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0a] focus-visible:outline-none"
+                className="text-caption flex min-h-[44px] cursor-pointer items-center gap-1.5 rounded-[12px] bg-[#e8b94a] px-3 py-1.5 font-bold text-[#1a3a3a] shadow-xs transition-all hover:bg-amber-400 focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#102828] focus-visible:outline-none"
               >
                 <ImageIcon className="size-3.5" />
                 <span>Pilih Foto QR</span>
@@ -451,7 +451,7 @@ export function QrScannerCamera({
 
         {/* Processing File Loader */}
         {processingFile && (
-          <div className="absolute inset-0 z-25 flex flex-col items-center justify-center gap-2 bg-[#0a0a0a]/90 text-white backdrop-blur-xs">
+          <div className="absolute inset-0 z-25 flex flex-col items-center justify-center gap-2 bg-[#102828]/95 text-white backdrop-blur-xs">
             <RefreshCwIcon className="size-7 animate-spin text-amber-400" />
             <p className="text-caption font-medium">
               Membaca QR dari gambar...
@@ -483,7 +483,7 @@ export function QrScannerCamera({
 
             {/* Hint Tag under Viewfinder */}
             <div className="mt-4">
-              <span className="text-caption rounded-full border border-white/15 bg-black/80 px-4 py-1.5 font-medium text-white/95 shadow-md backdrop-blur-md">
+              <span className="text-caption rounded-full border border-white/15 bg-[#102828]/90 px-4 py-1.5 font-medium text-white/95 shadow-md backdrop-blur-md">
                 Arahkan QR ke dalam kotak
               </span>
             </div>

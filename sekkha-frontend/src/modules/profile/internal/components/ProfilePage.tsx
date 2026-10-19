@@ -351,7 +351,8 @@ export function ProfilePage() {
     admin: "bg-[#ff4d8b]/15 text-[#ff4d8b] border-[#ff4d8b]/30 font-semibold",
     organizer: "bg-[#1a3a3a] text-white border-[#1a3a3a] font-semibold",
     pengurus: "bg-[#1a3a3a] text-white border-[#1a3a3a] font-semibold",
-    activist: "bg-[#b8a4ed]/30 text-[#0a0a0a] border-[#b8a4ed]/50 font-semibold",
+    activist:
+      "bg-[#b8a4ed]/30 text-[#0a0a0a] border-[#b8a4ed]/50 font-semibold",
     aktivis: "bg-[#b8a4ed]/30 text-[#0a0a0a] border-[#b8a4ed]/50 font-semibold",
     member: "bg-[#f5f0e0] text-[#0a0a0a] border-[#e5e5e5] font-semibold",
     umat: "bg-[#f5f0e0] text-[#0a0a0a] border-[#e5e5e5] font-semibold",
@@ -769,7 +770,10 @@ export function ProfilePage() {
                     <p className="text-xs font-bold text-[#0a0a0a] sm:text-sm">
                       {currentStreak > 0 ? (
                         <span className="inline-flex items-center gap-1.5">
-                          <FlameIcon className="size-4 text-orange-500" aria-hidden="true" />
+                          <FlameIcon
+                            className="size-4 text-orange-500"
+                            aria-hidden="true"
+                          />
                           <span>Attendance Streak is Active!</span>
                         </span>
                       ) : (
@@ -786,7 +790,10 @@ export function ProfilePage() {
 
                   <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
                     <span className="inline-flex items-center gap-1.5 rounded-full border border-[#e5e5e5] bg-[#fffaf0] px-3 py-1 text-xs font-bold text-[#0a0a0a] shadow-2xs">
-                      <TrophyIcon className="size-3.5 text-[#e8b94a]" aria-hidden="true" />
+                      <TrophyIcon
+                        className="size-3.5 text-[#e8b94a]"
+                        aria-hidden="true"
+                      />
                       <span>Longest Record: {longestStreak}x</span>
                     </span>
                     <span
@@ -798,7 +805,10 @@ export function ProfilePage() {
                     >
                       {currentStreak > 0 ? (
                         <>
-                          <CheckCircleIcon className="size-3.5 text-emerald-600" aria-hidden="true" />
+                          <CheckCircleIcon
+                            className="size-3.5 text-emerald-600"
+                            aria-hidden="true"
+                          />
                           <span>Checked in this week</span>
                         </>
                       ) : (
@@ -943,9 +953,15 @@ export function ProfilePage() {
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-1.5">
                             {strongestArea?.icon ? (
-                              <strongestArea.icon className="size-4 text-[#e8b94a]" aria-hidden="true" />
+                              <strongestArea.icon
+                                className="size-4 text-[#e8b94a]"
+                                aria-hidden="true"
+                              />
                             ) : (
-                              <SparklesIcon className="size-4 text-[#e8b94a]" aria-hidden="true" />
+                              <SparklesIcon
+                                className="size-4 text-[#e8b94a]"
+                                aria-hidden="true"
+                              />
                             )}
                             <span className="text-xs font-bold text-[#0a0a0a]">
                               Strongest Dimension
@@ -970,7 +986,10 @@ export function ProfilePage() {
                           >
                             <div className="mb-1 flex items-center justify-between text-xs font-bold text-[#0a0a0a]">
                               <div className="flex items-center gap-1.5">
-                                <item.icon className="size-3.5 text-[#1a3a3a]" aria-hidden="true" />
+                                <item.icon
+                                  className="size-3.5 text-[#1a3a3a]"
+                                  aria-hidden="true"
+                                />
                                 <span>{item.fullSubject}</span>
                               </div>
                               <div className="flex items-center gap-2 text-xs">
@@ -1072,7 +1091,10 @@ export function ProfilePage() {
                     </p>
                   </div>
                   <span className="inline-flex items-center gap-1.5 self-start rounded-[8px] border border-[#e5e5e5] bg-[#faf5e8] px-3 py-1 text-xs font-bold text-[#0a0a0a] sm:self-auto">
-                    <TrophyIcon className="size-3.5 text-[#e8b94a]" aria-hidden="true" />
+                    <TrophyIcon
+                      className="size-3.5 text-[#e8b94a]"
+                      aria-hidden="true"
+                    />
                     <span>
                       {badges.filter((b) => Boolean(b.earned_at)).length} of{" "}
                       {badges.length} Unlocked
@@ -1261,7 +1283,10 @@ export function ProfilePage() {
                         </div>
                         {school ? (
                           <p className="flex items-center gap-1 truncate text-[9px] text-white/80">
-                            <GraduationCapIcon className="size-2.5 shrink-0 text-white/80" aria-hidden="true" />
+                            <GraduationCapIcon
+                              className="size-2.5 shrink-0 text-white/80"
+                              aria-hidden="true"
+                            />
                             <span>{school}</span>
                           </p>
                         ) : null}
@@ -1690,7 +1715,8 @@ export function ProfilePage() {
 
             <p className="text-center text-xs leading-relaxed text-[#6a6a6a]">
               <LightbulbIcon className="mr-1 inline size-3.5 text-[#e8b94a]" />
-              When printing, only the official ID Card above will be sent to the printer.
+              When printing, only the official ID Card above will be sent to the
+              printer.
             </p>
 
             <div className="flex gap-2 border-t border-[#e5e5e5] pt-1">

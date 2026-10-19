@@ -62,7 +62,7 @@ export function AlertDialogFooter({
   return (
     <ShadcnAlertDialogFooter
       className={cn(
-        "flex flex-col-reverse gap-2 border-t border-[#e5e5e5] pt-4 mt-2 sm:flex-row sm:justify-end",
+        "mt-2 flex flex-col-reverse gap-2 border-t border-[#e5e5e5] pt-4 sm:flex-row sm:justify-end",
         className
       )}
       {...props}
@@ -102,7 +102,7 @@ export function AlertDialogTitle({
   return (
     <ShadcnAlertDialogTitle
       className={cn(
-        "text-base sm:text-lg font-bold tracking-tight text-[#0a0a0a]",
+        "text-base font-bold tracking-tight text-[#0a0a0a] sm:text-lg",
         className
       )}
       {...props}
@@ -116,7 +116,10 @@ export function AlertDialogDescription({
 }: React.ComponentProps<typeof ShadcnAlertDialogDescription>) {
   return (
     <ShadcnAlertDialogDescription
-      className={cn("text-xs sm:text-sm text-[#6a6a6a] leading-relaxed", className)}
+      className={cn(
+        "text-xs leading-relaxed text-[#6a6a6a] sm:text-sm",
+        className
+      )}
       {...props}
     />
   )

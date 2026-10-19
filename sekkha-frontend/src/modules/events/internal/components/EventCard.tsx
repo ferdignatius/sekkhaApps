@@ -1,11 +1,7 @@
 // feature/events/components/EventCard
 // Event card in the list adhering strictly to Clay Design System tokens.
 
-import {
-  CalendarIcon,
-  MapPinIcon,
-  ChevronRightIcon,
-} from "lucide-react"
+import { CalendarIcon, MapPinIcon, ChevronRightIcon } from "lucide-react"
 import { Badge } from "@/components/base/Badge"
 import type { EventListItem } from "../types"
 import { getCategoryColor } from "../masterdata"
@@ -109,11 +105,12 @@ export function EventCard({ event, onClick }: EventCardProps) {
               )}
 
               {/* Status: Scheduled / Upcoming */}
-              {(status === "scheduled" || status === "published") && !isLive && (
-                <Badge variant="secondary" glass>
-                  Scheduled
-                </Badge>
-              )}
+              {(status === "scheduled" || status === "published") &&
+                !isLive && (
+                  <Badge variant="secondary" glass>
+                    Scheduled
+                  </Badge>
+                )}
 
               {/* Live today indicator */}
               {(status === "scheduled" || status === "published") && isLive && (

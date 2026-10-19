@@ -178,7 +178,7 @@ export function DateTimePickerPopover({
         <PopoverContent
           align="start"
           sideOffset={6}
-          className="w-[310px] sm:w-[320px] rounded-[18px] border border-[#e5e5e5] bg-[#faf5e8] p-3 text-[#0a0a0a] shadow-xl outline-none"
+          className="w-[310px] rounded-[18px] border border-[#e5e5e5] bg-[#faf5e8] p-3 text-[#0a0a0a] shadow-xl outline-none sm:w-[320px]"
         >
           {/* Header */}
           <div className="mb-2 flex items-center justify-between border-b border-[#e5e5e5] pb-2">

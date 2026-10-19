@@ -68,6 +68,8 @@ export function AttendanceScanPage() {
     role === "admin" ||
     role === "activist" ||
     role === "aktivis"
+  const canCreateMember =
+    role === "organizer" || role === "pengurus" || role === "admin"
 
   // Event and attendances data state
   const [event, setEvent] = useState<EventListItem | null>(null)
@@ -99,6 +101,15 @@ export function AttendanceScanPage() {
   // Real People database for manual search
   const [peopleList, setPeopleList] = useState<MemberDto[]>([])
   const [searchQuery, setSearchQuery] = useState("")
+  const [newMemberForm, setNewMemberForm] = useState({
+    name: "",
+    phone: "",
+    email: "",
+  })
+  const [creatingMember, setCreatingMember] = useState(false)
+  const [createMemberError, setCreateMemberError] = useState<string | null>(
+    null
+  )
 
   // Attended IDs Set
   const [sessionAttendedIds, setSessionAttendedIds] = useState<Set<string>>(
@@ -320,6 +331,85 @@ export function AttendanceScanPage() {
     return label.replace(/(camera|video|facing)/gi, "").trim() || "Camera"
   }
 
+  async function recordManualAttendance(member: MemberDto) {
+    if (sessionAttendedIds.has(member.id)) {
+      playWarningChime()
+      triggerFeedback(
+        "duplicate",
+        "Already Checked In!",
+        `${member.name} has already checked in.`
+      )
+      return
+    }
+
+    if (!eventId) return
+
+    try {
+      await api.post(`/events/${eventId}/attendance`, {
+        method: "manual",
+        user_id: member.id,
+      })
+
+      setSessionAttendedIds((prev) => new Set(prev).add(member.id))
+      setSessionSuccessCount((prev) => prev + 1)
+      setRecentScans((prev) => [
+        {
+          id: `${member.id}-${Date.now()}`,
+          userId: member.id,
+          name: member.name,
+          userNumber: member.user_number,
+          time: new Date().toLocaleTimeString("en-US", {
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+          }),
+          status: "success",
+          message: "Checked in successfully (Manual)",
+        },
+        ...prev.slice(0, 19),
+      ])
+      triggerFeedback(
+        "success",
+        "Attendance Recorded!",
+        `${member.name} checked in.`
+      )
+    } catch (error: any) {
+      const message = error?.message || "Failed to record attendance."
+      if (message.toLowerCase().includes("already")) {
+        setSessionAttendedIds((prev) => new Set(prev).add(member.id))
+      }
+      triggerFeedback("error", "Attendance Failed", message)
+    }
+  }
+
+  async function handleCreateAndCheckIn(e: React.FormEvent) {
+    e.preventDefault()
+    const name = newMemberForm.name.trim()
+    if (!name) {
+      setCreateMemberError("Nama peserta wajib diisi.")
+      return
+    }
+
+    try {
+      setCreatingMember(true)
+      const member = await peopleApi.createMember({
+        name,
+        phone: newMemberForm.phone.trim() || undefined,
+        email: newMemberForm.email.trim() || undefined,
+        role: "member",
+      })
+      setPeopleList((prev) => [member, ...prev])
+      setNewMemberForm({ name: "", phone: "", email: "" })
+      setSearchQuery("")
+      setCreateMemberError(null)
+      await recordManualAttendance(member)
+    } catch (error: any) {
+      setCreateMemberError(error?.message || "Gagal menambahkan peserta baru.")
+    } finally {
+      setCreatingMember(false)
+    }
+  }
+
   // Switch between front/back cameras
   function handleToggleCamera() {
     if (cameras.length <= 1) return
@@ -372,7 +462,7 @@ export function AttendanceScanPage() {
       if (eventId) {
         api
           .post<any>(`/events/${eventId}/attendance`, {
-            method: "qr",
+            method: "manual",
             user_id: parsedQuery,
           })
           .then((res) => {
@@ -501,7 +591,7 @@ export function AttendanceScanPage() {
     if (eventId) {
       api
         .post(`/events/${eventId}/attendance`, {
-          method: "qr",
+          method: "manual",
           user_id: matched.id,
         })
         .catch((err: any) => {
@@ -611,7 +701,10 @@ export function AttendanceScanPage() {
   }
 
   function handleBack() {
-    navigate({ to: "/events" })
+    navigate({
+      to: "/events",
+      search: eventId ? { eventId } : {},
+    })
   }
 
   if (loadingEvent) {
@@ -621,7 +714,7 @@ export function AttendanceScanPage() {
         aria-live="polite"
         className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-[#fffaf0] px-6 text-center font-sans text-[#0a0a0a]"
       >
-        <div className="flex size-14 items-center justify-center rounded-[20px] bg-[#0a0a0a] text-[#e8b94a] shadow-md">
+        <div className="flex size-14 items-center justify-center rounded-[20px] bg-[#1a3a3a] text-[#e8b94a] shadow-md">
           <RefreshCwIcon className="size-7 animate-spin" aria-hidden="true" />
         </div>
         <div>
@@ -670,7 +763,7 @@ export function AttendanceScanPage() {
           <button
             type="button"
             onClick={handleBack}
-            className="mt-6 inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-[12px] bg-[#0a0a0a] px-5 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#1f1f1f] focus-visible:ring-2 focus-visible:ring-[#0a0a0a] focus-visible:ring-offset-2 focus-visible:outline-none sm:w-auto"
+            className="mt-6 inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-[12px] bg-[#1a3a3a] px-5 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#102828] focus-visible:ring-2 focus-visible:ring-[#1a3a3a] focus-visible:ring-offset-2 focus-visible:outline-none sm:w-auto"
           >
             <ArrowLeftIcon className="size-4" aria-hidden="true" />
             Back to Events
@@ -684,23 +777,23 @@ export function AttendanceScanPage() {
     <div
       role="main"
       aria-label="Scan QR Attendance"
-      className="fixed inset-0 z-50 flex h-[100dvh] w-full flex-col overflow-hidden bg-black font-sans text-white select-none"
+      className="fixed inset-0 z-50 flex h-[100dvh] w-full flex-col overflow-hidden bg-[#1a3a3a] font-sans text-white select-none"
     >
       {/* ── 1. Floating Top Bar ── */}
-      <div className="absolute inset-x-0 top-0 z-30 flex items-center justify-between bg-gradient-to-b from-black/90 via-black/50 to-transparent p-3 pt-[max(0.75rem,env(safe-area-inset-top))] sm:p-4">
+      <div className="absolute inset-x-0 top-0 z-30 flex items-center justify-between bg-gradient-to-b from-[#102828]/95 via-[#102828]/70 to-transparent p-3 pt-[max(0.75rem,env(safe-area-inset-top))] sm:p-4">
         {/* Left: Back Button */}
         <button
           type="button"
           onClick={handleBack}
           aria-label="Back to Events"
-          className="sm:text-caption flex min-h-[44px] shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-white/20 bg-black/60 px-3 py-2 text-[11px] font-bold text-white shadow-lg backdrop-blur-md transition-all hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black focus-visible:outline-none active:scale-95"
+          className="sm:text-caption flex min-h-[44px] shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-white/20 bg-[#102828]/80 px-3 py-2 text-[11px] font-bold text-white shadow-lg backdrop-blur-md transition-all hover:bg-[#1a3a3a] focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#1a3a3a] focus-visible:outline-none active:scale-95"
         >
           <ArrowLeftIcon className="size-4 sm:size-5" />
           <span className="xs:inline hidden">Back</span>
         </button>
 
         {/* Center: Live Counter / Title Pill */}
-        <div className="flex max-w-[48vw] min-w-0 items-center gap-1.5 rounded-full border border-white/20 bg-black/70 px-3 py-1 shadow-lg backdrop-blur-md sm:max-w-md sm:gap-2 sm:px-4 sm:py-1.5">
+        <div className="flex max-w-[48vw] min-w-0 items-center gap-1.5 rounded-full border border-white/20 bg-[#102828]/85 px-3 py-1 shadow-lg backdrop-blur-md sm:max-w-md sm:gap-2 sm:px-4 sm:py-1.5">
           <span className="flex size-2 animate-pulse rounded-full bg-emerald-500 sm:size-2.5" />
           <span className="sm:text-caption min-w-0 truncate text-[11px] font-bold tracking-wide text-white">
             {isPengurus
@@ -721,14 +814,14 @@ export function AttendanceScanPage() {
           <button
             type="button"
             onClick={handleToggleCamera}
-            className="sm:text-caption flex min-h-[44px] shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-white/25 bg-black/75 px-3 py-1.5 text-[10px] font-bold text-white shadow-lg backdrop-blur-md transition-all hover:bg-white/25 active:scale-95 sm:px-3.5 sm:py-2"
+            className="sm:text-caption flex min-h-[44px] shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-white/25 bg-[#102828]/85 px-3 py-1.5 text-[10px] font-bold text-white shadow-lg backdrop-blur-md transition-all hover:bg-[#1a3a3a] active:scale-95 sm:px-3.5 sm:py-2"
             title="Switch Camera (Rear / Front)"
           >
             <RefreshCwIcon className="size-3.5 shrink-0 text-amber-300 sm:size-4" />
             <span>{currentCamLabel}</span>
           </button>
         ) : (
-          <div className="flex shrink-0 items-center gap-1 rounded-full border border-white/10 bg-black/60 px-2.5 py-1 text-[10px] font-semibold text-white/80 backdrop-blur-md sm:px-3 sm:py-1.5 sm:text-[11px]">
+          <div className="flex shrink-0 items-center gap-1 rounded-full border border-white/10 bg-[#102828]/80 px-2.5 py-1 text-[10px] font-semibold text-white/80 backdrop-blur-md sm:px-3 sm:py-1.5 sm:text-[11px]">
             <CameraIcon className="size-3 text-amber-400 sm:size-3.5" />
             <span>Camera</span>
           </div>
@@ -801,7 +894,7 @@ export function AttendanceScanPage() {
           ) : (
             /* Manual Search Form in Full Screen */
             <div className="mx-auto max-h-[80vh] w-full max-w-lg animate-in space-y-4 overflow-y-auto p-4 duration-150 zoom-in-95 fade-in sm:p-6">
-              <div className="space-y-3 rounded-3xl border border-white/20 bg-zinc-950/85 p-4 shadow-2xl backdrop-blur-xl sm:p-5">
+              <div className="space-y-3 rounded-3xl border border-white/20 bg-[#102828]/95 p-4 shadow-2xl backdrop-blur-xl sm:p-5">
                 <div className="flex items-center justify-between">
                   <h4 className="text-caption-bold sm:text-body-md flex items-center gap-2 text-white">
                     <UserPlusIcon className="size-4 text-amber-400" />
@@ -821,9 +914,14 @@ export function AttendanceScanPage() {
                   <input
                     type="text"
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onChange={(e) => {
+                      const value = e.target.value
+                      setSearchQuery(value)
+                      setNewMemberForm((prev) => ({ ...prev, name: value }))
+                      setCreateMemberError(null)
+                    }}
                     placeholder="Search Name / Member ID / Email..."
-                    className="text-caption w-full rounded-xl border border-white/20 bg-black/60 py-2.5 pr-4 pl-10 text-white outline-none placeholder:text-zinc-500 focus:border-amber-400 focus:ring-1 focus:ring-amber-400"
+                    className="text-caption w-full rounded-xl border border-white/20 bg-[#1a3a3a] py-2.5 pr-4 pl-10 text-white outline-none placeholder:text-[#a4d4c5] focus:border-[#e8b94a] focus:ring-1 focus:ring-[#e8b94a]"
                     autoFocus
                   />
                 </div>
@@ -853,11 +951,11 @@ export function AttendanceScanPage() {
                             <button
                               type="button"
                               onClick={() => {
-                                processPengurusQrText(p.id)
+                                void recordManualAttendance(p)
                                 setSearchQuery("")
                                 setPengurusMode("camera")
                               }}
-                              className="text-caption shrink-0 cursor-pointer rounded-xl bg-amber-400 px-3 py-1 font-bold text-black shadow-xs transition-all hover:bg-amber-300 active:scale-95"
+                              className="text-caption shrink-0 cursor-pointer rounded-xl bg-amber-400 px-3 py-1 font-bold text-[#1a3a3a] shadow-xs transition-all hover:bg-amber-300 active:scale-95"
                             >
                               + Check In
                             </button>
@@ -866,9 +964,80 @@ export function AttendanceScanPage() {
                       )
                     })
                   ) : searchQuery.trim() ? (
-                    <p className="text-caption py-6 text-center text-zinc-400">
-                      No member found for "{searchQuery}".
-                    </p>
+                    <div className="space-y-3 rounded-2xl border border-[#e8b94a]/40 bg-[#1a3a3a]/60 p-3">
+                      <p className="text-caption text-[#f5f0e0]">
+                        No member found for "{searchQuery}".
+                      </p>
+                      {canCreateMember ? (
+                        <form
+                          onSubmit={handleCreateAndCheckIn}
+                          className="space-y-2"
+                        >
+                          <input
+                            value={newMemberForm.name || searchQuery}
+                            onChange={(e) =>
+                              setNewMemberForm((prev) => ({
+                                ...prev,
+                                name: e.target.value,
+                              }))
+                            }
+                            placeholder="Full name"
+                            aria-label="New member name"
+                            className="text-caption w-full rounded-xl border border-white/20 bg-[#102828] px-3 py-2.5 text-white outline-none placeholder:text-[#a4d4c5] focus:border-[#e8b94a] focus:ring-1 focus:ring-[#e8b94a]"
+                            required
+                          />
+                          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                            <input
+                              value={newMemberForm.phone}
+                              onChange={(e) =>
+                                setNewMemberForm((prev) => ({
+                                  ...prev,
+                                  phone: e.target.value,
+                                }))
+                              }
+                              placeholder="Phone (optional)"
+                              aria-label="New member phone"
+                              className="text-caption rounded-xl border border-white/20 bg-[#102828] px-3 py-2.5 text-white outline-none placeholder:text-[#a4d4c5] focus:border-[#e8b94a] focus:ring-1 focus:ring-[#e8b94a]"
+                            />
+                            <input
+                              type="email"
+                              value={newMemberForm.email}
+                              onChange={(e) =>
+                                setNewMemberForm((prev) => ({
+                                  ...prev,
+                                  email: e.target.value,
+                                }))
+                              }
+                              placeholder="Email (optional)"
+                              aria-label="New member email"
+                              className="text-caption rounded-xl border border-white/20 bg-[#102828] px-3 py-2.5 text-white outline-none placeholder:text-[#a4d4c5] focus:border-[#e8b94a] focus:ring-1 focus:ring-[#e8b94a]"
+                            />
+                          </div>
+                          {createMemberError && (
+                            <p
+                              role="alert"
+                              className="text-caption text-[#ffb084]"
+                            >
+                              {createMemberError}
+                            </p>
+                          )}
+                          <button
+                            type="submit"
+                            disabled={creatingMember}
+                            className="text-caption flex min-h-[44px] w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#e8b94a] px-3 py-2.5 font-bold text-[#1a3a3a] shadow-xs transition-all hover:bg-[#f2ca67] disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            <UserPlusIcon className="size-4" />
+                            {creatingMember
+                              ? "Adding member…"
+                              : "Add member & check in"}
+                          </button>
+                        </form>
+                      ) : (
+                        <p className="text-caption text-[#a4d4c5]">
+                          Only organizer or admin can add a new member.
+                        </p>
+                      )}
+                    </div>
                   ) : (
                     <p className="text-caption py-6 text-center text-zinc-400">
                       Type a participant name above to record attendance
@@ -882,7 +1051,7 @@ export function AttendanceScanPage() {
         ) : (
           /* Member View: Show Personal Member QR to present to Organizers (FE-04/XF-04 Harmonization) */
           <div className="mx-auto w-full max-w-sm animate-in space-y-5 p-4 duration-150 zoom-in-95 fade-in sm:p-6">
-            <div className="space-y-4 rounded-3xl border border-white/20 bg-zinc-950/90 p-5 text-center shadow-2xl backdrop-blur-xl sm:p-6">
+            <div className="space-y-4 rounded-3xl border border-white/20 bg-[#102828]/95 p-5 text-center shadow-2xl backdrop-blur-xl sm:p-6">
               <div className="space-y-1">
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/40 bg-amber-500/20 px-3 py-1 text-[11px] font-bold text-amber-300">
                   <CheckCircle2Icon className="size-3.5" />
@@ -935,7 +1104,7 @@ export function AttendanceScanPage() {
 
       {/* ── 4. Collapsible History Drawer ── */}
       {isHistoryDrawerOpen && (
-        <div className="absolute inset-x-2.5 bottom-20 z-40 mx-auto max-w-md animate-in rounded-3xl border border-white/20 bg-zinc-950/95 p-4 shadow-2xl backdrop-blur-2xl duration-200 slide-in-from-bottom-5 fade-in sm:inset-x-4 sm:p-5">
+        <div className="absolute inset-x-2.5 bottom-20 z-40 mx-auto max-w-md animate-in rounded-3xl border border-white/20 bg-[#102828]/95 p-4 shadow-2xl backdrop-blur-2xl duration-200 slide-in-from-bottom-5 fade-in sm:inset-x-4 sm:p-5">
           <div className="flex items-center justify-between border-b border-white/10 pb-3">
             <div className="flex items-center gap-2">
               <ListFilterIcon className="size-4 text-amber-400" />
@@ -996,7 +1165,7 @@ export function AttendanceScanPage() {
       )}
 
       {/* ── 5. Floating Bottom Action Dock ── */}
-      <div className="absolute inset-x-0 bottom-0 z-30 flex items-center justify-center gap-2 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-3 pb-[max(1rem,env(safe-area-inset-bottom))] sm:gap-3 sm:p-4">
+      <div className="absolute inset-x-0 bottom-0 z-30 flex items-center justify-center gap-2 bg-gradient-to-t from-[#102828]/95 via-[#102828]/70 to-transparent p-3 pb-[max(1rem,env(safe-area-inset-bottom))] sm:gap-3 sm:p-4">
         {isPengurus ? (
           <>
             {/* Button 1: Toggle Manual Search */}
@@ -1010,13 +1179,13 @@ export function AttendanceScanPage() {
               }}
               className={`sm:text-caption flex min-h-[44px] cursor-pointer items-center gap-1.5 rounded-full border px-3 py-2 text-[11px] font-bold shadow-lg backdrop-blur-xl transition-all active:scale-95 sm:gap-2 sm:px-4 sm:py-2.5 ${
                 pengurusMode === "search"
-                  ? "border-amber-300 bg-amber-400 text-black"
-                  : "border-white/25 bg-black/75 text-white hover:bg-white/20"
+                  ? "border-amber-300 bg-amber-400 text-[#1a3a3a]"
+                  : "border-white/25 bg-[#102828]/85 text-white hover:bg-[#1a3a3a]"
               }`}
             >
               {pengurusMode === "search" ? (
                 <>
-                  <CameraIcon className="size-3.5 shrink-0 text-black sm:size-4" />
+                  <CameraIcon className="size-3.5 shrink-0 text-[#1a3a3a] sm:size-4" />
                   <span>Open Camera</span>
                 </>
               ) : (
@@ -1033,8 +1202,8 @@ export function AttendanceScanPage() {
               onClick={() => setIsHistoryDrawerOpen((prev) => !prev)}
               className={`sm:text-caption flex min-h-[44px] cursor-pointer items-center gap-1.5 rounded-full border px-3 py-2 text-[11px] font-bold shadow-lg backdrop-blur-xl transition-all active:scale-95 sm:gap-2 sm:px-4 sm:py-2.5 ${
                 isHistoryDrawerOpen
-                  ? "border-white bg-white text-black"
-                  : "border-white/25 bg-black/75 text-white hover:bg-white/20"
+                  ? "border-white bg-white text-[#1a3a3a]"
+                  : "border-white/25 bg-[#102828]/85 text-white hover:bg-[#1a3a3a]"
               }`}
             >
               <ListFilterIcon className="size-3.5 shrink-0 text-amber-400 sm:size-4" />
@@ -1045,7 +1214,7 @@ export function AttendanceScanPage() {
             <button
               type="button"
               onClick={() => uploadInputRef.current?.click()}
-              className="sm:text-caption flex cursor-pointer items-center gap-1.5 rounded-full border border-white/25 bg-black/75 px-3 py-2 text-[11px] font-bold text-white shadow-lg backdrop-blur-xl transition-all hover:bg-white/20 active:scale-95 sm:gap-2 sm:px-4 sm:py-2.5"
+              className="sm:text-caption flex cursor-pointer items-center gap-1.5 rounded-full border border-white/25 bg-[#102828]/85 px-3 py-2 text-[11px] font-bold text-white shadow-lg backdrop-blur-xl transition-all hover:bg-[#1a3a3a] active:scale-95 sm:gap-2 sm:px-4 sm:py-2.5"
               title="Scan from Photo / Screenshot"
             >
               <ImageIcon className="size-3.5 shrink-0 text-cyan-400 sm:size-4" />
@@ -1056,7 +1225,7 @@ export function AttendanceScanPage() {
           <button
             type="button"
             onClick={() => navigate({ to: "/home/profile" })}
-            className="sm:text-caption flex cursor-pointer items-center gap-1.5 rounded-full border border-white/25 bg-black/75 px-4 py-2 text-[11px] font-bold text-white shadow-lg backdrop-blur-xl transition-all hover:bg-white/20 active:scale-95"
+            className="sm:text-caption flex cursor-pointer items-center gap-1.5 rounded-full border border-white/25 bg-[#102828]/85 px-4 py-2 text-[11px] font-bold text-white shadow-lg backdrop-blur-xl transition-all hover:bg-[#1a3a3a] active:scale-95"
           >
             <span>Buka Profil Lengkap</span>
           </button>

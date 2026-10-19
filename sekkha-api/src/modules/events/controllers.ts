@@ -111,14 +111,21 @@ export const eventControllers = {
 
       const { user_id, method = "qr", qr_code } = z
         .object({
-          user_id: z.string().min(1, "Identifier jemaat (user_id/user_number/username) wajib diisi"),
+          user_id: z.string().min(1, "Identifier jemaat (user_id/user_number/username) wajib diisi").optional(),
           method: z.enum(["qr", "manual"]).optional(),
           qr_code: z.string().optional(),
         })
         .parse(req.body)
 
+      const isSelfCheckIn = !user_id?.trim()
+      const targetUserId = user_id?.trim() || req.user!.userId
+      if (isSelfCheckIn && method === "qr" && !qr_code) {
+        res.status(400).json({ error: "QR event wajib dikirim untuk presensi mandiri." })
+        return
+      }
+
       const actorId = req.user!.userId
-      const result = await eventServices.recordAttendance(actorId, id, user_id.trim(), method, qr_code)
+      const result = await eventServices.recordAttendance(actorId, id, targetUserId, method, qr_code, isSelfCheckIn)
       res.status(result.alreadyRecorded ? 200 : 201).json(result.attendance)
     } catch (err: any) {
       if (err.statusCode) {

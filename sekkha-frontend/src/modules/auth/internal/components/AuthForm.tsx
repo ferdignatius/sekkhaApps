@@ -233,7 +233,7 @@ export function AuthForm({
         </Button>
         <Link
           to="/"
-          className="mt-3 block w-full text-center text-sm font-medium text-[#6a6a6a] transition-colors hover:text-[#0a0a0a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0a0a0a]/20 focus-visible:ring-offset-2"
+          className="mt-3 block w-full text-center text-sm font-medium text-[#6a6a6a] transition-colors hover:text-[#0a0a0a] focus-visible:ring-2 focus-visible:ring-[#0a0a0a]/20 focus-visible:ring-offset-2 focus-visible:outline-none"
         >
           Cancel
         </Link>

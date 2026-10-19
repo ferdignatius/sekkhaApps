@@ -21,8 +21,7 @@ export function MobileDock() {
         item.to === "/home"
           ? pathname === "/home" || pathname === "/home/"
           : pathname.startsWith(item.to),
-      hidden:
-        (role === "member" || role === "umat") && item.to === "/people",
+      hidden: (role === "member" || role === "umat") && item.to === "/people",
     }))
   )
 

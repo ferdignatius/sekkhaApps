@@ -286,7 +286,8 @@ export const eventServices = {
     eventId: string,
     targetIdentifier: string,
     method: "qr" | "manual" = "qr",
-    qrCodeParam?: string
+    qrCodeParam?: string,
+    isSelfCheckIn: boolean = false
   ) {
     const event = await eventModels.findEventBasic(eventId)
     if (!event) {
@@ -303,7 +304,14 @@ export const eventServices = {
       throw error
     }
 
-    if (method === "qr" && (!qrCodeParam || !event.qrCode || qrCodeParam !== event.qrCode)) {
+    if (isSelfCheckIn && method === "qr" && (!qrCodeParam || !event.qrCode || qrCodeParam !== event.qrCode)) {
+      console.warn("[events] QR attendance rejected", {
+        eventId,
+        hasSubmittedCode: Boolean(qrCodeParam),
+        submittedCodeLength: qrCodeParam?.length ?? 0,
+        hasStoredCode: Boolean(event.qrCode),
+        storedCodeLength: event.qrCode?.length ?? 0,
+      })
       const error = new Error("Kode QR tidak valid atau tidak cocok dengan event ini.") as any
       error.statusCode = 400
       throw error
@@ -378,6 +386,7 @@ export const eventServices = {
       status: "SUCCESS",
       details: { eventId, userId: user.id, method },
     })
+    console.info("[events] Attendance recorded", { eventId, userId: user.id, method })
 
     broadcastAttendanceScan({
       eventId,

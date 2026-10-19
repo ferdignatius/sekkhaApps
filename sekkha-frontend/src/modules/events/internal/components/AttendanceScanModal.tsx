@@ -331,7 +331,7 @@ export function AttendanceScanModal({
     if (eventId) {
       api
         .post(`/events/${eventId}/attendance`, {
-          method: "qr",
+          method: "manual",
           user_id: matched.id,
         })
         .catch((err: any) => {
@@ -623,24 +623,24 @@ export function AttendanceScanModal({
           width: "100vw",
           height: "100dvh",
           zIndex: 99999,
-          backgroundColor: "#000000",
+          backgroundColor: "#1a3a3a",
         }}
-        className="flex animate-in flex-col overflow-hidden bg-black font-sans text-white duration-200 fade-in"
+        className="flex animate-in flex-col overflow-hidden bg-[#1a3a3a] font-sans text-white duration-200 fade-in"
       >
         {/* ── 1. Floating Top Bar (Responsive QRIS Style) ── */}
-        <div className="absolute inset-x-0 top-0 z-30 flex items-center justify-between bg-gradient-to-b from-black/90 via-black/50 to-transparent p-3 pt-[max(0.75rem,env(safe-area-inset-top))] sm:p-4">
+        <div className="absolute inset-x-0 top-0 z-30 flex items-center justify-between bg-gradient-to-b from-[#102828]/95 via-[#102828]/70 to-transparent p-3 pt-[max(0.75rem,env(safe-area-inset-top))] sm:p-4">
           {/* Left: Close Button */}
           <button
             type="button"
             onClick={onClose}
             aria-label="Tutup Scanner"
-            className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-black/60 text-white shadow-lg backdrop-blur-md transition-all hover:bg-white/20 active:scale-95 sm:size-10"
+            className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-[#102828]/80 text-white shadow-lg backdrop-blur-md transition-all hover:bg-white/20 active:scale-95 sm:size-10"
           >
             <XIcon className="size-4 sm:size-5" />
           </button>
 
           {/* Center: Live Status & Counter Pill */}
-          <div className="flex items-center gap-1.5 rounded-full border border-white/20 bg-black/70 px-2.5 py-1 shadow-lg backdrop-blur-md sm:gap-2 sm:px-3.5 sm:py-1.5">
+          <div className="flex items-center gap-1.5 rounded-full border border-white/20 bg-[#102828]/85 px-2.5 py-1 shadow-lg backdrop-blur-md sm:gap-2 sm:px-3.5 sm:py-1.5">
             <span className="flex size-2 animate-pulse rounded-full bg-emerald-500 sm:size-2.5" />
             <span className="sm:text-caption text-[11px] font-bold tracking-wide text-white">
               {sessionAttendedIds.size} Hadir
@@ -657,14 +657,14 @@ export function AttendanceScanModal({
             <button
               type="button"
               onClick={handleToggleCamera}
-              className="sm:text-caption flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-white/25 bg-black/75 px-3 py-1.5 text-[10px] font-bold text-white shadow-lg backdrop-blur-md transition-all hover:bg-white/25 active:scale-95 sm:px-3.5 sm:py-2"
+              className="sm:text-caption flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-white/25 bg-[#102828]/90 px-3 py-1.5 text-[10px] font-bold text-white shadow-lg backdrop-blur-md transition-all hover:bg-white/25 active:scale-95 sm:px-3.5 sm:py-2"
               title="Ganti Kamera Depan / Belakang"
             >
               <RefreshCwIcon className="size-3.5 shrink-0 text-amber-300 sm:size-4" />
               <span>Kamera: {currentCamLabel}</span>
             </button>
           ) : (
-            <div className="flex shrink-0 items-center gap-1 rounded-full border border-white/10 bg-black/60 px-2.5 py-1 text-[10px] font-semibold text-white/80 backdrop-blur-md sm:px-3 sm:py-1.5 sm:text-[11px]">
+            <div className="flex shrink-0 items-center gap-1 rounded-full border border-white/10 bg-[#102828]/80 px-2.5 py-1 text-[10px] font-semibold text-white/80 backdrop-blur-md sm:px-3 sm:py-1.5 sm:text-[11px]">
               <CameraIcon className="size-3 text-amber-400 sm:size-3.5" />
               <span>Kamera Belakang</span>
             </div>
@@ -727,7 +727,7 @@ export function AttendanceScanModal({
           ) : (
             /* Manual Search Form in Full Screen overlay */
             <div className="mx-auto max-h-[80vh] w-full max-w-lg animate-in space-y-4 overflow-y-auto p-3 duration-150 zoom-in-95 fade-in sm:p-6">
-              <div className="space-y-3 rounded-3xl border border-white/20 bg-slate-950/90 p-4 shadow-2xl backdrop-blur-2xl sm:space-y-4 sm:p-5">
+              <div className="space-y-3 rounded-3xl border border-white/20 bg-[#102828]/95 p-4 shadow-2xl backdrop-blur-2xl sm:space-y-4 sm:p-5">
                 <div className="flex items-center justify-between border-b border-white/10 pb-2">
                   <h4 className="text-caption-bold sm:text-title-sm flex items-center gap-1.5 font-bold text-white sm:gap-2">
                     <SearchIcon className="size-4 text-amber-400" />
@@ -873,7 +873,7 @@ export function AttendanceScanModal({
 
         {/* ── 4. Collapsible Bottom Scan History Drawer (Responsive) ── */}
         {isHistoryDrawerOpen && (
-          <div className="absolute inset-x-2 bottom-20 z-40 flex max-h-[48vh] animate-in flex-col rounded-3xl border border-white/20 bg-slate-950/95 p-3.5 shadow-2xl backdrop-blur-2xl duration-200 slide-in-from-bottom-8 sm:inset-x-auto sm:bottom-24 sm:mx-auto sm:max-h-[52vh] sm:max-w-md sm:p-4">
+          <div className="absolute inset-x-2 bottom-20 z-40 flex max-h-[48vh] animate-in flex-col rounded-3xl border border-white/20 bg-[#102828]/95 p-3.5 shadow-2xl backdrop-blur-2xl duration-200 slide-in-from-bottom-8 sm:inset-x-auto sm:bottom-24 sm:mx-auto sm:max-h-[52vh] sm:max-w-md sm:p-4">
             <div className="flex shrink-0 items-center justify-between border-b border-white/10 pb-2 sm:pb-2.5">
               <div className="flex items-center gap-2">
                 <ClockIcon className="size-3.5 text-amber-400 sm:size-4" />
@@ -959,7 +959,7 @@ export function AttendanceScanModal({
         )}
 
         {/* ── 5. Floating Bottom Navigation Bar (Responsive Dock) ── */}
-        <div className="absolute inset-x-0 bottom-0 z-30 flex items-center justify-center gap-1.5 bg-gradient-to-t from-black/95 via-black/60 to-transparent p-3 pb-[max(1rem,env(safe-area-inset-bottom))] sm:gap-2.5 sm:p-4">
+        <div className="absolute inset-x-0 bottom-0 z-30 flex items-center justify-center gap-1.5 bg-gradient-to-t from-[#102828]/95 via-[#102828]/70 to-transparent p-3 pb-[max(1rem,env(safe-area-inset-bottom))] sm:gap-2.5 sm:p-4">
           {/* Button 1: Add / Search User Manually (Bottom Action) */}
           <button
             type="button"
@@ -971,7 +971,7 @@ export function AttendanceScanModal({
             className={`sm:text-caption flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-2 text-[11px] font-bold shadow-lg backdrop-blur-xl transition-all active:scale-95 sm:gap-2 sm:px-4 sm:py-2.5 ${
               pengurusMode === "search"
                 ? "border-amber-300 bg-[#e8b94a] font-extrabold text-[#0a0a0a]"
-                : "border-white/25 bg-black/75 text-white hover:bg-white/20"
+                : "border-white/25 bg-[#102828]/90 text-white hover:bg-white/20"
             }`}
           >
             {pengurusMode === "camera" ? (
@@ -994,7 +994,7 @@ export function AttendanceScanModal({
             className={`sm:text-caption flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-2 text-[11px] font-bold shadow-lg backdrop-blur-xl transition-all active:scale-95 sm:gap-2 sm:px-4 sm:py-2.5 ${
               isHistoryDrawerOpen
                 ? "border-white bg-white text-black"
-                : "border-white/25 bg-black/75 text-white hover:bg-white/20"
+                : "border-white/25 bg-[#102828]/90 text-white hover:bg-white/20"
             }`}
           >
             <ListFilterIcon className="size-3.5 shrink-0 text-amber-400 sm:size-4" />
@@ -1005,7 +1005,7 @@ export function AttendanceScanModal({
           <button
             type="button"
             onClick={() => uploadInputRef.current?.click()}
-            className="sm:text-caption flex cursor-pointer items-center gap-1.5 rounded-full border border-white/25 bg-black/75 px-3 py-2 text-[11px] font-bold text-white shadow-lg backdrop-blur-xl transition-all hover:bg-white/20 active:scale-95 sm:gap-2 sm:px-4 sm:py-2.5"
+            className="sm:text-caption flex cursor-pointer items-center gap-1.5 rounded-full border border-white/25 bg-[#102828]/90 px-3 py-2 text-[11px] font-bold text-white shadow-lg backdrop-blur-xl transition-all hover:bg-white/20 active:scale-95 sm:gap-2 sm:px-4 sm:py-2.5"
             title="Scan dari Foto / Screenshot QR"
           >
             <ImageIcon className="size-3.5 shrink-0 text-cyan-400 sm:size-4" />
@@ -1071,24 +1071,24 @@ export function AttendanceScanModal({
         width: "100vw",
         height: "100dvh",
         zIndex: 99999,
-        backgroundColor: "#000000",
+        backgroundColor: "#1a3a3a",
       }}
-      className="flex animate-in flex-col overflow-hidden bg-black font-sans text-white duration-200 fade-in"
+      className="flex animate-in flex-col overflow-hidden bg-[#1a3a3a] font-sans text-white duration-200 fade-in"
     >
       {/* ── 1. Floating Top Bar ── */}
-      <div className="absolute inset-x-0 top-0 z-30 flex items-center justify-between bg-gradient-to-b from-black/90 via-black/50 to-transparent p-3 pt-[max(0.75rem,env(safe-area-inset-top))] sm:p-4">
+      <div className="absolute inset-x-0 top-0 z-30 flex items-center justify-between bg-gradient-to-b from-[#102828]/95 via-[#102828]/70 to-transparent p-3 pt-[max(0.75rem,env(safe-area-inset-top))] sm:p-4">
         {/* Left: Close Button */}
         <button
           type="button"
           onClick={onClose}
           aria-label="Tutup Scanner"
-          className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-black/60 text-white shadow-lg backdrop-blur-md transition-all hover:bg-white/20 active:scale-95 sm:size-10"
+          className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-[#102828]/80 text-white shadow-lg backdrop-blur-md transition-all hover:bg-white/20 active:scale-95 sm:size-10"
         >
           <XIcon className="size-4 sm:size-5" />
         </button>
 
         {/* Center: Title Pill */}
-        <div className="flex items-center gap-1.5 rounded-full border border-white/20 bg-black/70 px-3 py-1 shadow-lg backdrop-blur-md sm:gap-2 sm:px-4 sm:py-1.5">
+        <div className="flex items-center gap-1.5 rounded-full border border-white/20 bg-[#102828]/85 px-3 py-1 shadow-lg backdrop-blur-md sm:gap-2 sm:px-4 sm:py-1.5">
           <ScanLineIcon className="size-3.5 text-amber-400 sm:size-4" />
           <span className="sm:text-caption text-[11px] font-bold tracking-wide text-white">
             Presensi Mandiri
@@ -1100,14 +1100,14 @@ export function AttendanceScanModal({
           <button
             type="button"
             onClick={handleToggleCamera}
-            className="sm:text-caption flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-white/25 bg-black/75 px-3 py-1.5 text-[10px] font-bold text-white shadow-lg backdrop-blur-md transition-all hover:bg-white/25 active:scale-95 sm:px-3.5 sm:py-2"
+            className="sm:text-caption flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-white/25 bg-[#102828]/90 px-3 py-1.5 text-[10px] font-bold text-white shadow-lg backdrop-blur-md transition-all hover:bg-white/25 active:scale-95 sm:px-3.5 sm:py-2"
             title="Ganti Kamera Depan / Belakang"
           >
             <RefreshCwIcon className="size-3.5 shrink-0 text-amber-300 sm:size-4" />
             <span>Kamera: {currentCamLabel}</span>
           </button>
         ) : (
-          <div className="flex shrink-0 items-center gap-1 rounded-full border border-white/10 bg-black/60 px-2.5 py-1 text-[10px] font-semibold text-white/80 backdrop-blur-md sm:px-3 sm:py-1.5 sm:text-[11px]">
+          <div className="flex shrink-0 items-center gap-1 rounded-full border border-white/10 bg-[#102828]/80 px-2.5 py-1 text-[10px] font-semibold text-white/80 backdrop-blur-md sm:px-3 sm:py-1.5 sm:text-[11px]">
             <CameraIcon className="size-3 text-amber-400 sm:size-3.5" />
             <span>Kamera</span>
           </div>
@@ -1176,7 +1176,7 @@ export function AttendanceScanModal({
         ) : (
           /* Manual Code Form in Full Screen overlay */
           <div className="mx-auto w-full max-w-sm animate-in space-y-5 p-4 duration-150 zoom-in-95 fade-in sm:p-6">
-            <div className="space-y-4 rounded-3xl border border-white/20 bg-zinc-950/85 p-5 shadow-2xl backdrop-blur-xl sm:p-6">
+            <div className="space-y-4 rounded-3xl border border-white/20 bg-[#102828]/95 p-5 shadow-2xl backdrop-blur-xl sm:p-6">
               <div className="flex items-center gap-3">
                 <div className="flex size-10 items-center justify-center rounded-2xl border border-amber-500/30 bg-amber-500/20 text-amber-400">
                   <KeyboardIcon className="size-5" />
@@ -1205,7 +1205,7 @@ export function AttendanceScanModal({
                       setCodeError("")
                     }}
                     placeholder={eventCode.replace(/./g, "·")}
-                    className="text-title-sm sm:text-title-md w-full rounded-2xl border border-white/20 bg-black/60 px-4 py-3.5 text-center font-mono tracking-widest text-amber-300 uppercase outline-none placeholder:text-zinc-600 focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20"
+                    className="text-title-sm sm:text-title-md w-full rounded-2xl border border-white/20 bg-[#102828]/90 px-4 py-3.5 text-center font-mono tracking-widest text-amber-300 uppercase outline-none placeholder:text-[#a4d4c5] focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20"
                     autoFocus
                   />
                   {codeError && (
@@ -1233,7 +1233,7 @@ export function AttendanceScanModal({
       </div>
 
       {/* ── 4. Floating Bottom Action Dock ── */}
-      <div className="absolute inset-x-0 bottom-0 z-30 flex items-center justify-center gap-2 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-3 pb-[max(1rem,env(safe-area-inset-bottom))] sm:p-4">
+      <div className="absolute inset-x-0 bottom-0 z-30 flex items-center justify-center gap-2 bg-gradient-to-t from-[#102828]/95 via-[#102828]/70 to-transparent p-3 pb-[max(1rem,env(safe-area-inset-bottom))] sm:p-4">
         {/* Toggle Mode Button (Camera vs Manual) */}
         <button
           type="button"
@@ -1244,7 +1244,7 @@ export function AttendanceScanModal({
           className={`sm:text-caption flex cursor-pointer items-center gap-1.5 rounded-full border px-3.5 py-2 text-[11px] font-bold shadow-lg backdrop-blur-xl transition-all active:scale-95 sm:gap-2 sm:px-4 sm:py-2.5 ${
             umatMode === "manual"
               ? "border-amber-300 bg-amber-400 text-black"
-              : "border-white/25 bg-black/75 text-white hover:bg-white/20"
+              : "border-white/25 bg-[#102828]/90 text-white hover:bg-white/20"
           }`}
         >
           {umatMode === "manual" ? (
@@ -1264,7 +1264,7 @@ export function AttendanceScanModal({
         <button
           type="button"
           onClick={() => uploadInputRef.current?.click()}
-          className="sm:text-caption flex cursor-pointer items-center gap-1.5 rounded-full border border-white/25 bg-black/75 px-3.5 py-2 text-[11px] font-bold text-white shadow-lg backdrop-blur-xl transition-all hover:bg-white/20 active:scale-95 sm:gap-2 sm:px-4 sm:py-2.5"
+          className="sm:text-caption flex cursor-pointer items-center gap-1.5 rounded-full border border-white/25 bg-[#102828]/90 px-3.5 py-2 text-[11px] font-bold text-white shadow-lg backdrop-blur-xl transition-all hover:bg-white/20 active:scale-95 sm:gap-2 sm:px-4 sm:py-2.5"
           title="Scan dari Foto / Screenshot QR"
         >
           <ImageIcon className="size-3.5 shrink-0 text-cyan-400 sm:size-4" />

@@ -2,7 +2,7 @@
 
 All notable changes to Sekkha Apps. Semver (`MAJOR.MINOR.PATCH`); newest on top. Entries are curated for humans — see git log for the full history.
 
-## [1.4.1] - 2026-09-16
+## [1.0.0] - 2026-10-19
 
 ### Added
 - Browser native EventSource (SSE) authentication support via `?token=` query parameter fallback on `requireAuth` middleware (`sekkha-api/src/middleware/auth.ts`).

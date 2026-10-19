@@ -36,18 +36,20 @@ import type {
 } from "../types"
 
 const EventsResponseSchema = z.array(
-  z
-    .object({
-      id: z.string(),
-      title: z.string(),
-      description: z.string().nullable().optional(),
-      location: z.string().default(""),
-      event_date: z.string().datetime(),
-      event_type: z.string().default("rutin"),
-      tag: z.string().optional(),
-      status: z.string(),
-      qr_code: z.object({ code: z.string(), expires_at: z.string().nullable() }).nullable().optional(),
-    })
+  z.object({
+    id: z.string(),
+    title: z.string(),
+    description: z.string().nullable().optional(),
+    location: z.string().default(""),
+    event_date: z.string().datetime(),
+    event_type: z.string().default("rutin"),
+    tag: z.string().optional(),
+    status: z.string(),
+    qr_code: z
+      .object({ code: z.string(), expires_at: z.string().nullable() })
+      .nullable()
+      .optional(),
+  })
 )
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -62,7 +64,9 @@ function toDateKey(iso?: string): string {
     month: "2-digit",
     day: "2-digit",
   }).formatToParts(d)
-  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]))
+  const values = Object.fromEntries(
+    parts.map((part) => [part.type, part.value])
+  )
   const y = values.year
   const m = values.month
   const day = values.day

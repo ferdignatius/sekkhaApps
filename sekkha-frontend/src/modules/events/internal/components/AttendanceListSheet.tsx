@@ -62,7 +62,9 @@ export function AttendanceListSheet({
 
   const [localRecords, setLocalRecords] = useState<AttendanceRecord[]>(records)
   const [activePickerUser, setActivePickerUser] = useState<string | null>(null)
-  const [deleteTarget, setDeleteTarget] = useState<AttendanceRecord | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<AttendanceRecord | null>(
+    null
+  )
   const [searchQuery, setSearchQuery] = useState("")
   const [filterMethod, setFilterMethod] = useState<"all" | "qr" | "manual">(
     "all"
@@ -295,7 +297,7 @@ export function AttendanceListSheet({
                 ? `Cari nama atau ID di ${metrics.manual} presensi manual...`
                 : "Cari nama umat atau nomor ID..."
           }
-          className="min-h-[42px] w-full rounded-full border border-[#e5e5e5] bg-[#fffaf0] pr-10 pl-10 text-xs text-[#0a0a0a] placeholder:text-[#767676] shadow-2xs focus:border-[#0a0a0a] focus:bg-white focus:outline-none sm:text-sm"
+          className="min-h-[42px] w-full rounded-full border border-[#e5e5e5] bg-[#fffaf0] pr-10 pl-10 text-xs text-[#0a0a0a] shadow-2xs placeholder:text-[#767676] focus:border-[#0a0a0a] focus:bg-white focus:outline-none sm:text-sm"
         />
         {searchQuery && (
           <button
@@ -339,7 +341,7 @@ export function AttendanceListSheet({
           )}
         </div>
       ) : (
-        <div className="overflow-hidden rounded-[20px] border border-[#e5e5e5] bg-[#fffaf0] shadow-xs divide-y divide-[#f0f0f0]">
+        <div className="divide-y divide-[#f0f0f0] overflow-hidden rounded-[20px] border border-[#e5e5e5] bg-[#fffaf0] shadow-xs">
           {paginatedRecords.map((rec, idx) => {
             const basePoints = rec.base_points ?? 50
             const userBadges = rec.badges ?? []
@@ -484,9 +486,7 @@ export function AttendanceListSheet({
               {Math.min(safePage * PAGE_SIZE, filteredRecords.length)}
             </strong>{" "}
             dari{" "}
-            <strong className="text-[#0a0a0a]">
-              {filteredRecords.length}
-            </strong>{" "}
+            <strong className="text-[#0a0a0a]">{filteredRecords.length}</strong>{" "}
             peserta
           </div>
 
@@ -542,7 +542,7 @@ export function AttendanceListSheet({
           />
 
           {/* Modal Card / Bottom Sheet on Mobile */}
-          <div className="relative z-10 w-full max-w-lg space-y-4 rounded-t-[28px] border border-[#e5e5e5] bg-[#faf5e8] p-5 text-left font-sans shadow-2xl animate-in fade-in slide-in-from-bottom-6 sm:rounded-[28px] sm:p-6">
+          <div className="relative z-10 w-full max-w-lg animate-in space-y-4 rounded-t-[28px] border border-[#e5e5e5] bg-[#faf5e8] p-5 text-left font-sans shadow-2xl fade-in slide-in-from-bottom-6 sm:rounded-[28px] sm:p-6">
             {/* Modal Header */}
             <div className="flex items-start justify-between gap-3 border-b border-[#e5e5e5] pb-3">
               <div>
@@ -617,7 +617,7 @@ export function AttendanceListSheet({
                     onClick={() =>
                       handleToggleBadge(activePickerRecord.user_id, preset)
                     }
-                    className={`flex w-full min-h-[46px] cursor-pointer items-center justify-between rounded-[14px] border p-3 text-xs transition-all ${
+                    className={`flex min-h-[46px] w-full cursor-pointer items-center justify-between rounded-[14px] border p-3 text-xs transition-all ${
                       isChecked
                         ? "border-[#0a0a0a] bg-[#fffaf0] font-bold text-[#0a0a0a] shadow-xs"
                         : "border-[#e5e5e5] bg-[#faf5e8] text-[#6a6a6a] hover:border-black/20 hover:bg-white"
@@ -630,7 +630,9 @@ export function AttendanceListSheet({
                         <SquareIcon className="size-4.5 shrink-0 text-[#6a6a6a]" />
                       )}
                       <div className="text-left">
-                        <p className="font-bold text-[#0a0a0a]">{preset.name}</p>
+                        <p className="font-bold text-[#0a0a0a]">
+                          {preset.name}
+                        </p>
                       </div>
                     </div>
 

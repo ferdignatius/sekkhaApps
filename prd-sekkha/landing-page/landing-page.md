@@ -42,7 +42,7 @@ Berdasarkan `sekkha-frontend/src/modules/landing-page/internal/components/`:
 | `LandingPage` | Root component — orchestrates semua section |
 | `LandingNavbar` | Sticky top nav dengan logo + nav links + login/signup button + mobile drawer |
 | `HeroSection` | Headline besar + subheadline + CTA utama |
-| `FeatureSection` | Grid 6 feature cards (attendance, points, retreat, social, dhamma, notifications) |
+| `FeatureSection` | Grid 5 feature cards (attendance, points, retreat, social, dhamma) |
 | `StatsSection` | 4 stat angka besar (500+ anggota, 120+ event, dsb) |
 | `EventsSection` | 4 sample event yang akan datang |
 | `LeaderboardSection` | 5 sample top member (mock data) |

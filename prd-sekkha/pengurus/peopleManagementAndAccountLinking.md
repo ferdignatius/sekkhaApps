@@ -136,7 +136,6 @@ model User {
   attendances       Attendance[]
   rsvps             Rsvp[]
   badges            UserBadge[]
-  notifications     Notification[]
   sentInvitations   RoleInvitation[] @relation("SentInvitations")
 
   @@map("users")
@@ -238,7 +237,7 @@ model User {
 Untuk mencegah pengguna nakal menebak-nebak ID orang lain:
 1. **Verifikasi Ganda**: Saat melakukan klaim manual, sistem tidak hanya mencocokkan `target_user_id`, tetapi juga meminta verifikasi pencocokan (Nomor Telepon / 4 digit akhir HP atau Tanggal Lahir).
 2. **Rate Limiting**: Batasi percobaan klaim maksimal 5 kali per jam per IP / akun.
-3. **Audit Log & Notifikasi**: Catat aktivitas penggabungan akun ke sistem log pengurus.
+3. **Audit Log**: Catat aktivitas penggabungan akun ke sistem log pengurus.
 
 ---
 

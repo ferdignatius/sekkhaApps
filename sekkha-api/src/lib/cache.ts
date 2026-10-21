@@ -115,5 +115,6 @@ export const CacheKeys = {
   userProfile: (userId: string) => `user:${userId}:profile`,
   userBadges: (userId: string) => `user:${userId}:badges`,
   userAttendances: (userId: string) => `user:${userId}:attendances`,
+  home: (userId: string, role: string) => `user:${userId}:home:${role}`,
   communityGoal: () => "community:goal",
 } as const

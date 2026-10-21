@@ -10,7 +10,6 @@ Kumpulan PRD yang menjadi **sumber kebenaran kebutuhan produk** sebelum implemen
 | `event/` | Event kebaktian + sistem presensi QR & SSE live stream | `event.md`, `abensiEvent.md` | [`api-contract.md`](event/api-contract.md) | Approved (v1.4.1) |
 | `dashboard/` | Halaman dashboard gamifikasi (streak, poin, event, dhamma) | `dashboard.md` | [`api-contract.md`](dashboard/api-contract.md) | Approved (v1.4.1) |
 | `leaderboard/` | Season-based ranking + podium + snapshot kalkulasi | `leaderboard.md` | [`api-contract.md`](leaderboard/api-contract.md) | Approved (v1.4.1) |
-| `notifications/` | In-app notification bell + riwayat notifikasi | `notifications.md` | [`api-contract.md`](notifications/api-contract.md) | Approved (v1.4.1) |
 | `teams/` | Direktori anggota (People) + claim PIN akun legacy | `teams.md` | [`api-contract.md`](teams/api-contract.md) | Approved (v1.4.1) |
 | `profile/` | Halaman profil user & gamifikasi personal | `profile.md` | [`api-contract.md`](profile/api-contract.md) | Approved (v1.4.1) |
 | `users/` | API user: profil, badge, attendance, streak, level, privasi | `users.md` | [`api-contract.md`](users/api-contract.md) | Approved (v1.4.1) |

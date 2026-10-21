@@ -38,85 +38,106 @@ function formatEventDate(iso: string): string {
   })
 }
 
+type HomeEvent = {
+  id: string
+  title: string
+  location: string | null
+  event_date: string
+}
+
+type HomeActivity = {
+  event_id: string
+  event_title: string
+  event_date: string
+  method: string
+  scanned_at: string
+}
+
+type HomeDashboard = {
+  profile: {
+    name: string
+    user_number: string | null
+    role: string
+    points: number
+    level: number
+    level_label: string
+  }
+  streak: {
+    current_streak: number
+    longest_streak: number
+    last_attended: string | null
+  }
+  events: HomeEvent[]
+  activities: HomeActivity[]
+}
+
 export function HomePage() {
   const { authState } = useAuth()
   const [showQrModal, setShowQrModal] = useState(false)
-  const [userProfile, setUserProfile] = useState<any>(null)
-
-  const [streakData, setStreakData] = useState<any>(null)
-  const [events, setEvents] = useState<any[]>([])
+  const [dashboard, setDashboard] = useState<HomeDashboard | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [retryKey, setRetryKey] = useState(0)
 
   useEffect(() => {
+    if (authState.status === "loading") return
+
+    const controller = new AbortController()
     let isMounted = true
+    const timeoutId = window.setTimeout(() => controller.abort(), 8_000)
+
     async function loadDashboardData() {
-      // Guard: wait until auth state is resolved to avoid duplicate requests on status transition
-      if (authState.status === "loading") return
-
-      const promises: Promise<any>[] = [api.get<any[]>("/events")]
-      if (authState.status === "authenticated") {
-        promises.push(api.get<any>("/users/me"))
-        promises.push(api.get<any>("/users/me/streak"))
-      }
-
-      const results = await Promise.allSettled(promises)
-      if (!isMounted) return
-
-      if (results[0]?.status === "fulfilled") {
-        setEvents(results[0].value || [])
-      }
-      if (results[1]?.status === "fulfilled") {
-        setUserProfile(results[1].value)
-      }
-      if (results[2]?.status === "fulfilled") {
-        setStreakData(results[2].value)
+      setLoading(true)
+      setError(null)
+      try {
+        const data = await api.get<HomeDashboard>("/home", {
+          signal: controller.signal,
+          ttlMs: 5_000,
+        })
+        if (isMounted) setDashboard(data)
+      } catch (cause) {
+        if (!isMounted) return
+        setError(
+          cause instanceof Error && cause.name === "AbortError"
+            ? "Dashboard timeout. Coba lagi."
+            : "Dashboard gagal dimuat. Coba lagi."
+        )
+      } finally {
+        window.clearTimeout(timeoutId)
+        if (isMounted) setLoading(false)
       }
     }
+
     loadDashboardData()
     return () => {
       isMounted = false
+      controller.abort()
+      window.clearTimeout(timeoutId)
     }
-  }, [authState.status])
+  }, [authState.status, retryKey])
 
   const role =
-    authState.status === "authenticated" ? (authState.role ?? "umat") : "umat"
+    authState.status === "authenticated"
+      ? (dashboard?.profile.role ?? authState.role ?? "umat")
+      : "umat"
   const roleLabel =
     role === "admin"
       ? "Admin"
-      : role === "pengurus"
+      : role === "pengurus" || role === "organizer"
         ? "Organizer"
-        : role === "aktivis"
+        : role === "aktivis" || role === "activist"
           ? "Activist"
           : "Member"
-  const displayName = userProfile?.name || authState.name || roleLabel
+  const displayName = dashboard?.profile.name || authState.name || roleLabel
   const memberId =
-    userProfile?.user_number ||
-    userProfile?.userNumber ||
-    userProfile?.id ||
+    dashboard?.profile.user_number ||
     (authState.userId ? `SKH-${authState.userId.slice(-4)}` : "SKH-8821")
-  const totalPoints = userProfile?.points ?? 0
-  const currentStreak = streakData?.current_streak ?? 0
+  const totalPoints = dashboard?.profile.points ?? 0
+  const currentStreak = dashboard?.streak.current_streak ?? 0
+  const events = dashboard?.events ?? []
+  const activities = dashboard?.activities ?? []
 
-  // Filter for next upcoming event only (exclude past/previous events)
-  const upcomingEvents = events
-    .filter((e) => {
-      if (
-        !e ||
-        e.status === "cancelled" ||
-        e.status === "done" ||
-        e.status === "closed"
-      ) {
-        return false
-      }
-      const eventTime = new Date(e.event_date).getTime()
-      // Exclude past events (allow ongoing events within 3 hours)
-      return !isNaN(eventTime) && eventTime >= Date.now() - 3 * 60 * 60 * 1000
-    })
-    .sort(
-      (a, b) =>
-        new Date(a.event_date).getTime() - new Date(b.event_date).getTime()
-    )
-
-  const nextEvent = upcomingEvents.length > 0 ? upcomingEvents[0] : null
+  const nextEvent = events[0] ?? null
 
   // State for "See More" (Lainnya) modal and in-modal menu search
   const [showAllMenusModal, setShowAllMenusModal] = useState(false)
@@ -452,6 +473,30 @@ export function HomePage() {
             <h2 id="section-profile" className="sr-only">
               Member Profile
             </h2>
+            {error && (
+              <div
+                role="alert"
+                className="mb-3 flex items-center justify-between gap-3 rounded-[16px] border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-800"
+              >
+                <span>{dashboard ? `Data lama ditampilkan. ${error}` : error}</span>
+                <button
+                  type="button"
+                  onClick={() => setRetryKey((value) => value + 1)}
+                  className="min-h-11 shrink-0 rounded-full bg-rose-800 px-4 font-semibold text-white"
+                >
+                  Retry
+                </button>
+              </div>
+            )}
+            {loading && !dashboard && (
+              <div
+                role="status"
+                aria-live="polite"
+                className="mb-3 rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] px-4 py-3 text-xs text-[#6a6a6a]"
+              >
+                Loading dashboard...
+              </div>
+            )}
             <div className="relative overflow-hidden rounded-[28px] border border-[#e5e5e5] bg-[#faf5e8]/85 p-4 shadow-xs backdrop-blur-md sm:p-5 lg:p-6">
               {/* Subtle Ambient Radial Glows */}
               <div className="pointer-events-none absolute -top-12 -right-12 size-44 rounded-full bg-[#ffb084]/20 blur-3xl" />
@@ -493,6 +538,11 @@ export function HomePage() {
                         <span className="shrink-0 font-mono text-[11px] text-[#6a6a6a] sm:text-xs">
                           ID: {memberId}
                         </span>
+                        {dashboard && (
+                          <span className="shrink-0 text-[11px] font-semibold text-[#6a6a6a] sm:text-xs">
+                            Level {dashboard.profile.level} · {dashboard.profile.level_label}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -727,6 +777,44 @@ export function HomePage() {
               </div>
             </div>
           </section>
+
+          <section aria-labelledby="section-activity" className="space-y-2">
+            <h2
+              id="section-activity"
+              className="px-1 text-[11px] font-bold tracking-wider text-[#6a6a6a] uppercase sm:text-xs"
+            >
+              Latest Activity
+            </h2>
+            <div className="rounded-[28px] border border-[#e5e5e5] bg-[#faf5e8]/85 p-4 shadow-xs sm:p-5">
+              {activities.length > 0 ? (
+                <ul className="divide-y divide-[#e5e5e5]">
+                  {activities.map((activity) => (
+                    <li
+                      key={`${activity.event_id}-${activity.scanned_at}`}
+                      className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-[#0a0a0a]">
+                          {activity.event_title}
+                        </p>
+                        <p className="text-xs text-[#6a6a6a]">
+                          {formatEventDate(activity.scanned_at)} · {activity.method}
+                        </p>
+                      </div>
+                      <Badge variant="emerald" size="sm">
+                        Attended
+                      </Badge>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="py-3 text-center text-xs text-[#6a6a6a]">
+                  Belum ada aktivitas terbaru.
+                </p>
+              )}
+            </div>
+          </section>
+
         </div>
       </div>
 
@@ -843,12 +931,26 @@ export function HomePage() {
 
       {/* ── User Unique QR Code Modal ── */}
       {showQrModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-md">
-          <div className="w-full max-w-sm animate-in rounded-[28px] border border-[#e5e5e5] bg-[#faf5e8] p-6 text-center shadow-2xl zoom-in-95 fade-in">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-md"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setShowQrModal(false)
+          }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="attendance-qr-title"
+            className="w-full max-w-sm animate-in rounded-[28px] border border-[#e5e5e5] bg-[#faf5e8] p-6 text-center shadow-2xl zoom-in-95 fade-in"
+          >
             <div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-[16px] bg-[#1a3a3a] text-white shadow-xs">
               <QrCodeIcon className="size-6" />
             </div>
-            <h3 className="text-base font-bold tracking-tight text-[#0a0a0a]">
+            <h3
+              id="attendance-qr-title"
+              className="text-base font-bold tracking-tight text-[#0a0a0a]"
+            >
               Your Attendance QR
             </h3>
             <p className="mt-1 text-xs leading-relaxed text-[#6a6a6a]">

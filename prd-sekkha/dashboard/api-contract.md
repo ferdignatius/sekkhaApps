@@ -13,7 +13,6 @@ Dashboard mengonsumsi data secara paralel (*concurrent fetching*) menggunakan en
 | **Widget Streak Konsistensi** | `GET /api/users/me/streak` | `current_streak`, `longest_streak`, tanggal kebaktian terakhir |
 | **Acara Mendatang (Next Event)** | `GET /api/events?limit=3` | Jadwal acara terdekat berikutnya, judul, lokasi, tanggal |
 | **Papan Peringkat Kilat** | `GET /api/leaderboard` | Peringkat pribadi (`my_rank`), Top 3 jemaat, Progres target komunitas vihara |
-| **Notifikasi & Aktivitas Terkini** | `GET /api/notifications?limit=5` | Pengumuman vihara terbaru, reward lencana yang baru diraih |
 
 ---
 

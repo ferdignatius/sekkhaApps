@@ -181,7 +181,6 @@ Backend **wajib** strip field sensitif saat query oleh `umat` / `aktivis`. Lihat
 
 - Direct message / chat antar user.
 - Follow / friend graph.
-- Activity feed per user (bisa pakai `notificationsModule`).
 - Export daftar ke CSV.
 
 ---

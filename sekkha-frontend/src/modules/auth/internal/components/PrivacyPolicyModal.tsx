@@ -138,10 +138,6 @@ export function PrivacyPolicyModal({
                 prestasi, dan peringkat leaderboard komunitas.
               </li>
               <li>
-                Memberikan notifikasi pengingat acara, jadwal kebaktian, dan
-                pembaruan penting dari pengurus.
-              </li>
-              <li>
                 Menyediakan analisis keaktifan agregat untuk membantu pengurus
                 vihara mendampingi anggota komunitas.
               </li>

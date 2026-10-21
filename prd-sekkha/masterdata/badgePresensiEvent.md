@@ -186,7 +186,7 @@ model UserBadge {
 
 | Event | Publisher | Subscriber | Payload | Keterangan |
 | --- | --- | --- | --- | --- |
-| `badge.earned` | Events module | Dashboard, Notif | `{ user_id, badge_id, point_value, event_id }` | Tambah poin presensi + notifikasi ke user |
+| `badge.earned` | Events module | Dashboard/Gamification | `{ user_id, badge_id, point_value, event_id }` | Tambah poin presensi |
 
 ---
 

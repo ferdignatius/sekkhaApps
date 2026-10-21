@@ -5,7 +5,6 @@ import { useState } from "react"
 import {
   LogOutIcon,
   KeyRoundIcon,
-  BellIcon,
   ChevronRightIcon,
   TargetIcon,
   ArrowLeftIcon,
@@ -20,18 +19,16 @@ interface SettingsSectionProps {
   onLogout: () => void
   onClose?: () => void
   onChangePassword?: () => void
-  onNotificationSettings?: () => void
   onMonthlyTargetSettings?: () => void
 }
 
 type SettingsView =
-  "menu" | "target" | "password" | "notifications" | "logout_confirm"
+  "menu" | "target" | "password" | "logout_confirm"
 
 export function SettingsSection({
   onLogout,
   onClose,
   onChangePassword,
-  onNotificationSettings,
   onMonthlyTargetSettings,
 }: SettingsSectionProps) {
   const [currentView, setCurrentView] = useState<SettingsView>("menu")
@@ -105,44 +102,6 @@ export function SettingsSection({
       setPasswordError(err.message || "Gagal mengubah kata sandi.")
     } finally {
       setPasswordLoading(false)
-    }
-  }
-
-  // ── 3. Notification Preferences State ──
-  const [notifPrefs, setNotifPrefs] = useState(() => {
-    try {
-      const saved = localStorage.getItem("sekkha_notification_preferences")
-      return saved
-        ? JSON.parse(saved)
-        : {
-            eventReminders: true,
-            pointsAndBadges: true,
-            viharaAnnouncements: true,
-          }
-    } catch {
-      return {
-        eventReminders: true,
-        pointsAndBadges: true,
-        viharaAnnouncements: true,
-      }
-    }
-  })
-  const [notifSaved, setNotifSaved] = useState(false)
-
-  const handleToggleNotif = (
-    key: "eventReminders" | "pointsAndBadges" | "viharaAnnouncements"
-  ) => {
-    const next = { ...notifPrefs, [key]: !notifPrefs[key] }
-    setNotifPrefs(next)
-    try {
-      localStorage.setItem(
-        "sekkha_notification_preferences",
-        JSON.stringify(next)
-      )
-      setNotifSaved(true)
-      setTimeout(() => setNotifSaved(false), 2000)
-    } catch (err) {
-      console.error(err)
     }
   }
 
@@ -387,132 +346,6 @@ export function SettingsSection({
     )
   }
 
-  // ─── Sub-View: Notifikasi ──────────────────────────────────────────────────
-  if (currentView === "notifications") {
-    return (
-      <div className="animate-in space-y-4 text-left font-sans duration-200 fade-in-50">
-        <button
-          type="button"
-          onClick={() => setCurrentView("menu")}
-          className="inline-flex cursor-pointer items-center gap-1.5 text-xs font-bold text-[#6a6a6a] transition-colors hover:text-[#0a0a0a]"
-        >
-          <ArrowLeftIcon className="size-3.5" />
-          <span>Kembali ke Pengaturan</span>
-        </button>
-
-        <div className="flex items-center gap-3 border-b border-[#e5e5e5] pb-3">
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] text-[#0a0a0a] shadow-xs">
-            <BellIcon className="size-5 text-[#0a0a0a]" />
-          </div>
-          <div>
-            <h3 className="text-sm font-bold text-[#0a0a0a] sm:text-base">
-              Pengaturan Notifikasi
-            </h3>
-            <p className="text-xs text-[#6a6a6a]">
-              Atur preferensi pengingat dan pemberitahuan di Sekkha
-            </p>
-          </div>
-        </div>
-
-        {notifSaved && (
-          <div className="flex items-center gap-2 rounded-[12px] border border-emerald-200 bg-emerald-50 p-3 text-xs font-bold text-emerald-800 shadow-xs">
-            <CheckCircleIcon className="size-4 shrink-0 text-emerald-600" />
-            <span>Preferensi notifikasi tersimpan!</span>
-          </div>
-        )}
-
-        <div className="space-y-2.5">
-          {/* Item 1 */}
-          <div className="flex items-center justify-between rounded-[14px] border border-[#e5e5e5] bg-[#fffaf0] p-3.5 shadow-xs">
-            <div className="space-y-0.5 pr-3">
-              <p className="text-xs font-bold text-[#0a0a0a] sm:text-sm">
-                Pengingat Kebaktian Rutin
-              </p>
-              <p className="text-[11px] text-[#6a6a6a]">
-                Kirim notifikasi 1 hari dan 2 jam sebelum kebaktian dimulai
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => handleToggleNotif("eventReminders")}
-              className={`h-6 w-11 shrink-0 cursor-pointer rounded-full p-0.5 transition-colors ${
-                notifPrefs.eventReminders ? "bg-[#0a0a0a]" : "bg-[#e5e5e5]"
-              }`}
-            >
-              <div
-                className={`size-5 rounded-full bg-white shadow-xs transition-transform ${
-                  notifPrefs.eventReminders ? "translate-x-5" : "translate-x-0"
-                }`}
-              />
-            </button>
-          </div>
-
-          {/* Item 2 */}
-          <div className="flex items-center justify-between rounded-[14px] border border-[#e5e5e5] bg-[#fffaf0] p-3.5 shadow-xs">
-            <div className="space-y-0.5 pr-3">
-              <p className="text-xs font-bold text-[#0a0a0a] sm:text-sm">
-                Poin & Lencana Gamifikasi
-              </p>
-              <p className="text-[11px] text-[#6a6a6a]">
-                Pemberitahuan saat kamu meraih badge atau naik level anggota
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => handleToggleNotif("pointsAndBadges")}
-              className={`h-6 w-11 shrink-0 cursor-pointer rounded-full p-0.5 transition-colors ${
-                notifPrefs.pointsAndBadges ? "bg-[#0a0a0a]" : "bg-[#e5e5e5]"
-              }`}
-            >
-              <div
-                className={`size-5 rounded-full bg-white shadow-xs transition-transform ${
-                  notifPrefs.pointsAndBadges ? "translate-x-5" : "translate-x-0"
-                }`}
-              />
-            </button>
-          </div>
-
-          {/* Item 3 */}
-          <div className="flex items-center justify-between rounded-[14px] border border-[#e5e5e5] bg-[#fffaf0] p-3.5 shadow-xs">
-            <div className="space-y-0.5 pr-3">
-              <p className="text-xs font-bold text-[#0a0a0a] sm:text-sm">
-                Pengumuman & Agenda Vihara
-              </p>
-              <p className="text-[11px] text-[#6a6a6a]">
-                Berita penting, puja bakti khusus, atau perubahan jadwal
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => handleToggleNotif("viharaAnnouncements")}
-              className={`h-6 w-11 shrink-0 cursor-pointer rounded-full p-0.5 transition-colors ${
-                notifPrefs.viharaAnnouncements ? "bg-[#0a0a0a]" : "bg-[#e5e5e5]"
-              }`}
-            >
-              <div
-                className={`size-5 rounded-full bg-white shadow-xs transition-transform ${
-                  notifPrefs.viharaAnnouncements
-                    ? "translate-x-5"
-                    : "translate-x-0"
-                }`}
-              />
-            </button>
-          </div>
-        </div>
-
-        <div className="flex items-center justify-end border-t border-[#e5e5e5] pt-3">
-          <button
-            type="button"
-            onClick={() => setCurrentView("menu")}
-            className="h-10 cursor-pointer rounded-[12px] bg-[#0a0a0a] px-5 text-xs font-bold text-white shadow-xs transition-colors hover:bg-[#1f1f1f]"
-          >
-            Selesai
-          </button>
-        </div>
-      </div>
-    )
-  }
-
   // ─── Sub-View: Konfirmasi Keluar (Logout) ──────────────────────────────────
   if (currentView === "logout_confirm") {
     return (
@@ -628,33 +461,7 @@ export function SettingsSection({
         <ChevronRightIcon className="size-4 shrink-0 text-[#6a6a6a]" />
       </button>
 
-      {/* 3. Notifikasi */}
-      <button
-        type="button"
-        onClick={() => {
-          if (onNotificationSettings) {
-            onNotificationSettings()
-          } else {
-            setCurrentView("notifications")
-          }
-        }}
-        className="flex w-full cursor-pointer items-center gap-3.5 rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0] p-3.5 text-left shadow-xs transition-all hover:border-[#d5d5d5] hover:bg-[#faf5e8] active:scale-[0.99]"
-      >
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] text-[#0a0a0a] shadow-xs">
-          <BellIcon className="size-5 text-[#0a0a0a]" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-xs font-bold text-[#0a0a0a] sm:text-sm">
-            Notifikasi
-          </p>
-          <p className="mt-0.5 truncate text-xs text-[#6a6a6a]">
-            Atur pengingat kebaktian, event & lencana
-          </p>
-        </div>
-        <ChevronRightIcon className="size-4 shrink-0 text-[#6a6a6a]" />
-      </button>
-
-      {/* 4. Keluar (Logout) */}
+      {/* 3. Keluar (Logout) */}
       <div className="pt-1">
         <button
           type="button"

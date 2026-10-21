@@ -16,7 +16,6 @@ async function main() {
   console.log("🌱 Seeding 3NF database...")
 
   // Clean existing tables in reverse dependency order
-  await prisma.notification.deleteMany().catch(() => {})
   await prisma.userBadge.deleteMany().catch(() => {})
   await prisma.pointTransaction.deleteMany().catch(() => {})
   await prisma.attendance.deleteMany().catch(() => {})
@@ -378,17 +377,6 @@ async function main() {
       type: "attendance",
       description: `Kehadiran: ${event1.title}`,
       referenceId: event1.id,
-    },
-  })
-
-  // ── 10. Notifications ──────────────────────────────────────────────────────
-  await prisma.notification.create({
-    data: {
-      userId: legacyHendra.id,
-      title: "Selamat Datang di Sekkha",
-      message: "Selamat datang di Sekkha Apps! Pantau kegiatan dan kumpulkan poinmu.",
-      type: "general",
-      status: "unread",
     },
   })
 

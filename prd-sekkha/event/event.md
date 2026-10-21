@@ -167,7 +167,6 @@ Setiap event card menampilkan:
 Di halaman edit event berstatus `planning`, tersedia **banner/callout** dengan tombol **"Konfirmasi & Jadwalkan Event"** yang secara otomatis:
 * Mengubah `event_status` ke `upcoming`
 * Mewajibkan pengisian `start_datetime` jika belum ada
-* Mengirim notifikasi (future feature) ke audiens yang dituju
 
 ---
 
@@ -488,10 +487,7 @@ Partial update didukung — kirim hanya field yang ingin diubah.
 
 | Event | Publisher | Subscriber | Payload | Keterangan |
 | --- | --- | --- | --- | --- |
-| `event.created` | Events module | (future: notif) | `{ event_id, title, visibility }` | Trigger notifikasi ke audiens |
-| `event.status_changed` | Events module | (future: notif) | `{ event_id, old_status, new_status }` | Notif saat planning ke upcoming |
 | `attendance.recorded` | Events module | Dashboard/Gamification | `{ event_id, user_id, point_reward, badge_id }` | Trigger poin + badge |
-| `event.cancelled` | Events module | (future: notif) | `{ event_id, title }` | Notif pembatalan kegiatan ke audiens |
 
 ---
 

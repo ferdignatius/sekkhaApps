@@ -54,7 +54,7 @@ Setiap request HTTP yang masuk ke backend mengikuti alur linear dan terstruktur:
 ┌──────────────────────────┐   ┌──────────────────────────────┐
 │ 🗄️ PostgreSQL (Prisma)    │   │ 📢 EventBus (src/core/)      │
 │    Database Data Utama   │   │    Memicu modul lain (cth:   │
-│                          │   │    notifikasi, leaderboard)  │
+│                          │   │    leaderboard)              │
 └──────────────────────────┘   └──────────────────────────────┘
 ```
 
@@ -192,6 +192,5 @@ Selesai! Fitur baru langsung terpasang rapi tanpa mengganggu file sistem lainnya
 | **`schools`** | Master Data Sekolah/Kampus & Autocomplete | ✅ Ya | `schoolsData.ts` (Daftar statis sekolah) |
 | **`users`** | Profil Pengguna, Avatar, Role & Poin | ✅ Ya | `utils.ts` (Helper format profil) |
 | **`configure`** | Konfigurasi Dinamis Master Data | ❌ Tidak | *(Semua logika cukup di MVC root)* |
-| **`notifications`**| Notifikasi In-App Pengguna | ❌ Tidak | *(Semua logika cukup di MVC root)* |
 | **`pengurus`** | Dashboard & Fitur Khusus Pengurus | ❌ Tidak | *(Semua logika cukup di MVC root)* |
 | **`people`** | Direktori Umat & Anggota Komunitas | ❌ Tidak | *(Semua logika cukup di MVC root)* |

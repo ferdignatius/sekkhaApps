@@ -50,7 +50,6 @@ Berdasarkan struktur `src/modules/dashboard/internal/components/`:
 | `ProfileSummaryCard` | Avatar + nama + salam "Selamat pagi/siang/malam" + ringkasan level/poin |
 | `NextEventCard` | Event terdekat yang user RSVP, dengan CTA "Lihat Detail" |
 | `LatestActivityCard` | 3-5 aktivitas terbaru (badge earned, attendance recorded, dll.) |
-| `AnnouncementCard` | Pengumuman broadcast dari pengurus |
 | `DhammaWidget` | Kutipan Dhamma acak dari `public/dhammapada.json` |
 
 ---
@@ -79,7 +78,6 @@ Dashboard **tidak membuat endpoint baru**. Data digabung dari endpoint existing:
 | `ProfileSummaryCard` | `GET /api/users/me`, `GET /api/users/me/level` |
 | `NextEventCard` | `GET /api/events?upcoming=true&userRsvp=true` |
 | `LatestActivityCard` | `GET /api/users/me/attendances?limit=5` + `GET /api/users/me/badges?limit=5` |
-| `AnnouncementCard` | `GET /api/notifications?type=announcement&limit=3` |
 | `DhammaWidget` | Static fetch dari `public/dhammapada.json` (client-side random) |
 
 ### 5.2. Personalisasi
@@ -118,7 +116,6 @@ Dashboard **tidak membuat endpoint baru**. Data digabung dari endpoint existing:
 | **AC-03** | User yang belum RSVP event apapun | NextEventCard menampilkan empty state: "Belum ada event terdekat. Cek Events" |
 | **AC-04** | User yang punya 3 presensi dalam 7 hari terakhir | LatestActivityCard menampilkan 3 entry terakhir (event title + tanggal) |
 | **AC-05** | DhammaWidget muncul | 1 kutipan Dhamma acak tampil, konsisten sepanjang hari yang sama untuk user yang sama |
-| **AC-06** | User pengurus login | AnnouncementCard menampilkan 1 pengumuman aktif (kalau ada) |
 | **AC-07** | Backend down saat buka dashboard | Skeleton muncul, setelah timeout setiap card tampil empty state + tombol retry; tidak ada error overlay global |
 | **AC-08** | Buka `/home` di mobile (375px) | Layout stack vertikal, tap target minimal 44px, NextEventCard di paling atas |
 | **AC-09** | User tanpa auth coba buka `/home` | Auto-redirect ke `/login?redirectTo=/home` |
@@ -129,7 +126,6 @@ Dashboard **tidak membuat endpoint baru**. Data digabung dari endpoint existing:
 
 - Drag-and-drop / reorder kartu (bisa jadi iterasi berikutnya).
 - Custom widget per user (semua user lihat layout sama).
-- Notifikasi real-time di dashboard (push via `notificationsModule` saja).
 - Personalisasi layout berdasarkan machine learning.
 
 ---

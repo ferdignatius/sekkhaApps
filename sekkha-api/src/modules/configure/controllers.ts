@@ -3,9 +3,12 @@ import { z } from "zod"
 import { configureServices } from "./services"
 
 export const BadgeSchema = z.object({
+  code: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).optional(),
   name: z.string().min(1),
   description: z.string().min(1),
   icon_url: z.string().min(1),
+  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
+  point_value: z.number().int().min(0).max(10000).optional(),
   condition_type: z.enum(["streak", "attendance", "points", "event_count", "manual"]),
   condition_value: z.number().int().min(0),
 })
@@ -17,9 +20,12 @@ export const LevelSchema = z.object({
 })
 
 export const EventTypeSchema = z.object({
-  code: z.string().min(1),
+  code: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
   label: z.string().min(1),
   color: z.string().min(1),
+  description: z.string().max(500).optional(),
+  default_point_reward: z.number().int().min(0).max(10000).optional(),
+  is_active: z.boolean().optional(),
   is_default: z.boolean().optional(),
 })
 

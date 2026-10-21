@@ -1,6 +1,7 @@
 // modules/configure — Public API
 import type { ModuleDefinition } from "@/shell/registry"
-export { BadgePage, BadgeFormPage, BadgeDetailPage } from "./internal/components/BadgePage"
+export { BadgePage, BadgeDetailPage } from "./internal/components/BadgePage"
+export { BadgeFormPage } from "./internal/components/BadgeFormPage"
 export { LevelPage } from "./internal/components/LevelPage"
 export { EventTypePage } from "./internal/components/EventTypePage"
 export { AchievementPage } from "./internal/components/AchievementPage"
@@ -9,4 +10,6 @@ export { ThresholdPage } from "./internal/components/ThresholdPage"
 export { SeasonPage } from "./internal/components/SeasonPage"
 export { PointsRulesPage } from "./internal/components/PointsRulesPage"
 export { SchoolPage } from "./internal/components/SchoolPage"
+export { SchoolFormPage } from "./internal/components/SchoolFormPage"
+export { SchoolDetailPage } from "./internal/components/SchoolDetailPage"
 export const configureModule: ModuleDefinition = { name: "configure", navItems: [], configureSections: [] }

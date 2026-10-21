@@ -19,6 +19,7 @@ import { leaderboardModule } from "./modules/leaderboard/module"
 import { peopleModule } from "./modules/people/module"
 import { pengurusModule } from "./modules/pengurus/module"
 import { schoolsModule } from "./modules/schools/module"
+import { homeModule } from "./modules/home/module"
 
 // ─── Distributed Rate Limiter Factory (F-09 Remediation) ──────────────────────
 function createRateLimitStore(prefix: string) {
@@ -39,6 +40,7 @@ export const modules: AppModule[] = [
   peopleModule,
   pengurusModule,
   schoolsModule,
+  homeModule,
 ]
 
 export function createApp(): Application {

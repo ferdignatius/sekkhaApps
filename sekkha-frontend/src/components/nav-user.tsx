@@ -19,7 +19,6 @@ import {
   SparklesIcon,
   BadgeCheckIcon,
   CreditCardIcon,
-  BellIcon,
   LogOutIcon,
 } from "lucide-react"
 
@@ -88,10 +87,6 @@ export function NavUser({
               <DropdownMenuItem>
                 <CreditCardIcon />
                 Billing
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <BellIcon />
-                Notifications
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />

@@ -549,7 +549,7 @@ export function OnboardingPage() {
                   className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 py-2 text-sm text-[#0a0a0a] transition-all outline-none placeholder:text-[#767676] focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a]"
                 />
                 <p className="text-[11px] text-[#6a6a6a]">
-                  Digunakan untuk notifikasi jadwal kebaktian & pemulihan akun.
+                  Digunakan untuk pemulihan akun.
                 </p>
               </div>
 

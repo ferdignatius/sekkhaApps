@@ -182,7 +182,6 @@ total_poin_user   = Σ poin_event_hadir (dalam window season) + Σ poin_badge_ea
 - Friend-to-friend challenge / private leaderboard.
 - Pembelian poin / premium currency.
 - Pencarian user di ranking.
-- Notifikasi "kamu naik ke posisi X" (bisa jadi iterasi berikutnya via `notificationsModule`).
 
 ---
 

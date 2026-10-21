@@ -11,7 +11,6 @@ Setiap modul adalah fitur independen dengan **kontrak publik yang sempit** lewat
 | `events` | `events/` | Kalender, RSVP, attendance | Aktif |
 | `leaderboard` | `leaderboard/` | Ranking, podium, streak | Aktif |
 | `profile` | `profile/` | Stats, badge, attendance tracker | Aktif |
-| `notifications` | `notifications/` | Inbox notifikasi | Aktif |
 | `configure` | `configure/` | Master data (admin) | Aktif |
 | `people` | `people/` | Daftar anggota | Aktif |
 | `pengurus` | `pengurus/` | Tools pengurus (event mgmt, analytics) | Aktif |

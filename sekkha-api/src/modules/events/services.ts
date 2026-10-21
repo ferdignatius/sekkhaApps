@@ -125,6 +125,7 @@ export const eventServices = {
 
     await invalidatePattern("events:*")
     await invalidate(CacheKeys.events())
+    await invalidatePattern("user:*:home:*")
 
     auditLogger.log({
       actorId,
@@ -165,6 +166,7 @@ export const eventServices = {
 
     await invalidatePattern("events:*")
     await invalidate(CacheKeys.events())
+    await invalidatePattern("user:*:home:*")
 
     auditLogger.log({
       actorId,
@@ -268,6 +270,7 @@ export const eventServices = {
 
     await invalidatePattern("events:*")
     await invalidate(CacheKeys.events())
+    await invalidatePattern("user:*:home:*")
 
     auditLogger.log({
       actorId,
@@ -376,6 +379,8 @@ export const eventServices = {
       throw error
     }
 
+    await invalidatePattern("user:*:home:*")
+
     const attendeeName = user.profile?.name ?? "Anggota Sekkha"
 
     auditLogger.log({
@@ -460,6 +465,7 @@ export const eventServices = {
     }
     await invalidatePattern("events:*")
     await invalidate(CacheKeys.events())
+    await invalidatePattern("user:*:home:*")
 
     auditLogger.log({
       actorId,

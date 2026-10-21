@@ -111,11 +111,11 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const isPengurus =
     role === "organizer" || role === "pengurus" || role === "admin"
 
-  // ── Build nav items dari Registry (Exclude notifications & profile as it's in user dropdown) ─────
+  // ── Build nav items dari Registry (profile stays in user dropdown) ─────
   const mainNavItems = activeModules
     .flatMap((m) => m.navItems)
     .filter((item) => {
-      if (item.to === "/notifications" || item.to === "/home/profile")
+      if (item.to === "/home/profile")
         return false
       if ((role === "member" || role === "umat") && item.to === "/people")
         return false

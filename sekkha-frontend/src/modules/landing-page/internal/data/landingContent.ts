@@ -82,11 +82,6 @@ export const landingContent: LandingContent = {
       description:
         "Access interactive Dhamma teachings, service chanting parittas, and audio guides anytime to deepen your spiritual journey.",
     },
-    {
-      title: "Real-time Notifications",
-      description:
-        "Get timely schedule updates, room adjustments, and important announcements right in the palm of your hand.",
-    },
   ],
 
   stats: [

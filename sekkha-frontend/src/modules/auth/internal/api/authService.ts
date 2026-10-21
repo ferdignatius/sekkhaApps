@@ -5,7 +5,7 @@
 import type { Dispatch } from "react"
 import { AuthError } from "../context/authReducer"
 import type { AuthAction, UserRole } from "../context/authReducer"
-import { API_BASE_URL } from "@/lib/api"
+import { API_BASE_URL, clearApiCache } from "@/lib/api"
 import { safeStorage } from "@/lib/storage"
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
@@ -416,6 +416,7 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
         }).catch(() => {})
       } catch {}
     }
+    clearApiCache()
     safeStorage.removeItem(STORAGE_KEY)
     dispatch({ type: "AUTH_LOGOUT" })
   }

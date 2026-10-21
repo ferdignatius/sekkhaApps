@@ -27,6 +27,9 @@ export const userModels = {
         stats: {
           select: { points: true },
         },
+        _count: {
+          select: { attendances: true },
+        },
       },
     })
   },
@@ -72,6 +75,27 @@ export const userModels = {
       update: updateData,
       create: createData,
       include: { school: true },
+    })
+  },
+
+  updateUserAndProfile(
+    userId: string,
+    userData: Prisma.UserUpdateInput,
+    profileUpdateData: Prisma.UserProfileUncheckedUpdateInput,
+    profileCreateData: Prisma.UserProfileUncheckedCreateInput
+  ) {
+    return prisma.$transaction(async (tx) => {
+      const user = await tx.user.update({
+        where: { id: userId },
+        data: userData,
+      })
+      const profile = await tx.userProfile.upsert({
+        where: { userId },
+        update: profileUpdateData,
+        create: profileCreateData,
+        include: { school: true },
+      })
+      return { user, profile }
     })
   },
 

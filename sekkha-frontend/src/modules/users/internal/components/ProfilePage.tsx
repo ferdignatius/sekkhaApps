@@ -46,7 +46,7 @@ import QRCode from "react-qr-code"
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ResponsiveFormModal } from "@/components/common/ResponsiveFormModal"
-import { SettingsSection } from "@/modules/profile/internal/components/SettingsSection"
+import { SettingsSection } from "@/modules/users/internal/components/SettingsSection"
 import { Button, Tabs, TabsList, TabsTrigger } from "@/components/base"
 
 const UserProfileResponseSchema = z
@@ -77,6 +77,7 @@ interface UserProfile {
   user_number?: string | null
   userNumber?: string | null
   points?: number
+  total_attendances?: number
   avatarUrl?: string | null
   createdAt?: string
 }
@@ -278,14 +279,14 @@ export function ProfilePage() {
       showToast("New passwords do not match", "error")
       return
     }
-    if (passwordForm.new_password.length < 6) {
-      showToast("New password must be at least 6 characters", "error")
+    if (passwordForm.new_password.length < 8) {
+      showToast("New password must be at least 8 characters", "error")
       return
     }
 
     setSavingPassword(true)
     try {
-      await api.post("/auth/change-password", {
+      await api.post("/users/change-password", {
         current_password: passwordForm.current_password,
         new_password: passwordForm.new_password,
       })
@@ -329,7 +330,7 @@ export function ProfilePage() {
     streakData?.currentStreak ?? (streakData as any)?.current_streak ?? 0
   const longestStreak =
     streakData?.longestStreak ?? (streakData as any)?.longest_streak ?? 0
-  const totalAttended = attendances.length
+  const totalAttended = profile?.total_attendances ?? attendances.length
 
   const userInitials =
     displayName
@@ -478,11 +479,10 @@ export function ProfilePage() {
       {toast && (
         <div className="fixed top-6 right-6 z-50 animate-in duration-200 fade-in slide-in-from-top-4">
           <div
-            className={`flex items-center gap-2.5 rounded-[12px] border px-4 py-3 shadow-xl ${
-              toast.type === "success"
-                ? "border-emerald-500/50 bg-[#0a0a0a] text-white"
-                : "border-rose-500/50 bg-rose-600 text-white"
-            }`}
+            className={`flex items-center gap-2.5 rounded-[12px] border px-4 py-3 shadow-xl ${toast.type === "success"
+              ? "border-emerald-500/50 bg-[#0a0a0a] text-white"
+              : "border-rose-500/50 bg-rose-600 text-white"
+              }`}
           >
             {toast.type === "success" ? (
               <CheckCircleIcon className="size-5 shrink-0 text-emerald-400" />
@@ -723,11 +723,10 @@ export function ProfilePage() {
                   <AwardIcon className="size-3.5" />
                   <span>Badges & Achievements</span>
                   <span
-                    className={`py-0.2 rounded-full px-1.5 text-[10px] font-bold ${
-                      activeTab === "badges"
-                        ? "bg-white/20 text-white"
-                        : "bg-[#f5f0e0] text-[#0a0a0a]"
-                    }`}
+                    className={`py-0.2 rounded-full px-1.5 text-[10px] font-bold ${activeTab === "badges"
+                      ? "bg-white/20 text-white"
+                      : "bg-[#f5f0e0] text-[#0a0a0a]"
+                      }`}
                   >
                     {badges.filter((b) => Boolean(b.earned_at)).length}/
                     {badges.length}
@@ -797,11 +796,10 @@ export function ProfilePage() {
                       <span>Longest Record: {longestStreak}x</span>
                     </span>
                     <span
-                      className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-bold shadow-2xs ${
-                        currentStreak > 0
-                          ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-                          : "border-[#e5e5e5] bg-[#fffaf0] text-[#6a6a6a]"
-                      }`}
+                      className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-bold shadow-2xs ${currentStreak > 0
+                        ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                        : "border-[#e5e5e5] bg-[#fffaf0] text-[#6a6a6a]"
+                        }`}
                     >
                       {currentStreak > 0 ? (
                         <>
@@ -1110,11 +1108,10 @@ export function ProfilePage() {
                         key={badge.badge_id}
                         type="button"
                         onClick={() => setSelectedBadge(badge)}
-                        className={`flex cursor-pointer flex-col items-center rounded-[14px] border p-4 text-center transition-all hover:shadow-sm active:scale-98 ${
-                          isEarned
-                            ? "border-[#e5e5e5] bg-[#faf5e8] shadow-xs"
-                            : "border-[#e5e5e5] bg-[#fffaf0] opacity-50 grayscale hover:opacity-100 hover:grayscale-0"
-                        }`}
+                        className={`flex cursor-pointer flex-col items-center rounded-[14px] border p-4 text-center transition-all hover:shadow-sm active:scale-98 ${isEarned
+                          ? "border-[#e5e5e5] bg-[#faf5e8] shadow-xs"
+                          : "border-[#e5e5e5] bg-[#fffaf0] opacity-50 grayscale hover:opacity-100 hover:grayscale-0"
+                          }`}
                       >
                         <div className="mb-2 flex size-14 items-center justify-center rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] text-2xl shadow-2xs">
                           {badge.icon_url}
@@ -1126,11 +1123,10 @@ export function ProfilePage() {
                           {badge.description}
                         </p>
                         <span
-                          className={`mt-2.5 rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                            isEarned
-                              ? "border border-emerald-200 bg-emerald-50 text-emerald-800"
-                              : "border border-neutral-200 bg-neutral-100 text-neutral-600"
-                          }`}
+                          className={`mt-2.5 rounded-full px-2 py-0.5 text-[10px] font-bold ${isEarned
+                            ? "border border-emerald-200 bg-emerald-50 text-emerald-800"
+                            : "border border-neutral-200 bg-neutral-100 text-neutral-600"
+                            }`}
                         >
                           {isEarned ? "Unlocked" : "Locked"}
                         </span>
@@ -1852,8 +1848,8 @@ export function ProfilePage() {
                 <input
                   type="password"
                   required
-                  minLength={6}
-                  placeholder="Minimum 6 characters"
+                  minLength={8}
+                  placeholder="Minimum 8 characters"
                   value={passwordForm.new_password}
                   onChange={(e) =>
                     setPasswordForm({
@@ -1872,7 +1868,7 @@ export function ProfilePage() {
                 <input
                   type="password"
                   required
-                  minLength={6}
+                  minLength={8}
                   placeholder="Repeat new password"
                   value={passwordForm.confirm_password}
                   onChange={(e) =>

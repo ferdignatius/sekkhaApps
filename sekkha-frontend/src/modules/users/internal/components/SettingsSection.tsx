@@ -76,15 +76,15 @@ export function SettingsSection({
       setPasswordError("Konfirmasi kata sandi baru tidak cocok.")
       return
     }
-    if (passwordForm.new_password.length < 6) {
-      setPasswordError("Kata sandi baru minimal 6 karakter.")
+    if (passwordForm.new_password.length < 8) {
+      setPasswordError("Kata sandi baru minimal 8 karakter.")
       return
     }
 
     try {
       setPasswordLoading(true)
       setPasswordError(null)
-      await api.post("/auth/change-password", {
+      await api.post("/users/change-password", {
         current_password: passwordForm.current_password,
         new_password: passwordForm.new_password,
       })
@@ -292,8 +292,8 @@ export function SettingsSection({
             <input
               type="password"
               required
-              minLength={6}
-              placeholder="Minimal 6 karakter"
+              minLength={8}
+              placeholder="Minimal 8 karakter"
               value={passwordForm.new_password}
               onChange={(e) =>
                 setPasswordForm({
@@ -312,7 +312,7 @@ export function SettingsSection({
             <input
               type="password"
               required
-              minLength={6}
+              minLength={8}
               placeholder="Ulangi kata sandi baru"
               value={passwordForm.confirm_password}
               onChange={(e) =>

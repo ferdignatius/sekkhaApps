@@ -10,7 +10,7 @@
 import { homeModule } from "@/modules/home"
 import { eventsModule } from "@/modules/events"
 import { leaderboardModule } from "@/modules/leaderboard"
-import { profileModule } from "@/modules/profile"
+import { profileModule } from "@/modules/users"
 import { configureModule } from "@/modules/configure"
 import { pengurusModule } from "@/modules/pengurus"
 import { peopleModule } from "@/modules/people"

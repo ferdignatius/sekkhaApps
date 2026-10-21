@@ -38,7 +38,7 @@ import { useAuth } from "@/modules/auth"
 import type { UserRole } from "@/modules/auth"
 import { api } from "@/lib/api"
 import { ResponsiveFormModal } from "@/components/common/ResponsiveFormModal"
-import { SettingsSection } from "@/modules/profile/internal/components/SettingsSection"
+import { SettingsSection } from "@/modules/users/internal/components/SettingsSection"
 import { activeModules } from "@/shell/registry"
 import { iconMap } from "@/shell/icon-map"
 import { cn } from "@/lib/utils"
@@ -100,7 +100,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
           })
         }
       })
-      .catch(() => {})
+      .catch(() => { })
     return () => {
       cancelled = true
     }

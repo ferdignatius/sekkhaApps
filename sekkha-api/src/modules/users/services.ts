@@ -1,5 +1,5 @@
 import { userModels } from "./models"
-import { cached, invalidate, CacheKeys } from "../../lib/cache"
+import { cached, invalidate, invalidatePattern, CacheKeys } from "../../lib/cache"
 import { encrypt, decrypt } from "../../lib/crypto"
 import { hashPassword, verifyPassword, DEFAULT_BCRYPT_COST } from "../../lib/password"
 import { generateUniqueUserNumber } from "../../lib/userNumber"
@@ -49,6 +49,7 @@ export const userServices = {
       role: user.role,
       user_number: uNum,
       points: user.stats?.points ?? 0,
+      total_attendances: user._count.attendances,
       created_at: user.createdAt,
     }
   },
@@ -125,39 +126,42 @@ export const userServices = {
       resolvedSchoolId = null
     }
 
-    // Update User core
-    const user = await userModels.updateUser(userId, {
+    const userData = {
       ...(body.username !== undefined && { username: body.username ? body.username.toLowerCase().trim() : null }),
       userNumber,
-    })
+    }
 
-    // Upsert UserProfile
-    const profile = await userModels.upsertUserProfile(
-      userId,
-      {
-        ...(body.name && { name: body.name.trim() }),
-        ...(resolvedSchoolId !== undefined && { schoolId: resolvedSchoolId }),
-        ...(body.class_grade !== undefined && { classGrade: body.class_grade ? encrypt(body.class_grade.trim()) : null }),
-        ...(body.phone !== undefined && { phone: body.phone ? encrypt(body.phone.trim()) : null }),
-        ...(body.birth_date !== undefined && {
-          birthDate: body.birth_date ? encrypt(new Date(body.birth_date).toISOString()) : null,
-        }),
-        ...(body.gender !== undefined && { gender: body.gender ? encrypt(body.gender.trim()) : null }),
-      },
-      {
-        userId,
-        name: body.name ? body.name.trim() : existing.username || "Anggota",
-        schoolId: resolvedSchoolId || null,
-        classGrade: body.class_grade ? encrypt(body.class_grade.trim()) : null,
-        phone: body.phone ? encrypt(body.phone.trim()) : null,
+    const profileUpdateData = {
+      ...(body.name && { name: body.name.trim() }),
+      ...(resolvedSchoolId !== undefined && { schoolId: resolvedSchoolId }),
+      ...(body.class_grade !== undefined && { classGrade: body.class_grade ? encrypt(body.class_grade.trim()) : null }),
+      ...(body.phone !== undefined && { phone: body.phone ? encrypt(body.phone.trim()) : null }),
+      ...(body.birth_date !== undefined && {
         birthDate: body.birth_date ? encrypt(new Date(body.birth_date).toISOString()) : null,
-        gender: body.gender ? encrypt(body.gender.trim()) : null,
-        avatarUrl: null,
-      }
+      }),
+      ...(body.gender !== undefined && { gender: body.gender ? encrypt(body.gender.trim()) : null }),
+    }
+    const profileCreateData = {
+      userId,
+      name: body.name ? body.name.trim() : existing.username || "Anggota",
+      schoolId: resolvedSchoolId || null,
+      classGrade: body.class_grade ? encrypt(body.class_grade.trim()) : null,
+      phone: body.phone ? encrypt(body.phone.trim()) : null,
+      birthDate: body.birth_date ? encrypt(new Date(body.birth_date).toISOString()) : null,
+      gender: body.gender ? encrypt(body.gender.trim()) : null,
+      avatarUrl: null,
+    }
+
+    const { user, profile } = await userModels.updateUserAndProfile(
+      userId,
+      userData,
+      profileUpdateData,
+      profileCreateData
     )
 
     // Invalidate profile cache
     await invalidate(CacheKeys.userProfile(userId))
+    await invalidatePattern(`user:${userId}:home:*`)
 
     // Update Redis session cache so /auth/verify returns the new name immediately
     const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null

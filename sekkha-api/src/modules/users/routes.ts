@@ -15,6 +15,7 @@ usersRouter.get("/me/attendances", requireAuth, userControllers.getAttendances)
 
 // PATCH /api/users/me — Update personal profile details
 usersRouter.patch("/me", requireAuth, userControllers.updateProfile)
+usersRouter.patch("/me/onboarding", requireAuth, userControllers.completeOnboarding)
 
 // GET /api/users/me/streak — Current & longest weekly streak
 usersRouter.get("/me/streak", requireAuth, userControllers.getStreak)

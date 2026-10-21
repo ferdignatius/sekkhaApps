@@ -12,10 +12,10 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
   if (err instanceof ZodError) {
     const message = err.issues.map((i) => i.message).join(", ")
     res.status(400).json({
-      error: message || "Data yang dikirim tidak valid",
-      code: "VALIDATION_ERROR",
-      ...(isDev ? { details: err.issues } : {}),
-      requestId,
+      status: "fail",
+      code: 400,
+      message: message || "Invalid request data",
+    data: isDev ? { details: err.issues, requestId } : null,
     })
     return
   }
@@ -31,8 +31,9 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
   const message = status < 500 || isDev ? (err.message ?? "Terjadi kesalahan internal pada server") : "Terjadi kesalahan internal pada server"
 
   res.status(status).json({
-    error: message,
-    code: err instanceof AppError ? err.code : err.code || (status === 500 ? "INTERNAL_SERVER_ERROR" : "BAD_REQUEST"),
-    requestId,
+    status: "fail",
+    code: status,
+    message,
+    data: isDev && status >= 500 ? { requestId } : null,
   })
 }

@@ -326,8 +326,19 @@ export function OnboardingPage() {
     setTimeout(() => setCopied(false), 2000)
   }
 
-  function handleFinish() {
-    void navigate({ to: "/home" })
+  async function handleFinish() {
+    try {
+      setSubmitting(true)
+      await api.patch("/users/me/onboarding", {
+        onboarding_completed: true,
+        skipped: step !== "success",
+      })
+      await navigate({ to: "/home" })
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : "Gagal menyelesaikan onboarding")
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (

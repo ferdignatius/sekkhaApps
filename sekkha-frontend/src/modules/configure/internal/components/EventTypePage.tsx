@@ -2,6 +2,7 @@
 // Master Data: Event Category & Type management — with Clay components, Color Wheel Picker, Role Access Permissions, & Custom Autofill Templates.
 
 import { useState } from "react"
+import { useNavigate, useParams } from "@tanstack/react-router"
 import {
   PlusIcon,
   PencilIcon,
@@ -12,7 +13,6 @@ import {
   ShieldCheckIcon,
 } from "lucide-react"
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
-import { ResponsiveFormModal } from "@/components/common/ResponsiveFormModal"
 import { useAuth } from "@/modules/auth"
 import {
   getMasterCategories,
@@ -26,6 +26,9 @@ import { ColorWheelPicker } from "@/components/ui/ColorWheelPicker"
 import { MultiSelectDropdown } from "@/components/ui/MultiSelectDropdown"
 
 export function EventTypePage() {
+  const navigate = useNavigate()
+  const params = useParams({ strict: false }) as { categoryId?: string }
+  const isEditor = Boolean(params.categoryId) || window.location.pathname.endsWith("/new")
   const { authState } = useAuth()
   const isAdmin =
     authState.status === "authenticated" && authState.role === "admin"
@@ -33,8 +36,9 @@ export function EventTypePage() {
   const [categories, setCategories] = useState<EventCategoryItem[]>(() =>
     getMasterCategories()
   )
-  const [editing, setEditing] = useState<EventCategoryItem | null>(null)
-  const [showModal, setShowModal] = useState(false)
+  const editing = params.categoryId
+    ? categories.find((category) => category.id === params.categoryId) ?? null
+    : null
 
   const [name, setName] = useState("")
   const [colorHex, setColorHex] = useState("#0284c7")
@@ -62,16 +66,15 @@ export function EventTypePage() {
     setAutofillLocation("")
     setAutofillDesc("")
     setTargetRoles(["admin", "pengurus", "aktivis", "umat"])
-    setEditing(null)
-    setShowModal(false)
+    navigate({ to: "/configure/master/event-type" })
   }
 
   function openCreate() {
-    resetForm()
-    setShowModal(true)
+    navigate({ to: "/configure/master/event-type/new" })
   }
 
   function openEdit(item: EventCategoryItem) {
+    navigate({ to: "/configure/master/event-type/$categoryId", params: { categoryId: item.id } })
     setName(item.name)
     setColorHex(item.colorHex || "#0284c7")
     setAutofillTitle(item.autofillTitle ?? `Vihara ${item.name} Activity`)
@@ -85,8 +88,6 @@ export function EventTypePage() {
         ? item.target_roles
         : ["admin", "pengurus", "aktivis", "umat"]
     )
-    setEditing(item)
-    setShowModal(true)
   }
 
   function handleSubmit(e: React.FormEvent) {
@@ -306,15 +307,7 @@ export function EventTypePage() {
           )}
         </div>
 
-        {/* Responsive Form Modal */}
-        <ResponsiveFormModal
-          isOpen={showModal && isAdmin}
-          onClose={resetForm}
-          title={
-            editing ? "Edit Category & Permissions" : "Add New Event Category"
-          }
-          description="Configure category badge color, allowed attendee roles, and event creation autofill presets."
-        >
+        {isEditor && isAdmin && (
           <form
             onSubmit={handleSubmit}
             className="space-y-4 text-left font-sans"
@@ -431,7 +424,7 @@ export function EventTypePage() {
               </button>
             </div>
           </form>
-        </ResponsiveFormModal>
+        )}
       </div>
     </main>
   )

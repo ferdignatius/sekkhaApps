@@ -24,6 +24,18 @@ interface AuthSuccessResponse {
   }
 }
 
+interface ApiEnvelope<T> {
+  status: "success" | "fail"
+  code: number
+  message: string
+  data: T
+}
+
+function unwrap<T>(response: ApiEnvelope<T>): T {
+  if (response.status !== "success") throw new Error(response.message)
+  return response.data
+}
+
 // ─── fetchWithTimeout ──────────────────────────────────────────────────────────
 
 /**
@@ -105,7 +117,7 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
     }
 
     if (response.ok) {
-      const data = (await response.json()) as AuthSuccessResponse
+      const data = unwrap((await response.json()) as ApiEnvelope<AuthSuccessResponse>)
       safeStorage.setItem(STORAGE_KEY, data.accessToken)
       dispatch({
         type: "AUTH_SUCCESS",
@@ -215,7 +227,7 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
     }
 
     if (response.ok) {
-      const data = (await response.json()) as AuthSuccessResponse
+      const data = unwrap((await response.json()) as ApiEnvelope<AuthSuccessResponse>)
       safeStorage.setItem(STORAGE_KEY, data.accessToken)
       dispatch({
         type: "AUTH_SUCCESS",

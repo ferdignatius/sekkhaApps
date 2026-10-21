@@ -47,7 +47,7 @@ export interface AuthResult {
   accessToken: string
   expiresInSeconds: number
   refreshToken?: string
-  user: { id: string; email: string; username?: string | null; name: string; role: string }
+  user: { id: string; email: string; username?: string | null; name: string; role: string; onboarding_completed?: boolean }
 }
 
 function getJwtExpiry(): string {
@@ -214,6 +214,7 @@ export async function verifyRegisterOtp(input: VerifyRegisterOtpInput): Promise<
     username: user.username,
     name: user.name,
     role: user.role,
+    onboarding_completed: false,
   }
 
   await cacheUserSession(token, userData)
@@ -326,6 +327,7 @@ export async function registerUser(input: RegisterInput): Promise<AuthResult> {
     username: user.username,
     name: user.name,
     role: user.role,
+    onboarding_completed: false,
   }
 
   await cacheUserSession(token, userData)
@@ -399,6 +401,7 @@ export async function loginUser(input: LoginInput): Promise<AuthResult> {
     username: user.username,
     name: user.name,
     role: user.role,
+    onboarding_completed: true,
   }
 
   await Promise.all([
@@ -470,6 +473,7 @@ export async function verifyToken(token: string) {
     username: user.username,
     name: user.name,
     role: user.role,
+    onboarding_completed: true,
   }
 
   return userData
@@ -503,6 +507,7 @@ export async function refreshSession(refreshToken: string): Promise<AuthResult> 
     username: user.username,
     name: user.name,
     role: user.role,
+    onboarding_completed: true,
   }
 
   await cacheUserSession(newAccessToken, userData)

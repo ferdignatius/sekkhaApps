@@ -27,7 +27,9 @@ export const homeServices = {
       if (!profile) return null
 
       const streak = calculateWeeklyStreak(
-        attendanceWeeks.map(({ week }) => ({ scannedAt: week }))
+        attendanceWeeks
+          .filter(({ week }) => week instanceof Date && !Number.isNaN(week.getTime()))
+          .map(({ week }) => ({ scannedAt: week }))
       )
       const level = profile.stats?.level ?? { level: 1, label: "Beginner" }
 

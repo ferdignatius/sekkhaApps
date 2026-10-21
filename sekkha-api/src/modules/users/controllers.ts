@@ -34,6 +34,15 @@ export const DeleteAccountSchema = z.object({
 })
 
 export const userControllers = {
+  async completeOnboarding(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const completed = z.object({ onboarding_completed: z.literal(true), skipped: z.boolean().optional() }).parse(req.body)
+      const result = await userServices.completeOnboarding(req.user!.userId, completed.skipped === true)
+      res.json({ status: "success", code: 200, message: "Onboarding completed", data: result })
+    } catch (err) {
+      next(err)
+    }
+  },
   async getProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const userId = req.user!.userId

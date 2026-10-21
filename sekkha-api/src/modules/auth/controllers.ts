@@ -11,6 +11,7 @@ import {
   ResetPasswordSchema,
 } from "./internal/validation"
 import * as service from "./services"
+import { apiSuccess } from "../../lib/apiResponse"
 
 function publicAuthResult(result: service.AuthResult) {
   const { refreshToken: _refreshToken, ...publicResult } = result
@@ -44,7 +45,7 @@ export async function handleRegisterRequest(req: Request, res: Response, next: N
   try {
     const body = RequestRegisterOtpSchema.parse(req.body)
     const result = await service.requestRegisterOtp(body)
-    res.json(result)
+    apiSuccess(res, 200, "Registration OTP sent", { expires_in_seconds: 600 })
   } catch (err) {
     next(err)
   }
@@ -56,7 +57,7 @@ export async function handleRegisterVerifyOtp(req: Request, res: Response, next:
     const body = VerifyRegisterOtpSchema.parse(req.body)
     const result = await service.verifyRegisterOtp(body)
     setRefreshCookie(res, result.refreshToken)
-    res.status(201).json(publicAuthResult(result))
+    apiSuccess(res, 201, "Registration successful", publicAuthResult(result))
   } catch (err) {
     next(err)
   }
@@ -67,7 +68,7 @@ export async function handleResendOtp(req: Request, res: Response, next: NextFun
   try {
     const body = ResendOtpSchema.parse(req.body)
     const result = await service.resendRegisterOtp(body)
-    res.json(result)
+    apiSuccess(res, 200, "Registration OTP resent", { expires_in_seconds: 600 })
   } catch (err) {
     next(err)
   }
@@ -79,7 +80,7 @@ export async function handleRegister(req: Request, res: Response, next: NextFunc
     const body = RegisterSchema.parse(req.body)
     const result = await service.registerUser(body)
     setRefreshCookie(res, result.refreshToken)
-    res.status(201).json(publicAuthResult(result))
+    apiSuccess(res, 201, "Registration successful", publicAuthResult(result))
   } catch (err) {
     next(err)
   }
@@ -91,7 +92,7 @@ export async function handleLogin(req: Request, res: Response, next: NextFunctio
     const body = LoginSchema.parse(req.body)
     const result = await service.loginUser(body)
     setRefreshCookie(res, result.refreshToken)
-    res.json(publicAuthResult(result))
+    apiSuccess(res, 200, "Login successful", publicAuthResult(result))
   } catch (err) {
     next(err)
   }
@@ -109,7 +110,7 @@ export async function handleRefreshSession(req: Request, res: Response, next: Ne
 
     const result = await service.refreshSession(refreshToken)
     setRefreshCookie(res, result.refreshToken)
-    res.json(publicAuthResult(result))
+    apiSuccess(res, 200, "Session refreshed", publicAuthResult(result))
   } catch (err) {
     clearRefreshCookie(res)
     next(err)
@@ -121,7 +122,7 @@ export async function handleForgotPasswordRequest(req: Request, res: Response, n
   try {
     const body = ForgotPasswordRequestSchema.parse(req.body)
     const result = await service.forgotPasswordRequest(body)
-    res.json(result)
+    apiSuccess(res, 200, "Password reset OTP sent", null)
   } catch (err) {
     next(err)
   }
@@ -132,7 +133,7 @@ export async function handleForgotPasswordVerifyOtp(req: Request, res: Response,
   try {
     const body = ForgotPasswordVerifyOtpSchema.parse(req.body)
     const result = await service.forgotPasswordVerifyOtp(body)
-    res.json(result)
+    apiSuccess(res, 200, "Password reset OTP verified", result)
   } catch (err) {
     next(err)
   }
@@ -143,7 +144,7 @@ export async function handleResetPassword(req: Request, res: Response, next: Nex
   try {
     const body = ResetPasswordSchema.parse(req.body)
     const result = await service.resetPassword(body)
-    res.json(result)
+    apiSuccess(res, 200, "Password reset successfully", null)
   } catch (err) {
     next(err)
   }
@@ -171,7 +172,7 @@ export async function handleVerify(req: Request, res: Response) {
   try {
     const token = header.slice(7)
     const user = await service.verifyToken(token)
-    res.json({ valid: true, user })
+    apiSuccess(res, 200, "Token valid", user)
   } catch {
     res.status(401).json({ error: "Invalid token" })
   }
@@ -188,7 +189,7 @@ export async function handleLogout(req: Request, res: Response, next: NextFuncti
       await service.logoutUser(token, req.user?.userId, refreshToken)
     }
     clearRefreshCookie(res)
-    res.json({ success: true, message: "Berhasil keluar (logout)" })
+    apiSuccess(res, 200, "Logout successful", null)
   } catch (err) {
     next(err)
   }

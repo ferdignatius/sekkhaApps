@@ -106,8 +106,6 @@ export const authModels = {
     username?: string
   }) {
     const username = data.username || (await this.generateUniqueUsername(data.name))
-    const level1 = await prisma.level.findFirst({ where: { level: 1 } })
-
     let attempts = 0
     while (attempts < 5) {
       attempts++
@@ -133,7 +131,6 @@ export const authModels = {
             stats: {
               create: {
                 points: 0,
-                levelId: level1?.id,
               },
             },
           },

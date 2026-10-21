@@ -20,6 +20,11 @@ export interface UpdateProfileInput {
 }
 
 export const userServices = {
+  async completeOnboarding(userId: string, skipped: boolean) {
+    await userModels.completeOnboarding(userId)
+    await invalidate(CacheKeys.userProfile(userId))
+    return { onboarding_completed: true, skipped }
+  },
   async getProfile(userId: string) {
     const user = await cached(CacheKeys.userProfile(userId), 120, async () => {
       return userModels.findUserWithProfileAndStats(userId)

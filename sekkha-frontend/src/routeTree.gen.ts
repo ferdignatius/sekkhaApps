@@ -38,8 +38,8 @@ import { Route as AuthenticatedConfigureRulesPointsRouteImport } from './routes/
 import { Route as AuthenticatedConfigureRulesSeasonRouteImport } from './routes/_authenticated/configure/rules/season'
 import { Route as AuthenticatedConfigureMasterBadgeBadgeIdRouteImport } from './routes/_authenticated/configure/master/badge.$badgeId'
 import { Route as AuthenticatedConfigureMasterBadgeNewRouteImport } from './routes/_authenticated/configure/master/badge.new'
-import { Route as AuthenticatedConfigureMasterEventTypeCategoryIdRouteImport } from './routes/_authenticated/configure/master/event-type/$categoryId'
-import { Route as AuthenticatedConfigureMasterEventTypeNewRouteImport } from './routes/_authenticated/configure/master/event-type/new'
+import { Route as AuthenticatedConfigureMasterEventTypeCategoryIdRouteImport } from './routes/_authenticated/configure/master/event-type.$categoryId'
+import { Route as AuthenticatedConfigureMasterEventTypeNewRouteImport } from './routes/_authenticated/configure/master/event-type.new'
 import { Route as AuthenticatedConfigureMasterSchoolSchoolIdRouteImport } from './routes/_authenticated/configure/master/school.$schoolId'
 import { Route as AuthenticatedConfigureMasterSchoolNewRouteImport } from './routes/_authenticated/configure/master/school.new'
 

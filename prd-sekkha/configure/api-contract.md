@@ -1,109 +1,276 @@
-# Spesifikasi Kontrak API: Domain Konfigurasi Sistem (`configure`)
+# API Contract: Configure Domain
 
-Dokumen ini mendefinisikan kontrak komunikasi resmi untuk manajemen konfigurasi master data vihara, sistem lencana (*badges* / *achievements*), level gamifikasi (*levels*), kategori acara (*event-types*), waktu kebaktian (*event-times*), musim papan peringkat (*seasons*), aturan perolehan poin (*points-rules*), dan batas peringatan dini (*early warning thresholds*).
+## 1. Scope
 
----
+Configure API exposes master data used by event creation, attendance rewards, and onboarding.
 
-## 1. Ikhtisar Modul
-- **Base Route**: `/api/configure`
-- **Aturan Otorisasi Bertingkat**:
-  - `GET` (Read-only): Terbuka untuk role **`pengurus`** dan **`admin`**.
-  - `POST`, `PUT`, `PATCH`, `DELETE` (Mutasi Data): Dibatasi khusus untuk **`admin`** saja. Percobaan mutasi oleh role selain admin menghasilkan `403 Forbidden: Only admin can modify configuration settings`.
-- **Dampak Lintas Modul**:
-  - Perubahan musim (`/seasons`) atau aktivasi musim otomatis memicu sinkronisasi dan kalkulasi ulang papan peringkat (`computeAndCacheLeaderboard()`).
+Base route:
 
----
+```text
+/api/configure
+```
 
-## 2. Rincian Endpoint per Sub-Fitur
+No `/v1` prefix. Add versioning only when breaking contract must coexist with older public contract.
 
-### 2.1. Lencana & Pencapaian (`/api/configure/badges` & `/api/configure/achievements`)
-- `GET /api/configure/badges`: Mengambil daftar seluruh lencana master.
-- `POST /api/configure/badges`: Membuat master lencana baru (`condition_type: streak | attendance | points | event_count | manual`).
-- `PUT /api/configure/badges/:id`: Memperbarui nama, deskripsi, icon URL, atau syarat nilai.
-- `DELETE /api/configure/badges/:id`: Menghapus lencana.
-- Endpoint `/api/configure/achievements` memiliki signature dan perilaku yang identik untuk kebutuhan master data achievement.
+Master data:
 
----
+- Event Types
+- Event Attendance Badges
+- Schools
+- School Requests
 
-### 2.2. Level Gamifikasi (`/api/configure/levels`)
-- `GET /api/configure/levels`: Mengambil tangga level beserta ambang batas minimum poin (`min_points`).
-- `POST /api/configure/levels`: Menambahkan level baru.
-  ```json
-  {
-    "level": 4,
-    "label": "Viriya (Semangat)",
-    "min_points": 750
+## 2. Standard response envelope
+
+Every response uses:
+
+```json
+{
+  "status": "success",
+  "code": 200,
+  "message": "Request completed successfully",
+  "data": {}
+}
+```
+
+Rules:
+
+- `status`: `success` or `fail`.
+- `code`: HTTP status code as a number.
+- `message`: always a string.
+- `data`: payload on success, `null` on failure.
+- Pagination belongs inside `data.pagination`.
+- No resource or `meta` fields outside `data`.
+
+Error example:
+
+```json
+{
+  "status": "fail",
+  "code": 403,
+  "message": "Forbidden",
+  "data": null
+}
+```
+
+## 3. Authorization
+
+- Require `requireAuth` for all non-public Configure endpoints.
+- Roles use English values exactly: `member`, `activist`, `organizer`, `admin`.
+- Enforce roles on the server. Never trust client-provided role.
+- `admin` bypasses role-specific read restrictions.
+- Validation errors return `400`.
+- Authentication errors return `401`.
+- Authorization errors return `403`.
+- Conflicts and protected deletes return `409`.
+
+## 4. Shared pagination
+
+List endpoints support:
+
+```text
+page=1&page_size=50&search=&is_active=
+```
+
+Maximum `page_size`: 100.
+
+```json
+{
+  "items": [],
+  "pagination": {
+    "page": 1,
+    "page_size": 50,
+    "total": 0,
+    "total_pages": 0
   }
-  ```
-- `PUT /api/configure/levels/:id`: Memperbarui nama level atau syarat poin.
-- `DELETE /api/configure/levels/:id`: Menghapus level.
+}
+```
 
----
+## 5. Event Types
 
-### 2.3. Kategori & Waktu Acara (`/api/configure/event-types` & `/api/configure/event-times`)
-- `GET /api/configure/event-types`: Mengambil daftar kategori kegiatan (`rutin`, `khusus`, `sharing`, `pelatihan`).
-- `POST /api/configure/event-types`: Menambah kategori acara dengan kode warna unik.
-- `PUT /api/configure/event-types/:id`: Memperbarui kode atau label.
-- `DELETE /api/configure/event-types/:id`: Menghapus kategori.
-- `GET /api/configure/event-times`: Mengambil template jam kebaktian standar vihara (misal: "Pagi 09:00 - 11:00").
-- `POST /api/configure/event-times`: Menambahkan template waktu.
-- `PUT /api/configure/event-times/:id` & `DELETE /:id`: Pengelolaan template waktu.
+Read: `organizer`, `admin`. Mutation: `admin`.
 
----
+### `GET /api/configure/event-types`
 
-### 2.4. Musim Papan Peringkat (`/api/configure/seasons`)
-- `GET /api/configure/seasons`: Mengambil daftar seluruh musim (Semester 6 Bulan, Kuartal 3 Bulan, Tahunan), beserta status aktif dan total presensi terkumpul.
-- `POST /api/configure/seasons`: Membuat musim baru:
-  ```json
-  {
-    "name": "Season Kuartal IV 2026",
-    "code": "quarterly_2026_q4",
-    "start_date": "2026-10-01T00:00:00.000Z",
-    "end_date": "2026-12-31T23:59:59.000Z",
-    "is_active": false,
-    "target_attendance": 300,
-    "bonus_points": 50,
-    "description": "Evaluasi presensi kuartal akhir tahun."
-  }
-  ```
-- `PUT /api/configure/seasons/:id`: Memperbarui tanggal atau target musim.
-- `POST /api/configure/seasons/:id/activate`: Mengaktifkan musim tertentu sebagai musim utama aktif saat ini (otomatis menonaktifkan musim lain).
-- `DELETE /api/configure/seasons/:id`: Menghapus musim.
+Query: `page`, `page_size`, `search`, `is_active`.
 
----
+Returns paginated Event Types in `data`.
 
-### 2.5. Aturan Poin (`/api/configure/points-rules`)
-- `GET /api/configure/points-rules`: Mengambil master aturan nilai poin (misal: `attendance_rutin` = 50 poin, `attendance_special` = 100 poin, `streak_weekly_bonus` = 30 poin).
-- `PUT /api/configure/points-rules`: Mengubah besaran poin untuk setiap kode aksi.
-  ```json
-  {
-    "rules": [
-      {
-        "code": "attendance_rutin",
-        "points": 60
-      }
-    ]
-  }
-  ```
+### `GET /api/configure/event-types/:id`
 
----
+Requires `organizer` or `admin`. Returns one Event Type in `data`.
 
-### 2.6. Batas Peringatan Dini Absensi (`/api/configure/threshold`)
-- `GET /api/configure/threshold`: Mengambil ambang batas saat ini untuk kalkulasi resiko jemaat pasif.
-  ```json
-  {
-    "warningConsecutiveMissed": 2,
-    "atRiskConsecutiveMissed": 3,
-    "lostConsecutiveMissed": 4,
-    "churnedDaysThreshold": 60
-  }
-  ```
-- `PUT /api/configure/threshold`: Mengubah ambang batas deteksi dini (*strict validation*).
-  ```json
-  {
-    "warningConsecutiveMissed": 2,
-    "atRiskConsecutiveMissed": 3,
-    "lostConsecutiveMissed": 4,
-    "churnedDaysThreshold": 60
-  }
-  ```
+### `POST /api/configure/event-types`
+
+Requires `admin`.
+
+```json
+{
+  "code": "regular-service",
+  "name": "Regular Service",
+  "color": "#4262FF",
+  "description": "Regular or special temple service",
+  "default_point_reward": 50,
+  "is_active": true
+}
+```
+
+Returns `201`. `code` is unique, lowercase kebab-case, and immutable. `default_point_reward` accepts `0-10000`.
+
+### `PATCH /api/configure/event-types/:id`
+
+Requires `admin`. Partial update. `code` cannot change. Default point changes affect new events only.
+
+### `DELETE /api/configure/event-types/:id`
+
+Requires `admin`. Returns `409` when referenced by an event. Deactivate instead.
+
+## 6. Event Attendance Badges
+
+Read: `organizer`, `admin`. Mutation: `admin`.
+
+### `GET /api/configure/badges`
+
+Query: `page`, `page_size`, `search`, `is_active`.
+
+Returns paginated badges in `data`.
+
+### `GET /api/configure/badges/:id`
+
+Requires `organizer` or `admin`. Returns one badge in `data`.
+
+### `POST /api/configure/badges`
+
+Requires `admin`.
+
+```json
+{
+  "code": "first-attendance",
+  "name": "First Attendance",
+  "color": "#10B981",
+  "description": "Reward for a user's first event attendance",
+  "point_value": 100,
+  "is_active": true
+}
+```
+
+Returns `201`. Validate `color` as `#RRGGBB`, `point_value` as integer `0-10000`, and `code` as unique lowercase kebab-case.
+
+### `PATCH /api/configure/badges/:id`
+
+Requires `admin`. Partial update. `code` cannot change. Point changes affect future unlocks only.
+
+### `DELETE /api/configure/badges/:id`
+
+Requires `admin`. Returns `409` when referenced by an event or earned by a user. Deactivate instead.
+
+Badge unlock and point reward must be idempotent per user and badge.
+
+## 7. Schools
+
+Active school reads: authenticated users. Detailed inactive reads: `organizer`, `admin`. Direct school CRUD: `admin` only.
+
+### `GET /api/configure/schools`
+
+Query: `page`, `page_size`, `search`, `type`, `city`, `is_active`.
+
+Active schools are available to all roles for onboarding and profile selection. Returns paginated schools in `data`.
+
+### `GET /api/configure/schools/:id`
+
+Requires `organizer` or `admin` for inactive or detailed records. Returns one school in `data`.
+
+### `POST /api/configure/schools`
+
+Requires `admin`.
+
+```json
+{
+  "name": "SMA Buddha Tzu Chi Bandung",
+  "type": "SMA",
+  "city": "Bandung",
+  "is_active": true
+}
+```
+
+Returns `201`. Name duplicate checks are case-insensitive.
+
+### `PATCH /api/configure/schools/:id`
+
+Requires `admin`. Partial update. Rename propagation updates legacy `User.school` references in one transaction.
+
+### `PATCH /api/configure/schools/:id/status`
+
+Requires `admin`.
+
+```json
+{
+  "is_active": false
+}
+```
+
+### `DELETE /api/configure/schools/:id`
+
+Requires `admin`. Returns `409` when referenced by users, events, or accepted requests. Deactivate instead.
+
+## 8. School Requests
+
+Submit: authenticated users. Review and decision: `organizer`, `admin`. No direct school CRUD for `organizer`.
+
+### `POST /api/configure/school-requests`
+
+Requires authentication. Used by onboarding and profile flows.
+
+```json
+{
+  "requested_name": "SMA Buddha Tzu Chi Bandung",
+  "requested_type": "SMA",
+  "requested_city": "Bandung"
+}
+```
+
+Returns `201` with `pending` request in `data`. Returns `409` for duplicate pending request or existing matching school.
+
+### `GET /api/configure/school-requests/me`
+
+Requires authentication. Returns current user's requests with pagination.
+
+### `GET /api/configure/school-requests`
+
+Requires `organizer` or `admin`. Query: `page`, `page_size`, `status`, `search`, `created_from`, `created_to`.
+
+### `GET /api/configure/school-requests/:id`
+
+Requester can read own request. `organizer` and `admin` can read reviewable requests.
+
+### `POST /api/configure/school-requests/:id/accept`
+
+Requires `organizer` or `admin`.
+
+```json
+{
+  "review_note": "Verified and added to school master data"
+}
+```
+
+Accept runs atomically. Existing matching school is linked. Otherwise, new school is created. Returns `409` when request is no longer `pending`.
+
+### `POST /api/configure/school-requests/:id/reject`
+
+Requires `organizer` or `admin`.
+
+```json
+{
+  "review_note": "Please submit the official school name"
+}
+```
+
+Returns updated request with `rejected` status in `data`.
+
+## 9. Cross-domain rules
+
+- All mutations validate at API boundary.
+- Normalize school name and city before duplicate checks.
+- Accepted school requests do not silently change requester profile unless onboarding explicitly selects the accepted school.
+- Inactive master data remains readable where needed for historical records.
+- Deactivation preferred over deletion when records are referenced.
+- Event attendance reward emits `badge.earned` with `{ user_id, badge_id, point_value, event_id }`.

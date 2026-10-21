@@ -21,13 +21,17 @@ export const peopleModels = {
       select: {
         id: true,
         username: true,
-        email: true,
         role: true,
         userNumber: true,
         isClaimed: true,
         createdAt: true,
         profile: {
-          include: { school: true },
+          select: {
+            name: true,
+            schoolId: true,
+            avatarUrl: true,
+            school: { select: { name: true } },
+          },
         },
         stats: {
           select: { points: true },
@@ -44,16 +48,34 @@ export const peopleModels = {
   findMemberDetail(id: string) {
     return prisma.user.findUnique({
       where: { id },
-      include: {
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        role: true,
+        userNumber: true,
+        isClaimed: true,
+        createdAt: true,
         profile: {
-          include: { school: true },
+          select: {
+            name: true,
+            phone: true,
+            schoolId: true,
+            birthDate: true,
+            gender: true,
+            avatarUrl: true,
+            school: { select: { name: true } },
+          },
         },
-        stats: true,
+        stats: { select: { points: true } },
         attendances: {
-          include: {
+          select: {
+            id: true,
+            method: true,
+            pointsEarned: true,
+            scannedAt: true,
             event: {
               select: {
-                id: true,
                 title: true,
                 eventDate: true,
                 location: true,
@@ -64,8 +86,10 @@ export const peopleModels = {
           take: 20,
         },
         badges: {
-          include: {
-            badge: true,
+          select: {
+            badgeId: true,
+            earnedAt: true,
+            badge: { select: { name: true, iconUrl: true } },
           },
         },
       },
@@ -137,8 +161,12 @@ export const peopleModels = {
     return prisma.school.findUnique({ where: { name } })
   },
 
-  createSchool(name: string, type: string = "Lainnya") {
-    return prisma.school.create({ data: { name, type } })
+  upsertSchool(name: string, type: string = "Lainnya") {
+    return prisma.school.upsert({
+      where: { name },
+      update: {},
+      create: { name, type },
+    })
   },
 
   findLevelByLevel(level: number) {

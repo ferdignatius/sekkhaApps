@@ -68,7 +68,7 @@ export function EventCard({ event, onClick }: EventCardProps) {
                   className="h-1.5 w-1.5 rounded-full"
                   style={colorInfo.dotStyle}
                 />
-                {tag}
+                {colorInfo.name}
               </Badge>
 
               {/* Status: Active / Live */}

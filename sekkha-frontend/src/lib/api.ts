@@ -124,7 +124,7 @@ export async function apiFetch<T = unknown>(
   }
 
   // Check in-flight duplicate GET requests (deduplication)
-  if (isGet && inFlightGetRequests.has(path)) {
+  if (isGet && !options.signal && inFlightGetRequests.has(path)) {
     return inFlightGetRequests.get(path) as Promise<T>
   }
 
@@ -197,7 +197,7 @@ export async function apiFetch<T = unknown>(
     return result
   }
 
-  if (isGet) {
+  if (isGet && !options.signal) {
     const promise = executeFetch().finally(() => {
       inFlightGetRequests.delete(path)
     })

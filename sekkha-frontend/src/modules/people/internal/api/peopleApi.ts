@@ -23,7 +23,6 @@ export interface MemberDto {
   user_number?: string | null
   is_claimed: boolean
   claimed_at?: string | null
-  default_password?: string
   total_attendance?: number
   points?: number
   created_at: string
@@ -56,7 +55,12 @@ export interface CreateMemberPayload {
   birth_date?: string
   gender?: string
   role?: PeopleRole
-  default_password?: string
+}
+
+export interface CreateMemberResponse extends MemberDto {
+  email_sent?: boolean
+  requires_change_on_login?: boolean
+  message: string
 }
 
 export interface UpdateMemberPayload {
@@ -127,7 +131,7 @@ export const peopleApi = {
   getMember: (id: string) => api.get<MemberDetailDto>(`/people/members/${id}`),
 
   createMember: (data: CreateMemberPayload) =>
-    api.post<MemberDto>("/people/members", data),
+    api.post<CreateMemberResponse>("/people/members", data),
 
   updateMember: (id: string, data: UpdateMemberPayload) =>
     api.put<MemberDto>(`/people/members/${id}`, data),
@@ -141,7 +145,8 @@ export const peopleApi = {
       user_number: string
       username?: string | null
       name: string
-      default_password: string
+      email_sent: boolean
+      requires_change_on_login?: boolean
       message: string
     }>(`/people/members/${id}/reset-password`),
 

@@ -330,7 +330,7 @@ export async function sendTemporaryPasswordEmail({ to, tempPassword, name }: Sen
       console.warn(`⚠️ [Gmail SMTP Error]:`, err?.message || err)
     }
   } else if (shouldLogOtpDev()) {
-    console.log(`🔑 [DEV ONLY - SMTP Unconfigured] Temporary password for ${to}: ${tempPassword}`)
+    console.log(`ℹ️ [DEV ONLY - SMTP Unconfigured] Temporary password delivery skipped for ${maskEmail(to)}.`)
   }
 
   return { success: true }

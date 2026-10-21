@@ -5,12 +5,11 @@ import { useState } from "react"
 import { useNavigate, useParams } from "@tanstack/react-router"
 import {
   PlusIcon,
-  PencilIcon,
-  TrashIcon,
   TagIcon,
   CheckIcon,
   Wand2Icon,
   ShieldCheckIcon,
+  EyeIcon,
 } from "lucide-react"
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
 import { useAuth } from "@/modules/auth"
@@ -122,20 +121,6 @@ export function EventTypePage() {
     resetForm()
   }
 
-  function handleToggleActive(id: string) {
-    if (!isAdmin) return
-    const updated = categories.map((c) =>
-      c.id === id ? { ...c, is_active: !c.is_active } : c
-    )
-    saveToStorage(updated)
-  }
-
-  function handleDelete(id: string) {
-    if (!isAdmin) return
-    const updated = categories.filter((c) => c.id !== id)
-    saveToStorage(updated)
-  }
-
   return (
     <main className="min-h-screen bg-[#fffaf0] pb-32 text-left font-sans md:pb-12">
       <PageBreadcrumb
@@ -185,7 +170,7 @@ export function EventTypePage() {
                   <th className="px-4 py-3">Allowed Roles Access</th>
                   <th className="px-4 py-3">Autofill Title Preset</th>
                   <th className="px-4 py-3 text-center">Status</th>
-                  {isAdmin && <th className="px-4 py-3 text-right">Actions</th>}
+                  <th className="px-4 py-3 text-right">View</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#f0f0f0]">
@@ -251,47 +236,17 @@ export function EventTypePage() {
                           </span>
                         )}
                       </td>
-                      {isAdmin && (
-                        <td className="px-4 py-3 text-right">
-                          <div className="flex items-center justify-end gap-1.5">
-                            <button
-                              type="button"
-                              onClick={() => handleToggleActive(c.id)}
-                              className={`h-8 cursor-pointer rounded-[8px] border px-2.5 text-xs font-bold transition-all ${
-                                c.is_active !== false
-                                  ? "border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100"
-                                  : "border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100"
-                              }`}
-                              title={
-                                c.is_active !== false
-                                  ? "Deactivate"
-                                  : "Activate"
-                              }
-                            >
-                              {c.is_active !== false
-                                ? "Deactivate"
-                                : "Activate"}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => openEdit(c)}
-                              className="flex h-8 cursor-pointer items-center gap-1 rounded-[8px] border border-[#e5e5e5] bg-[#fffaf0] px-2.5 text-xs font-bold text-[#0a0a0a] transition-colors hover:bg-[#faf5e8]"
-                              title="Edit Category, Color, & Permissions"
-                            >
-                              <PencilIcon className="size-3.5" />
-                              <span>Edit</span>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleDelete(c.id)}
-                              className="flex size-8 cursor-pointer items-center justify-center rounded-[8px] border border-rose-200 bg-rose-50 text-rose-700 transition-colors hover:bg-rose-100"
-                              title="Delete Category"
-                            >
-                              <TrashIcon className="size-3.5" />
-                            </button>
-                          </div>
-                        </td>
-                      )}
+                      <td className="px-4 py-3 text-right">
+                        <button
+                          type="button"
+                          onClick={() => openEdit(c)}
+                          className="inline-flex h-9 items-center gap-1.5 rounded-[8px] border border-[#e5e5e5] bg-[#fffaf0] px-3 text-xs font-bold text-[#0a0a0a] transition-colors hover:bg-[#faf5e8]"
+                          aria-label={`View ${c.name}`}
+                        >
+                          <EyeIcon className="size-3.5" />
+                          <span>View detail</span>
+                        </button>
+                      </td>
                     </tr>
                   )
                 })}

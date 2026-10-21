@@ -24,7 +24,7 @@ import type {
 import { ColorWheelPicker } from "@/components/ui/ColorWheelPicker"
 import { MultiSelectDropdown } from "@/components/ui/MultiSelectDropdown"
 
-export function EventTypePage() {
+export function EventTypeCreatePage() {
   const navigate = useNavigate()
   const params = useParams({ strict: false }) as { categoryId?: string }
   const isEditor = Boolean(params.categoryId) || window.location.pathname.endsWith("/new")

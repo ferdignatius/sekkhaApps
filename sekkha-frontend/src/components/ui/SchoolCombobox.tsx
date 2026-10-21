@@ -1,5 +1,5 @@
 import * as React from "react"
-import { useState, useEffect, useRef, useMemo } from "react"
+import { useState, useEffect, useRef } from "react"
 import {
   Search,
   ChevronDown,
@@ -46,28 +46,32 @@ export function SchoolCombobox({
   const searchInputRef = useRef<HTMLInputElement>(null)
   const listRef = useRef<HTMLUListElement>(null)
 
-  // Fetch schools on mount
+  // Keep onboarding result set bounded and search active schools server-side.
   useEffect(() => {
+    if (!open) return
     let isMounted = true
-    setLoading(true)
-    api
-      .get<{ total: number; schools: SchoolOption[] }>("/schools?limit=100")
-      .then((res) => {
-        if (isMounted) {
-          setSchools(res.schools || [])
-        }
-      })
-      .catch((err) => {
-        console.error("Gagal memuat master data sekolah:", err)
-      })
-      .finally(() => {
-        if (isMounted) setLoading(false)
-      })
+    const timer = window.setTimeout(() => {
+      setLoading(true)
+      api
+        .get<{ schools: SchoolOption[] }>(
+          `/configure/schools?page=1&page_size=20&search=${encodeURIComponent(search)}`
+        )
+        .then((res) => {
+          if (isMounted) setSchools(res.schools || [])
+        })
+        .catch(() => {
+          if (isMounted) setSchools([])
+        })
+        .finally(() => {
+          if (isMounted) setLoading(false)
+        })
+    }, 250)
 
     return () => {
       isMounted = false
+      window.clearTimeout(timer)
     }
-  }, [])
+  }, [open, search])
 
   // Close when clicking outside
   useEffect(() => {
@@ -89,17 +93,7 @@ export function SchoolCombobox({
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [open])
 
-  // Filter schools based on search query
-  const filteredSchools = useMemo(() => {
-    const query = search.toLowerCase().trim()
-    if (!query) return schools
-    return schools.filter(
-      (s) =>
-        s.name.toLowerCase().includes(query) ||
-        s.city.toLowerCase().includes(query) ||
-        s.type.toLowerCase().includes(query)
-    )
-  }, [schools, search])
+  const filteredSchools = schools
 
   // Reset highlighted index when search results change
   useEffect(() => {

@@ -61,6 +61,7 @@ export function OnboardingPage() {
     birth_date: "",
     gender: "L",
     school: "",
+    school_id: "",
     class_grade: "",
   })
 
@@ -68,6 +69,8 @@ export function OnboardingPage() {
   const [selectedSchoolType, setSelectedSchoolType] = useState<string | null>(
     null
   )
+  const [schoolRequest, setSchoolRequest] = useState({ name: "", type: "", city: "" })
+  const [schoolRequestStatus, setSchoolRequestStatus] = useState<string | null>(null)
 
   // Stats for matching/similar users
   const [stats, setStats] = useState<SimilarUsersStats | null>(null)
@@ -248,9 +251,27 @@ export function OnboardingPage() {
     setProfileForm((prev) => ({
       ...prev,
       school: schoolName,
+      school_id: schoolObj?.id || "",
       // Clear class_grade if the new school has no grade levels (Universitas or Umum)
       class_grade: nextHasGrade ? prev.class_grade : "",
     }))
+  }
+
+  async function handleSchoolRequest() {
+    if (!schoolRequest.name.trim()) return
+    try {
+      setSubmitting(true)
+      const res = await api.post<{ status: string }>("/configure/school-requests", {
+        requested_name: schoolRequest.name.trim(),
+        requested_type: schoolRequest.type.trim(),
+        requested_city: schoolRequest.city.trim(),
+      })
+      setSchoolRequestStatus(res.status || "pending")
+    } catch (err: any) {
+      setErrorMsg(err.message || "Gagal mengirim permintaan sekolah.")
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   // Step 2 Submission (Complete Onboarding)
@@ -285,7 +306,7 @@ export function OnboardingPage() {
         username: profileForm.username.trim().toLowerCase(),
         name: profileForm.name.trim(),
         phone: profileForm.phone.trim() || null,
-        school: profileForm.school.trim() || null,
+        school_id: profileForm.school_id || null,
         class_grade:
           hasGradeLevel && profileForm.class_grade
             ? profileForm.class_grade.trim()
@@ -623,6 +644,17 @@ export function OnboardingPage() {
                   onChange={handleSchoolChange}
                   placeholder="Cari sekolah (misal: Dharma Widya, Tzu Chi, UI, Umum...)"
                 />
+                {!profileForm.school && (
+                  <div className="space-y-2 rounded-[12px] border border-dashed border-[#e5e5e5] p-3">
+                    <p className="text-xs font-semibold text-[#0a0a0a]">Sekolah tidak terdaftar?</p>
+                    <input aria-label="Nama sekolah" placeholder="Nama sekolah" value={schoolRequest.name} onChange={(e) => setSchoolRequest({ ...schoolRequest, name: e.target.value })} className="h-10 w-full rounded-[10px] border border-[#e5e5e5] px-3 text-sm" />
+                    <div className="grid grid-cols-2 gap-2">
+                      <input aria-label="Jenis sekolah" placeholder="Jenis" value={schoolRequest.type} onChange={(e) => setSchoolRequest({ ...schoolRequest, type: e.target.value })} className="h-10 rounded-[10px] border border-[#e5e5e5] px-3 text-sm" />
+                      <input aria-label="Kota sekolah" placeholder="Kota" value={schoolRequest.city} onChange={(e) => setSchoolRequest({ ...schoolRequest, city: e.target.value })} className="h-10 rounded-[10px] border border-[#e5e5e5] px-3 text-sm" />
+                    </div>
+                    <button type="button" disabled={submitting || schoolRequestStatus === "pending"} onClick={handleSchoolRequest} className="h-10 rounded-[10px] bg-[#0a0a0a] px-3 text-xs font-semibold text-white disabled:opacity-50">{schoolRequestStatus === "pending" ? "Permintaan menunggu review" : "Ajukan sekolah"}</button>
+                  </div>
+                )}
                 <p className="text-[11px] text-[#6a6a6a]">
                   Pilih dari master data resmi. Untuk umum/pekerja, pilih opsi{" "}
                   <span className="font-semibold text-[#0a0a0a]">"Umum"</span>.

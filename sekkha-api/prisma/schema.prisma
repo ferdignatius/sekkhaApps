@@ -81,6 +81,7 @@ model User {
   attendances       Attendance[]
   pointTransactions PointTransaction[]
   badges            UserBadge[]
+  schoolRequests    SchoolRequest[]
 
   @@index([role])
   @@index([isClaimed])
@@ -135,12 +136,14 @@ model UserStats {
 model School {
   id        String   @id @default(cuid())
   name      String   @unique
-  type      String? // "SMP" | "SMA" | "SMK" | "Universitas" | "Lainnya"
+  type      String? // "SMP" | "SMA" | "SMK" | "Universitas" | "Umum"
+  isActive  Boolean  @default(true) @map("is_active")
   city      String?
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
 
   profiles UserProfile[]
+  requests SchoolRequest[]
 
   @@map("schools")
 }
@@ -151,6 +154,9 @@ model EventType {
   id        String   @id @default(cuid())
   code      String   @unique
   label     String
+  description String?
+  defaultPointReward Int @default(0) @map("default_point_reward")
+  isActive Boolean @default(true) @map("is_active")
   color     String
   isDefault Boolean  @default(false) @map("is_default")
   createdAt DateTime @default(now()) @map("created_at")
@@ -211,6 +217,33 @@ model Event {
   @@index([seasonId, eventDate])
   @@index([eventTypeId])
   @@map("events")
+}
+
+enum SchoolRequestStatus {
+  pending
+  accepted
+  rejected
+  cancelled
+}
+
+model SchoolRequest {
+  id String @id @default(cuid())
+  requestedName String @map("requested_name")
+  requestedType String @map("requested_type")
+  requestedCity String @map("requested_city")
+  status SchoolRequestStatus @default(pending)
+  requestedBy String @map("requested_by")
+  reviewedBy String? @map("reviewed_by")
+  reviewedAt DateTime? @map("reviewed_at")
+  reviewNote String? @map("review_note")
+  schoolId String? @map("school_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  requester User @relation(fields: [requestedBy], references: [id], onDelete: Cascade)
+  school School? @relation(fields: [schoolId], references: [id], onDelete: SetNull)
+  @@index([requestedBy, status])
+  @@index([status, createdAt])
+  @@map("school_requests")
 }
 
 // ─── Attendances ─────────────────────────────────────────────────────────────
@@ -277,9 +310,12 @@ model PointTransaction {
 
 model Badge {
   id             String             @id @default(cuid())
+  code           String             @unique
   name           String
   description    String
   iconUrl        String             @map("icon_url") // emoji or URL
+  color          String             @default("#10B981")
+  pointValue     Int                @default(0) @map("point_value")
   conditionType  BadgeConditionType @default(attendance) @map("condition_type")
   conditionValue Int                @map("condition_value")
   isActive       Boolean            @default(true) @map("is_active")

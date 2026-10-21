@@ -19,6 +19,9 @@ export const configureServices = {
       icon_url: b.iconUrl,
       condition_type: b.conditionType,
       condition_value: b.conditionValue,
+      code: b.code,
+      color: b.color,
+      point_value: b.pointValue,
       is_active: b.isActive,
     }))
   },
@@ -26,8 +29,11 @@ export const configureServices = {
   async createBadge(data: any) {
     const badge = await configureModels.createBadge({
       name: data.name,
+      code: data.code ?? `badge-${Date.now()}`,
       description: data.description,
       iconUrl: data.icon_url,
+      color: data.color ?? "#10B981",
+      pointValue: data.point_value ?? 0,
       conditionType: data.condition_type,
       conditionValue: data.condition_value,
       isActive: data.is_active ?? true,
@@ -38,8 +44,11 @@ export const configureServices = {
   async updateBadge(id: string, data: any) {
     const badge = await configureModels.updateBadge(id, {
       ...(data.name && { name: data.name }),
+      ...(data.code && { code: data.code }),
       ...(data.description && { description: data.description }),
       ...(data.icon_url && { iconUrl: data.icon_url }),
+      ...(data.color && { color: data.color }),
+      ...(data.point_value !== undefined && { pointValue: data.point_value }),
       ...(data.condition_type && { conditionType: data.condition_type }),
       ...(data.condition_value !== undefined && { conditionValue: data.condition_value }),
       ...(data.is_active !== undefined && { isActive: data.is_active }),
@@ -94,6 +103,9 @@ export const configureServices = {
       code: t.code,
       label: t.label,
       color: t.color,
+      description: t.description,
+      default_point_reward: t.defaultPointReward,
+      is_active: t.isActive,
       is_default: t.isDefault,
     }))
   },
@@ -103,6 +115,9 @@ export const configureServices = {
       code: data.code,
       label: data.label,
       color: data.color,
+      description: data.description,
+      defaultPointReward: data.default_point_reward ?? 0,
+      isActive: data.is_active ?? true,
       isDefault: data.is_default ?? false,
     })
     return { id: type.id, code: type.code }
@@ -113,6 +128,9 @@ export const configureServices = {
       ...(data.code && { code: data.code }),
       ...(data.label && { label: data.label }),
       ...(data.color && { color: data.color }),
+      ...(data.description !== undefined && { description: data.description }),
+      ...(data.default_point_reward !== undefined && { defaultPointReward: data.default_point_reward }),
+      ...(data.is_active !== undefined && { isActive: data.is_active }),
       ...(data.is_default !== undefined && { isDefault: data.is_default }),
     })
     return { id: type.id, code: type.code }

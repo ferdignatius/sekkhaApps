@@ -180,11 +180,20 @@ export async function apiFetch<T = unknown>(
     }
 
     const rawJson = await response.json()
+    // Configure API uses standard { status, code, message, data } envelope.
+    // Keep legacy endpoints working by unwrapping only recognized envelopes.
+    const json =
+      rawJson &&
+      typeof rawJson === "object" &&
+      "status" in rawJson &&
+      "data" in rawJson
+        ? rawJson.data
+        : rawJson
 
     // FE-06 Remediation: Runtime response schema validation using Zod
     const result = options.schema
-      ? (options.schema.parse(rawJson) as T)
-      : (rawJson as T)
+      ? (options.schema.parse(json) as T)
+      : (json as T)
 
     // Store in memory cache if eligible
     if (isGet && !options.noCache && cacheTtlMs > 0) {

@@ -8,12 +8,18 @@ import { api } from "@/lib/api"
 
 export interface BadgeDto {
   id: string
+  code?: string
   name: string
   description: string
+  color?: string
+  point_value?: number
+  /** Legacy achievement fields retained until achievement UI migration. */
   icon_url: string
   condition_type: "streak" | "attendance" | "points" | "event_count" | "manual"
   condition_value: number
   is_active: boolean
+  created_at?: string
+  updated_at?: string
 }
 
 export interface LevelDto {
@@ -26,9 +32,13 @@ export interface LevelDto {
 export interface EventTypeDto {
   id: string
   code: string
-  label: string
+  name: string
   color: string
-  is_default: boolean
+  description?: string | null
+  default_point_reward: number
+  is_active: boolean
+  created_at?: string
+  updated_at?: string
 }
 
 export type AchievementDto = BadgeDto // same shape
@@ -65,11 +75,14 @@ export const seasonsApi = {
 // ─── Badges ──────────────────────────────────────────────────────────────────
 
 export const badgesApi = {
-  list: () => api.get<BadgeDto[]>("/configure/badges"),
-  create: (data: Omit<BadgeDto, "id" | "is_active">) =>
-    api.post<{ id: string }>("/configure/badges", data),
+  list: () =>
+    api
+      .get<{ items: BadgeDto[] }>("/configure/badges")
+      .then((res) => res.items || []),
+  create: (data: Omit<BadgeDto, "id" | "created_at" | "updated_at">) =>
+    api.post<BadgeDto>("/configure/badges", data),
   update: (id: string, data: Partial<BadgeDto>) =>
-    api.put<{ id: string }>(`/configure/badges/${id}`, data),
+    api.patch<BadgeDto>(`/configure/badges/${id}`, data),
   remove: (id: string) => api.delete(`/configure/badges/${id}`),
 }
 
@@ -87,11 +100,12 @@ export const levelsApi = {
 // ─── Event Types ─────────────────────────────────────────────────────────────
 
 export const eventTypesApi = {
-  list: () => api.get<EventTypeDto[]>("/configure/event-types"),
-  create: (data: Omit<EventTypeDto, "id">) =>
-    api.post<{ id: string }>("/configure/event-types", data),
+  list: () =>
+    api.get<EventTypeDto[]>("/configure/event-types"),
+  create: (data: Omit<EventTypeDto, "id" | "created_at" | "updated_at">) =>
+    api.post<EventTypeDto>("/configure/event-types", data),
   update: (id: string, data: Partial<EventTypeDto>) =>
-    api.put<{ id: string }>(`/configure/event-types/${id}`, data),
+    api.patch<EventTypeDto>(`/configure/event-types/${id}`, data),
   remove: (id: string) => api.delete(`/configure/event-types/${id}`),
 }
 
@@ -134,20 +148,38 @@ export interface SchoolDto {
   name: string
   type: string
   city: string
+  user_count?: number
   userCount?: number
+  request_count?: number
+  is_active: boolean
+}
+
+export type SchoolType = "SMP" | "SMA" | "SMK" | "Universitas" | "Umum"
+export type SchoolRequestStatus = "pending" | "accepted" | "rejected" | "cancelled"
+export interface SchoolRequestDto {
+  id: string
+  requested_name: string
+  requested_type: SchoolType
+  requested_city: string
+  status: SchoolRequestStatus
+  review_note?: string | null
+  school_id?: string | null
+  created_at: string
 }
 
 export const schoolsApi = {
   list: (search?: string) =>
-    api
-      .get<{ total: number; schools: SchoolDto[] }>(
-        `/schools?limit=200${search ? `&search=${encodeURIComponent(search)}` : ""}`
-      )
-      .then((res) => res.schools || []),
-  create: (data: Omit<SchoolDto, "id" | "userCount">) =>
-    api.post<SchoolDto>("/schools", data),
-  update: (id: string, data: Partial<Omit<SchoolDto, "id" | "userCount">>) =>
-    api.put<SchoolDto>(`/schools/${id}`, data),
-  remove: (id: string) =>
-    api.delete<{ success: boolean; message: string }>(`/schools/${id}`),
+    api.get<{ items: SchoolDto[] }>(
+      `/configure/schools?page=1&page_size=100${search ? `&search=${encodeURIComponent(search)}` : ""}`
+    ).then((res) => res.items || []),
+  create: (data: Omit<SchoolDto, "id" | "is_active" | "user_count" | "request_count">) =>
+    api.post<SchoolDto>("/configure/schools", data),
+  update: (id: string, data: Partial<Omit<SchoolDto, "id" | "is_active" | "user_count" | "request_count">>) =>
+    api.patch<SchoolDto>(`/configure/schools/${id}`, data),
+  remove: (id: string) => api.delete(`/configure/schools/${id}`),
+  requests: () => api.get<{ items: SchoolRequestDto[] }>("/configure/school-requests"),
+  acceptRequest: (id: string, review_note: string) =>
+    api.post(`/configure/school-requests/${id}/accept`, { review_note }),
+  rejectRequest: (id: string, review_note: string) =>
+    api.post(`/configure/school-requests/${id}/reject`, { review_note }),
 }

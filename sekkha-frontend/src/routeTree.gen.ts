@@ -36,6 +36,10 @@ import { Route as AuthenticatedConfigureMasterSchoolRouteImport } from './routes
 import { Route as AuthenticatedConfigureMasterSeasonRouteImport } from './routes/_authenticated/configure/master/season'
 import { Route as AuthenticatedConfigureRulesPointsRouteImport } from './routes/_authenticated/configure/rules/points'
 import { Route as AuthenticatedConfigureRulesSeasonRouteImport } from './routes/_authenticated/configure/rules/season'
+import { Route as AuthenticatedConfigureMasterBadgeBadgeIdRouteImport } from './routes/_authenticated/configure/master/badge.$badgeId'
+import { Route as AuthenticatedConfigureMasterBadgeNewRouteImport } from './routes/_authenticated/configure/master/badge.new'
+import { Route as AuthenticatedConfigureMasterEventTypeCategoryIdRouteImport } from './routes/_authenticated/configure/master/event-type/$categoryId'
+import { Route as AuthenticatedConfigureMasterEventTypeNewRouteImport } from './routes/_authenticated/configure/master/event-type/new'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -189,6 +193,30 @@ const AuthenticatedConfigureRulesSeasonRoute =
     path: '/configure/rules/season',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedConfigureMasterBadgeBadgeIdRoute =
+  AuthenticatedConfigureMasterBadgeBadgeIdRouteImport.update({
+    id: '/$badgeId',
+    path: '/$badgeId',
+    getParentRoute: () => AuthenticatedConfigureMasterBadgeRoute,
+  } as any)
+const AuthenticatedConfigureMasterBadgeNewRoute =
+  AuthenticatedConfigureMasterBadgeNewRouteImport.update({
+    id: '/new',
+    path: '/new',
+    getParentRoute: () => AuthenticatedConfigureMasterBadgeRoute,
+  } as any)
+const AuthenticatedConfigureMasterEventTypeCategoryIdRoute =
+  AuthenticatedConfigureMasterEventTypeCategoryIdRouteImport.update({
+    id: '/$categoryId',
+    path: '/$categoryId',
+    getParentRoute: () => AuthenticatedConfigureMasterEventTypeRoute,
+  } as any)
+const AuthenticatedConfigureMasterEventTypeNewRoute =
+  AuthenticatedConfigureMasterEventTypeNewRouteImport.update({
+    id: '/new',
+    path: '/new',
+    getParentRoute: () => AuthenticatedConfigureMasterEventTypeRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -210,13 +238,17 @@ export interface FileRoutesByFullPath {
   '/configure/early-warning/threshold': typeof AuthenticatedConfigureEarlyWarningThresholdRoute
   '/configure/master/achievement': typeof AuthenticatedConfigureMasterAchievementRoute
   '/configure/master/attendance-badge': typeof AuthenticatedConfigureMasterAttendanceBadgeRoute
-  '/configure/master/badge': typeof AuthenticatedConfigureMasterBadgeRoute
-  '/configure/master/event-type': typeof AuthenticatedConfigureMasterEventTypeRoute
+  '/configure/master/badge': typeof AuthenticatedConfigureMasterBadgeRouteWithChildren
+  '/configure/master/event-type': typeof AuthenticatedConfigureMasterEventTypeRouteWithChildren
   '/configure/master/level': typeof AuthenticatedConfigureMasterLevelRoute
   '/configure/master/school': typeof AuthenticatedConfigureMasterSchoolRoute
   '/configure/master/season': typeof AuthenticatedConfigureMasterSeasonRoute
   '/configure/rules/points': typeof AuthenticatedConfigureRulesPointsRoute
   '/configure/rules/season': typeof AuthenticatedConfigureRulesSeasonRoute
+  '/configure/master/badge/$badgeId': typeof AuthenticatedConfigureMasterBadgeBadgeIdRoute
+  '/configure/master/badge/new': typeof AuthenticatedConfigureMasterBadgeNewRoute
+  '/configure/master/event-type/$categoryId': typeof AuthenticatedConfigureMasterEventTypeCategoryIdRoute
+  '/configure/master/event-type/new': typeof AuthenticatedConfigureMasterEventTypeNewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -238,13 +270,17 @@ export interface FileRoutesByTo {
   '/configure/early-warning/threshold': typeof AuthenticatedConfigureEarlyWarningThresholdRoute
   '/configure/master/achievement': typeof AuthenticatedConfigureMasterAchievementRoute
   '/configure/master/attendance-badge': typeof AuthenticatedConfigureMasterAttendanceBadgeRoute
-  '/configure/master/badge': typeof AuthenticatedConfigureMasterBadgeRoute
-  '/configure/master/event-type': typeof AuthenticatedConfigureMasterEventTypeRoute
+  '/configure/master/badge': typeof AuthenticatedConfigureMasterBadgeRouteWithChildren
+  '/configure/master/event-type': typeof AuthenticatedConfigureMasterEventTypeRouteWithChildren
   '/configure/master/level': typeof AuthenticatedConfigureMasterLevelRoute
   '/configure/master/school': typeof AuthenticatedConfigureMasterSchoolRoute
   '/configure/master/season': typeof AuthenticatedConfigureMasterSeasonRoute
   '/configure/rules/points': typeof AuthenticatedConfigureRulesPointsRoute
   '/configure/rules/season': typeof AuthenticatedConfigureRulesSeasonRoute
+  '/configure/master/badge/$badgeId': typeof AuthenticatedConfigureMasterBadgeBadgeIdRoute
+  '/configure/master/badge/new': typeof AuthenticatedConfigureMasterBadgeNewRoute
+  '/configure/master/event-type/$categoryId': typeof AuthenticatedConfigureMasterEventTypeCategoryIdRoute
+  '/configure/master/event-type/new': typeof AuthenticatedConfigureMasterEventTypeNewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -268,13 +304,17 @@ export interface FileRoutesById {
   '/_authenticated/configure/early-warning/threshold': typeof AuthenticatedConfigureEarlyWarningThresholdRoute
   '/_authenticated/configure/master/achievement': typeof AuthenticatedConfigureMasterAchievementRoute
   '/_authenticated/configure/master/attendance-badge': typeof AuthenticatedConfigureMasterAttendanceBadgeRoute
-  '/_authenticated/configure/master/badge': typeof AuthenticatedConfigureMasterBadgeRoute
-  '/_authenticated/configure/master/event-type': typeof AuthenticatedConfigureMasterEventTypeRoute
+  '/_authenticated/configure/master/badge': typeof AuthenticatedConfigureMasterBadgeRouteWithChildren
+  '/_authenticated/configure/master/event-type': typeof AuthenticatedConfigureMasterEventTypeRouteWithChildren
   '/_authenticated/configure/master/level': typeof AuthenticatedConfigureMasterLevelRoute
   '/_authenticated/configure/master/school': typeof AuthenticatedConfigureMasterSchoolRoute
   '/_authenticated/configure/master/season': typeof AuthenticatedConfigureMasterSeasonRoute
   '/_authenticated/configure/rules/points': typeof AuthenticatedConfigureRulesPointsRoute
   '/_authenticated/configure/rules/season': typeof AuthenticatedConfigureRulesSeasonRoute
+  '/_authenticated/configure/master/badge/$badgeId': typeof AuthenticatedConfigureMasterBadgeBadgeIdRoute
+  '/_authenticated/configure/master/badge/new': typeof AuthenticatedConfigureMasterBadgeNewRoute
+  '/_authenticated/configure/master/event-type/$categoryId': typeof AuthenticatedConfigureMasterEventTypeCategoryIdRoute
+  '/_authenticated/configure/master/event-type/new': typeof AuthenticatedConfigureMasterEventTypeNewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -305,6 +345,10 @@ export interface FileRouteTypes {
     | '/configure/master/season'
     | '/configure/rules/points'
     | '/configure/rules/season'
+    | '/configure/master/badge/$badgeId'
+    | '/configure/master/badge/new'
+    | '/configure/master/event-type/$categoryId'
+    | '/configure/master/event-type/new'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -333,6 +377,10 @@ export interface FileRouteTypes {
     | '/configure/master/season'
     | '/configure/rules/points'
     | '/configure/rules/season'
+    | '/configure/master/badge/$badgeId'
+    | '/configure/master/badge/new'
+    | '/configure/master/event-type/$categoryId'
+    | '/configure/master/event-type/new'
   id:
     | '__root__'
     | '/'
@@ -362,6 +410,10 @@ export interface FileRouteTypes {
     | '/_authenticated/configure/master/season'
     | '/_authenticated/configure/rules/points'
     | '/_authenticated/configure/rules/season'
+    | '/_authenticated/configure/master/badge/$badgeId'
+    | '/_authenticated/configure/master/badge/new'
+    | '/_authenticated/configure/master/event-type/$categoryId'
+    | '/_authenticated/configure/master/event-type/new'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -563,8 +615,72 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedConfigureRulesSeasonRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/configure/master/badge/$badgeId': {
+      id: '/_authenticated/configure/master/badge/$badgeId'
+      path: '/$badgeId'
+      fullPath: '/configure/master/badge/$badgeId'
+      preLoaderRoute: typeof AuthenticatedConfigureMasterBadgeBadgeIdRouteImport
+      parentRoute: typeof AuthenticatedConfigureMasterBadgeRoute
+    }
+    '/_authenticated/configure/master/badge/new': {
+      id: '/_authenticated/configure/master/badge/new'
+      path: '/new'
+      fullPath: '/configure/master/badge/new'
+      preLoaderRoute: typeof AuthenticatedConfigureMasterBadgeNewRouteImport
+      parentRoute: typeof AuthenticatedConfigureMasterBadgeRoute
+    }
+    '/_authenticated/configure/master/event-type/$categoryId': {
+      id: '/_authenticated/configure/master/event-type/$categoryId'
+      path: '/$categoryId'
+      fullPath: '/configure/master/event-type/$categoryId'
+      preLoaderRoute: typeof AuthenticatedConfigureMasterEventTypeCategoryIdRouteImport
+      parentRoute: typeof AuthenticatedConfigureMasterEventTypeRoute
+    }
+    '/_authenticated/configure/master/event-type/new': {
+      id: '/_authenticated/configure/master/event-type/new'
+      path: '/new'
+      fullPath: '/configure/master/event-type/new'
+      preLoaderRoute: typeof AuthenticatedConfigureMasterEventTypeNewRouteImport
+      parentRoute: typeof AuthenticatedConfigureMasterEventTypeRoute
+    }
   }
 }
+
+interface AuthenticatedConfigureMasterBadgeRouteChildren {
+  AuthenticatedConfigureMasterBadgeBadgeIdRoute: typeof AuthenticatedConfigureMasterBadgeBadgeIdRoute
+  AuthenticatedConfigureMasterBadgeNewRoute: typeof AuthenticatedConfigureMasterBadgeNewRoute
+}
+
+const AuthenticatedConfigureMasterBadgeRouteChildren: AuthenticatedConfigureMasterBadgeRouteChildren =
+  {
+    AuthenticatedConfigureMasterBadgeBadgeIdRoute:
+      AuthenticatedConfigureMasterBadgeBadgeIdRoute,
+    AuthenticatedConfigureMasterBadgeNewRoute:
+      AuthenticatedConfigureMasterBadgeNewRoute,
+  }
+
+const AuthenticatedConfigureMasterBadgeRouteWithChildren =
+  AuthenticatedConfigureMasterBadgeRoute._addFileChildren(
+    AuthenticatedConfigureMasterBadgeRouteChildren,
+  )
+
+interface AuthenticatedConfigureMasterEventTypeRouteChildren {
+  AuthenticatedConfigureMasterEventTypeCategoryIdRoute: typeof AuthenticatedConfigureMasterEventTypeCategoryIdRoute
+  AuthenticatedConfigureMasterEventTypeNewRoute: typeof AuthenticatedConfigureMasterEventTypeNewRoute
+}
+
+const AuthenticatedConfigureMasterEventTypeRouteChildren: AuthenticatedConfigureMasterEventTypeRouteChildren =
+  {
+    AuthenticatedConfigureMasterEventTypeCategoryIdRoute:
+      AuthenticatedConfigureMasterEventTypeCategoryIdRoute,
+    AuthenticatedConfigureMasterEventTypeNewRoute:
+      AuthenticatedConfigureMasterEventTypeNewRoute,
+  }
+
+const AuthenticatedConfigureMasterEventTypeRouteWithChildren =
+  AuthenticatedConfigureMasterEventTypeRoute._addFileChildren(
+    AuthenticatedConfigureMasterEventTypeRouteChildren,
+  )
 
 interface AuthenticatedRouteChildren {
   AuthenticatedInsightRoute: typeof AuthenticatedInsightRoute
@@ -582,8 +698,8 @@ interface AuthenticatedRouteChildren {
   AuthenticatedConfigureEarlyWarningThresholdRoute: typeof AuthenticatedConfigureEarlyWarningThresholdRoute
   AuthenticatedConfigureMasterAchievementRoute: typeof AuthenticatedConfigureMasterAchievementRoute
   AuthenticatedConfigureMasterAttendanceBadgeRoute: typeof AuthenticatedConfigureMasterAttendanceBadgeRoute
-  AuthenticatedConfigureMasterBadgeRoute: typeof AuthenticatedConfigureMasterBadgeRoute
-  AuthenticatedConfigureMasterEventTypeRoute: typeof AuthenticatedConfigureMasterEventTypeRoute
+  AuthenticatedConfigureMasterBadgeRoute: typeof AuthenticatedConfigureMasterBadgeRouteWithChildren
+  AuthenticatedConfigureMasterEventTypeRoute: typeof AuthenticatedConfigureMasterEventTypeRouteWithChildren
   AuthenticatedConfigureMasterLevelRoute: typeof AuthenticatedConfigureMasterLevelRoute
   AuthenticatedConfigureMasterSchoolRoute: typeof AuthenticatedConfigureMasterSchoolRoute
   AuthenticatedConfigureMasterSeasonRoute: typeof AuthenticatedConfigureMasterSeasonRoute
@@ -612,9 +728,9 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedConfigureMasterAttendanceBadgeRoute:
     AuthenticatedConfigureMasterAttendanceBadgeRoute,
   AuthenticatedConfigureMasterBadgeRoute:
-    AuthenticatedConfigureMasterBadgeRoute,
+    AuthenticatedConfigureMasterBadgeRouteWithChildren,
   AuthenticatedConfigureMasterEventTypeRoute:
-    AuthenticatedConfigureMasterEventTypeRoute,
+    AuthenticatedConfigureMasterEventTypeRouteWithChildren,
   AuthenticatedConfigureMasterLevelRoute:
     AuthenticatedConfigureMasterLevelRoute,
   AuthenticatedConfigureMasterSchoolRoute:

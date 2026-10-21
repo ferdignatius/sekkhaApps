@@ -10,6 +10,7 @@ export interface AuditLogEntry {
     | "AUTH_LOGOUT"
     | "AUTH_PASSWORD_RESET"
     | "AUTH_PASSWORD_CHANGED"
+    | "USER_PASSWORD_RESET"
     | "USER_ROLE_CHANGED"
     | "USER_CLAIM_PIN_GENERATED"
     | "USER_ACCOUNT_LINKED"

@@ -2,6 +2,16 @@ import type { Request, Response, NextFunction } from "express"
 import { z } from "zod"
 import { peopleServices } from "./services"
 
+export const ListMembersQuerySchema = z.object({
+  search: z.string().trim().max(100).optional(),
+  claimed_status: z.enum(["all", "claimed", "unclaimed"]).default("all"),
+  role: z
+    .enum(["all", "member", "activist", "organizer", "admin", "umat", "aktivis", "pengurus"])
+    .default("all"),
+  page: z.coerce.number().int().min(1).max(100_000).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+})
+
 export const CreateMemberSchema = z.object({
   name: z.string().trim().min(1, "Name is required").max(100, "Name maximum 100 characters"),
   username: z
@@ -12,7 +22,7 @@ export const CreateMemberSchema = z.object({
     .regex(/^[a-zA-Z0-9_.]+$/, "Username may only contain letters, numbers, dots, or underscores")
     .optional()
     .or(z.literal("")),
-  email: z.string().trim().email("Invalid email format").max(255).optional().or(z.literal("")),
+  email: z.string().trim().email("Invalid email format").max(255),
   phone: z.string().trim().max(20).optional().or(z.literal("")),
   school: z.string().trim().max(100).optional().or(z.literal("")),
   school_id: z.string().optional().or(z.literal("")),
@@ -23,7 +33,6 @@ export const CreateMemberSchema = z.object({
     .or(z.literal("")),
   gender: z.string().trim().max(20).optional().or(z.literal("")),
   role: z.enum(["member", "activist", "organizer", "admin"]).default("member"),
-  default_password: z.string().min(8).max(128).optional(),
 })
 
 export const UpdateMemberSchema = z.object({
@@ -41,7 +50,11 @@ export const UpdateMemberSchema = z.object({
   phone: z.string().trim().max(20).optional().nullable(),
   school: z.string().trim().max(100).optional().nullable(),
   school_id: z.string().optional().nullable(),
-  birth_date: z.string().optional().nullable(),
+  birth_date: z
+    .string()
+    .refine((v) => !v || !isNaN(Date.parse(v)), "Format birth_date tidak valid, gunakan format tanggal ISO")
+    .optional()
+    .nullable(),
   gender: z.string().trim().max(20).optional().nullable(),
   role: z.enum(["member", "activist", "organizer", "admin"]).optional(),
 })
@@ -54,12 +67,9 @@ export const LinkLegacyAccountSchema = z.object({
 export const peopleControllers = {
   async getMembers(req: Request, res: Response, next: NextFunction) {
     try {
-      const result = await peopleServices.getMembers(req.query as any, req.user)
-      if (result.isPaginated) {
-        res.json(result.data)
-      } else {
-        res.json(result.data)
-      }
+      const query = ListMembersQuerySchema.parse(req.query)
+      const result = await peopleServices.getMembers(query, req.user)
+      res.json(result)
     } catch (err) {
       next(err)
     }
@@ -125,7 +135,7 @@ export const peopleControllers = {
   async resetPassword(req: Request, res: Response, next: NextFunction) {
     try {
       const id = req.params.id as string
-      const result = await peopleServices.resetPassword(id)
+      const result = await peopleServices.resetPassword(id, req.user!)
       res.json(result)
     } catch (err: any) {
       if (err.statusCode) {
@@ -139,7 +149,7 @@ export const peopleControllers = {
   async generateClaimPin(req: Request, res: Response, next: NextFunction) {
     try {
       const id = req.params.id as string
-      const result = await peopleServices.generateClaimPin(id)
+      const result = await peopleServices.generateClaimPin(id, req.user!)
       res.json(result)
     } catch (err: any) {
       if (err.statusCode) {

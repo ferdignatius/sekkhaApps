@@ -13,8 +13,6 @@ import {
   CheckIcon,
   SparklesIcon,
   ShieldCheckIcon,
-  KeyIcon,
-  Share2Icon,
   ChevronRightIcon,
   PhoneIcon,
   GraduationCapIcon,
@@ -363,14 +361,6 @@ export function PeoplePage() {
   const [deletingMember, setDeletingMember] = useState<MemberDto | null>(null)
   const [qrMember, setQrMember] = useState<MemberDto | null>(null)
 
-  const [credentialModalData, setCredentialModalData] = useState<{
-    memberName: string
-    username: string
-    defaultPassword: string
-    userNumber?: string
-    phone?: string | null
-  } | null>(null)
-
   // Form states
   const [createForm, setCreateForm] = useState<CreateMemberPayload>({
     name: "",
@@ -444,10 +434,11 @@ export function PeoplePage() {
     if (
       !isAdmin ||
       !createForm.name.trim() ||
+      !createForm.email?.trim() ||
       !createForm.gender ||
       !createForm.school?.trim()
     ) {
-      setCreateError("Full Name, Gender, and School are required.")
+      setCreateError("Full Name, Email, Gender, and School are required.")
       return
     }
 
@@ -456,6 +447,7 @@ export function PeoplePage() {
       setCreateError(null)
       const created = await peopleApi.createMember({
         name: createForm.name.trim(),
+        email: createForm.email.trim(),
         gender: createForm.gender,
         school: createForm.school.trim(),
         role: "member",
@@ -475,14 +467,12 @@ export function PeoplePage() {
         role: "member",
       })
       await loadData()
-      // Open credentials modal so Pengurus can copy username & password or share to WA
-      setCredentialModalData({
-        memberName: created.name,
-        username: created.username || "-",
-        defaultPassword: created.default_password || "Sekkha****Puggala",
-        userNumber: created.user_number || undefined,
-        phone: created.phone,
-      })
+      showToast(
+        created.email_sent
+          ? "Temporary password sent to registered email."
+          : "Member created. No temporary password delivery channel configured.",
+        created.email_sent ? "success" : "error"
+      )
     } catch (err: any) {
       showToast(err.message || "Failed to add member", "error")
     } finally {
@@ -530,10 +520,13 @@ export function PeoplePage() {
   // Copy helper
   function handleCopy(text?: string | null) {
     if (!text) return
-    navigator.clipboard.writeText(text)
-    setCopiedId(true)
-    setTimeout(() => setCopiedId(false), 2000)
-    showToast("Copied to clipboard!")
+    navigator.clipboard
+      .writeText(text)
+      .then(() => {
+        setCopiedId(true)
+        showToast("Copied to clipboard!")
+      })
+      .catch(() => showToast("Clipboard access denied.", "error"))
   }
 
   // Pagination calculations based on server response
@@ -866,7 +859,7 @@ export function PeoplePage() {
           if (open) setCreateError(null)
         }}
         title="Add New Member"
-        description="Start with Full Name, Gender, and School. Members can complete their profile later."
+        description="Full Name, Email, Gender, and School are required to deliver temporary login password."
         maxWidth="max-w-xl"
       >
         <form onSubmit={handleCreateMember} className="space-y-5">
@@ -912,6 +905,26 @@ export function PeoplePage() {
               />
             </div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5 sm:col-span-2">
+                <label
+                  htmlFor="people-create-email"
+                  className="text-xs font-bold text-[#0a0a0a]"
+                >
+                  Email <span className="text-[#ef4444]">*</span>
+                </label>
+                <input
+                  id="people-create-email"
+                  type="email"
+                  required
+                  autoComplete="email"
+                  value={createForm.email || ""}
+                  onChange={(e) =>
+                    setCreateForm({ ...createForm, email: e.target.value })
+                  }
+                  placeholder="member@example.com"
+                  className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-sm text-[#0a0a0a] transition-colors outline-none placeholder:text-[#767676] focus:border-[#0a0a0a] focus:ring-2 focus:ring-[#0a0a0a]/15"
+                />
+              </div>
               <div className="space-y-1.5">
                 <label
                   htmlFor="people-create-gender"
@@ -1286,160 +1299,6 @@ export function PeoplePage() {
       {/* ───────────────────────────────────────────────────────────────────────── */}
       {/* MODAL 5: Member Credentials Modal (Pengurus / Admin)                      */}
       {/* ───────────────────────────────────────────────────────────────────────── */}
-      {credentialModalData && (
-        <div className="fixed inset-0 z-50 flex animate-in items-center justify-center bg-black/60 p-3.5 backdrop-blur-xs fade-in sm:p-4">
-          <div className="relative max-h-[90vh] w-full max-w-md space-y-4 overflow-y-auto rounded-[24px] border border-[#e5e5e5] bg-[#fffaf0] p-5 text-left shadow-2xl sm:space-y-5 sm:p-6">
-            {/* Header */}
-            <div className="flex items-center justify-between border-b border-[#e5e5e5] pb-3">
-              <div className="flex items-center gap-2.5">
-                <div className="flex size-9 items-center justify-center rounded-[10px] bg-[#0a0a0a] text-white shadow-xs">
-                  <KeyIcon className="size-4.5 text-[#e8b94a]" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-[#0a0a0a] sm:text-base">
-                    Member Credentials
-                  </h3>
-                  <p className="text-xs text-[#6a6a6a]">
-                    Username & login password for member
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setCredentialModalData(null)}
-                className="cursor-pointer rounded-full p-1.5 text-[#6a6a6a] hover:bg-[#faf5e8]"
-              >
-                <XIcon className="size-5" />
-              </button>
-            </div>
-
-            {/* Member Info Card */}
-            <div className="flex items-center justify-between gap-3 rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] p-3.5">
-              <div className="min-w-0">
-                <p className="text-[10px] font-bold tracking-wider text-[#6a6a6a] uppercase">
-                  Member Name
-                </p>
-                <p className="truncate text-xs font-bold text-[#0a0a0a] sm:text-sm">
-                  {credentialModalData.memberName}
-                </p>
-                {credentialModalData.phone && (
-                  <p className="flex items-center gap-1 text-xs text-[#6a6a6a]">
-                    <PhoneIcon className="size-3" aria-hidden="true" />
-                    <span>{credentialModalData.phone}</span>
-                  </p>
-                )}
-              </div>
-              {credentialModalData.userNumber && (
-                <div className="shrink-0 text-right">
-                  <p className="text-[10px] font-bold tracking-wider text-[#6a6a6a] uppercase">
-                    Member ID
-                  </p>
-                  <span className="rounded-[6px] border border-[#e5e5e5] bg-[#1a3a3a]/10 px-2 py-1 font-mono text-xs font-bold text-[#1a3a3a]">
-                    {credentialModalData.userNumber}
-                  </span>
-                </div>
-              )}
-            </div>
-
-            {/* Username & Password Display */}
-            <div className="space-y-3">
-              <div className="space-y-3 rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] p-4">
-                {/* Username */}
-                <div>
-                  <p className="mb-1 text-[11px] font-bold tracking-wider text-[#6a6a6a] uppercase">
-                    LOGIN USERNAME
-                  </p>
-                  <div className="flex items-center justify-between rounded-[10px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 py-2.5">
-                    <span className="font-mono text-sm font-bold text-[#0a0a0a] select-all sm:text-base">
-                      @{credentialModalData.username}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => handleCopy(credentialModalData.username)}
-                      className="flex cursor-pointer items-center gap-1 text-xs font-bold text-[#0a0a0a] hover:underline"
-                    >
-                      <CopyIcon className="size-3.5" />
-                      <span>Copy</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Password Default */}
-                <div>
-                  <p className="mb-1 text-[11px] font-bold tracking-wider text-[#6a6a6a] uppercase">
-                    DEFAULT PASSWORD
-                  </p>
-                  <div className="flex items-center justify-between rounded-[10px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 py-2.5">
-                    <span className="font-mono text-sm font-bold text-[#0a0a0a] select-all sm:text-base">
-                      {credentialModalData.defaultPassword}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        handleCopy(credentialModalData.defaultPassword)
-                      }
-                      className="flex cursor-pointer items-center gap-1 text-xs font-bold text-[#0a0a0a] hover:underline"
-                    >
-                      <CopyIcon className="size-3.5" />
-                      <span>Copy</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <p className="px-1 text-xs leading-relaxed text-[#6a6a6a]">
-                Members can immediately log in using the{" "}
-                <strong>Username</strong> and <strong>Default Password</strong>{" "}
-                above, and may update their credentials anytime under their
-                Profile menu.
-              </p>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="space-y-2 border-t border-[#e5e5e5] pt-2">
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    const fullText = `Sekkha Community Account:\nName: ${credentialModalData.memberName}\nUsername: @${credentialModalData.username}\nPassword: ${credentialModalData.defaultPassword}`
-                    navigator.clipboard.writeText(fullText)
-                    showToast("All credentials copied!")
-                  }}
-                  className="flex h-11 flex-1 cursor-pointer items-center justify-center gap-2 rounded-[12px] bg-[#0a0a0a] text-xs font-bold text-white shadow-xs transition-all hover:bg-[#1f1f1f] sm:text-sm"
-                >
-                  <CopyIcon className="size-4" />
-                  <span>Copy All</span>
-                </button>
-
-                {credentialModalData.phone && (
-                  <a
-                    href={`https://api.whatsapp.com/send?phone=${credentialModalData.phone.replace(/[^0-9]/g, "")}&text=${encodeURIComponent(
-                      `Namo Buddhaya ${credentialModalData.memberName},\n\nHere are your Sekkha account credentials:\n👤 Username: *${credentialModalData.username}*\n🔑 Password: *${credentialModalData.defaultPassword}*\n🆔 Member ID: *${credentialModalData.userNumber || "-"}*\n\nPlease log in to the Sekkha app with your credentials above. You can change your password under *Profile > Change Password*.\n\nThank you!`
-                    )}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex h-11 cursor-pointer items-center justify-center gap-2 rounded-[12px] bg-emerald-600 px-4 text-xs font-bold text-white shadow-xs transition-all hover:bg-emerald-700 sm:text-sm"
-                    title="Send via WhatsApp"
-                  >
-                    <Share2Icon className="size-4" />
-                    <span className="hidden sm:inline">Send WhatsApp</span>
-                  </a>
-                )}
-              </div>
-
-              <div className="flex items-center justify-end pt-1">
-                <button
-                  type="button"
-                  onClick={() => setCredentialModalData(null)}
-                  className="cursor-pointer text-xs font-semibold text-[#6a6a6a] hover:text-[#0a0a0a]"
-                >
-                  Done
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </main>
+      </main>
   )
 }

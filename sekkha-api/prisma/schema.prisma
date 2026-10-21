@@ -52,7 +52,6 @@ enum BadgeConditionType {
   manual
 }
 
-
 // ─── Core Identity & Authentication (Lean Table) ─────────────────────────────
 
 model User {
@@ -75,13 +74,13 @@ model User {
   updatedAt             DateTime  @updatedAt @map("updated_at")
 
   // 1:1 Normalized Relations
-  profile               UserProfile?
-  stats                 UserStats?
+  profile UserProfile?
+  stats   UserStats?
 
   // Relations
-  attendances           Attendance[]
-  pointTransactions     PointTransaction[]
-  badges                UserBadge[]
+  attendances       Attendance[]
+  pointTransactions PointTransaction[]
+  badges            UserBadge[]
 
   @@index([role])
   @@index([isClaimed])
@@ -92,18 +91,18 @@ model User {
 // ─── User Profile (Personal & Academic Data) ─────────────────────────────────
 
 model UserProfile {
-  userId     String    @id @map("user_id")
+  userId     String   @id @map("user_id")
   name       String
-  phone      String?   @map("phone") // Tier 2: AES-256-GCM ciphertext
-  schoolId   String?   @map("school_id")
-  classGrade String?   @map("class_grade") // Tier 2: AES-256-GCM ciphertext
-  birthDate  String?   @map("birth_date") // Tier 2: AES-256-GCM ciphertext of ISO date string
-  gender     String?   @map("gender") // Tier 2: AES-256-GCM ciphertext ("pria" | "wanita")
-  avatarUrl  String?   @map("avatar_url")
-  updatedAt  DateTime  @updatedAt @map("updated_at")
+  phone      String?  @map("phone") // Tier 2: AES-256-GCM ciphertext
+  schoolId   String?  @map("school_id")
+  classGrade String?  @map("class_grade") // Tier 2: AES-256-GCM ciphertext
+  birthDate  String?  @map("birth_date") // Tier 2: AES-256-GCM ciphertext of ISO date string
+  gender     String?  @map("gender") // Tier 2: AES-256-GCM ciphertext ("pria" | "wanita")
+  avatarUrl  String?  @map("avatar_url")
+  updatedAt  DateTime @updatedAt @map("updated_at")
 
-  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  school     School?   @relation(fields: [schoolId], references: [id], onDelete: SetNull)
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  school School? @relation(fields: [schoolId], references: [id], onDelete: SetNull)
 
   @@index([schoolId])
   @@index([name])
@@ -122,8 +121,8 @@ model UserStats {
   levelId           String?   @map("level_id")
   updatedAt         DateTime  @updatedAt @map("updated_at")
 
-  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  level             Level?    @relation(fields: [levelId], references: [id], onDelete: SetNull)
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  level Level? @relation(fields: [levelId], references: [id], onDelete: SetNull)
 
   @@index([points(sort: Desc)])
   @@index([consecutiveMissed])
@@ -134,14 +133,14 @@ model UserStats {
 // ─── Master Data: Schools ───────────────────────────────────────────────────
 
 model School {
-  id        String        @id @default(cuid())
-  name      String        @unique
-  type      String?       // "SMP" | "SMA" | "SMK" | "Universitas" | "Lainnya"
+  id        String   @id @default(cuid())
+  name      String   @unique
+  type      String? // "SMP" | "SMA" | "SMK" | "Universitas" | "Lainnya"
   city      String?
-  createdAt DateTime      @default(now()) @map("created_at")
-  updatedAt DateTime      @default(now()) @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
 
-  profiles  UserProfile[]
+  profiles UserProfile[]
 
   @@map("schools")
 }
@@ -157,7 +156,7 @@ model EventType {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
 
-  events    Event[]
+  events Event[]
 
   @@map("event_types")
 }
@@ -165,34 +164,36 @@ model EventType {
 // ─── Master Data: Seasons ────────────────────────────────────────────────────
 
 model Season {
-  id               String    @id @default(cuid())
-  name             String    // e.g. "Season 1 - Q1 2026", "Season Vassa 2026"
-  code             String?   @unique // e.g. "S2026-Q1"
-  startDate        DateTime  @map("start_date")
-  endDate          DateTime  @map("end_date")
-  isActive         Boolean   @default(false) @map("is_active")
-  targetAttendance Int       @default(500) @map("target_attendance")
-  bonusPoints      Int       @default(100) @map("bonus_points")
+  id               String   @id @default(cuid())
+  name             String // e.g. "Season 1 - Q1 2026", "Season Vassa 2026"
+  code             String?  @unique // e.g. "S2026-Q1"
+  startDate        DateTime @map("start_date")
+  endDate          DateTime @map("end_date")
+  isActive         Boolean  @default(false) @map("is_active")
+  targetAttendance Int      @default(500) @map("target_attendance")
+  bonusPoints      Int      @default(100) @map("bonus_points")
   description      String?
-  createdAt        DateTime  @default(now()) @map("created_at")
-  updatedAt        DateTime  @updatedAt @map("updated_at")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
 
-  events           Event[]
+  events Event[]
 
+  @@index([isActive, updatedAt(sort: Desc), startDate(sort: Desc)])
+  @@index([startDate(sort: Desc), endDate])
   @@map("seasons")
 }
 
 // ─── Events ──────────────────────────────────────────────────────────────────
 
 model Event {
-  id          String      @id @default(cuid())
+  id          String          @id @default(cuid())
   title       String
   description String?
   location    String
-  eventDate   DateTime    @map("event_date")
-  eventTypeId String?     @map("event_type_id")
-  seasonId    String?     @map("season_id")
-  tag         String?     // "rutin" | "retreat" | "meditasi" | "sosial"
+  eventDate   DateTime        @map("event_date")
+  eventTypeId String?         @map("event_type_id")
+  seasonId    String?         @map("season_id")
+  tag         String? // "rutin" | "retreat" | "meditasi" | "sosial"
   status      EventStatus     @default(scheduled)
   visibility  EventVisibility @default(all)
   qrCode      String?         @map("qr_code")
@@ -200,8 +201,8 @@ model Event {
   updatedAt   DateTime        @updatedAt @map("updated_at")
 
   // Relations
-  type        EventType?      @relation(fields: [eventTypeId], references: [id], onDelete: SetNull)
-  season      Season?         @relation(fields: [seasonId], references: [id], onDelete: SetNull)
+  type        EventType?   @relation(fields: [eventTypeId], references: [id], onDelete: SetNull)
+  season      Season?      @relation(fields: [seasonId], references: [id], onDelete: SetNull)
   attendances Attendance[]
 
   @@index([status, eventDate])
@@ -222,8 +223,8 @@ model Attendance {
   pointsEarned Int              @default(50) @map("points_earned")
   scannedAt    DateTime         @default(now()) @map("scanned_at")
 
-  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  event        Event            @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
   @@unique([userId, eventId])
   @@index([eventId, scannedAt])
@@ -235,13 +236,13 @@ model Attendance {
 // ─── Master Data: Point Rules ────────────────────────────────────────────────
 
 model PointRule {
-  id           String             @id @default(cuid())
-  code         String             @unique // e.g. "attendance_rutin", "attendance_special", "streak_bonus"
-  label        String
-  points       Int                @default(50)
-  description  String?
-  category     String             @default("attendance") // "attendance" | "streak" | "general"
-  updatedAt    DateTime           @updatedAt @map("updated_at")
+  id          String   @id @default(cuid())
+  code        String   @unique // e.g. "attendance_rutin", "attendance_special", "streak_bonus"
+  label       String
+  points      Int      @default(50)
+  description String?
+  category    String   @default("attendance") // "attendance" | "streak" | "general"
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
   transactions PointTransaction[]
 
@@ -254,21 +255,21 @@ model PointTransaction {
   id          String               @id @default(cuid())
   userId      String               @map("user_id")
   ruleId      String?              @map("rule_id")
-  amount      Int                  // e.g. +50, +100, -50
+  amount      Int // e.g. +50, +100, -50
   type        PointTransactionType @default(attendance)
   description String?
   referenceId String?              @map("reference_id") // e.g. attendanceId or eventId
   createdAt   DateTime             @default(now()) @map("created_at")
 
-  user        User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  rule        PointRule?           @relation(fields: [ruleId], references: [id], onDelete: SetNull)
+  user User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rule PointRule? @relation(fields: [ruleId], references: [id], onDelete: SetNull)
 
+  @@unique([userId, referenceId, type])
   @@index([userId, createdAt(sort: Desc)])
   @@index([createdAt])
   @@index([type, createdAt])
   @@index([ruleId])
   @@index([referenceId])
-  @@unique([userId, referenceId, type])
   @@map("point_transactions")
 }
 
@@ -283,7 +284,7 @@ model Badge {
   conditionValue Int                @map("condition_value")
   isActive       Boolean            @default(true) @map("is_active")
 
-  users          UserBadge[]
+  users UserBadge[]
 
   @@map("badges")
 }
@@ -293,18 +294,18 @@ model UserBadge {
   badgeId  String   @map("badge_id")
   earnedAt DateTime @default(now()) @map("earned_at")
 
-  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  badge    Badge    @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge Badge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
 
   @@id([userId, badgeId])
   @@map("user_badges")
 }
 
 model Level {
-  id        String      @id @default(cuid())
-  level     Int         @unique
+  id        String @id @default(cuid())
+  level     Int    @unique
   label     String
-  minPoints Int         @map("min_points")
+  minPoints Int    @map("min_points")
 
   userStats UserStats[]
 

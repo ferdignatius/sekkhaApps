@@ -19,7 +19,6 @@ import {
   AlertTriangleIcon,
   CheckCircleIcon,
   XIcon,
-  Share2Icon,
 } from "lucide-react"
 import QRCode from "react-qr-code"
 import { useAuth } from "@/modules/auth"
@@ -84,14 +83,6 @@ export function MemberDetailPage({
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
-  const [credentialModalData, setCredentialModalData] = useState<{
-    memberName: string
-    username: string
-    defaultPassword: string
-    userNumber?: string
-    phone?: string | null
-  } | null>(null)
-
   // Toast
   const [toast, setToast] = useState<{
     text: string
@@ -128,27 +119,25 @@ export function MemberDetailPage({
 
   function handleCopy(text?: string | null) {
     if (!text) return
-    navigator.clipboard.writeText(text)
-    setCopied(true)
-    showToast("Member ID copied to clipboard!")
-    setTimeout(() => setCopied(false), 2000)
+    navigator.clipboard
+      .writeText(text)
+      .then(() => {
+        setCopied(true)
+        showToast("Member ID copied to clipboard!")
+      })
+      .catch(() => showToast("Clipboard access denied.", "error"))
   }
 
   async function handleResetPassword() {
     if (!member || !isAdmin) return
     try {
       const res = await peopleApi.resetMemberPassword(member.id)
-      setCredentialModalData({
-        memberName: member.name,
-        username:
-          res.username ||
-          member.username ||
-          member.name.toLowerCase().replace(/\s+/g, ""),
-        defaultPassword: res.default_password || "Sekkha****Puggala",
-        userNumber: member.user_number || undefined,
-        phone: member.phone,
-      })
-      showToast("Password reset successfully!")
+      showToast(
+        res.email_sent
+          ? "Password reset. Temporary password sent to registered email."
+          : "Password reset. No temporary password delivery channel configured.",
+        res.email_sent ? "success" : "error"
+      )
     } catch (err: any) {
       showToast(err.message || "Failed to reset password", "error")
     }
@@ -768,90 +757,6 @@ export function MemberDetailPage({
       )}
 
       {/* ── MODAL: CREDENTIALS POPUP AFTER RESET ── */}
-      {credentialModalData && (
-        <div className="fixed inset-0 z-50 flex animate-in items-center justify-center bg-black/60 p-3.5 backdrop-blur-xs fade-in sm:p-4">
-          <div className="relative max-h-[90vh] w-full max-w-md space-y-4 overflow-y-auto rounded-[24px] border border-[#e5e5e5] bg-[#fffaf0] p-5 text-left shadow-2xl sm:p-6">
-            <div className="flex items-center justify-between border-b border-[#e5e5e5] pb-3">
-              <div className="flex items-center gap-2">
-                <KeyIcon className="size-4.5 text-[#0a0a0a]" />
-                <h3 className="text-sm font-bold text-[#0a0a0a] sm:text-base">
-                  Account Reset Credentials
-                </h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setCredentialModalData(null)}
-                className="cursor-pointer rounded-full p-1.5 text-[#6a6a6a] hover:bg-[#faf5e8]"
-              >
-                <XIcon className="size-5" />
-              </button>
-            </div>
-
-            <div className="space-y-3 rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] p-4">
-              <div>
-                <p className="mb-1 text-[11px] font-bold text-[#6a6a6a] uppercase">
-                  USERNAME
-                </p>
-                <div className="flex items-center justify-between rounded-[10px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 py-2">
-                  <span className="font-mono text-sm font-bold text-[#0a0a0a]">
-                    @{credentialModalData.username}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => handleCopy(credentialModalData.username)}
-                    className="cursor-pointer text-xs font-bold text-[#0a0a0a] hover:underline"
-                  >
-                    Copy
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <p className="mb-1 text-[11px] font-bold text-[#6a6a6a] uppercase">
-                  PASSWORD
-                </p>
-                <div className="flex items-center justify-between rounded-[10px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 py-2">
-                  <span className="font-mono text-sm font-bold text-[#0a0a0a]">
-                    {credentialModalData.defaultPassword}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      handleCopy(credentialModalData.defaultPassword)
-                    }
-                    className="cursor-pointer text-xs font-bold text-[#0a0a0a] hover:underline"
-                  >
-                    Copy
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex gap-2 border-t border-[#e5e5e5] pt-2">
-              <button
-                type="button"
-                onClick={() => setCredentialModalData(null)}
-                className="h-11 flex-1 cursor-pointer rounded-[12px] bg-[#0a0a0a] text-xs font-bold text-white hover:bg-[#1f1f1f] sm:text-sm"
-              >
-                Done
-              </button>
-              {credentialModalData.phone && (
-                <a
-                  href={`https://api.whatsapp.com/send?phone=${credentialModalData.phone.replace(/[^0-9]/g, "")}&text=${encodeURIComponent(
-                    `Namo Buddhaya ${credentialModalData.memberName},\n\nYour Sekkha password has been reset:\n👤 Username: *${credentialModalData.username}*\n🔑 Password: *${credentialModalData.defaultPassword}*\n🆔 Member ID: *${credentialModalData.userNumber || "-"}*\n\nThank you!`
-                  )}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex h-11 cursor-pointer items-center justify-center gap-1.5 rounded-[12px] bg-emerald-600 px-4 text-xs font-bold text-white hover:bg-emerald-700 sm:text-sm"
-                >
-                  <Share2Icon className="size-4" />
-                  <span>WhatsApp</span>
-                </a>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-    </main>
+      </main>
   )
 }

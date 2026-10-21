@@ -23,7 +23,7 @@ describe("EventCard Business Component (FE-16)", () => {
 
     expect(screen.getByText("Kebaktian Minggu Pagi")).toBeTruthy()
     expect(screen.getByText("Dhammasala Utama")).toBeTruthy()
-    expect(screen.getByText("meditasi")).toBeTruthy()
+    expect(screen.getByText("Meditation")).toBeTruthy()
   })
 
   it("invokes onClick callback when the card is clicked", () => {

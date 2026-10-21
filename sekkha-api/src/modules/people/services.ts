@@ -13,21 +13,24 @@ export function generateDefaultPassword(): string {
   return `Sekkha-${randHex}-Puggala`
 }
 
+type ListMembersQuery = {
+  search?: string
+  claimed_status: "all" | "claimed" | "unclaimed"
+  role: "all" | "member" | "activist" | "organizer" | "admin" | "umat" | "aktivis" | "pengurus"
+  page: number
+  limit: number
+}
+
+type CurrentUser = { userId: string; role: string }
+
 export const peopleServices = {
   async getMembers(
-    queryParams: {
-      search?: string
-      claimed_status?: string
-      role?: string
-      limit?: string
-      page?: string
-    },
-    currentUser?: { userId: string; role: string }
+    queryParams: ListMembersQuery,
+    currentUser?: CurrentUser
   ) {
-    const isPrivileged = currentUser?.role === "organizer" || currentUser?.role === "admin"
     const searchQuery = (queryParams.search || "").toLowerCase().trim()
-    const claimedStatus = queryParams.claimed_status || "all"
-    const roleFilter = queryParams.role || "all"
+    const claimedStatus = queryParams.claimed_status
+    const roleFilter = queryParams.role
 
     const where: any = {}
 
@@ -56,27 +59,15 @@ export const peopleServices = {
         { userNumber: { contains: searchQuery, mode: "insensitive" } },
         { profile: { school: { name: { contains: searchQuery, mode: "insensitive" } } } },
       ]
-      // Only privileged roles can search by private PII (email via blind index)
-      if (isPrivileged) {
-        const emailBindex = generateBlindIndex(searchQuery.trim().toLowerCase())
-        if (emailBindex) {
-          searchConditions.push({ emailBindex })
-        }
-      }
       where.OR = searchConditions
     }
 
-    const limitParam = queryParams.limit ? parseInt(queryParams.limit, 10) : undefined
-    const pageParam = queryParams.page ? parseInt(queryParams.page, 10) : undefined
-    const isPaginated = pageParam !== undefined || limitParam !== undefined
-    const limit = limitParam && limitParam > 0 ? Math.min(limitParam, 100) : 50
-    const page = pageParam && pageParam > 0 ? pageParam : 1
-    const skip = isPaginated ? (page - 1) * limit : 0
-    const take = limit
+    const { page, limit } = queryParams
+    const skip = (page - 1) * limit
 
     const [totalMatching, rawMembers, roleCounts] = await Promise.all([
       peopleModels.count(where),
-      peopleModels.findMany(where, take, skip),
+      peopleModels.findMany(where, limit, skip),
       peopleModels.countByRole(),
     ])
 
@@ -92,57 +83,38 @@ export const peopleServices = {
     )
 
     const members = rawMembers.map((m) => {
-      const isSelf = currentUser?.userId === m.id
-      const canViewSensitive = isPrivileged || isSelf
-
       return {
         id: m.id,
         name: m.profile?.name || m.username || "Anggota",
         username: m.username || null,
-        email: canViewSensitive ? (decrypt(m.email) || m.email) : null,
-        phone: canViewSensitive ? (decrypt(m.profile?.phone) || null) : null,
+        email: null,
+        phone: null,
         school: m.profile?.school?.name || null,
         school_id: m.profile?.schoolId || null,
-        birth_date: canViewSensitive ? (decrypt(m.profile?.birthDate) || null) : null,
-        gender: canViewSensitive ? (decrypt(m.profile?.gender) || null) : null,
+        birth_date: null,
+        gender: null,
         role: m.role,
         avatar_url: m.profile?.avatarUrl || null,
         user_number: m.userNumber || null,
         is_claimed: m.isClaimed ?? true,
         total_attendance: m._count?.attendances ?? 0,
-        points: canViewSensitive ? (m.stats?.points ?? 0) : 0,
+        points: m.stats?.points ?? 0,
         created_at: new Date(m.createdAt).toISOString(),
       }
     })
 
-    if (isPaginated) {
-      const totalPages = Math.max(1, Math.ceil(totalMatching / limit))
-      return {
-        isPaginated: true,
-        data: {
-          items: members,
-          members,
-          page,
-          limit,
-          total: totalMatching,
-          totalPages,
-          stats: {
-            total: counts.total,
-            member: counts.member,
-            activist: counts.activist,
-            organizer: counts.organizer,
-            // Backward-compatibility aliases
-            umat: counts.member,
-            aktivis: counts.activist,
-            pengurus: counts.organizer,
-          },
-        },
-      }
-    }
-
     return {
-      isPaginated: false,
-      data: members,
+      items: members,
+      page,
+      limit,
+      total: totalMatching,
+      totalPages: Math.max(1, Math.ceil(totalMatching / limit)),
+      stats: {
+        total: counts.total,
+        member: counts.member,
+        activist: counts.activist,
+        organizer: counts.organizer,
+      },
     }
   },
 
@@ -185,7 +157,7 @@ export const peopleServices = {
         scanned_at: new Date(a.scannedAt).toISOString(),
       })),
       badges: (member.badges || []).map((b: any) => ({
-        id: b.id,
+        id: b.badgeId,
         name: b.badge?.name,
         icon_url: b.badge?.iconUrl,
         earned_at: new Date(b.earnedAt).toISOString(),
@@ -214,7 +186,7 @@ export const peopleServices = {
       throw error
     }
 
-    const defaultPassword = data.default_password || generateDefaultPassword()
+    const defaultPassword = generateDefaultPassword()
     const hashedPassword = await hashPassword(defaultPassword, DEFAULT_BCRYPT_COST)
 
     let resolvedSchoolId = data.school_id
@@ -223,7 +195,7 @@ export const peopleServices = {
       if (s) {
         resolvedSchoolId = s.id
       } else {
-        const createdS = await peopleModels.createSchool(data.school.trim(), "Lainnya")
+        const createdS = await peopleModels.upsertSchool(data.school.trim(), "Lainnya")
         resolvedSchoolId = createdS.id
       }
     }
@@ -315,7 +287,7 @@ export const peopleServices = {
       responsePayload.email_sent = true
       responsePayload.message = `Anggota ${memberProfileName} berhasil didaftarkan. Informasi kata sandi sementara telah dikirimkan ke email terdaftar.`
     } else {
-      responsePayload.default_password = defaultPassword
+      responsePayload.email_sent = false
       responsePayload.requires_change_on_login = true
       responsePayload.message = `Anggota ${memberProfileName} berhasil didaftarkan.`
     }
@@ -365,40 +337,46 @@ export const peopleServices = {
       if (s) {
         resolvedSchoolId = s.id
       } else {
-        const createdS = await peopleModels.createSchool(data.school.trim(), "Lainnya")
+        const createdS = await peopleModels.upsertSchool(data.school.trim(), "Lainnya")
         resolvedSchoolId = createdS.id
       }
     }
 
-    const updatedUser = await peopleModels.update(id, {
+    const userData = {
       ...(data.username !== undefined && { username: data.username ? data.username.toLowerCase().trim() : null }),
       ...(data.email !== undefined && {
         email: data.email ? encrypt(data.email.toLowerCase().trim()) : null,
         emailBindex: data.email ? generateBlindIndex(data.email.toLowerCase().trim()) : null,
       }),
       ...(data.role && { role: data.role }),
-    })
-
-    const updatedProfile = await peopleModels.upsertProfileWithSchool(
-      id,
-      {
-        ...(data.name && { name: data.name.trim() }),
-        ...(data.phone !== undefined && { phone: data.phone ? encrypt(data.phone.trim()) : null }),
-        ...(resolvedSchoolId !== undefined && { schoolId: resolvedSchoolId }),
-        ...(data.birth_date !== undefined && {
-          birthDate: data.birth_date ? encrypt(new Date(data.birth_date).toISOString()) : null,
-        }),
-        ...(data.gender !== undefined && { gender: data.gender ? encrypt(data.gender.trim()) : null }),
-      },
-      {
-        userId: id,
-        name: data.name ? data.name.trim() : existing.username || "Anggota",
-        phone: data.phone ? encrypt(data.phone.trim()) : null,
-        schoolId: resolvedSchoolId || null,
+    }
+    const profileData = {
+      ...(data.name && { name: data.name.trim() }),
+      ...(data.phone !== undefined && { phone: data.phone ? encrypt(data.phone.trim()) : null }),
+      ...(resolvedSchoolId !== undefined && { schoolId: resolvedSchoolId }),
+      ...(data.birth_date !== undefined && {
         birthDate: data.birth_date ? encrypt(new Date(data.birth_date).toISOString()) : null,
-        gender: data.gender ? encrypt(data.gender.trim()) : null,
-      }
-    )
+      }),
+      ...(data.gender !== undefined && { gender: data.gender ? encrypt(data.gender.trim()) : null }),
+    }
+
+    const { updatedUser, updatedProfile } = await peopleModels.transaction(async (tx) => {
+      const updatedUser = await tx.user.update({ where: { id }, data: userData })
+      const updatedProfile = await tx.userProfile.upsert({
+        where: { userId: id },
+        update: profileData,
+        create: {
+          userId: id,
+          name: data.name ? data.name.trim() : existing.profile?.name || existing.username || "Anggota",
+          phone: data.phone ? encrypt(data.phone.trim()) : null,
+          schoolId: resolvedSchoolId || null,
+          birthDate: data.birth_date ? encrypt(new Date(data.birth_date).toISOString()) : null,
+          gender: data.gender ? encrypt(data.gender.trim()) : null,
+        },
+        include: { school: true },
+      })
+      return { updatedUser, updatedProfile }
+    })
 
     await invalidate(CacheKeys.userProfile(id))
 
@@ -444,7 +422,7 @@ export const peopleServices = {
     return { success: true, message: "Member deleted successfully." }
   },
 
-  async resetPassword(id: string) {
+  async resetPassword(id: string, actor: CurrentUser) {
     const targetUser = await peopleModels.findUserWithProfile(id)
     if (!targetUser) {
       const error = new Error("Member not found.") as any
@@ -469,6 +447,14 @@ export const peopleServices = {
       passwordChangedAt: new Date(),
     })
 
+    auditLogger.log({
+      actorId: actor.userId,
+      actorRole: actor.role,
+      action: "USER_PASSWORD_RESET",
+      targetId: id,
+      status: "SUCCESS",
+    })
+
     await invalidate(CacheKeys.userProfile(id))
 
     const memberName = targetUser.profile?.name || targetUser.username || "member"
@@ -487,7 +473,7 @@ export const peopleServices = {
         username: targetUser.username,
         name: memberName,
         email_sent: true,
-        message: `Kata sandi sementara untuk ${memberName} berhasil dibuat dan dikirimkan ke email terdaftar (${decryptedEmail}).`,
+        message: `Kata sandi sementara untuk ${memberName} berhasil dibuat dan dikirimkan ke email terdaftar.`,
       }
     }
 
@@ -496,13 +482,13 @@ export const peopleServices = {
       user_number: targetUser.userNumber,
       username: targetUser.username,
       name: memberName,
-      default_password: defaultPassword,
+      email_sent: false,
       requires_change_on_login: true,
       message: `Kata sandi sementara untuk ${memberName} berhasil diatur. Harap minta member segera mengubah kata sandi saat masuk.`,
     }
   },
 
-  async generateClaimPin(id: string) {
+  async generateClaimPin(id: string, actor: CurrentUser) {
     const targetUser = await peopleModels.findUserWithProfile(id)
     if (!targetUser) {
       const error = new Error("Anggota tidak ditemukan.") as any
@@ -527,15 +513,22 @@ export const peopleServices = {
 
     await invalidate(CacheKeys.userProfile(id))
 
+    auditLogger.log({
+      actorId: actor.userId,
+      actorRole: actor.role,
+      action: "USER_CLAIM_PIN_GENERATED",
+      targetId: id,
+      status: "SUCCESS",
+    })
+
     const memberName = targetUser.profile?.name || targetUser.username || "Anggota"
 
     return {
       success: true,
-      claim_pin: rawPin,
       user_number: targetUser.userNumber,
       name: memberName,
       expires_at: expiresAt.toISOString(),
-      message: `PIN klaim 6-digit untuk ${memberName} berhasil dibuat: ${rawPin}. Berikan PIN ini ke anggota terkait.`,
+      message: `PIN klaim 6-digit untuk ${memberName} berhasil dibuat. Distribusikan PIN melalui kanal aman.`,
     }
   },
 

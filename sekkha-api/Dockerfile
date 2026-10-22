@@ -34,7 +34,10 @@ COPY package.json bun.lock* ./
 COPY prisma ./prisma/
 
 RUN bun install --production --frozen-lockfile || bun install --production
-RUN bunx prisma generate
+
+# Copy generated Prisma client from builder (prisma CLI is a dev dep, not available here)
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma/client ./node_modules/@prisma/client
 
 COPY --from=builder /app/dist ./dist
 

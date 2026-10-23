@@ -113,7 +113,6 @@ export const CacheKeys = {
   eventDetail: (id: string) => `events:${id}`,
   leaderboard: (metric: string, season: string) => `leaderboard:${metric}:${season}`,
   userProfile: (userId: string) => `user:${userId}:profile`,
-  userBadges: (userId: string) => `user:${userId}:badges`,
   userAttendances: (userId: string) => `user:${userId}:attendances`,
   home: (userId: string, role: string) => `user:${userId}:home:${role}`,
   communityGoal: () => "community:goal",

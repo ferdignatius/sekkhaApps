@@ -7,8 +7,6 @@ export const usersRouter: Router = Router()
 // GET /api/users/me — Current authenticated user profile
 usersRouter.get("/me", requireAuth, userControllers.getProfile)
 
-// GET /api/users/me/badges — Badges earned by user
-usersRouter.get("/me/badges", requireAuth, userControllers.getBadges)
 
 // GET /api/users/me/attendances — Recent event attendances
 usersRouter.get("/me/attendances", requireAuth, userControllers.getAttendances)
@@ -20,8 +18,6 @@ usersRouter.patch("/me/onboarding", requireAuth, userControllers.completeOnboard
 // GET /api/users/me/streak — Current & longest weekly streak
 usersRouter.get("/me/streak", requireAuth, userControllers.getStreak)
 
-// GET /api/users/me/level — User gamification level & points
-usersRouter.get("/me/level", requireAuth, userControllers.getLevel)
 
 // GET /api/users/me/point-transactions — Point mutation history
 usersRouter.get("/me/point-transactions", requireAuth, userControllers.getPointTransactions)

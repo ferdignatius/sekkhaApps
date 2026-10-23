@@ -65,7 +65,7 @@ export const landingContent: LandingContent = {
     {
       title: "Merit Points & Leaderboard",
       description:
-        "Earn merit points every time you participate in fellowship and activities, unlock achievement badges, and level up in the community.",
+        "Earn merit points every time you participate in fellowship and activities, maintain your streak, and climb the community leaderboard.",
     },
     {
       title: "Retreat & Event Registration",

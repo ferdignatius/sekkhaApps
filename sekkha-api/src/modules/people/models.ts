@@ -83,13 +83,6 @@ export const peopleModels = {
           orderBy: { scannedAt: "desc" },
           take: 20,
         },
-        badges: {
-          select: {
-            badgeId: true,
-            earnedAt: true,
-            badge: { select: { name: true, iconUrl: true } },
-          },
-        },
       },
     })
   },
@@ -167,9 +160,6 @@ export const peopleModels = {
     })
   },
 
-  findLevelByLevel(level: number) {
-    return prisma.level.findFirst({ where: { level } })
-  },
 
   transaction<T>(fn: (tx: any) => Promise<T>): Promise<T> {
     return prisma.$transaction(fn)

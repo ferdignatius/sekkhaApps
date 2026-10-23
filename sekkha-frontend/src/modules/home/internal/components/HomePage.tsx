@@ -9,7 +9,7 @@ import {
   CalendarIcon,
   MapPinIcon,
   QrCodeIcon,
-  AwardIcon,
+  StarIcon,
   SearchIcon,
   SettingsIcon,
   TicketIcon,
@@ -59,8 +59,6 @@ type HomeDashboard = {
     user_number: string | null
     role: string
     points: number
-    level: number
-    level_label: string
   }
   streak: {
     current_streak: number
@@ -165,14 +163,6 @@ export function HomePage() {
       iconColor: "text-white",
       href: "/leaderboard",
     },
-    {
-      id: "achievements",
-      label: "Achievements",
-      icon: AwardIcon,
-      bg: "bg-[#b8a4ed]",
-      iconColor: "text-[#0a0a0a]",
-      href: "/home/achievements",
-    },
     ...(canAccessTeams
       ? [
           {
@@ -247,19 +237,6 @@ export function HomePage() {
           badge: "Rankings",
           keywords:
             "leaderboard ranking score points merit standings peringkat klasemen skor",
-        },
-        {
-          id: "achievements",
-          label: "Achievements",
-          description:
-            "Track your Dhamma badges, spiritual levels, and milestones",
-          icon: AwardIcon,
-          bg: "bg-[#b8a4ed]",
-          iconColor: "text-[#0a0a0a]",
-          href: "/home/achievements",
-          badge: "Badges",
-          keywords:
-            "achievements badges milestones level rewards pencapaian lencana tingkat",
         },
         ...(canAccessTeams
           ? [
@@ -360,31 +337,6 @@ export function HomePage() {
                 keywords: "schools kmb kampus sekolah universitas master data",
               },
               {
-                id: "badges",
-                label: "Master Badges",
-                description:
-                  "Configure spiritual badges, criteria, and gamification rewards",
-                icon: AwardIcon,
-                bg: "bg-[#b8a4ed]",
-                iconColor: "text-[#0a0a0a]",
-                href: "/configure/master/badge",
-                badge: "Gamification",
-                keywords: "badge master badges lencana gamifikasi",
-              },
-              {
-                id: "levels",
-                label: "Member Levels",
-                description:
-                  "Configure point thresholds, level titles, and progression rules",
-                icon: TrophyIcon,
-                bg: "bg-[#e8b94a]",
-                iconColor: "text-[#0a0a0a]",
-                href: "/configure/master/level",
-                badge: "Gamification",
-                keywords:
-                  "level tiers rank progression tingkatan member jenjang",
-              },
-              {
                 id: "event-types",
                 label: "Event Categories",
                 description:
@@ -478,7 +430,9 @@ export function HomePage() {
                 role="alert"
                 className="mb-3 flex items-center justify-between gap-3 rounded-[16px] border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-800"
               >
-                <span>{dashboard ? `Data lama ditampilkan. ${error}` : error}</span>
+                <span>
+                  {dashboard ? `Data lama ditampilkan. ${error}` : error}
+                </span>
                 <button
                   type="button"
                   onClick={() => setRetryKey((value) => value + 1)}
@@ -538,11 +492,6 @@ export function HomePage() {
                         <span className="shrink-0 font-mono text-[11px] text-[#6a6a6a] sm:text-xs">
                           ID: {memberId}
                         </span>
-                        {dashboard && (
-                          <span className="shrink-0 text-[11px] font-semibold text-[#6a6a6a] sm:text-xs">
-                            Level {dashboard.profile.level} · {dashboard.profile.level_label}
-                          </span>
-                        )}
                       </div>
                     </div>
                   </div>
@@ -582,7 +531,7 @@ export function HomePage() {
 
                   <div className="flex items-center gap-2.5 rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0]/90 px-3.5 py-2 shadow-2xs backdrop-blur-sm sm:px-4 sm:py-2.5">
                     <div className="flex size-9 shrink-0 items-center justify-center rounded-[12px] bg-[#e8b94a]/20">
-                      <AwardIcon className="size-5 text-[#0a0a0a]" />
+                      <StarIcon className="size-5 text-[#0a0a0a]" />
                     </div>
                     <div className="min-w-0 text-left">
                       <p className="text-[10px] font-bold tracking-wider text-[#6a6a6a] uppercase sm:text-[11px]">
@@ -798,7 +747,8 @@ export function HomePage() {
                           {activity.event_title}
                         </p>
                         <p className="text-xs text-[#6a6a6a]">
-                          {formatEventDate(activity.scanned_at)} · {activity.method}
+                          {formatEventDate(activity.scanned_at)} ·{" "}
+                          {activity.method}
                         </p>
                       </div>
                       <Badge variant="emerald" size="sm">
@@ -814,7 +764,6 @@ export function HomePage() {
               )}
             </div>
           </section>
-
         </div>
       </div>
 

@@ -44,14 +44,6 @@ enum PointTransactionType {
   system
 }
 
-enum BadgeConditionType {
-  streak
-  attendance
-  points
-  event_count
-  manual
-}
-
 // ─── Core Identity & Authentication (Lean Table) ─────────────────────────────
 
 model User {
@@ -80,7 +72,6 @@ model User {
   // Relations
   attendances            Attendance[]
   pointTransactions      PointTransaction[]
-  badges                 UserBadge[]
   submittedSchools       School[]           @relation("SchoolRequester")
   reviewedSchools        School[]           @relation("SchoolReviewer")
   claimedByUser          User?              @relation("UserClaimLink", fields: [claimedByUserId], references: [id], onDelete: SetNull)
@@ -121,15 +112,12 @@ model UserStats {
   lastActivityAt    DateTime? @map("last_activity_at")
   totalAttendances  Int       @default(0) @map("total_attendances")
   currentStreak     Int       @default(0) @map("current_streak")
-  levelId           String?   @map("level_id")
   updatedAt         DateTime  @updatedAt @map("updated_at")
 
   user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  level Level? @relation(fields: [levelId], references: [id], onDelete: SetNull)
 
   @@index([points(sort: Desc)])
   @@index([consecutiveMissed])
-  @@index([levelId])
   @@map("user_stats")
 }
 
@@ -291,46 +279,3 @@ model PointTransaction {
   @@map("point_transactions")
 }
 
-// ─── Gamification: Badges & Levels ───────────────────────────────────────────
-
-model Badge {
-  id             String             @id @default(cuid())
-  code           String             @unique
-  name           String
-  description    String
-  iconUrl        String             @map("icon_url") // emoji or URL
-  color          String             @default("#10B981")
-  pointValue     Int                @default(0) @map("point_value")
-  conditionType  BadgeConditionType @default(attendance) @map("condition_type")
-  conditionValue Int                @map("condition_value")
-  isActive       Boolean            @default(true) @map("is_active")
-
-  users UserBadge[]
-
-  @@map("badges")
-}
-
-model UserBadge {
-  userId   String   @map("user_id")
-  badgeId  String   @map("badge_id")
-  earnedAt DateTime @default(now()) @map("earned_at")
-
-  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  badge Badge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
-
-  @@id([userId, badgeId])
-  @@map("user_badges")
-}
-
-model Level {
-  id        String   @id @default(cuid())
-  level     Int      @unique
-  label     String
-  minPoints Int      @map("min_points")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  userStats UserStats[]
-
-  @@map("levels")
-}

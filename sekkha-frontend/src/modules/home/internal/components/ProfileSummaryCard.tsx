@@ -9,12 +9,8 @@ interface ProfileSummaryCardProps {
   avatarUrl?: string
   /** current_streak from GET /users/me/streak */
   currentStreak: number
-  /** total_points from GET /users/me/level */
+  /** total_points from profile */
   totalPoints: number
-  /** level from GET /users/me/level */
-  level: number
-  /** level_label from GET /users/me/level */
-  levelLabel: string
 }
 
 function getInitials(name: string): string {
@@ -68,8 +64,6 @@ export function ProfileSummaryCard({
   avatarUrl,
   currentStreak,
   totalPoints,
-  level,
-  levelLabel,
 }: ProfileSummaryCardProps) {
   const flame = getFlameConfig(currentStreak)
 
@@ -94,18 +88,9 @@ export function ProfileSummaryCard({
           )}
         </div>
 
-        {/* Name + level */}
+        {/* Name */}
         <div className="min-w-0 flex-1">
           <p className="truncate text-base font-bold text-[#0a0a0a]">{name}</p>
-          <div className="mt-1 flex flex-wrap items-center gap-1.5">
-            <span className="rounded-full border border-[#e5e5e5] bg-[#f5f0e0] px-2.5 py-0.5 text-xs font-bold text-[#0a0a0a]">
-              Lv.{level}
-            </span>
-            <span className="text-xs text-[#6a6a6a]">·</span>
-            <span className="text-xs font-semibold text-[#1a3a3a]">
-              {levelLabel}
-            </span>
-          </div>
         </div>
       </div>
 

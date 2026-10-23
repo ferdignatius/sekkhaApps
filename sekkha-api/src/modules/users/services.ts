@@ -59,20 +59,6 @@ export const userServices = {
     }
   },
 
-  async getBadges(userId: string) {
-    return cached(CacheKeys.userBadges(userId), 60, async () => {
-      const { allBadges, userBadges } = await userModels.findActiveBadgesWithUserBadges(userId)
-      const userBadgeMap = new Map(userBadges.map((ub) => [ub.badgeId, ub.earnedAt.toISOString()]))
-      return allBadges.map((b) => ({
-        badge_id: b.id,
-        name: b.name,
-        icon_url: b.iconUrl,
-        description: b.description,
-        earned_at: userBadgeMap.get(b.id) || null,
-      }))
-    })
-  },
-
   async getAttendances(userId: string) {
     return cached(CacheKeys.userAttendances(userId), 60, async () => {
       const result = await userModels.findUserAttendances(userId, 20)
@@ -205,21 +191,6 @@ export const userServices = {
     return calculateWeeklyStreak(attendances)
   },
 
-  async getLevel(userId: string) {
-    const stats = await userModels.findUserStatsWithLevel(userId)
-    const attendanceCount = await userModels.countUserAttendances(userId)
-    const totalPoints = stats?.points ?? attendanceCount * 50
-
-    const levels = await userModels.findLevelsOrderedDesc()
-    const currentLevel = levels.find((l) => totalPoints >= l.minPoints) ?? { level: 1, label: "Beginner", minPoints: 0 }
-
-    return {
-      level: stats?.level?.level ?? currentLevel.level,
-      level_label: stats?.level?.label ?? currentLevel.label,
-      total_points: totalPoints,
-    }
-  },
-
   async getPointTransactions(userId: string) {
     return userModels.findUserPointTransactions(userId, 20)
   },
@@ -279,16 +250,8 @@ export const userServices = {
         points: user.stats?.points ?? 0,
         total_attendances: user.stats?.totalAttendances ?? 0,
         current_streak: user.stats?.currentStreak ?? 0,
-        level: user.stats?.level?.level ?? 1,
-        level_label: user.stats?.level?.label ?? "Beginner",
         last_activity_at: user.stats?.lastActivityAt ?? null,
       },
-      badges: user.badges.map((ub) => ({
-        badge_name: ub.badge.name,
-        description: ub.badge.description,
-        icon: ub.badge.iconUrl,
-        earned_at: ub.earnedAt,
-      })),
       attendances: user.attendances.map((a) => ({
         event_title: a.event.title,
         event_date: a.event.eventDate,

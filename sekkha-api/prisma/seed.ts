@@ -23,8 +23,6 @@ async function main() {
   await prisma.userStats.deleteMany().catch(() => {})
   await prisma.userProfile.deleteMany().catch(() => {})
   await prisma.user.deleteMany().catch(() => {})
-  await prisma.badge.deleteMany().catch(() => {})
-  await prisma.level.deleteMany().catch(() => {})
   await prisma.pointRule.deleteMany().catch(() => {})
   await prisma.season.deleteMany().catch(() => {})
   await prisma.eventType.deleteMany().catch(() => {})
@@ -92,13 +90,6 @@ async function main() {
     },
   })
 
-  // ── 4. Master Data: Levels ──────────────────────────────────────────────────
-  console.log("⭐ Seeding Master Levels...")
-  const level1 = await prisma.level.create({ data: { level: 1, label: "Pemula", minPoints: 0 } })
-  const level2 = await prisma.level.create({ data: { level: 2, label: "Aktif", minPoints: 500 } })
-  const level3 = await prisma.level.create({ data: { level: 3, label: "Umat Setia", minPoints: 1000 } })
-  const level4 = await prisma.level.create({ data: { level: 4, label: "Teladan", minPoints: 2000 } })
-  const level5 = await prisma.level.create({ data: { level: 5, label: "Pembimbing", minPoints: 5000 } })
 
   // ── 5. Master Data: Point Rules ─────────────────────────────────────────────
   console.log("📜 Seeding Master Point Rules...")
@@ -113,44 +104,6 @@ async function main() {
     skipDuplicates: true,
   })
 
-  // ── 6. Master Data: Badges ─────────────────────────────────────────────────
-  console.log("🎖️ Seeding Master Badges...")
-  const badgePertama = await prisma.badge.create({
-    data: {
-      name: "Pertama Hadir",
-      description: "Hadir di kebaktian pertama",
-      iconUrl: "🎯",
-      conditionType: "attendance",
-      conditionValue: 1,
-    },
-  })
-  const badgeStreak = await prisma.badge.create({
-    data: {
-      name: "Streak 5",
-      description: "Hadir 5 minggu berturut-turut",
-      iconUrl: "🔥",
-      conditionType: "streak",
-      conditionValue: 5,
-    },
-  })
-  const badgeLoyal = await prisma.badge.create({
-    data: {
-      name: "Loyal",
-      description: "Aktif 3 bulan tanpa putus",
-      iconUrl: "❤️",
-      conditionType: "attendance",
-      conditionValue: 12,
-    },
-  })
-  const badgePoin = await prisma.badge.create({
-    data: {
-      name: "100 Poin",
-      description: "Kumpulkan 100 poin",
-      iconUrl: "⭐",
-      conditionType: "points",
-      conditionValue: 100,
-    },
-  })
 
   // ── 7. Seed Accounts (3NF: User + UserProfile + UserStats) ──────────────────
   console.log("👤 Seeding Normalized Users...")
@@ -189,7 +142,6 @@ async function main() {
           points: 150,
           totalAttendances: 3,
           currentStreak: 2,
-          levelId: level1.id,
           lastActivityAt: new Date(),
         },
       },
@@ -220,7 +172,6 @@ async function main() {
           points: 550,
           totalAttendances: 10,
           currentStreak: 5,
-          levelId: level2.id,
           lastActivityAt: new Date(),
         },
       },
@@ -309,25 +260,12 @@ async function main() {
         create: {
           points: 50,
           totalAttendances: 1,
-          levelId: level1.id,
         },
       },
     },
   })
 
 
-  // ── 8. Assign Badges ────────────────────────────────────────────────────────
-  await prisma.userBadge.createMany({
-    data: [
-      { userId: umatUser.id, badgeId: badgePertama.id },
-      { userId: umatUser.id, badgeId: badgePoin.id },
-      { userId: aktivisUser.id, badgeId: badgePertama.id },
-      { userId: aktivisUser.id, badgeId: badgeStreak.id },
-      { userId: pengurusUser.id, badgeId: badgeLoyal.id },
-      { userId: adminUser.id, badgeId: badgePertama.id },
-      { userId: adminUser.id, badgeId: badgePoin.id },
-    ],
-  })
 
   // ── 9. Seed Sample Events with Master Data Relations ────────────────────────
   console.log("🎉 Seeding Events...")

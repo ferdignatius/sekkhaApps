@@ -156,12 +156,6 @@ export const peopleServices = {
         points_earned: canViewSensitive ? (a.pointsEarned || 50) : 0,
         scanned_at: new Date(a.scannedAt).toISOString(),
       })),
-      badges: (member.badges || []).map((b: any) => ({
-        id: b.badgeId,
-        name: b.badge?.name,
-        icon_url: b.badge?.iconUrl,
-        earned_at: new Date(b.earnedAt).toISOString(),
-      })),
     }
   },
 
@@ -200,8 +194,6 @@ export const peopleServices = {
       }
     }
 
-    const level1 = await peopleModels.findLevelByLevel(1)
-
     let newMember: any = null
     let attempts = 0
     while (attempts < 5) {
@@ -229,7 +221,6 @@ export const peopleServices = {
             stats: {
               create: {
                 points: 0,
-                levelId: level1?.id,
               },
             },
           },
@@ -602,28 +593,6 @@ export const peopleServices = {
         }
       }
 
-      // 2. Transfer badges
-      const existingBadges = await tx.userBadge.findMany({
-        where: { userId: currentUserId },
-        select: { badgeId: true },
-      })
-      const existingBadgeIds = new Set(existingBadges.map((b: any) => b.badgeId))
-
-      const targetBadges = await tx.userBadge.findMany({
-        where: { userId: targetUser.id },
-      })
-
-      for (const b of targetBadges) {
-        if (!existingBadgeIds.has(b.badgeId)) {
-          await tx.userBadge.create({
-            data: {
-              userId: currentUserId,
-              badgeId: b.badgeId,
-              earnedAt: b.earnedAt,
-            },
-          })
-        }
-      }
 
       // 3. Merge points
       if (legacyPoints > 0) {

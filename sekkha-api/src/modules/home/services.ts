@@ -31,8 +31,6 @@ export const homeServices = {
           .filter(({ week }) => week instanceof Date && !Number.isNaN(week.getTime()))
           .map(({ week }) => ({ scannedAt: week }))
       )
-      const level = profile.stats?.level ?? { level: 1, label: "Beginner" }
-
       return {
         profile: {
           id: profile.id,
@@ -41,8 +39,6 @@ export const homeServices = {
           role: profile.role,
           user_number: profile.userNumber,
           points: profile.stats?.points ?? 0,
-          level: level.level,
-          level_label: level.label,
         },
         streak: {
           ...streak,

@@ -55,6 +55,7 @@ model User {
   password              String?
   role                  Role      @default(member)
   isClaimed             Boolean   @default(true) @map("is_claimed")
+  onboardingCompleted   Boolean   @default(false) @map("onboarding_completed")
   claimedAt             DateTime? @map("claimed_at")
   claimedByUserId       String?   @map("claimed_by_user_id")
   claimPin              String?   @map("claim_pin") // Tier 1: One-way bcrypt hash (12 rounds) — never exposed via API

@@ -401,7 +401,7 @@ export async function loginUser(input: LoginInput): Promise<AuthResult> {
     username: user.username,
     name: user.name,
     role: user.role,
-    onboarding_completed: true,
+    onboarding_completed: Boolean(user.onboardingCompleted),
   }
 
   await Promise.all([
@@ -473,7 +473,7 @@ export async function verifyToken(token: string) {
     username: user.username,
     name: user.name,
     role: user.role,
-    onboarding_completed: true,
+    onboarding_completed: Boolean(user.onboardingCompleted),
   }
 
   return userData
@@ -507,7 +507,7 @@ export async function refreshSession(refreshToken: string): Promise<AuthResult> 
     username: user.username,
     name: user.name,
     role: user.role,
-    onboarding_completed: true,
+    onboarding_completed: Boolean(user.onboardingCompleted),
   }
 
   await cacheUserSession(newAccessToken, userData)

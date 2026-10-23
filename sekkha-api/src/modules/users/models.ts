@@ -20,7 +20,6 @@ export const userModels = {
             phone: true,
             birthDate: true,
             gender: true,
-            avatarUrl: true,
             school: { select: { name: true } },
           },
         },

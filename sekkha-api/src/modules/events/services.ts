@@ -54,7 +54,7 @@ export const eventServices = {
       event_type: e.type?.code || "rutin",
       event_type_id: e.eventTypeId,
       season_id: e.seasonId,
-      tag: e.tag || "Umum",
+      tag: e.type?.label || e.type?.code || "Umum",
       status: e.status || "scheduled",
       visibility: e.visibility,
       qr_code: isPrivileged && e.qrCode ? { code: e.qrCode, expires_at: null } : null,
@@ -80,7 +80,7 @@ export const eventServices = {
       event_type: event.type?.code || "rutin",
       event_type_id: event.eventTypeId,
       season_id: event.seasonId,
-      tag: event.tag || "Umum",
+      tag: event.type?.label || event.type?.code || "Umum",
       status: event.status,
       visibility: event.visibility,
       qr_code: isPrivileged && event.qrCode ? { code: event.qrCode, expires_at: null } : null,
@@ -94,9 +94,16 @@ export const eventServices = {
       const typeByCode = await prisma.eventType.findUnique({ where: { code: body.event_type } })
       if (typeByCode) eventTypeId = typeByCode.id
     }
+    if (!eventTypeId && body.tag) {
+      const typeByTag = await prisma.eventType.findFirst({
+        where: {
+          OR: [{ code: body.tag.toLowerCase() }, { label: { equals: body.tag, mode: "insensitive" } }],
+        },
+      })
+      if (typeByTag) eventTypeId = typeByTag.id
+    }
     if (!eventTypeId) {
-      const defaultType = await eventModels.findDefaultEventType()
-      eventTypeId = defaultType?.id
+      throw new AppError("Jenis event (event_type_id) wajib dipilih", 400, "EVENT_TYPE_REQUIRED")
     }
 
     let seasonId = body.season_id
@@ -115,7 +122,6 @@ export const eventServices = {
         eventDate: new Date(body.event_date),
         eventTypeId: eventTypeId || null,
         seasonId: seasonId || null,
-        tag: body.tag,
         status: body.status ?? "scheduled",
         visibility: body.visibility ?? "all",
         qrCode,
@@ -149,6 +155,16 @@ export const eventServices = {
   },
 
   async updateEvent(actorId: string, actorRole: string, id: string, body: UpdateEventInput) {
+    let eventTypeId = body.event_type_id
+    if (!eventTypeId && body.tag) {
+      const typeByTag = await prisma.eventType.findFirst({
+        where: {
+          OR: [{ code: body.tag.toLowerCase() }, { label: { equals: body.tag, mode: "insensitive" } }],
+        },
+      })
+      if (typeByTag) eventTypeId = typeByTag.id
+    }
+
     const event = await prisma.event.update({
       where: { id },
       data: {
@@ -156,9 +172,8 @@ export const eventServices = {
         ...(body.description !== undefined && { description: body.description }),
         ...(body.location !== undefined && { location: body.location }),
         ...(body.event_date && { eventDate: new Date(body.event_date) }),
-        ...(body.tag !== undefined && { tag: body.tag }),
         ...(body.visibility && { visibility: body.visibility }),
-        ...(body.event_type_id !== undefined && { eventTypeId: body.event_type_id }),
+        ...(eventTypeId !== undefined && { eventTypeId }),
         ...(body.season_id !== undefined && { seasonId: body.season_id }),
       },
       include: { type: true },

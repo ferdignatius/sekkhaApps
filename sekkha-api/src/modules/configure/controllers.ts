@@ -26,7 +26,6 @@ export const EventTypeSchema = z.object({
   description: z.string().max(500).optional(),
   default_point_reward: z.number().int().min(0).max(10000).optional(),
   is_active: z.boolean().optional(),
-  is_default: z.boolean().optional(),
 })
 
 export const AchievementSchema = z.object({

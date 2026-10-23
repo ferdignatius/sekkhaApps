@@ -106,7 +106,6 @@ export const configureServices = {
       description: t.description,
       default_point_reward: t.defaultPointReward,
       is_active: t.isActive,
-      is_default: t.isDefault,
     }))
   },
 
@@ -118,7 +117,6 @@ export const configureServices = {
       description: data.description,
       defaultPointReward: data.default_point_reward ?? 0,
       isActive: data.is_active ?? true,
-      isDefault: data.is_default ?? false,
     })
     return { id: type.id, code: type.code }
   },
@@ -131,7 +129,6 @@ export const configureServices = {
       ...(data.description !== undefined && { description: data.description }),
       ...(data.default_point_reward !== undefined && { defaultPointReward: data.default_point_reward }),
       ...(data.is_active !== undefined && { isActive: data.is_active }),
-      ...(data.is_default !== undefined && { isDefault: data.is_default }),
     })
     return { id: type.id, code: type.code }
   },

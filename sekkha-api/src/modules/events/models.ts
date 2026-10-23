@@ -134,10 +134,6 @@ export const eventModels = {
     })
   },
 
-  findDefaultEventType() {
-    return prisma.eventType.findFirst({ where: { isDefault: true } })
-  },
-
   findEventTypeById(id: string) {
     return prisma.eventType.findUnique({ where: { id } })
   },

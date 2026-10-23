@@ -37,7 +37,7 @@ export const homeServices = {
         profile: {
           id: profile.id,
           name: profile.profile?.name || profile.username || "Anggota",
-          avatar_url: profile.profile?.avatarUrl || null,
+          avatar_url: null,
           role: profile.role,
           user_number: profile.userNumber,
           points: profile.stats?.points ?? 0,

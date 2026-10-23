@@ -50,7 +50,7 @@ export const userServices = {
       phone: decrypt(user.profile?.phone) || null,
       birth_date: decrypt(user.profile?.birthDate) || null,
       gender: decrypt(user.profile?.gender) || null,
-      avatar_url: user.profile?.avatarUrl || null,
+      avatar_url: null,
       role: user.role,
       user_number: uNum,
       points: user.stats?.points ?? 0,
@@ -154,7 +154,6 @@ export const userServices = {
       phone: body.phone ? encrypt(body.phone.trim()) : null,
       birthDate: body.birth_date ? encrypt(new Date(body.birth_date).toISOString()) : null,
       gender: body.gender ? encrypt(body.gender.trim()) : null,
-      avatarUrl: null,
     }
 
     const { user, profile } = await userModels.updateUserAndProfile(

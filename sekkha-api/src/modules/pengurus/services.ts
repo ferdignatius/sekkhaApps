@@ -177,7 +177,7 @@ export const pengurusServices = {
             encryptedEmail: u.email,
             encryptedPhone: u.profile?.phone || null,
             userNumber: u.userNumber,
-            avatarUrl: u.profile?.avatarUrl || null,
+            avatarUrl: null,
             role: u.role,
             createdAt: new Date(u.createdAt).toISOString(),
             lastAttendedDate,
@@ -363,7 +363,7 @@ export const pengurusServices = {
         userId: user.id,
         name: user.profile?.name || "Anggota",
         email: decrypt(user.email) || user.email,
-        avatarUrl: user.profile?.avatarUrl || null,
+        avatarUrl: null,
         role: user.role,
         createdAt: new Date(user.createdAt).toISOString(),
         phone: decrypt(user.profile?.phone) || null,
@@ -462,7 +462,7 @@ export const pengurusServices = {
         if (selectedCategories.includes("all") && (eventCategoryFilter === "all" || !eventCategoryFilter)) {
           return true
         }
-        const evCat = (ev.tag || ev.type?.code || "").toLowerCase()
+        const evCat = (ev.type?.code || "").toLowerCase()
         if (eventCategoryFilter !== "all" && evCat !== eventCategoryFilter.toLowerCase()) {
           return false
         }
@@ -674,7 +674,7 @@ export const pengurusServices = {
       }
 
       for (const ev of primaryEvents) {
-        const catKey = (ev.tag || ev.type?.code || "puja_bhakti").toLowerCase()
+        const catKey = (ev.type?.code || "puja_bhakti").toLowerCase()
         const key = categoryMap[catKey] ? catKey : "puja_bhakti"
         categoryMap[key].count += 1
         categoryMap[key].attendances += ev.attendances.filter((att) => targetUserIds.has(att.userId)).length

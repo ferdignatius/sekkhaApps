@@ -29,7 +29,6 @@ export const peopleModels = {
           select: {
             name: true,
             schoolId: true,
-            avatarUrl: true,
             school: { select: { name: true } },
           },
         },
@@ -63,7 +62,6 @@ export const peopleModels = {
             schoolId: true,
             birthDate: true,
             gender: true,
-            avatarUrl: true,
             school: { select: { name: true } },
           },
         },

@@ -10,7 +10,7 @@ export const schoolServices = {
       if (count === 0) {
         console.log("🏫 Seeding initial master schools data...")
         for (const item of INITIAL_SCHOOLS) {
-          await schoolModels.upsertSchool(item.name, item.type, item.city)
+          await schoolModels.upsertSchool(item.name, item.type)
         }
         console.log(`✅ Seeded ${INITIAL_SCHOOLS.length} master schools successfully.`)
       }
@@ -29,7 +29,6 @@ export const schoolServices = {
       ? {
           OR: [
             { name: { contains: trimmedSearch, mode: "insensitive" as const } },
-            { city: { contains: trimmedSearch, mode: "insensitive" as const } },
             { type: { contains: trimmedSearch, mode: "insensitive" as const } },
           ],
         }
@@ -40,7 +39,6 @@ export const schoolServices = {
       id: s.id,
       name: s.name,
       type: s.type || "Umum",
-      city: s.city || "Indonesia",
       userCount: s._count.profiles,
     }))
 
@@ -84,7 +82,7 @@ export const schoolServices = {
     })
   },
 
-  async createSchool(data: { name: string; type?: string; city?: string }) {
+  async createSchool(data: { name: string; type?: string }) {
     const trimmedName = data.name.trim()
     const existing = await schoolModels.findSchoolByName(trimmedName)
     if (existing) {
@@ -96,19 +94,17 @@ export const schoolServices = {
     const school = await schoolModels.createSchool({
       name: trimmedName,
       type: data.type || "Umum",
-      city: data.city?.trim() || "Indonesia",
     })
 
     return {
       id: school.id,
       name: school.name,
       type: school.type,
-      city: school.city,
       userCount: 0,
     }
   },
 
-  async updateSchool(id: string, data: { name?: string; type?: string; city?: string }) {
+  async updateSchool(id: string, data: { name?: string; type?: string }) {
     const existing = await schoolModels.findSchoolById(id)
     if (!existing) {
       const error = new Error("Sekolah tidak ditemukan.") as any
@@ -128,14 +124,12 @@ export const schoolServices = {
     const updated = await schoolModels.updateSchool(id, {
       ...(data.name && { name: data.name.trim() }),
       ...(data.type && { type: data.type }),
-      ...(data.city && { city: data.city.trim() }),
     })
 
     return {
       id: updated.id,
       name: updated.name,
       type: updated.type || "Umum",
-      city: updated.city || "Indonesia",
       userCount: updated._count.profiles,
     }
   },

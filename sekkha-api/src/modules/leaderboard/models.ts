@@ -51,7 +51,6 @@ export const leaderboardModels = {
         profile: {
           select: {
             name: true,
-            avatarUrl: true,
           },
         },
       },

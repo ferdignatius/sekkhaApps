@@ -210,6 +210,7 @@ export async function verifyRegisterOtp(input: VerifyRegisterOtpInput): Promise<
 
   const userData = {
     id: user.id,
+    user_number: user.userNumber,
     email: user.email || "",
     username: user.username,
     name: user.name,
@@ -397,6 +398,7 @@ export async function loginUser(input: LoginInput): Promise<AuthResult> {
 
   const userData = {
     id: user.id,
+    user_number: user.userNumber,
     email: user.email || "",
     username: user.username,
     name: user.name,
@@ -469,6 +471,7 @@ export async function verifyToken(token: string) {
 
   const userData = {
     id: user.id,
+    user_number: user.userNumber,
     email: user.email,
     username: user.username,
     name: user.name,

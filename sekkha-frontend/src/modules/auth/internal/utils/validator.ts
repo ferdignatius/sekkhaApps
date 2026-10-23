@@ -110,7 +110,10 @@ export function validateLoginForm({
   // Email or Username identifier validation
   const trimmed = identifier.trim()
   if (!trimmed) {
-    errors.push({ field: "identifier", message: "Email atau Username wajib diisi" })
+    errors.push({
+      field: "identifier",
+      message: "Email atau Username wajib diisi",
+    })
   } else if (trimmed.includes("@") && !EMAIL_REGEX.test(trimmed)) {
     errors.push({ field: "identifier", message: "Format email tidak valid" })
   } else if (!trimmed.includes("@") && trimmed.length < 3) {

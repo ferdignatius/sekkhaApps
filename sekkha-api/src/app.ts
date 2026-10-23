@@ -10,6 +10,11 @@ import { requestLogger } from "./middleware/requestLogger"
 import { redis } from "./lib/redis"
 import type { AppModule } from "./core/types"
 
+// Support native JSON.stringify serialization for BigInt (userNumber)
+;(BigInt.prototype as any).toJSON = function () {
+  return Number(this) <= Number.MAX_SAFE_INTEGER ? Number(this) : this.toString()
+}
+
 // ─── Module Imports ──────────────────────────────────────────────────────────
 import { authModule } from "./modules/auth/module"
 import { usersModule } from "./modules/users/module"

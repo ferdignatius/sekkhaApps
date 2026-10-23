@@ -6,11 +6,7 @@
 export type AuthStatus = "loading" | "authenticated" | "unauthenticated"
 
 // Role mirrors the API contract: member | activist | organizer | admin
-export type UserRole =
-  | "member"
-  | "activist"
-  | "organizer"
-  | "admin"
+export type UserRole = "member" | "activist" | "organizer" | "admin"
 
 export interface AuthState {
   status: AuthStatus

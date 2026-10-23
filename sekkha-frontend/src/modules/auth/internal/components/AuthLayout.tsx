@@ -34,7 +34,7 @@ export function AuthLayout({ children }: AuthLayoutProps) {
               Sekkha
             </h1>
             <p className="mt-1 text-xs font-medium text-[#6a6a6a] sm:text-sm">
-              Portal Komunitas & Presensi Remaja Vihara
+              Youth Community & Attendance Platform
             </p>
           </div>
         </div>

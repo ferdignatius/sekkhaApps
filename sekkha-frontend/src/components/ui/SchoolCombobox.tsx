@@ -7,6 +7,7 @@ import {
   X,
   School as SchoolIcon,
   Users,
+  Plus,
 } from "lucide-react"
 import { api } from "@/lib/api"
 import { cn } from "@/lib/utils"
@@ -26,6 +27,7 @@ interface SchoolComboboxProps {
   error?: string | null
   placeholder?: string
   className?: string
+  onRequestSchool?: (searchTerm: string) => void
 }
 
 export function SchoolCombobox({
@@ -33,8 +35,9 @@ export function SchoolCombobox({
   onChange,
   disabled = false,
   error = null,
-  placeholder = "Cari dan pilih asal sekolah / kampus...",
+  placeholder = "Search and select your school / campus...",
   className,
+  onRequestSchool,
 }: SchoolComboboxProps) {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState("")
@@ -53,11 +56,16 @@ export function SchoolCombobox({
     const timer = window.setTimeout(() => {
       setLoading(true)
       api
-        .get<{ schools: SchoolOption[] }>(
+        .get<any>(
           `/configure/schools?page=1&page_size=20&search=${encodeURIComponent(search)}`
         )
         .then((res) => {
-          if (isMounted) setSchools(res.schools || [])
+          if (isMounted) {
+            const list = Array.isArray(res)
+              ? res
+              : res?.schools || res?.data || []
+            setSchools(list)
+          }
         })
         .catch(() => {
           if (isMounted) setSchools([])
@@ -209,7 +217,7 @@ export function SchoolCombobox({
                 }
               }}
               className="rounded-full p-1 text-[#6a6a6a] transition-colors hover:bg-[#e5e5e5]/50 hover:text-[#0a0a0a]"
-              title="Hapus pilihan"
+              title="Clear selection"
             >
               <X className="size-3.5" />
             </span>
@@ -236,7 +244,7 @@ export function SchoolCombobox({
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Ketik nama sekolah atau kota..."
+                placeholder="Type school name or city..."
                 className="h-9 w-full rounded-[8px] border border-[#e5e5e5] bg-white pr-8 pl-9 text-xs font-medium text-[#0a0a0a] transition-all outline-none placeholder:text-[#767676] focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a]"
               />
               {search && (
@@ -259,19 +267,31 @@ export function SchoolCombobox({
           >
             {loading ? (
               <li className="py-6 text-center text-xs text-[#6a6a6a]">
-                Memuat master data sekolah...
+                Loading schools data...
               </li>
             ) : filteredSchools.length === 0 ? (
-              <li className="space-y-1.5 px-4 py-6 text-center">
+              <li className="space-y-2 px-4 py-6 text-center">
                 <p className="text-xs font-semibold text-[#0a0a0a]">
-                  Sekolah tidak ditemukan dalam master data
+                  School not found
                 </p>
                 <p className="text-[11px] text-[#6a6a6a]">
-                  Pilih opsi{" "}
-                  <span className="font-semibold text-[#0a0a0a]">"Umum"</span>{" "}
-                  atau hubungi pengurus Vihara jika ingin mendaftarkan nama
-                  almamatermu.
+                  Your school or campus is not registered in Sekkha yet.
                 </p>
+                {onRequestSchool && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      setOpen(false)
+                      onRequestSchool(search)
+                    }}
+                    className="mt-2 inline-flex cursor-pointer items-center gap-1.5 rounded-[10px] bg-[#0a0a0a] px-3.5 py-1.5 text-xs font-semibold text-white shadow-xs transition-all hover:bg-[#1f1f1f]"
+                  >
+                    <Plus className="size-3.5" />
+                    <span>Request New School</span>
+                  </button>
+                )}
               </li>
             ) : (
               filteredSchools.map((item, idx) => {
@@ -318,7 +338,7 @@ export function SchoolCombobox({
                       {item.userCount !== undefined && item.userCount > 0 && (
                         <span className="flex items-center gap-1 rounded-full border border-[#22c55e]/30 bg-[#22c55e]/10 px-2 py-0.5 text-[10px] font-bold text-[#22c55e]">
                           <Users className="size-2.5" />
-                          <span>{item.userCount} Umat</span>
+                          <span>{item.userCount} Members</span>
                         </span>
                       )}
                       {isSelected && (
@@ -333,9 +353,9 @@ export function SchoolCombobox({
 
           {/* Footer Note */}
           <div className="flex items-center justify-between border-t border-[#e5e5e5] bg-[#faf5e8] px-3 py-2 text-[11px] text-[#6a6a6a]">
-            <span>Master Data Terverifikasi</span>
+            <span>Verified Master Data</span>
             <span className="font-semibold text-[#0a0a0a]">
-              {schools.length} Sekolah Terdaftar
+              {schools.length} Registered Schools
             </span>
           </div>
         </div>

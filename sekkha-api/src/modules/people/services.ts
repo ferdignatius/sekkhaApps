@@ -53,10 +53,11 @@ export const peopleServices = {
     }
 
     if (searchQuery) {
+      const searchNum = /^\d+$/.test(searchQuery) ? parseInt(searchQuery, 10) : null
       const searchConditions: any[] = [
         { profile: { name: { contains: searchQuery, mode: "insensitive" } } },
         { username: { contains: searchQuery, mode: "insensitive" } },
-        { userNumber: { contains: searchQuery, mode: "insensitive" } },
+        ...(searchNum !== null ? [{ userNumber: searchNum }] : []),
         { profile: { school: { name: { contains: searchQuery, mode: "insensitive" } } } },
       ]
       where.OR = searchConditions
@@ -570,7 +571,7 @@ export const peopleServices = {
       throw error
     }
 
-    const legacyPoints = targetUser.stats?.points || 0
+    const legacyPoints = (targetUser as any).stats?.points || 0
 
     await peopleModels.transaction(async (tx) => {
       // 1. Transfer attendances

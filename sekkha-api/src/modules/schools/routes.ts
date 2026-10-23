@@ -10,6 +10,10 @@ schoolsRouter.get("/", schoolControllers.getSchools)
 // GET /api/schools/stats — Social proof user count in onboarding
 schoolsRouter.get("/stats", schoolControllers.getSchoolStats)
 
+// POST /api/schools/requests — Request new school (Authenticated users)
+schoolsRouter.post("/requests", requireAuth, schoolControllers.requestSchool)
+schoolsRouter.post("/school-requests", requireAuth, schoolControllers.requestSchool)
+
 // POST /api/schools — Create new school (Admin & Organizer)
 schoolsRouter.post("/", requireAuth, requireRole("admin", "organizer"), schoolControllers.createSchool)
 

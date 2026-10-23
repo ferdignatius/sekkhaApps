@@ -52,6 +52,7 @@ model User {
   username              String?   @unique @map("username")
   email                 String?   @map("email") // Tier 2: AES-256-GCM ciphertext
   emailBindex           String?   @unique @map("email_bindex") // Tier 2: HMAC-SHA256 Blind Index for O(1) lookup & unique constraint
+  emailVerifiedAt       DateTime? @map("email_verified_at")
   password              String?
   role                  Role      @default(member)
   isClaimed             Boolean   @default(true) @map("is_claimed")

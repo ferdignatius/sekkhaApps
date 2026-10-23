@@ -128,21 +128,22 @@ export function useSignUpForm(): UseSignUpFormReturn {
         switch (error.code) {
           case "EMAIL_ALREADY_EXISTS":
             setApiError(
-              "Email sudah digunakan. Silakan gunakan email lain atau masuk ke akun Anda."
+              "Email already in use. Please use a different email or sign in to your account."
             )
             break
           case "NETWORK_TIMEOUT":
             setApiError(
-              "Koneksi bermasalah. Periksa koneksi internet Anda dan coba lagi."
+              "Network error. Please check your internet connection and try again."
             )
             break
           default:
             setApiError(
-              error.message || "Terjadi kesalahan saat mengirim kode OTP."
+              error.message ||
+                "An error occurred while sending the verification code."
             )
         }
       } else {
-        setApiError("Terjadi kesalahan. Silakan coba beberapa saat lagi.")
+        setApiError("An error occurred. Please try again in a moment.")
       }
     } finally {
       setIsLoading(false)
@@ -161,7 +162,7 @@ export function useSignUpForm(): UseSignUpFormReturn {
       if (error instanceof AuthError) {
         setOtpError(error.message)
       } else {
-        setOtpError("Kode OTP salah atau tidak valid. Silakan coba lagi.")
+        setOtpError("Incorrect or invalid verification code. Please try again.")
       }
     } finally {
       setIsVerifyingOtp(false)
@@ -177,7 +178,7 @@ export function useSignUpForm(): UseSignUpFormReturn {
       if (error instanceof AuthError) {
         setOtpError(error.message)
       } else {
-        setOtpError("Gagal mengirim ulang OTP. Silakan coba lagi nanti.")
+        setOtpError("Failed to resend code. Please try again later.")
       }
       throw error
     }

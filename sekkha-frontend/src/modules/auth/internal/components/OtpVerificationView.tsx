@@ -138,10 +138,10 @@ export function OtpVerificationView({
           <MailCheckIcon className="size-6 text-[#e8b94a]" />
         </div>
         <h2 className="text-xl font-bold tracking-tight text-[#0a0a0a]">
-          Verifikasi Email Anda
+          Verify Your Email
         </h2>
         <p className="mx-auto max-w-xs text-xs leading-relaxed text-[#6a6a6a]">
-          Masukkan 6 digit kode OTP yang kami kirimkan ke:
+          Enter the 6-digit verification code sent to:
           <br />
           <span className="mt-0.5 inline-block rounded-[6px] border border-[#e5e5e5] bg-[#faf5e8] px-2.5 py-0.5 font-bold text-[#0a0a0a]">
             {email}
@@ -161,7 +161,7 @@ export function OtpVerificationView({
       {resendSuccessNotice && (
         <div className="flex animate-in items-center gap-2 rounded-[12px] border border-[#22c55e]/20 bg-[#22c55e]/10 p-3 text-xs font-semibold text-[#22c55e] fade-in">
           <SparklesIcon className="size-4 shrink-0" />
-          <span>Kode OTP baru telah dikirim ke email Anda!</span>
+          <span>A new verification code has been sent to your email!</span>
         </div>
       )}
 
@@ -190,10 +190,10 @@ export function OtpVerificationView({
 
         {/* Resend & Expiry Help */}
         <div className="flex flex-col items-center justify-between gap-2 pt-1 text-xs text-[#6a6a6a] sm:flex-row">
-          <span>Tidak menerima email?</span>
+          <span>Didn't receive the email?</span>
           {resendCountdown > 0 ? (
             <span className="rounded-full border border-[#e5e5e5] bg-[#faf5e8] px-2 py-0.5 font-semibold text-[#0a0a0a]">
-              Kirim ulang dalam {resendCountdown}d
+              Resend in {resendCountdown}s
             </span>
           ) : (
             <button
@@ -206,7 +206,7 @@ export function OtpVerificationView({
                 className={`size-3 ${isResending ? "animate-spin" : ""}`}
               />
               <span>
-                {isResending ? "Mengirim..." : "Kirim Ulang Kode OTP"}
+                {isResending ? "Sending..." : "Resend Verification Code"}
               </span>
             </button>
           )}
@@ -242,11 +242,11 @@ export function OtpVerificationView({
                   d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4Z"
                 />
               </svg>
-              <span>Memverifikasi OTP...</span>
+              <span>Verifying Code...</span>
             </>
           ) : (
             <>
-              <span>Verifikasi & Selesaikan Pendaftaran</span>
+              <span>Verify & Complete Registration</span>
               <ArrowRightIcon className="ml-1 size-4" />
             </>
           )}
@@ -260,7 +260,7 @@ export function OtpVerificationView({
             className="inline-flex cursor-pointer items-center gap-1.5 text-xs font-semibold text-[#6a6a6a] transition-colors hover:text-[#0a0a0a]"
           >
             <ArrowLeftIcon className="size-3.5" />
-            <span>Salah memasukkan email? Ubah Email</span>
+            <span>Wrong email address? Change Email</span>
           </button>
         </div>
       </form>

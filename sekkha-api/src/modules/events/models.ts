@@ -39,11 +39,12 @@ export const eventModels = {
   },
 
   findUserForAttendance(identifier: string) {
+    const isNum = /^\d+$/.test(identifier)
     return prisma.user.findFirst({
       where: {
         OR: [
           { id: identifier },
-          { userNumber: identifier },
+          ...(isNum ? [{ userNumber: parseInt(identifier, 10) }] : []),
           { username: identifier.toLowerCase() },
         ],
       },

@@ -96,16 +96,27 @@ export function AuthForm({
         <div className="space-y-3.5">
           {/* Email / Username field */}
           <AuthFormField
-            id={isSignUp ? "email" : "identifier"}
+            id="email"
+            name={isSignUp ? "email" : "identifier"}
             label={isSignUp ? "Email Address" : "Email or Username"}
             type={isSignUp ? "email" : "text"}
             placeholder={
               isSignUp ? "name@email.com" : "name@email.com or username"
             }
-            value={isSignUp ? fields.email ?? "" : fields.identifier ?? ""}
-            onChange={(val) => handleChange(isSignUp ? "email" : "identifier", val)}
-            onBlur={() => onFieldBlur(isSignUp ? "email" : "identifier")}
-            error={isSignUp ? errors.email : errors.identifier}
+            value={
+              isSignUp
+                ? (fields.email ?? "")
+                : (fields.identifier ?? fields.email ?? "")
+            }
+            onChange={(val) => {
+              handleChange(isSignUp ? "email" : "identifier", val)
+              if (!isSignUp) handleChange("email", val)
+            }}
+            onBlur={() => {
+              onFieldBlur(isSignUp ? "email" : "identifier")
+              if (!isSignUp) onFieldBlur("email")
+            }}
+            error={isSignUp ? errors.email : errors.identifier || errors.email}
           />
 
           {/* Password field */}
@@ -156,7 +167,7 @@ export function AuthForm({
                   className="mt-0.5 size-4 shrink-0 cursor-pointer rounded-[4px] border border-[#e5e5e5] bg-[#fffaf0] accent-[#0a0a0a]"
                 />
                 <span className="leading-relaxed">
-                  Saya telah membaca dan menyetujui{" "}
+                  I have read and agree to the{" "}
                   <button
                     type="button"
                     onClick={(e) => {
@@ -166,7 +177,7 @@ export function AuthForm({
                     }}
                     className="inline cursor-pointer font-bold text-[#0a0a0a] underline underline-offset-2 hover:text-[#1a3a3a]"
                   >
-                    Kebijakan Privasi Sekkha
+                    Sekkha Privacy Policy
                   </button>
                   <span className="ml-0.5 text-[#ef4444]">*</span>
                 </span>

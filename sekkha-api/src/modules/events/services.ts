@@ -413,7 +413,7 @@ export const eventServices = {
       attendanceId: attendance.id,
       userId: user.id,
       name: attendeeName,
-      userNumber: user.userNumber ?? "",
+      userNumber: String(user.userNumber ?? ""),
       pointsEarned,
       method,
       scannedAt: attendance.scannedAt.toISOString(),

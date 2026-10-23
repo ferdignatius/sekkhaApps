@@ -9,7 +9,7 @@ export interface MemberRecency {
   name: string
   email: string | null
   phone?: string | null
-  userNumber?: string | null
+  userNumber?: bigint | number | string | null
   avatarUrl: string | null
   role: string
   createdAt: string
@@ -31,7 +31,7 @@ export interface CachedMemberRecency {
   name: string
   encryptedEmail: string | null
   encryptedPhone?: string | null
-  userNumber?: string | null
+  userNumber?: bigint | number | string | null
   avatarUrl: string | null
   role: string
   createdAt: string
@@ -245,7 +245,7 @@ export const pengurusServices = {
         (m) =>
           m.name.toLowerCase().includes(searchQuery) ||
           (m.email && m.email.toLowerCase().includes(searchQuery)) ||
-          (m.userNumber && m.userNumber.toLowerCase().includes(searchQuery))
+          (m.userNumber && String(m.userNumber).toLowerCase().includes(searchQuery))
       )
     }
 

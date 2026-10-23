@@ -358,7 +358,7 @@ export async function registerUser(input: RegisterInput): Promise<AuthResult> {
  * Login an existing user with email or username.
  */
 export async function loginUser(input: LoginInput): Promise<AuthResult> {
-  const identifier = input.identifier || input.email || input.username || ""
+  const identifier = input.identifier
   const user = await repo.findUserByIdentifier(identifier)
   if (!user || !user.password) {
     auditLogger.log({

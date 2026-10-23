@@ -32,9 +32,9 @@ Setiap endpoint API mengembalikan format JSON standar:
 Sistem menggunakan 4 tingkatan peran (*role*) resmi:
 | Role (Kode) | Label | Hak Akses Utama |
 |---|---|---|
-| `member` / `umat` | Umat Remaja | Akses profil pribadi, presensi via panitia, melihat jadwal acara publik, papan peringkat. |
-| `activist` / `aktivis` | Aktivis Panitia | Seluruh hak `member` + pemindaian QR presensi jemaat (`POST /events/:id/attendances`) & live SSE stream. |
-| `organizer` / `pengurus` | Pengurus Vihara | Seluruh hak `activist` + manajemen event, direktori jemaat, recency alert, analitik insight vihara, dan konfigurasi master data (read-only). |
+| `member` | Member | Akses profil pribadi, presensi via panitia, melihat jadwal acara publik, papan peringkat. |
+| `activist` | Activist | Seluruh hak `member` + pemindaian QR presensi jemaat (`POST /events/:id/attendances`) & live SSE stream. |
+| `organizer` | Organizer | Seluruh hak `activist` + manajemen event, direktori jemaat, pembuatan People manual, recency alert, analitik insight vihara, dan konfigurasi master data (read-only). |
 | `admin` | Super Administrator | Akses penuh (*bypass* semua role guard), manajemen akun, reset password, CRUD konfigurasi master data, season activation, audit log. |
 
 ### 1.4. Keamanan & Proteksi Rate Limiting
@@ -48,7 +48,7 @@ Sistem menggunakan 4 tingkatan peran (*role*) resmi:
    - **Global**: 300 req/menit per IP.
    - **Autentikasi (`/login`, `/register`, `/refresh`)**: 30 req/15 menit per IP.
    - **OTP (`/register-request`, `/forgot-password/request`)**: 5 req/15 menit per IP.
-   - **Account Linking (`/link-legacy-account`)**: 5 req/15 menit per IP.
+   - **Verifikasi Email (`/users/email-verification/*`)**: 5 req/15 menit per user dan per IP.
    - **Statistik Sekolah (`/schools/stats`)**: 30 req/menit per IP.
 
 ---
@@ -78,10 +78,10 @@ Mengirimkan 6 digit kode OTP registrasi ke email calon pengguna.
   {
     "email": "budi@example.com",
     "password": "Password123!",
-    "name": "Budi Santoso",
-    "username": "budisantoso"
+    "name": "Budi Santoso"
   }
   ```
+  *(Catatan: `username` dan `user_number` tidak dikirim client. Keduanya di-generate sistem setelah OTP terverifikasi.)*
 - **Response (200 OK)**:
   ```json
   {
@@ -114,8 +114,9 @@ Memverifikasi kode OTP registrasi, membuat akun pengguna baru di database dengan
       "onboarding_completed": false,
       "user": {
         "id": "usr_abc123",
+        "user_number": 2026102301,
         "email": "budi@example.com",
-        "username": "budisantoso",
+        "username": "budi48291",
         "name": "Budi Santoso",
         "role": "member"
       }
@@ -142,7 +143,7 @@ Masuk dengan kredensial password.
     "password": "Password123!"
   }
   ```
-  *(Catatan: `identifier` menerima email, username, atau nomor telepon).*
+  *(Catatan: `identifier` menerima `username`, `user_number`, atau email yang sudah terverifikasi).*
 - **Response (200 OK)**:
   ```json
   {
@@ -153,10 +154,12 @@ Masuk dengan kredensial password.
       "accessToken": "eyJhbGciOiJIUzI1NiIsIn...",
       "expiresInSeconds": 900,
       "onboarding_completed": true,
+      "requires_password_change": false,
       "user": {
         "id": "usr_abc123",
+        "user_number": 2026102301,
         "email": "budi@example.com",
-        "username": "budisantoso",
+        "username": "budi48291",
         "name": "Budi Santoso",
         "role": "member"
       }
@@ -164,6 +167,8 @@ Masuk dengan kredensial password.
   }
   ```
   *(Header set-cookie: `sekkha_refresh_token=...; HttpOnly; SameSite=Lax`)*
+
+  Untuk akun pre-provisioning yang belum claim (`is_claimed: false`) dan masih memakai password dummy, response berisi `requires_password_change: true` dan token onboarding terbatas yang hanya boleh mengakses `POST /api/users/change-password`, `POST /api/users/email-verification/*`, dan `PATCH /api/users/me/onboarding`.
 
 ### 5. `POST /api/auth/refresh`
 Memperbarui Access Token menggunakan token dari HttpOnly cookie.
@@ -207,7 +212,9 @@ Memverifikasi keabsahan JWT saat booting aplikasi web.
     "data": {
       "user": {
         "id": "usr_abc123",
+        "user_number": 2026102301,
         "email": "budi@example.com",
+        "username": "budi48291",
         "name": "Budi Santoso",
         "role": "member"
       },
@@ -281,7 +288,7 @@ Menetapkan password baru menggunakan `reset_token`. Seluruh sesi login lama otom
 
 ## Modul 2: Pengguna & Profil Pribadi (`/api/users`)
 
-Mengelola profil mandiri, riwayat presensi, mutasi poin, streak, lencana, dan hak kepatuhan privasi data pribadi (UU PDP).
+Mengelola profil mandiri, account claim, perubahan email, riwayat presensi, mutasi poin, streak, dan hak kepatuhan privasi data pribadi (UU PDP). Badge dan level tidak ada pada produk ini.
 
 ### 1. `GET /api/users/me`
 Mengambil detail profil akun yang sedang login.
@@ -289,20 +296,29 @@ Mengambil detail profil akun yang sedang login.
 - **Response (200 OK)**:
   ```json
   {
-    "id": "usr_abc123",
-    "username": "budisantoso",
-    "email": "budi@example.com",
-    "role": "member",
-    "user_number": "NV-2026-0042",
-    "name": "Budi Santoso",
-    "school": "SMA Negeri 1 Jakarta",
-    "school_id": "sch_12345",
-    "class_grade": "11",
-    "phone": "081234567890",
-    "birth_date": "2008-05-14T00:00:00.000Z",
-    "gender": "male",
-    "avatar_url": null,
-    "points": 350
+    "status": "success",
+    "code": 200,
+    "message": "Request completed successfully",
+    "data": {
+      "id": "usr_abc123",
+      "user_number": 2026102301,
+      "username": "budi48291",
+      "name": "Budi Santoso",
+      "email": "budi@example.com",
+      "email_verified": true,
+      "pending_email": null,
+      "role": "member",
+      "is_claimed": true,
+      "onboarding_completed": true,
+      "school_id": "sch_12345",
+      "school": "SMA Negeri 1 Jakarta",
+      "class_grade": "11",
+      "phone": "081234567890",
+      "birth_date": "2008-05-14",
+      "gender": "male",
+      "points": 350,
+      "joined_at": "2026-10-23T00:00:00.000Z"
+    }
   }
   ```
 
@@ -313,35 +329,15 @@ Memperbarui profil mandiri pengguna.
   ```json
   {
     "name": "Budi Santoso",
-    "username": "budisantoso",
     "school_id": "sch_12345",
-    "school": "SMA Negeri 1 Jakarta",
     "class_grade": "11",
     "phone": "081234567890",
     "birth_date": "2008-05-14",
     "gender": "male"
   }
   ```
-- **Response (200 OK)**:
-  ```json
-  {
-    "success": true,
-    "user": {
-      "id": "usr_abc123",
-      "name": "Budi Santoso",
-      "username": "budisantoso",
-      "email": "budi@example.com",
-      "role": "member",
-      "school_id": "sch_12345",
-      "school": "SMA Negeri 1 Jakarta",
-      "class_grade": "11",
-      "phone": "081234567890",
-      "birth_date": "2008-05-14",
-      "gender": "male",
-      "avatar_url": null
-    }
-  }
-  ```
+  *(Catatan: `email`, `username`, `user_number`, dan `role` tidak dapat diubah lewat endpoint ini. Email diubah lewat `POST /api/users/email-verification/request`.)*
+- **Response (200 OK)**: Envelope standar dengan `data` berbentuk sama seperti `GET /api/users/me`.
 
 ### 3. `PATCH /api/users/me/onboarding`
 Menyelesaikan tahap awal perkenalan/onboarding profil pengguna.
@@ -349,8 +345,10 @@ Menyelesaikan tahap awal perkenalan/onboarding profil pengguna.
 - **Response (200 OK)**:
   ```json
   {
-    "success": true,
-    "message": "Onboarding completed"
+    "status": "success",
+    "code": 200,
+    "message": "Onboarding completed",
+    "data": { "onboarding_completed": true }
   }
   ```
 
@@ -360,36 +358,42 @@ Mengambil status keaktifan beruntun mingguan (*weekly attendance streak*).
 - **Response (200 OK)**:
   ```json
   {
-    "current_streak": 4,
-    "longest_streak": 12,
-    "last_attended": "2026-09-13T09:30:00.000Z",
-    "history": [
-      {
-        "event_id": "evt_sunday_01",
-        "title": "Kebaktian Remaja Minggu",
-        "date": "2026-09-13T09:00:00.000Z"
-      }
-    ]
+    "status": "success",
+    "code": 200,
+    "message": "Request completed successfully",
+    "data": {
+      "current_streak": 4,
+      "longest_streak": 12,
+      "last_attended": "2026-09-13T09:30:00.000Z"
+    }
   }
   ```
 
 ### 5. `GET /api/users/me/attendances`
 Mengambil riwayat absensi acara yang pernah dihadiri.
 - **Akses**: Terautentikasi (`requireAuth`)
-- **Query Parameters**: `limit` (default: 20, max: 50)
+- **Query Parameters**: `limit` (default: 10, max: 50), `cursor` (opsional)
 - **Response (200 OK)**:
   ```json
-  [
-    {
-      "id": "att_123",
-      "event_id": "evt_456",
-      "event_title": "Kebaktian Remaja",
-      "event_date": "2026-09-13T09:00:00.000Z",
-      "method": "qr",
-      "points_earned": 25,
-      "scanned_at": "2026-09-13T09:15:22.000Z"
+  {
+    "status": "success",
+    "code": 200,
+    "message": "Request completed successfully",
+    "data": {
+      "items": [
+        {
+          "id": "att_123",
+          "event_id": "evt_456",
+          "event_title": "Kebaktian Remaja",
+          "event_date": "2026-09-13T09:00:00.000Z",
+          "method": "qr",
+          "points_earned": 25,
+          "scanned_at": "2026-09-13T09:15:22.000Z"
+        }
+      ],
+      "pagination": { "next_cursor": null, "total": 42 }
     }
-  ]
+  }
   ```
 
 ### 6. `GET /api/users/me/point-transactions`
@@ -397,19 +401,26 @@ Mengambil riwayat mutasi penambahan/pengurangan poin.
 - **Akses**: Terautentikasi (`requireAuth`)
 - **Response (200 OK)**:
   ```json
-  [
-    {
-      "id": "tx_789",
-      "points": 50,
-      "type": "event_attendance",
-      "description": "Presensi Acara: Kebaktian Remaja",
-      "created_at": "2026-09-13T09:15:22.000Z"
+  {
+    "status": "success",
+    "code": 200,
+    "message": "Request completed successfully",
+    "data": {
+      "items": [
+        {
+          "id": "tx_789",
+          "points": 50,
+          "type": "event_attendance",
+          "description": "Presensi Acara: Kebaktian Remaja",
+          "created_at": "2026-09-13T09:15:22.000Z"
+        }
+      ]
     }
-  ]
+  }
   ```
 
 ### 7. `POST /api/users/change-password`
-Mengubah kata sandi akun secara mandiri.
+Mengubah kata sandi akun secara mandiri. Untuk akun pre-provisioning yang belum claim, `currentPassword` adalah password dummy dan endpoint ini menjadi langkah wajib claim account.
 - **Akses**: Terautentikasi (`requireAuth`)
 - **Request Body**:
   ```json
@@ -421,17 +432,62 @@ Mengubah kata sandi akun secara mandiri.
 - **Response (200 OK)**:
   ```json
   {
-    "success": true,
-    "message": "Password berhasil diubah. Seluruh sesi lain telah dikeluarkan."
+    "status": "success",
+    "code": 200,
+    "message": "Password berhasil diubah. Seluruh sesi lain telah dikeluarkan.",
+    "data": { "password_changed_by_user": true, "is_claimed": false }
+  }
+  ```
+  *(Catatan: `is_claimed` menjadi `true` hanya setelah password baru dan email verified selesai.)*
+
+### 8. `POST /api/users/email-verification/request`
+Meminta kode verifikasi 6 digit untuk email baru (claim account maupun ganti email). Email baru disimpan sebagai `pending_email`, email lama tetap aktif sampai kode valid.
+- **Akses**: Terautentikasi (`requireAuth`, termasuk token onboarding)
+- **Rate Limit**: 5 request per 15 menit per user dan per IP. Cooldown kirim ulang 60 detik.
+- **Request Body**:
+  ```json
+  { "email": "baru@example.com" }
+  ```
+- **Response (200 OK)** *(generik, tidak membocorkan apakah email sudah dipakai)*:
+  ```json
+  {
+    "status": "success",
+    "code": 200,
+    "message": "Verification code sent if the email is available",
+    "data": { "expires_in_seconds": 600, "resend_after_seconds": 60 }
   }
   ```
 
-### 8. `GET /api/users/me/export` (Kepatuhan UU PDP)
+### 9. `POST /api/users/email-verification/confirm`
+Mengonfirmasi kode verifikasi email. Kode kedaluwarsa 10 menit dan maksimal 5 percobaan.
+- **Akses**: Terautentikasi (`requireAuth`, termasuk token onboarding)
+- **Request Body**:
+  ```json
+  { "code": "123456" }
+  ```
+- **Response (200 OK)**:
+  ```json
+  {
+    "status": "success",
+    "code": 200,
+    "message": "Email verified",
+    "data": {
+      "email": "baru@example.com",
+      "email_verified": true,
+      "is_claimed": true
+    }
+  }
+  ```
+- **Error Khusus**:
+  - `400 Bad Request`: Kode salah, kedaluwarsa, atau challenge dibatalkan setelah 5 percobaan.
+  - `429 Too Many Requests`: Melebihi rate limit.
+
+### 10. `GET /api/users/me/export` (Kepatuhan UU PDP)
 Mengunduh salinan arsip data pribadi dalam format JSON terenkripsi/terbaca.
 - **Akses**: Terautentikasi (`requireAuth`)
 - **Response (200 OK)**: Seluruh metadata profil, relasi kehadiran, dan poin.
 
-### 9. `POST /api/users/me/delete-account` (Hak Penghapusan Akun)
+### 11. `POST /api/users/me/delete-account` (Hak Penghapusan Akun)
 Menghapus permanen akun atas permintaan mandiri.
 - **Akses**: Terautentikasi (`requireAuth`)
 - **Request Body**:
@@ -444,8 +500,10 @@ Menghapus permanen akun atas permintaan mandiri.
 - **Response (200 OK)**:
   ```json
   {
-    "success": true,
-    "message": "Akun Anda telah berhasil dihapus secara permanen."
+    "status": "success",
+    "code": 200,
+    "message": "Akun Anda telah berhasil dihapus secara permanen.",
+    "data": null
   }
   ```
 
@@ -463,9 +521,8 @@ Pusat komando terpadu yang menggabungkan informasi profil ringkas, streak minggu
     "profile": {
       "id": "usr_abc123",
       "name": "Budi Santoso",
-      "avatar_url": null,
       "role": "member",
-      "user_number": "NV-2026-0042",
+      "user_number": 2026102301,
       "points": 350
     },
     "streak": {
@@ -500,7 +557,7 @@ Pusat komando terpadu yang menggabungkan informasi profil ringkas, streak minggu
 Manajemen siklus acara vihara, penjadwalan, otorisasi QR scanner panitia, dan broadcast presensi real-time via Server-Sent Events (SSE).
 
 ### 1. `GET /api/events`
-Mengambil daftar acara. Umat biasa hanya melihat acara berstatus `published` atau `active` dengan visibilitas `all` / `member`.
+Mengambil daftar acara. Member hanya melihat acara berstatus `scheduled` atau `active` dengan visibilitas `all` / `member`.
 - **Akses**: Terautentikasi (`requireAuth`)
 - **Query Parameters**:
   - `page` (number, default: 1)
@@ -518,7 +575,7 @@ Mengambil daftar acara. Umat biasa hanya melihat acara berstatus `published` ata
       "event_type_id": "typ_rutin_01",
       "season_id": "sea_2026_q3",
       "tag": "Remaja",
-      "status": "published",
+      "status": "scheduled",
       "visibility": "all",
       "qr_code": {
         "code": "EVT-2026-ABC123XYZ",
@@ -536,7 +593,7 @@ Mengambil detail satu acara secara lengkap.
 
 ### 3. `POST /api/events`
 Membuat acara baru.
-- **Akses**: Pengurus & Admin (`requireRole("organizer", "admin")`)
+- **Akses**: Organizer & Admin (`requireRole("organizer", "admin")`)
 - **Request Body**:
   ```json
   {
@@ -550,16 +607,16 @@ Membuat acara baru.
   }
   ```
   *(Catatan: `event_type_id` bersifat wajib / mandatory. Field `tag` tidak lagi disimpan di database).*
-- **Response (201 Created)**: Objek acara baru yang berhasil dibuat.
+- **Response (201 Created)**: Objek acara baru yang berhasil dibuat dengan status awal `scheduled`.
 
 ### 4. `PUT /api/events/:id`
-Memperbarui informasi acara yang telah ada.
-- **Akses**: Pengurus & Admin (`requireRole("organizer", "admin")`)
+Memperbarui informasi acara yang telah ada (tidak dapat mengubah status acara).
+- **Akses**: Organizer & Admin (`requireRole("organizer", "admin")`)
 - **Response (200 OK)**: Objek acara yang diperbarui.
 
-### 5. `PATCH /api/events/:id/status`
-Memperbarui status siklus hidup acara (`draft` → `published` → `active` → `closed` → `cancelled`).
-- **Akses**: Pengurus & Admin (`requireRole("organizer", "admin")`)
+### 5. `PATCH /api/events/:id/status` (Action Button)
+Memperbarui status siklus hidup acara melalui tombol aksi (`scheduled` → `active` → `done`, atau `canceled`).
+- **Akses**: Organizer & Admin (`requireRole("organizer", "admin")`)
 - **Request Body**:
   ```json
   { "status": "active" }
@@ -574,8 +631,8 @@ Memperbarui status siklus hidup acara (`draft` → `published` → `active` → 
 
 ### 6. `POST /api/events/:id/attendances` (Alias: `POST /api/events/:id/attendance`)
 Mencatat presensi jemaat oleh panitia/pengurus di lokasi via pemindaian QR code kartu jemaat atau input ID/nomor anggota manual.
-- **Akses**: Aktivis, Pengurus, Admin (`requireRole("organizer", "admin", "activist")`)
-- **Aturan**: Acara harus berstatus `active` atau `published`.
+- **Akses**: Activist, Organizer, Admin (`requireRole("organizer", "admin", "activist")`)
+- **Aturan**: Acara harus berstatus `active`.
 - **Request Body**:
   ```json
   {
@@ -588,7 +645,7 @@ Mencatat presensi jemaat oleh panitia/pengurus di lokasi via pemindaian QR code 
   {
     "user_id": "usr_abc123",
     "name": "Budi Santoso",
-    "user_number": "NV-2026-0042",
+    "user_number": 2026102301,
     "method": "qr",
     "points_earned": 50,
     "scanned_at": "2026-09-20T09:12:45.000Z",
@@ -601,17 +658,17 @@ Mencatat presensi jemaat oleh panitia/pengurus di lokasi via pemindaian QR code 
 
 ### 7. `GET /api/events/:id/live-attendance` (Server-Sent Events)
 Stream koneksi real-time untuk monitor scanner panitia di meja registrasi.
-- **Akses**: Aktivis, Pengurus, Admin (`requireRole("organizer", "admin", "activist")`)
+- **Akses**: Activist, Organizer, Admin (`requireRole("organizer", "admin", "activist")`)
 - **Header**: `Accept: text/event-stream` (Mendukung parameter query `?token=<jwt>`)
 - **Format Pesan SSE**:
   ```
   event: attendance
-  data: {"type":"ATTENDANCE_RECORDED","eventId":"evt_sunday_01","attendance":{"userId":"usr_abc123","name":"Budi Santoso","userNumber":"NV-2026-0042","scannedAt":"2026-09-20T09:12:45.000Z","points":50}}
+  data: {"type":"ATTENDANCE_RECORDED","eventId":"evt_sunday_01","attendance":{"userId":"usr_abc123","name":"Budi Santoso","userNumber":2026102301,"scannedAt":"2026-09-20T09:12:45.000Z","points":50}}
   ```
 
 ### 8. `GET /api/events/:id/attendances`
-Mengambil daftar seluruh peserta yang hadir pada acara tertentu.
-- **Akses**: Aktivis, Pengurus, Admin (`requireRole("organizer", "admin", "activist")`)
+Mengambil rekap dan daftar seluruh peserta yang hadir pada acara tertentu.
+- **Akses**: Organizer & Admin (`requireRole("organizer", "admin")`) — *activist dilarang mengakses rekap presensi*.
 - **Query Parameters**: `page` (default: 1), `limit` (default: 50, max: 100)
 - **Response (200 OK)**:
   ```json
@@ -620,8 +677,7 @@ Mengambil daftar seluruh peserta yang hadir pada acara tertentu.
       "user_id": "usr_abc123",
       "name": "Budi Santoso",
       "role": "member",
-      "user_number": "NV-2026-0042",
-      "avatar_url": null,
+      "user_number": 2026102301,
       "method": "qr",
       "scanned_at": "2026-09-20T09:12:45.000Z"
     }
@@ -630,7 +686,7 @@ Mengambil daftar seluruh peserta yang hadir pada acara tertentu.
 
 ### 9. `DELETE /api/events/:id/attendances/:userId`
 Membatalkan / menghapus catatan presensi peserta tertentu dari suatu event.
-- **Akses**: Pengurus & Admin (`requireRole("organizer", "admin")`)
+- **Akses**: Organizer & Admin (`requireRole("organizer", "admin")`)
 - **Response (200 OK)**:
   ```json
   {
@@ -641,7 +697,7 @@ Membatalkan / menghapus catatan presensi peserta tertentu dari suatu event.
 
 ### 10. `DELETE /api/events/:id`
 Menghapus acara secara permanen dari sistem.
-- **Akses**: Pengurus & Admin (`requireRole("organizer", "admin")`)
+- **Akses**: Organizer & Admin (`requireRole("organizer", "admin")`)
 - **Response (200 OK)**:
   ```json
   {
@@ -671,20 +727,16 @@ Mengambil data papan peringkat komunitas berdasarkan metrik tertentu.
         "user_id": "usr_abc123",
         "name": "Budi Santoso",
         "initials": "BS",
-        "user_number": "NV-2026-0042",
-        "value": 450,
-        "level": 3,
-        "badge_count": 5
+        "user_number": 2026102301,
+        "value": 450
       },
       {
         "rank": 2,
         "user_id": "usr_def456",
         "name": "Dewi Lestari",
         "initials": "DL",
-        "user_number": "NV-2026-0012",
-        "value": 420,
-        "level": 3,
-        "badge_count": 4
+        "user_number": 2026102302,
+        "value": 420
       }
     ],
     "my_rank": {
@@ -719,13 +771,13 @@ Melihat status agregasi database pengguna dan cache snapshot (Khusus audit siste
 
 ## Modul 6: Manajemen Umat & Tim (`/api/people`)
 
-Direktori keanggotaan jemaat (*People Management*), prapendaftaran anggota (*pre-provisioning*), aktivasi akun, dan integrasi riwayat akun lama (*account linking*).
+Direktori keanggotaan jemaat (*People Management*) dan prapendaftaran anggota (*pre-provisioning*) dengan kredensial otomatis. Aktivasi akun berjalan lewat login pertama, ganti password, dan verifikasi email (lihat `prd-sekkha/general/users/account-claim-simplification.md`). Mekanisme claim PIN dan account linking dihapus.
 
 ### 1. `GET /api/people/members`
 Mencari dan menampilkan daftar anggota jemaat komunitas.
-- **Akses**: Pengurus & Admin (`requireRole("organizer", "admin")`)
+- **Akses**: Organizer & Admin (`requireRole("organizer", "admin")`)
 - **Query Parameters**:
-  - `search` (string): Pencarian nama, username, nomor anggota (NV-XXXX), sekolah, atau email.
+  - `search` (string): Pencarian nama, username, nomor anggota (`yyyymmddnn`), sekolah, atau email.
   - `claimed_status` (`all` | `claimed` | `unclaimed`, default: `all`)
   - `role` (`all` | `member` | `activist` | `organizer` | `admin`, default: `all`)
   - `page` (number, default: 1)
@@ -737,16 +789,15 @@ Mencari dan menampilkan daftar anggota jemaat komunitas.
       {
         "id": "usr_abc123",
         "name": "Budi Santoso",
-        "username": "budisantoso",
-        "user_number": "NV-2026-0042",
+        "username": "budi48291",
+        "user_number": 2026102301,
         "role": "member",
         "school": "SMA Negeri 1 Jakarta",
         "class_grade": "11",
         "is_claimed": true,
         "points": 350,
         "streak": 4,
-        "avatar_url": null,
-        "created_at": "2026-08-01T10:00:00.000Z"
+        "created_at": "2026-10-23T10:00:00.000Z"
       }
     ],
     "pagination": {
@@ -760,28 +811,44 @@ Mencari dan menampilkan daftar anggota jemaat komunitas.
 
 ### 2. `GET /api/people/members/:id`
 Mengambil rekam jejak mendalam dari salah satu jemaat.
-- **Akses**: Pengurus & Admin (`requireRole("organizer", "admin")`)
+- **Akses**: Organizer & Admin (`requireRole("organizer", "admin")`)
 - **Response (200 OK)**: Objek profil anggota lengkap dengan riwayat absensi terbaru.
 
 ### 3. `POST /api/people/members`
-Menambahkan data profil jemaat baru secara pra-registrasi (*pre-provisioning*) oleh pengurus.
-- **Akses**: Pengurus & Admin (`requireRole("organizer", "admin")`)
+Menambahkan data profil jemaat baru secara pra-registrasi (*pre-provisioning*) oleh organizer. Sistem otomatis men-generate `user_number` (`yyyymmddnum`), `username` (nama normalized + angka random), dan password dummy (`sekkha` + 5 angka random + `puggala`, disimpan hashed).
+- **Akses**: Organizer & Admin (`requireRole("organizer", "admin")`)
 - **Request Body**:
   ```json
   {
     "name": "Siti Rahma",
-    "email": "siti@example.com",
+    "email": null,
     "school_id": "sch_12345",
     "class_grade": "10",
     "phone": "081987654321",
     "role": "member"
   }
   ```
-- **Response (201 Created)**: Objek anggota baru dengan nomor anggota yang telah digenerate (misal: `NV-2026-0050`).
+- **Response (201 Created)** *(satu-satunya response yang memuat `temporary_password`, tidak dapat diambil ulang)*:
+  ```json
+  {
+    "status": "success",
+    "code": 201,
+    "message": "People created",
+    "data": {
+      "id": "usr_def456",
+      "user_number": 2026102302,
+      "username": "siti73104",
+      "temporary_password": "sekkha73104puggala",
+      "email": null,
+      "role": "member",
+      "is_claimed": false
+    }
+  }
+  ```
 
 ### 4. `PUT /api/people/members/:id`
 Memperbarui data anggota jemaat.
-- **Akses**: Pengurus & Admin (`requireRole("organizer", "admin")`)
+- **Akses**: Organizer & Admin (`requireRole("organizer", "admin")`)
   *(Catatan: Perubahan peran/role ke `activist`/`organizer`/`admin` mewajibkan otorisasi `admin`).*
 - **Response (200 OK)**: Objek anggota yang telah diperbarui.
 
@@ -811,33 +878,21 @@ Mereset kata sandi anggota oleh administrator.
   }
   ```
 
-### 7. `POST /api/people/members/:id/generate-claim-pin`
-Menerbitkan PIN 6-digit sementara untuk mengklaim/menautkan data historis anggota.
-- **Akses**: Pengurus & Admin (`requireRole("organizer", "admin")`)
-- **Response (200 OK)**:
+### 7. `POST /api/people/members/:id/regenerate-credentials`
+Menerbitkan ulang password dummy untuk anggota yang belum claim. Password lama langsung invalid.
+- **Akses**: Organizer & Admin (`requireRole("organizer", "admin")`)
+- **Aturan**: Hanya untuk `is_claimed: false`. Anggota yang sudah claim memakai alur lupa password biasa (`409 Conflict`).
+- **Response (200 OK)** *(password hanya tampil sekali)*:
   ```json
   {
-    "pin": "748291",
-    "expires_at": "2026-09-22T23:59:59.000Z"
-  }
-  ```
-
-### 8. `POST /api/people/link-legacy-account`
-Menautkan dan menggabungkan akun terdaftar saat ini dengan rekam data jemaat lama menggunakan PIN klaim.
-- **Akses**: Terautentikasi (`requireAuth`)
-- **Rate Limit**: 5 percobaan per 15 menit per IP.
-- **Request Body**:
-  ```json
-  {
-    "user_number": "NV-2026-0019",
-    "claim_pin": "748291"
-  }
-  ```
-- **Response (200 OK)**:
-  ```json
-  {
-    "success": true,
-    "message": "Akun berhasil ditautkan. Seluruh poin dan riwayat presensi telah digabungkan."
+    "status": "success",
+    "code": 200,
+    "message": "Credentials regenerated",
+    "data": {
+      "user_number": 2026102302,
+      "username": "siti73104",
+      "temporary_password": "sekkha18462puggala"
+    }
   }
   ```
 
@@ -849,7 +904,7 @@ Deteksi risiko ketidakhadiran jemaat (*Silent Churn*), tindak lanjut pastoral (*
 
 ### 1. `GET /api/pengurus/recency-alerts`
 Mengambil daftar jemaat yang berisiko pasif berdasarkan frekuensi ketidakhadiran beruntun (*consecutive missed events*).
-- **Akses**: Pengurus & Admin (`requireRole("organizer", "admin")`)
+- **Akses**: Organizer & Admin (`requireRole("organizer", "admin")`)
 - **Query Parameters**:
   - `level` (`all` | `normal` | `warning` | `at_risk` | `lost`, default: `all`)
     - `normal`: Bolos 0-1 kali.
@@ -872,7 +927,7 @@ Mengambil daftar jemaat yang berisiko pasif berdasarkan frekuensi ketidakhadiran
       {
         "user_id": "usr_ghi789",
         "name": "Kevin Wijaya",
-        "user_number": "NV-2026-0019",
+        "user_number": "202610230019",
         "role": "member",
         "school": "SMA Tarakanita 1",
         "phone": "08129876543",
@@ -888,7 +943,7 @@ Mengambil daftar jemaat yang berisiko pasif berdasarkan frekuensi ketidakhadiran
 
 ### 2. `GET /api/pengurus/recency-alerts/:userId`
 Detail presensi dan metrik ketidakhadiran seorang jemaat untuk keperluan konseling.
-- **Akses**: Pengurus & Admin (`requireRole("organizer", "admin")`)
+- **Akses**: Organizer & Admin (`requireRole("organizer", "admin")`)
 - **Response (200 OK)**:
   ```json
   {
@@ -896,7 +951,7 @@ Detail presensi dan metrik ketidakhadiran seorang jemaat untuk keperluan konseli
       "id": "usr_ghi789",
       "name": "Kevin Wijaya",
       "email": "kevin@example.com",
-      "user_number": "NV-2026-0019",
+      "user_number": "202610230019",
       "phone": "08129876543",
       "school": "SMA Tarakanita 1",
       "joined_at": "2026-01-10T00:00:00.000Z"
@@ -920,7 +975,7 @@ Detail presensi dan metrik ketidakhadiran seorang jemaat untuk keperluan konseli
 
 ### 3. `GET /api/pengurus/insight`
 Mengambil data analitik komprehensif kehadiran vihara, tren periode, retensi jemaat, perbandingan tahunan, serta segmentasi masa keanggotaan (*tenure*).
-- **Akses**: Pengurus & Admin (`requireRole("organizer", "admin")`)
+- **Akses**: Organizer & Admin (`requireRole("organizer", "admin")`)
 - **Query Parameters**:
   - `timeUnit` (`year` | `month`, default: `year`)
   - `primaryYear` (number, default: tahun berjalan)
@@ -1039,7 +1094,7 @@ Mengambil ringkasan statistik persebaran jemaat remaja per sekolah dan total keh
 
 ### 3. `POST /api/schools`
 Menambahkan sekolah baru ke master data.
-- **Akses**: Pengurus & Admin (`requireRole("organizer", "admin")`)
+- **Akses**: Organizer & Admin (`requireRole("organizer", "admin")`)
 - **Request Body**:
   ```json
   {
@@ -1051,7 +1106,7 @@ Menambahkan sekolah baru ke master data.
 
 ### 4. `PUT /api/schools/:id`
 Memperbarui data nama atau jenjang sekolah.
-- **Akses**: Pengurus & Admin (`requireRole("organizer", "admin")`)
+- **Akses**: Organizer & Admin (`requireRole("organizer", "admin")`)
 - **Response (200 OK)**: Objek sekolah yang diperbarui.
 
 ### 5. `DELETE /api/schools/:id`

@@ -71,6 +71,7 @@ function makeContext(
       role: null,
       name: null,
       email: null,
+      onboardingCompleted: null,
     },
   }
 }

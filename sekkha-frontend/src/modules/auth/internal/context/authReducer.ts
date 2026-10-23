@@ -11,9 +11,6 @@ export type UserRole =
   | "activist"
   | "organizer"
   | "admin"
-  | "umat"
-  | "aktivis"
-  | "pengurus"
 
 export interface AuthState {
   status: AuthStatus
@@ -22,6 +19,7 @@ export interface AuthState {
   role: UserRole | null
   name: string | null
   email: string | null
+  onboardingCompleted: boolean | null
 }
 
 export const initialAuthState: AuthState = {
@@ -31,6 +29,7 @@ export const initialAuthState: AuthState = {
   role: null,
   name: null,
   email: null,
+  onboardingCompleted: null,
 }
 
 // ─── Actions ───────────────────────────────────────────────────────────────────
@@ -45,6 +44,7 @@ export type AuthAction =
         role: UserRole | null
         name?: string | null
         email?: string | null
+        onboardingCompleted?: boolean
       }
     }
   | {
@@ -77,6 +77,8 @@ export function authReducer(state: AuthState, action: AuthAction): AuthState {
         role: action.payload.role,
         name: action.payload.name ?? state.name,
         email: action.payload.email ?? state.email,
+        onboardingCompleted:
+          action.payload.onboardingCompleted ?? state.onboardingCompleted,
       }
 
     case "AUTH_UPDATE_USER":
@@ -104,6 +106,7 @@ export function authReducer(state: AuthState, action: AuthAction): AuthState {
         role: null,
         name: null,
         email: null,
+        onboardingCompleted: null,
       }
 
     case "AUTH_VERIFY_FAILED":
@@ -114,6 +117,7 @@ export function authReducer(state: AuthState, action: AuthAction): AuthState {
         role: null,
         name: null,
         email: null,
+        onboardingCompleted: null,
       }
 
     default: {

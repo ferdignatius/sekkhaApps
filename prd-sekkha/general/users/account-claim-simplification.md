@@ -20,20 +20,22 @@ Aktivasi akun memakai pola **Temporary Password & First-Time Login Claim**.
 
 Identitas login:
 
-- `userNumber`: nomor anggota bisnis, unik dan immutable. Dipakai sebagai username awal.
-- `username`: identifier login unik. Nilai awal sama dengan `userNumber`.
+- `userNumber`: nomor anggota unik hasil generate sistem.
+- `username`: identifier login unik hasil generate dari nama dan angka random.
 - `email`: identifier login tambahan dan kontak. Nullable saat pre-provisioning.
 
-Login menerima `username` atau email terverifikasi sebagai identifier.
+Login menerima `username`, `userNumber`, atau email terverifikasi sebagai identifier.
+
+Format `userNumber` adalah integer numerik `yyyymmddnn` (10 digit, misalnya `2026102301`). Nilai terdiri dari tanggal pembuatan (`yyyymmdd`) dan 2 digit nomor urut pendaftaran (`nn`), tanpa prefix atau separator. Disimpan sebagai BigInt/Integer di database.
 
 ### User Journey
 
 1. **Pendaftaran oleh Pengurus**:
-   - Sistem membuat `userNumber` unik, `username` dari `userNumber`, dan password sementara acak.
+   - Sistem membuat `userNumber` unik, `username` dari nama + angka random, dan password dummy berformat `sekkha` + 5 angka random + `puggala`.
    - Email boleh kosong (`null`) sampai jemaat melengkapi profil.
    - Akun tersimpan dengan `isClaimed: false` dan `passwordChangedByUser: false`.
 2. **Jemaat Mengakses Aplikasi**:
-   - Jemaat login menggunakan `username` atau `userNumber` + password sementara.
+   - Jemaat login menggunakan `username` atau `userNumber` + password dummy.
 3. **Pemberitahuan Wajib Ganti Password**:
    - Sistem mendeteksi `isClaimed === false` atau `passwordChangedByUser === false`.
    - Token sementara hanya boleh mengakses onboarding dan ganti password.
@@ -57,8 +59,8 @@ Login menerima `username` atau email terverifikasi sebagai identifier.
 
 ### Kolom yang Dipertahankan
 
-- `userNumber` (nomor anggota unik dan immutable)
-- `username` (unik, default dari `userNumber`)
+- `userNumber` (nomor anggota unik hasil generate sistem)
+- `username` (identifier login unik dari nama + angka random)
 - `email` (nullable saat pre-provisioning, unique jika diisi)
 - `isClaimed` (default `true` untuk registrasi mandiri, `false` untuk pre-provisioning Pengurus)
 - `claimedAt` (waktu klaim pertama)
@@ -81,7 +83,8 @@ Login menerima `username` atau email terverifikasi sebagai identifier.
 ## 5. Aturan Identitas & Collision
 
 - `userNumber` wajib unik dan tidak berubah setelah dibuat.
-- `username` wajib unik dan default-nya sama dengan `userNumber`.
+- `userNumber` hanya berisi angka dengan format `yyyymmddnum`.
+- `username` wajib unik dan dihasilkan dari nama + angka random.
 - `email` nullable sebelum klaim, tetapi wajib unik jika diisi.
 - Identifier duplikat harus ditolak database dan ditangani API sebagai validation error.
 - Email tidak boleh dipakai untuk login sebelum verifikasi berhasil.
@@ -89,7 +92,7 @@ Login menerima `username` atau email terverifikasi sebagai identifier.
 ## 6. Next Steps
 
 - [ ] Review alur oleh user / developer.
-- [ ] Tambahkan login dengan `username` atau email.
+- [ ] Tambahkan login dengan `username`, `userNumber`, atau email.
 - [ ] Implementasi endpoint `/api/users/change-password`.
 - [ ] Implementasi verifikasi email.
 - [ ] Drop kolom PIN di `prisma/schema.prisma` dan migrasi database.

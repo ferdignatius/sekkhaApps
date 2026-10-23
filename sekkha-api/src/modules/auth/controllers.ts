@@ -36,6 +36,8 @@ function setRefreshCookie(res: Response, refreshToken?: string) {
 function clearRefreshCookie(res: Response) {
   res.clearCookie("sekkha_refresh_token", {
     httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
     path: "/api/auth",
   })
 }
@@ -104,7 +106,7 @@ export async function handleRefreshSession(req: Request, res: Response, next: Ne
     const refreshToken = req.cookies?.sekkha_refresh_token
 
     if (!refreshToken) {
-      res.status(401).json({ error: "Refresh token tidak ditemukan" })
+      apiSuccess(res, 401, "Refresh token not found", null)
       return
     }
 
@@ -155,7 +157,7 @@ export async function handleForgotPassword(req: Request, res: Response, next: Ne
   try {
     const body = ForgotPasswordSchema.parse(req.body)
     const result = await service.forgotPassword(body)
-    res.json(result)
+    apiSuccess(res, 200, "Password recovery request processed", null)
   } catch (err) {
     next(err)
   }
@@ -165,7 +167,7 @@ export async function handleForgotPassword(req: Request, res: Response, next: Ne
 export async function handleVerify(req: Request, res: Response) {
   const header = req.headers.authorization
   if (!header?.startsWith("Bearer ")) {
-    res.status(401).json({ error: "Token not found" })
+    apiSuccess(res, 401, "Token not found", null)
     return
   }
 
@@ -174,7 +176,7 @@ export async function handleVerify(req: Request, res: Response) {
     const user = await service.verifyToken(token)
     apiSuccess(res, 200, "Token valid", user)
   } catch {
-    res.status(401).json({ error: "Invalid token" })
+    apiSuccess(res, 401, "Invalid token", null)
   }
 }
 
@@ -194,4 +196,3 @@ export async function handleLogout(req: Request, res: Response, next: NextFuncti
     next(err)
   }
 }
-

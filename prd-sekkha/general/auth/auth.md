@@ -48,16 +48,16 @@ New accounts always receive `member`. Only authorized administration may change 
 ### 4.1 Sign-up
 
 1. User opens `/sign-up`.
-2. User submits `name`, `email`, `password`, and frontend-only `confirm_password`.
+2. User submits `name`, `email`, `password`, and frontend-only `confirm_password` (all is mandatory).
 3. Backend validates input and sends OTP. Account is not active yet.
 4. User submits OTP.
-5. Backend creates or activates account with `role: "member"`, `onboarding_completed: false`, and returns session tokens.
+5. Backend creates or activates account with `role: "member"`, `is_claimed: true`, `onboarding_completed: false`, and returns session tokens.
 6. Frontend stores the access token and redirects to `/onboarding`.
 7. User may not reach Home until onboarding completes or is explicitly skipped.
 
 ### 4.2 Sign-in
 
-1. User submits `identifier` and `password` to `POST /api/auth/login`.
+1. User submits `identifier` and `password` to `POST /api/auth/login` (all mandatory).
 2. Backend verifies credentials and account status.
 3. Backend returns session tokens. No OTP is sent.
 4. If `onboarding_completed` is false, redirect to `/onboarding`; otherwise redirect to `/home` or validated `redirectTo`.

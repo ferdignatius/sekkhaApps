@@ -14,15 +14,16 @@ interface AuthFormProps {
   isLoading: boolean
   apiError: string | null
   onInputChange?: () => void
-  onOAuthError?: (message: string) => void
   fields: {
-    email: string
+    email?: string
+    identifier?: string
     password: string
     confirmPassword?: string
     agreeToPrivacy?: boolean
   }
   errors: {
     email?: string
+    identifier?: string
     password?: string
     confirmPassword?: string
     agreeToPrivacy?: string
@@ -95,16 +96,16 @@ export function AuthForm({
         <div className="space-y-3.5">
           {/* Email / Username field */}
           <AuthFormField
-            id="email"
+            id={isSignUp ? "email" : "identifier"}
             label={isSignUp ? "Email Address" : "Email or Username"}
             type={isSignUp ? "email" : "text"}
             placeholder={
               isSignUp ? "name@email.com" : "name@email.com or username"
             }
-            value={fields.email}
-            onChange={(val) => handleChange("email", val)}
-            onBlur={() => onFieldBlur("email")}
-            error={errors.email}
+            value={isSignUp ? fields.email ?? "" : fields.identifier ?? ""}
+            onChange={(val) => handleChange(isSignUp ? "email" : "identifier", val)}
+            onBlur={() => onFieldBlur(isSignUp ? "email" : "identifier")}
+            error={isSignUp ? errors.email : errors.identifier}
           />
 
           {/* Password field */}

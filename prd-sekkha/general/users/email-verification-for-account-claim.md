@@ -10,7 +10,7 @@
 
 Menambahkan verifikasi email sebagai bagian dari alur **user claim account**.
 
-User hasil pre-provisioning login pertama kali menggunakan `userNumber` atau `username` dan password sementara. Setelah itu user mengganti password, memasukkan email, lalu memverifikasi email sebelum email dapat dipakai sebagai identifier login atau pemulihan akun.
+User hasil pre-provisioning login pertama kali menggunakan `username` atau `userNumber` dan password dummy. Setelah itu user mengganti password, memasukkan email, lalu memverifikasi email sebelum email dapat dipakai sebagai identifier login atau pemulihan akun.
 
 Email belum menjadi syarat untuk login awal.
 
@@ -21,11 +21,12 @@ Email belum menjadi syarat untuk login awal.
 1. Pengurus membuat data People.
 2. Sistem membuat `User` dengan:
    - `userNumber` unik.
-   - `username` default dari `userNumber`.
+   - `userNumber` sebagai nomor anggota integer numerik format `yyyymmddnn` (10 digit, e.g. `2026102301`) hasil generate sistem.
+   - `username` sebagai identifier login dari nama dan angka random.
    - `email: null`.
    - `isClaimed: false`.
    - `passwordChangedByUser: false`.
-3. User login memakai `username` atau `userNumber` + password sementara.
+3. User login memakai `username` atau `userNumber` + password dummy.
 4. Sistem memberi token onboarding terbatas.
 5. User mengganti password.
 6. User mengirim email baru.

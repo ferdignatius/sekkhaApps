@@ -61,7 +61,6 @@ function renderWithAuth(
     verifyRegisterOtp: vi.fn(),
     resendRegisterOtp: vi.fn(),
     logout: vi.fn(),
-    initiateGoogleOAuth: vi.fn(),
     updateUser: (
       data: Partial<{
         name: string | null

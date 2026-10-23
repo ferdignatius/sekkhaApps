@@ -18,13 +18,8 @@ export const RegisterSchema = z.object({
 })
 
 export const LoginSchema = z.object({
-  identifier: z.string().trim().min(1, "Email or username is required").max(255).optional(),
-  email: z.string().trim().min(1, "Email or username is required").max(255).optional(),
-  username: z.string().trim().min(1).max(30).optional(),
+  identifier: z.string().trim().min(1, "Email or username is required").max(255),
   password: z.string().min(1, "Password is required").max(128, "Password maximum 128 characters"),
-}).refine((data) => Boolean(data.identifier || data.email || data.username), {
-  message: "Email or username is required",
-  path: ["email"],
 })
 
 export const ForgotPasswordSchema = z.object({
@@ -47,7 +42,7 @@ export const RequestRegisterOtpSchema = z.object({
 
 export const VerifyRegisterOtpSchema = z.object({
   email: z.string().trim().toLowerCase().email("Format email tidak valid").max(255),
-  otp: z.string().trim().min(6, "Kode OTP harus 6 digit").max(6, "Kode OTP harus 6 digit"),
+  otp: z.string().trim().regex(/^\d{6}$/, "Kode OTP harus 6 digit"),
 })
 
 export const ResendOtpSchema = z.object({

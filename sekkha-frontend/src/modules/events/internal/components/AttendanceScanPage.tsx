@@ -63,13 +63,8 @@ export function AttendanceScanPage() {
   const { authState } = useAuth()
   const role: UserRole | null = authState.role ?? null
   const isPengurus =
-    role === "organizer" ||
-    role === "pengurus" ||
-    role === "admin" ||
-    role === "activist" ||
-    role === "aktivis"
-  const canCreateMember =
-    role === "organizer" || role === "pengurus" || role === "admin"
+    role === "organizer" || role === "admin" || role === "activist"
+  const canCreateMember = role === "organizer" || role === "admin"
 
   // Event and attendances data state
   const [event, setEvent] = useState<EventListItem | null>(null)

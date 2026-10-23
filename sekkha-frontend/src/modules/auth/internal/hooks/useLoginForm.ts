@@ -15,7 +15,7 @@ const MAX_REDIRECT_LENGTH = 2048
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
-type LoginField = "email" | "password"
+type LoginField = "identifier" | "password"
 
 type FieldErrors = Partial<Record<LoginField, string>>
 
@@ -61,7 +61,7 @@ export function useLoginForm(): UseLoginFormReturn {
   const search = useSearch({ from: "/login" })
 
   const [fields, setFields] = useState<Record<LoginField, string>>({
-    email: "",
+    identifier: "",
     password: "",
   })
   const [errors, setErrors] = useState<FieldErrors>({})
@@ -119,7 +119,7 @@ export function useLoginForm(): UseLoginFormReturn {
     setApiErrorDismissed(false)
 
     try {
-      await login(fields.email, fields.password)
+      await login(fields.identifier, fields.password)
 
       // Determine redirect target after successful login (req 5.4, 5.5, 6.2, 6.3, 6.5)
       const redirectTo = search.redirectTo

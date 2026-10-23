@@ -30,7 +30,6 @@ export function LoginPage() {
     handleBlur,
     handleSubmit,
     dismissApiError,
-    setApiError,
   } = useLoginForm()
 
   // Redirect authenticated users away (req 2.8)
@@ -53,7 +52,6 @@ export function LoginPage() {
           isLoading={isLoading}
           apiError={apiError}
           onInputChange={dismissApiError}
-          onOAuthError={setApiError}
           fields={fields}
           errors={errors}
           onFieldChange={handleChange}

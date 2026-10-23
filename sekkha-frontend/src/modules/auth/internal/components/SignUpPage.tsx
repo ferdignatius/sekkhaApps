@@ -29,7 +29,6 @@ export function SignUpPage() {
     handleResendOtp,
     handleBackToForm,
     dismissApiError,
-    setApiError,
   } = useSignUpForm()
 
   // Only redirect if user was already authenticated upon opening the sign-up page before interacting
@@ -53,7 +52,6 @@ export function SignUpPage() {
             isLoading={isLoading}
             apiError={apiError}
             onInputChange={dismissApiError}
-            onOAuthError={setApiError}
             fields={fields}
             errors={errors}
             onFieldChange={handleChange}

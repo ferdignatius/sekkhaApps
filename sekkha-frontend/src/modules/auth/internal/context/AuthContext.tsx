@@ -24,7 +24,7 @@ import { safeStorage } from "@/lib/storage"
 export interface AuthContextValue {
   authState: AuthState
   /** Signs the user in with email + password. */
-  login: (email: string, password: string) => Promise<void>
+  login: (identifier: string, password: string) => Promise<void>
   /** Creates a new account with email + password + optional name. */
   register: (email: string, password: string, name?: string) => Promise<void>
   /** Requests a 6-digit OTP code sent to user email for registration. */
@@ -41,8 +41,6 @@ export interface AuthContextValue {
   ) => Promise<{ success: boolean; message: string }>
   /** Clears the session and sets auth state to unauthenticated. */
   logout: () => void
-  /** Initiates the Google OAuth flow by redirecting to the backend OAuth entry point. */
-  initiateGoogleOAuth: () => void
   /** Updates the in-memory authenticated user info (name, role, email). */
   updateUser: (
     user: Partial<{
@@ -77,25 +75,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     let cancelled = false
 
     async function initAuth() {
-      // 1. Check if token is present in URL query parameters (Google OAuth callback redirect)
-      const urlParams =
-        typeof window !== "undefined"
-          ? new URLSearchParams(window.location.search)
-          : null
-      const urlToken = urlParams?.get("token")
-
-      let token = safeStorage.getItem(STORAGE_KEY)
-
-      if (urlToken) {
-        safeStorage.setItem(STORAGE_KEY, urlToken)
-        token = urlToken
-
-        // Clean query parameter from URL to keep it pristine
-        if (typeof window !== "undefined") {
-          const cleanUrl = window.location.pathname + window.location.hash
-          window.history.replaceState({}, document.title, cleanUrl)
-        }
-      }
+      const token = safeStorage.getItem(STORAGE_KEY)
 
       // No token → immediately unauthenticated, no server request needed (requirement 4.8)
       if (!token) {
@@ -161,8 +141,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // ── Auth actions — wired to authService ─────────────────────────────────────
 
-  const login = async (email: string, password: string): Promise<void> => {
-    await authService.login(email, password)
+  const login = async (identifier: string, password: string): Promise<void> => {
+    await authService.login(identifier, password)
   }
 
   const register = async (email: string, password: string): Promise<void> => {
@@ -174,10 +154,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     if (typeof window !== "undefined" && window.location.pathname !== "/") {
       window.location.href = "/"
     }
-  }
-
-  const initiateGoogleOAuth = (): void => {
-    authService.initiateGoogleOAuth()
   }
 
   const requestRegisterOtp = async (
@@ -244,7 +220,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     verifyRegisterOtp,
     resendRegisterOtp,
     logout,
-    initiateGoogleOAuth,
     updateUser,
     refreshUser,
   }

@@ -48,7 +48,7 @@ enum PointTransactionType {
 
 model User {
   id                    String    @id @default(cuid())
-  userNumber            String?   @unique @map("user_number")
+  userNumber            BigInt?   @unique @map("user_number")
   username              String?   @unique @map("username")
   email                 String?   @map("email") // Tier 2: AES-256-GCM ciphertext
   emailBindex           String?   @unique @map("email_bindex") // Tier 2: HMAC-SHA256 Blind Index for O(1) lookup & unique constraint

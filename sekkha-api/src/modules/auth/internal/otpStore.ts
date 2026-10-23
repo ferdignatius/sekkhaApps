@@ -22,7 +22,7 @@ const memoryStore = new Map<string, { payload: RegistrationOtpPayload; timer: No
 const forgotMemoryStore = new Map<string, { payload: ForgotPasswordOtpPayload; timer: NodeJS.Timeout; attempts: number }>()
 const resetTokenStore = new Map<string, { userId: string; tokenHashed: string; timer: NodeJS.Timeout }>()
 
-const OTP_TTL_SECONDS = 300 // 5 minutes
+const OTP_TTL_SECONDS = 600 // 10 minutes
 const RESET_TOKEN_TTL_SECONDS = 600 // 10 minutes
 export const MAX_OTP_ATTEMPTS = 5
 

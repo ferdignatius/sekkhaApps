@@ -27,7 +27,7 @@ afterEach(() => {
   currentPath = "/home"
 })
 
-function renderDock(role: UserRole = "aktivis") {
+function renderDock(role: UserRole = "activist") {
   const authState: AuthState = {
     ...initialAuthState,
     status: "authenticated",
@@ -43,7 +43,6 @@ function renderDock(role: UserRole = "aktivis") {
     verifyRegisterOtp: vi.fn(),
     resendRegisterOtp: vi.fn(),
     logout: vi.fn(),
-    initiateGoogleOAuth: vi.fn(),
     updateUser: vi.fn(),
     refreshUser: vi.fn(),
   }
@@ -57,7 +56,7 @@ function renderDock(role: UserRole = "aktivis") {
 
 describe("MobileDock", () => {
   it("renders navigation items from the registry in order", () => {
-    renderDock("aktivis")
+    renderDock("activist")
 
     const links = screen.getAllByRole("link")
     const labels = links.map((link) => link.textContent?.trim())
@@ -90,7 +89,7 @@ describe("MobileDock", () => {
 
   it("sets aria-current='page' on the active route", () => {
     currentPath = "/events"
-    renderDock("aktivis")
+    renderDock("activist")
 
     const eventsLink = screen.getByRole("link", { name: /events/i })
     expect(eventsLink.getAttribute("aria-current")).toBe("page")

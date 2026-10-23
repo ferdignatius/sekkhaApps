@@ -89,7 +89,7 @@ export function validateSignUpForm({
 // ─── validateLoginForm ─────────────────────────────────────────────────────────
 
 export interface LoginFormInput {
-  email: string
+  identifier: string
   password: string
 }
 
@@ -102,19 +102,19 @@ export interface LoginFormInput {
  * - Password must not be empty (req 3.3)
  */
 export function validateLoginForm({
-  email,
+  identifier,
   password,
 }: LoginFormInput): ValidationResult {
   const errors: FieldError[] = []
 
   // Email or Username identifier validation
-  const trimmed = email.trim()
+  const trimmed = identifier.trim()
   if (!trimmed) {
-    errors.push({ field: "email", message: "Email atau Username wajib diisi" })
+    errors.push({ field: "identifier", message: "Email atau Username wajib diisi" })
   } else if (trimmed.includes("@") && !EMAIL_REGEX.test(trimmed)) {
-    errors.push({ field: "email", message: "Format email tidak valid" })
+    errors.push({ field: "identifier", message: "Format email tidak valid" })
   } else if (!trimmed.includes("@") && trimmed.length < 3) {
-    errors.push({ field: "email", message: "Username minimal 3 karakter" })
+    errors.push({ field: "identifier", message: "Username minimal 3 karakter" })
   }
 
   // Password validation

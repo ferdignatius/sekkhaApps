@@ -103,15 +103,24 @@ export const userServices = {
 
     let resolvedSchoolId: string | null | undefined = undefined
     if (body.school_id !== undefined) {
-      resolvedSchoolId = body.school_id
+      if (body.school_id) {
+        const school = await prisma.school.findUnique({ where: { id: body.school_id } })
+        if (!school || school.status !== "approved" || !school.isActive) {
+          const error = new Error("Sekolah yang dipilih belum disetujui atau tidak aktif.") as any
+          error.statusCode = 400
+          throw error
+        }
+        resolvedSchoolId = school.id
+      } else {
+        resolvedSchoolId = null
+      }
     } else if (body.school) {
       const trimmedSchool = body.school.trim()
       const existingSchool = await userModels.findSchoolByName(trimmedSchool)
-      if (existingSchool) {
+      if (existingSchool && existingSchool.status === "approved" && existingSchool.isActive) {
         resolvedSchoolId = existingSchool.id
       } else {
-        const newSchool = await userModels.createSchool(trimmedSchool, "Lainnya")
-        resolvedSchoolId = newSchool.id
+        resolvedSchoolId = null
       }
     } else if (body.school === null) {
       resolvedSchoolId = null

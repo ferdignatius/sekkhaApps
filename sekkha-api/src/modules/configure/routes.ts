@@ -2,10 +2,18 @@ import { Router } from "express"
 import { requireAuth, requireRole } from "../../middleware/auth"
 import { configureControllers } from "./controllers"
 
+import { schoolControllers } from "../schools/controllers"
+
 export const configureRouter: Router = Router()
 
-// All configure routes require auth and organizer/admin role
+// All configure routes require auth
 configureRouter.use(requireAuth)
+
+// School master data and user requests (Accessible to all authenticated members for onboarding)
+configureRouter.get("/schools", schoolControllers.getSchools)
+configureRouter.post("/school-requests", schoolControllers.requestSchool)
+
+// Other configure routes require organizer/admin role
 configureRouter.use(requireRole("organizer", "admin"))
 
 // Read-only for organizer: all mutating methods (POST, PUT, PATCH, DELETE) require admin role

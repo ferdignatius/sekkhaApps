@@ -37,14 +37,16 @@ export const authModels = {
   async findUserByIdentifier(identifier: string) {
     const clean = identifier.trim().toLowerCase()
     const bindex = generateBlindIndex(clean)
+    const asNum = /^\d+$/.test(clean) ? parseInt(clean, 10) : null
     const user = await prisma.user.findFirst({
       where: {
         OR: [
           ...(bindex ? [{ emailBindex: bindex }] : []),
           { username: clean },
+          ...(asNum !== null ? [{ userNumber: asNum }] : []),
         ],
       },
-      include: { profile: { select: { name: true } } },
+      include: { profile: { select: { name: true } }, stats: true },
     })
     if (!user) return null
     return {
@@ -59,6 +61,7 @@ export const authModels = {
       where: { id: userId },
       select: {
         id: true,
+        userNumber: true,
         username: true,
         email: true,
         role: true,
@@ -72,6 +75,7 @@ export const authModels = {
     if (!user) return null
     return {
       id: user.id,
+      userNumber: user.userNumber,
       username: user.username,
       email: decrypt(user.email) || user.email,
       name: user.profile?.name ?? "",
@@ -125,6 +129,9 @@ export const authModels = {
             password: data.password,
             passwordChangedAt: new Date(),
             userNumber,
+            isClaimed: true,
+            emailVerifiedAt: new Date(),
+            onboardingCompleted: false,
             profile: {
               create: {
                 name: data.name,

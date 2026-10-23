@@ -135,10 +135,12 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
           role:
             (data.user?.role as UserRole) ??
             ((data as any).role as UserRole) ??
-            "umat",
+            "member",
           name: data.user?.name ?? null,
           email: data.user?.email ?? null,
-          onboardingCompleted: data.onboarding_completed,
+          ...(data.onboarding_completed !== undefined && {
+            onboardingCompleted: data.onboarding_completed,
+          }),
         },
       })
       return
@@ -248,7 +250,7 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
           role:
             (data.user?.role as UserRole) ??
             ((data as any).role as UserRole) ??
-            "umat",
+            "member",
           name: data.user?.name ?? null,
           email: data.user?.email ?? null,
         },
@@ -352,7 +354,7 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
           role:
             (data.user?.role as UserRole) ??
             ((data as any).role as UserRole) ??
-            "umat",
+            "member",
           name: data.user?.name ?? null,
           email: data.user?.email ?? null,
         },

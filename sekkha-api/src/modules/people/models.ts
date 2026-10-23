@@ -106,10 +106,11 @@ export const peopleModels = {
     return prisma.user.findUnique({ where: { emailBindex } })
   },
 
-  findUnclaimedMemberForLinking(userNumber: string) {
+  findUnclaimedMemberForLinking(userNumber: string | number) {
+    const parsedNum = typeof userNumber === "number" ? userNumber : parseInt(userNumber, 10)
     return prisma.user.findFirst({
       where: {
-        userNumber,
+        userNumber: isNaN(parsedNum) ? undefined : parsedNum,
         isClaimed: false,
       },
       include: {

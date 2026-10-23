@@ -25,20 +25,25 @@ export const schoolServices = {
     const validLimit = Math.min(Number(limit) || 100, 200)
     const trimmedSearch = search.trim()
 
-    const whereClause = trimmedSearch
-      ? {
-          OR: [
-            { name: { contains: trimmedSearch, mode: "insensitive" as const } },
-            { type: { contains: trimmedSearch, mode: "insensitive" as const } },
-          ],
-        }
-      : {}
+    const whereClause: any = {
+      status: "approved",
+      isActive: true,
+      ...(trimmedSearch
+        ? {
+            OR: [
+              { name: { contains: trimmedSearch, mode: "insensitive" as const } },
+              { type: { contains: trimmedSearch, mode: "insensitive" as const } },
+            ],
+          }
+        : {}),
+    }
 
     const schools = await schoolModels.findSchools(whereClause, validLimit)
     const result = schools.map((s) => ({
       id: s.id,
       name: s.name,
       type: s.type || "Umum",
+      city: "Nasional",
       userCount: s._count.profiles,
     }))
 
@@ -101,6 +106,29 @@ export const schoolServices = {
       name: school.name,
       type: school.type,
       userCount: 0,
+    }
+  },
+
+  async requestSchool(userId: string, data: { name: string; type?: string }) {
+    const trimmedName = data.name.trim()
+    const existing = await schoolModels.findSchoolByName(trimmedName)
+    if (existing) {
+      const error = new Error(`Sekolah "${trimmedName}" sudah terdaftar atau sedang diajukan.`) as any
+      error.statusCode = 409
+      throw error
+    }
+
+    const school = await schoolModels.createSchoolRequest({
+      name: trimmedName,
+      type: data.type || "Umum",
+      requestedBy: userId,
+    })
+
+    return {
+      id: school.id,
+      name: school.name,
+      type: school.type || "Umum",
+      status: school.status,
     }
   },
 

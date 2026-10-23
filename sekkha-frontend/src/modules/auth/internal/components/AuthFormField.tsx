@@ -4,6 +4,7 @@ import { Input } from "@/components/base/Input"
 
 interface AuthFormFieldProps {
   id: string
+  name?: string
   label: string
   type: "email" | "password" | "text"
   value: string
@@ -15,6 +16,7 @@ interface AuthFormFieldProps {
 
 export function AuthFormField({
   id,
+  name,
   label,
   type,
   value,
@@ -59,6 +61,7 @@ export function AuthFormField({
   return (
     <Input
       id={id}
+      name={name || id}
       label={label}
       type={resolvedType}
       value={value}

@@ -59,11 +59,11 @@ export function ForgotPasswordPage() {
     e.preventDefault()
     const cleanEmail = email.trim().toLowerCase()
     if (!cleanEmail) {
-      setError("Email wajib diisi")
+      setError("Email is required")
       return
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
-      setError("Format email tidak valid")
+      setError("Invalid email format")
       return
     }
 
@@ -80,7 +80,7 @@ export function ForgotPasswordPage() {
       setStep("otp")
       setResendCountdown(60)
     } catch (err: any) {
-      setError(err?.message || "Email tidak terdaftar di sistem Sekkha.")
+      setError(err?.message || "Email is not registered in Sekkha.")
     } finally {
       setIsLoading(false)
     }
@@ -159,7 +159,7 @@ export function ForgotPasswordPage() {
       )
       setStep("new-password")
     } catch (err: any) {
-      setError(err?.message || "Kode OTP salah atau telah kedaluwarsa.")
+      setError(err?.message || "Incorrect or expired verification code.")
     } finally {
       setIsLoading(false)
     }
@@ -182,7 +182,7 @@ export function ForgotPasswordPage() {
       setResendSuccess(true)
       setTimeout(() => setResendSuccess(false), 4000)
     } catch (err: any) {
-      setError(err?.message || "Gagal mengirim ulang OTP.")
+      setError(err?.message || "Failed to resend code.")
     } finally {
       setIsResending(false)
     }
@@ -193,11 +193,11 @@ export function ForgotPasswordPage() {
     e.preventDefault()
 
     if (newPassword.length < 8) {
-      setError("Kata sandi baru minimal 8 karakter")
+      setError("New password must be at least 8 characters")
       return
     }
     if (newPassword !== confirmPassword) {
-      setError("Konfirmasi kata sandi tidak cocok")
+      setError("Password confirmation does not match")
       return
     }
 
@@ -215,7 +215,7 @@ export function ForgotPasswordPage() {
       )
       setStep("success")
     } catch (err: any) {
-      setError(err?.message || "Gagal mereset kata sandi. Silakan coba lagi.")
+      setError(err?.message || "Failed to reset password. Please try again.")
     } finally {
       setIsLoading(false)
     }
@@ -243,24 +243,24 @@ export function ForgotPasswordPage() {
             )}
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-[#0a0a0a]">
-            {step === "email" && "Lupa Kata Sandi?"}
-            {step === "otp" && "Verifikasi Kode OTP"}
-            {step === "new-password" && "Buat Kata Sandi Baru"}
-            {step === "success" && "Kata Sandi Diperbarui!"}
+            {step === "email" && "Forgot Password?"}
+            {step === "otp" && "Verify Code"}
+            {step === "new-password" && "Create New Password"}
+            {step === "success" && "Password Updated!"}
           </h1>
           <p className="mx-auto max-w-xs text-xs leading-relaxed text-[#6a6a6a]">
             {step === "email" &&
-              "Masukkan email terdaftar Anda untuk menerima kode OTP pemulihan kata sandi."}
+              "Enter your registered email address to receive a recovery code."}
             {step === "otp" && (
               <>
-                Masukkan 6 digit kode OTP yang kami kirimkan ke{" "}
+                Enter the 6-digit verification code sent to{" "}
                 <span className="font-bold text-[#0a0a0a]">{email}</span>
               </>
             )}
             {step === "new-password" &&
-              "Masukkan kata sandi baru Anda dengan minimal 8 karakter."}
+              "Enter your new password with a minimum of 8 characters."}
             {step === "success" &&
-              "Kata sandi akun Sekkha Anda berhasil diperbarui. Silakan masuk kembali."}
+              "Your Sekkha account password has been updated successfully. Please sign in with your new password."}
           </p>
         </div>
 
@@ -278,7 +278,7 @@ export function ForgotPasswordPage() {
           {resendSuccess && (
             <div className="flex animate-in items-center gap-2 rounded-[12px] border border-[#22c55e]/20 bg-[#22c55e]/10 p-3 text-xs font-semibold text-[#22c55e] fade-in">
               <SparklesIcon className="size-4 shrink-0" />
-              <span>Kode OTP baru telah dikirim ke email Anda!</span>
+              <span>A new verification code has been sent to your email!</span>
             </div>
           )}
 
@@ -294,14 +294,14 @@ export function ForgotPasswordPage() {
                   htmlFor="email"
                   className="text-xs font-semibold text-[#0a0a0a]"
                 >
-                  Email Akun Anda
+                  Your Account Email
                 </label>
                 <div className="relative">
                   <MailIcon className="absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[#6a6a6a]" />
                   <input
                     id="email"
                     type="email"
-                    placeholder="nama@email.com"
+                    placeholder="name@email.com"
                     value={email}
                     onChange={(e) => {
                       setEmail(e.target.value)
@@ -320,10 +320,10 @@ export function ForgotPasswordPage() {
                 className="w-full"
               >
                 {isLoading ? (
-                  <span>Mengirim Kode OTP...</span>
+                  <span>Sending Recovery Code...</span>
                 ) : (
                   <>
-                    <span>Kirim Kode OTP Reset</span>
+                    <span>Send Reset Code</span>
                     <ArrowRightIcon className="ml-1 size-4" />
                   </>
                 )}
@@ -357,10 +357,10 @@ export function ForgotPasswordPage() {
 
               {/* Resend & Back Helper */}
               <div className="flex flex-col items-center justify-between gap-2 pt-1 text-xs text-[#6a6a6a] sm:flex-row">
-                <span>Tidak menerima email?</span>
+                <span>Didn't receive the email?</span>
                 {resendCountdown > 0 ? (
                   <span className="rounded-full border border-[#e5e5e5] bg-[#faf5e8] px-2.5 py-0.5 font-semibold text-[#0a0a0a]">
-                    Kirim ulang dalam {resendCountdown}d
+                    Resend in {resendCountdown}s
                   </span>
                 ) : (
                   <button
@@ -373,7 +373,7 @@ export function ForgotPasswordPage() {
                       className={`size-3 ${isResending ? "animate-spin" : ""}`}
                     />
                     <span>
-                      {isResending ? "Mengirim..." : "Kirim Ulang Kode OTP"}
+                      {isResending ? "Sending..." : "Resend Verification Code"}
                     </span>
                   </button>
                 )}
@@ -387,10 +387,10 @@ export function ForgotPasswordPage() {
                 className="w-full"
               >
                 {isLoading ? (
-                  <span>Memverifikasi Kode OTP...</span>
+                  <span>Verifying Code...</span>
                 ) : (
                   <>
-                    <span>Verifikasi Kode OTP</span>
+                    <span>Verify Code</span>
                     <ArrowRightIcon className="ml-1 size-4" />
                   </>
                 )}
@@ -406,7 +406,7 @@ export function ForgotPasswordPage() {
                   className="inline-flex cursor-pointer items-center gap-1.5 text-xs font-semibold text-[#6a6a6a] transition-colors hover:text-[#0a0a0a]"
                 >
                   <ArrowLeftIcon className="size-3.5" />
-                  <span>Ubah Alamat Email</span>
+                  <span>Change Email Address</span>
                 </button>
               </div>
             </div>
@@ -425,14 +425,14 @@ export function ForgotPasswordPage() {
                   htmlFor="newPassword"
                   className="text-xs font-semibold text-[#0a0a0a]"
                 >
-                  Kata Sandi Baru
+                  New Password
                 </label>
                 <div className="relative">
                   <LockIcon className="absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[#6a6a6a]" />
                   <input
                     id="newPassword"
                     type={showPassword ? "text" : "password"}
-                    placeholder="Minimal 8 karakter"
+                    placeholder="Minimum 8 characters"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     required
@@ -458,14 +458,14 @@ export function ForgotPasswordPage() {
                   htmlFor="confirmPassword"
                   className="text-xs font-semibold text-[#0a0a0a]"
                 >
-                  Konfirmasi Kata Sandi Baru
+                  Confirm New Password
                 </label>
                 <div className="relative">
                   <LockIcon className="absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[#6a6a6a]" />
                   <input
                     id="confirmPassword"
                     type={showConfirmPassword ? "text" : "password"}
-                    placeholder="Ketik ulang kata sandi baru"
+                    placeholder="Re-enter your new password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     required
@@ -492,10 +492,10 @@ export function ForgotPasswordPage() {
                 className="w-full"
               >
                 {isLoading ? (
-                  <span>Menyimpan Kata Sandi...</span>
+                  <span>Saving New Password...</span>
                 ) : (
                   <>
-                    <span>Simpan Kata Sandi Baru</span>
+                    <span>Save New Password</span>
                     <ArrowRightIcon className="ml-1 size-4" />
                   </>
                 )}
@@ -507,13 +507,12 @@ export function ForgotPasswordPage() {
           {step === "success" && (
             <div className="space-y-5 text-center">
               <div className="rounded-[16px] border border-[#22c55e]/20 bg-[#22c55e]/10 p-4 text-xs leading-relaxed font-medium text-[#15803d]">
-                Kata sandi akun Anda berhasil diperbarui! Silakan gunakan kata
-                sandi baru untuk masuk ke Sekkha Apps.
+                Your account password has been successfully updated! Please use your new password to sign in to Sekkha.
               </div>
 
               <Link to="/login" className="block w-full">
                 <Button variant="filled" className="w-full">
-                  <span>Masuk ke Akun Anda</span>
+                  <span>Sign In to Your Account</span>
                   <ArrowRightIcon className="size-4" />
                 </Button>
               </Link>
@@ -528,7 +527,7 @@ export function ForgotPasswordPage() {
                 className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#6a6a6a] transition-colors hover:text-[#0a0a0a]"
               >
                 <ArrowLeftIcon className="size-3.5" />
-                <span>Kembali ke Halaman Masuk</span>
+                <span>Back to Sign In</span>
               </Link>
             </div>
           )}
@@ -536,7 +535,7 @@ export function ForgotPasswordPage() {
 
         {/* Sekkha Footer Brand */}
         <p className="text-center text-[11px] text-[#6a6a6a]">
-          © 2026 Komunitas Pemuda Vihara Sekkha.
+          © 2026 Sekkha Youth Community.
         </p>
       </div>
     </div>

@@ -10,7 +10,7 @@ export const schoolModels = {
     return prisma.school.upsert({
       where: { name },
       update: { type },
-      create: { name, type },
+      create: { name, type, status: "approved", isActive: true },
     })
   },
 
@@ -45,8 +45,8 @@ export const schoolModels = {
   },
 
   findSchoolByName(name: string) {
-    return prisma.school.findUnique({
-      where: { name },
+    return prisma.school.findFirst({
+      where: { name: { equals: name, mode: "insensitive" } },
     })
   },
 
@@ -58,7 +58,24 @@ export const schoolModels = {
 
   createSchool(data: { name: string; type?: string }) {
     return prisma.school.create({
-      data,
+      data: {
+        name: data.name,
+        type: data.type,
+        status: "approved",
+        isActive: true,
+      },
+    })
+  },
+
+  createSchoolRequest(data: { name: string; type?: string; requestedBy: string }) {
+    return prisma.school.create({
+      data: {
+        name: data.name,
+        type: data.type || "Umum",
+        status: "pending",
+        isActive: false,
+        requestedBy: data.requestedBy,
+      },
     })
   },
 

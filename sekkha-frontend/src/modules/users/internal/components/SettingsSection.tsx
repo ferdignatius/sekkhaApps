@@ -22,8 +22,7 @@ interface SettingsSectionProps {
   onMonthlyTargetSettings?: () => void
 }
 
-type SettingsView =
-  "menu" | "target" | "password" | "logout_confirm"
+type SettingsView = "menu" | "target" | "password" | "logout_confirm"
 
 export function SettingsSection({
   onLogout,

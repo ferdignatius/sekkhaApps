@@ -32,33 +32,6 @@ export const DEFAULT_POINT_RULES = [
 ]
 
 export const configureModels = {
-  // Badges & Achievements (same Badge model)
-  findBadges() {
-    return prisma.badge.findMany({ orderBy: { name: "asc" } })
-  },
-  createBadge(data: any) {
-    return prisma.badge.create({ data })
-  },
-  updateBadge(id: string, data: any) {
-    return prisma.badge.update({ where: { id }, data })
-  },
-  deleteBadge(id: string) {
-    return prisma.badge.delete({ where: { id } })
-  },
-
-  // Levels
-  findLevels() {
-    return prisma.level.findMany({ orderBy: { level: "asc" } })
-  },
-  createLevel(data: any) {
-    return prisma.level.create({ data })
-  },
-  updateLevel(id: string, data: any) {
-    return prisma.level.update({ where: { id }, data })
-  },
-  deleteLevel(id: string) {
-    return prisma.level.delete({ where: { id } })
-  },
 
   // Event Types
   findEventTypes() {

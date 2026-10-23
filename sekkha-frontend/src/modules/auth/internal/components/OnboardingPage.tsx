@@ -69,8 +69,14 @@ export function OnboardingPage() {
   const [selectedSchoolType, setSelectedSchoolType] = useState<string | null>(
     null
   )
-  const [schoolRequest, setSchoolRequest] = useState({ name: "", type: "", city: "" })
-  const [schoolRequestStatus, setSchoolRequestStatus] = useState<string | null>(null)
+  const [schoolRequest, setSchoolRequest] = useState({
+    name: "",
+    type: "",
+    city: "",
+  })
+  const [schoolRequestStatus, setSchoolRequestStatus] = useState<string | null>(
+    null
+  )
 
   // Stats for matching/similar users
   const [stats, setStats] = useState<SimilarUsersStats | null>(null)
@@ -261,11 +267,14 @@ export function OnboardingPage() {
     if (!schoolRequest.name.trim()) return
     try {
       setSubmitting(true)
-      const res = await api.post<{ status: string }>("/configure/school-requests", {
-        requested_name: schoolRequest.name.trim(),
-        requested_type: schoolRequest.type.trim(),
-        requested_city: schoolRequest.city.trim(),
-      })
+      const res = await api.post<{ status: string }>(
+        "/configure/school-requests",
+        {
+          requested_name: schoolRequest.name.trim(),
+          requested_type: schoolRequest.type.trim(),
+          requested_city: schoolRequest.city.trim(),
+        }
+      )
       setSchoolRequestStatus(res.status || "pending")
     } catch (err: any) {
       setErrorMsg(err.message || "Gagal mengirim permintaan sekolah.")
@@ -356,7 +365,9 @@ export function OnboardingPage() {
       })
       await navigate({ to: "/home" })
     } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : "Gagal menyelesaikan onboarding")
+      setErrorMsg(
+        err instanceof Error ? err.message : "Gagal menyelesaikan onboarding"
+      )
     } finally {
       setSubmitting(false)
     }
@@ -646,13 +657,57 @@ export function OnboardingPage() {
                 />
                 {!profileForm.school && (
                   <div className="space-y-2 rounded-[12px] border border-dashed border-[#e5e5e5] p-3">
-                    <p className="text-xs font-semibold text-[#0a0a0a]">Sekolah tidak terdaftar?</p>
-                    <input aria-label="Nama sekolah" placeholder="Nama sekolah" value={schoolRequest.name} onChange={(e) => setSchoolRequest({ ...schoolRequest, name: e.target.value })} className="h-10 w-full rounded-[10px] border border-[#e5e5e5] px-3 text-sm" />
+                    <p className="text-xs font-semibold text-[#0a0a0a]">
+                      Sekolah tidak terdaftar?
+                    </p>
+                    <input
+                      aria-label="Nama sekolah"
+                      placeholder="Nama sekolah"
+                      value={schoolRequest.name}
+                      onChange={(e) =>
+                        setSchoolRequest({
+                          ...schoolRequest,
+                          name: e.target.value,
+                        })
+                      }
+                      className="h-10 w-full rounded-[10px] border border-[#e5e5e5] px-3 text-sm"
+                    />
                     <div className="grid grid-cols-2 gap-2">
-                      <input aria-label="Jenis sekolah" placeholder="Jenis" value={schoolRequest.type} onChange={(e) => setSchoolRequest({ ...schoolRequest, type: e.target.value })} className="h-10 rounded-[10px] border border-[#e5e5e5] px-3 text-sm" />
-                      <input aria-label="Kota sekolah" placeholder="Kota" value={schoolRequest.city} onChange={(e) => setSchoolRequest({ ...schoolRequest, city: e.target.value })} className="h-10 rounded-[10px] border border-[#e5e5e5] px-3 text-sm" />
+                      <input
+                        aria-label="Jenis sekolah"
+                        placeholder="Jenis"
+                        value={schoolRequest.type}
+                        onChange={(e) =>
+                          setSchoolRequest({
+                            ...schoolRequest,
+                            type: e.target.value,
+                          })
+                        }
+                        className="h-10 rounded-[10px] border border-[#e5e5e5] px-3 text-sm"
+                      />
+                      <input
+                        aria-label="Kota sekolah"
+                        placeholder="Kota"
+                        value={schoolRequest.city}
+                        onChange={(e) =>
+                          setSchoolRequest({
+                            ...schoolRequest,
+                            city: e.target.value,
+                          })
+                        }
+                        className="h-10 rounded-[10px] border border-[#e5e5e5] px-3 text-sm"
+                      />
                     </div>
-                    <button type="button" disabled={submitting || schoolRequestStatus === "pending"} onClick={handleSchoolRequest} className="h-10 rounded-[10px] bg-[#0a0a0a] px-3 text-xs font-semibold text-white disabled:opacity-50">{schoolRequestStatus === "pending" ? "Permintaan menunggu review" : "Ajukan sekolah"}</button>
+                    <button
+                      type="button"
+                      disabled={submitting || schoolRequestStatus === "pending"}
+                      onClick={handleSchoolRequest}
+                      className="h-10 rounded-[10px] bg-[#0a0a0a] px-3 text-xs font-semibold text-white disabled:opacity-50"
+                    >
+                      {schoolRequestStatus === "pending"
+                        ? "Permintaan menunggu review"
+                        : "Ajukan sekolah"}
+                    </button>
                   </div>
                 )}
                 <p className="text-[11px] text-[#6a6a6a]">

@@ -100,7 +100,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
           })
         }
       })
-      .catch(() => { })
+      .catch(() => {})
     return () => {
       cancelled = true
     }
@@ -115,8 +115,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const mainNavItems = activeModules
     .flatMap((m) => m.navItems)
     .filter((item) => {
-      if (item.to === "/home/profile")
-        return false
+      if (item.to === "/home/profile") return false
       if ((role === "member" || role === "umat") && item.to === "/people")
         return false
       return true

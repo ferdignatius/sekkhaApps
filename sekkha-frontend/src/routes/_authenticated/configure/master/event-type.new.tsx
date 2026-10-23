@@ -4,6 +4,8 @@ export const Route = createFileRoute(
   "/_authenticated/configure/master/event-type/new"
 )({
   component: lazyRouteComponent(() =>
-    import("@/modules/configure").then((m) => ({ default: m.EventTypeCreatePage }))
+    import("@/modules/configure").then((m) => ({
+      default: m.EventTypeCreatePage,
+    }))
   ),
 })

@@ -102,17 +102,6 @@ export const userModels = {
     })
   },
 
-  async findActiveBadgesWithUserBadges(userId: string) {
-    const allBadges = await prisma.badge.findMany({
-      where: { isActive: true },
-      orderBy: { conditionValue: "asc" },
-    })
-    const userBadges = await prisma.userBadge.findMany({
-      where: { userId },
-    })
-    return { allBadges, userBadges }
-  },
-
   findUserAttendances(userId: string, take: number = 20) {
     return prisma.attendance.findMany({
       where: { userId },
@@ -130,18 +119,6 @@ export const userModels = {
     })
   },
 
-  findUserStatsWithLevel(userId: string) {
-    return prisma.userStats.findUnique({
-      where: { userId },
-      include: { level: true },
-    })
-  },
-
-  findLevelsOrderedDesc() {
-    return prisma.level.findMany({
-      orderBy: { minPoints: "desc" },
-    })
-  },
 
   countUserAttendances(userId: string) {
     return prisma.attendance.count({
@@ -162,8 +139,7 @@ export const userModels = {
       where: { id: userId },
       include: {
         profile: { include: { school: true } },
-        stats: { include: { level: true } },
-        badges: { include: { badge: true } },
+        stats: true,
         attendances: {
           include: { event: { select: { title: true, eventDate: true, location: true } } },
           orderBy: { scannedAt: "desc" },

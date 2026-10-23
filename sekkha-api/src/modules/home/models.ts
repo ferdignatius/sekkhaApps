@@ -17,7 +17,6 @@ export const homeModels = {
         stats: {
           select: {
             points: true,
-            level: { select: { level: true, label: true } },
           },
         },
       },

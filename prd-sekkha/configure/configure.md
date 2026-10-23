@@ -46,24 +46,15 @@ Berdasarkan `sekkha-frontend/src/modules/configure/internal/components/` dan `se
 | `/configure/master/school` | `SchoolPage` | Direktori sekolah (lihat PRD `masterdata/schools.md`) |
 | `/configure/master/event-type` | `EventTypePage` | Jenis event (kebaktian, retreat, meditasi, sosial) |
 | `/configure/master/event-time` | `EventTimePage` | Preset waktu (Senin 18:00, Minggu 09:00, dll) |
-| `/configure/master/attendance-badge` | `AttendanceBadgePage` | Badge yang diberikan saat presensi |
 
-### 3.2. Gamification
-
-| Halaman | Komponen | Isi |
-| --- | --- | --- |
-| `/configure/master/achievement` | `AchievementPage` | Master achievement (kondisi + hadiah) |
-| `/configure/master/badge` | `BadgePage` | Master badge visual (icon, warna, kategori) |
-| `/configure/master/level` | `LevelPage` | Threshold level (level N butuh X poin) |
-
-### 3.3. Rules
+### 3.2. Rules
 
 | Halaman | Komponen | Isi |
 | --- | --- | --- |
 | `/configure/rules/season` | `SeasonPage` | Definisi season (nama, tanggal, aktif/tidak) |
 | `/configure/rules/points` | `PointsRulesPage` | Aturan poin per event_type + multiplier |
 
-### 3.4. Early Warning
+### 3.3. Early Warning
 
 | Halaman | Komponen | Isi |
 | --- | --- | --- |

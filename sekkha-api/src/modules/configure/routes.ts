@@ -19,29 +19,11 @@ configureRouter.use((req, res, next) => {
   next()
 })
 
-// Badges
-configureRouter.get("/badges", configureControllers.getBadges)
-configureRouter.post("/badges", configureControllers.createBadge)
-configureRouter.put("/badges/:id", configureControllers.updateBadge)
-configureRouter.delete("/badges/:id", configureControllers.deleteBadge)
-
-// Levels
-configureRouter.get("/levels", configureControllers.getLevels)
-configureRouter.post("/levels", configureControllers.createLevel)
-configureRouter.put("/levels/:id", configureControllers.updateLevel)
-configureRouter.delete("/levels/:id", configureControllers.deleteLevel)
-
 // Event Types
 configureRouter.get("/event-types", configureControllers.getEventTypes)
 configureRouter.post("/event-types", configureControllers.createEventType)
 configureRouter.put("/event-types/:id", configureControllers.updateEventType)
 configureRouter.delete("/event-types/:id", configureControllers.deleteEventType)
-
-// Achievements
-configureRouter.get("/achievements", configureControllers.getAchievements)
-configureRouter.post("/achievements", configureControllers.createAchievement)
-configureRouter.put("/achievements/:id", configureControllers.updateAchievement)
-configureRouter.delete("/achievements/:id", configureControllers.deleteAchievement)
 
 // Threshold
 configureRouter.get("/threshold", configureControllers.getThresholds)

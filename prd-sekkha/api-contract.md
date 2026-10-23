@@ -373,37 +373,7 @@ Mengambil status keaktifan beruntun mingguan (*weekly attendance streak*).
   }
   ```
 
-### 5. `GET /api/users/me/level`
-Mengambil tingkatan gamifikasi dan progres poin pengguna.
-- **Akses**: Terautentikasi (`requireAuth`)
-- **Response (200 OK)**:
-  ```json
-  {
-    "level": 3,
-    "title": "Saddhā (Keyakinan)",
-    "current_points": 350,
-    "next_level_points": 500,
-    "progress_percent": 70
-  }
-  ```
-
-### 6. `GET /api/users/me/badges`
-Mengambil lencana yang telah dikumpulkan pengguna.
-- **Akses**: Terautentikasi (`requireAuth`)
-- **Response (200 OK)**:
-  ```json
-  [
-    {
-      "id": "bdg_first_att",
-      "name": "Langkah Pertama",
-      "description": "Menghadiri kebaktian pertama kali",
-      "icon_url": "/badges/first.svg",
-      "unlocked_at": "2026-08-01T10:00:00.000Z"
-    }
-  ]
-  ```
-
-### 7. `GET /api/users/me/attendances`
+### 5. `GET /api/users/me/attendances`
 Mengambil riwayat absensi acara yang pernah dihadiri.
 - **Akses**: Terautentikasi (`requireAuth`)
 - **Query Parameters**: `limit` (default: 20, max: 50)
@@ -422,7 +392,7 @@ Mengambil riwayat absensi acara yang pernah dihadiri.
   ]
   ```
 
-### 8. `GET /api/users/me/point-transactions`
+### 6. `GET /api/users/me/point-transactions`
 Mengambil riwayat mutasi penambahan/pengurangan poin.
 - **Akses**: Terautentikasi (`requireAuth`)
 - **Response (200 OK)**:
@@ -438,7 +408,7 @@ Mengambil riwayat mutasi penambahan/pengurangan poin.
   ]
   ```
 
-### 9. `POST /api/users/change-password`
+### 7. `POST /api/users/change-password`
 Mengubah kata sandi akun secara mandiri.
 - **Akses**: Terautentikasi (`requireAuth`)
 - **Request Body**:
@@ -456,12 +426,12 @@ Mengubah kata sandi akun secara mandiri.
   }
   ```
 
-### 10. `GET /api/users/me/export` (Kepatuhan UU PDP)
+### 8. `GET /api/users/me/export` (Kepatuhan UU PDP)
 Mengunduh salinan arsip data pribadi dalam format JSON terenkripsi/terbaca.
 - **Akses**: Terautentikasi (`requireAuth`)
-- **Response (200 OK)**: Seluruh metadata profil, relasi kehadiran, poin, dan lencana.
+- **Response (200 OK)**: Seluruh metadata profil, relasi kehadiran, dan poin.
 
-### 11. `POST /api/users/me/delete-account` (Hak Penghapusan Akun)
+### 9. `POST /api/users/me/delete-account` (Hak Penghapusan Akun)
 Menghapus permanen akun atas permintaan mandiri.
 - **Akses**: Terautentikasi (`requireAuth`)
 - **Request Body**:
@@ -496,9 +466,7 @@ Pusat komando terpadu yang menggabungkan informasi profil ringkas, streak minggu
       "avatar_url": null,
       "role": "member",
       "user_number": "NV-2026-0042",
-      "points": 350,
-      "level": 3,
-      "level_label": "Saddhā (Keyakinan)"
+      "points": 350
     },
     "streak": {
       "current_streak": 4,
@@ -1099,9 +1067,9 @@ Menghapus sekolah dari master data.
 
 ---
 
-## Modul 9: Konfigurasi & Gamifikasi Master (`/api/configure`)
+## Modul 9: Konfigurasi & Master Data (`/api/configure`)
 
-Manajemen konfigurasi sistem gamifikasi vihara: lencana (*badges*), tingkatan (*levels*), kategori acara (*event types*), capaian (*achievements*), ambang batas (*thresholds*), musim (*seasons*), dan aturan poin (*point rules*).
+Manajemen konfigurasi sistem master vihara: kategori acara (*event types*), ambang batas (*thresholds*), musim (*seasons*), dan aturan poin (*point rules*).
 
 > **Hak Akses Khusus Modul Configure:**
 > - Seluruh endpoint `GET`: Dapat diakses oleh **`organizer`** dan **`admin`**.
@@ -1109,101 +1077,7 @@ Manajemen konfigurasi sistem gamifikasi vihara: lencana (*badges*), tingkatan (*
 
 ---
 
-### 9.1. Lencana Gamifikasi (`/api/configure/badges`)
-
-#### `GET /api/configure/badges`
-- **Response (200 OK)**:
-  ```json
-  [
-    {
-      "id": "bdg_01",
-      "code": "first-attendance",
-      "name": "Langkah Pertama",
-      "description": "Menghadiri kebaktian untuk pertama kali",
-      "icon_url": "/badges/first.svg",
-      "color": "#10B981",
-      "point_value": 25,
-      "condition_type": "attendance_count",
-      "condition_value": 1,
-      "is_active": true
-    }
-  ]
-  ```
-
-#### `POST /api/configure/badges`
-- **Request Body**:
-  ```json
-  {
-    "name": "Pejuang Vassa",
-    "code": "vassa-warrior",
-    "description": "Hadir 8 kebaktian selama masa Vassa",
-    "icon_url": "/badges/vassa.svg",
-    "color": "#F59E0B",
-    "point_value": 100,
-    "condition_type": "season_attendance",
-    "condition_value": 8,
-    "is_active": true
-  }
-  ```
-- **Response (201 Created)**: `{ "id": "bdg_02", "name": "Pejuang Vassa" }`
-
-#### `PUT /api/configure/badges/:id`
-- **Request Body**: Sama seperti `POST` (field opsional yang ingin diperbarui).
-- **Response (200 OK)**: `{ "id": "bdg_02", "name": "Pejuang Vassa" }`
-
-#### `DELETE /api/configure/badges/:id`
-- **Response (200 OK)**: `{ "success": true }`
-
----
-
-### 9.2. Tingkatan Gamifikasi (`/api/configure/levels`)
-
-#### `GET /api/configure/levels`
-- **Response (200 OK)**:
-  ```json
-  [
-    {
-      "id": "lvl_01",
-      "level": 1,
-      "label": "Kalyanamitta (Sahabat Kebajikan)",
-      "min_points": 0
-    },
-    {
-      "id": "lvl_02",
-      "level": 2,
-      "label": "Sila (Kebajikan)",
-      "min_points": 150
-    },
-    {
-      "id": "lvl_03",
-      "level": 3,
-      "label": "Saddhā (Keyakinan)",
-      "min_points": 350
-    }
-  ]
-  ```
-
-#### `POST /api/configure/levels`
-- **Request Body**:
-  ```json
-  {
-    "level": 4,
-    "label": "Paññā (Kebijaksanaan)",
-    "min_points": 600
-  }
-  ```
-- **Response (201 Created)**: Objek level baru.
-
-#### `PUT /api/configure/levels/:id`
-- **Request Body**: `{ "label": "Paññā Agung", "min_points": 650 }`
-- **Response (200 OK)**: Objek level yang diperbarui.
-
-#### `DELETE /api/configure/levels/:id`
-- **Response (200 OK)**: `{ "success": true }`
-
----
-
-### 9.3. Kategori Acara (`/api/configure/event-types`)
+### 9.1. Kategori Acara (`/api/configure/event-types`)
 
 #### `GET /api/configure/event-types`
 - **Response (200 OK)**:
@@ -1250,16 +1124,7 @@ Manajemen konfigurasi sistem gamifikasi vihara: lencana (*badges*), tingkatan (*
 
 ---
 
-### 9.4. Capaian Prestasi / Achievements (`/api/configure/achievements`)
-Menggunakan model dan struktur yang selaras dengan Lencana Gamifikasi (`/api/configure/badges`).
-- `GET /api/configure/achievements`: Daftar achievements.
-- `POST /api/configure/achievements`: Tambah achievement baru.
-- `PUT /api/configure/achievements/:id`: Update achievement.
-- `DELETE /api/configure/achievements/:id`: Hapus achievement.
-
----
-
-### 9.5. Ambang Batas / Thresholds (`/api/configure/threshold`)
+### 9.2. Ambang Batas / Thresholds (`/api/configure/threshold`)
 
 Mengatur ambang batas parameter peringatan dini *consecutive missed events* dan deteksi jemaat pasif (*churned*).
 
@@ -1288,7 +1153,7 @@ Mengatur ambang batas parameter peringatan dini *consecutive missed events* dan 
 
 ---
 
-### 9.6. Musim Papan Peringkat / Seasons (`/api/configure/seasons`)
+### 9.3. Musim Papan Peringkat / Seasons (`/api/configure/seasons`)
 
 #### `GET /api/configure/seasons`
 - **Response (200 OK)**:
@@ -1339,7 +1204,7 @@ Mengaktifkan season bersangkutan dan otomatis menonaktifkan season aktif lainnya
 
 ---
 
-### 9.7. Aturan Poin Master (`/api/configure/point-rules`)
+### 9.4. Aturan Poin Master (`/api/configure/point-rules`)
 
 Mengatur alokasi poin reward dinamis untuk setiap kategori aktivitas.
 

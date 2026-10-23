@@ -9,91 +9,6 @@ let defaultThresholds = {
 }
 
 export const configureServices = {
-  // ─── Badges ────────────────────────────────────────────────────────────────
-  async getBadges() {
-    const badges = await configureModels.findBadges()
-    return badges.map((b) => ({
-      id: b.id,
-      name: b.name,
-      description: b.description,
-      icon_url: b.iconUrl,
-      condition_type: b.conditionType,
-      condition_value: b.conditionValue,
-      code: b.code,
-      color: b.color,
-      point_value: b.pointValue,
-      is_active: b.isActive,
-    }))
-  },
-
-  async createBadge(data: any) {
-    const badge = await configureModels.createBadge({
-      name: data.name,
-      code: data.code ?? `badge-${Date.now()}`,
-      description: data.description,
-      iconUrl: data.icon_url,
-      color: data.color ?? "#10B981",
-      pointValue: data.point_value ?? 0,
-      conditionType: data.condition_type,
-      conditionValue: data.condition_value,
-      isActive: data.is_active ?? true,
-    })
-    return { id: badge.id, name: badge.name }
-  },
-
-  async updateBadge(id: string, data: any) {
-    const badge = await configureModels.updateBadge(id, {
-      ...(data.name && { name: data.name }),
-      ...(data.code && { code: data.code }),
-      ...(data.description && { description: data.description }),
-      ...(data.icon_url && { iconUrl: data.icon_url }),
-      ...(data.color && { color: data.color }),
-      ...(data.point_value !== undefined && { pointValue: data.point_value }),
-      ...(data.condition_type && { conditionType: data.condition_type }),
-      ...(data.condition_value !== undefined && { conditionValue: data.condition_value }),
-      ...(data.is_active !== undefined && { isActive: data.is_active }),
-    })
-    return { id: badge.id, name: badge.name }
-  },
-
-  async deleteBadge(id: string) {
-    await configureModels.deleteBadge(id)
-    return { success: true }
-  },
-
-  // ─── Levels ────────────────────────────────────────────────────────────────
-  async getLevels() {
-    const levels = await configureModels.findLevels()
-    return levels.map((l) => ({
-      id: l.id,
-      level: l.level,
-      label: l.label,
-      min_points: l.minPoints,
-    }))
-  },
-
-  async createLevel(data: any) {
-    const level = await configureModels.createLevel({
-      level: data.level,
-      label: data.label,
-      minPoints: data.min_points,
-    })
-    return { id: level.id, level: level.level }
-  },
-
-  async updateLevel(id: string, data: any) {
-    const level = await configureModels.updateLevel(id, {
-      ...(data.level !== undefined && { level: data.level }),
-      ...(data.label && { label: data.label }),
-      ...(data.min_points !== undefined && { minPoints: data.min_points }),
-    })
-    return { id: level.id, level: level.level }
-  },
-
-  async deleteLevel(id: string) {
-    await configureModels.deleteLevel(id)
-    return { success: true }
-  },
 
   // ─── Event Types ───────────────────────────────────────────────────────────
   async getEventTypes() {
@@ -138,22 +53,6 @@ export const configureServices = {
     return { success: true }
   },
 
-  // ─── Achievements (same Badge model) ───────────────────────────────────────
-  async getAchievements() {
-    return this.getBadges()
-  },
-
-  async createAchievement(data: any) {
-    return this.createBadge(data)
-  },
-
-  async updateAchievement(id: string, data: any) {
-    return this.updateBadge(id, data)
-  },
-
-  async deleteAchievement(id: string) {
-    return this.deleteBadge(id)
-  },
 
   // ─── Thresholds ────────────────────────────────────────────────────────────
   getThresholds() {

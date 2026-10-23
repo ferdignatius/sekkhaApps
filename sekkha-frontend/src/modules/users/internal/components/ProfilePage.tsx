@@ -19,7 +19,6 @@ import {
   FlameIcon,
   TrophyIcon,
   StarIcon,
-  AwardIcon,
   QrCodeIcon,
   SettingsIcon,
   LogOutIcon,
@@ -88,14 +87,6 @@ interface UserStreakData {
   weeklyActivity: boolean[]
 }
 
-interface UserBadge {
-  badge_id: string
-  name: string
-  icon_url: string
-  description: string
-  earned_at: string | null
-}
-
 interface UserAttendance {
   event_id: string
   event_title: string
@@ -116,20 +107,18 @@ export function ProfilePage() {
   const { authState, logout } = useAuth()
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [streakData, setStreakData] = useState<UserStreakData | null>(null)
-  const [badges, setBadges] = useState<UserBadge[]>([])
   const [attendances, setAttendances] = useState<UserAttendance[]>([])
   const [myRank, setMyRank] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
 
   // Tabs & Modals
-  const [activeTab, setActiveTab] = useState<
-    "overview" | "badges" | "card" | "settings"
-  >("overview")
+  const [activeTab, setActiveTab] = useState<"overview" | "card" | "settings">(
+    "overview"
+  )
   const [showEditModal, setShowEditModal] = useState(false)
   const [showPrintModal, setShowPrintModal] = useState(false)
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
-  const [selectedBadge, setSelectedBadge] = useState<UserBadge | null>(null)
   const [copiedId, setCopiedId] = useState(false)
 
   // Form states
@@ -168,7 +157,7 @@ export function ProfilePage() {
   async function loadProfileData() {
     setLoading(true)
     try {
-      const [profileRes, streakRes, badgesRes, attendancesRes, lbRes] =
+      const [profileRes, streakRes, attendancesRes, lbRes] =
         await Promise.allSettled([
           api.get<UserProfile>("/users/me", {
             schema: UserProfileResponseSchema,
@@ -177,7 +166,6 @@ export function ProfilePage() {
             "/users/me/streak",
             { schema: StreakResponseSchema }
           ),
-          api.get<UserBadge[]>("/users/me/badges"),
           api.get<UserAttendance[]>("/users/me/attendances"),
           api.get<LeaderboardResponse>("/leaderboard?metric=points"),
         ])
@@ -198,12 +186,6 @@ export function ProfilePage() {
           longestStreak: 0,
           weeklyActivity: [],
         })
-      }
-
-      if (badgesRes.status === "fulfilled" && badgesRes.value) {
-        setBadges(badgesRes.value || [])
-      } else {
-        setBadges([])
       }
 
       if (attendancesRes.status === "fulfilled" && attendancesRes.value) {
@@ -359,7 +341,7 @@ export function ProfilePage() {
     umat: "bg-[#f5f0e0] text-[#0a0a0a] border-[#e5e5e5] font-semibold",
   }
 
-  // Dynamic Radar Chart Analytics based on attendance, streak, badges, and points
+  // Dynamic Radar Chart Analytics based on attendance, streak, and points
   const { radarData, overallIndexScore, strongestArea } = useMemo(() => {
     // 1. Attendance Score: % of target (e.g. 12 events)
     const attendanceScore = Math.min(
@@ -373,15 +355,7 @@ export function ProfilePage() {
     // 3. Points Score: Current points / 500 max 100
     const pointsScore = Math.min(100, Math.round((totalPoints / 500) * 100))
 
-    // 4. Badges Score: Badges earned / total badges available
-    const earnedBadgesCount = badges.filter((b) => b.earned_at !== null).length
-    const totalBadgesCount = Math.max(1, badges.length)
-    const badgeScore = Math.min(
-      100,
-      Math.round((earnedBadgesCount / totalBadgesCount) * 100)
-    )
-
-    // 5. Special Events Participation
+    // 4. Special Events Participation
     const specialAttCount = attendances.filter((a) => {
       const title = (a.event_title || "").toLowerCase()
       return (
@@ -394,7 +368,7 @@ export function ProfilePage() {
     }).length
     const specialScore = Math.min(100, Math.round((specialAttCount / 3) * 100))
 
-    // 6. Dedication Index: Combination of streaks + consistency
+    // 5. Dedication Index: Combination of streaks + consistency
     const baseAvg = Math.round(
       (attendanceScore + streakScore + pointsScore) / 3
     )
@@ -427,14 +401,6 @@ export function ProfilePage() {
         color: "#0a0a0a",
       },
       {
-        subject: "Badges",
-        fullSubject: "Badges Unlocked",
-        score: badgeScore,
-        raw: `${earnedBadgesCount}/${totalBadgesCount}`,
-        icon: TrophyIcon,
-        color: "#b8a4ed",
-      },
-      {
         subject: "Special",
         fullSubject: "Special Participation",
         score: specialScore,
@@ -462,14 +428,7 @@ export function ProfilePage() {
       overallIndexScore: overall,
       strongestArea: best,
     }
-  }, [
-    totalAttended,
-    currentStreak,
-    longestStreak,
-    totalPoints,
-    badges,
-    attendances,
-  ])
+  }, [totalAttended, currentStreak, longestStreak, totalPoints, attendances])
 
   return (
     <main className="min-h-screen bg-[#fffaf0] text-left">
@@ -479,10 +438,11 @@ export function ProfilePage() {
       {toast && (
         <div className="fixed top-6 right-6 z-50 animate-in duration-200 fade-in slide-in-from-top-4">
           <div
-            className={`flex items-center gap-2.5 rounded-[12px] border px-4 py-3 shadow-xl ${toast.type === "success"
-              ? "border-emerald-500/50 bg-[#0a0a0a] text-white"
-              : "border-rose-500/50 bg-rose-600 text-white"
-              }`}
+            className={`flex items-center gap-2.5 rounded-[12px] border px-4 py-3 shadow-xl ${
+              toast.type === "success"
+                ? "border-emerald-500/50 bg-[#0a0a0a] text-white"
+                : "border-rose-500/50 bg-rose-600 text-white"
+            }`}
           >
             {toast.type === "success" ? (
               <CheckCircleIcon className="size-5 shrink-0 text-emerald-400" />
@@ -719,19 +679,6 @@ export function ProfilePage() {
                   <SparklesIcon className="size-3.5" />
                   <span>Overview & Analytics</span>
                 </TabsTrigger>
-                <TabsTrigger value="badges">
-                  <AwardIcon className="size-3.5" />
-                  <span>Badges & Achievements</span>
-                  <span
-                    className={`py-0.2 rounded-full px-1.5 text-[10px] font-bold ${activeTab === "badges"
-                      ? "bg-white/20 text-white"
-                      : "bg-[#f5f0e0] text-[#0a0a0a]"
-                      }`}
-                  >
-                    {badges.filter((b) => Boolean(b.earned_at)).length}/
-                    {badges.length}
-                  </span>
-                </TabsTrigger>
                 <TabsTrigger value="card">
                   <QrCodeIcon className="size-3.5" />
                   <span>Digital Member ID</span>
@@ -796,10 +743,11 @@ export function ProfilePage() {
                       <span>Longest Record: {longestStreak}x</span>
                     </span>
                     <span
-                      className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-bold shadow-2xs ${currentStreak > 0
-                        ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-                        : "border-[#e5e5e5] bg-[#fffaf0] text-[#6a6a6a]"
-                        }`}
+                      className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-bold shadow-2xs ${
+                        currentStreak > 0
+                          ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                          : "border-[#e5e5e5] bg-[#fffaf0] text-[#6a6a6a]"
+                      }`}
                     >
                       {currentStreak > 0 ? (
                         <>
@@ -1071,68 +1019,6 @@ export function ProfilePage() {
                       </p>
                     </div>
                   )}
-                </div>
-              </div>
-            )}
-
-            {/* TAB 2: BADGES & ACHIEVEMENTS */}
-            {activeTab === "badges" && (
-              <div className="animate-in space-y-4 rounded-[20px] border border-[#e5e5e5] bg-[#fffaf0] p-5 shadow-xs duration-200 fade-in sm:p-6">
-                <div className="flex flex-col justify-between gap-2 border-b border-[#e5e5e5] pb-3 sm:flex-row sm:items-center">
-                  <div>
-                    <h3 className="text-sm font-bold text-[#0a0a0a] sm:text-base">
-                      Badge Collection & Achievements
-                    </h3>
-                    <p className="text-xs text-[#6a6a6a]">
-                      Milestones earned through attendance, streaks, and
-                      community participation
-                    </p>
-                  </div>
-                  <span className="inline-flex items-center gap-1.5 self-start rounded-[8px] border border-[#e5e5e5] bg-[#faf5e8] px-3 py-1 text-xs font-bold text-[#0a0a0a] sm:self-auto">
-                    <TrophyIcon
-                      className="size-3.5 text-[#e8b94a]"
-                      aria-hidden="true"
-                    />
-                    <span>
-                      {badges.filter((b) => Boolean(b.earned_at)).length} of{" "}
-                      {badges.length} Unlocked
-                    </span>
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3 pt-1 sm:grid-cols-3 sm:gap-4 md:grid-cols-4">
-                  {badges.map((badge) => {
-                    const isEarned = Boolean(badge.earned_at)
-                    return (
-                      <button
-                        key={badge.badge_id}
-                        type="button"
-                        onClick={() => setSelectedBadge(badge)}
-                        className={`flex cursor-pointer flex-col items-center rounded-[14px] border p-4 text-center transition-all hover:shadow-sm active:scale-98 ${isEarned
-                          ? "border-[#e5e5e5] bg-[#faf5e8] shadow-xs"
-                          : "border-[#e5e5e5] bg-[#fffaf0] opacity-50 grayscale hover:opacity-100 hover:grayscale-0"
-                          }`}
-                      >
-                        <div className="mb-2 flex size-14 items-center justify-center rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] text-2xl shadow-2xs">
-                          {badge.icon_url}
-                        </div>
-                        <p className="line-clamp-1 text-xs font-bold text-[#0a0a0a]">
-                          {badge.name}
-                        </p>
-                        <p className="mt-0.5 line-clamp-2 text-[11px] leading-tight text-[#6a6a6a]">
-                          {badge.description}
-                        </p>
-                        <span
-                          className={`mt-2.5 rounded-full px-2 py-0.5 text-[10px] font-bold ${isEarned
-                            ? "border border-emerald-200 bg-emerald-50 text-emerald-800"
-                            : "border border-neutral-200 bg-neutral-100 text-neutral-600"
-                            }`}
-                        >
-                          {isEarned ? "Unlocked" : "Locked"}
-                        </span>
-                      </button>
-                    )
-                  })}
                 </div>
               </div>
             )}
@@ -1734,62 +1620,6 @@ export function ProfilePage() {
                 <span>Print Card Now</span>
               </Button>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── MODAL 3: BADGE DETAILS ── */}
-      {selectedBadge && (
-        <div className="fixed inset-0 z-50 flex animate-in items-center justify-center bg-black/60 p-3.5 backdrop-blur-xs fade-in sm:p-4">
-          <div className="relative w-full max-w-sm space-y-3.5 rounded-[24px] border border-[#e5e5e5] bg-[#fffaf0] p-6 text-center shadow-2xl">
-            <button
-              type="button"
-              onClick={() => setSelectedBadge(null)}
-              className="absolute top-4 right-4 cursor-pointer rounded-full p-1.5 text-[#6a6a6a] hover:bg-[#faf5e8]"
-            >
-              <XIcon className="size-5" />
-            </button>
-
-            <div className="mx-auto flex size-20 items-center justify-center rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] text-4xl shadow-xs">
-              {selectedBadge.icon_url}
-            </div>
-
-            <div className="space-y-1">
-              <h3 className="text-base font-bold text-[#0a0a0a]">
-                {selectedBadge.name}
-              </h3>
-              <p className="text-xs leading-relaxed text-[#6a6a6a]">
-                {selectedBadge.description}
-              </p>
-            </div>
-
-            <div className="rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] p-3 text-xs text-[#6a6a6a]">
-              {selectedBadge.earned_at ? (
-                <p className="flex items-center justify-center gap-1 font-bold text-emerald-800">
-                  <CheckCircleIcon className="size-4 text-emerald-600" />
-                  <span>
-                    Unlocked on{" "}
-                    {new Date(selectedBadge.earned_at).toLocaleDateString(
-                      "en-US",
-                      { month: "long", year: "numeric" }
-                    )}
-                  </span>
-                </p>
-              ) : (
-                <p className="font-medium text-[#6a6a6a]">
-                  This badge is currently locked. Keep attending and
-                  participating!
-                </p>
-              )}
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setSelectedBadge(null)}
-              className="h-11 w-full cursor-pointer rounded-[12px] bg-[#0a0a0a] text-xs font-bold text-white shadow-xs transition-all hover:bg-[#1f1f1f] sm:text-sm"
-            >
-              Close
-            </button>
           </div>
         </div>
       )}

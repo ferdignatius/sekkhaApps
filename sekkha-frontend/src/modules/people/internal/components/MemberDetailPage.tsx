@@ -757,6 +757,6 @@ export function MemberDetailPage({
       )}
 
       {/* ── MODAL: CREDENTIALS POPUP AFTER RESET ── */}
-      </main>
+    </main>
   )
 }

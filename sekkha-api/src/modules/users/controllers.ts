@@ -57,16 +57,6 @@ export const userControllers = {
     }
   },
 
-  async getBadges(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
-      const userId = req.user!.userId
-      const badges = await userServices.getBadges(userId)
-      res.json(badges)
-    } catch (err) {
-      next(err)
-    }
-  },
-
   async getAttendances(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const userId = req.user!.userId
@@ -98,16 +88,6 @@ export const userControllers = {
       const userId = req.user!.userId
       const streak = await userServices.getStreak(userId)
       res.json(streak)
-    } catch (err) {
-      next(err)
-    }
-  },
-
-  async getLevel(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
-      const userId = req.user!.userId
-      const level = await userServices.getLevel(userId)
-      res.json(level)
     } catch (err) {
       next(err)
     }

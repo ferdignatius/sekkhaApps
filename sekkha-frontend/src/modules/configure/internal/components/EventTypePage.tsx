@@ -27,7 +27,8 @@ import { MultiSelectDropdown } from "@/components/ui/MultiSelectDropdown"
 export function EventTypeCreatePage() {
   const navigate = useNavigate()
   const params = useParams({ strict: false }) as { categoryId?: string }
-  const isEditor = Boolean(params.categoryId) || window.location.pathname.endsWith("/new")
+  const isEditor =
+    Boolean(params.categoryId) || window.location.pathname.endsWith("/new")
   const { authState } = useAuth()
   const isAdmin =
     authState.status === "authenticated" && authState.role === "admin"
@@ -36,7 +37,7 @@ export function EventTypeCreatePage() {
     getMasterCategories()
   )
   const editing = params.categoryId
-    ? categories.find((category) => category.id === params.categoryId) ?? null
+    ? (categories.find((category) => category.id === params.categoryId) ?? null)
     : null
 
   const [name, setName] = useState("")
@@ -73,7 +74,10 @@ export function EventTypeCreatePage() {
   }
 
   function openEdit(item: EventCategoryItem) {
-    navigate({ to: "/configure/master/event-type/$categoryId", params: { categoryId: item.id } })
+    navigate({
+      to: "/configure/master/event-type/$categoryId",
+      params: { categoryId: item.id },
+    })
     setName(item.name)
     setColorHex(item.colorHex || "#0284c7")
     setAutofillTitle(item.autofillTitle ?? `Vihara ${item.name} Activity`)

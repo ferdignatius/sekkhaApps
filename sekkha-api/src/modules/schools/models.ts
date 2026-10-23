@@ -6,11 +6,11 @@ export const schoolModels = {
     return prisma.school.count()
   },
 
-  upsertSchool(name: string, type?: string, city?: string) {
+  upsertSchool(name: string, type?: string) {
     return prisma.school.upsert({
       where: { name },
-      update: { type, city },
-      create: { name, type, city },
+      update: { type },
+      create: { name, type },
     })
   },
 
@@ -56,13 +56,13 @@ export const schoolModels = {
     })
   },
 
-  createSchool(data: { name: string; type?: string; city?: string }) {
+  createSchool(data: { name: string; type?: string }) {
     return prisma.school.create({
       data,
     })
   },
 
-  updateSchool(id: string, data: { name?: string; type?: string; city?: string }) {
+  updateSchool(id: string, data: { name?: string; type?: string; isActive?: boolean }) {
     return prisma.school.update({
       where: { id },
       data,

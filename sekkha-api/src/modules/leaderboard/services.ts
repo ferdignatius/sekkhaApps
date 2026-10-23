@@ -162,7 +162,7 @@ async function computeAndCacheLeaderboardInternal(): Promise<void> {
             rank: 0,
             value: val,
             attendances_count: attendanceCount,
-            avatar_url: u.profile?.avatarUrl,
+            avatar_url: null,
             role: u.role || "member",
           }
         })

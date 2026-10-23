@@ -78,10 +78,13 @@ model User {
   stats   UserStats?
 
   // Relations
-  attendances       Attendance[]
-  pointTransactions PointTransaction[]
-  badges            UserBadge[]
-  schoolRequests    SchoolRequest[]
+  attendances            Attendance[]
+  pointTransactions      PointTransaction[]
+  badges                 UserBadge[]
+  submittedSchools       School[]           @relation("SchoolRequester")
+  reviewedSchools        School[]           @relation("SchoolReviewer")
+  claimedByUser          User?              @relation("UserClaimLink", fields: [claimedByUserId], references: [id], onDelete: SetNull)
+  claimedUsers           User[]             @relation("UserClaimLink")
 
   @@index([role])
   @@index([isClaimed])
@@ -99,7 +102,6 @@ model UserProfile {
   classGrade String?  @map("class_grade") // Tier 2: AES-256-GCM ciphertext
   birthDate  String?  @map("birth_date") // Tier 2: AES-256-GCM ciphertext of ISO date string
   gender     String?  @map("gender") // Tier 2: AES-256-GCM ciphertext ("pria" | "wanita")
-  avatarUrl  String?  @map("avatar_url")
   updatedAt  DateTime @updatedAt @map("updated_at")
 
   user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -133,18 +135,28 @@ model UserStats {
 
 // ─── Master Data: Schools ───────────────────────────────────────────────────
 
+enum SchoolStatus {
+  pending
+  approved
+  rejected
+}
+
 model School {
-  id        String   @id @default(cuid())
-  name      String   @unique
-  type      String? // "SMP" | "SMA" | "SMK" | "Universitas" | "Umum"
-  isActive  Boolean  @default(true) @map("is_active")
-  city      String?
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+  id          String       @id @default(cuid())
+  name        String       @unique
+  type        String?      // "SMP" | "SMA" | "SMK" | "Universitas" | "Umum"
+  status      SchoolStatus @default(approved)
+  isActive    Boolean      @default(true) @map("is_active")
+  requestedBy String?      @map("requested_by")
+  reviewedBy  String?      @map("reviewed_by")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
 
-  profiles UserProfile[]
-  requests SchoolRequest[]
+  profiles    UserProfile[]
+  requester   User?        @relation("SchoolRequester", fields: [requestedBy], references: [id], onDelete: SetNull)
+  reviewer    User?        @relation("SchoolReviewer", fields: [reviewedBy], references: [id], onDelete: SetNull)
 
+  @@index([status])
   @@map("schools")
 }
 
@@ -158,9 +170,8 @@ model EventType {
   defaultPointReward Int @default(0) @map("default_point_reward")
   isActive Boolean @default(true) @map("is_active")
   color     String
-  isDefault Boolean  @default(false) @map("is_default")
   createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   events Event[]
 
@@ -199,7 +210,6 @@ model Event {
   eventDate   DateTime        @map("event_date")
   eventTypeId String?         @map("event_type_id")
   seasonId    String?         @map("season_id")
-  tag         String? // "rutin" | "retreat" | "meditasi" | "sosial"
   status      EventStatus     @default(scheduled)
   visibility  EventVisibility @default(all)
   qrCode      String?         @map("qr_code")
@@ -217,33 +227,6 @@ model Event {
   @@index([seasonId, eventDate])
   @@index([eventTypeId])
   @@map("events")
-}
-
-enum SchoolRequestStatus {
-  pending
-  accepted
-  rejected
-  cancelled
-}
-
-model SchoolRequest {
-  id String @id @default(cuid())
-  requestedName String @map("requested_name")
-  requestedType String @map("requested_type")
-  requestedCity String @map("requested_city")
-  status SchoolRequestStatus @default(pending)
-  requestedBy String @map("requested_by")
-  reviewedBy String? @map("reviewed_by")
-  reviewedAt DateTime? @map("reviewed_at")
-  reviewNote String? @map("review_note")
-  schoolId String? @map("school_id")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-  requester User @relation(fields: [requestedBy], references: [id], onDelete: Cascade)
-  school School? @relation(fields: [schoolId], references: [id], onDelete: SetNull)
-  @@index([requestedBy, status])
-  @@index([status, createdAt])
-  @@map("school_requests")
 }
 
 // ─── Attendances ─────────────────────────────────────────────────────────────
@@ -275,6 +258,8 @@ model PointRule {
   points      Int      @default(50)
   description String?
   category    String   @default("attendance") // "attendance" | "streak" | "general"
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
   transactions PointTransaction[]
@@ -338,10 +323,12 @@ model UserBadge {
 }
 
 model Level {
-  id        String @id @default(cuid())
-  level     Int    @unique
+  id        String   @id @default(cuid())
+  level     Int      @unique
   label     String
-  minPoints Int    @map("min_points")
+  minPoints Int      @map("min_points")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   userStats UserStats[]
 

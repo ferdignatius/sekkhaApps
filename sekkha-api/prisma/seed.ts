@@ -33,23 +33,23 @@ async function main() {
   // ── 1. Master Data: Schools ─────────────────────────────────────────────────
   console.log("🏫 Seeding Master Schools...")
   const schoolTMD = await prisma.school.create({
-    data: { name: "SMA Tri Maha Dharma", type: "SMA", city: "Jakarta Barat" },
+    data: { name: "SMA Tri Maha Dharma", type: "SMA" },
   })
   const schoolSMAN1 = await prisma.school.create({
-    data: { name: "SMA Negeri 1 Jakarta", type: "SMA", city: "Jakarta Pusat" },
+    data: { name: "SMA Negeri 1 Jakarta", type: "SMA" },
   })
   const schoolUI = await prisma.school.create({
-    data: { name: "Universitas Indonesia", type: "Universitas", city: "Depok" },
+    data: { name: "Universitas Indonesia", type: "Universitas" },
   })
   const schoolHQ = await prisma.school.create({
-    data: { name: "Sekkha Headquarter", type: "Lainnya", city: "Jakarta Barat" },
+    data: { name: "Sekkha Headquarter", type: "Lainnya" },
   })
   await prisma.school.createMany({
     data: [
-      { name: "SMA Dharma Widya", type: "SMA", city: "Tangerang" },
-      { name: "SMA Cinta Kasih Tzu Chi", type: "SMA", city: "Jakarta Barat" },
-      { name: "Universitas Bina Nusantara (BINUS)", type: "Universitas", city: "Jakarta Barat" },
-      { name: "Umum", type: "Lainnya", city: "Nasional" },
+      { name: "SMA Dharma Widya", type: "SMA" },
+      { name: "SMA Cinta Kasih Tzu Chi", type: "SMA" },
+      { name: "Universitas Bina Nusantara (BINUS)", type: "Universitas" },
+      { name: "Umum", type: "Lainnya" },
     ],
     skipDuplicates: true,
   })
@@ -57,16 +57,16 @@ async function main() {
   // ── 2. Master Data: Event Types ──────────────────────────────────────────────
   console.log("🎯 Seeding Master Event Types...")
   const eventTypeRutin = await prisma.eventType.create({
-    data: { code: "rutin", label: "Kebaktian Rutin", color: "#4262ff", isDefault: true },
+    data: { code: "rutin", label: "Kebaktian Rutin", color: "#4262ff" },
   })
   const eventTypeSpecial = await prisma.eventType.create({
-    data: { code: "special", label: "Special Event", color: "#ffd02f", isDefault: false },
+    data: { code: "special", label: "Special Event", color: "#ffd02f" },
   })
   await prisma.eventType.createMany({
     data: [
-      { code: "retreat", label: "Retreat", color: "#ff9999", isDefault: false },
-      { code: "meditasi", label: "Meditasi", color: "#0fbcb0", isDefault: false },
-      { code: "sosial", label: "Bakti Sosial", color: "#fde0f0", isDefault: false },
+      { code: "retreat", label: "Retreat", color: "#ff9999" },
+      { code: "meditasi", label: "Meditasi", color: "#0fbcb0" },
+      { code: "sosial", label: "Bakti Sosial", color: "#fde0f0" },
     ],
     skipDuplicates: true,
   })

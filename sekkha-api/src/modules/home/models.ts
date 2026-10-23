@@ -12,7 +12,7 @@ export const homeModels = {
         role: true,
         userNumber: true,
         profile: {
-          select: { name: true, avatarUrl: true },
+          select: { name: true },
         },
         stats: {
           select: {

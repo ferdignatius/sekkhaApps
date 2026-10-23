@@ -44,7 +44,6 @@ export const pengurusModels = {
           select: {
             name: true,
             phone: true,
-            avatarUrl: true,
           },
         },
         stats: {
@@ -84,7 +83,6 @@ export const pengurusModels = {
           select: {
             name: true,
             phone: true,
-            avatarUrl: true,
           },
         },
         attendances: {

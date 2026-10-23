@@ -127,6 +127,7 @@ async function main() {
       password: await hash(umatPasswordRaw),
       role: Role.member,
       userNumber: "26010101",
+      onboardingCompleted: true,
       profile: {
         create: {
           name: "Sari Dewi (Umat)",
@@ -157,6 +158,7 @@ async function main() {
       password: await hash(aktivisPasswordRaw),
       role: Role.activist,
       userNumber: "26010102",
+      onboardingCompleted: true,
       profile: {
         create: {
           name: "Budi Santoso (Aktivis)",
@@ -187,6 +189,7 @@ async function main() {
       password: await hash(pengurusPasswordRaw),
       role: Role.organizer,
       userNumber: "26010103",
+      onboardingCompleted: true,
       profile: {
         create: {
           name: "Budi Wijaya (Pengurus)",
@@ -201,7 +204,6 @@ async function main() {
           points: 1200,
           totalAttendances: 24,
           currentStreak: 12,
-          levelId: level3.id,
           lastActivityAt: new Date(),
         },
       },
@@ -217,6 +219,7 @@ async function main() {
       password: await hash(adminPasswordRaw),
       role: Role.admin,
       userNumber: "26010104",
+      onboardingCompleted: true,
       profile: {
         create: {
           name: "Admin Sekkha",
@@ -231,7 +234,6 @@ async function main() {
           points: 5000,
           totalAttendances: 50,
           currentStreak: 20,
-          levelId: level5.id,
           lastActivityAt: new Date(),
         },
       },
@@ -248,6 +250,7 @@ async function main() {
       role: Role.member,
       userNumber: "26010105",
       isClaimed: false,
+      onboardingCompleted: true,
       profile: {
         create: {
           name: "Hendra Kusuma",

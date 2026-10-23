@@ -63,6 +63,7 @@ export const authModels = {
         email: true,
         role: true,
         passwordChangedAt: true,
+        onboardingCompleted: true,
         profile: {
           select: { name: true },
         },
@@ -76,6 +77,7 @@ export const authModels = {
       name: user.profile?.name ?? "",
       role: user.role,
       passwordChangedAt: user.passwordChangedAt,
+      onboardingCompleted: user.onboardingCompleted,
     }
   },
 

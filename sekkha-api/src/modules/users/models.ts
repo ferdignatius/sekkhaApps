@@ -53,7 +53,10 @@ export const userModels = {
   },
 
   completeOnboarding(userId: string) {
-    return prisma.$executeRaw`UPDATE "users" SET "onboarding_completed" = true WHERE "id" = ${userId}`
+    return prisma.user.update({
+      where: { id: userId },
+      data: { onboardingCompleted: true },
+    })
   },
 
   findSchoolByName(name: string) {

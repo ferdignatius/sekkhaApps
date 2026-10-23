@@ -71,7 +71,7 @@ describe("authReducer — AUTH_SUCCESS", () => {
       payload: {
         accessToken: "access-token-123",
         userId: "user-456",
-        role: "umat",
+        role: "member",
       },
     })
     expect(next.status).toBe("authenticated")
@@ -82,7 +82,7 @@ describe("authReducer — AUTH_SUCCESS", () => {
     const state = makeState({ status: "loading" })
     const next = authReducer(state, {
       type: "AUTH_SUCCESS",
-      payload: { accessToken: "my-jwt-token", userId: "u1", role: "umat" },
+      payload: { accessToken: "my-jwt-token", userId: "u1", role: "member" },
     })
     expect(next.accessToken).toBe("my-jwt-token")
   })
@@ -92,7 +92,7 @@ describe("authReducer — AUTH_SUCCESS", () => {
     const state = makeState({ status: "loading" })
     const next = authReducer(state, {
       type: "AUTH_SUCCESS",
-      payload: { accessToken: "tok", userId: "user-789", role: "umat" },
+      payload: { accessToken: "tok", userId: "user-789", role: "member" },
     })
     expect(next.userId).toBe("user-789")
   })
@@ -101,11 +101,11 @@ describe("authReducer — AUTH_SUCCESS", () => {
     // Requirements: 4.2
     const first = authReducer(makeState(), {
       type: "AUTH_SUCCESS",
-      payload: { accessToken: "old-token", userId: "old-user", role: "umat" },
+      payload: { accessToken: "old-token", userId: "old-user", role: "member" },
     })
     const second = authReducer(first, {
       type: "AUTH_SUCCESS",
-      payload: { accessToken: "new-token", userId: "new-user", role: "umat" },
+      payload: { accessToken: "new-token", userId: "new-user", role: "member" },
     })
     expect(second.accessToken).toBe("new-token")
     expect(second.userId).toBe("new-user")

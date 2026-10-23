@@ -108,16 +108,14 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
 
   const userId = authState.status === "authenticated" ? authState.userId : null
   const role = authState.status === "authenticated" ? authState.role : null
-  const isPengurus =
-    role === "organizer" || role === "pengurus" || role === "admin"
+  const isPengurus = role === "organizer" || role === "admin"
 
   // ── Build nav items dari Registry (profile stays in user dropdown) ─────
   const mainNavItems = activeModules
     .flatMap((m) => m.navItems)
     .filter((item) => {
       if (item.to === "/home/profile") return false
-      if ((role === "member" || role === "umat") && item.to === "/people")
-        return false
+      if (role === "member" && item.to === "/people") return false
       return true
     })
   const pengurusNavItems = activeModules.flatMap(
@@ -130,9 +128,9 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const roleLabel =
     role === "admin"
       ? "Admin"
-      : role === "organizer" || role === "pengurus"
+      : role === "organizer"
         ? "Organizer"
-        : role === "activist" || role === "aktivis"
+        : role === "activist"
           ? "Activist"
           : "Member"
   // Render blank when no real name is available — avoid flashing a default

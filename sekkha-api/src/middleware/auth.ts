@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from "express"
 import jwt from "jsonwebtoken"
 import { prisma } from "../lib/prisma"
 import { isTokenRevoked } from "../modules/auth"
+import { apiSuccess } from "../lib/apiResponse"
 
 export interface AuthPayload {
   userId: string
@@ -25,13 +26,13 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
       : null
 
   if (!token) {
-    res.status(401).json({ error: "Token not found" })
+    apiSuccess(res, 401, "Token not found", null)
     return
   }
   const secret = process.env.JWT_SECRET
   if (!secret) {
     console.error("❌ JWT_SECRET is not configured in environment variables")
-    res.status(500).json({ error: "Server security configuration is incomplete" })
+    apiSuccess(res, 500, "Server security configuration is incomplete", null)
     return
   }
 
@@ -39,7 +40,7 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
     // 1. Check if token was revoked (logged out)
     const revoked = await isTokenRevoked(token)
     if (revoked) {
-      res.status(401).json({ error: "Session has been terminated. Please log in again." })
+      apiSuccess(res, 401, "Session has been terminated. Please log in again.", null)
       return
     }
 
@@ -65,7 +66,7 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
     })
 
     if (!user) {
-      res.status(401).json({ error: "User not found or account deactivated" })
+      apiSuccess(res, 401, "User not found or account deactivated", null)
       return
     }
 
@@ -73,7 +74,7 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
     if (user.passwordChangedAt) {
       const dbTimeSeconds = Math.floor(user.passwordChangedAt.getTime() / 1000)
       if (!payload.passwordChangedAt || dbTimeSeconds > payload.passwordChangedAt) {
-        res.status(401).json({ error: "Password was changed. Please log in again." })
+        apiSuccess(res, 401, "Password was changed. Please log in again.", null)
         return
       }
     }
@@ -86,21 +87,21 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
 
     next()
   } catch {
-    res.status(401).json({ error: "Token is invalid or has expired" })
+    apiSuccess(res, 401, "Token is invalid or has expired", null)
   }
 }
 
 export function requireRole(...roles: string[]) {
   return (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) {
-      res.status(401).json({ error: "Unauthorized" })
+      apiSuccess(res, 401, "Unauthorized", null)
       return
     }
     if (req.user.role === "admin" || roles.includes(req.user.role)) {
       next()
       return
     }
-    res.status(403).json({ error: "Access denied" })
+    apiSuccess(res, 403, "Access denied", null)
   }
 }
 
@@ -168,4 +169,3 @@ export async function optionalAuth(req: Request, res: Response, next: NextFuncti
 
   next()
 }
-

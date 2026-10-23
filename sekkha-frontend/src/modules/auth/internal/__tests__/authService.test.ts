@@ -83,7 +83,7 @@ describe("authService.login — success", () => {
       payload: {
         accessToken: "tok-abc",
         userId: "user-1",
-        role: "umat",
+        role: "member",
         name: null,
         email: null,
       },
@@ -162,7 +162,7 @@ describe("authService.register — success", () => {
       payload: {
         accessToken: "reg-tok",
         userId: "user-2",
-        role: "umat",
+        role: "member",
         name: null,
         email: null,
       },

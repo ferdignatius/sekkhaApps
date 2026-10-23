@@ -27,6 +27,7 @@ export function getRouter() {
         status: "loading",
         accessToken: null,
         userId: null,
+        onboardingCompleted: null,
         role: null,
         name: null,
         email: null,

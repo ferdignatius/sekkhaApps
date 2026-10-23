@@ -17,7 +17,7 @@ import type { AuthState, UserRole } from "../context/authReducer"
  */
 export interface UseAuthReturn {
   authState: AuthState
-  login: (email: string, password: string) => Promise<void>
+  login: (identifier: string, password: string) => Promise<void>
   register: (email: string, password: string) => Promise<void>
   requestRegisterOtp: (
     email: string,
@@ -29,7 +29,6 @@ export interface UseAuthReturn {
     email: string
   ) => Promise<{ success: boolean; message: string }>
   logout: () => void
-  initiateGoogleOAuth: () => void
   updateUser: (
     user: Partial<{
       userId: string | null
@@ -69,7 +68,6 @@ export function useAuth(): UseAuthReturn {
     verifyRegisterOtp,
     resendRegisterOtp,
     logout,
-    initiateGoogleOAuth,
     updateUser,
     refreshUser,
   } = useAuthContext()
@@ -82,7 +80,6 @@ export function useAuth(): UseAuthReturn {
     verifyRegisterOtp,
     resendRegisterOtp,
     logout,
-    initiateGoogleOAuth,
     updateUser,
     refreshUser,
   }

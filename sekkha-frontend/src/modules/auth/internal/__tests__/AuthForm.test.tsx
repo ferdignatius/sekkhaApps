@@ -141,14 +141,6 @@ vi.mock("@tanstack/react-router", () => ({
   ),
 }))
 
-// Mock SocialAuthButton to avoid the AuthProvider/useAuth dependency — the
-// accessibility property test is about label↔input linkage, not OAuth.
-vi.mock("../components/SocialAuthButton", () => ({
-  SocialAuthButton: () => (
-    <button type="button">Lanjutkan dengan Google</button>
-  ),
-}))
-
 // Default props shared by all renders — no loading, no error, empty fields.
 const defaultFormProps = {
   onSubmit: async () => {},

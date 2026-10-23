@@ -128,8 +128,7 @@ type View = "calendar" | "detail"
 export function EventsPage() {
   const { authState } = useAuth()
   const role = authState.status === "authenticated" ? authState.role : null
-  const isPengurus =
-    role === "organizer" || role === "pengurus" || role === "admin"
+  const isPengurus = role === "organizer" || role === "admin"
 
   const [events, setEvents] = useState<EventListItem[]>([])
   const [loadingEvents, setLoadingEvents] = useState(true)

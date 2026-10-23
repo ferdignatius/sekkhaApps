@@ -350,9 +350,9 @@ export function LeaderboardPage() {
   const myId =
     authState.status === "authenticated" ? (authState.userId ?? "") : ""
   const userRole =
-    authState.status === "authenticated" ? authState.role : "umat"
-  const isPengurusOrAdmin = userRole === "admin" || userRole === "pengurus"
-  const isAktivis = userRole === "aktivis"
+    authState.status === "authenticated" ? authState.role : "member"
+  const isPengurusOrAdmin = userRole === "admin" || userRole === "organizer"
+  const isAktivis = userRole === "activist"
   const isUmatOnly = !isPengurusOrAdmin && !isAktivis
 
   const [metric, setMetric] = useState<LeaderboardMetric>("points")

@@ -22,6 +22,7 @@ interface AuthSuccessResponse {
     name: string
     role: string
   }
+  onboarding_completed?: boolean
 }
 
 interface ApiEnvelope<T> {
@@ -99,7 +100,7 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
    *
    * Requirements: 4.2, 7.1, 7.3, 7.4
    */
-  async function login(email: string, password: string): Promise<void> {
+  async function login(identifier: string, password: string): Promise<void> {
     let response: Response
 
     try {
@@ -108,7 +109,7 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password }),
+          body: JSON.stringify({ identifier, password }),
         },
         10_000
       )
@@ -137,6 +138,7 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
             "umat",
           name: data.user?.name ?? null,
           email: data.user?.email ?? null,
+          onboardingCompleted: data.onboarding_completed,
         },
       })
       return
@@ -442,27 +444,6 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
     dispatch({ type: "AUTH_LOGOUT" })
   }
 
-  // ── initiateGoogleOAuth ────────────────────────────────────────────────────
-  /**
-   * Initiates the Google OAuth flow by redirecting to the backend OAuth entry
-   * point at `/auth/google`.
-   *
-   * Throws `AuthError("OAUTH_FAILED")` if the redirect cannot be initiated
-   * (e.g., programmatic navigation is blocked).
-   *
-   * Requirements: 8.4, 8.6, 8.7
-   */
-  function initiateGoogleOAuth(): void {
-    try {
-      window.location.href = `${API_BASE_URL}/auth/google`
-    } catch {
-      throw new AuthError(
-        "OAUTH_FAILED",
-        "Autentikasi dengan Google gagal. Silakan coba lagi."
-      )
-    }
-  }
-
   return {
     login,
     register,
@@ -471,7 +452,6 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
     resendRegisterOtp,
     verifyToken,
     logout,
-    initiateGoogleOAuth,
   }
 }
 

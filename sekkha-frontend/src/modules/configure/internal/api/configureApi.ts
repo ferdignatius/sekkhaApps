@@ -97,16 +97,37 @@ export interface PointRuleDto {
   label: string
   points: number
   description?: string | null
-  category: "attendance" | "streak" | "general"
+  category: "attendance" | "service" | "streak" | "general"
+  is_active?: boolean
+  created_at?: string
   updated_at?: string
 }
 
 export const pointRulesApi = {
-  list: () => api.get<PointRuleDto[]>("/configure/point-rules"),
+  list: (params?: { is_active?: boolean; category?: string; search?: string }) => {
+    const searchParams = new URLSearchParams()
+    if (params?.is_active !== undefined) {
+      searchParams.append("is_active", String(params.is_active))
+    }
+    if (params?.category) {
+      searchParams.append("category", params.category)
+    }
+    if (params?.search) {
+      searchParams.append("search", params.search)
+    }
+    const q = searchParams.toString() ? `?${searchParams.toString()}` : ""
+    return api.get<PointRuleDto[]>(`/configure/point-rules${q}`)
+  },
+  getById: (id: string) => api.get<PointRuleDto>(`/configure/point-rules/${id}`),
   update: (
     id: string,
-    data: { label?: string; points: number; description?: string | null }
-  ) => api.put<PointRuleDto>(`/configure/point-rules/${id}`, data),
+    data: {
+      label?: string
+      points?: number
+      description?: string | null
+      is_active?: boolean
+    }
+  ) => api.patch<PointRuleDto>(`/configure/point-rules/${id}`, data),
 }
 
 // ─── Master Data: Schools ───────────────────────────────────────────────────

@@ -79,9 +79,14 @@ export const SeasonUpdateSchema = z.object({
 })
 
 export const PointRuleUpdateSchema = z.object({
-  label: z.string().min(1).optional(),
-  points: z.number().int().min(0),
-  description: z.string().optional().nullable(),
+  label: z.string().trim().min(1, "Label is required").max(100).optional(),
+  points: z
+    .number()
+    .int("Points must be an integer")
+    .min(0, "Points must be non-negative")
+    .max(100, "Points cannot exceed 100 to protect point economy from inflation"),
+  description: z.string().trim().max(500).optional().nullable(),
+  is_active: z.boolean().optional(),
 })
 
 export const BadgeActivitySchema = z.object({
@@ -205,9 +210,18 @@ export const configureControllers = {
   },
 
   // Point Rules
-  async getPointRules(_req: Request, res: Response, next: NextFunction) {
+  async getPointRules(req: Request, res: Response, next: NextFunction) {
     try {
-      res.json(await configureServices.getPointRules())
+      const isActive = req.query.is_active !== undefined ? req.query.is_active === "true" : undefined
+      const category = req.query.category ? String(req.query.category) : undefined
+      const search = req.query.search ? String(req.query.search) : undefined
+      res.json(await configureServices.getPointRules({ isActive, category, search }))
+    } catch (err) { next(err) }
+  },
+  async getPointRuleById(req: Request, res: Response, next: NextFunction) {
+    try {
+      const id = req.params.id as string
+      res.json(await configureServices.getPointRuleById(id))
     } catch (err) { next(err) }
   },
   async updatePointRule(req: Request, res: Response, next: NextFunction) {

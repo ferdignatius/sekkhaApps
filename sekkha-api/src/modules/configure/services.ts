@@ -378,16 +378,80 @@ export const configureServices = {
   },
 
   // ─── Point Rules ───────────────────────────────────────────────────────────
-  async getPointRules() {
-    return configureModels.findPointRules()
+  async getPointRules(filter?: { isActive?: boolean; category?: string; search?: string }) {
+    const list = await configureModels.findPointRules(filter)
+    return list.map((r) => ({
+      id: r.id,
+      code: r.code,
+      label: r.label,
+      points: r.points,
+      description: r.description,
+      category: r.category,
+      is_active: r.isActive,
+      created_at: r.createdAt.toISOString(),
+      updated_at: r.updatedAt.toISOString(),
+    }))
   },
 
-  async updatePointRule(id: string, data: any) {
-    return configureModels.updatePointRule(id, {
+  async getPointRuleById(identifier: string) {
+    const r = await configureModels.findPointRuleByIdOrCode(identifier)
+    if (!r) {
+      throw new AppError("Point rule not found", 404, "POINT_RULE_NOT_FOUND")
+    }
+    const txCount = await configureModels.countTransactionsByPointRuleId(r.id)
+    return {
+      id: r.id,
+      code: r.code,
+      label: r.label,
+      points: r.points,
+      description: r.description,
+      category: r.category,
+      is_active: r.isActive,
+      transactions_count: txCount,
+      created_at: r.createdAt.toISOString(),
+      updated_at: r.updatedAt.toISOString(),
+    }
+  },
+
+  async updatePointRule(
+    identifier: string,
+    data: {
+      label?: string
+      points?: number
+      description?: string | null
+      is_active?: boolean
+    }
+  ) {
+    if (data.points !== undefined && (data.points < 0 || data.points > 100)) {
+      throw new AppError(
+        "Point value must be between 0 and 100 to protect point economy from inflation.",
+        400,
+        "POINT_RULE_LIMIT_EXCEEDED"
+      )
+    }
+
+    const updated = await configureModels.updatePointRule(identifier, {
       ...(data.label && { label: data.label }),
-      points: data.points,
+      ...(data.points !== undefined && { points: data.points }),
       ...(data.description !== undefined && { description: data.description }),
+      ...(data.is_active !== undefined && { isActive: data.is_active }),
     })
+
+    if (!updated) {
+      throw new AppError("Point rule not found", 404, "POINT_RULE_NOT_FOUND")
+    }
+
+    return {
+      id: updated.id,
+      code: updated.code,
+      label: updated.label,
+      points: updated.points,
+      description: updated.description,
+      category: updated.category,
+      is_active: updated.isActive,
+      created_at: updated.createdAt.toISOString(),
+      updated_at: updated.updatedAt.toISOString(),
+    }
   },
 
   // ─── Badge Activities (Master Data) ─────────────────────────────────────────

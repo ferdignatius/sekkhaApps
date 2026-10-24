@@ -1,36 +1,5 @@
 import { prisma } from "../../lib/prisma"
 
-export const DEFAULT_POINT_RULES = [
-  {
-    code: "attendance_rutin",
-    label: "Poin Presensi Kegiatan Rutin",
-    points: 50,
-    category: "attendance",
-    description: "Poin standar yang didapatkan umat saat melakukan presensi pada kebaktian rutin mingguan.",
-  },
-  {
-    code: "attendance_special",
-    label: "Poin Presensi Kegiatan Khusus",
-    points: 100,
-    category: "attendance",
-    description: "Poin untuk kehadiran pada acara spesial seperti perayaan hari besar (Waisak, Kathina, Asadha) atau retreat.",
-  },
-  {
-    code: "streak_weekly_bonus",
-    label: "Bonus Konsistensi (Streak Mingguan)",
-    points: 30,
-    category: "streak",
-    description: "Bonus poin tambahan yang diberikan saat umat mempertahankan kehadiran berturut-turut tanpa terputus.",
-  },
-  {
-    code: "first_attendance_bonus",
-    label: "Bonus Presensi Pertama Kali",
-    points: 25,
-    category: "general",
-    description: "Poin sambutan perdana bagi umat baru yang baru pertama kali mencatatkan presensi di vihara.",
-  },
-]
-
 export const configureModels = {
 
   // Event Types
@@ -101,23 +70,53 @@ export const configureModels = {
   },
 
   // Point Rules
-  async findPointRules() {
-    const pointRuleModel = (prisma as any).pointRule
-    let rules = await pointRuleModel.findMany({ orderBy: { category: "asc" } })
-    if (rules.length === 0) {
-      for (const def of DEFAULT_POINT_RULES) {
-        await pointRuleModel.upsert({
-          where: { code: def.code },
-          update: {},
-          create: def,
-        })
-      }
-      rules = await pointRuleModel.findMany({ orderBy: { category: "asc" } })
-    }
-    return rules
+  findPointRules(where?: { isActive?: boolean; category?: string; search?: string }) {
+    return prisma.pointRule.findMany({
+      where: {
+        ...(where?.isActive !== undefined ? { isActive: where.isActive } : {}),
+        ...(where?.category ? { category: where.category } : {}),
+        ...(where?.search
+          ? {
+              OR: [
+                { label: { contains: where.search, mode: "insensitive" } },
+                { code: { contains: where.search, mode: "insensitive" } },
+                { description: { contains: where.search, mode: "insensitive" } },
+              ],
+            }
+          : {}),
+      },
+      orderBy: [{ category: "asc" }, { points: "desc" }, { code: "asc" }],
+    })
   },
-  updatePointRule(id: string, data: any) {
-    return (prisma as any).pointRule.update({ where: { id }, data })
+  findPointRuleById(id: string) {
+    return prisma.pointRule.findUnique({ where: { id } })
+  },
+  findPointRuleByCode(code: string) {
+    return prisma.pointRule.findUnique({ where: { code } })
+  },
+  findPointRuleByIdOrCode(identifier: string) {
+    return prisma.pointRule.findFirst({
+      where: {
+        OR: [{ id: identifier }, { code: identifier }],
+      },
+    })
+  },
+  countTransactionsByPointRuleId(ruleId: string) {
+    return prisma.pointTransaction.count({ where: { ruleId } })
+  },
+  async updatePointRule(identifier: string, data: any) {
+    const existing = await prisma.pointRule.findFirst({
+      where: {
+        OR: [{ id: identifier }, { code: identifier }],
+      },
+    })
+    if (!existing) {
+      return null
+    }
+    return prisma.pointRule.update({
+      where: { id: existing.id },
+      data,
+    })
   },
 
   // Badge Activities (Master Data)

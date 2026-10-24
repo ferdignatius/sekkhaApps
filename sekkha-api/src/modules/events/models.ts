@@ -31,7 +31,7 @@ export const eventModels = {
       select: {
         id: true,
         title: true,
-        type: { select: { code: true } },
+        type: { select: { code: true, defaultPointReward: true } },
         status: true,
         qrCode: true,
       },

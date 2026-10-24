@@ -62,9 +62,11 @@ configureRouter.delete("/seasons/:id", configureControllers.deleteSeason)
 configureRouter.post("/seasons/:id/activate", configureControllers.activateSeason)
 configureRouter.patch("/seasons/:id/activate", configureControllers.activateSeason)
 
-// Point Rules
+// Point Rules (Fixed System Engine Policies - Tuning only)
 configureRouter.get("/point-rules", configureControllers.getPointRules)
+configureRouter.get("/point-rules/:id", configureControllers.getPointRuleById)
 configureRouter.put("/point-rules/:id", configureControllers.updatePointRule)
+configureRouter.patch("/point-rules/:id", configureControllers.updatePointRule)
 
 // Badge Activities (Master Data)
 configureRouter.get("/badge-activities", configureControllers.getBadgeActivities)

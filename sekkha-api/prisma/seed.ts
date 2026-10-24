@@ -156,16 +156,42 @@ async function main() {
 
   // ── 5. Master Data: Point Rules ─────────────────────────────────────────────
   console.log("📜 Seeding Master Point Rules...")
-  const ruleRutin = await prisma.pointRule.create({
-    data: { code: "attendance_rutin", label: "Hadir Kebaktian Rutin", points: 50, category: "attendance" },
-  })
-  await prisma.pointRule.createMany({
-    data: [
-      { code: "attendance_special", label: "Hadir Acara Khusus", points: 100, category: "attendance" },
-      { code: "streak_bonus", label: "Bonus Streak 4 Minggu", points: 100, category: "streak" },
-    ],
-    skipDuplicates: true,
-  })
+  const pointRulesData = [
+    {
+      code: "attendance_rutin",
+      label: "Weekly Regular Puja",
+      points: 50,
+      category: "attendance",
+      description: "Baseline points for attending standard weekly service, including communal Paritta and Chanting rituals.",
+    },
+    {
+      code: "streak_monthly_bonus",
+      label: "Monthly Attendance Consistency",
+      points: 50,
+      category: "streak",
+      description: "Appreciation bonus for maintaining active attendance for 4 consecutive weeks in a month.",
+    },
+    {
+      code: "first_attendance_bonus",
+      label: "First Visit Welcome (Claimed Members)",
+      points: 50,
+      category: "general",
+      description: "One-time welcome reward granted upon first verified attendance exclusively for claimed member accounts (isClaimed: true).",
+    },
+  ]
+
+  for (const pr of pointRulesData) {
+    await prisma.pointRule.upsert({
+      where: { code: pr.code },
+      update: {
+        label: pr.label,
+        points: pr.points,
+        category: pr.category,
+        description: pr.description,
+      },
+      create: pr,
+    })
+  }
 
 
   // ── 6. Master Data: Schools ─────────────────────────────────────────────────

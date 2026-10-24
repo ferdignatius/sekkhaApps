@@ -33,16 +33,16 @@ Untuk menjaga nilai kelangkaan poin, sistem memberlakukan 5 aturan ketat (*hard 
 ### 2.1 Skala Nilai Poin yang Terkendali & Proporsional (Controlled Point Scale)
 Poin tidak boleh diberikan dalam nominal ratusan ribu atau jutaan. Standar nilai poin dikunci pada rentang yang proporsional sesuai tingkat usaha (*effort*):
 
-| Kategori Kegiatan | Nilai Poin | Rasio Terhadap Baseline | Catatan Operasional di Vihara |
+| Kategori Kegiatan | Nilai Poin | Dikelola Di | Catatan Operasional di Vihara |
 |---|:---:|:---:|---|
-| **1. Kehadiran Kebaktian Standar** | **`50 Poin`** | 100% (*Baseline*) | **Termasuk rangkaian Chanting/Paritta** yang menjadi satu kesatuan ritual kebaktian rutin. |
-| **2. Sesi Meditasi / Workshop / Dhamma Class** | **`70 Poin`** | 140% | Sesi hening batin (Bhavana), workshop pemuda, atau Dhamma Class terpandu intensif. |
-| **3. Petugas Pelayanan (*Service Duty Bonus*)** | **`+30 Poin`** | +60% (*Total: 80 Poin*) | Apresiasi untuk MC, Pemimpin Puja / Chanting, Organis, Operator Slide/Audio, dan Usher. |
-| **4. Aksi Sosial Akbar / Baksos / Donor Darah** | **`100 Poin`** | 200% | Partisipasi kerja fisik dan kemanusiaan di luar kebaktian formal (misal baksos panti, donor darah). |
+| **1. Kehadiran Kebaktian Standar** | **`50 Poin`** | `PointRule: attendance_rutin` / `EventType` | Baseline kehadiran mingguan jemaat. Nilai spesifik per jenis kegiatan dapat disesuaikan di **Master Data Event Types**. |
+| **2. Petugas Pelayanan (*Service Duty Bonus*)** | **`+30 Poin`** | Master Data `BadgeActivity` | Bonus untuk MC, Pemimpin Puja/Chanting, Musician, Operator, dll. dikelola terpusat di **Badge Activities**. |
+| **3. Konsistensi Bulanan (Streak Appreciation)** | **`+50 Poin`** | `PointRule: streak_monthly_bonus` | Evaluasi otomatis via Gamification Streak Engine setiap 4 minggu kehadiran berturut-turut. |
+| **4. Penyambutan Akun Terklaim (*Claimed Welcome*)** | **`+50 Poin`** | `PointRule: first_attendance_bonus` | Bonus satu kali saat kehadiran perdana yang terverifikasi khusus bagi jemaat yang telah mengklaim akunnya (`isClaimed: true`). |
 
 ### 2.2 Batas Maksimal Perolehan Harian (*Daily Point Cap*)
 - **Maksimal 150 Poin per Hari per Pengguna**:
-  Bahkan jika dalam satu hari ada 3-4 sesi acara sekaligus di vihara, total perolehan poin seorang anggota dibatasi maksimal 150 poin per hari.
+  Bahkan jika dalam satu hari ada beberapa sesi acara sekaligus di vihara, total perolehan poin seorang anggota dibatasi maksimal 150 poin per hari.
 - **Tujuan**: Mencegah lonjakan poin ekstrem dalam satu hari yang membuat jarak antar anggota menjadi tidak adil.
 
 ### 2.3 Pencegahan Presensi Ganda (*Anti-Double Scan*)
@@ -60,25 +60,21 @@ Poin tidak boleh diberikan dalam nominal ratusan ribu atau jutaan. Standar nilai
 
 ---
 
-## 3. Kategori Sumber Perolehan Poin
+## 3. Filosofi Aturan Tetap Mesin (*Fixed System Engine Policies*)
 
-Aturan poin diklasifikasikan ke dalam 4 kategori terstruktur:
+### 3.1 Mengapa Point Rules Tidak Memiliki Fitur "Add New" & "Delete"?
+Setiap aturan poin di Sekkha terhubung erat dengan **logika trigger eksekusi khusus (*business logic trigger*)** di backend:
+1. `attendance_rutin` ➔ Dipicu saat scanning QR absensi dan penutupan event kebaktian (`events/services.ts`).
+2. `streak_monthly_bonus` ➔ Dipicu secara otomatis oleh background engine evaluasi streak per 4 minggu.
+3. `first_attendance_bonus` ➔ Dipicu satu kali seumur hidup khusus untuk pengguna yang sudah menyelesaikan klaim akun (`isClaimed: true`).
 
-### 3.1 Presensi Kegiatan (Attendance Points)
-Poin dasar yang diperoleh saat melakukan scan QR presensi di kegiatan vihara:
-- **Kebaktian Rutin Mingguan (`attendance_rutin`)**: `50 Poin` (sudah mencakup ritual pembacaan Paritta / Chanting bersama).
-- **Sesi Meditasi / Dhamma Class Khusus (`attendance_special`)**: `70 Poin` (khusus sesi latihan meditasi batin terpandu atau pendalaman materi dhamma).
+> [!IMPORTANT]
+> **Prinsip Arsitektur (Anti-Dead-Data)**: Menambahkan entitas aturan poin baru dari antarmuka UI tanpa kode pemroses (*engine handler*) hanya akan menghasilkan data mati (*dead data*) yang tidak pernah dieksekusi oleh sistem. Oleh karena itu, master data Point Rules bersifat **Fixed / Predefined via Database Seed (`seed.ts`)**.
 
-### 3.2 Pelayanan & Petugas Kebaktian (Service Duty Bonus)
-Mendorong pemuda untuk aktif mengambil tanggung jawab pelayanan vihara dengan reward proporsional:
-- **Petugas Kebaktian (`duty_service_bonus`)**: `+30 Poin` (sehingga total yang diterima petugas adalah $50 + 30 =$ `80 Poin`). Diberikan kepada MC, Pemimpin Puja/Chanting, Organis, Operator Slide/Audio, dan Usher yang bertugas.
-
-### 3.3 Konsistensi Kehadiran (Streak Appreciation)
-Mengapresiasi konsistensi kehadiran pemuda secara bulanan tanpa meledakkan jumlah poin:
-- **Konsistensi Bulanan (`streak_monthly_bonus`)**: `+50 Poin` (flat bonus, tidak berlipat ganda) jika berhasil menjaga *streak* kehadiran secara konsisten selama 1 bulan penuh (4 minggu berturut-turut). *Hanya ada reward untuk konsistensi bulanan ini guna menjaga eksklusivitas reward konsistensi.*
-
-### 3.4 Penyambutan Umat Baru (Welcome First Visit)
-- **First-Time Attendee (`first_attendance_bonus`)**: `+50 Poin` untuk kunjungan pertama kali seumur hidup, memberikan apresiasi awal yang bersahabat tanpa merusak keseimbangan klasemen.
+### 3.2 Pemisahan Tanggung Jawab (*Separation of Concerns*):
+- Ingin membuat kegiatan ibadah / workshop / baksos baru yang berpoin? ➔ Buat di **[Master Data: Event Types](/configure/master/event-types)** dengan nilai `defaultPointReward`.
+- Ingin membuat tugas kepengurusan / relawan baru yang berpoin? ➔ Buat di **[Master Data: Badge Activities](/configure/master/badge-activities)** dengan nilai `bonusPoints`.
+- Ingin menyetel bobot poin atau mematikan aturan sistem? ➔ Lakukan di **Point Rules (Policy Tuning)**.
 
 ---
 
@@ -90,11 +86,11 @@ Tabel konfigurasi master data aturan poin:
 ```prisma
 model PointRule {
   id          String   @id @default(cuid())
-  code        String   @unique // e.g. "attendance_rutin", "duty_service_bonus"
-  label       String   // e.g. "Kebaktian Rutin Mingguan"
+  code        String   @unique // e.g. "attendance_rutin", "streak_monthly_bonus", "first_attendance_bonus"
+  label       String   // e.g. "Weekly Regular Puja"
   points      Int      @default(50) // Dibatasi min 0, max 100
   description String?
-  category    String   @default("attendance") // "attendance" | "streak" | "service" | "general"
+  category    String   @default("attendance") // "attendance" | "streak" | "general"
   isActive    Boolean  @default(true) @map("is_active")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
@@ -132,27 +128,27 @@ model PointTransaction {
 
 ## 5. Hak Akses (Role & Permissions)
 
-| Aksi | `admin` | `organizer` | `activist` | `member` |
+| Aksi | `admin` | `pengurus` | `aktivis` | `umat` |
 | --- | :---: | :---: | :---: | :---: |
 | Melihat daftar Point Rules | ✅ | ✅ (Read-only) | ❌ | ❌ |
-| Mengubah nilai poin pada rule (Maks 100) | ✅ | ❌ | ❌ | ❌ |
-| Mengaktifkan / Menonaktifkan rule | ✅ | ❌ | ❌ | ❌ |
+| Melakukan Tuning Poin (Edit bobot 0–100, label, deskripsi) | ✅ | ❌ | ❌ | ❌ |
+| Mengaktifkan / Menonaktifkan status rule (`isActive`) | ✅ | ❌ | ❌ | ❌ |
+| Menambah Rule Baru (*Create New*) | ❌ (Disabled/YAGNI) | ❌ | ❌ | ❌ |
+| Menghapus Rule (*Delete*) | ❌ (Protected/Fixed) | ❌ | ❌ | ❌ |
 | Melihat riwayat poin pribadi (*Points History*) | ✅ | ✅ | ✅ | ✅ |
-| Penyesuaian poin manual (Koreksi kesalahan) | ✅ | ❌ | ❌ | ❌ |
 
 ---
 
 ## 6. UI Requirements (`/configure/rules/points`)
 
-- **Tampilan Terkelompok per Kategori**:
-  - Section 1: *Attendance Rules* (Poin Kehadiran)
-  - Section 2: *Service Duty Rules* (Poin Petugas & Pelayanan)
-  - Section 3: *Streak & Engagement Rules* (Poin Konsistensi Bulanan & Sambutan)
-- **Kartu Nilai Poin**:
-  - Menampilkan nama aturan, kode teknis semantik, besaran poin saat ini (e.g. `+50 Poin`), badge kategori, dan status aktif.
-  - Quick Edit Modal untuk Admin dengan validasi rentang nilai angka 0 s/d 100.
-- **Pesan Panduan Ekonomi Poin bagi Admin**:
-  - Banner informasi di atas halaman: *"Menjaga nilai poin tetap seimbang sangat penting. Batas maksimal nilai per aturan adalah 100 poin agar poin tetap bernilai tinggi dan dihormati oleh seluruh umat."*
+- **Tampilan Terkelompok per Kategori Sistem**:
+  - Section 1: *Global Attendance Rules* (`attendance_rutin` - Baseline kehadiran)
+  - Section 2: *Streak & Member Engagement Rules* (`streak_monthly_bonus` & `first_attendance_bonus`)
+- **Kartu Nilai Poin & Parameter Tuning**:
+  - Menampilkan nama aturan, kode teknis semantik, besaran poin saat ini (e.g. `+50 Pts`), badge kategori, dan toggle status aktif.
+  - Tombol **Edit Policy** untuk Admin guna membuka modal tuning dengan validasi rentang nilai angka `0` s/d `100`.
+- **Banner Panduan Ekonomi Poin bagi Admin**:
+  - Memberikan edukasi terkait batas maksimal plafon transaksi 100 poin dan batas harian 150 poin, serta informasi navigasi cepat ke *Event Types* dan *Badge Activities* jika ingin menambahkan item kegiatan baru.
 
 ---
 
@@ -162,20 +158,20 @@ Base URL: `/api/configure`
 
 | Method | Endpoint | Akses | Keterangan |
 | --- | --- | --- | --- |
-| `GET` | `/api/configure/point-rules` | `organizer`, `admin` | Mengambil seluruh daftar aturan poin |
-| `PATCH` | `/api/configure/point-rules/:code` | `admin` | Memperbarui nilai poin (Zod validasi: min 0, max 100) |
-| `GET` | `/api/users/me/points-history` | All Roles | Mengambil riwayat transaksi poin transparan pengguna |
+| `GET` | `/api/configure/point-rules` | `pengurus`, `admin` | Mengambil seluruh daftar aturan poin |
+| `GET` | `/api/configure/point-rules/:id` | `pengurus`, `admin` | Mengambil detail aturan poin beserta riwayat pemakaian |
+| `PATCH` | `/api/configure/point-rules/:id` | `admin` | Melakukan tuning parameter rule (Zod validasi: points `[0, 100]`, `label`, `description`, `isActive`) |
+| `GET` | `/api/users/me/points-history` | All Roles | Mengambil riwayat audit transaksi poin pengguna |
 
 ---
 
 ## 8. Kriteria Penerimaan (Acceptance Criteria)
 
-- [ ] **AC-01**: Sesi kebaktian standar bernilai 50 poin dan sudah mencakup rangkaian ritual chanting/paritta.
-- [ ] **AC-02**: Bonus petugas kebaktian (*Service Duty*) bernilai +30 poin (sehingga total kehadiran + tugas adalah 80 poin).
-- [ ] **AC-03**: Sesi meditasi atau Dhamma Class terpandu bernilai 70 poin.
-- [ ] **AC-04**: Aksi sosial kemanusiaan bernilai 100 poin sebagai batas capaian kegiatan tertinggi.
-- [ ] **AC-05**: Konsistensi kehadiran hanya memberikan reward untuk streak bulanan (`+50 Poin` untuk 4 minggu berturut-turut tanpa bonus mingguan).
-- [ ] **AC-06**: Sistem memberlakukan batas maksimal akumulasi harian (Daily Cap 150 poin) per user.
-- [ ] **AC-07**: Form edit point rules di admin membatasi nilai poin maksimal sebesar 100 poin (`[0, 100]`) untuk mencegah inflasi angka.
-- [ ] **AC-08**: Scanning QR presensi lebih dari satu kali pada event yang sama tidak menghasilkan penambahan poin ganda.
-- [ ] **AC-09**: Setiap penambahan poin tercatat transparan di tabel `point_transactions` dengan timestamp dan referensi kegiatan.
+- [ ] **AC-01**: Master rules disediakan melalui `seed.ts` dan tidak menyediakan tombol Add New / Delete di UI maupun endpoint create/delete publik.
+- [ ] **AC-02**: Admin dapat mengatur (tune) besaran poin per rule dengan validasi batas rentang 0 s/d 100 poin.
+- [ ] **AC-03**: Admin dapat menonaktifkan atau mengaktifkan rule sewaktu-waktu (`isActive`).
+- [ ] **AC-04**: Sesi kebaktian standar bernilai 50 poin sebagai baseline universal jika event tidak menentukan poin khusus.
+- [ ] **AC-05**: Konsistensi kehadiran memberikan reward untuk streak bulanan (`+50 Pts` per 4 minggu berturut-turut).
+- [ ] **AC-06**: Penyambutan jemaat baru (`+50 Pts`) hanya berlaku bagi anggota yang akunnya telah diklaim (`isClaimed: true`).
+- [ ] **AC-07**: Scanning QR presensi lebih dari satu kali pada event yang sama tidak menghasilkan penambahan poin ganda (*Anti-Double Scan*).
+- [ ] **AC-08**: Setiap penambahan poin tercatat transparan di tabel `point_transactions` dengan timestamp dan referensi kegiatan.

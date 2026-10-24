@@ -167,6 +167,8 @@ const activeComputations = new Map<string, Promise<void>>()
 /**
  * Coalesces concurrent refreshes into one database computation per period.
  */
+const memoryLeaderboardCache = new Map<string, LeaderboardSnapshot>()
+
 export function computeAndCacheLeaderboard(periodTarget?: LeaderboardPeriod): Promise<void> {
   const periodKey = periodTarget ? `${periodTarget.key}:${periodTarget.code || periodTarget.id}` : "default"
   const existing = activeComputations.get(periodKey)
@@ -268,10 +270,17 @@ async function computeAndCacheLeaderboardInternal(periodTarget?: LeaderboardPeri
       }
 
       const cacheKey = leaderboardCacheKey(metric, activePeriod.key, activePeriod.code || activePeriod.id)
-      await redis.set(cacheKey, JSON.stringify(snapshot), "EX", 60 * 60 * 24 * 7)
+      memoryLeaderboardCache.set(cacheKey, snapshot)
+      try {
+        if (redis.status === "ready" || redis.status === "connect") {
+          await redis.set(cacheKey, JSON.stringify(snapshot), "EX", 60 * 60 * 24 * 7)
+        }
+      } catch {
+        // Fall back cleanly to memoryLeaderboardCache
+      }
     }
-  } catch (err) {
-    console.error("❌ Failed to compute leaderboard snapshot:", err)
+  } catch (err: any) {
+    console.warn("⚠️ Failed to compute leaderboard snapshot:", err?.message || err)
     throw err
   }
 }
@@ -300,33 +309,61 @@ export async function getLeaderboardSnapshot(
   const cacheKey = leaderboardCacheKey(metric, targetPeriod.key, targetPeriod.code || targetPeriod.id)
   if (!forceRefresh) {
     try {
-      const raw = await redis.get(cacheKey)
-      if (raw) {
-        const parsed = JSON.parse(raw) as LeaderboardSnapshot
-        const isStale = parsed.entries?.some((e) => !e.role)
-        if (!isStale) {
-          // Always ensure available_periods are updated to real-time status
-          parsed.available_periods = periods
-          parsed.active_period = targetPeriod
-          return parsed
+      if (redis.status === "ready" || redis.status === "connect") {
+        const raw = await redis.get(cacheKey)
+        if (raw) {
+          const parsed = JSON.parse(raw) as LeaderboardSnapshot
+          const isStale = parsed.entries?.some((e) => !e.role)
+          if (!isStale) {
+            // Always ensure available_periods are updated to real-time status
+            parsed.available_periods = periods
+            parsed.active_period = targetPeriod
+            return parsed
+          }
         }
       }
     } catch (err) {
       console.warn("⚠️ Redis cache read error:", err)
     }
+
+    const cachedMem = memoryLeaderboardCache.get(cacheKey)
+    if (cachedMem) {
+      const isStale = cachedMem.entries?.some((e) => !e.role)
+      if (!isStale) {
+        cachedMem.available_periods = periods
+        cachedMem.active_period = targetPeriod
+        return cachedMem
+      }
+    }
   }
 
   // Cold start or stale cache fallback: compute and cache now
-  await computeAndCacheLeaderboard(targetPeriod)
-  const raw = await redis.get(cacheKey).catch(() => null)
-  if (raw) {
-    const parsed = JSON.parse(raw) as LeaderboardSnapshot
-    parsed.available_periods = periods
-    parsed.active_period = targetPeriod
-    return parsed
+  try {
+    await computeAndCacheLeaderboard(targetPeriod)
+  } catch {
+    // Graceful error recovery
   }
 
-  // In-memory minimal fallback if Redis is down
+  try {
+    if (redis.status === "ready" || redis.status === "connect") {
+      const raw = await redis.get(cacheKey).catch(() => null)
+      if (raw) {
+        const parsed = JSON.parse(raw) as LeaderboardSnapshot
+        parsed.available_periods = periods
+        parsed.active_period = targetPeriod
+        return parsed
+      }
+    }
+  } catch {}
+
+  const cachedMem = memoryLeaderboardCache.get(cacheKey)
+  if (cachedMem) {
+    cachedMem.available_periods = periods
+    cachedMem.active_period = targetPeriod
+    return cachedMem
+  }
+
+  // In-memory minimal fallback if DB / Redis is empty or down
   return {
     entries: [],
     community_total: 0,

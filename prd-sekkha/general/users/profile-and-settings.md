@@ -15,8 +15,8 @@
 ## 1. Ringkasan Eksekutif & Tujuan
 
 Profil dan Pengaturan Akun adalah pusat identitas mandiri bagi setiap jemaat vihara yang telah terdaftar di Sekkha Apps (`/home/profile`). Modul ini menggabungkan:
-1. **Identitas Komunitas (Digital Member Card)**: Kartu identitas permanen berdesain Clay premium yang menampilkan Nama Lengkap, Nomor Anggota (`userNumber`), Almamater Sekolah/Institusi, Tanggal Bergabung, serta **QR Code Statis Permanen** yang digunakan saat presensi event di vihara.
-2. **Manajemen Data Pribadi**: Jemaat dapat memperbarui nama panggilan, nomor telepon, tanggal lahir, jenis kelamin, alamat, dan sekolah almamater.
+1. **Identitas Komunitas (Digital Member Card)**: Kartu identitas permanen berdesain minimalis sesuai standar HIG (Apple Human Interface Guidelines) yang menampilkan Nama Lengkap, Nomor Anggota (`userNumber`), Almamater Sekolah/Institusi, Tanggal Bergabung, Role Badge dengan tema warna unik per role, serta **QR Code Statis Permanen** berkontras tinggi untuk presensi event di vihara tanpa ticker ringkasan yang mengacaukan visual kartu.
+2. **Manajemen Data Pribadi (In-Page Inline Form)**: Jemaat dapat memperbarui profil langsung di halaman (*in-place inline editing* tanpa modal popup), mencakup nama lengkap, nomor WhatsApp, tanggal lahir, dan sekolah almamater.
 3. **Buku Besar Poin Transparan (*Points Ledger / History*)**: Riwayat mutasi perolehan poin yang transparan (`/api/users/me/points-history`) mencakup tanggal kegiatan, jenis transaksi (kehadiran rutin, tugas pelayanan ibadah, bonus streak, dll.), poin masuk/keluar, dan saldo akhir.
 4. **Keamanan Akun & Pengaturan (*Account Settings*)**:
    - Ganti Password mandiri dengan verifikasi password lama.
@@ -42,34 +42,51 @@ Fitur Profil & Pengaturan Akun berlaku universal untuk seluruh role jemaat dan p
 
 ## 3. Komponen Utama & Alur Pengguna (User Flows)
 
-Halaman `/home/profile` memiliki 3 tab terorganisir dengan Clay Design System:
+Halaman `/home/profile` memiliki 3 tab terorganisir dengan Clay & HIG Design System:
 
 ```
 [ Tab 1: Member Card & ID ]  |  [ Tab 2: Personal Profile ]  |  [ Tab 3: Security & Settings ]
 ```
 
 ### 3.1. Tab 1: Digital Member ID Card & Points History
-* **Kartu Anggota Digital**:
-  * Desain elegan Clay Card dengan gradasi emas hangat (`#e8b94a` dan `#faf5e8`).
-  * Header: Logo Vihara Sekkha + Label *"Official Community Member"*.
-  * QR Code Statis Permanen berbasis teks `userNumber` (mis. `2026102401`).
-  * Nama lengkap jemaat dan role badge.
-  * Ticker ringkasan: *Total Points Earned*, *Current Streak (Weeks)*, dan *School Almamater*.
-  * Tombol aksi: *"Download Member Card"* (simpan sebagai gambar) dan *"Enlarge QR"* (tampilan QR Code layar penuh untuk di-scan oleh pengurus di pintu masuk ibadah).
+* **Kartu Anggota Digital (HIG-Compliant Minimalist Design)**:
+  * **Filosofi Desain**: Mengikuti standar Apple Human Interface Guidelines (HIG) untuk digital pass / identity card — bersih, minimalis, proporsional, dan bebas dari clutter. Ticker ringkasan (poin/streak) dieliminasi dari kartu agar murni berfungsi sebagai tanda pengenal resmi dan instrumen presensi.
+  * **Aspek Rasio & Bentuk**: Standar ID-1 ISO/IEC 7810 rasio ~1.586 : 1 (`aspect-[1.586/1]` responsif), dengan sudut melengkung halus squircle (`rounded-[20px]` atau `rounded-[22px]`).
+  * **Layering & Depth**: Hairline border specular halus (`border border-white/25` atau `border border-black/10`), depth shadow ambient occlusion (`shadow-md`).
+  * **Diferensiasi Tema Warna Kartu Tiap Role**:
+    * **`member` (Warm Pearl / Sand Ivory)**: Background krem hangat bergradasi lembut (`from-[#FDFBF7] to-[#F4EFE6]`), teks arang gelap (`#1A1A1A`), border aksen emas pasir (`#E8DCC4`), role chip netral elegan.
+    * **`activist` (Emerald Seva / Fresh Jade)**: Background gradasi hijau zamrud segar (`from-[#064E3B] to-[#022C22]`), teks putih jernih (`#FFFFFF`), border aksen mint emerald (`#10B981`), role chip kontras hijau terang melambangkan energi pelayanan.
+    * **`organizer` (Royal Sapphire / Indigo Navy)**: Background biru safir mendalam (`from-[#1E293B] to-[#0F172A]`), teks putih bersih (`#FFFFFF`), border aksen sapphire metallic (`#3B82F6` / `#E8B94A`), role chip biru royal tegas melambangkan tata kelola kepengurusan.
+    * **`admin` (Obsidian Titanium / Midnight Gold)**: Background monolitik hitam obsidian elegan (`from-[#18181B] to-[#09090B]`), teks putih kristal (`#FAFAFA`), hairline accent champagne gold (`#E8B94A` / `#D4AF37`), role chip emas mewah melambangkan otoritas sistem.
+  * **Elemen Kartu Minimalis**:
+    * **Top Header**: Logo Vihara Sekkha + Label Subheading `"SEKKHA DHAMMA COMMUNITY"` + Role Badge pill di pojok kanan atas.
+    * **Center Body**: Nama lengkap jemaat (headline bold `text-lg` s.d. `text-xl`), Nomor Anggota dalam format monospace terpisah (`font-mono tracking-widest text-sm font-semibold`), dan Institusi / Almamater Sekolah.
+    * **High-Contrast QR Code Container**: Kotak putih bersih kontras tinggi (`bg-white p-2.5 rounded-[14px] shadow-sm`) memuat QR Code statis permanen berbasis teks `userNumber` (mis. `2026102401`), menjamin keterbacaan instan kamera scanner presensi dalam kondisi pencahayaan vihara apa pun.
+    * **Footer**: Tanggal bergabung (*"Member since [Month Year]"*).
+  * **Tombol Aksi**:
+    * *"Download Card"*: Simpan kartu ke galeri/perangkat sebagai format gambar (PNG) beresolusi tinggi.
+    * *"Enlarge QR"*: Modal fullscreen QR Code kontras tinggi dengan kecerahan optimal untuk kemudahan pemindaian di pintu masuk kebaktian.
 * **Riwayat Poin Transparan (Points History)**:
   * Menampilkan daftar transaksi poin dari endpoint `GET /api/users/me/points-history`.
   * Setiap entri memuat: Nama Kegiatan / Event, Waktu & Tanggal, Tag Kategori, dan Badge Perubahan Poin (`+50 Pts` hijau atau `-15 Pts` merah jika penalti terlambat).
 
-### 3.2. Tab 2: Edit Personal Profile
-* Form data profil:
-  * **Full Name** *(Wajib)*.
-  * **Phone Number / WhatsApp** *(Opsional, e.g. `08123456789`)*.
-  * **School / University** *(Dropdown interaktif dari master data `/configure/schools`, memungkinkan jemaat memilih almamater verified)*.
-  * **Date of Birth** *(Datepicker)*.
-  * **Gender** *(Radio toggle: Male / Female)*.
-  * **Bio / Spiritual Motto** *(Textarea singkat)*.
-  * **Address** *(Opsional)*.
-* Saat ditekan *"Save Changes"*, memanggil `PUT /api/users/me/profile`. Data langsung ter-update secara real-time.
+### 3.2. Tab 2: Personal Profile (In-Page Inline Edit Form)
+* **Desain Interaksi Tanpa Modal (*No Popup Dialog*)**:
+  * Tab profil **TIDAK menggunakan modal atau drawer popup**. Pengeditan data dilakukan langsung di tempat (*in-place inline editing*) pada halaman `/home/profile`.
+  * **State 1: View Mode (Default / Read-Only)**:
+    * Menampilkan kartu ringkasan informasi data diri jemaat dalam layout dua kolom yang rapi dan terstruktur.
+    * Memuat info: Full Name, Username, Phone Number (WhatsApp), School / University Almamater, dan Date of Birth.
+    * Tombol *"Edit Profile"* di pojok kanan atas kartu dengan ikon pensil.
+  * **State 2: Edit Mode (Inline Form Transition)**:
+    * Saat user mengklik *"Edit Profile"*, kartu data profil langsung bertransformasi menjadi form interaktif di halaman yang sama (animasi transisi halus fade/slide tanpa layout shift).
+    * **Field Input Form**:
+      * **Full Name** *(Input teks, wajib, min 2 karakter)*.
+      * **Phone Number / WhatsApp** *(Input nomor telepon, e.g. `08123456789`)*.
+      * **School / University** *(Dropdown interaktif dari master data `/configure/schools`, menampilkan institusi terverifikasi)*.
+      * **Date of Birth** *(Input tanggal / Datepicker `YYYY-MM-DD`)*.
+    * **Tombol Aksi Bawah Form**:
+      * Tombol *"Cancel"*: Mengembalikan form ke View Mode tanpa menyimpan perubahan (reset ke data sebelumnya).
+      * Tombol *"Save Changes"*: Memvalidasi payload dan memanggil `PUT /api/users/me/profile`. Menampilkan indikator loading saat proses penyimpanan dan notifikasi toast sukses, lalu otomatis kembali ke View Mode dengan data terbaru.
 
 ### 3.3. Tab 3: Account Security & OTP Email Verification
 
@@ -140,10 +157,7 @@ Mengambil data profil lengkap, metadata akun, dan almamater user yang sedang log
       "profile": {
         "name": "Budi Santoso",
         "phone": "08123456789",
-        "gender": "male",
         "date_of_birth": "2005-04-12",
-        "address": "Jl. Kemenangan No. 12, Jakarta",
-        "bio": "Keep cultivating loving-kindness and mindfulness.",
         "school": {
           "id": "sch_12",
           "name": "SMA Tri Ratna",
@@ -167,10 +181,7 @@ Memperbarui data diri pribadi.
     name: z.string().trim().min(2).max(100).optional(),
     phone: z.string().trim().max(20).optional().nullable(),
     school_id: z.string().cuid().optional().nullable(),
-    gender: z.enum(["male", "female"]).optional().nullable(),
     date_of_birth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
-    address: z.string().max(255).optional().nullable(),
-    bio: z.string().max(300).optional().nullable(),
   })
   ```
 
@@ -236,8 +247,20 @@ Mengambil buku besar catatan mutasi poin pengguna yang login.
 
 ---
 
-## 6. Antarmuka Pengguna & Clay Aesthetics
+## 6. Antarmuka Pengguna & Standar Human Interface Guidelines (HIG)
 
-* **Desain Kartu Anggota**: Sudut melengkung `rounded-[24px]`, shadow halus `shadow-sm`, ring kontras tipis, dan backdrop hangat `#fffaf0`.
+* **Prinsip HIG pada Digital Member Card**:
+  * **Clarity & Visual Focus**: Informasi terpenting (Nama Jemaat, Nomor Anggota `userNumber`, QR Code, dan Role) memiliki kontras visual tinggi tanpa elemen dekoratif sekunder atau ticker statistik yang mengaburkan fungsi utama identitas fisik-digital.
+  * **Standard Aspect Ratio (ID-1 / ISO 7810)**: Rasio 1.586 : 1 yang natural menyerupai kartu fisik pada Apple Wallet / Google Wallet (`aspect-[1.586/1]`).
+  * **Continuous Curve Squircle**: Sudut `rounded-[20px]` / `rounded-[22px]` dengan specular hairline border (`ring-1 ring-black/5` atau `border-white/20`) dan ambient elevation shadow yang halus (`shadow-md`).
+  * **Diferensiasi Palet Warna Per Role**:
+    * `member`: Warm Pearl Ivory (`#FDFBF7` -> `#F4EFE6`), teks `#1A1A1A`, border `#E8DCC4`.
+    * `activist`: Emerald Seva (`#064E3B` -> `#022C22`), teks `#FFFFFF`, aksen `#10B981`.
+    * `organizer`: Royal Sapphire (`#1E293B` -> `#0F172A`), teks `#FFFFFF`, aksen `#3B82F6` / `#E8B94A`.
+    * `admin`: Obsidian Titanium (`#18181B` -> `#09090B`), teks `#FAFAFA`, aksen `#E8B94A` / `#D4AF37`.
+  * **QR Code Scanner-Ready**: QR code statis ditempatkan pada background putih murni (`#FFFFFF`) beradius `rounded-[14px]` agar pantulan cahaya latar tidak mengganggu sensor scanner optik kamera saat presensi di vihara.
+* **Inline In-Page Form Interaction (No Modal Popup)**:
+  * Mengeliminasi disrupsi konteks modal popup. User mengedit data profil langsung di halaman `/home/profile` dengan transisi in-place.
+  * Focus ring aksesibel (`focus-visible:ring-2 focus-visible:ring-[#0a0a0a]`), touch target minimal 44x44px sesuai pedoman HIG accessibility.
 * **OTP Input Component**: Menggunakan 6 kotak input terpisah dengan transisi fokus otomatis, paste clipboard support, dan hitung mundur timer 60 detik untuk tombol *"Resend OTP"*.
-* **Semua Label Bahasa Inggris**: *"Digital Member ID"*, *"Personal Information"*, *"Account Security"*, *"Change Password"*, *"Verify New Email"*, *"Enter 6-Digit OTP"*, *"Points Ledger"*.
+* **Semua Label Bahasa Inggris**: *"Digital Member ID"*, *"Personal Information"*, *"Edit Profile"*, *"Save Changes"*, *"Cancel"*, *"Account Security"*, *"Change Password"*, *"Verify New Email"*, *"Enter 6-Digit OTP"*, *"Points Ledger"*.

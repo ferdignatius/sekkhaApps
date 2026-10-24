@@ -13,7 +13,7 @@ export const homeServices = {
   async getDashboard(userId: string, role: string) {
     return cached(CacheKeys.home(userId, role), 5, async () => {
       const now = new Date()
-      const [profile, events, activity, attendanceWeeks] = await Promise.all([
+      const [profile, events, activity, attendanceWeeks, activeSeason] = await Promise.all([
         homeModels.findProfile(userId),
         homeModels.findUpcomingEvents({
           status: { in: ["scheduled", "active"] },
@@ -22,6 +22,7 @@ export const homeServices = {
         }),
         homeModels.findRecentActivity(userId),
         homeModels.findAttendanceWeeks(userId),
+        homeModels.findActiveSeason(),
       ])
 
       if (!profile) return null
@@ -31,10 +32,26 @@ export const homeServices = {
           .filter(({ week }) => week instanceof Date && !Number.isNaN(week.getTime()))
           .map(({ week }) => ({ scannedAt: week }))
       )
+
+      const season = activeSeason
+        ? {
+            id: activeSeason.id,
+            name: activeSeason.name,
+            code: activeSeason.code,
+            start_date: activeSeason.startDate.toISOString(),
+            end_date: activeSeason.endDate.toISOString(),
+            target_attendance: activeSeason.targetAttendance,
+            days_left: Math.max(
+              0,
+              Math.ceil((activeSeason.endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+            ),
+          }
+        : null
+
       return {
         profile: {
           id: profile.id,
-          name: profile.profile?.name || profile.username || "Anggota",
+          name: profile.profile?.name || profile.username || "Member",
           avatar_url: null,
           role: profile.role,
           user_number: profile.userNumber,
@@ -44,12 +61,13 @@ export const homeServices = {
           ...streak,
           last_attended: attendanceWeeks[0]?.last_attended?.toISOString() ?? null,
         },
+        season,
         events: events.map((event) => ({
           id: event.id,
           title: event.title,
           location: event.location,
           event_date: event.eventDate.toISOString(),
-          event_type: event.type?.code === "special" ? "special" : "rutin",
+          event_type: event.type?.code === "special" ? "special" : "routine",
         })),
         activities: activity.map((item) => ({
           event_id: item.eventId,

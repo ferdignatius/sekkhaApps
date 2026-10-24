@@ -15,10 +15,8 @@ export interface UpdateProfileInput {
   name?: string
   school?: string | null
   school_id?: string | null
-  class_grade?: string | null
   phone?: string | null
-  birth_date?: string | null
-  gender?: string | null
+  date_of_birth?: string | null
 }
 
 export const userServices = {
@@ -42,20 +40,10 @@ export const userServices = {
       await userModels.updateUser(user.id, { userNumber: uNum }).catch(() => {})
     }
 
-    const pendingEmail = await emailVerificationStore.getPendingEmail(userId)
     const decryptedEmail = decrypt(user.email) || user.email || ""
     const decryptedPhone = decrypt(user.profile?.phone) || null
-    const decryptedClassGrade = decrypt(user.profile?.classGrade) || null
     const rawBirthDate = decrypt(user.profile?.birthDate) || null
     const decryptedBirthDate = rawBirthDate ? new Date(rawBirthDate).toISOString().split("T")[0] : null
-    const rawGender = decrypt(user.profile?.gender) || null
-    const normalizedGender =
-      rawGender === "pria" || rawGender === "male" || rawGender === "L"
-        ? "male"
-        : rawGender === "wanita" || rawGender === "female" || rawGender === "P"
-          ? "female"
-          : rawGender
-
     return {
       id: user.id,
       user_number: Number(uNum),
@@ -63,17 +51,18 @@ export const userServices = {
       name: user.profile?.name || "",
       email: decryptedEmail,
       email_verified: Boolean(user.emailVerifiedAt),
-      pending_email: pendingEmail,
       role: user.role,
       is_claimed: user.isClaimed,
       onboarding_completed: user.onboardingCompleted,
       school_id: user.profile?.schoolId || null,
       school: user.profile?.school?.name || null,
-      class_grade: decryptedClassGrade,
       phone: decryptedPhone,
-      birth_date: decryptedBirthDate,
-      gender: normalizedGender,
-      points: user.stats?.points ?? 0,
+      date_of_birth: decryptedBirthDate,
+      stats: {
+        total_points: user.stats?.points ?? 0,
+        current_streak: user.stats?.currentStreak ?? 0,
+        total_attendances: user.stats?.totalAttendances ?? user._count?.attendances ?? 0,
+      },
       joined_at: new Date(user.createdAt).toISOString(),
     }
   },
@@ -91,7 +80,7 @@ export const userServices = {
       if (body.school_id) {
         const school = await prisma.school.findUnique({ where: { id: body.school_id } })
         if (!school || school.status !== "active" || !school.isActive) {
-          const error = new Error("Sekolah yang dipilih belum disetujui atau tidak aktif.") as any
+          const error = new Error("Selected school is not approved or inactive.") as any
           error.statusCode = 400
           throw error
         }
@@ -111,25 +100,24 @@ export const userServices = {
       resolvedSchoolId = null
     }
 
+    const birthDateVal = body.date_of_birth
+
     const profileUpdateData = {
       ...(body.name && { name: body.name.trim() }),
       ...(resolvedSchoolId !== undefined && { schoolId: resolvedSchoolId }),
-      ...(body.class_grade !== undefined && { classGrade: body.class_grade ? encrypt(body.class_grade.trim()) : null }),
       ...(body.phone !== undefined && { phone: body.phone ? encrypt(body.phone.trim()) : null }),
-      ...(body.birth_date !== undefined && {
-        birthDate: body.birth_date ? encrypt(new Date(body.birth_date).toISOString()) : null,
+      ...(birthDateVal !== undefined && {
+        birthDate: birthDateVal ? encrypt(new Date(birthDateVal).toISOString()) : null,
       }),
-      ...(body.gender !== undefined && { gender: body.gender ? encrypt(body.gender.trim().toLowerCase()) : null }),
     }
 
     const profileCreateData = {
       userId,
-      name: body.name ? body.name.trim() : existing.username || "Anggota",
+      name: body.name ? body.name.trim() : existing.username || "Member",
       schoolId: resolvedSchoolId || null,
-      classGrade: body.class_grade ? encrypt(body.class_grade.trim()) : null,
+      classGrade: null,
       phone: body.phone ? encrypt(body.phone.trim()) : null,
-      birthDate: body.birth_date ? encrypt(new Date(body.birth_date).toISOString()) : null,
-      gender: body.gender ? encrypt(body.gender.trim().toLowerCase()) : null,
+      birthDate: birthDateVal ? encrypt(new Date(birthDateVal).toISOString()) : null,
     }
 
     const { user, profile } = await userModels.updateUserAndProfile(
@@ -294,13 +282,22 @@ export const userServices = {
 
   async getPointTransactions(userId: string, limit: number = 20) {
     const raw = await userModels.findUserPointTransactions(userId, limit)
-    const items = raw.map((pt) => ({
-      id: pt.id,
-      points: pt.amount,
-      type: pt.type,
-      description: pt.description || "",
-      created_at: new Date(pt.createdAt).toISOString(),
-    }))
+    const stats = await prisma.userStats.findUnique({ where: { userId } })
+    let currentBalance = stats?.points ?? 0
+
+    const items = raw.map((pt) => {
+      const balance = currentBalance
+      currentBalance -= pt.amount
+      return {
+        id: pt.id,
+        points: pt.amount,
+        points_delta: pt.amount,
+        type: pt.type,
+        description: pt.description || "",
+        running_balance: balance,
+        created_at: new Date(pt.createdAt).toISOString(),
+      }
+    })
     return { items }
   },
 
@@ -359,14 +356,13 @@ export const userServices = {
       profile: {
         name: user.profile?.name ?? null,
         phone: decrypt(user.profile?.phone) || null,
-        gender: decrypt(user.profile?.gender) || null,
         birth_date: decrypt(user.profile?.birthDate) || null,
         class_grade: decrypt(user.profile?.classGrade) || null,
         school: user.profile?.school?.name ?? null,
       },
       stats: {
         points: user.stats?.points ?? 0,
-        total_attendances: user.stats?.totalAttendances ?? 0,
+        total_attendances: user.stats?.totalAttendances ?? user.attendances?.length ?? 0,
         current_streak: user.stats?.currentStreak ?? 0,
         last_activity_at: user.stats?.lastActivityAt ?? null,
       },

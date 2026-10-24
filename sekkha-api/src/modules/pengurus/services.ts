@@ -2,384 +2,22 @@ import { pengurusModels } from "./models"
 import { cached } from "../../lib/cache"
 import { decrypt } from "../../lib/crypto"
 
-export type AlertLevel = "normal" | "mulai_jarang" | "at_risk" | "kemungkinan_hilang" | "churned"
-
-export interface MemberRecency {
-  userId: string
-  name: string
-  email: string | null
-  phone?: string | null
-  userNumber?: bigint | number | string | null
-  avatarUrl: string | null
-  role: string
-  createdAt: string
-  lastAttendedDate: string | null
-  daysSinceLastAttendance: number
-  consecutiveMissedEvents: number
-  level: AlertLevel
-  attendanceCount: number
-  recentAttendances: Array<{
-    eventId: string
-    title: string
-    eventDate: string
-    scannedAt: string
-  }>
-}
-
-export interface CachedMemberRecency {
-  userId: string
-  name: string
-  encryptedEmail: string | null
-  encryptedPhone?: string | null
-  userNumber?: bigint | number | string | null
-  avatarUrl: string | null
-  role: string
-  createdAt: string
-  lastAttendedDate: string | null
-  daysSinceLastAttendance: number
-  consecutiveMissedEvents: number
-  level: AlertLevel
-  attendanceCount: number
-  recentAttendances: Array<{
-    eventId: string
-    title: string
-    eventDate: string
-    scannedAt: string
-  }>
-}
-
-interface AttendanceItem {
-  id: string
-  scannedAt: Date
-  method?: string
-  event: {
-    id: string
-    title: string
-    eventDate: Date
-    status: string
-    location?: string
-  }
-}
-
 export const MONTH_NAMES = [
-  "Januari",
-  "Februari",
-  "Maret",
+  "January",
+  "February",
+  "March",
   "April",
-  "Mei",
-  "Juni",
-  "Juli",
-  "Agustus",
+  "May",
+  "June",
+  "July",
+  "August",
   "September",
-  "Oktober",
+  "October",
   "November",
-  "Desember",
+  "December",
 ]
 
 export const pengurusServices = {
-  async getRecencyAlerts(queryParams: {
-    level?: string
-    search?: string
-    sortBy?: string
-  }) {
-    const levelFilter = queryParams.level || "all"
-    const searchQuery = (queryParams.search || "").toLowerCase().trim()
-    const sortBy = queryParams.sortBy || "longest_absence"
-
-    const now = new Date()
-
-    // 1. Fetch & calculate recency metrics (cached for 60 seconds)
-    const { calculatedMembers, pastEventsCount } = await cached(
-      "pengurus:recency-alerts:base",
-      60,
-      async () => {
-        const pastEvents = await pengurusModels.findPastEvents(now)
-        const users = await pengurusModels.findAllUsersWithAttendancesAndProfile()
-
-        const members: CachedMemberRecency[] = users.map((u) => {
-          const attendances = (u.attendances || []) as AttendanceItem[]
-          const validAttendances = attendances
-            .filter((att) => att.event && (att.event.status === "scheduled" || att.event.status === "active" || att.event.status === "closed") && new Date(att.event.eventDate) <= now)
-            .sort((a, b) => new Date(a.event.eventDate).getTime() - new Date(b.event.eventDate).getTime())
-
-          const attendanceCount = validAttendances.length
-
-          let lastAttendedDate: string | null = null
-          let daysSinceLastAttendance = 0
-          let personalBaselineDays = 7
-
-          if (attendanceCount > 0) {
-            const lastAtt = validAttendances[validAttendances.length - 1]
-            lastAttendedDate = new Date(lastAtt.event.eventDate).toISOString()
-            const diffMs = now.getTime() - new Date(lastAtt.event.eventDate).getTime()
-            daysSinceLastAttendance = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)))
-
-            if (attendanceCount >= 2) {
-              let totalIntervalDays = 0
-              let intervalCount = 0
-              for (let i = 1; i < validAttendances.length; i++) {
-                const prevDate = new Date(validAttendances[i - 1].event.eventDate).getTime()
-                const currDate = new Date(validAttendances[i].event.eventDate).getTime()
-                const gap = (currDate - prevDate) / (1000 * 60 * 60 * 24)
-                if (gap > 0) {
-                  totalIntervalDays += gap
-                  intervalCount++
-                }
-              }
-              if (intervalCount > 0) {
-                personalBaselineDays = Math.max(7, Math.round(totalIntervalDays / intervalCount))
-              }
-            }
-          } else {
-            const regDiffMs = now.getTime() - new Date(u.createdAt).getTime()
-            daysSinceLastAttendance = Math.max(0, Math.floor(regDiffMs / (1000 * 60 * 60 * 24)))
-          }
-
-          let consecutiveMissedEvents = 0
-          if (attendanceCount > 0 && lastAttendedDate) {
-            const lastAttendedTime = new Date(lastAttendedDate).getTime()
-            consecutiveMissedEvents = pastEvents.filter(
-              (ev) => new Date(ev.eventDate).getTime() > lastAttendedTime
-            ).length
-          } else {
-            const userRegTime = new Date(u.createdAt).getTime()
-            consecutiveMissedEvents = pastEvents.filter(
-              (ev) => new Date(ev.eventDate).getTime() >= userRegTime
-            ).length
-          }
-
-          let level: AlertLevel = "normal"
-          if (daysSinceLastAttendance > 60 || consecutiveMissedEvents >= 6) {
-            level = "churned"
-          } else if (consecutiveMissedEvents >= 4) {
-            level = "kemungkinan_hilang"
-          } else if (consecutiveMissedEvents === 3) {
-            level = "at_risk"
-          } else if (consecutiveMissedEvents === 2) {
-            level = "mulai_jarang"
-          } else {
-            level = "normal"
-          }
-
-          const recentAttendances = validAttendances
-            .slice(-5)
-            .map((att) => ({
-              eventId: att.event.id,
-              title: att.event.title,
-              eventDate: new Date(att.event.eventDate).toISOString(),
-              scannedAt: new Date(att.scannedAt).toISOString(),
-            }))
-            .reverse()
-
-          return {
-            userId: u.id,
-            name: u.profile?.name || "Anggota",
-            encryptedEmail: u.email,
-            encryptedPhone: u.profile?.phone || null,
-            userNumber: u.userNumber,
-            avatarUrl: null,
-            role: u.role,
-            createdAt: new Date(u.createdAt).toISOString(),
-            lastAttendedDate,
-            daysSinceLastAttendance,
-            consecutiveMissedEvents,
-            level,
-            attendanceCount,
-            recentAttendances,
-          }
-        })
-
-        return { calculatedMembers: members, pastEventsCount: pastEvents.length }
-      }
-    )
-
-    // Decrypt PII on-the-fly when serving, never in the shared cache
-    const resolvedMembers: MemberRecency[] = calculatedMembers.map((m: any) => ({
-      userId: m.userId,
-      name: m.name,
-      email: decrypt(m.encryptedEmail) || m.encryptedEmail,
-      phone: decrypt(m.encryptedPhone) || null,
-      userNumber: m.userNumber,
-      avatarUrl: m.avatarUrl,
-      role: m.role,
-      createdAt: m.createdAt,
-      lastAttendedDate: m.lastAttendedDate,
-      daysSinceLastAttendance: m.daysSinceLastAttendance,
-      consecutiveMissedEvents: m.consecutiveMissedEvents,
-      level: m.level,
-      attendanceCount: m.attendanceCount,
-      recentAttendances: m.recentAttendances,
-    }))
-
-    const normalCount = resolvedMembers.filter((m) => m.level === "normal").length
-    const mulaiJarangCount = resolvedMembers.filter((m) => m.level === "mulai_jarang").length
-    const atRiskCount = resolvedMembers.filter((m) => m.level === "at_risk").length
-    const kemungkinanHilangCount = resolvedMembers.filter((m) => m.level === "kemungkinan_hilang").length
-    const churnedCount = resolvedMembers.filter((m) => m.level === "churned").length
-    const lostCount = kemungkinanHilangCount + churnedCount
-
-    const summary = {
-      totalMembers: resolvedMembers.length,
-      normalCount,
-      mulaiJarangCount,
-      warningCount: mulaiJarangCount,
-      atRiskCount,
-      kemungkinanHilangCount,
-      churnedCount,
-      lostCount,
-      totalClosedEvents: pastEventsCount,
-    }
-
-    let filteredMembers = resolvedMembers
-    if (levelFilter !== "all") {
-      if (levelFilter === "lost") {
-        filteredMembers = filteredMembers.filter((m) => m.level === "kemungkinan_hilang" || m.level === "churned")
-      } else if (levelFilter === "warning") {
-        filteredMembers = filteredMembers.filter((m) => m.level === "mulai_jarang")
-      } else {
-        filteredMembers = filteredMembers.filter((m) => m.level === levelFilter)
-      }
-    }
-    if (searchQuery) {
-      filteredMembers = filteredMembers.filter(
-        (m) =>
-          m.name.toLowerCase().includes(searchQuery) ||
-          (m.email && m.email.toLowerCase().includes(searchQuery)) ||
-          (m.userNumber && String(m.userNumber).toLowerCase().includes(searchQuery))
-      )
-    }
-
-    filteredMembers.sort((a, b) => {
-      if (sortBy === "longest_absence") {
-        return b.daysSinceLastAttendance - a.daysSinceLastAttendance
-      }
-      if (sortBy === "consecutive_missed") {
-        return b.consecutiveMissedEvents - a.consecutiveMissedEvents
-      }
-      if (sortBy === "name") {
-        return a.name.localeCompare(b.name)
-      }
-      return b.daysSinceLastAttendance - a.daysSinceLastAttendance
-    })
-
-    return {
-      summary,
-      members: filteredMembers,
-    }
-  },
-
-  async getUserRecencyAlertDetail(userId: string) {
-    const now = new Date()
-
-    const user = await pengurusModels.findUserWithAttendancesById(userId)
-    if (!user) {
-      const error = new Error("Member not found") as any
-      error.statusCode = 404
-      throw error
-    }
-
-    const pastEvents = await pengurusModels.findPastEventsDesc(now)
-
-    const attendances = (user.attendances || []) as AttendanceItem[]
-    const validAttendances = attendances
-      .filter((att) => att.event && (att.event.status === "scheduled" || att.event.status === "active" || att.event.status === "closed") && new Date(att.event.eventDate) <= now)
-      .sort((a, b) => new Date(a.event.eventDate).getTime() - new Date(b.event.eventDate).getTime())
-
-    const attendanceCount = validAttendances.length
-    let lastAttendedDate: string | null = null
-    let daysSinceLastAttendance = 0
-    let personalBaselineDays = 7
-
-    if (attendanceCount > 0) {
-      const lastAtt = validAttendances[validAttendances.length - 1]
-      lastAttendedDate = new Date(lastAtt.event.eventDate).toISOString()
-      const diffMs = now.getTime() - new Date(lastAtt.event.eventDate).getTime()
-      daysSinceLastAttendance = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)))
-
-      if (attendanceCount >= 2) {
-        let totalIntervalDays = 0
-        let intervalCount = 0
-        for (let i = 1; i < validAttendances.length; i++) {
-          const prevDate = new Date(validAttendances[i - 1].event.eventDate).getTime()
-          const currDate = new Date(validAttendances[i].event.eventDate).getTime()
-          const gap = (currDate - prevDate) / (1000 * 60 * 60 * 24)
-          if (gap > 0) {
-            totalIntervalDays += gap
-            intervalCount++
-          }
-        }
-        if (intervalCount > 0) {
-          personalBaselineDays = Math.max(7, Math.round(totalIntervalDays / intervalCount))
-        }
-      }
-    } else {
-      const regDiffMs = now.getTime() - new Date(user.createdAt).getTime()
-      daysSinceLastAttendance = Math.max(0, Math.floor(regDiffMs / (1000 * 60 * 60 * 24)))
-    }
-
-    let consecutiveMissedEvents = 0
-    if (attendanceCount > 0 && lastAttendedDate) {
-      const lastAttendedTime = new Date(lastAttendedDate).getTime()
-      consecutiveMissedEvents = pastEvents.filter(
-        (ev) => new Date(ev.eventDate).getTime() > lastAttendedTime
-      ).length
-    } else {
-      const userRegTime = new Date(user.createdAt).getTime()
-      consecutiveMissedEvents = pastEvents.filter(
-        (ev) => new Date(ev.eventDate).getTime() >= userRegTime
-      ).length
-    }
-
-    const gapRatio = Number((daysSinceLastAttendance / personalBaselineDays).toFixed(2))
-
-    let level: AlertLevel = "normal"
-    if (daysSinceLastAttendance > 60 || consecutiveMissedEvents >= 6) {
-      level = "churned"
-    } else if (consecutiveMissedEvents >= 4 || gapRatio > 4.0) {
-      level = "kemungkinan_hilang"
-    } else if (consecutiveMissedEvents === 3 || gapRatio > 3.0) {
-      level = "at_risk"
-    } else if (consecutiveMissedEvents === 2 || gapRatio > 2.0) {
-      level = "mulai_jarang"
-    } else {
-      level = "normal"
-    }
-
-    const eventTimeline = pastEvents.slice(0, 15).map((ev) => {
-      const attended = validAttendances.find((att) => att.event.id === ev.id)
-      return {
-        eventId: ev.id,
-        title: ev.title,
-        eventDate: new Date(ev.eventDate).toISOString(),
-        location: ev.location,
-        attended: !!attended,
-        scannedAt: attended ? new Date(attended.scannedAt).toISOString() : null,
-        method: attended ? attended.method : null,
-      }
-    })
-
-    return {
-      member: {
-        userId: user.id,
-        name: user.profile?.name || "Anggota",
-        email: decrypt(user.email) || user.email,
-        avatarUrl: null,
-        role: user.role,
-        createdAt: new Date(user.createdAt).toISOString(),
-        phone: decrypt(user.profile?.phone) || null,
-        userNumber: user.userNumber,
-        lastAttendedDate,
-        daysSinceLastAttendance,
-        personalBaselineDays,
-        consecutiveMissedEvents,
-        gapRatio,
-        level,
-        attendanceCount,
-      },
-      eventTimeline,
-    }
-  },
-
   async getInsights(queryParams: {
     timeUnit?: string
     primaryYear?: string | number
@@ -414,21 +52,21 @@ export const pengurusServices = {
       : [`${MONTH_NAMES[primaryMonth - 1]} ${primaryYear}`]
 
     const now = new Date()
-    const primaryMonthName = MONTH_NAMES[primaryMonth - 1] || "Juli"
-    const compareMonthName = MONTH_NAMES[compareMonth - 1] || "Juni"
+    const primaryMonthName = MONTH_NAMES[primaryMonth - 1] || "July"
+    const compareMonthName = MONTH_NAMES[compareMonth - 1] || "June"
 
-    const periodLabel = timeUnit === "year" ? `Tahun ${primaryYear}` : `${primaryMonthName} ${primaryYear}`
-    const previousPeriodLabel = timeUnit === "year" ? `Tahun ${compareYear}` : `${compareMonthName} ${compareYear}`
+    const periodLabel = timeUnit === "year" ? String(primaryYear) : `${primaryMonthName} ${primaryYear}`
+    const previousPeriodLabel = timeUnit === "year" ? String(compareYear) : `${compareMonthName} ${compareYear}`
 
     const catDisplayNames: Record<string, string> = {
-      puja_bhakti: "Puja Bhakti Minggu",
-      dhammasakaccha: "Dhammasakaccha",
-      meditasi: "Latihan Meditasi",
-      bakti_sosial: "Bakti Sosial / Umat Care",
-      sekolah_minggu: "Sekolah Minggu / Pemuda",
+      puja_bhakti: "Sunday Service",
+      dhammasakaccha: "Dhamma Discussion",
+      meditasi: "Meditation Practice",
+      bakti_sosial: "Social Service / Care",
+      sekolah_minggu: "Sunday School / Youth",
     }
 
-    let categoryLabel = "Semua Kategori Event"
+    let categoryLabel = "All Event Categories"
     if (selectedCategories.length > 0 && !selectedCategories.includes("all")) {
       categoryLabel = selectedCategories
         .map((c) => catDisplayNames[c] || c)
@@ -688,25 +326,25 @@ export const pengurusServices = {
       }))
 
       // 8. Tenure Breakdown
-      const tenureCounts = { "< 3 Bulan": 0, "3 - 12 Bulan": 0, "1 - 2 Tahun": 0, "> 2 Tahun": 0 }
+      const tenureCounts = { "< 3 Months": 0, "3 - 12 Months": 0, "1 - 2 Years": 0, "> 2 Years": 0 }
       for (const u of targetUsers) {
         const diffMonths = (now.getTime() - new Date(u.createdAt).getTime()) / (1000 * 60 * 60 * 24 * 30.4)
         if (diffMonths < 3) {
-          tenureCounts["< 3 Bulan"]++
+          tenureCounts["< 3 Months"]++
         } else if (diffMonths < 12) {
-          tenureCounts["3 - 12 Bulan"]++
+          tenureCounts["3 - 12 Months"]++
         } else if (diffMonths < 24) {
-          tenureCounts["1 - 2 Tahun"]++
+          tenureCounts["1 - 2 Years"]++
         } else {
-          tenureCounts["> 2 Tahun"]++
+          tenureCounts["> 2 Years"]++
         }
       }
 
       const tenureColors: Record<string, string> = {
-        "< 3 Bulan": "#3B82F6",
-        "3 - 12 Bulan": "#10B981",
-        "1 - 2 Tahun": "#F59E0B",
-        "> 2 Tahun": "#8B5CF6",
+        "< 3 Months": "#3B82F6",
+        "3 - 12 Months": "#10B981",
+        "1 - 2 Years": "#F59E0B",
+        "> 2 Years": "#8B5CF6",
       }
 
       const tenureBreakdown = Object.entries(tenureCounts).map(([label, count]) => ({
@@ -722,25 +360,25 @@ export const pengurusServices = {
             value: primaryActiveCount,
             deltaText: activeMembersDelta >= 0 ? `+${activeMembersDelta}%` : `${activeMembersDelta}%`,
             isPositive: activeMembersDelta >= 0,
-            description: `Dibandingkan ${previousPeriodLabel}`,
+            description: `Compared to ${previousPeriodLabel}`,
           },
           avgAttendanceRate: {
             value: `${primaryAvgRate}%`,
             deltaText: rateDelta >= 0 ? `+${rateDelta}%` : `${rateDelta}%`,
             isPositive: rateDelta >= 0,
-            description: `Konsistensi kehadiran umat`,
+            description: `Member attendance consistency`,
           },
           retentionRate: {
             value: `${retentionRate}%`,
             deltaText: retentionRate >= 80 ? "+2.4%" : "-1.5%",
             isPositive: retentionRate >= 80,
-            description: `Umat aktif berulang`,
+            description: `Recurring active members`,
           },
           atRiskMembersCount: {
             value: atRiskCount,
-            deltaText: atRiskDelta <= 0 ? `${atRiskDelta} org` : `+${atRiskDelta} org`,
+            deltaText: atRiskDelta <= 0 ? `${atRiskDelta} members` : `+${atRiskDelta} members`,
             isPositive: atRiskDelta <= 0,
-            description: `Perlu intervensi & follow-up`,
+            description: `Needs pastoral care & follow-up`,
           },
         },
         trendChartData,

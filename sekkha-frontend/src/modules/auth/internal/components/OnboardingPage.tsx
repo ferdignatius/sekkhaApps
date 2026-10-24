@@ -62,14 +62,13 @@ export function OnboardingPage() {
 
   // Profile Form State:
   // Step 1: username & name (MANDATORY)
-  // Step 2: phone, birth_date, gender (OPTIONAL - CAN SKIP)
+  // Step 2: phone, birth_date (OPTIONAL - CAN SKIP)
   // Step 3: school, school_id, class_grade (OPTIONAL - CAN SKIP)
   const [profileForm, setProfileForm] = useState({
     username: "",
     name: "",
     phone: "",
     birth_date: "",
-    gender: "L",
     school: "",
     school_id: "",
     class_grade: "",
@@ -119,7 +118,6 @@ export function OnboardingPage() {
         school_id?: string
         class_grade?: string
         birth_date?: string
-        gender?: string
       }>("/users/me")
       .then(async (u) => {
         const autoUsername =
@@ -139,7 +137,6 @@ export function OnboardingPage() {
           school: u.school || prev.school,
           school_id: u.school_id || prev.school_id,
           class_grade: u.class_grade || prev.class_grade,
-          gender: u.gender || prev.gender,
           birth_date: u.birth_date
             ? u.birth_date.split("T")[0]
             : prev.birth_date,
@@ -261,7 +258,6 @@ export function OnboardingPage() {
       await api.patch("/users/me", {
         phone: profileForm.phone.trim() || null,
         birth_date: profileForm.birth_date || null,
-        gender: profileForm.gender || "L",
       })
       setStep("school")
       window.scrollTo({ top: 0, behavior: "smooth" })
@@ -636,52 +632,30 @@ export function OnboardingPage() {
                 />
               </div>
 
-              {/* Date of Birth & Gender */}
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <div className="space-y-1.5">
-                  <label
-                    htmlFor="birthdate-input"
-                    className="flex items-center gap-1 text-xs font-semibold text-[#0a0a0a]"
-                  >
-                    <CalendarIcon className="size-3 text-[#6a6a6a]" />
-                    <span>Date of Birth</span>
-                    <span className="text-[11px] font-normal text-[#6a6a6a]">
-                      (Optional)
-                    </span>
-                  </label>
-                  <input
-                    id="birthdate-input"
-                    type="date"
-                    value={profileForm.birth_date}
-                    onChange={(e) =>
-                      setProfileForm({
-                        ...profileForm,
-                        birth_date: e.target.value,
-                      })
-                    }
-                    className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 py-2 text-sm text-[#0a0a0a] transition-all outline-none focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a]"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label
-                    htmlFor="gender-select"
-                    className="text-xs font-semibold text-[#0a0a0a]"
-                  >
-                    Gender
-                  </label>
-                  <select
-                    id="gender-select"
-                    value={profileForm.gender}
-                    onChange={(e) =>
-                      setProfileForm({ ...profileForm, gender: e.target.value })
-                    }
-                    className="h-11 w-full cursor-pointer rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 py-2 text-sm text-[#0a0a0a] transition-all outline-none focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a]"
-                  >
-                    <option value="L">Male</option>
-                    <option value="P">Female</option>
-                  </select>
-                </div>
+              {/* Date of Birth */}
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="birthdate-input"
+                  className="flex items-center gap-1 text-xs font-semibold text-[#0a0a0a]"
+                >
+                  <CalendarIcon className="size-3 text-[#6a6a6a]" />
+                  <span>Date of Birth</span>
+                  <span className="text-[11px] font-normal text-[#6a6a6a]">
+                    (Optional)
+                  </span>
+                </label>
+                <input
+                  id="birthdate-input"
+                  type="date"
+                  value={profileForm.birth_date}
+                  onChange={(e) =>
+                    setProfileForm({
+                      ...profileForm,
+                      birth_date: e.target.value,
+                    })
+                  }
+                  className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 py-2 text-sm text-[#0a0a0a] transition-all outline-none focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a]"
+                />
               </div>
 
               <p className="text-[11px] text-[#6a6a6a]">

@@ -10,8 +10,8 @@ export interface MemberDto {
   phone?: string | null
   school?: string | null
   school_id?: string | null
+  date_of_birth?: string | null
   birth_date?: string | null
-  gender?: string | null
   role: PeopleRole
   user_number?: string | null
   is_claimed: boolean
@@ -26,7 +26,6 @@ export interface MemberDetailDto extends MemberDto {
     id: string
     event_title: string
     event_date: string
-    location: string
     method: string
     points_earned: number
     scanned_at: string
@@ -39,10 +38,7 @@ export interface CreateMemberPayload {
   school_id?: string | null
   school?: string | null
   phone?: string | null
-  gender?: "male" | "female" | string | null
   date_of_birth?: string | null
-  birth_date?: string | null
-  address?: string | null
 }
 
 export interface CreateMemberResponse {
@@ -78,11 +74,8 @@ export interface UpdateMemberPayload {
   phone?: string | null
   school_id?: string | null
   school?: string | null
-  birth_date?: string | null
   date_of_birth?: string | null
-  gender?: string | null
   role?: PeopleRole
-  address?: string | null
 }
 
 export interface PaginatedMembersResponse {

@@ -17,7 +17,7 @@ Onboarding introduces newly registered or first-time claiming users to Sekkha, g
 Principles:
 - **Concise & Non-blocking**: Mobile-friendly, simple, and skippable where stated.
 - **Required Fields**: Only `username` and `fullname` (nama lengkap) are mandatory during onboarding.
-- **Optional & Skippable**: All other profile fields (`phone`, `birth_date`, `gender`, `school`, `class_grade`) can be skipped during onboarding and filled/edited later via the User Profile edit page (`/profile` or `/settings`).
+- **Optional & Skippable**: All other profile fields (`phone`, `birth_date`, `school`, `class_grade`) can be skipped during onboarding and filled/edited later via the User Profile edit page (`/profile` or `/settings`).
 - **No Product Tour**: Product tour/walkthrough is completely removed. After completing or skipping optional onboarding steps, user immediately proceeds to Home (`/home`).
 - **Self-Registration Claim State**: User registering manually via sign-up with email OTP automatically has `isClaimed = true` upon creation.
 - **School Request & Search**: Users search for existing schools by name. If not found, a dedicated button allows requesting a new school (`status: "pending"`). Only active and approved schools appear in the school selection dropdown.
@@ -103,7 +103,6 @@ Principles:
 * **Fields**:
   - Nomor Telepon (`phone`): Opsional, format nomor Indonesia.
   - Tanggal Lahir (`birth_date`): Opsional, date picker ISO.
-  - Jenis Kelamin (`gender`): Opsional (`pria` / `wanita`).
 * **Actions**:
   - Button: **"Lanjutkan" (Continue)** (saves provided fields).
   - Button / Link: **"Lewati" (Skip)** (proceeds without saving, fields can be updated later in edit profile).
@@ -219,7 +218,6 @@ Memperbarui data profil pengguna secara berkala di setiap step.
   {
     "phone": "081234567890",
     "birth_date": "2008-05-14",
-    "gender": "pria",
     "school_id": "sch_12345",
     "class_grade": "11"
   }
@@ -249,11 +247,11 @@ Menandai bahwa onboarding telah selesai atau di-skip oleh user.
 | --- | --- | --- |
 | **AC-ONB-01** | User mendaftar akun baru mandiri via sign-up email OTP | Akun berhasil dibuat dengan `isClaimed = true` dan `onboardingCompleted = false`. User langsung diarahkan ke `/onboarding`. |
 | **AC-ONB-02** | User di halaman Step 1 Onboarding mencoba lanjut tanpa `name` atau `username` | Validasi error muncul. Form tidak dapat di-submit dan tidak dapat di-skip. |
-| **AC-ONB-03** | User di Step 2 (Phone, Birth Date, Gender) mengklik "Lewati" | Tidak ada data profil tambahan yang disimpan, step berpindah ke Step 3 tanpa error. |
+| **AC-ONB-03** | User di Step 2 (Phone, Birth Date) mengklik "Lewati" | Tidak ada data profil tambahan yang disimpan, step berpindah ke Step 3 tanpa error. |
 | **AC-ONB-04** | User mencari nama sekolah yang sudah terdaftar dan aktif | Nama sekolah muncul di dropdown dan dapat dipilih (`school_id` tersimpan). |
 | **AC-ONB-05** | User mencari nama sekolah yang belum terdaftar | Muncul tombol "Ajukan Sekolah Baru". User mengisi modal pengajuan. |
 | **AC-ONB-06** | User submit pengajuan sekolah baru | Request tersimpan dengan status `pending` dan `isActive: false`. Sekolah tersebut **tidak langsung muncul** di dropdown pemilihan. User dapat menyelesaikan onboarding. |
 | **AC-ONB-07** | Organizer meng-approve pengajuan sekolah di panel admin | Status sekolah berubah menjadi `approved` dan `isActive: true`. Sekolah kini muncul di dropdown pemilihan sekolah profil. |
 | **AC-ONB-08** | Selesai Step 3 Onboarding (baik isi sekolah maupun lewati) | Sistem memanggil `PATCH /api/users/me/onboarding` -> `onboardingCompleted = true` -> langsung redirect ke `/home` **tanpa ada product tour**. |
 | **AC-ONB-09** | User yang sudah menyelesaikan onboarding login kembali | Langsung diarahkan ke `/home`. Halaman `/onboarding` tidak pernah muncul lagi. |
-| **AC-ONB-10** | User yang melewatkan data opsional membuka halaman Edit Profile | Semua data opsional (`phone`, `birth_date`, `gender`, `school`, `class_grade`) dapat diisi dan diedit secara manual. |
+| **AC-ONB-10** | User yang melewatkan data opsional membuka halaman Edit Profile | Semua data opsional (`phone`, `birth_date`, `school`, `class_grade`) dapat diisi dan diedit secara manual. |

@@ -132,7 +132,7 @@ Mengambil daftar anggota komunitas dengan pagination, search, dan filter.
     }
   }
   ```
-  *(Catatan YAGNI: `total_attendances` dan `total_points` sengaja DIHAPUS dari list view `/people` untuk efisiensi query DB tanpa agregasi berat. Metrik performa kehadiran telah memiliki modul khusus di `/recency-alerts` dan `/leaderboard`).*
+  *(Catatan YAGNI: `total_attendances` dan `total_points` sengaja DIHAPUS dari list view `/people` untuk efisiensi query DB tanpa agregasi berat. Metrik performa kehadiran telah memiliki modul khusus di `/insight` dan `/leaderboard`).*
 
 #### 2. `POST /api/people`
 Mendaftarkan anggota baru dan men-generate temporary credentials.

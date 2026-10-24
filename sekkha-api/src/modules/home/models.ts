@@ -63,4 +63,20 @@ export const homeModels = {
       ORDER BY week DESC
     `
   },
+
+  findActiveSeason() {
+    return prisma.season.findFirst({
+      where: { isActive: true },
+      select: {
+        id: true,
+        name: true,
+        code: true,
+        startDate: true,
+        endDate: true,
+        targetAttendance: true,
+        description: true,
+      },
+      orderBy: [{ updatedAt: "desc" }, { startDate: "desc" }],
+    })
+  },
 }

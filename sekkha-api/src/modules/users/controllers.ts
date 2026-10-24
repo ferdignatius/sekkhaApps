@@ -3,26 +3,31 @@ import { z } from "zod"
 import { userServices } from "./services"
 
 export const UpdateProfileSchema = z.object({
-  name: z.string().trim().min(1).max(100).optional(),
+  name: z.string().trim().min(1, "Name must be at least 1 character").max(100).optional(),
   school: z.string().trim().max(100).optional().nullable(),
   school_id: z.string().optional().nullable(),
-  class_grade: z.string().trim().max(50).optional().nullable(),
   phone: z.string().trim().max(20).optional().nullable(),
-  birth_date: z
-    .string()
-    .refine((v) => !v || !isNaN(Date.parse(v)), "Format birth_date tidak valid, gunakan format tanggal ISO (YYYY-MM-DD)")
-    .optional()
-    .nullable(),
-  gender: z.string().trim().max(20).optional().nullable(),
+  date_of_birth: z.string().optional().nullable(),
 })
 
-export const RequestEmailVerificationSchema = z.object({
-  email: z.string().trim().email("Format email tidak valid"),
-})
+export const RequestEmailVerificationSchema = z
+  .object({
+    email: z.string().trim().email("Invalid email format").optional(),
+    new_email: z.string().trim().email("Invalid email format").optional(),
+  })
+  .refine((d) => Boolean(d.email || d.new_email), "Email address is required")
 
-export const ConfirmEmailVerificationSchema = z.object({
-  code: z.string().trim().length(6, "Kode verifikasi harus 6 digit"),
-})
+export const ConfirmEmailVerificationSchema = z
+  .object({
+    code: z.string().trim().length(6, "Verification code must be 6 digits").optional(),
+    otp_code: z.string().trim().length(6, "Verification code must be 6 digits").optional(),
+    otpCode: z.string().trim().length(6, "Verification code must be 6 digits").optional(),
+    new_email: z.string().trim().email().optional(),
+  })
+  .refine(
+    (d) => Boolean(d.code || d.otp_code || d.otpCode),
+    "Verification code is required"
+  )
 
 export const ChangePasswordSchema = z
   .object({
@@ -129,9 +134,10 @@ export const userControllers = {
 
   async requestEmailVerification(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { email } = RequestEmailVerificationSchema.parse(req.body)
+      const parsed = RequestEmailVerificationSchema.parse(req.body)
+      const targetEmail = parsed.new_email || parsed.email!
       const userId = req.user!.userId
-      const result = await userServices.requestEmailVerification(userId, email)
+      const result = await userServices.requestEmailVerification(userId, targetEmail)
       successEnvelope(res, 200, "Verification code sent if the email is available", result)
     } catch (err: any) {
       if (err.statusCode) {
@@ -149,7 +155,8 @@ export const userControllers = {
 
   async confirmEmailVerification(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { code } = ConfirmEmailVerificationSchema.parse(req.body)
+      const parsed = ConfirmEmailVerificationSchema.parse(req.body)
+      const code = (parsed.code || parsed.otp_code || parsed.otpCode)!
       const userId = req.user!.userId
       const result = await userServices.confirmEmailVerification(userId, code)
       successEnvelope(res, 200, "Email verified successfully", result)
@@ -214,9 +221,15 @@ export const userControllers = {
   async getPointTransactions(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const userId = req.user!.userId
-      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 20
+      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 50
       const transactions = await userServices.getPointTransactions(userId, limit)
-      successEnvelope(res, 200, "Request completed successfully", transactions)
+      res.json({
+        status: "success",
+        code: 200,
+        message: "Points history retrieved successfully",
+        data: transactions.items,
+        items: transactions.items,
+      })
     } catch (err) {
       next(err)
     }

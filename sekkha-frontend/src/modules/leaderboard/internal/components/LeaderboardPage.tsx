@@ -462,7 +462,7 @@ export function LeaderboardPage() {
           active_period?: any
           community_goal?: { current: number; target: number; label: string }
         }>(
-          `/leaderboard?metric=${metric}${periodParam}&roles=${encodeURIComponent(roleScope)}&limit=10${refreshParam}`,
+          `/leaderboard?metric=${metric}${periodParam}&roles=${encodeURIComponent(roleScope)}&limit=100${refreshParam}`,
           { noCache: true }
         )
 
@@ -530,11 +530,11 @@ export function LeaderboardPage() {
     }))
 
   const podium = filteredEntries.slice(0, 3)
-  // Show ranks 4 through 10 in the main list
-  const rest = filteredEntries.slice(3, 10)
+  // Show ranks 4 through 100 in the main list
+  const rest = filteredEntries.slice(3, 100)
 
   const myFilteredIdx = filteredEntries.findIndex((e) => e.user_id === myId)
-  const isUserInTop10 = myFilteredIdx >= 0 && myFilteredIdx < 10
+  const isUserInTop100 = myFilteredIdx >= 0 && myFilteredIdx < 100
 
   const metricUnit =
     metric === "points"
@@ -543,10 +543,10 @@ export function LeaderboardPage() {
         ? "weeks"
         : "attendances"
 
-  // If current user is outside Top 10, display as 11th entry
+  // If current user is outside Top 100, display as trailing entry
   const userEntryOutsideTop10: LeaderboardEntry | null =
-    !isUserInTop10 && myId
-      ? myFilteredIdx >= 10
+    !isUserInTop100 && myId
+      ? myFilteredIdx >= 100
         ? filteredEntries[myFilteredIdx]
         : myRankData && typeof myRankData.value === "number"
           ? {
@@ -554,7 +554,7 @@ export function LeaderboardPage() {
               name: myRankData.name || authState.name || "You",
               initials: myRankData.initials || "YOU",
               value: myRankData.value ?? 0,
-              rank: typeof myRankData.rank === "number" ? myRankData.rank : 11,
+              rank: typeof myRankData.rank === "number" ? myRankData.rank : 101,
               label:
                 myRankData.label || `${myRankData.value ?? 0} ${metricUnit}`,
               role: (userRole || "umat") as any,
@@ -568,6 +568,12 @@ export function LeaderboardPage() {
     myFilteredIdx >= 0
       ? (filteredEntries[myFilteredIdx]?.value ?? 0)
       : (myRankData?.value ?? 0)
+
+  const myEntry =
+    myFilteredIdx >= 0 ? filteredEntries[myFilteredIdx] : userEntryOutsideTop10
+  const hintForMyEntry = myEntry
+    ? getCompetitionHint(myEntry, filteredEntries, metricUnit)
+    : null
   const roleGroupLabel =
     activeRoles.length === 3
       ? "All Members"
@@ -933,7 +939,7 @@ export function LeaderboardPage() {
                         <p className="px-1 text-[11px] font-bold tracking-wider text-[#6a6a6a] uppercase">
                           Rankings: {roleGroupLabel}{" "}
                           {rest.length > 0
-                            ? `(4–${Math.min(10, filteredEntries.length)})`
+                            ? `(4–${Math.min(100, filteredEntries.length)})`
                             : ""}
                         </p>
                         <ul role="list" className="space-y-3">
@@ -1129,6 +1135,52 @@ export function LeaderboardPage() {
           </div>
         </div>
       </div>
+
+      {/* ── Floating Sticky Self-Rank Bar (PRD Section 3.4) ── */}
+      {myId && (myRankData || myFilteredIdx >= 0) && (
+        <div
+          role="region"
+          aria-label="Your ranking quick view"
+          className="fixed bottom-20 left-3.5 right-3.5 z-40 mx-auto max-w-lg rounded-[20px] border border-[#0a0a0a]/10 bg-[#0a0a0a]/92 px-4 py-3 text-white shadow-xl backdrop-blur-xl transition-all sm:left-6 sm:right-6 md:bottom-6"
+        >
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-2.5">
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-[#e8b94a] text-xs font-black text-[#0a0a0a] shadow-xs">
+                #{myRank}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5">
+                  <span className="truncate text-xs font-bold text-white sm:text-sm">
+                    {myRankData?.name || authState.name || "You"}
+                  </span>
+                  <span className="py-0.2 shrink-0 rounded-[4px] bg-[#e8b94a] px-1 text-[8px] font-extrabold text-[#0a0a0a] uppercase">
+                    You
+                  </span>
+                </div>
+                {hintForMyEntry ? (
+                  <p className="truncate text-[10px] font-medium text-[#e8b94a] sm:text-[11px]">
+                    {hintForMyEntry}
+                  </p>
+                ) : (
+                  <p className="truncate text-[10px] text-white/70 sm:text-[11px]">
+                    {roleGroupLabel} · {seasonData?.name || "Active Season"}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="shrink-0 text-right">
+              <p className="flex items-center justify-end gap-1 text-xs font-extrabold text-white sm:text-sm">
+                <ZapIcon className="size-3 fill-[#e8b94a] text-[#e8b94a]" />
+                <span>{myValue.toLocaleString("en-US")}</span>
+              </p>
+              <p className="text-[10px] font-bold text-white/60 capitalize">
+                {metricUnit}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   )
 }

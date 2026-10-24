@@ -100,7 +100,7 @@ export function PrivacyPolicyModal({
               <li>
                 <strong>Account & Identity Details:</strong> Full legal name,
                 email address, phone/WhatsApp number, school or campus name,
-                date of birth, gender, and your username.
+                date of birth, and your username.
               </li>
               <li>
                 <strong>Member Number & QR Code:</strong> A unique Member ID

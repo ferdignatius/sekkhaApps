@@ -1,23 +1,30 @@
-# ─── Multi-stage Dockerfile for Sekkha API (Full Bun Stack) ────────────────────
+# ─── Multi-stage Dockerfile for Sekkha API (Optimized Bun Stack) ───────────────
 
 # 1. Build Stage
 FROM oven/bun:1.2-alpine AS builder
 
 WORKDIR /app
 
-# Install OpenSSL for Prisma CLI and query engine on Alpine
+# Install OpenSSL for Prisma CLI and query engine
 RUN apk add --no-cache openssl
 
 COPY package.json bun.lock* ./
 COPY prisma ./prisma/
 
-RUN bun install --frozen-lockfile || bun install
+# Cache bun package downloads to speed up builds and avoid baking cache into layer
+RUN --mount=type=cache,id=bun,target=/root/.bun/install/cache \
+    bun install --frozen-lockfile || bun install
 
 COPY tsconfig.json ./
 COPY src ./src
 
+# Generate Prisma client and compile TypeScript
 RUN bunx prisma generate
 RUN bun run build
+
+# Strip dev artifacts (TypeScript declarations and source maps) & Prisma temp files
+RUN find ./dist -type f \( -name "*.d.ts" -o -name "*.d.ts.map" -o -name "*.js.map" \) -delete && \
+    find ./node_modules/.prisma/client -type f -name "*.tmp*" -delete 2>/dev/null || true
 
 # 2. Production Runner Stage
 FROM oven/bun:1.2-alpine AS runner
@@ -30,24 +37,24 @@ RUN apk add --no-cache openssl
 ENV NODE_ENV=production
 ENV PORT=4000
 
-COPY package.json bun.lock* ./
-COPY prisma ./prisma/
+# Copy package manifests directly with bun ownership
+COPY --chown=bun:bun package.json bun.lock* ./
+COPY --chown=bun:bun prisma ./prisma/
 
-RUN bun install --production --frozen-lockfile || bun install --production
+# Install only production dependencies
+RUN --mount=type=cache,id=bun,target=/root/.bun/install/cache \
+    bun install --production --frozen-lockfile || bun install --production
 
-# Copy generated Prisma client from builder (prisma CLI is a dev dep, not available here)
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/node_modules/@prisma/client ./node_modules/@prisma/client
+# Copy generated Prisma client from builder directly with bun ownership
+COPY --chown=bun:bun --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --chown=bun:bun --from=builder /app/node_modules/@prisma/client ./node_modules/@prisma/client
 
-COPY --from=builder /app/dist ./dist
+# Copy compiled JavaScript code directly with bun ownership
+COPY --chown=bun:bun --from=builder /app/dist ./dist
 
-# Change ownership to non-root user bun
-RUN chown -R bun:bun /app
-
+# Run as non-root user bun (eliminates `RUN chown -R`, preventing duplicate layer bloat)
 USER bun
 
 EXPOSE 4000
 
-CMD ["bun", "dist/index.js"]
-
-
+CMD ["bun", "dist/server.js"]

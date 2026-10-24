@@ -31,23 +31,30 @@ async function main() {
   // ── 1. Master Data: Schools ─────────────────────────────────────────────────
   console.log("🏫 Seeding Master Schools...")
   const schoolTMD = await prisma.school.create({
-    data: { name: "SMA Tri Maha Dharma", type: "SMA" },
+    data: { name: "SMA/SMK Tri Maha Dharma", type: "SMA/SMK" },
   })
   const schoolSMAN1 = await prisma.school.create({
-    data: { name: "SMA Negeri 1 Jakarta", type: "SMA" },
+    data: { name: "SMA/SMK Negeri 1 Jakarta", type: "SMA/SMK" },
   })
   const schoolUI = await prisma.school.create({
     data: { name: "Universitas Indonesia", type: "Universitas" },
   })
   const schoolHQ = await prisma.school.create({
-    data: { name: "Sekkha Headquarter", type: "Lainnya" },
+    data: { name: "Sekkha Headquarter", type: "Umum" },
   })
   await prisma.school.createMany({
     data: [
-      { name: "SMA Dharma Widya", type: "SMA" },
-      { name: "SMA Cinta Kasih Tzu Chi", type: "SMA" },
+      { name: "SMA/SMK Dharma Widya", type: "SMA/SMK" },
+      { name: "SMA/SMK Cinta Kasih Tzu Chi", type: "SMA/SMK" },
+      { name: "SMA/SMK Tri Ratna", type: "SMA/SMK" },
+      { name: "SMP Tri Maha Dharma", type: "SMP" },
+      { name: "SMP Dharma Widya", type: "SMP" },
+      { name: "SMP Cinta Kasih Tzu Chi", type: "SMP" },
       { name: "Universitas Bina Nusantara (BINUS)", type: "Universitas" },
-      { name: "Umum", type: "Lainnya" },
+      { name: "Universitas Tarumanagara (UNTAR)", type: "Universitas" },
+      { name: "Universitas Multimedia Nusantara (UMN)", type: "Universitas" },
+      { name: "STAB Kertarajasa", type: "Universitas" },
+      { name: "Umum", type: "Umum" },
     ],
     skipDuplicates: true,
   })
@@ -132,6 +139,25 @@ async function main() {
     skipDuplicates: true,
   })
 
+
+  // ── 6. Master Data: Schools ─────────────────────────────────────────────────
+  console.log("🏫 Seeding Master Schools...")
+  const initialSchools = [
+    { name: "SMP Strada Bakti Mulia", type: "SMP" },
+    { name: "SMP Negeri 1", type: "SMP" },
+    { name: "SMK Bina Mandiri", type: "SMA/SMK" },
+    { name: "Umum", type: "Umum" },
+    { name: "Universitas Bunda Mulia", type: "Universitas" },
+    { name: "Universitas Bina Nusantara", type: "Universitas" },
+    { name: "Universitas Buddhi Dharma", type: "Universitas" },
+  ]
+  for (const s of initialSchools) {
+    await prisma.school.upsert({
+      where: { name: s.name },
+      update: { type: s.type, status: "active", isActive: true },
+      create: { name: s.name, type: s.type, status: "active", isActive: true },
+    })
+  }
 
   // ── 7. Seed Accounts (3NF: User + UserProfile + UserStats) ──────────────────
   console.log("👤 Seeding Normalized Users...")

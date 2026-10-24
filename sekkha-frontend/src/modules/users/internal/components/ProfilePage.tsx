@@ -193,7 +193,7 @@ export function ProfilePage() {
 
       if (attendancesRes.status === "fulfilled" && attendancesRes.value) {
         const rawAtt = attendancesRes.value as any
-        const list = Array.isArray(rawAtt) ? rawAtt : (rawAtt?.items || [])
+        const list = Array.isArray(rawAtt) ? rawAtt : rawAtt?.items || []
         setAttendances(list)
       } else {
         setAttendances([])
@@ -221,7 +221,10 @@ export function ProfilePage() {
       school: profile.school || "",
       phone: profile.phone || "",
       birth_date: formattedBirthDate,
-      gender: profile.gender === "P" || profile.gender === "female" ? "Female" : "Male",
+      gender:
+        profile.gender === "P" || profile.gender === "female"
+          ? "Female"
+          : "Male",
     })
     setShowEditModal(true)
   }

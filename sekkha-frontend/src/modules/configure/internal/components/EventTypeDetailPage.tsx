@@ -29,7 +29,8 @@ export function EventTypeDetailPage() {
   const { categoryId } = useParams({ strict: false }) as { categoryId?: string }
   const navigate = useNavigate()
   const { authState } = useAuth()
-  const isAdmin = authState.status === "authenticated" && authState.role === "admin"
+  const isAdmin =
+    authState.status === "authenticated" && authState.role === "admin"
 
   const [item, setItem] = useState<EventTypeDto | null>(null)
   const [loading, setLoading] = useState(true)
@@ -70,7 +71,8 @@ export function EventTypeDetailPage() {
           setErrorMessage("Event type not found.")
         }
       } catch (err: any) {
-        if (!cancelled) setErrorMessage(err?.message || "Failed to load event type details.")
+        if (!cancelled)
+          setErrorMessage(err?.message || "Failed to load event type details.")
       } finally {
         if (!cancelled) setLoading(false)
       }
@@ -125,7 +127,11 @@ export function EventTypeDetailPage() {
       await navigate({ to: "/configure/master/event-type" })
     } catch (err: any) {
       const msg = err?.message || ""
-      if (err?.status === 409 || msg.includes("currently in use") || msg.includes("relasi")) {
+      if (
+        err?.status === 409 ||
+        msg.includes("currently in use") ||
+        msg.includes("relasi")
+      ) {
         setConflictMessage(
           msg ||
             "This event type is already associated with existing events in the system and cannot be permanently deleted. You can deactivate it instead so it no longer appears when creating new events."
@@ -156,7 +162,7 @@ export function EventTypeDetailPage() {
       <main className="min-h-screen bg-[#fffaf0] p-6 text-left font-sans">
         <div className="mx-auto max-w-3xl space-y-4">
           <div className="h-8 w-40 animate-pulse rounded bg-[#e5e5e5]" />
-          <div className="h-64 animate-pulse rounded-[20px] bg-white border border-[#e5e5e5]" />
+          <div className="h-64 animate-pulse rounded-[20px] border border-[#e5e5e5] bg-white" />
         </div>
       </main>
     )
@@ -167,10 +173,16 @@ export function EventTypeDetailPage() {
       <main className="min-h-screen bg-[#fffaf0] p-6 text-center font-sans">
         <div className="mx-auto max-w-md rounded-[16px] border border-[#e5e5e5] bg-white p-8">
           <AlertTriangleIcon className="mx-auto size-12 text-[#ef4444]" />
-          <h2 className="mt-4 text-base font-bold text-[#0a0a0a]">Data Not Found</h2>
-          <p className="mt-1 text-xs text-[#6a6a6a]">Event type with this ID is not available in the system.</p>
+          <h2 className="mt-4 text-base font-bold text-[#0a0a0a]">
+            Data Not Found
+          </h2>
+          <p className="mt-1 text-xs text-[#6a6a6a]">
+            Event type with this ID is not available in the system.
+          </p>
           <Button
-            onClick={() => void navigate({ to: "/configure/master/event-type" })}
+            onClick={() =>
+              void navigate({ to: "/configure/master/event-type" })
+            }
             className="mt-6 rounded-[12px] bg-[#0a0a0a] text-xs font-bold text-white"
           >
             Back to List
@@ -215,7 +227,8 @@ export function EventTypeDetailPage() {
                   Edit Event Type
                 </h1>
                 <p className="text-xs text-[#6a6a6a]">
-                  Configure visual identity, attendance point rewards, and active status.
+                  Configure visual identity, attendance point rewards, and
+                  active status.
                 </p>
               </div>
             </div>
@@ -251,7 +264,9 @@ export function EventTypeDetailPage() {
             {/* Immutable Code Field */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-semibold text-[#0a0a0a]">System Code</label>
+                <label className="text-xs font-semibold text-[#0a0a0a]">
+                  System Code
+                </label>
                 <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#8a7a5a]">
                   <LockIcon className="size-3" /> Permanently Locked
                 </span>
@@ -260,7 +275,7 @@ export function EventTypeDetailPage() {
                 disabled
                 readOnly
                 value={item.code}
-                className="bg-[#faf5e8] font-mono text-xs font-bold text-[#6a6a6a] cursor-not-allowed opacity-90"
+                className="cursor-not-allowed bg-[#faf5e8] font-mono text-xs font-bold text-[#6a6a6a] opacity-90"
                 helperText="This semantic code is permanently locked to preserve relational data integrity and attendance streak consistency."
                 startIcon={<LockIcon className="size-4 text-[#8a7a5a]" />}
               />
@@ -293,7 +308,7 @@ export function EventTypeDetailPage() {
                 />
                 <Input
                   disabled={!isAdmin}
-                  className="font-mono uppercase bg-white"
+                  className="bg-white font-mono uppercase"
                   value={color}
                   onChange={(e) => setColor(e.target.value)}
                   placeholder="#4262FF"
@@ -311,7 +326,11 @@ export function EventTypeDetailPage() {
                 required
                 disabled={!isAdmin}
                 value={defaultPointReward}
-                onChange={(e) => setDefaultPointReward(Math.max(0, parseInt(e.target.value) || 0))}
+                onChange={(e) =>
+                  setDefaultPointReward(
+                    Math.max(0, parseInt(e.target.value) || 0)
+                  )
+                }
                 startIcon={<CoinsIcon className="size-4 text-[#e8b94a]" />}
                 helperText="Default reward points for events of this type (0 - 10,000)."
               />
@@ -329,9 +348,9 @@ export function EventTypeDetailPage() {
                 placeholder="Brief description about this event type..."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] p-3 text-xs text-[#0a0a0a] shadow-2xs outline-none transition-colors placeholder:text-[#767676] hover:border-[#bfbfbf] focus:border-[#0a0a0a] focus:ring-2 focus:ring-[#0a0a0a]/15 disabled:cursor-not-allowed disabled:opacity-60"
+                className="w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] p-3 text-xs text-[#0a0a0a] shadow-2xs transition-colors outline-none placeholder:text-[#767676] hover:border-[#bfbfbf] focus:border-[#0a0a0a] focus:ring-2 focus:ring-[#0a0a0a]/15 disabled:cursor-not-allowed disabled:opacity-60"
               />
-              <p className="text-[11px] text-[#8a8a8a] text-right">
+              <p className="text-right text-[11px] text-[#8a8a8a]">
                 {description.length}/500 characters
               </p>
             </div>
@@ -339,7 +358,9 @@ export function EventTypeDetailPage() {
             {/* Status Active Toggle */}
             <div className="flex items-center justify-between rounded-[14px] border border-[#e5e5e5] bg-[#faf5e8] p-4">
               <div>
-                <p className="text-xs font-bold text-[#0a0a0a]">Active Status</p>
+                <p className="text-xs font-bold text-[#0a0a0a]">
+                  Active Status
+                </p>
                 <p className="text-[11px] text-[#6a6a6a]">
                   Inactive event types are hidden from new event creation forms.
                 </p>
@@ -355,11 +376,13 @@ export function EventTypeDetailPage() {
 
             {/* Action Buttons */}
             {isAdmin && (
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#f0ece1]">
+              <div className="flex items-center justify-end gap-3 border-t border-[#f0ece1] pt-4">
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => void navigate({ to: "/configure/master/event-type" })}
+                  onClick={() =>
+                    void navigate({ to: "/configure/master/event-type" })
+                  }
                   className="rounded-[12px] text-xs font-bold"
                 >
                   Cancel
@@ -388,8 +411,8 @@ export function EventTypeDetailPage() {
               Delete Event Type "{item.label}"?
             </DialogTitle>
             <DialogDescription className="text-xs text-[#6a6a6a]">
-              This action is permanent. If this event type is already used by at least one
-              event, the database will reject deletion.
+              This action is permanent. If this event type is already used by at
+              least one event, the database will reject deletion.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="mt-4 flex gap-2">
@@ -414,7 +437,10 @@ export function EventTypeDetailPage() {
       </Dialog>
 
       {/* 409 Conflict Dialog */}
-      <Dialog open={Boolean(conflictMessage)} onOpenChange={(open) => !open && setConflictMessage(null)}>
+      <Dialog
+        open={Boolean(conflictMessage)}
+        onOpenChange={(open) => !open && setConflictMessage(null)}
+      >
         <DialogContent className="max-w-md rounded-[20px] bg-white p-6">
           <DialogHeader>
             <div className="mb-2 flex size-10 items-center justify-center rounded-full bg-[#f59e0b]/10 text-[#f59e0b]">
@@ -428,8 +454,9 @@ export function EventTypeDetailPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="mt-2 rounded-[12px] bg-[#faf5e8] p-3 text-xs text-[#8a7a5a]">
-            💡 <strong>Recommendation:</strong> Deactivate this event type instead. Past events will remain intact
-            and this type will no longer appear on new event forms.
+            💡 <strong>Recommendation:</strong> Deactivate this event type
+            instead. Past events will remain intact and this type will no longer
+            appear on new event forms.
           </div>
           <DialogFooter className="mt-4 flex gap-2">
             <Button

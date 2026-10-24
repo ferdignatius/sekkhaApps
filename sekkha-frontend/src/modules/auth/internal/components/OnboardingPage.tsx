@@ -567,7 +567,8 @@ export function OnboardingPage() {
                   className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 py-2 text-sm text-[#0a0a0a] transition-all outline-none placeholder:text-[#767676] focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a]"
                 />
                 <p className="text-[11px] text-[#6a6a6a]">
-                  Official full name for your profile and Sekkha temple membership card.
+                  Official full name for your profile and Sekkha temple
+                  membership card.
                 </p>
               </div>
 
@@ -684,7 +685,8 @@ export function OnboardingPage() {
               </div>
 
               <p className="text-[11px] text-[#6a6a6a]">
-                These details can be updated or filled in at any time from Profile Settings.
+                These details can be updated or filled in at any time from
+                Profile Settings.
               </p>
 
               {/* Action Buttons */}
@@ -761,7 +763,8 @@ export function OnboardingPage() {
                   placeholder="Search registered & active schools..."
                 />
                 <p className="text-[11px] text-[#6a6a6a]">
-                  Only active and verified institutions appear in search. If yours is not listed, use the "Request New School" button.
+                  Only active and verified institutions appear in search. If
+                  yours is not listed, use the "Request New School" button.
                 </p>
               </div>
 
@@ -966,7 +969,9 @@ export function OnboardingPage() {
               </div>
 
               <p className="text-[11px] leading-relaxed text-[#6a6a6a]">
-                Submitted requests remain <strong>Pending</strong> until verified by administrators. You can proceed with onboarding right away without waiting for approval.
+                Submitted requests remain <strong>Pending</strong> until
+                verified by administrators. You can proceed with onboarding
+                right away without waiting for approval.
               </p>
 
               <div className="flex items-center justify-end gap-2 pt-2">

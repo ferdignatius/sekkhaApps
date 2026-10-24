@@ -177,7 +177,9 @@ export function SettingsSection({
         setCurrentView("menu")
       }, 1500)
     } catch (err: any) {
-      setEmailError(err.message || "Kode verifikasi tidak cocok atau kedaluwarsa.")
+      setEmailError(
+        err.message || "Kode verifikasi tidak cocok atau kedaluwarsa."
+      )
     } finally {
       setEmailLoading(false)
     }
@@ -374,7 +376,10 @@ export function SettingsSection({
         )}
 
         {emailStep === "request" ? (
-          <form onSubmit={handleRequestVerificationCode} className="space-y-3.5">
+          <form
+            onSubmit={handleRequestVerificationCode}
+            className="space-y-3.5"
+          >
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-[#0a0a0a]">
                 Alamat Email Baru *
@@ -410,7 +415,10 @@ export function SettingsSection({
             </div>
           </form>
         ) : (
-          <form onSubmit={handleConfirmVerificationCode} className="space-y-3.5">
+          <form
+            onSubmit={handleConfirmVerificationCode}
+            className="space-y-3.5"
+          >
             <div className="rounded-[12px] border border-blue-200 bg-blue-50/70 p-3 text-xs text-blue-900">
               Kode verifikasi telah dikirim ke <strong>{newEmailInput}</strong>.
               Berlaku selama 10 menit.

@@ -507,7 +507,8 @@ export function ForgotPasswordPage() {
           {step === "success" && (
             <div className="space-y-5 text-center">
               <div className="rounded-[16px] border border-[#22c55e]/20 bg-[#22c55e]/10 p-4 text-xs leading-relaxed font-medium text-[#15803d]">
-                Your account password has been successfully updated! Please use your new password to sign in to Sekkha.
+                Your account password has been successfully updated! Please use
+                your new password to sign in to Sekkha.
               </div>
 
               <Link to="/login" className="block w-full">

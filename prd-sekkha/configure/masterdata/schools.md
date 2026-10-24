@@ -60,24 +60,17 @@ Berikut 4 kategori tipe institusi resmi yang didukung:
 
 ## 4. Default Master Data
 
-Sistem melakukan seeding otomatis saat tabel `schools` kosong secara idempotens:
+Sistem melakukan seeding awal pada database via `bun run db:seed` secara idempotens:
 
-| Name | Type | Status | Is Active | City (Informational) |
-| --- | --- | --- | --- | --- |
-| SMA/SMK Tri Maha Dharma | `SMA/SMK` | `approved` | `true` | Jakarta Barat |
-| SMA/SMK Dharma Widya | `SMA/SMK` | `approved` | `true` | Tangerang |
-| SMA/SMK Cinta Kasih Tzu Chi | `SMA/SMK` | `approved` | `true` | Jakarta Barat |
-| SMA/SMK Tri Ratna | `SMA/SMK` | `approved` | `true` | Jakarta Barat |
-| SMA/SMK Negeri 1 Jakarta | `SMA/SMK` | `approved` | `true` | Jakarta Pusat |
-| SMP Tri Maha Dharma | `SMP` | `approved` | `true` | Jakarta Barat |
-| SMP Dharma Widya | `SMP` | `approved` | `true` | Tangerang |
-| SMP Cinta Kasih Tzu Chi | `SMP` | `approved` | `true` | Jakarta Barat |
-| Universitas Indonesia | `Universitas` | `approved` | `true` | Depok |
-| Universitas Bina Nusantara (BINUS) | `Universitas` | `approved` | `true` | Jakarta Barat |
-| Universitas Tarumanagara (UNTAR) | `Universitas` | `approved` | `true` | Jakarta Barat |
-| Universitas Multimedia Nusantara (UMN) | `Universitas` | `approved` | `true` | Tangerang |
-| STAB Kertarajasa | `Universitas` | `approved` | `true` | Batu, Malang |
-| Umum | `Umum` | `approved` | `true` | Nasional |
+| Name | Type | Status | Is Active |
+| --- | --- | --- | --- |
+| SMP Strada Bakti Mulia | `SMP` | `active` | `true` |
+| SMP Negeri 1 | `SMP` | `active` | `true` |
+| SMK Bina Mandiri | `SMA/SMK` | `active` | `true` |
+| Umum | `Umum` | `active` | `true` |
+| Universitas Bunda Mulia | `Universitas` | `active` | `true` |
+| Universitas Bina Nusantara | `Universitas` | `active` | `true` |
+| Universitas Buddhi Dharma | `Universitas` | `active` | `true` |
 
 ---
 
@@ -90,15 +83,15 @@ Skema database terintegrasi menggunakan enum `SchoolStatus` dan tabel `schools`:
 ```prisma
 enum SchoolStatus {
   pending
-  approved
-  rejected
+  active
+  cancel
 }
 
 model School {
   id          String       @id @default(cuid())
   name        String       @unique
   type        String?      // "SMP" | "SMA/SMK" | "Universitas" | "Umum"
-  status      SchoolStatus @default(approved)
+  status      SchoolStatus @default(active)
   isActive    Boolean      @default(true) @map("is_active")
   requestedBy String?      @map("requested_by")
   reviewedBy  String?      @map("reviewed_by")
@@ -121,7 +114,7 @@ model School {
 | `id` | `id` | `String (cuid)` | Yes | Primary Key, server-generated CUID. |
 | `name` | `name` | `String` | Yes | 2-100 karakter, unik case-insensitive (`@unique`). |
 | `type` | `type` | `String?` | No | Pilihan resmi: `"SMP"`, `"SMA/SMK"`, `"Universitas"`, `"Umum"`. |
-| `status` | `status` | `SchoolStatus` | Yes | Nilai enum: `pending`, `approved`, `rejected`. Default: `approved` (untuk master seeding/admin). |
+| `status` | `status` | `SchoolStatus` | Yes | Nilai enum: `pending`, `active`, `cancel`. Default: `active` (untuk master seeding/admin). |
 | `is_active` | `is_active` | `Boolean` | Yes | Default `true`. Mengontrol kemunculan di autocomplete onboarding. |
 | `requested_by` | `requested_by` | `String?` | No | ID User yang mengajukan jika berasal dari alur permohonan onboarding. |
 | `reviewed_by` | `reviewed_by` | `String?` | No | ID Pengurus (Organizer/Admin) yang menyetujui atau menolak. |
@@ -172,7 +165,7 @@ Umat di Step 3 Onboarding
 
 ### 7.1 Onboarding Component (`SchoolCombobox` & Modal)
 - **SchoolCombobox**:
-  - Mengambil daftar sekolah dengan `status = "approved"` dan `is_active = true`.
+  - Mengambil daftar sekolah dengan `status = "active"` dan `is_active = true`.
   - Filter pencarian debounce (250ms) berbasis query string server-side.
   - Menampilkan badge tipe sekolah (`SMP`, `SMA/SMK`, `Universitas`, `Umum`).
   - Menampilkan badge social proof (jumlah umat dari almamater tersebut).
@@ -193,19 +186,18 @@ Umat di Step 3 Onboarding
 - **Kartu Direktori Sekolah**:
   - Judul/Nama Sekolah (bold, tautan ke detail sekolah `/configure/master/school/:id`).
   - Badge kategori jenjang (`SMP`, `SMA/SMK`, `Universitas`, `Umum`).
-  - Lokasi kota/wilayah dengan icon `MapPin`.
   - Indikator sosial proof: jumlah umat terhubung dari almamater tersebut dengan icon `Users`.
-  - Status keaktifan (`Aktif` / `Nonaktif`) dan tombol aksi *"Lihat Detail"*.
+  - Status keaktifan (`Active` / `Inactive`) dan tombol aksi *"View Details"*.
 - **Filter & Search**:
-  - Filter jenjang menggunakan chip horizontal: `Semua`, `SMP`, `SMA/SMK`, `Universitas`, `Umum`.
+  - Filter jenjang menggunakan chip horizontal: `All`, `SMP`, `SMA/SMK`, `Universitas`, `Umum`.
   - Search bar interaktif dengan debounced search.
 - **Tab Antrean Pengajuan (Pending Queue)**:
   - Tersedia bagi role `organizer` dan `admin`.
-  - Card layout menampilkan nama sekolah yang diajukan umat, tipe almamater, kota, dan tanggal pengajuan.
+  - Card layout menampilkan nama sekolah yang diajukan umat, tipe almamater, requester name, dan tanggal pengajuan.
   - Aksi verifikasi: Tombol **Approve** (centang hijau) dan **Reject** (silang merah).
-- **Master Data CRUD (Approved Schools)**:
+- **Master Data CRUD (Active Schools)**:
   - CRUD penuh eksklusif bagi role `admin`.
-  - Tombol aksi *"Tambah Sekolah"* (`/configure/master/school/new`).
+  - Tombol aksi *"Add School"* (`/configure/master/school/new`).
 
 ---
 
@@ -220,8 +212,8 @@ Base URL: `/api/configure` (atau endpoint modular `/api/schools`)
 | `GET` | `/api/configure/schools` | All Authenticated | Pencarian daftar sekolah aktif untuk dropdown onboarding |
 | `POST` | `/api/configure/school-requests` | All Authenticated | Mengajukan pendaftaran sekolah baru (status: `pending`) |
 | `GET` | `/api/configure/schools/pending` | `organizer`, `admin` | Mengambil daftar permohonan sekolah berstatus `pending` |
-| `POST` | `/api/configure/schools/:id/approve` | `organizer`, `admin` | Menyetujui pengajuan sekolah menjadi `approved` |
-| `POST` | `/api/configure/schools/:id/reject` | `organizer`, `admin` | Menolak pengajuan sekolah (`rejected`) |
+| `POST` | `/api/configure/schools/:id/approve` | `organizer`, `admin` | Menyetujui pengajuan sekolah menjadi `active` |
+| `POST` | `/api/configure/schools/:id/reject` | `organizer`, `admin` | Membatalkan/menolak pengajuan sekolah (`cancel`) |
 | `POST` | `/api/configure/schools` | `admin` | Menambahkan master sekolah secara langsung |
 | `PATCH` | `/api/configure/schools/:id` | `admin` | Mengubah data sekolah (Nama, Tipe `SMA/SMK`, dll.) |
 | `DELETE` | `/api/configure/schools/:id` | `admin` | Menghapus sekolah (hanya jika belum ada relasi profil) |
@@ -232,7 +224,7 @@ Base URL: `/api/configure` (atau endpoint modular `/api/schools`)
 **Request Body**:
 ```json
 {
-  "name": "SMA/SMK Dharma Widya",
+  "name": "SMK Bina Mandiri",
   "type": "SMA/SMK"
 }
 ```
@@ -245,7 +237,7 @@ Base URL: `/api/configure` (atau endpoint modular `/api/schools`)
   "message": "Pengajuan sekolah berhasil dikirim dan menunggu persetujuan",
   "data": {
     "id": "clysch001abc",
-    "name": "SMA/SMK Dharma Widya",
+    "name": "SMK Bina Mandiri",
     "type": "SMA/SMK",
     "status": "pending",
     "is_active": true
@@ -253,7 +245,7 @@ Base URL: `/api/configure` (atau endpoint modular `/api/schools`)
 }
 ```
 
-#### `GET /api/configure/schools?search=dharma`
+#### `GET /api/configure/schools?search=mandiri`
 **Response (200 OK)**:
 ```json
 {
@@ -263,9 +255,8 @@ Base URL: `/api/configure` (atau endpoint modular `/api/schools`)
   "data": [
     {
       "id": "clysch001abc",
-      "name": "SMA/SMK Dharma Widya",
+      "name": "SMK Bina Mandiri",
       "type": "SMA/SMK",
-      "city": "Tangerang",
       "userCount": 14
     }
   ],
@@ -279,11 +270,11 @@ Base URL: `/api/configure` (atau endpoint modular `/api/schools`)
 
 | ID | Skenario | Hasil yang Diharapkan |
 | --- | --- | --- |
-| **AC-01** | Umat mencari sekolah saat onboarding | Hanya sekolah berstatus `approved` dan `is_active = true` yang muncul di dropdown. |
+| **AC-01** | Umat mencari sekolah saat onboarding | Hanya sekolah berstatus `active` dan `is_active = true` yang muncul di dropdown. |
 | **AC-02** | Umat memilih sekolah tipe `SMA/SMK` | Dropdown tingkatan kelas menampilkan pilihan: `Grade 10`, `Grade 11`, dan `Grade 12`. |
 | **AC-03** | Umat memilih sekolah tipe `Universitas` atau `Umum` | Input tingkatan kelas otomatis disembunyikan/dibersihkan dari form. |
 | **AC-04** | Umat mengajukan sekolah baru dengan tipe `SMA/SMK` | Data tersimpan di database dengan `status = "pending"` dan `requested_by = userId`. Umat dapat langsung menyelesaikan onboarding. |
 | **AC-05** | Umat mengajukan sekolah yang namanya sudah terdaftar | API menolak dengan status HTTP `409 Conflict` atau pesan bahwa sekolah sudah ada. |
-| **AC-06** | Pengurus menyetujui pengajuan sekolah (`approve`) | Status sekolah berubah menjadi `approved`, `reviewed_by` tercatat, dan sekolah langsung muncul di autocomplete publik. |
+| **AC-06** | Pengurus menyetujui pengajuan sekolah (`approve`) | Status sekolah berubah menjadi `active`, `reviewed_by` tercatat, dan sekolah langsung muncul di autocomplete publik. |
 | **AC-07** | Admin mencoba menghapus sekolah yang sudah memiliki anggota | Operasi ditolak dengan HTTP `409 Conflict`; Admin diarahkan menonaktifkan (`is_active = false`). |
 | **AC-08** | Role `member` mencoba mengakses antrean review sekolah | Server menolak dengan HTTP `403 Forbidden`. |

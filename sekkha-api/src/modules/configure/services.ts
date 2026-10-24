@@ -169,9 +169,16 @@ export const configureServices = {
   async getSeasons() {
     await resolveActiveSeason()
     const seasons = await configureModels.findSeasons()
+    const now = new Date()
+
     return Promise.all(
       seasons.map(async (s) => {
         const count = await configureModels.countSeasonAttendances(s.startDate, s.endDate)
+        const daysLeft = Math.max(
+          0,
+          Math.ceil((s.endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+        )
+
         return {
           id: s.id,
           name: s.name,
@@ -180,59 +187,191 @@ export const configureServices = {
           end_date: s.endDate.toISOString(),
           is_active: s.isActive,
           target_attendance: s.targetAttendance,
-          bonus_points: s.bonusPoints,
           description: s.description,
           total_attendances: count,
+          days_left: daysLeft,
           created_at: s.createdAt.toISOString(),
+          updated_at: s.updatedAt.toISOString(),
         }
       })
     )
   },
 
-  async createSeason(data: any) {
+  async createSeason(data: {
+    name: string
+    code?: string
+    start_date: string
+    end_date: string
+    is_active?: boolean
+    target_attendance?: number
+    description?: string | null
+  }) {
+    const startDate = new Date(data.start_date)
+    const endDate = new Date(data.end_date)
+
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+      throw new AppError("Invalid date range format. Use ISO dates.", 400, "INVALID_DATE_FORMAT")
+    }
+
+    if (endDate <= startDate) {
+      throw new AppError("End date must be greater than start date.", 400, "INVALID_DATE_RANGE")
+    }
+
+    // Auto-generate code in uppercase kebab-case
+    const baseCode = data.code
+      ? toKebabCase(data.code).toUpperCase()
+      : toKebabCase(data.name).toUpperCase()
+    let cleanCode = baseCode || `SEASON-${Date.now().toString(36).toUpperCase()}`
+
+    let candidateCode = cleanCode
+    let counter = 1
+    while (await configureModels.findSeasonByCode(candidateCode)) {
+      if (data.code) {
+        throw new AppError(`Season with code '${candidateCode}' already exists`, 400, "DUPLICATE_CODE")
+      }
+      candidateCode = `${cleanCode}-${counter}`
+      counter++
+    }
+    cleanCode = candidateCode
+
+    // Invariant: At most one active custom season at any given time
     if (data.is_active) {
       await configureModels.deactivateOtherSeasons()
     }
+
     const season = await configureModels.createSeason({
-      name: data.name,
-      code: data.code || `S-${Date.now().toString(36).toUpperCase()}`,
-      startDate: new Date(data.start_date),
-      endDate: new Date(data.end_date),
+      name: data.name.trim(),
+      code: cleanCode,
+      startDate,
+      endDate,
       isActive: data.is_active ?? false,
       targetAttendance: data.target_attendance ?? 500,
-      bonusPoints: data.bonus_points ?? 100,
-      description: data.description,
+      description: data.description?.trim() || null,
     })
+
     computeAndCacheLeaderboard().catch(() => {})
-    return season
+    return {
+      id: season.id,
+      name: season.name,
+      code: season.code,
+      start_date: season.startDate.toISOString(),
+      end_date: season.endDate.toISOString(),
+      is_active: season.isActive,
+      target_attendance: season.targetAttendance,
+      description: season.description,
+      created_at: season.createdAt.toISOString(),
+      updated_at: season.updatedAt.toISOString(),
+    }
   },
 
-  async updateSeason(id: string, data: any) {
+  async updateSeason(
+    id: string,
+    data: {
+      name?: string
+      code?: string
+      start_date?: string
+      end_date?: string
+      is_active?: boolean
+      target_attendance?: number
+      description?: string | null
+    }
+  ) {
+    const existing = await configureModels.findSeasonById(id)
+    if (!existing) {
+      throw new AppError("Season not found", 404, "SEASON_NOT_FOUND")
+    }
+
+    const startDate = data.start_date ? new Date(data.start_date) : existing.startDate
+    const endDate = data.end_date ? new Date(data.end_date) : existing.endDate
+
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+      throw new AppError("Invalid date range format. Use ISO dates.", 400, "INVALID_DATE_FORMAT")
+    }
+
+    if (endDate <= startDate) {
+      throw new AppError("End date must be greater than start date.", 400, "INVALID_DATE_RANGE")
+    }
+
+    // Invariant: At most one active season
     if (data.is_active) {
       await configureModels.deactivateOtherSeasons(id)
     }
-    const season = await configureModels.updateSeason(id, {
-      ...(data.name && { name: data.name }),
-      ...(data.code !== undefined && { code: data.code }),
-      ...(data.start_date && { startDate: new Date(data.start_date) }),
-      ...(data.end_date && { endDate: new Date(data.end_date) }),
-      ...(data.is_active !== undefined && { isActive: data.is_active }),
-      ...(data.target_attendance !== undefined && { targetAttendance: data.target_attendance }),
-      ...(data.bonus_points !== undefined && { bonusPoints: data.bonus_points }),
-      ...(data.description !== undefined && { description: data.description }),
-    })
+
+    const updatePayload: any = {}
+    if (data.name !== undefined) updatePayload.name = data.name.trim()
+    if (data.start_date !== undefined) updatePayload.startDate = startDate
+    if (data.end_date !== undefined) updatePayload.endDate = endDate
+    if (data.is_active !== undefined) updatePayload.isActive = data.is_active
+    if (data.target_attendance !== undefined) updatePayload.targetAttendance = data.target_attendance
+    if (data.description !== undefined) updatePayload.description = data.description?.trim() || null
+
+    // Auto-sync code from name (or explicit code)
+    const baseCode = data.code
+      ? toKebabCase(data.code).toUpperCase()
+      : (data.name ? toKebabCase(data.name).toUpperCase() : null)
+
+    if (baseCode && baseCode !== existing.code) {
+      let candidateCode = baseCode
+      let counter = 1
+      while (true) {
+        const found = await configureModels.findSeasonByCode(candidateCode)
+        if (!found || found.id === id) {
+          break
+        }
+        if (data.code) {
+          throw new AppError(`Season with code '${candidateCode}' already exists`, 400, "DUPLICATE_CODE")
+        }
+        candidateCode = `${baseCode}-${counter}`
+        counter++
+      }
+      updatePayload.code = candidateCode
+    }
+
+    const season = await configureModels.updateSeason(id, updatePayload)
     computeAndCacheLeaderboard().catch(() => {})
-    return season
+
+    return {
+      id: season.id,
+      name: season.name,
+      code: season.code,
+      start_date: season.startDate.toISOString(),
+      end_date: season.endDate.toISOString(),
+      is_active: season.isActive,
+      target_attendance: season.targetAttendance,
+      description: season.description,
+      created_at: season.createdAt.toISOString(),
+      updated_at: season.updatedAt.toISOString(),
+    }
   },
 
   async deleteSeason(id: string) {
+    const existing = await configureModels.findSeasonById(id)
+    if (!existing) {
+      throw new AppError("Season not found", 404, "SEASON_NOT_FOUND")
+    }
+
+    // Safe delete relational check: block delete if season has events
+    const eventCount = await configureModels.countEventsBySeasonId(id)
+    if (eventCount > 0) {
+      throw new AppError(
+        `Cannot delete season because it is associated with ${eventCount} event(s). Please deactivate it instead.`,
+        409,
+        "SEASON_IN_USE"
+      )
+    }
+
     await configureModels.deleteSeason(id)
     computeAndCacheLeaderboard().catch(() => {})
-    return { success: true }
+    return { success: true, message: "Season deleted successfully" }
   },
 
   async activateSeason(id: string) {
-    await configureModels.deactivateOtherSeasons()
+    const existing = await configureModels.findSeasonById(id)
+    if (!existing) {
+      throw new AppError("Season not found", 404, "SEASON_NOT_FOUND")
+    }
+
+    await configureModels.deactivateOtherSeasons(id)
     const season = await configureModels.updateSeason(id, { isActive: true })
     await computeAndCacheLeaderboard()
     return { success: true, season }

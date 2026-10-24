@@ -385,15 +385,31 @@ export function LeaderboardPage() {
   const [reloadToken, setReloadToken] = useState(0)
   const forceRefreshRef = useRef(false)
   const [seasonData, setSeasonData] = useState<{
+    id?: string
     name: string
     code?: string | null
     start_date: string
     end_date: string
     days_left: number
     target_attendance: number
-    bonus_points: number
     description?: string | null
   } | null>(null)
+  const [availablePeriods, setAvailablePeriods] = useState<
+    Array<{
+      id: string
+      key: "custom" | "semester" | "annual"
+      name: string
+      code?: string | null
+      start_date: string
+      end_date: string
+      days_left: number
+      target_attendance: number
+      is_active: boolean
+      is_custom: boolean
+      description?: string | null
+    }>
+  >([])
+  const [selectedPeriodKey, setSelectedPeriodKey] = useState<string>("default")
   const [communityGoal, setCommunityGoal] = useState({
     current: 0,
     target: 500,
@@ -407,6 +423,7 @@ export function LeaderboardPage() {
         myRankData: any
         seasonData: typeof seasonData
         communityGoal: typeof communityGoal
+        availablePeriods: typeof availablePeriods
       }
     >()
   )
@@ -415,13 +432,14 @@ export function LeaderboardPage() {
     let cancelled = false
 
     async function fetchLeaderboard() {
-      const cacheKey = `${metric}:${roleScope}`
+      const cacheKey = `${metric}:${roleScope}:${selectedPeriodKey}`
       const cached = leaderboardCacheRef.current.get(cacheKey)
       if (cached && !forceRefreshRef.current) {
         setEntries(cached.entries)
         setMyRankData(cached.myRankData)
         setSeasonData(cached.seasonData)
         setCommunityGoal(cached.communityGoal)
+        setAvailablePeriods(cached.availablePeriods)
         setIsLoading(false)
         return
       }
@@ -431,14 +449,20 @@ export function LeaderboardPage() {
 
       try {
         const refreshParam = forceRefreshRef.current ? "&refresh=true" : ""
+        const periodParam =
+          selectedPeriodKey !== "default"
+            ? `&period=${encodeURIComponent(selectedPeriodKey)}`
+            : ""
         forceRefreshRef.current = false
         const res = await api.get<{
           entries: LeaderboardEntry[]
           my_rank: any
           season?: any
+          available_periods?: typeof availablePeriods
+          active_period?: any
           community_goal?: { current: number; target: number; label: string }
         }>(
-          `/leaderboard?metric=${metric}&roles=${encodeURIComponent(roleScope)}&limit=10${refreshParam}`,
+          `/leaderboard?metric=${metric}${periodParam}&roles=${encodeURIComponent(roleScope)}&limit=10${refreshParam}`,
           { noCache: true }
         )
 
@@ -446,6 +470,7 @@ export function LeaderboardPage() {
         setEntries(res.entries ?? [])
         setMyRankData(res.my_rank ?? null)
         if (res.season) setSeasonData(res.season)
+        if (res.available_periods) setAvailablePeriods(res.available_periods)
         if (res.community_goal) setCommunityGoal(res.community_goal)
         leaderboardCacheRef.current.set(cacheKey, {
           entries: res.entries ?? [],
@@ -456,6 +481,7 @@ export function LeaderboardPage() {
             target: 500,
             label: "Community Attendance Target",
           },
+          availablePeriods: res.available_periods ?? [],
         })
       } catch (err) {
         if (cancelled) return
@@ -463,7 +489,7 @@ export function LeaderboardPage() {
         setEntries([])
         setMyRankData(null)
         setLoadError(
-          "Leaderboard belum dapat dimuat. Periksa koneksi lalu coba lagi."
+          "Leaderboard could not be loaded. Please check your connection and try again."
         )
       } finally {
         if (!cancelled) setIsLoading(false)
@@ -474,7 +500,7 @@ export function LeaderboardPage() {
     return () => {
       cancelled = true
     }
-  }, [metric, reloadToken, roleScope, authState.status])
+  }, [metric, selectedPeriodKey, reloadToken, roleScope, authState.status])
 
   function handleRetry() {
     forceRefreshRef.current = true
@@ -635,6 +661,46 @@ export function LeaderboardPage() {
               </div>
             </div>
           </header>
+
+          {/* ── Season Period Tabs (Dynamic: [ Custom (e.g. Vassa) ] [ Semester ] [ Annual ]) ── */}
+          {availablePeriods.length > 0 && (
+            <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center">
+              <span className="text-[11px] font-bold tracking-wider text-[#6a6a6a] uppercase">
+                Competition Period:
+              </span>
+              <div className="flex scrollbar-none items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+                {availablePeriods.map((period, idx) => {
+                  const isSelected =
+                    selectedPeriodKey === period.key ||
+                    selectedPeriodKey === period.id ||
+                    (selectedPeriodKey === "default" && idx === 0)
+
+                  return (
+                    <button
+                      key={period.id}
+                      type="button"
+                      onClick={() => setSelectedPeriodKey(period.key)}
+                      className={`flex shrink-0 cursor-pointer items-center gap-1.5 rounded-[12px] px-3.5 py-1.5 text-xs font-bold transition-all ${
+                        isSelected
+                          ? "bg-[#0a0a0a] text-white shadow-xs"
+                          : "border border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] hover:bg-[#faf5e8]"
+                      }`}
+                    >
+                      {period.is_custom && (
+                        <SparklesIcon className="size-3.5 text-[#e8b94a]" />
+                      )}
+                      <span>{period.name}</span>
+                      {period.is_custom && (
+                        <span className="rounded-full bg-[#e8b94a] px-1.5 py-0.2 text-[9px] font-extrabold text-[#0a0a0a] uppercase">
+                          Special
+                        </span>
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
 
           {/* ── Filters Bar: Metric & Role Filters ── */}
           <div className="flex flex-col justify-between gap-2.5 sm:gap-3 md:flex-row md:items-center">

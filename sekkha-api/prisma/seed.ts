@@ -105,23 +105,51 @@ async function main() {
   }
 
   // ── 3. Master Data: Seasons ──────────────────────────────────────────────────
-  console.log("📅 Seeding Master Season...")
+  console.log("📅 Seeding Master Seasons...")
   const now = new Date()
   const year = now.getFullYear()
-  const q = Math.floor(now.getMonth() / 3) + 1
-  const qStart = new Date(year, (q - 1) * 3, 1)
-  const qEnd = new Date(year, q * 3, 0, 23, 59, 59)
 
-  const activeSeason = await prisma.season.create({
-    data: {
-      name: `Season ${q} · ${year}`,
-      code: `S${year}-Q${q}`,
-      startDate: qStart,
-      endDate: qEnd,
-      isActive: true,
+  // Default Standard Periods (Semester & Annual)
+  await prisma.season.upsert({
+    where: { code: `S${year}-SEM1` },
+    update: {},
+    create: {
+      name: `Semester 1 · ${year}`,
+      code: `S${year}-SEM1`,
+      startDate: new Date(year, 0, 1),
+      endDate: new Date(year, 5, 30, 23, 59, 59),
+      isActive: false,
       targetAttendance: 500,
-      bonusPoints: 100,
-      description: `Musim kompetisi kuartal ${q} tahun ${year}`,
+      description: `Default semester 1 evaluation period for year ${year}`,
+    },
+  })
+
+  await prisma.season.upsert({
+    where: { code: `S${year}-ANNUAL` },
+    update: {},
+    create: {
+      name: `Annual · ${year}`,
+      code: `S${year}-ANNUAL`,
+      startDate: new Date(year, 0, 1),
+      endDate: new Date(year, 11, 31, 23, 59, 59),
+      isActive: false,
+      targetAttendance: 1000,
+      description: `Full calendar year competition period for ${year}`,
+    },
+  })
+
+  // Active Custom Season: e.g. Vassa
+  const activeSeason = await prisma.season.upsert({
+    where: { code: `VASSA-${year}` },
+    update: { isActive: true },
+    create: {
+      name: `Vassa ${year}`,
+      code: `VASSA-${year}`,
+      startDate: new Date(year, 6, 15),
+      endDate: new Date(year, 9, 15, 23, 59, 59),
+      isActive: true,
+      targetAttendance: 350,
+      description: `Intensive Vassa retreat and community service season ${year}`,
     },
   })
 

@@ -59,14 +59,23 @@ export const ThresholdSchema = z
   .strict()
 
 export const SeasonSchema = z.object({
-  name: z.string().min(1),
-  code: z.string().optional(),
-  start_date: z.string().refine((v) => !isNaN(Date.parse(v)), "Format start_date tidak valid, gunakan format tanggal ISO"),
-  end_date: z.string().refine((v) => !isNaN(Date.parse(v)), "Format end_date tidak valid, gunakan format tanggal ISO"),
+  name: z.string().trim().min(1, "Season name is required"),
+  code: z.string().trim().optional(),
+  start_date: z.string().refine((v) => !isNaN(Date.parse(v)), "Format start_date must be valid ISO date"),
+  end_date: z.string().refine((v) => !isNaN(Date.parse(v)), "Format end_date must be valid ISO date"),
+  is_active: z.boolean().optional(),
+  target_attendance: z.number().int().min(1).optional().default(500),
+  description: z.string().trim().nullable().optional(),
+})
+
+export const SeasonUpdateSchema = z.object({
+  name: z.string().trim().min(1).optional(),
+  code: z.string().trim().optional(),
+  start_date: z.string().refine((v) => !isNaN(Date.parse(v)), "Format start_date must be valid ISO date").optional(),
+  end_date: z.string().refine((v) => !isNaN(Date.parse(v)), "Format end_date must be valid ISO date").optional(),
   is_active: z.boolean().optional(),
   target_attendance: z.number().int().min(1).optional(),
-  bonus_points: z.number().int().min(0).optional(),
-  description: z.string().nullable().optional(),
+  description: z.string().trim().nullable().optional(),
 })
 
 export const PointRuleUpdateSchema = z.object({
@@ -178,7 +187,7 @@ export const configureControllers = {
   async updateSeason(req: Request, res: Response, next: NextFunction) {
     try {
       const id = req.params.id as string
-      const body = SeasonSchema.partial().parse(req.body)
+      const body = SeasonUpdateSchema.parse(req.body)
       res.json(await configureServices.updateSeason(id, body))
     } catch (err) { next(err) }
   },

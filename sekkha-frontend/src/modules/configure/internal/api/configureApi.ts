@@ -26,23 +26,24 @@ export interface SeasonDto {
   end_date: string
   is_active: boolean
   target_attendance: number
-  bonus_points: number
   description?: string | null
+  days_left?: number
   total_attendances?: number
   created_at?: string
+  updated_at?: string
 }
 
 // ─── Seasons ─────────────────────────────────────────────────────────────────
 
 export const seasonsApi = {
   list: () => api.get<SeasonDto[]>("/configure/seasons"),
-  create: (data: Omit<SeasonDto, "id" | "total_attendances" | "created_at">) =>
+  create: (data: Omit<SeasonDto, "id" | "total_attendances" | "created_at" | "updated_at" | "days_left">) =>
     api.post<SeasonDto>("/configure/seasons", data),
   update: (id: string, data: Partial<SeasonDto>) =>
-    api.put<SeasonDto>(`/configure/seasons/${id}`, data),
+    api.patch<SeasonDto>(`/configure/seasons/${id}`, data),
   remove: (id: string) => api.delete(`/configure/seasons/${id}`),
   activate: (id: string) =>
-    api.post<{ success: boolean; season: SeasonDto }>(
+    api.patch<{ success: boolean; season: SeasonDto }>(
       `/configure/seasons/${id}/activate`
     ),
 }

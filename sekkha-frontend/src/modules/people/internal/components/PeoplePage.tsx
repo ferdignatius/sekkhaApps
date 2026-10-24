@@ -8,16 +8,14 @@ import {
   CheckCircleIcon,
   AlertTriangleIcon,
   XIcon,
-  PrinterIcon,
   CopyIcon,
   CheckIcon,
-  SparklesIcon,
   ShieldCheckIcon,
   ChevronRightIcon,
   PhoneIcon,
   GraduationCapIcon,
+  Share2Icon,
 } from "lucide-react"
-import QRCode from "react-qr-code"
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
 import { ResponsiveFormModal } from "@/components/common/ResponsiveFormModal"
 import { useAuth } from "@/modules/auth"
@@ -43,8 +41,10 @@ import { peopleApi } from "../api/peopleApi"
 import type {
   MemberDto,
   CreateMemberPayload,
+  CreateMemberResponse,
   UpdateMemberPayload,
   PaginatedMembersResponse,
+  VerifiedSchoolDto,
 } from "../api/peopleApi"
 
 function formatRoleLabel(role?: string | null): string {
@@ -76,17 +76,14 @@ function CommunityRoleChart({
     member?: number
     activist?: number
     organizer?: number
-    umat?: number
-    aktivis?: number
-    pengurus?: number
   }
   activeFilter: string
   onFilterChange: (role: string) => void
 }) {
   const total = stats.total || 0
-  const memberCount = stats.member ?? stats.umat ?? 0
-  const activistCount = stats.activist ?? stats.aktivis ?? 0
-  const organizerCount = stats.organizer ?? stats.pengurus ?? 0
+  const memberCount = stats.member ?? 0
+  const activistCount = stats.activist ?? 0
+  const organizerCount = stats.organizer ?? 0
 
   const memberPct = total > 0 ? (memberCount / total) * 100 : 0
   const activistPct = total > 0 ? (activistCount / total) * 100 : 0
@@ -122,7 +119,7 @@ function CommunityRoleChart({
     },
     {
       id: "activist",
-      label: "Activists & Volunteers",
+      label: "Activists",
       shortLabel: "Activists",
       count: activistCount,
       pct: activistPct,
@@ -154,19 +151,12 @@ function CommunityRoleChart({
                       r={r}
                       fill="none"
                       stroke="#1a3a3a"
-                      strokeWidth={
-                        activeFilter === "organizer" ||
-                        activeFilter === "pengurus"
-                          ? 12
-                          : 10
-                      }
+                      strokeWidth={activeFilter === "organizer" ? 12 : 10}
                       strokeDasharray={`${organizerLen} ${c}`}
                       strokeDashoffset={organizerOffset}
                       className="cursor-pointer transition-all duration-300 hover:opacity-85"
                       onClick={() =>
-                        onFilterChange(
-                          activeFilter === "organizer" ? "all" : "organizer"
-                        )
+                        onFilterChange(activeFilter === "organizer" ? "all" : "organizer")
                       }
                     />
                   )}
@@ -177,18 +167,12 @@ function CommunityRoleChart({
                       r={r}
                       fill="none"
                       stroke="#e8b94a"
-                      strokeWidth={
-                        activeFilter === "member" || activeFilter === "umat"
-                          ? 12
-                          : 10
-                      }
+                      strokeWidth={activeFilter === "member" ? 12 : 10}
                       strokeDasharray={`${memberLen} ${c}`}
                       strokeDashoffset={memberOffset}
                       className="cursor-pointer transition-all duration-300 hover:opacity-85"
                       onClick={() =>
-                        onFilterChange(
-                          activeFilter === "member" ? "all" : "member"
-                        )
+                        onFilterChange(activeFilter === "member" ? "all" : "member")
                       }
                     />
                   )}
@@ -199,19 +183,12 @@ function CommunityRoleChart({
                       r={r}
                       fill="none"
                       stroke="#8b5cf6"
-                      strokeWidth={
-                        activeFilter === "activist" ||
-                        activeFilter === "aktivis"
-                          ? 12
-                          : 10
-                      }
+                      strokeWidth={activeFilter === "activist" ? 12 : 10}
                       strokeDasharray={`${activistLen} ${c}`}
                       strokeDashoffset={activistOffset}
                       className="cursor-pointer transition-all duration-300 hover:opacity-85"
                       onClick={() =>
-                        onFilterChange(
-                          activeFilter === "activist" ? "all" : "activist"
-                        )
+                        onFilterChange(activeFilter === "activist" ? "all" : "activist")
                       }
                     />
                   )}
@@ -228,20 +205,14 @@ function CommunityRoleChart({
                   ? "cursor-pointer hover:scale-105"
                   : "pointer-events-none cursor-default"
               }`}
-              title={
-                activeFilter !== "all"
-                  ? "Click to reset to all members"
-                  : "Total Members"
-              }
+              title={activeFilter !== "all" ? "Click to reset to all members" : "Total Members"}
             >
               <span className="text-xl leading-none font-black text-[#0a0a0a] sm:text-2xl">
                 {total}
               </span>
               <span
                 className={`mt-0.5 text-[9px] font-bold tracking-wider uppercase ${
-                  activeFilter !== "all"
-                    ? "text-[#0a0a0a] underline"
-                    : "text-[#6a6a6a]"
+                  activeFilter !== "all" ? "text-[#0a0a0a] underline" : "text-[#6a6a6a]"
                 }`}
               >
                 {activeFilter !== "all" ? "Reset" : "Total"}
@@ -266,8 +237,7 @@ function CommunityRoleChart({
               )}
             </div>
             <p className="mt-0.5 text-xs text-[#6a6a6a]">
-              Community breakdown by youth roles. Click a card to filter the
-              directory.
+              Community breakdown by youth roles. Click a card to filter the directory.
             </p>
           </div>
         </div>
@@ -331,8 +301,10 @@ function CommunityRoleChart({
 export function PeoplePage() {
   const navigate = useNavigate()
   const { authState } = useAuth()
-  const isAdmin =
-    authState.status === "authenticated" && authState.role === "admin"
+  const isOrganizerOrAdmin =
+    authState.status === "authenticated" &&
+    (authState.role === "organizer" || authState.role === "admin")
+  const isAdmin = authState.status === "authenticated" && authState.role === "admin"
 
   const [members, setMembers] = useState<MemberDto[]>([])
   const [totalItems, setTotalItems] = useState(0)
@@ -343,34 +315,36 @@ export function PeoplePage() {
     member: 0,
     activist: 0,
     organizer: 0,
-    umat: 0,
-    aktivis: 0,
-    pengurus: 0,
+    claimed: 0,
+    unclaimed: 0,
   })
 
   // Filters & Pagination
   const [searchQuery, setSearchQuery] = useState("")
-  const debouncedSearchQuery = useDebounce(searchQuery, 300)
+  const debouncedSearchQuery = useDebounce(searchQuery, 250)
   const [roleFilter, setRoleFilter] = useState<string>("all")
+  const [claimStatusFilter, setClaimStatusFilter] = useState<string>("all")
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(15)
 
+  // Master data
+  const [verifiedSchools, setVerifiedSchools] = useState<VerifiedSchoolDto[]>([])
+
   // Modals
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [createdCredentials, setCreatedCredentials] = useState<CreateMemberResponse | null>(null)
   const [editingMember, setEditingMember] = useState<MemberDto | null>(null)
   const [deletingMember, setDeletingMember] = useState<MemberDto | null>(null)
-  const [qrMember, setQrMember] = useState<MemberDto | null>(null)
 
   // Form states
   const [createForm, setCreateForm] = useState<CreateMemberPayload>({
     name: "",
-    username: "",
-    email: "",
-    phone: "",
-    school: "",
-    birth_date: "",
-    gender: "",
     role: "member",
+    school_id: "",
+    phone: "",
+    gender: "",
+    date_of_birth: "",
+    address: "",
   })
   const [updateForm, setUpdateForm] = useState<UpdateMemberPayload>({})
   const [submitting, setSubmitting] = useState(false)
@@ -379,17 +353,22 @@ export function PeoplePage() {
     text: string
     type: "success" | "error"
   } | null>(null)
-  const [copiedId, setCopiedId] = useState(false)
+  const [copiedInvite, setCopiedInvite] = useState(false)
+
+  // Load verified schools for dropdown
+  useEffect(() => {
+    peopleApi.getVerifiedSchools().then(setVerifiedSchools)
+  }, [])
 
   // Reset pagination when filter/search changes
   useEffect(() => {
     setCurrentPage(1)
-  }, [debouncedSearchQuery, roleFilter])
+  }, [debouncedSearchQuery, roleFilter, claimStatusFilter])
 
   // Fetch paginated & filtered data from API
   useEffect(() => {
     loadData()
-  }, [currentPage, pageSize, debouncedSearchQuery, roleFilter])
+  }, [currentPage, pageSize, debouncedSearchQuery, roleFilter, claimStatusFilter])
 
   function showToast(text: string, type: "success" | "error" = "success") {
     setToastMessage({ text, type })
@@ -402,6 +381,7 @@ export function PeoplePage() {
       const res = (await peopleApi.listMembers({
         search: debouncedSearchQuery.trim() || undefined,
         role: roleFilter,
+        claimed_status: claimStatusFilter,
         page: currentPage,
         limit: pageSize,
       })) as PaginatedMembersResponse
@@ -412,12 +392,11 @@ export function PeoplePage() {
       if (res.stats) {
         setStats({
           total: res.stats.total || 0,
-          member: res.stats.member ?? res.stats.umat ?? 0,
-          activist: res.stats.activist ?? res.stats.aktivis ?? 0,
-          organizer: res.stats.organizer ?? res.stats.pengurus ?? 0,
-          umat: res.stats.umat ?? res.stats.member ?? 0,
-          aktivis: res.stats.aktivis ?? res.stats.activist ?? 0,
-          pengurus: res.stats.pengurus ?? res.stats.organizer ?? 0,
+          member: res.stats.member ?? 0,
+          activist: res.stats.activist ?? 0,
+          organizer: res.stats.organizer ?? 0,
+          claimed: res.stats.claimed ?? 0,
+          unclaimed: res.stats.unclaimed ?? 0,
         })
       }
     } catch (err) {
@@ -428,17 +407,11 @@ export function PeoplePage() {
     }
   }
 
-  // Handle Create Member with auto-generated credentials (Admin only)
+  // Pre-provisioning: Handle Create Member
   async function handleCreateMember(e: React.FormEvent) {
     e.preventDefault()
-    if (
-      !isAdmin ||
-      !createForm.name.trim() ||
-      !createForm.email?.trim() ||
-      !createForm.gender ||
-      !createForm.school?.trim()
-    ) {
-      setCreateError("Full Name, Email, Gender, and School are required.")
+    if (!createForm.name.trim() || createForm.name.trim().length < 2) {
+      setCreateError("Full name must be at least 2 characters.")
       return
     }
 
@@ -447,34 +420,29 @@ export function PeoplePage() {
       setCreateError(null)
       const created = await peopleApi.createMember({
         name: createForm.name.trim(),
-        email: createForm.email.trim(),
-        gender: createForm.gender,
-        school: createForm.school.trim(),
-        role: "member",
+        role: createForm.role || "member",
+        school_id: createForm.school_id || null,
+        phone: createForm.phone?.trim() || null,
+        gender: createForm.gender || null,
+        date_of_birth: createForm.date_of_birth || null,
+        address: createForm.address?.trim() || null,
       })
-      showToast(
-        `Successfully registered member "${created.name}" (Username: @${created.username || "-"})`
-      )
+
       setShowCreateModal(false)
+      setCreatedCredentials(created)
       setCreateForm({
         name: "",
-        username: "",
-        email: "",
-        phone: "",
-        school: "",
-        birth_date: "",
-        gender: "",
         role: "member",
+        school_id: "",
+        phone: "",
+        gender: "",
+        date_of_birth: "",
+        address: "",
       })
       await loadData()
-      showToast(
-        created.email_sent
-          ? "Temporary password sent to registered email."
-          : "Member created. No temporary password delivery channel configured.",
-        created.email_sent ? "success" : "error"
-      )
+      showToast(`Member "${created.name}" registered successfully!`)
     } catch (err: any) {
-      showToast(err.message || "Failed to add member", "error")
+      setCreateError(err.message || "Failed to add member")
     } finally {
       setSubmitting(false)
     }
@@ -488,9 +456,7 @@ export function PeoplePage() {
     try {
       setSubmitting(true)
       await peopleApi.updateMember(editingMember.id, { role: updateForm.role })
-      showToast(
-        `Role for "${editingMember.name}" updated to ${updateForm.role?.toUpperCase()}`
-      )
+      showToast(`Role for "${editingMember.name}" updated to ${updateForm.role?.toUpperCase()}`)
       setEditingMember(null)
       await loadData()
     } catch (err: any) {
@@ -518,13 +484,24 @@ export function PeoplePage() {
   }
 
   // Copy helper
-  function handleCopy(text?: string | null) {
+  function handleCopy(text?: string | number | null, successMessage: string = "Copied to clipboard!") {
     if (!text) return
     navigator.clipboard
-      .writeText(text)
+      .writeText(String(text))
       .then(() => {
-        setCopiedId(true)
-        showToast("Copied to clipboard!")
+        showToast(successMessage)
+      })
+      .catch(() => showToast("Clipboard access denied.", "error"))
+  }
+
+  function handleCopyWhatsAppInvitation(message?: string) {
+    if (!message) return
+    navigator.clipboard
+      .writeText(message)
+      .then(() => {
+        setCopiedInvite(true)
+        showToast("Invitation message copied for WhatsApp!")
+        setTimeout(() => setCopiedInvite(false), 2500)
       })
       .catch(() => showToast("Clipboard access denied.", "error"))
   }
@@ -536,13 +513,8 @@ export function PeoplePage() {
   const roleBadgeStyle: Record<string, string> = {
     admin: "bg-[#ff4d8b]/15 text-[#ff4d8b] border-[#ff4d8b]/30 font-semibold",
     organizer: "bg-[#1a3a3a] text-white border-[#1a3a3a] font-semibold",
-    activist:
-      "bg-[#b8a4ed]/30 text-[#0a0a0a] border-[#b8a4ed]/50 font-semibold",
+    activist: "bg-[#b8a4ed]/30 text-[#0a0a0a] border-[#b8a4ed]/50 font-semibold",
     member: "bg-[#f5f0e0] text-[#0a0a0a] border-[#e5e5e5] font-semibold",
-    // Backward-compat aliases
-    pengurus: "bg-[#1a3a3a] text-white border-[#1a3a3a] font-semibold",
-    aktivis: "bg-[#b8a4ed]/30 text-[#0a0a0a] border-[#b8a4ed]/50 font-semibold",
-    umat: "bg-[#f5f0e0] text-[#0a0a0a] border-[#e5e5e5] font-semibold",
   }
 
   return (
@@ -576,15 +548,16 @@ export function PeoplePage() {
             onFilterChange={setRoleFilter}
           />
 
-          {/* ── Search Bar & Actions ── */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          {/* ── Search Bar, Status Filter & Actions ── */}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            {/* Search Input */}
             <div className="relative flex-1">
               <SearchIcon className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[#6a6a6a]" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search name, @username, ID..."
+                placeholder="Search name, @username, Member ID..."
                 className="h-10 w-full rounded-[12px] border border-[#e6decb]/80 bg-[#fffaf0]/90 pr-9 pl-10 text-xs text-[#0a0a0a] shadow-2xs backdrop-blur-sm transition-all outline-none placeholder:text-[#6a6a6a] focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] sm:h-11 sm:text-sm"
               />
               {searchQuery && (
@@ -599,14 +572,33 @@ export function PeoplePage() {
               )}
             </div>
 
-            {isAdmin && (
+            {/* Filter Pills for Claim Status */}
+            <div className="flex items-center gap-1.5 overflow-x-auto rounded-[12px] border border-[#e6decb]/80 bg-[#fffaf0]/90 p-1 shadow-2xs">
+              {(["all", "claimed", "unclaimed"] as const).map((st) => (
+                <button
+                  key={st}
+                  type="button"
+                  onClick={() => setClaimStatusFilter(st)}
+                  className={`cursor-pointer rounded-[8px] px-3 py-1.5 text-xs font-bold capitalize transition-all ${
+                    claimStatusFilter === st
+                      ? "bg-[#0a0a0a] text-white shadow-xs"
+                      : "text-[#6a6a6a] hover:text-[#0a0a0a]"
+                  }`}
+                >
+                  {st === "all" ? "All Accounts" : st}
+                </button>
+              ))}
+            </div>
+
+            {/* Add Member Button (Organizer/Admin) */}
+            {isOrganizerOrAdmin && (
               <Button
                 variant="filled"
                 onClick={() => setShowCreateModal(true)}
-                className="h-10 shrink-0 gap-1.5 rounded-[12px] px-3 sm:h-11 sm:px-4"
+                className="h-10 shrink-0 gap-1.5 rounded-[12px] px-3.5 sm:h-11 sm:px-4"
               >
                 <PlusIcon className="size-3.5 sm:size-4" />
-                <span className="hidden sm:inline">Add Member</span>
+                <span>Add Member</span>
               </Button>
             )}
           </div>
@@ -621,18 +613,20 @@ export function PeoplePage() {
                 <p className="text-xs text-[#6a6a6a]">
                   Showing {totalItems === 0 ? 0 : startIndex + 1}–{endIndex} of{" "}
                   {totalItems} members
-                  {totalItems !== members.length &&
-                    ` (filtered from ${members.length} total)`}
+                  {(roleFilter !== "all" || claimStatusFilter !== "all") && " (filtered)"}
                 </p>
               </div>
 
-              {roleFilter !== "all" && (
+              {(roleFilter !== "all" || claimStatusFilter !== "all") && (
                 <button
                   type="button"
-                  onClick={() => setRoleFilter("all")}
+                  onClick={() => {
+                    setRoleFilter("all")
+                    setClaimStatusFilter("all")
+                  }}
                   className="cursor-pointer text-xs font-bold text-[#0a0a0a] hover:underline"
                 >
-                  Clear filter
+                  Clear filters
                 </button>
               )}
             </div>
@@ -660,15 +654,13 @@ export function PeoplePage() {
             ) : members.length === 0 ? (
               <div className="flex min-h-[260px] flex-col items-center justify-center rounded-[20px] border border-dashed border-[#e6decb]/80 bg-[#fffaf0]/90 p-8 text-center backdrop-blur-sm">
                 <UsersIcon className="mb-2 size-10 text-[#6a6a6a]/40" />
-                <p className="text-sm font-bold text-[#0a0a0a]">
-                  No members found
-                </p>
+                <p className="text-sm font-bold text-[#0a0a0a]">No members found</p>
                 <p className="mt-1 max-w-xs text-xs text-[#6a6a6a]">
-                  Try adjusting your search terms or category filter.
+                  Try adjusting your search query or filter settings.
                 </p>
               </div>
             ) : (
-              /* Uniform Responsive Card Grid across mobile & desktop */
+              /* Clay Card Grid across mobile & desktop */
               <div className="grid grid-cols-2 gap-2.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
                 {members.map((m) => {
                   const initials =
@@ -676,7 +668,7 @@ export function PeoplePage() {
                       .split(" ")
                       .slice(0, 2)
                       .map((w) => (w[0] ? w[0].toUpperCase() : ""))
-                      .join("") || "UM"
+                      .join("") || "MB"
 
                   return (
                     <div
@@ -697,9 +689,7 @@ export function PeoplePage() {
                           </div>
                           <span
                             className={`inline-block rounded-full border px-2 py-0.5 text-[10px] font-bold ${
-                              roleBadgeStyle[m.role] ||
-                              roleBadgeStyle.member ||
-                              roleBadgeStyle.umat
+                              roleBadgeStyle[m.role] || roleBadgeStyle.member
                             }`}
                           >
                             {formatRoleLabel(m.role)}
@@ -725,7 +715,7 @@ export function PeoplePage() {
                                 type="button"
                                 onClick={(e) => {
                                   e.stopPropagation()
-                                  handleCopy(m.user_number)
+                                  handleCopy(m.user_number, "Member ID copied!")
                                 }}
                                 className="inline-flex cursor-pointer items-center gap-1 font-mono text-[11px] text-[#6a6a6a] transition-colors hover:text-[#0a0a0a]"
                                 title="Click to copy Member ID"
@@ -737,29 +727,33 @@ export function PeoplePage() {
                           </div>
                         </div>
 
-                        {/* Contact & Info Snippets - hidden on mobile, shown on tablet/desktop */}
-                        <div className="mt-2.5 hidden space-y-1 text-[11px] text-[#6a6a6a] sm:block">
+                        {/* Status & School info */}
+                        <div className="mt-2.5 space-y-1 text-[11px] text-[#6a6a6a]">
+                          {/* Claim Status Badge */}
+                          <div>
+                            {m.is_claimed ? (
+                              <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/20 bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
+                                <CheckCircleIcon className="size-2.5" />
+                                <span>Claimed</span>
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700">
+                                <AlertTriangleIcon className="size-2.5" />
+                                <span>Unclaimed</span>
+                              </span>
+                            )}
+                          </div>
+
                           {m.school && (
-                            <p className="flex items-center gap-1.5 truncate">
-                              <GraduationCapIcon
-                                className="size-3 shrink-0 text-[#6a6a6a]"
-                                aria-hidden="true"
-                              />
+                            <p className="hidden items-center gap-1.5 truncate sm:flex">
+                              <GraduationCapIcon className="size-3 shrink-0 text-[#6a6a6a]" />
                               <span className="truncate">{m.school}</span>
                             </p>
                           )}
                           {m.phone && (
-                            <p className="flex items-center gap-1.5 truncate">
-                              <PhoneIcon
-                                className="size-2.5 shrink-0 text-[#6a6a6a]"
-                                aria-hidden="true"
-                              />
+                            <p className="hidden items-center gap-1.5 truncate sm:flex">
+                              <PhoneIcon className="size-2.5 shrink-0 text-[#6a6a6a]" />
                               <span className="truncate">{m.phone}</span>
-                            </p>
-                          )}
-                          {!m.school && !m.phone && (
-                            <p className="truncate text-[11px] text-[#6a6a6a]">
-                              {m.email || "No additional contact"}
                             </p>
                           )}
                         </div>
@@ -776,13 +770,11 @@ export function PeoplePage() {
               </div>
             )}
 
-            {/* ── PAGINATION CONTROLS (ICONS-ONLY STYLE) ── */}
+            {/* ── PAGINATION CONTROLS ── */}
             {totalItems > 0 && (
               <div className="flex flex-col gap-3 rounded-[16px] border border-[#e6decb]/80 bg-[#fffaf0]/90 p-3 text-xs text-[#0a0a0a] shadow-2xs backdrop-blur-sm sm:flex-row sm:items-center sm:justify-between sm:p-4">
                 <Field orientation="horizontal" className="w-fit">
-                  <FieldLabel htmlFor="select-rows-per-page">
-                    Items per page
-                  </FieldLabel>
+                  <FieldLabel htmlFor="select-rows-per-page">Items per page</FieldLabel>
                   <Select
                     value={String(pageSize)}
                     onValueChange={(val) => {
@@ -814,8 +806,8 @@ export function PeoplePage() {
                     <strong className="text-[#0a0a0a]">
                       {totalItems === 0 ? 0 : startIndex + 1}–{endIndex}
                     </strong>{" "}
-                    of <strong className="text-[#0a0a0a]">{totalItems}</strong>{" "}
-                    (Page {currentPage} of {totalPages})
+                    of <strong className="text-[#0a0a0a]">{totalItems}</strong> (Page{" "}
+                    {currentPage} of {totalPages})
                   </span>
 
                   <Pagination className="mx-0 w-auto">
@@ -835,9 +827,7 @@ export function PeoplePage() {
                           href="#"
                           onClick={(e) => {
                             e.preventDefault()
-                            setCurrentPage((prev) =>
-                              Math.min(totalPages, prev + 1)
-                            )
+                            setCurrentPage((prev) => Math.min(totalPages, prev + 1))
                           }}
                           disabled={currentPage >= totalPages}
                         />
@@ -851,138 +841,165 @@ export function PeoplePage() {
         </div>
       </div>
 
-      {/* ───────────────────────────────────────────────────────────────────────── */}
+      {/* ── MODAL 1: PRE-PROVISION NEW MEMBER ── */}
       <ResponsiveFormModal
         open={showCreateModal}
         onOpenChange={(open) => {
           setShowCreateModal(open)
           if (open) setCreateError(null)
         }}
-        title="Add New Member"
-        description="Full Name, Email, Gender, and School are required to deliver temporary login password."
+        title="Pre-Provision New Member"
+        description="Register a community member before they download the app. System will generate a permanent Member ID and temporary login credentials."
         maxWidth="max-w-xl"
       >
-        <form onSubmit={handleCreateMember} className="space-y-5">
+        <form onSubmit={handleCreateMember} className="space-y-4">
           {createError && (
             <div
               role="alert"
               className="flex items-start gap-2.5 rounded-[12px] border border-[#ef4444]/30 bg-[#ef4444]/5 p-3 text-xs font-semibold text-[#991b1b]"
             >
-              <AlertTriangleIcon
-                className="mt-0.5 size-4 shrink-0"
-                aria-hidden="true"
-              />
+              <AlertTriangleIcon className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
               <span>{createError}</span>
             </div>
           )}
-          <section className="space-y-4 rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] p-4">
-            <div>
-              <h4 className="flex items-center gap-2 text-sm font-bold text-[#0a0a0a]">
-                <UsersIcon className="size-4 text-[#1a3a3a]" /> Member basics
-              </h4>
-              <p className="mt-1 text-xs leading-relaxed text-[#6a6a6a]">
-                These three details are enough to create the member record.
-              </p>
-            </div>
+
+          <div className="space-y-3.5">
+            {/* Full Name */}
             <div className="space-y-1.5">
-              <label
-                htmlFor="people-create-name"
-                className="text-xs font-bold text-[#0a0a0a]"
-              >
+              <label htmlFor="people-create-name" className="text-xs font-bold text-[#0a0a0a]">
                 Full Name <span className="text-[#ef4444]">*</span>
               </label>
               <input
                 id="people-create-name"
                 type="text"
                 required
-                autoComplete="name"
                 value={createForm.name}
-                onChange={(e) =>
-                  setCreateForm({ ...createForm, name: e.target.value })
-                }
-                placeholder="e.g. Michael Jordan"
-                className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-sm text-[#0a0a0a] transition-colors outline-none placeholder:text-[#767676] focus:border-[#0a0a0a] focus:ring-2 focus:ring-[#0a0a0a]/15"
+                onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
+                placeholder="e.g. Budi Santoso"
+                className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-sm text-[#0a0a0a] transition-colors outline-none focus:border-[#0a0a0a] focus:ring-2 focus:ring-[#0a0a0a]/15"
               />
             </div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="space-y-1.5 sm:col-span-2">
-                <label
-                  htmlFor="people-create-email"
-                  className="text-xs font-bold text-[#0a0a0a]"
+
+            {/* Role & School */}
+            <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <label htmlFor="people-create-role" className="text-xs font-bold text-[#0a0a0a]">
+                  Initial Role
+                </label>
+                <select
+                  id="people-create-role"
+                  value={createForm.role || "member"}
+                  onChange={(e) =>
+                    setCreateForm({ ...createForm, role: e.target.value as any })
+                  }
+                  className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-sm text-[#0a0a0a] transition-colors outline-none focus:border-[#0a0a0a]"
                 >
-                  Email <span className="text-[#ef4444]">*</span>
+                  <option value="member">Member (Regular)</option>
+                  <option value="activist">Activist (Volunteer)</option>
+                </select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label htmlFor="people-create-school" className="text-xs font-bold text-[#0a0a0a]">
+                  School / Institution
+                </label>
+                <select
+                  id="people-create-school"
+                  value={createForm.school_id || ""}
+                  onChange={(e) =>
+                    setCreateForm({ ...createForm, school_id: e.target.value || null })
+                  }
+                  className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-sm text-[#0a0a0a] transition-colors outline-none focus:border-[#0a0a0a]"
+                >
+                  <option value="">None / Not set</option>
+                  {verifiedSchools.map((sch) => (
+                    <option key={sch.id} value={sch.id}>
+                      {sch.name} ({sch.type})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Phone & Gender */}
+            <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <label htmlFor="people-create-phone" className="text-xs font-bold text-[#0a0a0a]">
+                  Phone Number / WhatsApp
                 </label>
                 <input
-                  id="people-create-email"
-                  type="email"
-                  required
-                  autoComplete="email"
-                  value={createForm.email || ""}
-                  onChange={(e) =>
-                    setCreateForm({ ...createForm, email: e.target.value })
-                  }
-                  placeholder="member@example.com"
-                  className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-sm text-[#0a0a0a] transition-colors outline-none placeholder:text-[#767676] focus:border-[#0a0a0a] focus:ring-2 focus:ring-[#0a0a0a]/15"
+                  id="people-create-phone"
+                  type="tel"
+                  value={createForm.phone || ""}
+                  onChange={(e) => setCreateForm({ ...createForm, phone: e.target.value })}
+                  placeholder="e.g. 08123456789"
+                  className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-sm text-[#0a0a0a] transition-colors outline-none focus:border-[#0a0a0a]"
                 />
               </div>
+
               <div className="space-y-1.5">
-                <label
-                  htmlFor="people-create-gender"
-                  className="text-xs font-bold text-[#0a0a0a]"
-                >
-                  Gender <span className="text-[#ef4444]">*</span>
+                <label htmlFor="people-create-gender" className="text-xs font-bold text-[#0a0a0a]">
+                  Gender
                 </label>
                 <select
                   id="people-create-gender"
-                  required
                   value={createForm.gender || ""}
-                  onChange={(e) =>
-                    setCreateForm({ ...createForm, gender: e.target.value })
-                  }
-                  className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-sm text-[#0a0a0a] transition-colors outline-none focus:border-[#0a0a0a] focus:ring-2 focus:ring-[#0a0a0a]/15"
+                  onChange={(e) => setCreateForm({ ...createForm, gender: e.target.value })}
+                  className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-sm text-[#0a0a0a] transition-colors outline-none focus:border-[#0a0a0a]"
                 >
-                  <option value="" disabled>
-                    Select gender
-                  </option>
-                  <option value="L">Male</option>
-                  <option value="P">Female</option>
+                  <option value="">Not specified</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
                 </select>
               </div>
+            </div>
+
+            {/* Date of Birth & Address */}
+            <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <label
-                  htmlFor="people-create-school"
-                  className="text-xs font-bold text-[#0a0a0a]"
-                >
-                  School <span className="text-[#ef4444]">*</span>
+                <label htmlFor="people-create-dob" className="text-xs font-bold text-[#0a0a0a]">
+                  Date of Birth
                 </label>
                 <input
-                  id="people-create-school"
-                  type="text"
-                  required
-                  autoComplete="organization"
-                  value={createForm.school || ""}
+                  id="people-create-dob"
+                  type="date"
+                  value={createForm.date_of_birth || ""}
                   onChange={(e) =>
-                    setCreateForm({ ...createForm, school: e.target.value })
+                    setCreateForm({ ...createForm, date_of_birth: e.target.value })
                   }
-                  placeholder="e.g. SMA Tri Maha Dharma"
-                  className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-sm text-[#0a0a0a] transition-colors outline-none placeholder:text-[#767676] focus:border-[#0a0a0a] focus:ring-2 focus:ring-[#0a0a0a]/15"
+                  className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-sm text-[#0a0a0a] transition-colors outline-none focus:border-[#0a0a0a]"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label htmlFor="people-create-address" className="text-xs font-bold text-[#0a0a0a]">
+                  Address / Notes
+                </label>
+                <input
+                  id="people-create-address"
+                  type="text"
+                  value={createForm.address || ""}
+                  onChange={(e) => setCreateForm({ ...createForm, address: e.target.value })}
+                  placeholder="Optional address"
+                  className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-sm text-[#0a0a0a] transition-colors outline-none focus:border-[#0a0a0a]"
                 />
               </div>
             </div>
-          </section>
+          </div>
+
           <div className="flex flex-col-reverse gap-2.5 border-t border-[#e5e5e5] pt-4 sm:flex-row sm:justify-end">
             <button
               type="button"
               disabled={submitting}
               onClick={() => setShowCreateModal(false)}
-              className="min-h-11 flex-1 rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-4 text-sm font-semibold text-[#0a0a0a] transition-colors hover:bg-[#f5f0e0] disabled:opacity-50 sm:flex-none"
+              className="min-h-11 flex-1 cursor-pointer rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-4 text-sm font-semibold text-[#0a0a0a] transition-colors hover:bg-[#f5f0e0] disabled:opacity-50 sm:flex-none"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-[12px] bg-[#0a0a0a] px-5 text-sm font-bold text-white transition-colors hover:bg-[#1f1f1f] disabled:cursor-wait disabled:opacity-50 sm:flex-none"
+              className="inline-flex min-h-11 flex-1 cursor-pointer items-center justify-center gap-2 rounded-[12px] bg-[#0a0a0a] px-5 text-sm font-bold text-white transition-colors hover:bg-[#1f1f1f] disabled:cursor-wait disabled:opacity-50 sm:flex-none"
             >
               {submitting && (
                 <span
@@ -990,13 +1007,161 @@ export function PeoplePage() {
                   aria-hidden="true"
                 />
               )}
-              {submitting ? "Creating..." : "Create Member"}
+              {submitting ? "Registering..." : "Register Member"}
             </button>
           </div>
         </form>
       </ResponsiveFormModal>
-      {/* MODAL 2: Change Member Role (Pengurus/Admin only can change role)          */}
-      {/* ───────────────────────────────────────────────────────────────────────── */}
+
+      {/* ── MODAL 2: ONE-TIME TEMPORARY CREDENTIALS MODAL ── */}
+      {createdCredentials && (
+        <div className="fixed inset-0 z-50 flex animate-in items-center justify-center bg-black/60 p-3.5 backdrop-blur-xs fade-in sm:p-4">
+          <div className="relative max-h-[90vh] w-full max-w-lg space-y-4 overflow-y-auto rounded-[24px] border border-[#e5e5e5] bg-[#fffaf0] p-5 text-left shadow-2xl sm:p-6">
+            <div className="flex items-center gap-3 border-b border-[#e5e5e5] pb-3">
+              <div className="flex size-10 items-center justify-center rounded-[12px] bg-emerald-500 text-white shadow-xs">
+                <CheckCircleIcon className="size-6" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-[#0a0a0a] sm:text-lg">
+                  Member Pre-Provisioned!
+                </h3>
+                <p className="text-xs text-[#6a6a6a]">
+                  Share these temporary credentials with the member for initial login.
+                </p>
+              </div>
+            </div>
+
+            {/* Credentials Card */}
+            <div className="space-y-3 rounded-[16px] border border-[#e8b94a]/40 bg-[#faf5e8] p-4">
+              <div>
+                <span className="block text-[10px] font-bold tracking-wider text-[#6a6a6a] uppercase">
+                  Full Name
+                </span>
+                <span className="text-sm font-bold text-[#0a0a0a]">
+                  {createdCredentials.name}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 border-t border-[#e6decb]/80 pt-2.5">
+                <div>
+                  <span className="block text-[10px] font-bold tracking-wider text-[#6a6a6a] uppercase">
+                    Member ID
+                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-mono text-sm font-bold text-[#1a3a3a]">
+                      {createdCredentials.user_number}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleCopy(createdCredentials.user_number, "Member ID copied!")
+                      }
+                      className="cursor-pointer text-[#6a6a6a] hover:text-[#0a0a0a]"
+                      title="Copy Member ID"
+                    >
+                      <CopyIcon className="size-3" />
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <span className="block text-[10px] font-bold tracking-wider text-[#6a6a6a] uppercase">
+                    Username
+                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-mono text-sm font-bold text-[#1a3a3a]">
+                      @{createdCredentials.username}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleCopy(createdCredentials.username, "Username copied!")
+                      }
+                      className="cursor-pointer text-[#6a6a6a] hover:text-[#0a0a0a]"
+                      title="Copy Username"
+                    >
+                      <CopyIcon className="size-3" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t border-[#e6decb]/80 pt-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="block text-[10px] font-bold tracking-wider text-[#6a6a6a] uppercase">
+                    Temporary Password
+                  </span>
+                  <span className="text-[10px] font-semibold text-rose-600">
+                    *Shown once only
+                  </span>
+                </div>
+                <div className="mt-1 flex items-center justify-between rounded-[8px] border border-[#e5e5e5] bg-[#fffaf0] px-3 py-2">
+                  <span className="font-mono text-xs font-extrabold text-[#0a0a0a] select-all sm:text-sm">
+                    {createdCredentials.temporary_password}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleCopy(
+                        createdCredentials.temporary_password,
+                        "Password copied!"
+                      )
+                    }
+                    className="inline-flex cursor-pointer items-center gap-1 text-xs font-bold text-[#0a0a0a] hover:underline"
+                  >
+                    <CopyIcon className="size-3" />
+                    <span>Copy</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* WhatsApp Invite Action */}
+            <div className="space-y-2">
+              <Button
+                variant="filled"
+                type="button"
+                onClick={() =>
+                  handleCopyWhatsAppInvitation(
+                    createdCredentials.whatsapp_invite_message ||
+                      createdCredentials.copy_template
+                  )
+                }
+                className="w-full gap-2 rounded-[12px] bg-emerald-600 text-white hover:bg-emerald-700"
+              >
+                {copiedInvite ? (
+                  <CheckIcon className="size-4" />
+                ) : (
+                  <Share2Icon className="size-4" />
+                )}
+                <span>
+                  {copiedInvite
+                    ? "Copied for WhatsApp!"
+                    : "Copy WhatsApp Invitation Message"}
+                </span>
+              </Button>
+
+              <p className="text-center text-[11px] text-[#6a6a6a]">
+                Member can activate their account and set permanent password at{" "}
+                <strong>/login</strong>.
+              </p>
+            </div>
+
+            <div className="flex justify-end border-t border-[#e5e5e5] pt-3">
+              <Button
+                variant="outlined"
+                type="button"
+                onClick={() => setCreatedCredentials(null)}
+                className="rounded-[12px] px-6"
+              >
+                Done
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL 3: CHANGE MEMBER ROLE (ADMIN ONLY) ── */}
       {editingMember && (
         <div className="fixed inset-0 z-50 flex animate-in items-center justify-center bg-black/60 p-3.5 backdrop-blur-xs fade-in sm:p-4">
           <div className="relative max-h-[90vh] w-full max-w-md space-y-4 overflow-y-auto rounded-[24px] border border-[#e5e5e5] bg-[#fffaf0] p-4 text-left shadow-2xl sm:space-y-5 sm:p-6">
@@ -1023,15 +1188,10 @@ export function PeoplePage() {
               </button>
             </div>
 
-            {/* Read-Only User Info Card */}
             <div className="space-y-2.5 rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] p-3.5">
               <div className="flex items-center gap-3">
                 <div className="flex size-10 shrink-0 items-center justify-center rounded-[12px] bg-[#e8b94a] text-xs font-bold text-[#0a0a0a] uppercase shadow-2xs">
-                  {editingMember.name
-                    .split(" ")
-                    .slice(0, 2)
-                    .map((w) => (w[0] ? w[0].toUpperCase() : ""))
-                    .join("") || "UM"}
+                  {editingMember.name.slice(0, 2).toUpperCase()}
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-xs font-bold text-[#0a0a0a] sm:text-sm">
@@ -1047,74 +1207,39 @@ export function PeoplePage() {
                   {editingMember.role}
                 </span>
               </div>
-
-              <div className="grid grid-cols-2 gap-2 border-t border-[#e5e5e5] pt-2 text-xs text-[#6a6a6a]">
-                <div className="truncate">
-                  <span className="block text-[10px] font-bold text-[#6a6a6a] uppercase">
-                    Contact
-                  </span>
-                  <span className="block truncate font-medium text-[#0a0a0a]">
-                    {editingMember.phone || editingMember.email || "—"}
-                  </span>
-                </div>
-                <div className="truncate">
-                  <span className="block text-[10px] font-bold text-[#6a6a6a] uppercase">
-                    School/College
-                  </span>
-                  <span className="block truncate font-medium text-[#0a0a0a]">
-                    {editingMember.school || "—"}
-                  </span>
-                </div>
-              </div>
             </div>
 
             <form onSubmit={handleUpdateMember} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="flex items-center justify-between text-xs font-bold text-[#0a0a0a]">
-                  <span>Select New Role</span>
+                <label className="text-xs font-bold text-[#0a0a0a]">
+                  Select New Role
                 </label>
                 <select
                   value={updateForm.role || "member"}
                   onChange={(e) =>
                     setUpdateForm({ role: e.target.value as any })
                   }
-                  className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-xs font-semibold text-[#0a0a0a] outline-none focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] sm:text-sm"
+                  className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-xs font-semibold text-[#0a0a0a] outline-none focus:border-[#0a0a0a] sm:text-sm"
                 >
-                  <option value="member">
-                    Member (Access: Home, Events, Leaderboard, Profile)
-                  </option>
-                  <option value="activist">
-                    Activist (Access: Attendance Scanner & Event Duties)
-                  </option>
-                  <option value="organizer">
-                    Organizer (Full Access: Management & Events)
-                  </option>
-                  {isAdmin && (
-                    <option value="admin">
-                      Admin (System Master Administrator)
-                    </option>
-                  )}
+                  <option value="member">Member (Regular Community)</option>
+                  <option value="activist">Activist (Volunteer & Duties)</option>
+                  <option value="organizer">Organizer (Operations & Events)</option>
+                  {isAdmin && <option value="admin">Admin (System Master)</option>}
                 </select>
-              </div>
-
-              <div className="rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] p-3 text-xs leading-relaxed text-[#0a0a0a]">
-                ℹ️ <strong>Information:</strong> Role changes will immediately
-                update the member's navigation menu and authorization
-                privileges.
               </div>
 
               <div className="flex gap-2.5 pt-2">
                 <button
                   type="button"
                   onClick={() => setEditingMember(null)}
-                  className="h-11 flex-1 cursor-pointer rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] text-xs font-semibold text-[#0a0a0a] transition-colors hover:bg-[#faf5e8] sm:text-sm"
+                  className="h-11 flex-1 cursor-pointer rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] text-xs font-semibold text-[#0a0a0a] hover:bg-[#faf5e8] sm:text-sm"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="h-11 flex-1 cursor-pointer rounded-[12px] bg-[#0a0a0a] text-xs font-bold text-white shadow-xs transition-all hover:bg-[#1f1f1f] disabled:opacity-50 sm:text-sm"
+                  className="h-11 flex-1 cursor-pointer rounded-[12px] bg-[#0a0a0a] text-xs font-bold text-white shadow-xs hover:bg-[#1f1f1f] disabled:opacity-50 sm:text-sm"
                 >
                   {submitting ? "Saving..." : "Save Role"}
                 </button>
@@ -1124,131 +1249,7 @@ export function PeoplePage() {
         </div>
       )}
 
-      {/* ───────────────────────────────────────────────────────────────────────── */}
-      {/* MODAL 3: Member QR Card & Printable Physical ID                           */}
-      {/* ───────────────────────────────────────────────────────────────────────── */}
-      {qrMember && (
-        <div className="fixed inset-0 z-50 flex animate-in items-center justify-center bg-black/60 p-3.5 backdrop-blur-xs fade-in sm:p-4">
-          <div className="relative max-h-[90vh] w-full max-w-md space-y-4 overflow-y-auto rounded-[24px] border border-[#e5e5e5] bg-[#fffaf0] p-4 text-left shadow-2xl sm:space-y-5 sm:p-6">
-            <div className="flex items-center justify-between border-b border-[#e5e5e5] pb-3">
-              <div className="flex items-center gap-2">
-                <SparklesIcon className="size-5 text-[#e8b94a]" />
-                <h3 className="text-sm font-bold text-[#0a0a0a] sm:text-base">
-                  Member Card & QR Code
-                </h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setQrMember(null)}
-                className="cursor-pointer rounded-full p-1.5 text-[#6a6a6a] hover:bg-[#faf5e8]"
-              >
-                <XIcon className="size-5" />
-              </button>
-            </div>
-
-            {/* The ID Card Preview */}
-            <div className="space-y-4 rounded-[20px] border border-[#e5e5e5] bg-[#faf5e8] p-4 shadow-xs sm:p-5">
-              <div className="flex items-center justify-between border-b border-[#e5e5e5] pb-2.5">
-                <div>
-                  <p className="text-xs font-bold text-[#0a0a0a]">
-                    Sekkha Community
-                  </p>
-                  <p className="text-[11px] font-medium text-[#6a6a6a]">
-                    Official Membership ID Card
-                  </p>
-                </div>
-                <span
-                  className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold capitalize ${roleBadgeStyle[qrMember.role]}`}
-                >
-                  {qrMember.role}
-                </span>
-              </div>
-
-              <div className="flex flex-col items-center justify-center space-y-3 py-2">
-                <div className="rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0] p-3 shadow-xs">
-                  <QRCode
-                    value={qrMember.user_number || qrMember.id}
-                    size={140}
-                    style={{ height: "auto", maxWidth: "100%", width: "100%" }}
-                    viewBox="0 0 256 256"
-                  />
-                </div>
-
-                <div className="space-y-0.5 text-center">
-                  <p className="text-sm font-bold text-[#0a0a0a] sm:text-base">
-                    {qrMember.name}
-                  </p>
-                  <p className="font-mono text-xs font-bold text-[#1a3a3a]">
-                    {qrMember.user_number || "—"}
-                  </p>
-                  {qrMember.school && (
-                    <p className="flex items-center gap-1 text-xs text-[#6a6a6a]">
-                      <GraduationCapIcon
-                        className="size-3"
-                        aria-hidden="true"
-                      />
-                      <span>{qrMember.school}</span>
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between border-t border-[#e5e5e5] pt-2 text-xs text-[#6a6a6a]">
-                <span className="inline-flex items-center gap-1.5">
-                  <span>Status:</span>
-                  {qrMember.is_claimed ? (
-                    <span className="inline-flex items-center gap-1 font-semibold text-emerald-600">
-                      <CheckCircleIcon
-                        className="size-3.5"
-                        aria-hidden="true"
-                      />
-                      Active Account
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 font-semibold text-amber-600">
-                      <AlertTriangleIcon
-                        className="size-3.5"
-                        aria-hidden="true"
-                      />
-                      Unclaimed
-                    </span>
-                  )}
-                </span>
-                <span>Total Attendance: {qrMember.total_attendance || 0}x</span>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => handleCopy(qrMember.user_number)}
-                className="flex h-11 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] text-xs font-semibold text-[#0a0a0a] transition-colors hover:bg-[#faf5e8] sm:text-sm"
-              >
-                {copiedId ? (
-                  <CheckIcon className="size-4 text-emerald-600" />
-                ) : (
-                  <CopyIcon className="size-4 text-[#6a6a6a]" />
-                )}
-                <span>{copiedId ? "Copied!" : "Copy Member ID"}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => window.print()}
-                className="flex h-11 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-[12px] bg-[#0a0a0a] text-xs font-bold text-white shadow-xs transition-all hover:bg-[#1f1f1f] sm:text-sm"
-              >
-                <PrinterIcon className="size-4" />
-                <span>Print Card</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ───────────────────────────────────────────────────────────────────────── */}
-      {/* MODAL 4: Delete Confirmation                                              */}
-      {/* ───────────────────────────────────────────────────────────────────────── */}
+      {/* ── MODAL 4: DELETE MEMBER CONFIRMATION ── */}
       {deletingMember && (
         <div className="fixed inset-0 z-50 flex animate-in items-center justify-center bg-black/60 p-3.5 backdrop-blur-xs fade-in sm:p-4">
           <div className="relative max-h-[90vh] w-full max-w-sm space-y-4 overflow-y-auto rounded-[24px] border border-[#e5e5e5] bg-[#fffaf0] p-4 text-left shadow-2xl sm:p-6">
@@ -1260,17 +1261,13 @@ export function PeoplePage() {
                 <h3 className="text-sm font-bold text-[#0a0a0a] sm:text-base">
                   Delete Member?
                 </h3>
-                <p className="text-xs text-[#6a6a6a]">
-                  This action cannot be undone
-                </p>
+                <p className="text-xs text-[#6a6a6a]">This action cannot be undone</p>
               </div>
             </div>
 
             <p className="text-xs leading-relaxed text-[#6a6a6a] sm:text-sm">
-              Are you sure you want to delete{" "}
-              <strong>"{deletingMember.name}"</strong> (
-              {deletingMember.user_number || "No ID"})? All associated history
-              will be removed.
+              Are you sure you want to delete <strong>"{deletingMember.name}"</strong> (
+              {deletingMember.user_number || "No ID"})?
             </p>
 
             <div className="flex gap-2 pt-2">
@@ -1295,10 +1292,6 @@ export function PeoplePage() {
           </div>
         </div>
       )}
-
-      {/* ───────────────────────────────────────────────────────────────────────── */}
-      {/* MODAL 5: Member Credentials Modal (Pengurus / Admin)                      */}
-      {/* ───────────────────────────────────────────────────────────────────────── */}
     </main>
   )
 }

@@ -4,26 +4,27 @@ import { peopleControllers } from "./controllers"
 
 export const peopleRouter: Router = Router()
 
-// 1. List members (organizer/admin only)
-peopleRouter.get("/members", requireAuth, requireRole("organizer", "admin"), peopleControllers.getMembers)
+// 1. List members (activist, organizer, admin)
+peopleRouter.get("/", requireAuth, requireRole("activist", "organizer", "admin"), peopleControllers.getMembers)
+peopleRouter.get("/members", requireAuth, requireRole("activist", "organizer", "admin"), peopleControllers.getMembers)
 
-// 2. Member detail (organizer/admin only)
-peopleRouter.get("/members/:id", requireAuth, requireRole("organizer", "admin"), peopleControllers.getMemberDetail)
+// 2. Member detail (activist, organizer, admin)
+peopleRouter.get("/:id", requireAuth, requireRole("activist", "organizer", "admin"), peopleControllers.getMemberDetail)
+peopleRouter.get("/members/:id", requireAuth, requireRole("activist", "organizer", "admin"), peopleControllers.getMemberDetail)
 
-// 3. Add new member (organizer/admin)
+// 3. Add new member / Pre-provisioning (organizer, admin)
+peopleRouter.post("/", requireAuth, requireRole("organizer", "admin"), peopleControllers.createMember)
 peopleRouter.post("/members", requireAuth, requireRole("organizer", "admin"), peopleControllers.createMember)
 
-// 4. Update member (organizer/admin only; role change requires admin handled in service)
+// 4. Update member (organizer, admin)
+peopleRouter.put("/:id", requireAuth, requireRole("organizer", "admin"), peopleControllers.updateMember)
 peopleRouter.put("/members/:id", requireAuth, requireRole("organizer", "admin"), peopleControllers.updateMember)
 
 // 5. Delete member (admin only)
+peopleRouter.delete("/:id", requireAuth, requireRole("admin"), peopleControllers.deleteMember)
 peopleRouter.delete("/members/:id", requireAuth, requireRole("admin"), peopleControllers.deleteMember)
 
-// 6. Reset password (admin only)
-peopleRouter.post("/members/:id/reset-password", requireAuth, requireRole("admin"), peopleControllers.resetPassword)
-
-// 7. Generate claim PIN (organizer/admin only)
-peopleRouter.post("/members/:id/generate-claim-pin", requireAuth, requireRole("organizer", "admin"), peopleControllers.generateClaimPin)
-
-// 8. Link legacy account (authenticated user)
-peopleRouter.post("/link-legacy-account", requireAuth, peopleControllers.linkLegacyAccount)
+// 6. Reset temporary password (organizer, admin; only for unclaimed accounts)
+peopleRouter.post("/:id/reset-temporary-password", requireAuth, requireRole("organizer", "admin"), peopleControllers.resetTemporaryPassword)
+peopleRouter.post("/members/:id/reset-temporary-password", requireAuth, requireRole("organizer", "admin"), peopleControllers.resetTemporaryPassword)
+peopleRouter.post("/members/:id/reset-password", requireAuth, requireRole("organizer", "admin"), peopleControllers.resetTemporaryPassword)

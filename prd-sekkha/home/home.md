@@ -1,146 +1,105 @@
-# PRD: Dashboard / Home — Sekkha Apps
+# PRD: Home Dashboard — Sekkha Apps
 
 | Metadata | Detail |
 | --- | --- |
 | **Dokumen** | Product Requirement Document (PRD) |
-| **Fitur** | Dashboard (Home) — Gamifikasi Personal |
+| **Fitur** | Personal Home Dashboard (Ringkasan Komunitas, Kartu Anggota, Streak, & Event Terdekat) |
+| **Domain** | `home` / `dashboard` |
 | **Aplikasi** | Sekkha Apps (Frontend & Backend) |
-| **Versi** | 1.0.0 |
+| **Versi** | 2.0.0 (Unified & Gamification-Sanitized) |
 | **Status** | Approved / Ready for Development |
+| **Referensi Terkait** | `prd-sekkha/event/event.md`, `prd-sekkha/configure/seasons.md`, `prd-sekkha/general/users/profile-and-settings.md` |
 
 ---
 
 ## 1. Ringkasan Eksekutif & Tujuan
 
-Dashboard adalah halaman **Home** yang pertama kali dilihat pengguna setelah login (`/home`). Halaman ini berfungsi sebagai pusat **gamifikasi personal**: menampilkan progres, aktivitas terkini, ajakan bertindak, dan "rasa memiliki" terhadap komunitas.
-
-Berbeda dari halaman fitur (Events, Leaderboard, Profile), Dashboard bersifat **ringkasan cepat** — pengguna bisa melihat "apa yang penting hari ini" tanpa harus menavigasi ke banyak halaman.
-
-### 🎯 Tujuan Utama
-1. **Engagement harian**: mendorong user kembali ke aplikasi setiap hari via streak, event berikutnya, aktivitas terbaru.
-2. **Visualisasi progres**: menunjukkan poin, level, badge secara ringkas dan memotivasi.
-3. **Personal touch**: salam + nama user, avatar, ringkasan personal.
-4. **Spiritual touch**: kutipan Dhamma acak untuk mengingatkan nilai-nilai vihara.
-5. **Akses cepat**: pintasan ke fitur utama tanpa harus menggali menu.
+Dashboard Home (`/home`) adalah beranda utama yang pertama kali dilihat pengguna setelah masuk ke Sekkha Apps. Berfungsi sebagai **pusat keterlibatan personal jemaat** (*personal community hub*):
+1. **Penyambutan Hangat & Kartu Anggota Digital**: Salam waktu dinamis (*"Good morning/afternoon/evening, [Name]"*), kartu digital ringkas yang menampilkan `userNumber` dan tombol cepat membuka QR Presensi.
+2. **Keterlibatan Konsistensi (Weekly Streak)**: Menampilkan jumlah minggu berturut-turut jemaat hadir di vihara untuk menjaga komitmen spiritual pemuda.
+3. **Event Terdekat (Upcoming Event)**: Menyoroti kegiatan kebaktian, meditasi, atau bakti sosial terdekat dengan countdown timer dan detail lokasi.
+4. **Progres Musim Aktif (Season Progress)**: Menampilkan pencapaian poin jemaat dalam musim kompetisi sehat yang sedang berjalan (mis. Vassa / Semester) serta sisa hari musim.
+5. **Kutipan Dhamma Harian (Daily Dhamma Wisdom)**: Kutipan kebijaksanaan harian untuk menginspirasi hari anggota.
+6. **Eliminasi Gamifikasi Artifisial**: Fitur level numerik (Level 1-99) dan badge koleksi telah **dieliminasi total** sesuai filosofi Buddhis kesederhanaan dan nilai guna nyata.
 
 ---
 
 ## 2. Target Pengguna & Role
 
-Semua role yang sudah login dapat mengakses Dashboard:
-
-| Role | Akses | Tampilan Spesifik |
-| --- | --- | --- |
-| `umat` | ✅ Default landing | Gamifikasi personal lengkap |
-| `aktivis` | ✅ | + highlight tugas kepanitiaan / scanner shortcut |
-| `pengurus` | ✅ | + analytics ringkas (jumlah event minggu ini, anggota baru) |
-| `admin` | ✅ | Sama dengan pengurus (admin tidak punya halaman khusus di sini) |
-
-Dashboard **tidak menampilkan** data sensitif user lain secara default. Privacy: data hanya milik user yang login.
-
----
-
-## 3. Komponen Utama (Berdasarkan Implementasi)
-
-Berdasarkan struktur `src/modules/dashboard/internal/components/`:
-
-| Komponen | Tujuan |
+| Role | Tampilan & Akses Khusus di Home Dashboard |
 | --- | --- |
-| `DashboardPage` | Layout utama, grid komponen di bawah ini |
-| `ProfileSummaryCard` | Avatar + nama + salam "Selamat pagi/siang/malam" + ringkasan level/poin |
-| `NextEventCard` | Event terdekat yang user RSVP, dengan CTA "Lihat Detail" |
-| `LatestActivityCard` | 3-5 aktivitas terbaru (badge earned, attendance recorded, dll.) |
-| `DhammaWidget` | Kutipan Dhamma acak dari `public/dhammapada.json` |
+| `member` | Dashboard personal jemaat: Kartu QR anggota, streak mingguan, event terdekat, musim aktif, dan kutipan Dhamma. |
+| `activist` | Sama dengan member + badge status aktivis. |
+| `organizer` | Sama dengan jemaat + **Quick Operator Card**: Pintasan langsung ke live QR scanner event aktif (`/events/scan`) dan ringkasan jemaat hadir hari ini. |
+| `admin` | Sama dengan organizer. |
 
 ---
 
-## 4. User Stories
+## 3. Komponen Antarmuka & Layout (Clay Design System)
 
-| ID | Sebagai | Saya ingin | Supaya |
-| --- | --- | --- | --- |
-| US-01 | Umat | Melihat ringkasan streak, poin, level saya di satu tempat | Tidak perlu buka banyak halaman untuk tahu progres |
-| US-02 | Umat | Melihat event berikutnya yang sudah saya RSVP | Tidak lupa hadir |
-| US-03 | Umat | Melihat aktivitas terbaru saya (badge, presensi) | Merasakan progres |
-| US-04 | Umat | Membaca kutipan Dhamma acak | Mendapat pengingat nilai spiritual |
-| US-05 | Aktivis | Pintasan ke fitur scan QR presensi | Cepat absen saat event |
-| US-06 | Pengurus | Melihat ringkas jumlah event minggu ini | Manage prioritas |
+Mengadopsi layout grid responsif 12 kolom (`max-w-7xl mx-auto`) dengan estetika Clay hangat:
 
----
+```
+┌────────────────────────────────────────────────────────┐
+│  1. Hero Welcome & Digital Member Quick ID Card        │
+│     (Salam, QR Presensi, Streak Counter, Poin Musim)   │
+└────────────────────────────────────────────────────────┘
+┌─────────────────────────────────┬──────────────────────┐
+│  2. Next Upcoming Event Card    │ 3. Active Season Card│
+│     (Judul, Waktu, Lokasi, CTA) │    (Progress Bar)    │
+├─────────────────────────────────┴──────────────────────┤
+│  4. Recent Activity & Points History Ledger            │
+│     (Catatan presensi & poin masuk terakhir)           │
+├────────────────────────────────────────────────────────┤
+│  5. Daily Dhamma Quote Widget                          │
+└────────────────────────────────────────────────────────┘
+```
 
-## 5. Functional Requirements
+### 3.1. Hero Welcome & Digital Member Quick Card
+* **Salam Waktu Dinamis (Local Time Greeting)**:
+  * Pagi (04:00 - 11:59): *"Good morning, [Name]"*
+  * Siang (12:00 - 16:59): *"Good afternoon, [Name]"*
+  * Malam (17:00 - 03:59): *"Good evening, [Name]"*
+* **Statistik Cepat**:
+  * **Current Streak**: Jumlah minggu berturut-turut hadir (`🔥 N Weeks Streak`).
+  * **Season Points**: Poin yang diperoleh dalam musim yang sedang aktif.
+  * **Member ID**: Nomor anggota resmi `userNumber` (mis. `2026102401`).
+* **Tombol Cepat QR Presensi**: Tombol *"Show Member QR"* yang langsung menampilkan modal QR code statis layar penuh dengan kecerahan tinggi untuk mempermudah pemindaian oleh petugas pintu masuk vihara.
 
-### 5.1. Data Source
+### 3.2. Next Upcoming Event Card
+* Menampilkan event terdekat yang berstatus `scheduled` atau `active`:
+  * Badge Status: *"Live Today"* (hijau berkedip jika hari ini) atau *"Upcoming"*.
+  * Tag Kategori Event dari master data: Routine Puja, Chanting, Meditation, dll.
+  * Countdown Waktu: *"Starts in 2 hours"* atau *"Tomorrow at 09:00 AM"*.
+  * Nama Lokasi: Dhammasala Utama / Vihara Sekkha.
+  * CTA Button: *"View Event Details"*, mengarahkan ke `/events?eventId=:id`.
 
-Dashboard **tidak membuat endpoint baru**. Data digabung dari endpoint existing:
+### 3.3. Active Season Progress Card
+* Terintegrasi dengan modul Season aktif (`prd-sekkha/configure/seasons.md`):
+  * Nama Musim Aktif: e.g. *"Vassa Season 2026"*.
+  * Sisa Waktu: e.g. *"42 Days Remaining"*.
+  * Progress Bar: Poin jemaat terhadap target komunitas atau pencapaian semester.
+  * CTA: *"View Leaderboard"*, mengarahkan ke tab musim di `/leaderboard`.
 
-| Kartu | Endpoint (existing) |
-| --- | --- |
-| `ProfileSummaryCard` | `GET /api/users/me`, `GET /api/users/me/level` |
-| `NextEventCard` | `GET /api/events?upcoming=true&userRsvp=true` |
-| `LatestActivityCard` | `GET /api/users/me/attendances?limit=5` + `GET /api/users/me/badges?limit=5` |
-| `DhammaWidget` | Static fetch dari `public/dhammapada.json` (client-side random) |
-
-### 5.2. Personalisasi
-
-- **Salam berdasarkan jam lokal** (pagi < 11, siang < 15, sore < 18, malam setelahnya).
-- **DhammaWidget**: ambil 1 quote random per hari (berdasarkan `Date.now()` modulo) supaya konsisten dalam 1 hari tapi beda tiap hari.
-
-### 5.3. Loading & Error State
-
-- Setiap card memiliki skeleton state (`skeleton.tsx`) saat loading.
-- Error pada 1 card **tidak boleh** meruntuhkan seluruh dashboard — tampilkan empty state + retry per card.
-- Stale data: gunakan data terakhir yang sukses + tampilkan badge "Updated X minutes ago".
-
-### 5.4. Responsive
-
-- **Desktop**: grid 2 kolom (kiri: profil + next event; kanan: activity + announcement + dhamma).
-- **Mobile**: stack vertikal, Next Event paling atas (CTA terkuat).
-
----
-
-## 6. UI/UX & NFR
-
-1. **Hero Card** (ProfileSummaryCard) menggunakan warna brand Sekkha (Yellow/Blue gradient halus dari DESIGN.md).
-2. **Skeleton shimmer** untuk setiap card (bukan spinner global).
-3. **First-paint time**: target < 1.5s di 4G (lihat skill `performance-optimization`).
-4. **Aksesibilitas**: heading hierarchy benar (h1 = salam, h2 = section, h3 = card title).
-
----
-
-## 7. Acceptance Criteria
-
-| ID | Skenario | Hasil yang Diharapkan |
-| --- | --- | --- |
-| **AC-01** | User login pertama kali (umat) → buka `/home` | ProfileSummary menampilkan nama + level 1 + poin 0. Salam: "Selamat [waktu], [Nama]" |
-| **AC-02** | User yang punya RSVP event hari ini | NextEventCard menampilkan judul event + waktu + lokasi + CTA "Lihat Detail" |
-| **AC-03** | User yang belum RSVP event apapun | NextEventCard menampilkan empty state: "Belum ada event terdekat. Cek Events" |
-| **AC-04** | User yang punya 3 presensi dalam 7 hari terakhir | LatestActivityCard menampilkan 3 entry terakhir (event title + tanggal) |
-| **AC-05** | DhammaWidget muncul | 1 kutipan Dhamma acak tampil, konsisten sepanjang hari yang sama untuk user yang sama |
-| **AC-07** | Backend down saat buka dashboard | Skeleton muncul, setelah timeout setiap card tampil empty state + tombol retry; tidak ada error overlay global |
-| **AC-08** | Buka `/home` di mobile (375px) | Layout stack vertikal, tap target minimal 44px, NextEventCard di paling atas |
-| **AC-09** | User tanpa auth coba buka `/home` | Auto-redirect ke `/login?redirectTo=/home` |
+### 3.4. Operator Shortcut Banner (Khusus Organizer & Admin)
+* Ditampilkan hanya jika ada event berstatus `active` saat ini:
+  * Banner Amber Emas: *"Live Attendance Session Active: [Judul Event]"*.
+  * Tombol CTA: *"Launch Camera QR Scanner"*, langsung membuka `/events/scan?eventId=:id`.
 
 ---
 
-## 8. Out of Scope
+## 4. Spesifikasi Teknis & API Contract
 
-- Drag-and-drop / reorder kartu (bisa jadi iterasi berikutnya).
-- Custom widget per user (semua user lihat layout sama).
-- Personalisasi layout berdasarkan machine learning.
-
----
-
-## 9. Open Questions
-
-1. Apakah pengurus butuh widget khusus "tugas pengurus yang belum selesai" di dashboard?
-2. Apakah ada konsep "Daily Check-in" (tap tombol → dapat poin) yang akan ditambahkan ke ProfileSummaryCard?
-3. Apakah DhammaWidget perlu bisa di-share ke media sosial?
+Dashboard Home menggabungkan data dari endpoint efisien tanpa overhead query:
+1. `GET /api/users/me`: Profil, streak, total points, dan nomor anggota.
+2. `GET /api/events?limit=1&upcoming=true`: Event terdekat yang relevan.
+3. `GET /api/configure/seasons?active=true`: Metadata musim aktif dan rentang tanggal.
+4. `GET /api/users/me/points-history?limit=3`: 3 riwayat perolehan poin kehadiran terakhir.
 
 ---
 
-## 10. Referensi
+## 5. UI/UX & Non-Functional Requirements
 
-- `sekkha-frontend/src/modules/dashboard/` — implementasi existing
-- `sekkha-frontend/public/dhammapada.json` — sumber kutipan Dhamma
-- `DESIGN.md` — design tokens (warna brand, typography)
-- `sekkha-api-contract.md` — kontrak endpoint yang dipakai
+1. **Aesthetic Tokens**: Clay Card `rounded-[24px]`, border `#e5e5e5`, background warm canvas `#fffaf0`, ambient glow backdrop mesh.
+2. **Skeleton Shimmer**: Tidak ada spinner layar penuh. Setiap kartu memiliki skeleton loader mandiri saat inisialisasi data.
+3. **100% Bahasa Inggris**: Seluruh label dan dialog menggunakan Bahasa Inggris.

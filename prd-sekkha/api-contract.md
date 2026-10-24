@@ -898,7 +898,7 @@ Melihat status agregasi database pengguna dan cache snapshot (Khusus audit siste
 
 ## Modul 6: Manajemen Umat & Tim (`/api/people`)
 
-Direktori keanggotaan jemaat (*People Management*) dan prapendaftaran anggota (*pre-provisioning*) dengan kredensial otomatis. Aktivasi akun berjalan lewat login pertama, ganti password, dan verifikasi email (lihat `prd-sekkha/general/users/account-claim-simplification.md`). Mekanisme claim PIN dan account linking dihapus.
+Direktori keanggotaan jemaat (*People Management*) dan prapendaftaran anggota (*pre-provisioning*) dengan kredensial otomatis. Aktivasi akun berjalan lewat login pertama, ganti password, dan verifikasi email (lihat `prd-sekkha/peoples/people-management.md`). Mekanisme claim PIN dan account linking dihapus.
 
 ### 1. `GET /api/people/members`
 Mencari dan menampilkan daftar anggota jemaat komunitas.

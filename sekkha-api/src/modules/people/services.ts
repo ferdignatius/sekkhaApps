@@ -1,36 +1,79 @@
-import { randomBytes, randomInt } from "crypto"
+import { randomInt } from "crypto"
 import { peopleModels } from "./models"
-import { hashPassword, verifyPassword, DEFAULT_BCRYPT_COST } from "../../lib/password"
-import { generateUniqueUsername, sendTemporaryPasswordEmail } from "../auth"
+import { hashPassword, DEFAULT_BCRYPT_COST } from "../../lib/password"
 import { invalidate, CacheKeys } from "../../lib/cache"
 import { generateUniqueUserNumber } from "../../lib/userNumber"
 import { encrypt, decrypt, generateBlindIndex } from "../../lib/crypto"
 import { auditLogger } from "../../lib/auditLogger"
 import { prisma } from "../../lib/prisma"
 
-export function generateDefaultPassword(): string {
-  const randHex = randomBytes(6).toString("hex")
-  return `Sekkha-${randHex}-Puggala`
+export function generateTemporaryPassword(): string {
+  const digits = randomInt(10000, 100000) // 5 random digits: 10000..99999
+  return `sekkha${digits}puggala`
 }
 
-type ListMembersQuery = {
+export const generateDefaultPassword = generateTemporaryPassword
+
+export async function generateUniqueUsername(fullName: string): Promise<string> {
+  const words = fullName.trim().split(/\s+/)
+  const firstName = words[0]?.toLowerCase().replace(/[^a-z0-9]/g, "") || "member"
+  const base =
+    firstName.length >= 3
+      ? firstName
+      : fullName.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 15) || "member"
+
+  let attempts = 0
+  while (attempts < 20) {
+    attempts++
+    const randomDigits = randomInt(1000, 10000) // 4 digits: 1000..9999
+    const candidate = `${base}${randomDigits}`
+    const existing = await peopleModels.findUserByUsername(candidate)
+    if (!existing) {
+      return candidate
+    }
+  }
+
+  // Fallback timestamp-based suffix
+  return `${base}${Date.now() % 10000}`
+}
+
+export function generateWhatsAppInviteMessage(data: {
+  name: string
+  userNumber: string | number | bigint
+  username: string
+  tempPassword: string
+}): string {
+  return [
+    `Namaste ${data.name},`,
+    `Akun Sekkha Apps Anda telah dibuat oleh pengurus vihara.`,
+    ``,
+    `Berikut kredensial login sementara Anda:`,
+    `• Member ID: ${data.userNumber}`,
+    `• Username: ${data.username}`,
+    `• Password Sementara: ${data.tempPassword}`,
+    ``,
+    `Silakan login di https://sekkha.app/login untuk menyelesaikan aktivasi akun dan membuat password pribadi Anda. Terima kasih!`,
+  ].join("\n")
+}
+
+export type ListMembersQuery = {
   search?: string
-  claimed_status: "all" | "claimed" | "unclaimed"
-  role: "all" | "member" | "activist" | "organizer" | "admin" | "umat" | "aktivis" | "pengurus"
+  claimed_status?: "all" | "claimed" | "unclaimed"
+  status?: "all" | "claimed" | "unclaimed"
+  role?: "all" | "member" | "activist" | "organizer" | "admin" | "umat" | "aktivis" | "pengurus"
+  school_id?: string
   page: number
   limit: number
 }
 
-type CurrentUser = { userId: string; role: string }
+export type CurrentUser = { userId: string; role: string }
 
 export const peopleServices = {
-  async getMembers(
-    queryParams: ListMembersQuery,
-    currentUser?: CurrentUser
-  ) {
-    const searchQuery = (queryParams.search || "").toLowerCase().trim()
-    const claimedStatus = queryParams.claimed_status
-    const roleFilter = queryParams.role
+  async getMembers(queryParams: ListMembersQuery, currentUser?: CurrentUser) {
+    const rawSearch = (queryParams.search || "").trim()
+    const claimedStatus = queryParams.claimed_status || queryParams.status || "all"
+    const roleFilter = queryParams.role || "all"
+    const isPrivileged = currentUser?.role === "organizer" || currentUser?.role === "admin"
 
     const where: any = {}
 
@@ -52,74 +95,93 @@ export const peopleServices = {
       }
     }
 
-    if (searchQuery) {
-      const searchNum = /^\d+$/.test(searchQuery) ? parseInt(searchQuery, 10) : null
-      const searchConditions: any[] = [
-        { profile: { name: { contains: searchQuery, mode: "insensitive" } } },
-        { username: { contains: searchQuery, mode: "insensitive" } },
-        ...(searchNum !== null ? [{ userNumber: searchNum }] : []),
-        { profile: { school: { name: { contains: searchQuery, mode: "insensitive" } } } },
-      ]
-      where.OR = searchConditions
+    if (queryParams.school_id) {
+      where.profile = { ...(where.profile || {}), schoolId: queryParams.school_id }
+    }
+
+    // Big-O Query Branching Strategy:
+    // If input is purely numeric digits, do an instant B-Tree index scan on userNumber BigInt.
+    // Otherwise, perform case-insensitive text search on profile.name or username.
+    if (rawSearch) {
+      if (/^\d+$/.test(rawSearch)) {
+        where.userNumber = BigInt(rawSearch)
+      } else {
+        where.OR = [
+          { profile: { name: { contains: rawSearch, mode: "insensitive" } } },
+          { username: { contains: rawSearch, mode: "insensitive" } },
+        ]
+      }
     }
 
     const { page, limit } = queryParams
     const skip = (page - 1) * limit
 
-    const [totalMatching, rawMembers, roleCounts] = await Promise.all([
+    const [totalMatching, rawMembers, roleCounts, claimCounts] = await Promise.all([
       peopleModels.count(where),
       peopleModels.findMany(where, limit, skip),
       peopleModels.countByRole(),
+      peopleModels.countByClaimStatus(),
     ])
 
-    const counts = roleCounts.reduce(
-      (result, row) => {
-        result.total += row._count._all
-        if (row.role === "member") result.member = row._count._all
-        if (row.role === "activist") result.activist = row._count._all
-        if (row.role === "organizer" || row.role === "admin") result.organizer += row._count._all
-        return result
-      },
-      { total: 0, member: 0, activist: 0, organizer: 0 }
-    )
+    const stats = {
+      total: 0,
+      member: 0,
+      activist: 0,
+      organizer: 0,
+      claimed: 0,
+      unclaimed: 0,
+    }
 
-    const members = rawMembers.map((m) => {
+    roleCounts.forEach((row) => {
+      stats.total += row._count._all
+      if (row.role === "member") stats.member = row._count._all
+      if (row.role === "activist") stats.activist = row._count._all
+      if (row.role === "organizer" || row.role === "admin") stats.organizer += row._count._all
+    })
+
+    claimCounts.forEach((row) => {
+      if (row.isClaimed) stats.claimed += row._count._all
+      else stats.unclaimed += row._count._all
+    })
+
+    const items = rawMembers.map((m) => {
+      const rawPhone = m.profile?.phone ? decrypt(m.profile.phone) : null
       return {
         id: m.id,
-        name: m.profile?.name || m.username || "Anggota",
+        user_number: m.userNumber ? Number(m.userNumber) : null,
         username: m.username || null,
-        email: null,
-        phone: null,
+        name: m.profile?.name || m.username || "Member",
+        role: m.role,
+        is_claimed: m.isClaimed ?? true,
         school: m.profile?.school?.name || null,
         school_id: m.profile?.schoolId || null,
-        birth_date: null,
-        gender: null,
-        role: m.role,
-        avatar_url: null,
-        user_number: m.userNumber || null,
-        is_claimed: m.isClaimed ?? true,
-        total_attendance: m._count?.attendances ?? 0,
-        points: m.stats?.points ?? 0,
+        phone: isPrivileged ? rawPhone : null,
         created_at: new Date(m.createdAt).toISOString(),
+        last_attended_at: m.stats?.lastActivityAt
+          ? new Date(m.stats.lastActivityAt).toISOString()
+          : null,
       }
     })
 
+    const totalPages = Math.max(1, Math.ceil(totalMatching / limit))
+
     return {
-      items: members,
+      items,
+      pagination: {
+        page,
+        limit,
+        total: totalMatching,
+        total_pages: totalPages,
+      },
       page,
       limit,
       total: totalMatching,
-      totalPages: Math.max(1, Math.ceil(totalMatching / limit)),
-      stats: {
-        total: counts.total,
-        member: counts.member,
-        activist: counts.activist,
-        organizer: counts.organizer,
-      },
+      totalPages,
+      stats,
     }
   },
 
-  async getMemberDetail(id: string, currentUser?: { userId: string; role: string }) {
+  async getMemberDetail(id: string, currentUser?: CurrentUser) {
     const isPrivileged = currentUser?.role === "organizer" || currentUser?.role === "admin"
     const isSelf = currentUser?.userId === id
     const canViewSensitive = isPrivileged || isSelf
@@ -134,19 +196,24 @@ export const peopleServices = {
 
     return {
       id: member.id,
-      name: member.profile?.name || member.username || "Anggota",
+      user_number: member.userNumber ? Number(member.userNumber) : null,
       username: member.username,
-      email: canViewSensitive ? (decrypt(member.email) || member.email) : null,
-      phone: canViewSensitive ? (decrypt(member.profile?.phone) || null) : null,
+      name: member.profile?.name || member.username || "Member",
+      email: canViewSensitive && member.email ? decrypt(member.email) || member.email : null,
+      phone: canViewSensitive && member.profile?.phone ? decrypt(member.profile.phone) || null : null,
       school: member.profile?.school?.name || null,
       school_id: member.profile?.schoolId || null,
-      birth_date: canViewSensitive ? (decrypt(member.profile?.birthDate) || null) : null,
-      gender: canViewSensitive ? (decrypt(member.profile?.gender) || null) : null,
+      birth_date:
+        canViewSensitive && member.profile?.birthDate
+          ? decrypt(member.profile.birthDate) || null
+          : null,
+      gender:
+        canViewSensitive && member.profile?.gender
+          ? decrypt(member.profile.gender) || null
+          : null,
       role: member.role,
-      avatar_url: null,
-      user_number: member.userNumber,
       is_claimed: member.isClaimed ?? true,
-      points: canViewSensitive ? (member.stats?.points ?? 0) : 0,
+      points: canViewSensitive ? member.stats?.points ?? 0 : 0,
       created_at: new Date(member.createdAt).toISOString(),
       attendances: (member.attendances || []).map((a: any) => ({
         id: a.id,
@@ -154,49 +221,49 @@ export const peopleServices = {
         event_date: a.event?.eventDate ? new Date(a.event.eventDate).toISOString() : new Date().toISOString(),
         location: a.event?.location || "—",
         method: a.method,
-        points_earned: canViewSensitive ? (a.pointsEarned || 50) : 0,
+        points_earned: canViewSensitive ? a.pointsEarned || 50 : 0,
         scanned_at: new Date(a.scannedAt).toISOString(),
       })),
     }
   },
 
-  async createMember(data: any) {
-    if (data.email) {
-      const emailBindex = generateBlindIndex(data.email)
-      if (emailBindex) {
-        const existingEmail = await peopleModels.findUserByEmailBindex(emailBindex)
-        if (existingEmail) {
-          const error = new Error("Email is already registered with another user.") as any
-          error.statusCode = 400
-          throw error
-        }
-      }
-    }
+  async createMember(data: {
+    name: string
+    role?: "member" | "activist"
+    school_id?: string | null
+    school?: string | null
+    phone?: string | null
+    gender?: "male" | "female" | string | null
+    date_of_birth?: string | null
+    birth_date?: string | null
+    address?: string | null
+    email?: string | null
+    username?: string | null
+  }, actor?: CurrentUser) {
+    const role = data.role === "activist" ? "activist" : "member"
+    const birthDateVal = data.date_of_birth || data.birth_date || null
 
-    const username = data.username ? data.username.toLowerCase().trim() : await generateUniqueUsername(data.name)
-    const existingUsername = await peopleModels.findUserByUsername(username)
-    if (existingUsername) {
-      const error = new Error(`Username @${username} is already taken. Please choose another username.`) as any
-      error.statusCode = 400
-      throw error
-    }
-
-    const defaultPassword = generateDefaultPassword()
-    const hashedPassword = await hashPassword(defaultPassword, DEFAULT_BCRYPT_COST)
-
-    let resolvedSchoolId = data.school_id
+    let resolvedSchoolId = data.school_id || null
     if (!resolvedSchoolId && data.school) {
       const s = await peopleModels.findSchoolByName(data.school.trim())
       if (s) {
         resolvedSchoolId = s.id
-      } else {
-        const createdS = await peopleModels.upsertSchool(data.school.trim(), "Lainnya")
-        resolvedSchoolId = createdS.id
       }
     }
 
+    // Auto-generate username per PRD formula: firstName + 4 random digits
+    let username = data.username ? data.username.toLowerCase().trim() : null
+    if (!username) {
+      username = await generateUniqueUsername(data.name)
+    }
+
+    // Auto-generate temporary password: sekkha#####puggala
+    const tempPassword = generateTemporaryPassword()
+    const hashedPassword = await hashPassword(tempPassword, DEFAULT_BCRYPT_COST)
+
     let newMember: any = null
     let attempts = 0
+
     while (attempts < 5) {
       attempts++
       const userNumber = await generateUniqueUserNumber(prisma)
@@ -207,15 +274,16 @@ export const peopleServices = {
             password: hashedPassword,
             email: data.email ? encrypt(data.email.toLowerCase().trim()) : null,
             emailBindex: data.email ? generateBlindIndex(data.email.toLowerCase().trim()) : null,
-            role: data.role,
+            role,
             userNumber,
-            isClaimed: true,
+            isClaimed: false, // Pre-provisioned accounts start unclaimed
+            passwordChangedByUser: false,
             profile: {
               create: {
                 name: data.name.trim(),
                 phone: data.phone ? encrypt(data.phone.trim()) : null,
-                schoolId: resolvedSchoolId || null,
-                birthDate: data.birth_date ? encrypt(new Date(data.birth_date).toISOString()) : null,
+                schoolId: resolvedSchoolId,
+                birthDate: birthDateVal ? encrypt(new Date(birthDateVal).toISOString()) : null,
                 gender: data.gender ? encrypt(data.gender.trim()) : null,
               },
             },
@@ -246,48 +314,43 @@ export const peopleServices = {
 
     await invalidate(CacheKeys.userProfile(newMember.id))
 
-    const memberProfileName = (newMember.profile as any)?.name || data.name.trim()
-
-    if (data.email) {
-      try {
-        await sendTemporaryPasswordEmail({
-          to: data.email.toLowerCase().trim(),
-          tempPassword: defaultPassword,
-          name: memberProfileName,
-        })
-      } catch (emailErr) {
-        console.error("Failed to send welcome email with temporary password:", emailErr)
-      }
+    if (actor) {
+      auditLogger.log({
+        actorId: actor.userId,
+        actorRole: actor.role,
+        action: "PEOPLE_CREATED",
+        targetId: newMember.id,
+        status: "SUCCESS",
+      })
     }
 
-    const responsePayload: Record<string, any> = {
-      id: newMember.id,
-      name: memberProfileName,
+    const memberName = (newMember.profile as any)?.name || data.name.trim()
+    const userNumberInt = Number(newMember.userNumber)
+
+    const whatsappInvite = generateWhatsAppInviteMessage({
+      name: memberName,
+      userNumber: userNumberInt,
       username: newMember.username,
-      email: data.email || null,
-      phone: data.phone || null,
-      school: (newMember.profile as any)?.school?.name || null,
-      birth_date: data.birth_date || null,
-      gender: data.gender || null,
+      tempPassword,
+    })
+
+    return {
+      id: newMember.id,
+      user_number: userNumberInt,
+      username: newMember.username,
+      name: memberName,
       role: newMember.role,
-      user_number: newMember.userNumber,
-      is_claimed: true,
+      is_claimed: false,
+      temporary_password: tempPassword,
+      whatsapp_invite_message: whatsappInvite,
+      copy_template: whatsappInvite,
+      school: (newMember.profile as any)?.school?.name || null,
+      school_id: (newMember.profile as any)?.schoolId || null,
       created_at: new Date(newMember.createdAt).toISOString(),
     }
-
-    if (data.email) {
-      responsePayload.email_sent = true
-      responsePayload.message = `Anggota ${memberProfileName} berhasil didaftarkan. Informasi kata sandi sementara telah dikirimkan ke email terdaftar.`
-    } else {
-      responsePayload.email_sent = false
-      responsePayload.requires_change_on_login = true
-      responsePayload.message = `Anggota ${memberProfileName} berhasil didaftarkan.`
-    }
-
-    return responsePayload
   },
 
-  async updateMember(id: string, data: any, currentUser?: { userId: string; role: string }) {
+  async updateMember(id: string, data: any, currentUser?: CurrentUser) {
     if (data.role && currentUser?.role !== "admin") {
       const error = new Error("Only admin can change member role.") as any
       error.statusCode = 403
@@ -299,19 +362,6 @@ export const peopleServices = {
       const error = new Error("Member not found") as any
       error.statusCode = 404
       throw error
-    }
-
-    if (data.email) {
-      const cleanEmail = data.email.toLowerCase().trim()
-      const emailBindex = generateBlindIndex(cleanEmail)
-      if (emailBindex) {
-        const emailInUse = await peopleModels.findUserByEmailBindex(emailBindex)
-        if (emailInUse && emailInUse.id !== id) {
-          const error = new Error("Email is already used by another member.") as any
-          error.statusCode = 400
-          throw error
-        }
-      }
     }
 
     if (data.username && data.username !== existing.username) {
@@ -328,29 +378,27 @@ export const peopleServices = {
       const s = await peopleModels.findSchoolByName(data.school.trim())
       if (s) {
         resolvedSchoolId = s.id
-      } else {
-        const createdS = await peopleModels.upsertSchool(data.school.trim(), "Lainnya")
-        resolvedSchoolId = createdS.id
       }
     }
 
-    const userData = {
-      ...(data.username !== undefined && { username: data.username ? data.username.toLowerCase().trim() : null }),
-      ...(data.email !== undefined && {
-        email: data.email ? encrypt(data.email.toLowerCase().trim()) : null,
-        emailBindex: data.email ? generateBlindIndex(data.email.toLowerCase().trim()) : null,
-      }),
-      ...(data.role && { role: data.role }),
+    const birthDateVal = data.date_of_birth || data.birth_date
+
+    const userData: any = {}
+    if (data.username !== undefined) {
+      userData.username = data.username ? data.username.toLowerCase().trim() : null
     }
-    const profileData = {
-      ...(data.name && { name: data.name.trim() }),
-      ...(data.phone !== undefined && { phone: data.phone ? encrypt(data.phone.trim()) : null }),
-      ...(resolvedSchoolId !== undefined && { schoolId: resolvedSchoolId }),
-      ...(data.birth_date !== undefined && {
-        birthDate: data.birth_date ? encrypt(new Date(data.birth_date).toISOString()) : null,
-      }),
-      ...(data.gender !== undefined && { gender: data.gender ? encrypt(data.gender.trim()) : null }),
+    if (data.role) {
+      userData.role = data.role
     }
+
+    const profileData: any = {}
+    if (data.name) profileData.name = data.name.trim()
+    if (data.phone !== undefined) profileData.phone = data.phone ? encrypt(data.phone.trim()) : null
+    if (resolvedSchoolId !== undefined) profileData.schoolId = resolvedSchoolId
+    if (birthDateVal !== undefined) {
+      profileData.birthDate = birthDateVal ? encrypt(new Date(birthDateVal).toISOString()) : null
+    }
+    if (data.gender !== undefined) profileData.gender = data.gender ? encrypt(data.gender.trim()) : null
 
     const { updatedUser, updatedProfile } = await peopleModels.transaction(async (tx) => {
       const updatedUser = await tx.user.update({ where: { id }, data: userData })
@@ -359,10 +407,10 @@ export const peopleServices = {
         update: profileData,
         create: {
           userId: id,
-          name: data.name ? data.name.trim() : existing.profile?.name || existing.username || "Anggota",
+          name: data.name ? data.name.trim() : existing.profile?.name || existing.username || "Member",
           phone: data.phone ? encrypt(data.phone.trim()) : null,
           schoolId: resolvedSchoolId || null,
-          birthDate: data.birth_date ? encrypt(new Date(data.birth_date).toISOString()) : null,
+          birthDate: birthDateVal ? encrypt(new Date(birthDateVal).toISOString()) : null,
           gender: data.gender ? encrypt(data.gender.trim()) : null,
         },
         include: { school: true },
@@ -376,19 +424,16 @@ export const peopleServices = {
       id: updatedUser.id,
       name: updatedProfile.name,
       username: updatedUser.username,
-      email: data.email !== undefined ? data.email : (decrypt(updatedUser.email) || updatedUser.email),
-      phone: data.phone !== undefined ? data.phone : (decrypt(updatedProfile.phone) || null),
       school: (updatedProfile as any).school?.name || null,
-      birth_date: data.birth_date !== undefined ? data.birth_date : (decrypt(updatedProfile.birthDate) || null),
-      gender: data.gender !== undefined ? data.gender : (decrypt(updatedProfile.gender) || null),
+      school_id: (updatedProfile as any).schoolId || null,
       role: updatedUser.role,
-      user_number: updatedUser.userNumber,
+      user_number: updatedUser.userNumber ? Number(updatedUser.userNumber) : null,
       is_claimed: updatedUser.isClaimed,
       updated_at: new Date(updatedUser.updatedAt).toISOString(),
     }
   },
 
-  async deleteMember(id: string, currentUser?: { userId: string; role: string }) {
+  async deleteMember(id: string, currentUser?: CurrentUser) {
     if (id === currentUser?.userId) {
       const error = new Error("You cannot delete your own account.") as any
       error.statusCode = 400
@@ -411,10 +456,20 @@ export const peopleServices = {
     await peopleModels.delete(id)
     await invalidate(CacheKeys.userProfile(id))
 
+    if (currentUser) {
+      auditLogger.log({
+        actorId: currentUser.userId,
+        actorRole: currentUser.role,
+        action: "USER_DELETED",
+        targetId: id,
+        status: "SUCCESS",
+      })
+    }
+
     return { success: true, message: "Member deleted successfully." }
   },
 
-  async resetPassword(id: string, actor: CurrentUser) {
+  async resetTemporaryPassword(id: string, actor: CurrentUser) {
     const targetUser = await peopleModels.findUserWithProfile(id)
     if (!targetUser) {
       const error = new Error("Member not found.") as any
@@ -422,16 +477,18 @@ export const peopleServices = {
       throw error
     }
 
-    if (targetUser.passwordChangedByUser) {
+    // STRICT GUARD: If account is claimed, reject!
+    if (targetUser.isClaimed === true || targetUser.passwordChangedByUser === true) {
       const error = new Error(
-        "Akun ini telah mengubah kata sandi sendiri. Admin tidak dapat mereset kata sandi demi keamanan dan privasi pengguna."
+        "ACCOUNT_ALREADY_CLAIMED: This account has already been claimed by the member. For security and privacy, members must use the self-service forgot password feature."
       ) as any
-      error.statusCode = 403
+      error.statusCode = 400
       throw error
     }
 
-    const defaultPassword = generateDefaultPassword()
-    const hashedPassword = await hashPassword(defaultPassword, DEFAULT_BCRYPT_COST)
+    // Generate new temporary password
+    const newTempPassword = generateTemporaryPassword()
+    const hashedPassword = await hashPassword(newTempPassword, DEFAULT_BCRYPT_COST)
 
     await peopleModels.update(id, {
       password: hashedPassword,
@@ -442,209 +499,32 @@ export const peopleServices = {
     auditLogger.log({
       actorId: actor.userId,
       actorRole: actor.role,
-      action: "USER_PASSWORD_RESET",
+      action: "TEMPORARY_PASSWORD_RESET",
       targetId: id,
       status: "SUCCESS",
     })
 
     await invalidate(CacheKeys.userProfile(id))
 
-    const memberName = targetUser.profile?.name || targetUser.username || "member"
-    const decryptedEmail = decrypt(targetUser.email) || targetUser.email
+    const memberName = targetUser.profile?.name || targetUser.username || "Member"
+    const userNumberInt = targetUser.userNumber ? Number(targetUser.userNumber) : null
 
-    if (decryptedEmail) {
-      await sendTemporaryPasswordEmail({
-        to: decryptedEmail,
-        tempPassword: defaultPassword,
-        name: memberName,
-      })
-
-      return {
-        success: true,
-        user_number: targetUser.userNumber,
-        username: targetUser.username,
-        name: memberName,
-        email_sent: true,
-        message: `Kata sandi sementara untuk ${memberName} berhasil dibuat dan dikirimkan ke email terdaftar.`,
-      }
-    }
+    const whatsappInvite = generateWhatsAppInviteMessage({
+      name: memberName,
+      userNumber: userNumberInt || "-",
+      username: targetUser.username || "-",
+      tempPassword: newTempPassword,
+    })
 
     return {
-      success: true,
-      user_number: targetUser.userNumber,
+      id: targetUser.id,
+      user_number: userNumberInt,
       username: targetUser.username,
       name: memberName,
-      email_sent: false,
-      requires_change_on_login: true,
-      message: `Kata sandi sementara untuk ${memberName} berhasil diatur. Harap minta member segera mengubah kata sandi saat masuk.`,
-    }
-  },
-
-  async generateClaimPin(id: string, actor: CurrentUser) {
-    const targetUser = await peopleModels.findUserWithProfile(id)
-    if (!targetUser) {
-      const error = new Error("Anggota tidak ditemukan.") as any
-      error.statusCode = 404
-      throw error
-    }
-
-    if (targetUser.isClaimed) {
-      const error = new Error("Akun anggota ini sudah diklaim / aktif.") as any
-      error.statusCode = 400
-      throw error
-    }
-
-    const rawPin = randomInt(100000, 1000000).toString()
-    const hashedPin = await hashPassword(rawPin, DEFAULT_BCRYPT_COST)
-    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-
-    await peopleModels.update(id, {
-      claimPin: hashedPin,
-      claimPinExpiresAt: expiresAt,
-    })
-
-    await invalidate(CacheKeys.userProfile(id))
-
-    auditLogger.log({
-      actorId: actor.userId,
-      actorRole: actor.role,
-      action: "USER_CLAIM_PIN_GENERATED",
-      targetId: id,
-      status: "SUCCESS",
-    })
-
-    const memberName = targetUser.profile?.name || targetUser.username || "Anggota"
-
-    return {
-      success: true,
-      user_number: targetUser.userNumber,
-      name: memberName,
-      expires_at: expiresAt.toISOString(),
-      message: `PIN klaim 6-digit untuk ${memberName} berhasil dibuat. Distribusikan PIN melalui kanal aman.`,
-    }
-  },
-
-  async linkLegacyAccount(
-    data: { user_number: string; claim_pin: string },
-    currentUser: { userId: string; role?: string }
-  ) {
-    const { user_number, claim_pin } = data
-    const cleanPin = claim_pin.replace(/[^0-9]/g, "").trim()
-    const currentUserId = currentUser.userId
-
-    const targetUser = await peopleModels.findUnclaimedMemberForLinking(user_number.trim())
-
-    if (!targetUser || !targetUser.claimPin) {
-      const error = new Error("Akun dengan nomor anggota tersebut tidak ditemukan atau sudah diklaim.") as any
-      error.statusCode = 404
-      throw error
-    }
-
-    if (targetUser.id === currentUserId) {
-      const error = new Error("Tidak dapat menautkan akun ke diri sendiri.") as any
-      error.statusCode = 400
-      throw error
-    }
-
-    if (targetUser.failedClaimAttempts >= 5) {
-      const error = new Error(
-        "Akun ini telah dikunci karena 5 kali percobaan PIN yang salah. Silakan minta PIN baru ke pengurus."
-      ) as any
-      error.statusCode = 403
-      throw error
-    }
-
-    if (targetUser.claimPinExpiresAt && targetUser.claimPinExpiresAt < new Date()) {
-      const error = new Error("PIN aktivasi sudah kedaluwarsa. Silakan minta PIN baru ke pengurus.") as any
-      error.statusCode = 400
-      throw error
-    }
-
-    const isPinValid = await verifyPassword(cleanPin, targetUser.claimPin)
-    if (!isPinValid) {
-      await peopleModels.update(targetUser.id, {
-        failedClaimAttempts: { increment: 1 },
-      })
-      const remaining = 5 - (targetUser.failedClaimAttempts + 1)
-      const error = new Error(`PIN aktivasi salah. Sisa percobaan: ${Math.max(0, remaining)} kali.`) as any
-      error.statusCode = 400
-      throw error
-    }
-
-    const legacyPoints = (targetUser as any).stats?.points || 0
-
-    await peopleModels.transaction(async (tx) => {
-      // 1. Transfer attendances
-      const existingAttendances = await tx.attendance.findMany({
-        where: { userId: currentUserId },
-        select: { eventId: true },
-      })
-      const existingEventIds = new Set(existingAttendances.map((a: any) => a.eventId))
-
-      const targetAttendances = await tx.attendance.findMany({
-        where: { userId: targetUser.id },
-      })
-
-      for (const att of targetAttendances) {
-        if (!existingEventIds.has(att.eventId)) {
-          await tx.attendance.update({
-            where: { id: att.id },
-            data: { userId: currentUserId },
-          })
-        }
-      }
-
-
-      // 3. Merge points
-      if (legacyPoints > 0) {
-        await tx.userStats.upsert({
-          where: { userId: currentUserId },
-          update: { points: { increment: legacyPoints } },
-          create: { userId: currentUserId, points: legacyPoints },
-        })
-
-        await tx.pointTransaction.create({
-          data: {
-            userId: currentUserId,
-            amount: legacyPoints,
-            type: "system",
-            description: `Penggabungan data akun lama (${targetUser.userNumber}) via PIN Aktivasi`,
-          },
-        })
-      }
-
-      // 4. Mark pre-provisioned user as claimed, link to claimer, and clear sensitive PIN
-      await tx.user.update({
-        where: { id: targetUser.id },
-        data: {
-          isClaimed: true,
-          claimedAt: new Date(),
-          claimedByUserId: currentUserId,
-          claimPin: null,
-          claimPinExpiresAt: null,
-          failedClaimAttempts: 0,
-        },
-      })
-    })
-
-    auditLogger.log({
-      actorId: currentUserId,
-      actorRole: currentUser.role,
-      action: "USER_ACCOUNT_LINKED",
-      targetId: targetUser.id,
-      status: "SUCCESS",
-      details: {
-        targetUserNumber: targetUser.userNumber,
-        pointsMerged: legacyPoints,
-      },
-    })
-
-    await invalidate(CacheKeys.userProfile(currentUserId))
-    await invalidate(CacheKeys.userProfile(targetUser.id))
-
-    return {
-      success: true,
-      message: `Akun lama (${targetUser.userNumber}) berhasil ditautkan. Riwayat absensi dan poin telah digabungkan.`,
+      temporary_password: newTempPassword,
+      whatsapp_invite_message: whatsappInvite,
+      copy_template: whatsappInvite,
+      message: `Temporary password for ${memberName} has been regenerated successfully.`,
     }
   },
 }

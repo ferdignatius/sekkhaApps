@@ -32,9 +32,9 @@ Setiap endpoint API mengembalikan format JSON standar:
 Sistem menggunakan 4 tingkatan peran (*role*) resmi:
 | Role (Kode) | Label | Hak Akses Utama |
 |---|---|---|
-| `member` | Member | Akses profil pribadi, presensi via panitia, melihat jadwal acara publik, papan peringkat. |
-| `activist` | Activist | Seluruh hak `member` + pemindaian QR presensi jemaat (`POST /events/:id/attendances`) & live SSE stream. |
-| `organizer` | Organizer | Seluruh hak `activist` + manajemen event, direktori jemaat, pembuatan People manual, recency alert, analitik insight vihara, dan konfigurasi master data (read-only). |
+| `member` | Member | Akses profil pribadi, melihat jadwal acara publik, kartu QR anggota permanen, papan peringkat. |
+| `activist` | Activist | Seluruh hak `member` + melihat jadwal acara khusus aktivis (`visibility: activist`). *Catatan: Aktivis tidak memiliki hak take absensi jemaat.* |
+| `organizer` | Organizer | Seluruh hak `activist` + manajemen event, scanner presensi jemaat (`POST /events/:id/attendances`), rekap presensi, direktori jemaat, pembuatan People manual, recency alert, analitik insight vihara, dan konfigurasi master data (read-only). |
 | `admin` | Super Administrator | Akses penuh (*bypass* semua role guard), manajemen akun, reset password, CRUD konfigurasi master data, season activation, audit log. |
 
 ### 1.4. Keamanan & Proteksi Rate Limiting
@@ -57,12 +57,12 @@ Sistem menggunakan 4 tingkatan peran (*role*) resmi:
 1. [Modul 1: Autentikasi (`/api/auth`)](#modul-1-autentikasi-apiauth)
 2. [Modul 2: Pengguna & Profil Pribadi (`/api/users`)](#modul-2-pengguna--profil-pribadi-apiusers)
 3. [Modul 3: Beranda / Dashboard (`/api/home`)](#modul-3-beranda--dashboard-apihome)
-4. [Modul 4: Acara & Presensi Real-Time (`/api/events`)](#modul-4-acara--presensi-real-time-apievents)
+4. [Modul 4: Acara & Presensi (`/api/events`)](#modul-4-acara--presensi-apievents)
 5. [Modul 5: Papan Peringkat / Leaderboard (`/api/leaderboard`)](#modul-5-papan-peringkat--leaderboard-apileaderboard)
 6. [Modul 6: Manajemen Umat & Tim (`/api/people`)](#modul-6-manajemen-umat--tim-apipeople)
 7. [Modul 7: Analitik Pengurus & Early Warning Alerts (`/api/pengurus`)](#modul-7-analitik-pengurus--early-warning-alerts-apipengurus)
 8. [Modul 8: Master Data Sekolah (`/api/schools`)](#modul-8-master-data-sekolah-apischools)
-9. [Modul 9: Konfigurasi & Gamifikasi Master (`/api/configure`)](#modul-9-konfigurasi--gamifikasi-master-apiconfigure)
+9. [Modul 9: Konfigurasi & Master Data (`/api/configure`)](#modul-9-konfigurasi--master-data-apiconfigure)
 
 ---
 
@@ -552,157 +552,284 @@ Pusat komando terpadu yang menggabungkan informasi profil ringkas, streak minggu
 
 ---
 
-## Modul 4: Acara & Presensi Real-Time (`/api/events`)
+## Modul 4: Acara & Presensi (`/api/events`)
 
-Manajemen siklus acara vihara, penjadwalan, otorisasi QR scanner panitia, dan broadcast presensi real-time via Server-Sent Events (SSE).
+Manajemen siklus acara vihara, penjadwalan, validasi tanggal pelaksanaan, Action Buttons (`scheduled`, `active`, `closed`, `cancel`), scanning berkelanjutan anti-race condition, dan rekap presensi.
 
 ### 1. `GET /api/events`
-Mengambil daftar acara. Member hanya melihat acara berstatus `scheduled` atau `active` dengan visibilitas `all` / `member`.
+Mengambil daftar acara. Member hanya melihat acara dengan visibilitas `all` / `member`.
 - **Akses**: Terautentikasi (`requireAuth`)
 - **Query Parameters**:
   - `page` (number, default: 1)
   - `limit` (number, default: 20, max: 50)
+  - `status` (string, opsional: `scheduled`, `active`, `closed`, `cancel`)
+  - `event_type_id` (string, opsional)
 - **Response (200 OK)**:
   ```json
-  [
-    {
+  {
+    "status": "success",
+    "code": 200,
+    "message": "Daftar acara berhasil diambil",
+    "data": [
+      {
+        "id": "evt_sunday_01",
+        "title": "Kebaktian Remaja Minggu Pagi",
+        "description": "Kebaktian rutin mingguan dan sharing dhamma.",
+        "location": "Dhammasala Utama",
+        "event_date": "2026-10-25T09:00:00.000Z",
+        "event_type_id": "typ_rutin_01",
+        "season_id": "sea_2026_q3",
+        "status": "scheduled",
+        "visibility": "all",
+        "point_reward": 50,
+        "max_late_minutes": 30,
+        "late_penalty_points": 15
+      }
+    ]
+  }
+  ```
+
+### 2. `GET /api/events/:id`
+Mengambil detail satu acara secara lengkap.
+- **Akses**: Terautentikasi (`requireAuth`, dengan server-side visibility guard: `404 Not Found` jika role tidak berhak)
+- **Response (200 OK)**:
+  ```json
+  {
+    "status": "success",
+    "code": 200,
+    "message": "Detail event berhasil diambil",
+    "data": {
       "id": "evt_sunday_01",
       "title": "Kebaktian Remaja Minggu Pagi",
       "description": "Kebaktian rutin mingguan dan sharing dhamma.",
       "location": "Dhammasala Utama",
-      "event_date": "2026-09-20T09:00:00.000Z",
-      "event_type": "rutin",
+      "event_date": "2026-10-25T09:00:00.000Z",
       "event_type_id": "typ_rutin_01",
       "season_id": "sea_2026_q3",
-      "tag": "Remaja",
       "status": "scheduled",
       "visibility": "all",
-      "qr_code": {
-        "code": "EVT-2026-ABC123XYZ",
-        "expires_at": null
-      }
+      "point_reward": 50,
+      "max_late_minutes": 30,
+      "late_penalty_points": 15
     }
-  ]
+  }
   ```
-  *(Catatan: Field `qr_code` hanya disertakan jika peminta memiliki role `organizer` atau `admin`).*
-
-### 2. `GET /api/events/:id`
-Mengambil detail satu acara secara lengkap.
-- **Akses**: Terautentikasi (`requireAuth`, dengan guard visibilitas role)
-- **Response (200 OK)**: Objek acara lengkap.
 
 ### 3. `POST /api/events`
 Membuat acara baru.
 - **Akses**: Organizer & Admin (`requireRole("organizer", "admin")`)
+- **Validasi Server-Side**:
+  - `event_date`: Wajib DateTime ISO dan harus **`event_date >= current date`** (waktu server saat request diterima). Jika lampau, menolak dengan `400 Bad Request`.
 - **Request Body**:
   ```json
   {
     "title": "Pekan Penghayatan Dhamma 2026",
     "description": "Retreat meditasi dan pendalaman sutta 3 hari.",
     "location": "Bhavana Center",
-    "event_date": "2026-10-15T08:00:00.000Z",
+    "event_date": "2026-11-15T08:00:00.000Z",
     "event_type_id": "typ_khusus_02",
     "season_id": "sea_2026_q4",
-    "visibility": "all"
+    "visibility": "all",
+    "point_reward": 100,
+    "max_late_minutes": 30,
+    "late_penalty_points": 15
   }
   ```
-  *(Catatan: `event_type_id` bersifat wajib / mandatory. Field `tag` tidak lagi disimpan di database).*
-- **Response (201 Created)**: Objek acara baru yang berhasil dibuat dengan status awal `scheduled`.
+- **Response (201 Created)**:
+  ```json
+  {
+    "status": "success",
+    "code": 201,
+    "message": "Event berhasil dibuat",
+    "data": {
+      "id": "evt_new_01",
+      "status": "scheduled"
+    }
+  }
+  ```
+- **Error (400 Bad Request)**:
+  ```json
+  {
+    "status": "error",
+    "code": 400,
+    "message": "Event date cannot be in the past"
+  }
+  ```
 
 ### 4. `PUT /api/events/:id`
 Memperbarui informasi acara yang telah ada (tidak dapat mengubah status acara).
 - **Akses**: Organizer & Admin (`requireRole("organizer", "admin")`)
 - **Response (200 OK)**: Objek acara yang diperbarui.
 
-### 5. `PATCH /api/events/:id/status` (Action Button)
-Memperbarui status siklus hidup acara melalui tombol aksi (`scheduled` → `active` → `done`, atau `canceled`).
+### 5. `PATCH /api/events/:id/status` (Action Button Endpoint)
+Memperbarui status siklus acara secara aman: `scheduled` → `active` → `closed`, `cancel`, atau reschedule dari `cancel` $\rightarrow$ `scheduled`.
 - **Akses**: Organizer & Admin (`requireRole("organizer", "admin")`)
-- **Request Body**:
-  ```json
-  { "status": "active" }
-  ```
-- **Response (200 OK)**:
+- **Request Body (Mulai Acara)**:
   ```json
   {
-    "id": "evt_sunday_01",
     "status": "active"
   }
   ```
+  *(Validasi Mulai Acara: Waktu sekarang harus sudah mencapai jadwal acara: `event.event_date <= current date`).*
+- **Request Body (Reschedule Event dari `cancel` ke `scheduled`)**:
+  ```json
+  {
+    "status": "scheduled",
+    "event_date": "2026-11-20T09:00:00.000Z"
+  }
+  ```
+  *(Validasi Reschedule: `event_date` wajib disertakan dan harus `>= current date`).*
+- **Response (200 OK - Start Event)**:
+  ```json
+  {
+    "status": "success",
+    "code": 200,
+    "message": "Event started successfully and attendance session is now active",
+    "data": {
+      "id": "evt_sunday_01",
+      "status": "active"
+    }
+  }
+  ```
+- **Response (200 OK - Close & Finalize Event)**:
+  ```json
+  {
+    "status": "success",
+    "code": 200,
+    "message": "Event closed successfully and attendance points distributed",
+    "data": {
+      "id": "evt_sunday_01",
+      "status": "closed",
+      "total_attendees": 42,
+      "points_distributed": true
+    }
+  }
+  ```
+- **Response (200 OK - Reschedule Event)**:
+  ```json
+  {
+    "status": "success",
+    "code": 200,
+    "message": "Event rescheduled successfully",
+    "data": {
+      "id": "evt_sunday_01",
+      "status": "scheduled",
+      "event_date": "2026-11-20T09:00:00.000Z"
+    }
+  }
+  ```
+- **Error (400 Bad Request - Start Event Prematur)**:
+  ```json
+  {
+    "status": "error",
+    "code": 400,
+    "message": "Event cannot be started before its scheduled date and time"
+  }
+  ```
 
-### 6. `POST /api/events/:id/attendances` (Alias: `POST /api/events/:id/attendance`)
-Mencatat presensi jemaat oleh panitia/pengurus di lokasi via pemindaian QR code kartu jemaat atau input ID/nomor anggota manual.
-- **Akses**: Activist, Organizer, Admin (`requireRole("organizer", "admin", "activist")`)
-- **Aturan**: Acara harus berstatus `active`.
+### 6. `POST /api/events/:id/attendances`
+Mencatat presensi jemaat oleh panitia di lokasi (via scan QR statis kartu jemaat atau input nomor anggota `userNumber` manual).
+- **Akses**: **Eksklusif Organizer & Admin** (`requireRole("organizer", "admin")`) — *activist dilarang*.
+- **Aturan**: Acara harus berstatus `active`. Poin jemaat belum bertambah (`is_finalized: false`).
 - **Request Body**:
   ```json
   {
-    "method": "qr",
-    "user_id": "usr_abc123"
+    "user_number": "202610230001",
+    "method": "qr"
   }
   ```
 - **Response (201 Created)**:
   ```json
   {
-    "user_id": "usr_abc123",
-    "name": "Budi Santoso",
-    "user_number": 2026102301,
-    "method": "qr",
-    "points_earned": 50,
-    "scanned_at": "2026-09-20T09:12:45.000Z",
-    "status": "staged"
+    "status": "success",
+    "code": 201,
+    "message": "Attendance drafted successfully",
+    "data": {
+      "attendance_id": "att_001",
+      "user_id": "usr_abc123",
+      "name": "Budi Santoso",
+      "user_number": "202610230001",
+      "is_late": false,
+      "late_penalty_applied": 0,
+      "points_earned": 50,
+      "is_finalized": false,
+      "scanned_at": "2026-10-25T09:12:45.000Z"
+    }
   }
   ```
-- **Error Khusus**:
-  - `400 Bad Request`: Event tidak aktif.
-  - `409 Conflict`: Peserta sudah tercatat hadir pada event ini (*Duplicate Attendance*).
-
-### 7. `GET /api/events/:id/live-attendance` (Server-Sent Events)
-Stream koneksi real-time untuk monitor scanner panitia di meja registrasi.
-- **Akses**: Activist, Organizer, Admin (`requireRole("organizer", "admin", "activist")`)
-- **Header**: `Accept: text/event-stream` (Mendukung parameter query `?token=<jwt>`)
-- **Format Pesan SSE**:
+- **Error (409 Conflict)**:
+  ```json
+  {
+    "status": "error",
+    "code": 409,
+    "message": "Peserta sudah tercatat hadir"
+  }
   ```
-  event: attendance
-  data: {"type":"ATTENDANCE_RECORDED","eventId":"evt_sunday_01","attendance":{"userId":"usr_abc123","name":"Budi Santoso","userNumber":2026102301,"scannedAt":"2026-09-20T09:12:45.000Z","points":50}}
+- **Error (404 Not Found)**:
+  ```json
+  {
+    "status": "error",
+    "code": 404,
+    "message": "User with specified user number not found"
+  }
   ```
 
-### 8. `GET /api/events/:id/attendances`
+### 7. `GET /api/events/:id/attendances`
 Mengambil rekap dan daftar seluruh peserta yang hadir pada acara tertentu.
-- **Akses**: Organizer & Admin (`requireRole("organizer", "admin")`) — *activist dilarang mengakses rekap presensi*.
+- **Akses**: **Hanya Organizer & Admin** (`requireRole("organizer", "admin")`) — *activist dilarang*.
 - **Query Parameters**: `page` (default: 1), `limit` (default: 50, max: 100)
 - **Response (200 OK)**:
   ```json
-  [
-    {
-      "user_id": "usr_abc123",
-      "name": "Budi Santoso",
-      "role": "member",
-      "user_number": 2026102301,
-      "method": "qr",
-      "scanned_at": "2026-09-20T09:12:45.000Z"
+  {
+    "status": "success",
+    "code": 200,
+    "message": "Daftar kehadiran berhasil diambil",
+    "data": {
+      "event_id": "evt_sunday_01",
+      "total_attended": 42,
+      "is_finalized": false,
+      "attendances": [
+        {
+          "attendance_id": "att_001",
+          "user_id": "usr_abc123",
+          "name": "Budi Santoso",
+          "user_number": "202610230001",
+          "role": "member",
+          "school": "SMA Negeri 1 Jakarta",
+          "method": "qr",
+          "is_late": false,
+          "badge_activity": "MC",
+          "scanned_at": "2026-10-25T09:12:45.000Z"
+        }
+      ]
     }
-  ]
+  }
   ```
 
-### 9. `DELETE /api/events/:id/attendances/:userId`
-Membatalkan / menghapus catatan presensi peserta tertentu dari suatu event.
+### 8. `DELETE /api/events/:id/attendances/:userId`
+Membatalkan / menghapus catatan presensi peserta tertentu dari event yang sedang berjalan (sebelum `closed`).
 - **Akses**: Organizer & Admin (`requireRole("organizer", "admin")`)
 - **Response (200 OK)**:
   ```json
   {
-    "success": true,
-    "message": "Presensi peserta berhasil dibatalkan."
+    "status": "success",
+    "code": 200,
+    "message": "Presensi peserta berhasil dibatalkan",
+    "data": {
+      "user_id": "usr_abc123"
+    }
   }
   ```
 
-### 10. `DELETE /api/events/:id`
+### 9. `DELETE /api/events/:id`
 Menghapus acara secara permanen dari sistem.
 - **Akses**: Organizer & Admin (`requireRole("organizer", "admin")`)
 - **Response (200 OK)**:
   ```json
   {
-    "success": true,
-    "message": "Event berhasil dihapus."
+    "status": "success",
+    "code": 200,
+    "message": "Event berhasil dihapus"
   }
   ```
 
@@ -1045,29 +1172,33 @@ Mengambil data analitik komprehensif kehadiran vihara, tren periode, retensi jem
 Manajemen master institusi pendidikan jemaat remaja serta statistik persebaran siswa.
 
 ### 1. `GET /api/schools`
-Mencari dan menampilkan daftar sekolah master aktif (status `approved`).
+Mencari dan menampilkan daftar sekolah master (status default: `active`).
 - **Akses**: Publik
 - **Query Parameters**:
-  - `search` (string, opsional): Pencarian nama sekolah atau jenjang (`SMA`, `SMK`, `SMP`).
+  - `search` (string, opsional): Pencarian nama sekolah.
+  - `status` (string, opsional: `active`, `pending`, `cancel` — default: `active`)
   - `limit` (number, default: 100, max: 200)
 - **Response (200 OK)**:
   ```json
-  [
-    {
-      "id": "sch_12345",
-      "name": "SMA Negeri 1 Jakarta",
-      "type": "SMA",
-      "status": "approved",
-      "student_count": 28
-    },
-    {
-      "id": "sch_67890",
-      "name": "SMK Negeri 26 Jakarta",
-      "type": "SMK",
-      "status": "approved",
-      "student_count": 14
-    }
-  ]
+  {
+    "status": "success",
+    "code": 200,
+    "message": "Daftar sekolah berhasil diambil",
+    "data": [
+      {
+        "id": "sch_12345",
+        "name": "SMA Negeri 1 Jakarta",
+        "status": "active",
+        "user_count": 28
+      },
+      {
+        "id": "sch_67890",
+        "name": "Universitas Bunda Mulia",
+        "status": "active",
+        "user_count": 14
+      }
+    ]
+  }
   ```
 
 ### 2. `GET /api/schools/stats`
@@ -1076,19 +1207,23 @@ Mengambil ringkasan statistik persebaran jemaat remaja per sekolah dan total keh
 - **Response (200 OK)**:
   ```json
   {
-    "total_schools": 35,
-    "total_students": 142,
-    "schools": [
-      {
-        "id": "sch_12345",
-        "name": "SMA Negeri 1 Jakarta",
-        "type": "SMA",
-        "status": "approved",
-        "student_count": 28,
-        "total_points": 1450,
-        "total_attendances": 85
-      }
-    ]
+    "status": "success",
+    "code": 200,
+    "message": "Statistik sekolah berhasil diambil",
+    "data": {
+      "total_schools": 35,
+      "total_students": 142,
+      "schools": [
+        {
+          "id": "sch_12345",
+          "name": "SMA Negeri 1 Jakarta",
+          "status": "active",
+          "user_count": 28,
+          "total_points": 1450,
+          "total_attendances": 85
+        }
+      ]
+    }
   }
   ```
 
@@ -1098,15 +1233,21 @@ Menambahkan sekolah baru ke master data.
 - **Request Body**:
   ```json
   {
-    "name": "SMA Kristen 1 Penabur",
-    "type": "SMA"
+    "name": "Universitas Bina Nusantara"
   }
   ```
-- **Response (201 Created)**: Objek sekolah baru (`status: approved`).
+- **Response (201 Created)**: Objek sekolah baru (`status: active`).
 
 ### 4. `PUT /api/schools/:id`
-Memperbarui data nama atau jenjang sekolah.
+Memperbarui data nama atau status sekolah.
 - **Akses**: Organizer & Admin (`requireRole("organizer", "admin")`)
+- **Request Body**:
+  ```json
+  {
+    "name": "Universitas Bina Nusantara",
+    "status": "active"
+  }
+  ```
 - **Response (200 OK)**: Objek sekolah yang diperbarui.
 
 ### 5. `DELETE /api/schools/:id`
@@ -1115,8 +1256,9 @@ Menghapus sekolah dari master data.
 - **Response (200 OK)**:
   ```json
   {
-    "success": true,
-    "message": "Sekolah berhasil dihapus."
+    "status": "success",
+    "code": 200,
+    "message": "Sekolah berhasil dihapus"
   }
   ```
 
@@ -1124,7 +1266,7 @@ Menghapus sekolah dari master data.
 
 ## Modul 9: Konfigurasi & Master Data (`/api/configure`)
 
-Manajemen konfigurasi sistem master vihara: kategori acara (*event types*), ambang batas (*thresholds*), musim (*seasons*), dan aturan poin (*point rules*).
+Manajemen konfigurasi sistem master vihara: kategori acara (*event types*), peran aktivitas jemaat (*badge activities*), ambang batas (*thresholds*), musim (*seasons*), dan aturan poin (*point rules*).
 
 > **Hak Akses Khusus Modul Configure:**
 > - Seluruh endpoint `GET`: Dapat diakses oleh **`organizer`** dan **`admin`**.
@@ -1137,49 +1279,141 @@ Manajemen konfigurasi sistem master vihara: kategori acara (*event types*), amba
 #### `GET /api/configure/event-types`
 - **Response (200 OK)**:
   ```json
-  [
-    {
-      "id": "typ_rutin_01",
-      "code": "rutin",
-      "label": "Kebaktian Rutin Remaja",
-      "description": "Kegiatan rutin kebaktian hari Minggu",
-      "default_point_reward": 50,
-      "is_active": true
-    },
-    {
-      "id": "typ_khusus_02",
-      "code": "special",
-      "label": "Perayaan Hari Besar / Retreat",
-      "description": "Waisak, Kathina, Asadha, atau Retreat",
-      "default_point_reward": 100,
-      "is_active": true
-    }
-  ]
+  {
+    "status": "success",
+    "code": 200,
+    "message": "Daftar tipe event berhasil diambil",
+    "data": [
+      {
+        "id": "typ_rutin_01",
+        "code": "rutin",
+        "name": "Kebaktian Rutin Remaja",
+        "description": "Kegiatan rutin kebaktian hari Minggu",
+        "default_point_reward": 50,
+        "default_max_late_minutes": 30,
+        "default_late_penalty_points": 15,
+        "is_active": true
+      },
+      {
+        "id": "typ_khusus_02",
+        "code": "special",
+        "name": "Perayaan Hari Besar / Retreat",
+        "description": "Waisak, Kathina, Asadha, atau Retreat",
+        "default_point_reward": 100,
+        "default_max_late_minutes": 30,
+        "default_late_penalty_points": 15,
+        "is_active": true
+      }
+    ]
+  }
   ```
 
 #### `POST /api/configure/event-types`
 - **Request Body**:
   ```json
   {
-    "code": "workshop",
-    "label": "Workshop & Pelatihan",
+    "name": "Workshop & Pelatihan",
     "description": "Kelas keterampilan dan kepemimpinan pemuda",
     "default_point_reward": 75,
+    "default_max_late_minutes": 30,
+    "default_late_penalty_points": 15,
     "is_active": true
   }
   ```
-- **Response (201 Created)**: `{ "id": "typ_03", "code": "workshop" }`
+- **Response (201 Created)**: Objek tipe event baru.
 
 #### `PUT /api/configure/event-types/:id`
 - **Request Body**: Field yang ingin diperbarui.
-- **Response (200 OK)**: `{ "id": "typ_03", "code": "workshop" }`
+- **Response (200 OK)**: Objek tipe event yang diperbarui.
 
 #### `DELETE /api/configure/event-types/:id`
-- **Response (200 OK)**: `{ "success": true }`
+- **Response (200 OK)**:
+  ```json
+  {
+    "status": "success",
+    "code": 200,
+    "message": "Tipe event berhasil dihapus"
+  }
+  ```
 
 ---
 
-### 9.2. Ambang Batas / Thresholds (`/api/configure/threshold`)
+### 9.2. Peran & Penugasan Aktivitas (`/api/configure/badge-activities`)
+
+Manajemen master peran pelayanan jemaat pada kegiatan vihara (MC, Puja Leader, Musician, dll).
+
+#### `GET /api/configure/badge-activities`
+- **Query Parameters**: `is_active` (`true` | `false`, opsional), `search` (string, opsional)
+- **Response (200 OK)**:
+  ```json
+  {
+    "status": "success",
+    "code": 200,
+    "message": "Daftar badge activity berhasil diambil",
+    "data": [
+      {
+        "id": "bac_mc_01",
+        "code": "mc",
+        "name": "Master of Ceremony (MC)",
+        "description": "Memandu dan memimpin jalannya susunan acara kegiatan",
+        "point_bonus": 30,
+        "color": "#3B82F6",
+        "is_active": true
+      },
+      {
+        "id": "bac_puja_02",
+        "code": "puja-leader",
+        "name": "Pemimpin Puja",
+        "description": "Memimpin pembacaan paritta dan doa kebaktian",
+        "point_bonus": 30,
+        "color": "#10B981",
+        "is_active": true
+      },
+      {
+        "id": "bac_music_03",
+        "code": "musician",
+        "name": "Pemusik / Pengiring",
+        "description": "Mengiringi lagu buddhis dan instrumen puja",
+        "point_bonus": 30,
+        "color": "#F59E0B",
+        "is_active": true
+      }
+    ]
+  }
+  ```
+
+#### `POST /api/configure/badge-activities`
+- **Akses**: Admin Only (`requireRole("admin")`)
+- **Request Body**:
+  ```json
+  {
+    "name": "Multimedia & Sound",
+    "description": "Mengoperasikan slide presentasi dan sound system",
+    "point_bonus": 30,
+    "color": "#8B5CF6",
+    "is_active": true
+  }
+  ```
+- **Response (201 Created)**: Objek badge activity baru (kode otomatis di-generate).
+
+#### `PUT /api/configure/badge-activities/:id`
+- **Akses**: Admin Only (`requireRole("admin")`)
+- **Response (200 OK)**: Objek badge activity yang diperbarui.
+
+#### `DELETE /api/configure/badge-activities/:id`
+- **Akses**: Admin Only (`requireRole("admin")`)
+- **Response (200 OK)**:
+  ```json
+  {
+    "status": "success",
+    "code": 200,
+    "message": "Badge activity berhasil dihapus"
+  }
+  ```
+
+---
+
+### 9.3. Ambang Batas / Thresholds (`/api/configure/threshold`)
 
 Mengatur ambang batas parameter peringatan dini *consecutive missed events* dan deteksi jemaat pasif (*churned*).
 
@@ -1208,7 +1442,7 @@ Mengatur ambang batas parameter peringatan dini *consecutive missed events* dan 
 
 ---
 
-### 9.3. Musim Papan Peringkat / Seasons (`/api/configure/seasons`)
+### 9.4. Musim Papan Peringkat / Seasons (`/api/configure/seasons`)
 
 #### `GET /api/configure/seasons`
 - **Response (200 OK)**:
@@ -1259,7 +1493,7 @@ Mengaktifkan season bersangkutan dan otomatis menonaktifkan season aktif lainnya
 
 ---
 
-### 9.4. Aturan Poin Master (`/api/configure/point-rules`)
+### 9.5. Aturan Poin Master (`/api/configure/point-rules`)
 
 Mengatur alokasi poin reward dinamis untuk setiap kategori aktivitas.
 

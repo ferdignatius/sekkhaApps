@@ -33,6 +33,14 @@ export const EventTypeSchema = z.object({
 })
 
 export const EventTypeUpdateSchema = z.object({
+  code: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .min(2, "Code must be at least 2 characters")
+    .max(50, "Code cannot exceed 50 characters")
+    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Code must be lowercase kebab-case (e.g. regular-puja)")
+    .optional(),
   label: z.string().trim().min(1, "Label is required").max(100).optional(),
   color: z.string().trim().regex(/^#[0-9A-Fa-f]{6}$/, "Color must be a valid 6-digit hex code").optional(),
   description: z.string().trim().max(500).optional().nullable(),
@@ -65,6 +73,46 @@ export const PointRuleUpdateSchema = z.object({
   label: z.string().min(1).optional(),
   points: z.number().int().min(0),
   description: z.string().optional().nullable(),
+})
+
+export const BadgeActivitySchema = z.object({
+  code: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .min(2, "Code must be at least 2 characters")
+    .max(50, "Code cannot exceed 50 characters")
+    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Code must be lowercase kebab-case (e.g. puja-leader)")
+    .optional(),
+  label: z
+    .string({ required_error: "Label is required" })
+    .trim()
+    .min(1, "Label is required")
+    .max(100, "Label cannot exceed 100 characters"),
+  description: z.string().trim().max(500, "Description cannot exceed 500 characters").optional().nullable(),
+  bonus_points: z
+    .number()
+    .int("Bonus points must be an integer")
+    .min(0, "Bonus points must be non-negative")
+    .max(100, "Bonus points cannot exceed 100")
+    .optional()
+    .default(30),
+  is_active: z.boolean().optional().default(true),
+})
+
+export const BadgeActivityUpdateSchema = z.object({
+  code: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .min(2, "Code must be at least 2 characters")
+    .max(50, "Code cannot exceed 50 characters")
+    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Code must be lowercase kebab-case (e.g. mc)")
+    .optional(),
+  label: z.string().trim().min(1, "Label is required").max(100).optional(),
+  description: z.string().trim().max(500).optional().nullable(),
+  bonus_points: z.number().int().min(0).max(100).optional(),
+  is_active: z.boolean().optional(),
 })
 
 export const configureControllers = {
@@ -160,4 +208,39 @@ export const configureControllers = {
       res.json(await configureServices.updatePointRule(id, body))
     } catch (err) { next(err) }
   },
+
+  // Badge Activities (Master Data)
+  async getBadgeActivities(req: Request, res: Response, next: NextFunction) {
+    try {
+      const isActive = req.query.is_active !== undefined ? req.query.is_active === "true" : undefined
+      const search = req.query.search ? String(req.query.search) : undefined
+      res.json(await configureServices.getBadgeActivities({ isActive, search }))
+    } catch (err) { next(err) }
+  },
+  async getBadgeActivityById(req: Request, res: Response, next: NextFunction) {
+    try {
+      const id = req.params.id as string
+      res.json(await configureServices.getBadgeActivityById(id))
+    } catch (err) { next(err) }
+  },
+  async createBadgeActivity(req: Request, res: Response, next: NextFunction) {
+    try {
+      const body = BadgeActivitySchema.parse(req.body)
+      res.status(201).json(await configureServices.createBadgeActivity(body))
+    } catch (err) { next(err) }
+  },
+  async updateBadgeActivity(req: Request, res: Response, next: NextFunction) {
+    try {
+      const id = req.params.id as string
+      const body = BadgeActivityUpdateSchema.parse(req.body)
+      res.json(await configureServices.updateBadgeActivity(id, body))
+    } catch (err) { next(err) }
+  },
+  async deleteBadgeActivity(req: Request, res: Response, next: NextFunction) {
+    try {
+      const id = req.params.id as string
+      res.json(await configureServices.deleteBadgeActivity(id))
+    } catch (err) { next(err) }
+  },
 }
+

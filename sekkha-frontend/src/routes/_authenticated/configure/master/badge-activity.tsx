@@ -1,0 +1,23 @@
+import {
+  createFileRoute,
+  lazyRouteComponent,
+  redirect,
+} from "@tanstack/react-router"
+import { ConfigureSkeleton } from "@/components/common/PageSkeletons"
+
+export const Route = createFileRoute(
+  "/_authenticated/configure/master/badge-activity"
+)({
+  beforeLoad: ({ context }) => {
+    const role = (context as any).authState.role
+    if (role !== "organizer" && role !== "pengurus" && role !== "admin") {
+      throw redirect({ to: "/home" })
+    }
+  },
+  component: lazyRouteComponent(() =>
+    import("@/modules/configure").then((m) => ({
+      default: m.BadgeActivityListPage,
+    }))
+  ),
+  pendingComponent: ConfigureSkeleton,
+})

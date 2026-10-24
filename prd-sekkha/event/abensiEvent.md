@@ -3,42 +3,46 @@
 | Metadata | Detail |
 | --- | --- |
 | **Dokumen** | Product Requirement Document (PRD) |
-| **Fitur** | Absensi Event (Sesi Scan QR, Batch Commit, Reward) |
+| **Fitur** | Absensi Event (Sesi Scan QR, Draft Attendance, Batch Point Finalization) |
 | **Aplikasi** | Sekkha Apps (Frontend & Backend) |
-| **Versi** | 2.0.0 |
-| **Status** | Draft / Ready for Review |
-| **Referensi** | `prd-sekkha/event/event.md`, `prd-sekkha/masterdata/badgePresensiEvent.md` |
+| **Versi** | 2.1.0 |
+| **Status** | Approved / Synchronized |
+| **Referensi** | `prd-sekkha/event/event.md`, `prd-sekkha/configure/masterdata/eventType.md` |
 
 ---
 
 ## 1. Ringkasan Eksekutif
 
-Sistem absensi event adalah mekanisme pencatatan kehadiran peserta yang berjalan dalam sebuah **sesi absensi** yang dibuka dan ditutup oleh **pengurus**.
+Sistem absensi event adalah mekanisme pencatatan kehadiran jemaat yang berjalan dalam sebuah **sesi absensi** yang dibuka, dikelola, dan difinalisasi secara eksklusif oleh **organizer** dan **admin**.
 
 Alur utama:
-1. Pengurus **mengaktifkan absensi** pada event → sesi absensi dimulai.
-2. Pengurus scan QR Code umat satu per satu secara kontinyu tanpa interupsi.
-3. Setiap scan masuk ke **daftar sementara** (local + backend draft) — belum tersimpan ke database final.
-4. Pengurus **menutup sesi** → semua data kehadiran di-commit ke database, reward (poin + badge) dihitung dan diberikan sekaligus.
+1. Organizer/Admin **memulai acara** via Action Button (`scheduled` → `active`) → sesi absensi dibuka.
+2. Organizer/Admin memindai QR Code jemaat satu per satu secara kontinyu tanpa interupsi atau menginput manual jika jemaat tidak membawa ponsel.
+3. Setiap scan masuk ke **daftar kehadiran draft** (local + backend draft) dengan status `is_finalized = false`. Selama event berstatus `active`, data presensi masih **editable** (bisa dihapus/dikoreksi jika salah scan), dan **poin jemaat belum bertambah**.
+4. Organizer/Admin **menutup acara** (`active` → `closed`) → seluruh kehadiran difinalisasi, poin kehadiran dikreditkan secara batch ke saldo jemaat (`UserStats.points`), mutasi transaksi dicatat, dan streak mingguan jemaat diperbarui.
+5. Gamifikasi badge/level telah **dieliminasi total** dari sistem Sekkha.
 
 Desain ini menjamin:
-- **Kecepatan scan** — tidak ada delay per-user karena tidak ada DB write per scan.
-- **Keamanan data** — data tersimpan di dua lapisan (IndexedDB frontend + tabel `AttendancePending` backend) sehingga aman meski terjadi crash.
+- **Kecepatan scan** — zero latency scan di lokasi tanpa delay per-user.
+- **Koreksi Aman (Zero-Rollback)** — salah scan dapat langsung dihapus saat event `active` tanpa perlu rollback transaksi poin.
+- **Integritas Data** — poin hanya didistribusikan saat kegiatan resmi ditutup (`closed`).
 
 ---
 
 ## 2. Hak Akses
 
-| Aksi | `admin` | `pengurus` | `aktivis` | `umat` |
+| Aksi | `admin` | `organizer` | `activist` | `member` |
 | --- | :---: | :---: | :---: | :---: |
-| Aktifkan sesi absensi event | v | v | x | x |
-| Scan QR Code via kamera | v | v | x | x |
+| Buka Sesi Absensi (`scheduled` → `active`) | v | v | x | x |
+| Scan QR Code via kamera (`/events/:id/scan`) | v | v | x | x |
 | Input absensi manual | v | v | x | x |
-| Tutup sesi & commit data | v | v | x | x |
+| Hapus / Koreksi presensi draft | v | v | x | x |
+| Tutup Sesi & Finalisasi Poin (`closed`) | v | v | x | x |
+| Batalkan Event (`cancel`) | v | v | x | x |
 | Lihat QR Code Sendiri (`/profile/qr`) | v | v | v | v |
-| Lihat rekap kehadiran event | v | v | x | x |
+| Lihat & Ekspor rekap kehadiran | v | v | x | x |
 
-> **Catatan**: `aktivis` **tidak lagi memiliki akses** ke fitur absensi. Seluruh proses scan dan pengelolaan sesi dilakukan oleh `pengurus` atau `admin`.
+> **Catatan Ketat**: Role `activist` **TIDAK MEMILIKI AKSES** ke fitur absensi. Seluruh proses scan, koreksi draft, dan penutupan sesi dilakukan eksklusif oleh `organizer` atau `admin`.
 
 ---
 
@@ -46,247 +50,260 @@ Desain ini menjamin:
 
 ### 3.1. Status Event
 
-| Status | Deskripsi | Absensi Tersedia? |
-| --- | --- | :---: |
-| `planning` | Rencana kegiatan, belum terkonfirmasi | Tidak |
-| `upcoming` | Event terkonfirmasi & terjadwal | Tidak |
-| `ongoing` | Event sedang berlangsung — sesi absensi aktif | **Ya** |
-| `completed` | Event selesai — sesi absensi ditutup & data di-commit | Tidak |
-| `cancelled` | Event dibatalkan | Tidak |
+| Status | Deskripsi | Absensi Tersedia? | Poin Terdistribusi? |
+| --- | --- | :---: | :---: |
+| `scheduled` | Event terkonfirmasi & terjadwal | Tidak | Tidak |
+| `active` | Event sedang berlangsung — sesi absensi dibuka | **Ya (Draft)** | Belum (Pending) |
+| `closed` | Event selesai — sesi ditutup & poin difinalisasi | Tidak | **Ya (Final)** |
+| `cancel` | Event dibatalkan | Tidak | Tidak |
 
-### 3.2. Transisi Status oleh Pengurus
+### 3.2. Transisi Status oleh Organizer / Admin
 
 ```
-upcoming
-    |
-    | [Pengurus klik "Aktifkan Absensi"]
-    ↓
-ongoing  ←── AttendanceSession dibuat (status: active)
-    |
-    | [Scan QR berlangsung, data masuk ke PendingScan]
-    |
-    | [Pengurus klik "Tutup Absensi & Selesaikan Event"]
-    ↓
-completed ←── AttendancePending di-flush ke Attendance + reward dihitung
+       [Buat Event Baru (event_date >= current date)]
+                           │
+                           ▼
+                    ┌──────────────┐   [Reschedule Event]   ┌──────────────┐
+                    │  scheduled   │ ◄───────────────────── │    cancel    │
+                    └──────┬───────┘   (Input tanggal baru) └──────────────┘
+                           │                                       ▲
+                 ┌─────────┴─────────┐                             │
+                 │ [Mulai Acara]     │ [Batalkan Acara]            │
+                 ▼                   ▼                             │
+            ┌──────────────┐   ┌──────────────┐                    │
+            │    active    │   │    cancel    │                    │
+            └──────┬───────┘   └──────────────┘                    │
+                   │                                               │
+                   │ [Tutup Sesi &                                 │ [Batalkan Acara]
+                   │  Kreditkan Poin]                              │
+                   ▼                                               │
+            ┌──────────────┐                                       │
+            │    closed    │───────────────────────────────────────┘ (Jika belum ada transaksi poin)
+            └──────────────┘
 ```
 
-> **Aturan**: Pengurus tidak bisa langsung menutup event tanpa mengaktifkan absensi terlebih dahulu. Tombol "Tutup Sesi" hanya tersedia setelah sesi absensi diaktifkan.
+> **Aturan**:
+> 1. Pengurus tidak bisa langsung menutup event tanpa mengaktifkan absensi terlebih dahulu (`active`). Tombol "Tutup Sesi & Kreditkan Poin" hanya tersedia saat status `active`.
+> 2. Event yang berstatus `cancel` dapat dijadwalkan ulang (**Reschedule**) kembali menjadi `scheduled` dengan memasukkan tanggal baru (`event_date >= current date`). Sesi absensi tidak dapat dibuka pada event berstatus `cancel`.
+> 3. Tombol **"Mulai Acara" (Start Event)** untuk mengubah status ke `active` hanya dapat dieksekusi jika waktu pelaksanaan kegiatan sudah tiba (**`event_date <= current date`**). Sesi presensi tidak dapat diaktifkan sebelum waktu jadwal kegiatan.
 
 ---
 
-## 4. Konsep: QR Code User
+## 4. Konsep: QR Code Identitas Jemaat (Dikelola Modul Users)
 
 ### 4.1. Deskripsi
 
-Setiap user memiliki **QR Code unik personal** yang digunakan sebagai identitas kehadiran. Di-encode dari `user_id` + tanda tangan kriptografis (HMAC-SHA256) untuk mencegah pemalsuan.
+QR Code kehadiran adalah **representasi visual statis dan permanen dari `userNumber`** anggota (10 digit numerik `yyyymmddnn`). Halaman kartu anggota dan penerbitan QR dikelola secara terpusat oleh modul **Users** (`/profile/qr` atau modal profil jemaat).
 
 ### 4.2. Karakteristik QR Code
 
 | Aspek | Detail |
 | --- | --- |
-| Konten encode | `{ user_id, issued_at }` + HMAC signature |
-| Masa berlaku token | 24 jam (rolling — di-refresh setiap kali halaman QR dibuka) |
-| Format | Signed string yang di-render menjadi QR image |
-| Tampilan di profil | QR image besar + nama user + foto profil |
-| Lokasi akses | `/profile/qr` — semua role |
-
-### 4.3. Keamanan QR
-
-1. Token tidak mengandung data sensitif selain `user_id` dan `issued_at`.
-2. Signature diverifikasi di backend dengan server secret yang tidak pernah dikirim ke client.
-3. Token expired → backend return `401 EXPIRED_QR_TOKEN`.
-4. `attended_at` dicatat berdasarkan **server time**, bukan dari konten token.
+| Konten Encode | String statis nomor anggota: `userNumber` (misal: `"2026102301"`) |
+| Masa Berlaku | **Permanen / Statis** (tidak ada kedaluwarsa 24 jam / tanpa rolling token) |
+| Format | Gambar QR 2D yang dapat di-scan oleh kamera scanner panitia |
+| Ketahanan Offline | Dapat dicetak pada kartu fisik/lanyard atau disimpan di galeri smartphone tanpa butuh koneksi internet jemaat |
+| Dual-Mode Scan | Scanner kamera membaca string `userNumber`. Jika kamera bermasalah, panitia cukup mengetikkan `userNumber` yang sama di kolom input manual. |
 
 ---
 
-## 5. Arsitektur Penyimpanan Data Sementara (Dual-Layer Safety)
+## 5. Arsitektur Presensi Draft & Recovery Otomatis
 
-### 5.1. Mengapa Dual-Layer?
+### 5.1. Mekanisme Draft Langsung di Database (`is_finalized: false`)
 
-Karena pengurus menscan puluhan umat tanpa commit ke DB, diperlukan mekanisme safety agar data tidak hilang jika:
-- Baterai HP habis / aplikasi crash
-- Koneksi internet putus di tengah sesi
-- Browser ditutup tidak sengaja
+Untuk menghindari kompleksitas sinkronisasi IndexedDB lokal vs tabel pending terpisah, sistem menggunakan pendekatan terpadu yang jauh lebih bersih, aman, dan zero-rollback:
 
-### 5.2. Layer 1 — IndexedDB (Frontend)
+1. **Penyimpanan Langsung**:
+   Setiap scan QR yang berhasil langsung disimpan ke tabel `attendances` dengan atribut:
+   ```prisma
+   isFinalized = false
+   ```
+2. **Saldo Poin Belum Berubah**:
+   Karena `isFinalized = false`, mutasi saldo poin di `user_stats` **belum dieksekusi**. Jemaat belum menerima poin.
+3. **Editable & Safe Correction**:
+   Di layar scanner dan rekap kehadiran, setiap nama jemaat yang baru saja di-scan memiliki tombol hapus. Jika panitia salah memindai jemaat, panitia cukup menghapus baris tersebut tanpa repot melakukan rollback transaksi keuangan poin.
+4. **Alur Recovery Instan (Anti Data-Loss)**:
+   Karena data langsung tersimpan di PostgreSQL:
+   - Jika baterai smartphone panitia habis, browser tertutup tidak sengaja, atau panitia berganti perangkat, data scan **tidak akan pernah hilang**.
+   - Saat panitia membuka kembali halaman `/events/:id/attendances` atau scanner `/events/:id/scan`, sistem langsung mengambil data kehadiran draft (`GET /api/events/:id/attendances`) dan menampilkan seluruh daftar peserta yang sudah di-scan sebelumnya. Panitia dapat langsung melanjutkan scan tanpa jeda.
 
-| Aspek | Detail |
-| --- | --- |
-| Teknologi | Browser IndexedDB (persisten, tidak hilang saat refresh) |
-| Kapan ditulis | Segera setelah QR berhasil terbaca dan tervalidasi |
-| Isi | `{ sessionId, userId, userName, userPhoto, scannedAt }` |
-| Kapan dihapus | Setelah commit berhasil (backend confirm `completed`) |
-| Keunggulan | Zero-latency — tidak perlu tunggu network |
+### 5.2. Arsitektur Scanning Berkelanjutan & Mitigasi Race Condition
 
-### 5.3. Layer 2 — Tabel `AttendancePending` (Backend)
+Sistem **TIDAK menggunakan SSE (Server-Sent Events) atau WebSocket** untuk transmisi scan absensi panitia. SSE hanya menambah kompleksitas koneksi persisten yang rentan putus-nyambung pada jaringan seluler di lapangan dan tidak memecahkan masalah race condition (karena mutasi presensi adalah aksi tulis / *write action*).
 
-| Aspek | Detail |
-| --- | --- |
-| Teknologi | PostgreSQL via Prisma |
-| Kapan ditulis | Setiap scan QR berhasil divalidasi (async, fire-and-forget dari frontend) |
-| Isi | `{ session_id, user_id, scanned_at }` |
-| Kapan dihapus | Setelah commit berhasil → record dipindah ke `Attendance`, `AttendancePending` dihapus |
-| Keunggulan | Data aman meski HP pengurus mati total — bisa di-recover dari backend |
-
-### 5.4. Alur Recovery
-
-Jika pengurus kehilangan data lokal (IndexedDB kosong) karena crash atau ganti device:
+Sebagai gantinya, sistem menerapkan kombinasi **Frontend In-Flight Lock + Cooldown Buffer** dipadukan dengan **PostgreSQL Database Unique Constraint** untuk menjamin *zero race condition* dan kecepatan scan maksimal:
 
 ```
-Pengurus buka kembali halaman event yang masih 'ongoing'
-      |
-Frontend: cek IndexedDB → kosong
-      |
-Frontend: GET /v1/events/:id/attendance-session/pending
-      |
-Backend: kembalikan semua AttendancePending milik sesi aktif
-      |
-Frontend: populate ulang daftar scan dari data backend
-      |
-Pengurus bisa lanjut scan atau langsung commit
+[Kamera Aktif (Continuous 30-60 FPS Video Stream)]
+                     │
+         Deteksi Frame: userNumber
+                     │
+    Apakah sama dengan barcode terakhir & < 3000ms?
+         ├── YA  ──► [ABAIKAN] (Zero Network Overhead)
+         └── TIDAK
+                     │
+    Kunci State UI: `isProcessing = true` (In-Flight Mutex)
+                     │
+    Kirim HTTP POST /api/events/:id/attendances { user_number, method: "qr" }
+                     │
+         ┌───────────┴─────────────────────────────┐
+         ▼                                         ▼
+   [201 Created (Sukses)]                   [409 Conflict (Sudah Hadir)]
+   • Play audio beep sukses                • Play audio buzz peringatan
+   • Prepend nama jemaat ke daftar draft   • Tampilkan notifikasi "Sudah Hadir"
+   • Reset recent scan buffer              • Catat di recent scan buffer
+         └───────────┬─────────────────────────────┘
+                     │
+    Buka Kunci State: `isProcessing = false`
+    (Kamera langsung siap mendeteksi jemaat berikutnya dalam < 300ms)
 ```
+
+#### Komponen Penjamin Konsistensi & Kecepatan:
+
+1. **Frontend Level: In-Flight Mutex & Rapid Scan Cooldown (3 Detik)**:
+   - **In-Flight Lock**: Saat satu frame barcode sedang dikirim melalui HTTP POST, event scanner lain ditahan sementara (`isProcessing = true`).
+   - **Cooldown Set (Deduplication Buffer)**: Menyimpan `lastScannedUserNumber` dan timestamp-nya. Jika kamera membaca kartu anggota yang sama dalam kurun waktu $\le 3$ detik, event tersebut langsung diabaikan di sisi browser tanpa mengirim request ke server.
+
+2. **Database Level: PostgreSQL Compound Unique Constraint (`[user_id, event_id]`)**:
+   - Di `prisma/schema.prisma`:
+     ```prisma
+     @@unique([userId, eventId])
+     ```
+   - **Jaminan Konsistensi 100%**: Jika terdapat multi-gate / beberapa panitia berbeda yang memindai QR kartu anggota yang sama pada milidetik yang identik:
+     - Request pertama sukses tersimpan (`201 Created`).
+     - Request kedua ditolak langsung oleh PostgreSQL Engine dengan kode pelanggaran unik `P2002` $\rightarrow$ Server menangkap exception dan mengembalikan respon bersih `409 Conflict: "Peserta sudah tercatat hadir"`.
+   - **Idempotency**: Operasi presensi bersifat idempoten; tidak akan pernah terjadi data ganda (*duplicate attendance*) dalam kondisi konkurensi sepadat apa pun.
 
 ---
 
-## 6. Alur Lengkap: Sesi Absensi
+## 6. Alur Lengkap: Presensi Event
 
-### 6.1. Fase 1 — Aktivasi Sesi
+### 6.1. Fase 1 — Mulai Acara (Aktivasi Sesi Presensi)
 
 ```
-Pengurus di halaman detail event (status: 'upcoming')
-          |
-Klik tombol "Aktifkan Absensi"
-          |
-Konfirmasi dialog: "Event akan ditandai sebagai Berlangsung.
-                    Sesi absensi akan dibuka. Lanjutkan?"
-          |
-POST /v1/events/:id/attendance-session/open
-          |
+Organizer/Admin di halaman detail event (/events/:id)
+          │
+          │ Klik Action Button "Start Event" (hanya jika event_date <= current date)
+          ▼
+PATCH /api/events/:id/status { "status": "active" }
+          │
 Backend:
-  ├── Update event.status = 'ongoing'
-  └── INSERT AttendanceSession { event_id, opened_at, status: 'active' }
-          |
-Response: { session_id, event_id }
-          |
+  └── UPDATE events SET status = 'active', updated_at = now() WHERE id = :id
+          │
+Response 200: { status: "success", code: 200, message: "Event started...", data: { id, status: "active" } }
+          │
 Frontend:
-  ├── Simpan session_id ke IndexedDB
-  └── Redirect ke /events/:id/scan
+  └── Tombol "Buka Scanner Presensi" aktif → Arahkan ke /events/:id/scan
 ```
 
-### 6.2. Fase 2 — Scanning Berkelanjutan
+### 6.2. Fase 2 — Scanning Berkelanjutan (Zero Race Condition)
 
 ```
-Halaman scanner terbuka (kamera aktif)
-          |
-┌─────────────────────────────────────┐
-│           SCAN LOOP                 │
-│                                     │
-│  Kamera deteksi QR Code             │
-│        |                            │
-│  [debounce 500ms]                   │
-│        |                            │
-│  Decode QR → qr_token               │
-│        |                            │
-│  Validasi lokal (IndexedDB):        │
-│  ├── User sudah di list? → Skip     │
-│  └── Belum → lanjut                 │
-│        |                            │
-│  POST /v1/events/:id/attendance-    │
-│       session/scan { qr_token }     │
-│        |                            │
-│  Backend validasi:                  │
-│  ├── Token valid? (HMAC check)      │
-│  ├── Token belum expired?           │
-│  └── User belum di session ini?     │
-│        |                            │
-│  Response: user data                │
-│        |                            │
-│  Frontend:                          │
-│  ├── Tambah ke IndexedDB            │
-│  └── Tambah ke daftar UI (prepend)  │
-│        |                            │
-│  Kamera langsung aktif lagi         │
-│  (auto-resume, tanpa interupsi)     │
-└─────────────────────────────────────┘
+Halaman scanner terbuka di /events/:id/scan (kamera aktif)
+          │
+┌───────────────────────────────────────────────────────────────┐
+│                       SCAN LOOP                               │
+│                                                               │
+│  Kamera mendeteksi QR Code Kartu Anggota (isi: userNumber)    │
+│        │                                                      │
+│  [Cek Cooldown Buffer 3000ms]                                 │
+│  ├── userNumber sama & < 3 detik? → ABAIKAN (Skip frame)      │
+│  └── Baru → Lanjut                                            │
+│        │                                                      │
+│  Lock State UI: isProcessing = true (In-Flight Mutex)         │
+│        │                                                      │
+│  POST /api/events/:id/attendances { user_number, method }     │
+│        │                                                      │
+│  Backend validasi:                                            │
+│  ├── Event berstatus 'active'?                                │
+│  ├── userNumber terdaftar di database?                        │
+│  ├── Belum pernah tercatat hadir (@@unique([userId, eventId]))│
+│  └── Evaluasi waktu scan vs (event_date + max_late_minutes)   │
+│        │                                                      │
+│  ┌─────┴────────────────────────────────────────┐             │
+│  ▼                                              ▼             │
+│  Response 201 Created:                          Response 409: │
+│  {                                              {             │
+│    status: "success",                             code: 409,  │
+│    code: 201,                                     message:    │
+│    data: {                                          "Sudah    │
+│      attendance_id,                                  tercatat │
+│      user_id,                                        hadir"   │
+│      name,                                      }             │
+│      user_number,                                             │
+│      is_late,                                                 │
+│      is_finalized: false                                      │
+│    }                                                          │
+│  }                                                            │
+│        │                                                      │
+│  Frontend:                                                    │
+│  ├── Play audio beep sukses / buzz jika 409                   │
+│  ├── Tambah nama ke daftar UI draft (prepend)                 │
+│  └── isProcessing = false → Kamera langsung siap scan jemaat  │
+│      berikutnya dalam < 300ms!                                │
+└───────────────────────────────────────────────────────────────┘
 ```
 
-### 6.3. Fase 3 — Commit & Tutup Sesi
+### 6.3. Fase 3 — Tutup Acara & Finalisasi Poin
 
 ```
-Pengurus klik "Tutup Absensi & Selesaikan Event"
-          |
+Organizer/Admin klik Action Button "Close & Finalize Event"
+          │
 Dialog konfirmasi:
-"X orang tercatat hadir. Tutup sesi dan kirim data?"
-          |
-POST /v1/events/:id/attendance-session/commit
-          |
-Backend (dalam 1 transaksi DB):
-  ├── Ambil semua AttendancePending (session_id)
-  ├── Bulk INSERT ke Attendance (method, attended_at)
+"Tutup acara dan distribusikan poin ke seluruh peserta hadir?"
+          │
+PATCH /api/events/:id/status { "status": "closed" }
+          │
+Backend (dalam 1 Transaksi Database Prisma $transaction):
+  ├── UPDATE events SET status = 'closed', updated_at = now() WHERE id = :id
+  ├── UPDATE attendances SET is_finalized = true WHERE event_id = :id
   ├── Untuk setiap Attendance:
-  │     ├── Tambah event.point_reward ke user.total_points
-  │     └── INSERT UserBadge jika event.badge_id ada & belum dimiliki
-  ├── Update AttendanceSession.status = 'completed'
-  ├── Update event.status = 'completed'
-  └── Hapus semua AttendancePending sesi ini
-          |
-EventBus: publish("attendance.batch_recorded", {
-  event_id,
-  attendances: [{ user_id, point_reward, badge_id }]
+  │     ├── Tambah (points_earned + badge_bonus_points) ke user_stats.points
+  │     └── INSERT PointTransaction
+  └── Perbarui streak mingguan jemaat
+          │
+EventBus: publish("event.closed", {
+  eventId,
+  totalAttendees,
+  pointsDistributed: true
 })
-          |
+          │
+Response 200: { status: "success", code: 200, message: "Event closed...", data: { status: "closed" } }
+          │
 Frontend:
-  ├── Hapus IndexedDB sesi ini
-  └── Redirect ke /events/:id/attendances (rekap)
+  └── Redirect ke /events/:id/attendances (Rekap Kehadiran Terkunci)
 ```
 
 ---
 
-## 7. Sistem Reward (Batch)
+## 7. Sistem Distribusi Poin (Batch Finalization)
 
-Reward dihitung **satu kali setelah commit** — bukan per scan — untuk menjaga performa dan konsistensi transaksi.
+Poin dihitung dan dikreditkan **satu kali saat status event diubah menjadi `closed`** — bukan saat scan berlangsung — untuk menjamin data presensi bersih dari kekeliruan scan dan menjaga konsistensi transaksi database.
 
-### 7.1. Sumber Reward
+### 7.1. Aturan Poin Kehadiran
 
 | Jenis | Field | Keterangan |
 | --- | --- | --- |
-| **Poin Kehadiran** | `event.point_reward` | Ditambahkan ke `user.total_points` setelah commit |
-| **Badge Presensi** | `event.badge_id` | Di-unlock via `UserBadge`, dilindungi unique constraint |
+| **Poin Kehadiran** | `event.point_reward` | Ditambahkan ke saldo `user_stats.points` saat status event menjadi `closed` |
+| **Potongan Terlambat** | `event.late_penalty_points` | Mengurangi perolehan poin kehadiran jika scan melewati `max_late_minutes` |
+| **Bonus Badge Activity** | `badge_bonus_points` | Poin tambahan jika jemaat bertugas pelayanan (MC, Puja Leader, Musician) |
+| **Streak Mingguan** | `user_stats.current_streak` | Dihitung otomatis per minggu kalender saat finalisasi event |
+| **Mutasi Transaksi** | `PointTransaction` | Tercatat resmi dengan referensi `eventId` dan label kegiatan |
 
-### 7.2. Logika Commit Reward (per user, dalam transaksi)
-
-```
-Untuk setiap user di AttendancePending:
-
-  1. INSERT Attendance { event_id, user_id, method, attended_at }
-
-  2. Jika event.point_reward > 0:
-       UPDATE User SET total_points += point_reward
-
-  3. Jika event.badge_id NOT NULL:
-       Cek UserBadge (user_id, badge_id)
-       ├── Belum ada → INSERT UserBadge + UPDATE User.total_points += badge.point_value
-       └── Sudah ada → Skip (tidak diduplikasi)
-```
-
-### 7.3. Gagal Sebagian (Partial Failure)
-
-Semua operasi commit berjalan dalam **satu database transaction**. Jika ada error di tengah:
-- Seluruh transaksi di-rollback
-- `AttendancePending` tetap ada — pengurus bisa retry commit
-- Frontend menampilkan error toast: *"Gagal menyimpan data. Data scan aman, coba tutup ulang."*
+> **Catatan Sistem**: Fitur badge reward dan level akun telah **dieliminasi total** dari Sekkha Apps.
 
 ---
 
-## 8. UI: Halaman Detail Event (Tombol Aktivasi)
+## 8. UI: Halaman Detail Event (Action Buttons)
 
-Pada halaman `/events/:id` untuk pengurus, tombol absensi berubah sesuai status:
+Pada halaman `/events/:id` untuk organizer dan admin, tombol aksi berubah secara kontekstual sesuai status:
 
-| Status Event | Tombol Tampil |
+| Status Event | Action Button yang Ditampilkan |
 | --- | --- |
-| `upcoming` | **"Aktifkan Absensi"** (hijau, prominent) |
-| `ongoing` | **"Buka Scanner"** + **"Tutup & Selesaikan"** |
-| `completed` | **"Lihat Rekap Kehadiran"** |
+| `scheduled` | **"Start Event"** (hanya jika `event_date <= current date`) dan **"Cancel Event"** |
+| `active` | **"Buka Scanner Presensi"** (`/events/:id/scan`), **"Lihat Rekap Kehadiran"**, **"Close & Finalize Event"** (kreditkan poin), dan **"Cancel Event"** |
+| `closed` | **"Lihat Rekap Kehadiran"** (status final, read-only) |
+| `cancel` | **"Reschedule Event"** (membuka modal input tanggal baru `event_date >= current date` untuk kembali ke `scheduled`) |
 
 ---
 
@@ -296,365 +313,246 @@ Pada halaman `/events/:id` untuk pengurus, tombol absensi berubah sesuai status:
 
 ```
 ┌─────────────────────────────────────┐
-│  ←  Kebaktian Minggu Pagi           │
+│  ←  Kebaktian Remaja                │
 │  🔴 SESI ABSENSI AKTIF              │
 ├─────────────────────────────────────┤
 │                                     │
 │     [ LIVE CAMERA VIEW ]            │
 │   ┌──────────────────┐              │
-│   │   [ QR FRAME ]   │              │
+│   │   [ SCAN FRAME ] │              │
 │   └──────────────────┘              │
 │                                     │
 ├─────────────────────────────────────┤
-│  38 Peserta Tercatat                │
+│  38 Jemaat Tercatat                 │
 │  ─────────────────────────────────  │
-│  • Hendra S.    08:15               │
-│  • Lina W.      08:12               │
-│  • Budi R.      08:10               │
-│         [ scroll ]                  │
+│  • Hendra Santoso (202610230001)    │
+│  • Lina Wijaya    (202610230002)    │
+│  • Budi Raharjo   (202610230003)    │
+│         [ scroll list ]             │
 ├─────────────────────────────────────┤
-│  [ + Tambah Manual ]                │
-│  [   Tutup & Selesaikan Event   ]   │
+│  [ + Absensi Manual (userNumber) ]  │
+│  [   Tutup & Finalisasi Poin     ]  │
 └─────────────────────────────────────┘
 ```
 
-### 9.2. Behavior Detail
+### 9.2. State Feedback Scan
 
-| Komponen | Deskripsi |
+| Kondisi | Tampilan Feedback |
 | --- | --- |
-| **Badge sesi aktif** | Label merah "SESI ABSENSI AKTIF" — penanda visual bahwa data belum final |
-| **Live camera** | Kamera aktif terus, auto-resume setelah setiap scan |
-| **Counter** | Jumlah peserta yang sudah terscan di sesi ini (dari IndexedDB) |
-| **Daftar scan** | Prepend — terbaru di atas, tampilkan foto + nama + waktu scan |
-| **Debounce** | 500ms setelah QR terdeteksi sebelum request dikirim |
-| **Feedback scan** | Toast 2 detik: ✅ sukses / ⚠️ duplikat / ❌ token invalid |
-| **Tombol "Tambah Manual"** | Buka modal search user (pengurus/admin only) |
-| **Tombol "Tutup & Selesaikan"** | Trigger commit — muncul dialog konfirmasi dengan jumlah peserta |
-
-### 9.3. State Feedback Scan
-
-| Kondisi | Tampilan |
-| --- | --- |
-| Scan baru berhasil | ✅ Toast hijau: "Hendra Santoso ditambahkan" |
-| User sudah terscan di sesi ini | ⚠️ Toast kuning: "Hendra Santoso sudah ada di daftar" |
-| Token expired / invalid | ❌ Toast merah: "QR tidak valid atau kadaluarsa" |
-| Error network (scan tidak terkirim) | 🟠 Toast oranye: "Offline — data disimpan lokal" — tetap masuk IndexedDB |
-
-### 9.4. Mode Offline
-
-Jika koneksi terputus saat scan:
-- Data tetap disimpan di **IndexedDB**
-- Sinkronisasi ke backend dilakukan secara **background** saat koneksi kembali
-- Scanner tetap bisa digunakan — tidak ada blocker
+| Scan baru berhasil | ✅ Beep + Toast hijau: *"Hendra Santoso tercatat hadir"* |
+| Jemaat terlambat | ⚠️ Beep + Toast oranye: *"Hendra Santoso tercatat (Terlambat -15 Pts)"* |
+| User sudah tercatat sebelumnya | ⚠️ Buzz + Toast kuning: *"Peserta sudah tercatat hadir"* (HTTP 409) |
+| Nomor anggota tidak valid | ❌ Buzz + Toast merah: *"Nomor anggota tidak ditemukan"* (HTTP 404) |
 
 ---
 
-## 10. UI: Modal Absensi Manual
+## 10. UI: Modal Absensi Manual (Fallback)
 
-* Input search nama user (autocomplete — source: RSVP list + semua user aktif)
-* Tiap hasil: foto, nama, badge status ("Sudah RSVP" / "Tidak RSVP")
-* Jika user sudah ada di daftar scan: tampil badge "Sudah Tercatat", tombol disabled
-* Klik **"Tambahkan"** → masuk ke daftar sesi (IndexedDB + AttendancePending)
-* Modal tidak menutup otomatis — pengurus bisa tambah beberapa user sekaligus
+* Input pencarian berdasarkan **`userNumber`** (nomor anggota) atau Nama jemaat.
+* Tampilan hasil: Nama Jemaat, Nomor Anggota (`userNumber`), Role, Asal Sekolah.
+* Tombol **"Catat Hadir"** $\rightarrow$ Menembak endpoint presensi manual `POST /api/events/:id/attendances` dengan `method: "manual"`.
 
 ---
 
 ## 11. UI: Rekap Kehadiran (`/events/:id/attendances`)
 
-* **Summary card**: Total Hadir, Total Tidak Hadir, Persentase Kehadiran
-* **Tabel**: Foto, Nama, Waktu Hadir, Via (QR / Manual)
-* **Filter tab**: Semua / Hadir / Tidak Hadir
-* **Export CSV** *(future feature)*
-* Akses: `pengurus` / `admin` only
+* **Summary Card**: Total Kehadiran (`total_attended`), Status Finalisasi (`is_finalized: false / true`). *(Tidak ada data photo_url, total RSVP, atau attendance rate).*
+* **Tabel Presensi**:
+  * Kolom: Nomor Anggota (`userNumber`), Nama Jemaat, Role, Sekolah, Waktu Scan, Metode (`qr` / `manual`), Badge Aktivitas, Status Terlambat, Aksi (Hapus presensi draft jika event masih `active`).
+* Akses: `organizer` dan `admin` only (`activist` dan `member` dilarang).
 
 ---
 
-## 12. API Contract
+## 12. Spesifikasi API Contract
 
-### 12.1. Buka Sesi Absensi
-
-#### `POST /v1/events/:id/attendance-session/open`
-
-**Headers:** `Authorization: Bearer <token>` (role: `pengurus` / `admin`)
-
-**Response 201:**
+Semua endpoint menggunakan format envelope numerik standar Sekkha Apps:
 ```json
 {
-  "status": "success",
-  "data": {
-    "session_id": "sess_abc123",
-    "event_id": "evt_xyz789",
-    "opened_at": "2026-08-03T08:00:00Z",
+  "status": "success" | "error",
+  "code": 200,
+  "message": "Pesan deskriptif",
+  "data": {}
+}
+```
+
+### 12.1. Ubah Status Event (Start, Close, Cancel, Reschedule)
+#### `PATCH /api/events/:id/status`
+- **Akses**: `organizer`, `admin`
+- **Request Body (Start Event)**:
+  ```json
+  {
     "status": "active"
-  },
-  "message": "Sesi absensi dibuka. Event ditandai sebagai Berlangsung."
-}
-```
-
-**Response 409 — Sesi sudah aktif:**
-```json
-{
-  "status": "error",
-  "code": "SESSION_ALREADY_ACTIVE",
-  "data": { "session_id": "sess_abc123" },
-  "message": "Sesi absensi sudah aktif untuk event ini"
-}
-```
-
----
-
-### 12.2. Scan QR (Tambah ke Pending)
-
-#### `POST /v1/events/:id/attendance-session/scan`
-
-**Headers:** `Authorization: Bearer <token>` (role: `pengurus` / `admin`)
-
-**Request Body:**
-```json
-{
-  "qr_token": "eyJhbGciOiJIUzI1NiJ9...",
-  "session_id": "sess_abc123"
-}
-```
-
-**Response 200 — Sukses:**
-```json
-{
-  "status": "success",
-  "data": {
-    "pending_id": "pend_001",
-    "session_id": "sess_abc123",
-    "user": {
-      "id": "usr_9b1deb4d",
-      "name": "Hendra Santoso",
-      "photo_url": "https://cdn.sekkha.app/photos/usr_9b1d.jpg"
-    },
-    "scanned_at": "2026-08-03T08:15:30Z"
-  },
-  "message": "Hendra Santoso ditambahkan ke daftar"
-}
-```
-
-**Response 409 — Sudah di sesi:**
-```json
-{
-  "status": "error",
-  "code": "ALREADY_IN_SESSION",
-  "message": "Hendra Santoso sudah ada di daftar sesi ini"
-}
-```
-
-**Response 401 — Token invalid/expired:**
-```json
-{
-  "status": "error",
-  "code": "EXPIRED_QR_TOKEN",
-  "message": "QR Code tidak valid atau sudah kadaluarsa"
-}
-```
-
----
-
-### 12.3. Tambah Manual ke Pending
-
-#### `POST /v1/events/:id/attendance-session/manual`
-
-**Headers:** `Authorization: Bearer <token>` (role: `pengurus` / `admin`)
-
-**Request Body:**
-```json
-{
-  "session_id": "sess_abc123",
-  "user_id": "usr_9b1deb4d"
-}
-```
-
-**Response 200:**
-```json
-{
-  "status": "success",
-  "data": {
-    "pending_id": "pend_002",
-    "user": { "id": "usr_9b1deb4d", "name": "Hendra Santoso" },
-    "method": "manual",
-    "scanned_at": "2026-08-03T08:20:00Z"
-  },
-  "message": "Hendra Santoso ditambahkan secara manual"
-}
-```
-
----
-
-### 12.4. Ambil Data Pending (Recovery)
-
-#### `GET /v1/events/:id/attendance-session/pending`
-
-**Headers:** `Authorization: Bearer <token>` (role: `pengurus` / `admin`)
-
-**Response 200:**
-```json
-{
-  "status": "success",
-  "data": {
-    "session_id": "sess_abc123",
-    "event_id": "evt_xyz789",
-    "status": "active",
-    "opened_at": "2026-08-03T08:00:00Z",
-    "pending_count": 38,
-    "pending": [
-      {
-        "pending_id": "pend_001",
-        "user": { "id": "usr_9b1deb4d", "name": "Hendra Santoso", "photo_url": "..." },
-        "method": "qr",
-        "scanned_at": "2026-08-03T08:15:30Z"
-      }
-    ]
   }
-}
-```
-
----
-
-### 12.5. Commit & Tutup Sesi
-
-#### `POST /v1/events/:id/attendance-session/commit`
-
-**Headers:** `Authorization: Bearer <token>` (role: `pengurus` / `admin`)
-
-**Request Body:**
-```json
-{
-  "session_id": "sess_abc123"
-}
-```
-
-**Response 200:**
-```json
-{
-  "status": "success",
-  "data": {
-    "event_id": "evt_xyz789",
-    "total_committed": 38,
-    "total_points_awarded": 1900,
-    "total_badges_awarded": 12,
-    "committed_at": "2026-08-03T10:30:00Z"
-  },
-  "message": "Sesi ditutup. 38 kehadiran berhasil disimpan."
-}
-```
-
-**Response 400 — Tidak ada data pending:**
-```json
-{
-  "status": "error",
-  "code": "NO_PENDING_DATA",
-  "message": "Tidak ada data kehadiran yang terscan di sesi ini"
-}
-```
-
----
-
-### 12.6. Generate QR Token User
-
-#### `GET /v1/users/me/qr-token`
-
-**Headers:** `Authorization: Bearer <token>`
-
-**Response 200:**
-```json
-{
-  "status": "success",
-  "data": {
-    "qr_token": "eyJhbGciOiJIUzI1NiJ9...",
-    "expires_at": "2026-08-04T08:00:00Z",
-    "user": {
-      "id": "usr_9b1deb4d",
-      "name": "Hendra Santoso",
-      "photo_url": "https://cdn.sekkha.app/photos/usr_9b1d.jpg"
+  ```
+- **Response 200 OK**:
+  ```json
+  {
+    "status": "success",
+    "code": 200,
+    "message": "Event started successfully and attendance session is now active",
+    "data": {
+      "id": "evt_abc123",
+      "status": "active"
     }
   }
-}
-```
+  ```
+- **Error 400 Bad Request (Start Prematur)**:
+  ```json
+  {
+    "status": "error",
+    "code": 400,
+    "message": "Event cannot be started before its scheduled date and time"
+  }
+  ```
+- **Request Body (Reschedule Event dari `cancel` ke `scheduled`)**:
+  ```json
+  {
+    "status": "scheduled",
+    "event_date": "2026-11-01T09:00:00.000Z"
+  }
+  ```
+- **Response 200 OK (Reschedule)**:
+  ```json
+  {
+    "status": "success",
+    "code": 200,
+    "message": "Event rescheduled successfully",
+    "data": {
+      "id": "evt_abc123",
+      "status": "scheduled",
+      "event_date": "2026-11-01T09:00:00.000Z"
+    }
+  }
+  ```
 
 ---
 
-### 12.7. Rekap Kehadiran
+### 12.2. Catat Presensi (QR Scanner / Manual)
+#### `POST /api/events/:id/attendances`
+- **Akses**: `organizer`, `admin` (`requireRole("organizer", "admin")`)
+- **Request Body (Scan QR)**:
+  ```json
+  {
+    "user_number": "202610230001",
+    "method": "qr"
+  }
+  ```
+- **Response 201 Created**:
+  ```json
+  {
+    "status": "success",
+    "code": 201,
+    "message": "Attendance drafted successfully",
+    "data": {
+      "attendance_id": "att_001",
+      "user_id": "usr_9b1deb4d",
+      "name": "Hendra Santoso",
+      "user_number": "202610230001",
+      "is_late": false,
+      "late_penalty_applied": 0,
+      "points_earned": 50,
+      "is_finalized": false,
+      "scanned_at": "2026-10-25T09:15:00.000Z"
+    }
+  }
+  ```
+- **Error 409 Conflict (Sudah Hadir)**:
+  ```json
+  {
+    "status": "error",
+    "code": 409,
+    "message": "Peserta sudah tercatat hadir"
+  }
+  ```
+- **Error 404 Not Found (Nomor Anggota Tidak Ditemukan)**:
+  ```json
+  {
+    "status": "error",
+    "code": 404,
+    "message": "User with specified user number not found"
+  }
+  ```
 
-#### `GET /v1/events/:id/attendances`
+---
 
-**Headers:** `Authorization: Bearer <token>` (role: `pengurus` / `admin`)
-
-**Response 200:**
-```json
-{
-  "status": "success",
-  "data": {
-    "event_id": "evt_xyz789",
-    "total_rsvp": 42,
-    "total_attended": 38,
-    "total_not_attended": 4,
-    "attendance_rate": 90.5,
-    "attendances": [
-      {
-        "user": {
-          "id": "usr_9b1deb4d",
+### 12.3. Rekap Kehadiran Event
+#### `GET /api/events/:id/attendances`
+- **Akses**: `organizer`, `admin`
+- **Response 200 OK**:
+  ```json
+  {
+    "status": "success",
+    "code": 200,
+    "message": "Daftar kehadiran berhasil diambil",
+    "data": {
+      "event_id": "evt_abc123",
+      "total_attended": 38,
+      "is_finalized": false,
+      "attendances": [
+        {
+          "attendance_id": "att_001",
+          "user_id": "usr_9b1deb4d",
           "name": "Hendra Santoso",
-          "photo_url": "..."
-        },
-        "attended_at": "2026-08-03T08:15:30Z",
-        "method": "qr"
-      }
-    ]
-  },
-  "meta": { "total_attended": 38 }
-}
-```
+          "user_number": "202610230001",
+          "role": "member",
+          "school": "SMA Negeri 1 Jakarta",
+          "method": "qr",
+          "is_late": false,
+          "badge_activity": "MC",
+          "scanned_at": "2026-10-25T09:15:00.000Z"
+        }
+      ]
+    }
+  }
+  ```
+
+---
+
+### 12.4. Hapus / Koreksi Kehadiran Draft
+#### `DELETE /api/events/:id/attendances/:userId`
+- **Akses**: `organizer`, `admin`
+- **Aturan**: Hanya bisa dilakukan saat status event belum `closed`.
+- **Response 200 OK**:
+  ```json
+  {
+    "status": "success",
+    "code": 200,
+    "message": "Presensi peserta berhasil dibatalkan",
+    "data": {
+      "user_id": "usr_9b1deb4d"
+    }
+  }
+  ```
 
 ---
 
 ## 13. Database Schema (Prisma)
 
+Mengikuti schema konsisten di PostgreSQL:
+
 ```prisma
-model AttendanceSession {
-  id         String   @id @default(cuid())
-  event_id   String   @unique  // 1 sesi per event
-  opened_by  String             // user_id pengurus
-  opened_at  DateTime @default(now())
-  closed_at  DateTime?
-  status     String   @default("active")  // 'active' | 'completed'
-
-  event    Event              @relation(fields: [event_id], references: [id])
-  opener   User               @relation(fields: [opened_by], references: [id])
-  pendings AttendancePending[]
-}
-
-model AttendancePending {
-  id         String   @id @default(cuid())
-  session_id String
-  user_id    String
-  method     String   @default("qr")   // 'qr' | 'manual'
-  scanned_at DateTime @default(now())
-
-  session AttendanceSession @relation(fields: [session_id], references: [id], onDelete: Cascade)
-  user    User              @relation(fields: [user_id], references: [id])
-
-  @@unique([session_id, user_id])  // tidak bisa scan user yang sama 2x dalam 1 sesi
-  @@index([session_id])
-}
-
 model Attendance {
-  id          String   @id @default(cuid())
-  event_id    String
-  user_id     String
-  method      String   @default("qr")   // 'qr' | 'manual'
-  attended_at DateTime
+  id                 String           @id @default(cuid())
+  userId             String           @map("user_id")
+  eventId            String           @map("event_id")
+  method             AttendanceMethod @default(qr)
+  pointsEarned       Int              @default(50) @map("points_earned")
+  isLate             Boolean          @default(false) @map("is_late")
+  latePenaltyApplied Int              @default(0) @map("late_penalty_applied")
+  badgeActivityId    String?          @map("badge_activity_id")
+  badgeBonusPoints   Int              @default(0) @map("badge_bonus_points")
+  isFinalized        Boolean          @default(false) @map("is_finalized")
+  scannedAt          DateTime         @default(now) @map("scanned_at")
 
-  event Event @relation(fields: [event_id], references: [id], onDelete: Cascade)
-  user  User  @relation(fields: [user_id], references: [id])
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event         Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  badgeActivity BadgeActivity? @relation(fields: [badgeActivityId], references: [id], onDelete: SetNull)
 
-  @@unique([event_id, user_id])
-  @@index([event_id])
-  @@index([user_id])
+  @@unique([userId, eventId])
+  @@index([eventId, scannedAt])
+  @@index([scannedAt])
+  @@index([userId, scannedAt(sort: Desc)])
+  @@map("attendances")
 }
 ```
 
@@ -662,22 +560,9 @@ model Attendance {
 
 ## 14. Domain Events (EventBus Integration)
 
-| Event | Publisher | Subscriber | Payload | Keterangan |
+| Event | Publisher | Subscriber | Payload | Efek Samping |
 | --- | --- | --- | --- | --- |
-| `attendance.session_opened` | Events module | — | `{ event_id, session_id }` | Event status → ongoing |
-| `attendance.batch_recorded` | Events module | Dashboard/Gamification | `{ event_id, attendances: [{user_id, point_reward, badge_id}] }` | Proses reward semua peserta sekaligus |
-| `event.completed` | Events module | — | `{ event_id }` | Event selesai |
-
-### Subscriber Logic (`attendance.batch_recorded`):
-
-```
-Gamification Module menerima event
-          |
-Untuk setiap item di attendances[]:
-  ├── point_reward > 0 → UPDATE user.total_points
-  ├── badge_id NOT NULL → INSERT UserBadge (skip jika sudah ada)
-  └── Cek Achievement triggers (future PRD)
-```
+| `event.closed` | Events module | Users/Stats module | `{ eventId, pointReward, attendeeUserIds: string[] }` | Menandai `isFinalized = true` pada seluruh `Attendance`, menambah saldo poin di `UserStats`, membuat catatan `PointTransaction`, memperbarui streak mingguan jemaat, dan menginvalidasi cache leaderboard/profil. |
 
 ---
 
@@ -685,18 +570,14 @@ Untuk setiap item di attendances[]:
 
 | ID | Skenario | Hasil yang Diharapkan |
 | --- | --- | --- |
-| **AC-01** | Pengurus klik "Aktifkan Absensi" pada event `upcoming` | Event berubah ke `ongoing`, sesi dibuat, halaman scanner terbuka |
-| **AC-02** | `aktivis` mencoba membuka `/events/:id/scan` | `403 Forbidden` — aktivis tidak punya akses |
-| **AC-03** | Pengurus scan QR user yang valid | User masuk ke daftar sesi, toast ✅, kamera auto-resume |
-| **AC-04** | Pengurus scan QR user yang sama dua kali | Toast ⚠️ "Sudah ada di daftar", data tidak diduplikasi |
-| **AC-05** | Pengurus scan QR token expired | Toast ❌ "QR tidak valid atau kadaluarsa", tidak ada data tersimpan |
-| **AC-06** | Koneksi internet putus saat scan | Data tersimpan di IndexedDB, toast oranye "Offline", sinkronisasi otomatis saat koneksi kembali |
-| **AC-07** | Pengurus kehilangan data lokal (IndexedDB kosong) dan buka ulang scanner | Data pending diambil dari backend, daftar scan terpulihkan |
-| **AC-08** | Pengurus tambah manual user yang belum terscan | User masuk daftar dengan `method: 'manual'` |
-| **AC-09** | Pengurus klik "Tutup & Selesaikan" dengan 38 peserta | Dialog konfirmasi muncul dengan jumlah peserta |
-| **AC-10** | Pengurus konfirmasi tutup sesi | Semua data di-commit dalam 1 transaksi: Attendance tersimpan, poin & badge diberikan, event → `completed` |
-| **AC-11** | Terjadi error saat commit | Transaksi di-rollback, AttendancePending tetap ada, toast error dengan instruksi retry |
-| **AC-12** | Commit berhasil | IndexedDB dibersihkan, redirect ke rekap kehadiran |
-| **AC-13** | Pengurus buka rekap kehadiran setelah commit | Tampil total hadir, persentase, tabel peserta dengan waktu dan metode hadir |
-| **AC-14** | User buka `/profile/qr` | QR Code segar ditampilkan (token baru 24 jam) |
-| **AC-15** | EventBus `attendance.batch_recorded` dipublish setelah commit | Gamification module menerima dan memperbarui poin + badge semua peserta |
+| **AC-ATT-01** | Organizer klik "Start Event" saat jadwal sudah tiba (`event_date <= current date`) | Status event berubah menjadi `active` via `PATCH /api/events/:id/status` (code `200`). Scanner presensi terbuka. |
+| **AC-ATT-02** | Organizer mencoba klik "Start Event" sebelum tanggal/jam event | Backend menolak dengan `400 Bad Request` dan pesan "Event cannot be started before its scheduled date and time". |
+| **AC-ATT-03** | `activist` mencoba membuka `/events/:id/scan` atau POST absensi | Backend menolak dengan `403 Forbidden`. Akses scanner eksklusif untuk `organizer` dan `admin`. |
+| **AC-ATT-04** | Panitia memindai QR Code kartu anggota jemaat (`userNumber`) | Data masuk ke presensi draft (`is_finalized: false`), respon `201 Created` dengan code angka `201`, audio beep aktif, kamera auto-resume. |
+| **AC-ATT-05** | Panitia memindai jemaat yang sama dua kali atau multi-gate scan berbarengan | Backend merespon `409 Conflict` (code `409`) dengan pesan "Peserta sudah tercatat hadir" berkat constraint `@@unique([userId, eventId])`. Data tidak ganda. |
+| **AC-ATT-06** | Jemaat di-scan melewati batas toleransi `max_late_minutes` | Sistem otomatis mencatat `is_late: true` dan mengurangi perolehan poin sesuai `late_penalty_applied`. |
+| **AC-ATT-07** | Panitia menghapus entri salah scan saat event masih `active` | Data draft terhapus via `DELETE /api/events/:id/attendances/:userId` tanpa perlu rollback saldo poin (karena poin belum terdistribusi). |
+| **AC-ATT-08** | Organizer klik "Close & Finalize Event" | Status event berubah menjadi `closed` (code `200`), seluruh presensi ditandai `is_finalized = true`, poin dikreditkan serentak dalam 1 transaksi DB. |
+| **AC-ATT-09** | Organizer membuka Rekap Kehadiran (`/events/:id/attendances`) | Menampilkan `total_attended`, status finalisasi, dan daftar peserta dengan nomor anggota, sekolah, dan waktu scan (tanpa photo_url, tanpa RSVP, tanpa attendance rate). |
+| **AC-ATT-10** | Organizer melakukan "Reschedule Event" pada event `cancel` | Menentukan tanggal baru (`event_date >= current date`), status berubah kembali menjadi `scheduled` (code `200`). |
+

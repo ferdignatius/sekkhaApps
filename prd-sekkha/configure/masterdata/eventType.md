@@ -45,16 +45,17 @@ Manajemen Event Type merupakan konfigurasi internal vihara:
 
 Berikut data default yang di-seed saat inisialisasi sistem:
 
-| Code | Label | Color | Description | Default Points |
-| --- | --- | --- | --- | ---: |
-| `regular-puja` | Regular Puja | `#4262FF` | Kebaktian rutin mingguan pemuda vihara | 50 |
-| `chanting` | Chanting | `#0D9488` | Sesi pelafalan paritta dan sutra kebajikan | 60 |
-| `volunteer` | Volunteer | `#EC4899` | Kegiatan bakti sosial dan aksi kerelawanan pemuda | 80 |
+| Code | Label | Color | Description | Default Points | Default Max Late | Default Late Penalty |
+| --- | --- | --- | --- | ---: | ---: | ---: |
+| `regular-puja` | Regular Puja | `#4262FF` | Kebaktian rutin mingguan pemuda vihara | 50 | 30 menit | 15 poin |
+| `chanting` | Chanting | `#0D9488` | Sesi pelafalan paritta dan sutra kebajikan | 60 | 30 menit | 15 poin |
+| `volunteer` | Volunteer | `#EC4899` | Kegiatan bakti sosial dan aksi kerelawanan pemuda | 80 | 30 menit | 15 poin |
 
 Saat organizer memilih Event Type ketika membuat event baru:
 1. `default_point_reward` otomatis mengisi nilai poin reward event tersebut.
-2. Organizer dapat menyesuaikan nilai poin jika diizinkan aturan kegiatan.
-3. Perubahan nilai default poin di master data tidak akan mengubah nilai poin pada event yang sudah dibuat sebelumnya (historical immutability).
+2. `default_max_late_minutes` (default: 30 menit) dan `default_late_penalty_points` (default: 15 poin) otomatis mengisi konfigurasi toleransi keterlambatan event.
+3. Organizer dapat menyesuaikan nilai poin maupun batas menit telat jika diizinkan aturan kegiatan tertentu (fleksibel dan editable per-event).
+4. Perubahan nilai default di master data tidak akan mengubah nilai pada event yang sudah dibuat sebelumnya (historical immutability).
 
 ---
 
@@ -66,15 +67,17 @@ Tabel database menggunakan penamaan jamak `event_types`:
 
 ```prisma
 model EventType {
-  id                 String   @id @default(cuid())
-  code               String   @unique
-  label              String
-  description        String?
-  defaultPointReward Int      @default(0) @map("default_point_reward")
-  isActive           Boolean  @default(true) @map("is_active")
-  color              String
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
+  id                      String   @id @default(cuid())
+  code                    String   @unique
+  label                   String
+  description             String?
+  defaultPointReward      Int      @default(0) @map("default_point_reward")
+  defaultMaxLateMinutes   Int?     @default(30) @map("default_max_late_minutes")
+  defaultLatePenaltyPoints Int?    @default(15) @map("default_late_penalty_points")
+  isActive                Boolean  @default(true) @map("is_active")
+  color                   String
+  createdAt               DateTime @default(now()) @map("created_at")
+  updatedAt               DateTime @updatedAt @map("updated_at")
 
   events Event[]
 
@@ -87,11 +90,13 @@ model EventType {
 | Field | Database Column | Type | Required | Rules & Constraints |
 | --- | --- | --- | :---: | --- |
 | `id` | `id` | `String (cuid)` | Yes | Primary Key, server-generated CUID. |
-| `code` | `code` | `String` | Yes | Unique, lowercase kebab-case (`^[a-z0-9]+(?:-[a-z0-9]+)*$`), 2-50 chars. Dihasilkan otomatis oleh sistem dari nilai label (kebab-case otomatis) dan ditampilkan secara read-only di form. Terkunci & immutable setelah dibuat. |
+| `code` | `code` | `String` | Yes | Unique, lowercase kebab-case (`^[a-z0-9]+(?:-[a-z0-9]+)*$`), 2-50 chars. Dihasilkan otomatis oleh sistem dari nilai label (kebab-case otomatis) dan ditampilkan secara read-only di form. Tidak immutable: kode otomatis menyesuaikan dan tersinkronisasi saat label diperbarui (dengan resolusi duplikasi otomatis). Relasi event tetap aman karena mengacu pada Primary Key `id`. |
 | `label` | `label` | `String` | Yes | 1-100 chars, nama tampilan yang ramah pengguna (misal: "Regular Puja"). |
 | `color` | `color` | `String` | Yes | Hex code warna CSS, validasi regex `^#[0-9A-Fa-f]{6}$`. |
 | `description` | `description` | `String?` | No | Keterangan opsional, maksimal 500 karakter. |
-| `default_point_reward` | `default_point_reward` | `Int` | Yes | Nilai integer antara 0 s/d 10.000, default `0`. |
+| `default_point_reward` | `default_point_reward` | `Int` | Yes | Nilai integer antara 0 s/d 100, default `50`. |
+| `default_max_late_minutes` | `default_max_late_minutes` | `Int?` | No | Batas toleransi menit keterlambatan standar, default `30` menit (rentang 0-180 menit). |
+| `default_late_penalty_points` | `default_late_penalty_points` | `Int?` | No | Potongan poin keterlambatan standar, default `15` poin (rentang 0-100 poin). |
 | `is_active` | `is_active` | `Boolean` | Yes | Default `true`. Mengontrol ketersediaan opsi di form event. |
 | `created_at` | `created_at` | `DateTime` | Yes | Otomatis dibuat oleh server (`now()`). |
 | `updated_at` | `updated_at` | `DateTime` | Yes | Otomatis diperbarui saat mutasi data (`updatedAt`). |
@@ -163,7 +168,7 @@ Field `code` adalah **identifikator semantik permanen berbasis string (kebab-cas
 ## 6. Validation and Business Rules
 
 1. **Boundary Validation**: Validasi semua payload mutasi pada boundary controller menggunakan Zod `EventTypeSchema`.
-2. **Immutability of `code`**: Setelah Event Type dibuat, nilai `code` tidak boleh diubah (read-only) untuk mencegah broken reference pada histori event dan logika streak.
+2. **Auto-Synchronization of `code` (Read-Only)**: Nilai `code` ditampilkan secara read-only di antarmuka pengguna dan otomatis tersinkronisasi menyesuaikan label saat diubah. Integritas data tetap terjaga karena relasi antartabel mengacu pada Primary Key `id` (CUID), bukan pada string `code`.
 3. **Regex Format**:
    - `code`: Wajib huruf kecil, angka, dan tanda hubung kebab-case: `^[a-z0-9]+(?:-[a-z0-9]+)*$`.
    - `color`: Wajib format warna hex 6 digit valid: `^#[0-9A-Fa-f]{6}$`.
@@ -195,8 +200,8 @@ Field `code` adalah **identifikator semantik permanen berbasis string (kebab-cas
   - Toggle Switch `is_active`.
   - Textarea `description`.
 - **Form Edit**:
-  - Menampilkan `code` dalam keadaan terkunci permanen (disabled/read-only) dengan icon gembok dan penjelasan integritas data.
-  - Memperbarui `label`, `color`, `default_point_reward`, `is_active`, dan `description`.
+  - Menampilkan `code` dalam keadaan read-only dengan live preview otomatis yang tersinkronisasi saat label diedit.
+  - Memperbarui `label` (otomatis menyelaraskan `code`), `color`, `default_point_reward`, `is_active`, dan `description`.
   - Color Picker murni (tanpa preset statis).
 - **Aksi Hapus**: Tombol hapus dicegah dan memunculkan modal dialog penjelasan jika data sudah terhubung ke event yang ada (HTTP 409 Conflict), merekomendasikan opsi nonaktifkan saja.
 - **Standar Aksesibilitas**: Minimum touch target 44px, kontras warna label memenuhi rasio WCAG AA.
@@ -213,8 +218,8 @@ Base route: `/api/configure/event-types`
 | --- | --- | --- | --- |
 | `GET` | `/api/configure/event-types` | `organizer`, `admin` | Mengambil seluruh daftar Event Type (opsional query `?is_active=true`) |
 | `POST` | `/api/configure/event-types` | `admin` | Membuat Event Type baru (`code` otomatis digenerate jika kosong) |
-| `PUT` | `/api/configure/event-types/:id` | `admin` | Mengubah label, color, points, is_active |
-| `PATCH` | `/api/configure/event-types/:id` | `admin` | Alias parsial update untuk PUT |
+| `PUT` | `/api/configure/event-types/:id` | `admin` | Mengubah label (otomatis menyesuaikan code), color, points, is_active |
+| `PATCH` | `/api/configure/event-types/:id` | `admin` | Alias parsial update untuk PUT (otomatis menyesuaikan code) |
 | `DELETE` | `/api/configure/event-types/:id` | `admin` | Menghapus Event Type (jika belum pernah dipakai) |
 
 ### 8.2 Payload & Response Examples

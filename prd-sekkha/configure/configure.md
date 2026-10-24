@@ -90,7 +90,7 @@ Setiap sub-halaman Master Data mengikuti pola arsitektur antarmuka Clay:
   - Setiap kartu memuat identitas visual entitas (aksen warna/badge), judul/nama jelas, parameter sistem, dan tombol aksi cepat di bagian bawah.
 - **Pencarian & Filter**: Debounced search bar + horizontal chips filter kategori.
 - **Create**: Formulir terstandarisasi dengan validasi Zod (`code` di-generate otomatis sistem dalam format kebab-case dari label tanpa membebani input manual pengguna).
-- **Edit**: Halaman/modal prefill data existing dengan `code` berstatus read-only (terkunci permanen demi integritas relasional).
+- **Edit**: Halaman/modal prefill data existing dengan `code` berstatus read-only yang otomatis tersinkronisasi menyesuaikan perubahan nama/label (relasi database tetap terjaga karena berpegang pada Primary Key `id`).
 - **Delete**: Konfirmasi dialog + validasi integritas relasi (pencegahan hard-delete dengan HTTP 409 Conflict jika entitas telah memiliki relasi aktif di sistem).
 
 ### 5.2. Permission Gate

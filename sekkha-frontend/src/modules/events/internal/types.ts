@@ -2,23 +2,10 @@
 // Shared types for the events feature, shaped after the API contract.
 
 export type EventType = "rutin" | "special"
-export type EventStatus =
-  | "draft"
-  | "scheduled"
-  | "published"
-  | "active"
-  | "closed"
-  | "done"
-  | "cancelled"
+export type EventStatus = "scheduled" | "active" | "cancelled" | "closed"
+
 export type AttendanceMethod = "qr" | "manual"
-export type UserRole =
-  | "member"
-  | "activist"
-  | "organizer"
-  | "admin"
-  | "umat"
-  | "aktivis"
-  | "pengurus"
+export type UserRole = "member" | "activist" | "organizer" | "admin"
 
 // ─── Tag system — dynamic from master data, fallback hardcoded ────────────────
 
@@ -60,12 +47,10 @@ export const DEFAULT_EVENT_TAG_COLORS: Record<string, TagColors> = {
 }
 
 // Re-export as EVENT_TAG_COLORS for backward compatibility
-// This will be replaced at runtime by useEventTags hook
 export const EVENT_TAG_COLORS = DEFAULT_EVENT_TAG_COLORS
 
 /**
  * Convert a hex color to tailwind-compatible inline style approach.
- * Since master data stores hex colors, we generate CSS classes dynamically.
  */
 export function hexToTagColors(hex: string): TagColors {
   return {
@@ -80,12 +65,17 @@ export function hexToTagColors(hex: string): TagColors {
 export interface EventListItem {
   id: string
   title: string
-  description?: string
+  description?: string | null
   location: string
   event_date: string // ISO 8601
-  event_type: EventType
+  event_type: any
   tag?: EventTag
   status: EventStatus
+  visibility?: "all" | "member" | "activist" | "organizer"
+  point_reward?: number
+  max_late_minutes?: number
+  late_penalty_points?: number
+  total_attendees?: number
   qr_code?: QrCode | null
 }
 
@@ -96,7 +86,7 @@ export interface QrCode {
   expires_at: string | null
 }
 
-// ─── Attendance record & Badge System ─────────────────────────────────────────
+// ─── Attendance record & Badge Activity System ────────────────────────────────
 
 export interface AttendanceBadge {
   id: string
@@ -107,11 +97,21 @@ export interface AttendanceBadge {
 }
 
 export interface AttendanceRecord {
+  attendance_id?: string
   user_id: string
   name: string
   user_number?: string | null
+  role?: string
+  school?: string
   method: AttendanceMethod
   scanned_at: string
+  points_earned?: number
+  is_late?: boolean
+  late_penalty_applied?: number
+  badge_activity_id?: string | null
+  badge_activity?: string | null
+  badge_bonus_points?: number
+  is_finalized?: boolean
   base_points?: number
   badges?: AttendanceBadge[]
 }
@@ -120,9 +120,14 @@ export interface AttendanceRecord {
 
 export interface CreateEventPayload {
   title: string
-  description: string
+  description?: string
   location: string
   event_date: string
-  event_type: EventType
+  event_type?: EventType
+  event_type_id?: string
   tag?: string
+  visibility?: "all" | "member" | "activist" | "organizer"
+  point_reward?: number
+  max_late_minutes?: number
+  late_penalty_points?: number
 }

@@ -36,7 +36,11 @@ function isTodayEvent(iso: string): boolean {
 
 export function EventCard({ event, onClick }: EventCardProps) {
   const { day, time } = formatDate(event.event_date)
-  const tag = event.tag ?? event.event_type ?? "rutin"
+  const tag =
+    event.tag ??
+    (typeof event.event_type === "string"
+      ? event.event_type
+      : event.event_type?.code ?? "rutin")
   const colorInfo = getCategoryColor(tag)
   const isLive = isTodayEvent(event.event_date)
   const status = event.status ?? "scheduled"
@@ -79,41 +83,33 @@ export function EventCard({ event, onClick }: EventCardProps) {
                   className="animate-pulse font-semibold"
                 >
                   <span className="mr-1 h-1.5 w-1.5 rounded-full bg-emerald-600" />
-                  Live Presensi
+                  Live Attendance
                 </Badge>
               )}
 
               {/* Status: Closed */}
               {status === "closed" && (
                 <Badge variant="secondary" glass>
-                  Selesai
+                  Closed
                 </Badge>
               )}
 
               {/* Status: Cancelled */}
               {status === "cancelled" && (
                 <Badge variant="destructive" glass>
-                  Dibatalkan
-                </Badge>
-              )}
-
-              {/* Status: Draft */}
-              {status === "draft" && (
-                <Badge variant="outline" glass>
-                  Draft
+                  Cancelled
                 </Badge>
               )}
 
               {/* Status: Scheduled / Upcoming */}
-              {(status === "scheduled" || status === "published") &&
-                !isLive && (
-                  <Badge variant="secondary" glass>
-                    Scheduled
-                  </Badge>
-                )}
+              {status === "scheduled" && !isLive && (
+                <Badge variant="secondary" glass>
+                  Scheduled
+                </Badge>
+              )}
 
               {/* Live today indicator */}
-              {(status === "scheduled" || status === "published") && isLive && (
+              {status === "scheduled" && isLive && (
                 <Badge variant="ochre" glass className="font-bold">
                   <span className="mr-1 h-1.5 w-1.5 rounded-full bg-[#e8b94a]" />
                   Today

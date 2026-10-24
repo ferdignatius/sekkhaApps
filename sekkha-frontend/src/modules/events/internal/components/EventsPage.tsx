@@ -41,10 +41,25 @@ const EventsResponseSchema = z.array(
     title: z.string(),
     description: z.string().nullable().optional(),
     location: z.string().default(""),
-    event_date: z.string().datetime(),
-    event_type: z.string().default("rutin"),
+    event_date: z.string(),
+    event_type: z
+      .union([
+        z.string(),
+        z.object({
+          id: z.string(),
+          code: z.string().optional(),
+          label: z.string(),
+          color: z.string().optional(),
+          default_point_reward: z.number().optional(),
+        }),
+      ])
+      .optional(),
     tag: z.string().optional(),
     status: z.string(),
+    point_reward: z.number().optional(),
+    max_late_minutes: z.number().optional(),
+    late_penalty_points: z.number().optional(),
+    total_attendees: z.number().optional(),
     qr_code: z
       .object({ code: z.string(), expires_at: z.string().nullable() })
       .nullable()
@@ -272,10 +287,13 @@ export function EventsPage() {
 
   async function loadEventAttendances(eventId: string) {
     try {
-      const data = await api.get<AttendanceRecord[]>(
+      const data = await api.get<any>(
         `/events/${eventId}/attendances`
       )
-      setAttendances((prev) => ({ ...prev, [eventId]: data }))
+      const list: AttendanceRecord[] = Array.isArray(data)
+        ? data
+        : data?.attendances ?? []
+      setAttendances((prev) => ({ ...prev, [eventId]: list }))
     } catch (err) {
       console.error("Failed to load event attendances:", err)
     }
@@ -460,21 +478,48 @@ export function EventsPage() {
               }
               onStatusChange={
                 isPengurus
-                  ? async (eventId, newStatus) => {
+                  ? async (eventId, newStatus, newEventDate) => {
                       try {
+                        const updatePayload: {
+                          status: string
+                          event_date?: string
+                        } = {
+                          status: newStatus,
+                        }
+                        if (newEventDate) {
+                          updatePayload.event_date = new Date(
+                            newEventDate
+                          ).toISOString()
+                        }
+
                         setEvents((prev) =>
                           prev.map((e) =>
-                            e.id === eventId ? { ...e, status: newStatus } : e
+                            e.id === eventId
+                              ? {
+                                  ...e,
+                                  status: newStatus,
+                                  ...(updatePayload.event_date
+                                    ? { event_date: updatePayload.event_date }
+                                    : {}),
+                                }
+                              : e
                           )
                         )
                         setSelected((prev) =>
                           prev && prev.id === eventId
-                            ? { ...prev, status: newStatus }
+                            ? {
+                                ...prev,
+                                status: newStatus,
+                                ...(updatePayload.event_date
+                                  ? { event_date: updatePayload.event_date }
+                                  : {}),
+                              }
                             : prev
                         )
-                        await api.patch(`/events/${eventId}/status`, {
-                          status: newStatus,
-                        })
+                        await api.patch(
+                          `/events/${eventId}/status`,
+                          updatePayload
+                        )
                         await loadEvents()
                       } catch (err) {
                         console.error("Failed to update event status:", err)
@@ -485,6 +530,7 @@ export function EventsPage() {
               }
               attendances={attendances[selected.id] ?? []}
               onRecordAttendance={handleRecordAttendance}
+              onRefreshAttendances={() => loadEventAttendances(selected.id)}
               onDeleteAttendance={
                 isPengurus
                   ? async (userId) => {

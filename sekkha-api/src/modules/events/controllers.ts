@@ -5,19 +5,44 @@ import { registerSseClient } from "./internal/sse"
 import { canRecordAttendance } from "./policy"
 
 export const CreateEventSchema = z.object({
-  title: z.string().trim().min(1, "Judul event wajib diisi").max(200, "Judul maksimal 200 karakter"),
+  title: z
+    .string({ required_error: "Nama Acara wajib diisi" })
+    .trim()
+    .min(3, "Nama Acara minimal 3 karakter")
+    .max(200, "Judul maksimal 200 karakter"),
   description: z.string().trim().max(2000, "Deskripsi maksimal 2000 karakter").optional(),
-  location: z.string().trim().max(200, "Lokasi maksimal 200 karakter").optional(),
-  event_date: z.string().refine((val) => !isNaN(Date.parse(val)), "Format tanggal event tidak valid"),
+  location: z.string({ required_error: "Lokasi wajib diisi" }).trim().min(1, "Lokasi wajib diisi").max(200),
+  event_date: z
+    .string({ required_error: "Tanggal pelaksanaan wajib diisi" })
+    .refine((val) => !isNaN(Date.parse(val)), "Format tanggal event tidak valid"),
   event_type: z.enum(["rutin", "special"]).optional(),
   event_type_id: z.string().optional(),
   season_id: z.string().optional(),
   tag: z.string().max(50).optional(),
-  status: z.enum(["draft", "scheduled", "active", "closed", "cancelled"]).optional(),
-  visibility: z.enum(["all", "member", "activist", "organizer"]).optional(),
+  visibility: z.enum(["all", "member", "activist", "organizer"]).optional().default("all"),
+  point_reward: z.number().int().min(0).max(100).optional(),
+  max_late_minutes: z.number().int().min(0).max(240).optional(),
+  late_penalty_points: z.number().int().min(0).max(100).optional(),
 })
 
+// Status cannot be updated via regular update form per PRD Section 4
 export const UpdateEventSchema = CreateEventSchema.partial()
+
+export const UpdateStatusSchema = z.object({
+  status: z.enum(["active", "closed", "cancel", "cancelled", "scheduled"]),
+  event_date: z.string().optional(),
+})
+
+export const RecordAttendanceSchema = z.object({
+  user_number: z.string().optional(),
+  user_id: z.string().optional(),
+  method: z.enum(["qr", "manual"]).optional().default("qr"),
+  qr_code: z.string().optional(),
+})
+
+export const AssignBadgeActivitySchema = z.object({
+  badge_activity_id: z.string().nullable().optional(),
+})
 
 export const eventControllers = {
   async listEvents(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -26,9 +51,22 @@ export const eventControllers = {
       const isPrivileged = userRole === "organizer" || userRole === "admin"
       const page = Math.max(1, parseInt(req.query.page as string, 10) || 1)
       const limit = Math.min(50, Math.max(1, parseInt(req.query.limit as string, 10) || 20))
+      const status = req.query.status ? String(req.query.status) : undefined
+      const event_type_id = req.query.event_type_id ? String(req.query.event_type_id) : undefined
+      const month = req.query.month ? String(req.query.month) : undefined
 
-      const result = await eventServices.listEvents(userRole, isPrivileged, page, limit)
-      res.json(result)
+      const result = await eventServices.listEvents(userRole, isPrivileged, page, limit, {
+        status,
+        event_type_id,
+        month,
+      })
+
+      res.json({
+        status: "success",
+        code: 200,
+        message: "Events retrieved successfully",
+        data: result,
+      })
     } catch (err) {
       next(err)
     }
@@ -41,10 +79,19 @@ export const eventControllers = {
       const isPrivileged = userRole === "organizer" || userRole === "admin"
 
       const result = await eventServices.getEventDetail(id, userRole, isPrivileged)
-      res.json(result)
+      res.json({
+        status: "success",
+        code: 200,
+        message: "Event detail retrieved successfully",
+        data: result,
+      })
     } catch (err: any) {
       if (err.statusCode) {
-        res.status(err.statusCode).json({ error: err.message })
+        res.status(err.statusCode).json({
+          status: "error",
+          code: err.statusCode,
+          message: err.message,
+        })
         return
       }
       next(err)
@@ -57,7 +104,13 @@ export const eventControllers = {
       const actorId = req.user!.userId
       const actorRole = req.user!.role
       const result = await eventServices.createEvent(actorId, actorRole, body)
-      res.status(201).json(result)
+
+      res.status(201).json({
+        status: "success",
+        code: 201,
+        message: "Event created successfully",
+        data: result,
+      })
     } catch (err) {
       next(err)
     }
@@ -70,7 +123,13 @@ export const eventControllers = {
       const actorId = req.user!.userId
       const actorRole = req.user!.role
       const result = await eventServices.updateEvent(actorId, actorRole, id, body)
-      res.json(result)
+
+      res.json({
+        status: "success",
+        code: 200,
+        message: "Event updated successfully",
+        data: result,
+      })
     } catch (err) {
       next(err)
     }
@@ -79,19 +138,36 @@ export const eventControllers = {
   async updateStatus(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const id = req.params.id as string
-      const { status } = z
-        .object({
-          status: z.enum(["draft", "scheduled", "active", "closed", "cancelled"]),
-        })
-        .parse(req.body)
+      const { status, event_date } = UpdateStatusSchema.parse(req.body)
 
       const actorId = req.user!.userId
       const actorRole = req.user!.role
-      const result = await eventServices.updateEventStatus(actorId, actorRole, id, status)
-      res.json(result)
+      const result = await eventServices.updateEventStatus(actorId, actorRole, id, status, event_date)
+
+      let message = "Event status updated successfully"
+      if (result.status === "active") {
+        message = "Event started successfully and attendance session is now active"
+      } else if (result.status === "closed") {
+        message = "Event closed successfully and attendance points distributed"
+      } else if (result.status === "scheduled") {
+        message = "Event rescheduled successfully"
+      } else if (result.status === "cancel") {
+        message = "Event cancelled successfully"
+      }
+
+      res.json({
+        status: "success",
+        code: 200,
+        message,
+        data: result,
+      })
     } catch (err: any) {
       if (err.statusCode) {
-        res.status(err.statusCode).json({ error: err.message })
+        res.status(err.statusCode).json({
+          status: "error",
+          code: err.statusCode,
+          message: err.message,
+        })
         return
       }
       next(err)
@@ -101,35 +177,165 @@ export const eventControllers = {
   async recordAttendance(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const id = req.params.id as string
-      const callerRole = req.user?.role
-      const isPrivileged = canRecordAttendance(callerRole ?? "")
+      const callerRole = req.user?.role || ""
 
-      if (!isPrivileged) {
-        res.status(403).json({ error: "Hanya Pengurus, Admin, atau Aktivis yang berhak mencatat presensi." })
+      // Role check: Only organizer and admin per PRD AC-EVT-01 & AC-ATT-03
+      if (!canRecordAttendance(callerRole)) {
+        res.status(403).json({
+          status: "error",
+          code: 403,
+          message: "Hanya Pengurus dan Admin yang berhak mencatat presensi.",
+        })
         return
       }
 
-      const { user_id, method = "qr", qr_code } = z
-        .object({
-          user_id: z.string().min(1, "Identifier jemaat (user_id/user_number/username) wajib diisi").optional(),
-          method: z.enum(["qr", "manual"]).optional(),
-          qr_code: z.string().optional(),
-        })
-        .parse(req.body)
+      const { user_number, user_id, method = "qr" } = RecordAttendanceSchema.parse(req.body)
+      const targetIdentifier = user_number?.trim() || user_id?.trim()
 
-      const isSelfCheckIn = !user_id?.trim()
-      const targetUserId = user_id?.trim() || req.user!.userId
-      if (isSelfCheckIn && method === "qr" && !qr_code) {
-        res.status(400).json({ error: "QR event wajib dikirim untuk presensi mandiri." })
+      if (!targetIdentifier) {
+        res.status(400).json({
+          status: "error",
+          code: 400,
+          message: "Nomor anggota atau identifier jemaat wajib diisi.",
+        })
         return
       }
 
       const actorId = req.user!.userId
-      const result = await eventServices.recordAttendance(actorId, id, targetUserId, method, qr_code, isSelfCheckIn)
-      res.status(result.alreadyRecorded ? 200 : 201).json(result.attendance)
+      const result = await eventServices.recordAttendance(actorId, id, targetIdentifier, method)
+
+      res.status(201).json({
+        status: "success",
+        code: 201,
+        message: "Attendance drafted successfully",
+        data: result,
+      })
     } catch (err: any) {
       if (err.statusCode) {
-        res.status(err.statusCode).json({ error: err.message })
+        res.status(err.statusCode).json({
+          status: "error",
+          code: err.statusCode,
+          message: err.message,
+        })
+        return
+      }
+      next(err)
+    }
+  },
+
+  async assignBadgeActivity(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const id = req.params.id as string
+      const userId = req.params.userId as string
+      const { badge_activity_id } = AssignBadgeActivitySchema.parse(req.body)
+
+      const actorId = req.user!.userId
+      const result = await eventServices.assignBadgeActivity(actorId, id, userId, badge_activity_id)
+
+      res.json({
+        status: "success",
+        code: 200,
+        message: "Peran pelayanan berhasil diperbarui",
+        data: result,
+      })
+    } catch (err: any) {
+      if (err.statusCode) {
+        res.status(err.statusCode).json({
+          status: "error",
+          code: err.statusCode,
+          message: err.message,
+        })
+        return
+      }
+      next(err)
+    }
+  },
+
+  async listAttendances(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const id = req.params.id as string
+      const callerRole = req.user?.role || ""
+
+      // Role check: Only organizer and admin per PRD AC-EVT-02
+      if (!canRecordAttendance(callerRole)) {
+        res.status(403).json({
+          status: "error",
+          code: 403,
+          message: "Hanya Pengurus dan Admin yang berhak melihat rekap presensi.",
+        })
+        return
+      }
+
+      const page = Math.max(1, parseInt(req.query.page as string, 10) || 1)
+      const limit = Math.min(200, Math.max(1, parseInt(req.query.limit as string, 10) || 100))
+      const result = await eventServices.listAttendances(id, page, limit)
+
+      res.json({
+        status: "success",
+        code: 200,
+        message: "Daftar kehadiran berhasil diambil",
+        data: result,
+      })
+    } catch (err: any) {
+      if (err.statusCode) {
+        res.status(err.statusCode).json({
+          status: "error",
+          code: err.statusCode,
+          message: err.message,
+        })
+        return
+      }
+      next(err)
+    }
+  },
+
+
+  async deleteAttendance(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const id = req.params.id as string
+      const userId = req.params.userId as string
+      const actorId = req.user!.userId
+      const result = await eventServices.deleteAttendance(actorId, id, userId)
+
+      res.json({
+        status: "success",
+        code: 200,
+        message: "Presensi peserta berhasil dibatalkan",
+        data: result,
+      })
+    } catch (err: any) {
+      if (err.statusCode) {
+        res.status(err.statusCode).json({
+          status: "error",
+          code: err.statusCode,
+          message: err.message,
+        })
+        return
+      }
+      next(err)
+    }
+  },
+
+  async deleteEvent(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const id = req.params.id as string
+      const actorId = req.user!.userId
+      const actorRole = req.user!.role
+      const result = await eventServices.deleteEvent(actorId, actorRole, id)
+
+      res.json({
+        status: "success",
+        code: 200,
+        message: "Event deleted successfully",
+        data: result,
+      })
+    } catch (err: any) {
+      if (err.statusCode) {
+        res.status(err.statusCode).json({
+          status: "error",
+          code: err.statusCode,
+          message: err.message,
+        })
         return
       }
       next(err)
@@ -159,41 +365,5 @@ export const eventControllers = {
       clearInterval(heartbeat)
       unregister()
     })
-  },
-
-  async listAttendances(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
-      const id = req.params.id as string
-      const page = Math.max(1, parseInt(req.query.page as string, 10) || 1)
-      const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string, 10) || 50))
-      const result = await eventServices.listAttendances(id, page, limit)
-      res.json(result)
-    } catch (err) {
-      next(err)
-    }
-  },
-
-  async deleteAttendance(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
-      const id = req.params.id as string
-      const userId = req.params.userId as string
-      const actorId = req.user!.userId
-      const result = await eventServices.deleteAttendance(actorId, id, userId)
-      res.json(result)
-    } catch (err) {
-      next(err)
-    }
-  },
-
-  async deleteEvent(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
-      const id = req.params.id as string
-      const actorId = req.user!.userId
-      const actorRole = req.user!.role
-      const result = await eventServices.deleteEvent(actorId, actorRole, id)
-      res.json(result)
-    } catch (err) {
-      next(err)
-    }
   },
 }

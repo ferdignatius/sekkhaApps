@@ -152,6 +152,8 @@ export function EventForm({
       errs.event_date = "Event date and time is required"
     } else if (Number.isNaN(new Date(eventDate).getTime())) {
       errs.event_date = "Choose a valid date and time"
+    } else if (!initial?.id && new Date(eventDate).getTime() < Date.now() - 60000) {
+      errs.event_date = "Event date cannot be in the past"
     }
 
     if (Object.keys(errs).length > 0) {
@@ -164,7 +166,7 @@ export function EventForm({
     try {
       await onSubmit({
         title: title.trim(),
-        description: initial?.id ? description.trim() : "",
+        description: description.trim(),
         event_date: localToIso(eventDate),
         location: location.trim() ? location.trim() : "Vihara Sekkha",
         tag,

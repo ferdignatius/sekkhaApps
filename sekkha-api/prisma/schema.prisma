@@ -23,6 +23,7 @@ enum EventStatus {
   active
   closed
   cancelled
+  cancel
 }
 
 enum EventVisibility {
@@ -192,18 +193,21 @@ model Season {
 // ─── Events ──────────────────────────────────────────────────────────────────
 
 model Event {
-  id          String          @id @default(cuid())
-  title       String
-  description String?
-  location    String
-  eventDate   DateTime        @map("event_date")
-  eventTypeId String?         @map("event_type_id")
-  seasonId    String?         @map("season_id")
-  status      EventStatus     @default(scheduled)
-  visibility  EventVisibility @default(all)
-  qrCode      String?         @map("qr_code")
-  createdAt   DateTime        @default(now()) @map("created_at")
-  updatedAt   DateTime        @updatedAt @map("updated_at")
+  id                String          @id @default(cuid())
+  title             String
+  description       String?
+  location          String
+  eventDate         DateTime        @map("event_date")
+  eventTypeId       String?         @map("event_type_id")
+  seasonId          String?         @map("season_id")
+  status            EventStatus     @default(scheduled)
+  visibility        EventVisibility @default(all)
+  qrCode            String?         @map("qr_code")
+  pointReward       Int             @default(50) @map("point_reward")
+  maxLateMinutes    Int?            @default(30) @map("max_late_minutes")
+  latePenaltyPoints Int?            @default(15) @map("late_penalty_points")
+  createdAt         DateTime        @default(now()) @map("created_at")
+  updatedAt         DateTime        @updatedAt @map("updated_at")
 
   // Relations
   type        EventType?   @relation(fields: [eventTypeId], references: [id], onDelete: SetNull)
@@ -226,7 +230,11 @@ model Attendance {
   eventId            String           @map("event_id")
   method             AttendanceMethod @default(qr)
   pointsEarned       Int              @default(50) @map("points_earned")
+  isLate             Boolean          @default(false) @map("is_late")
+  latePenaltyApplied Int              @default(0) @map("late_penalty_applied")
   badgeActivityId    String?          @map("badge_activity_id")
+  badgeBonusPoints   Int              @default(0) @map("badge_bonus_points")
+  isFinalized        Boolean          @default(false) @map("is_finalized")
   scannedAt          DateTime         @default(now()) @map("scanned_at")
 
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)

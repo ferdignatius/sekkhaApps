@@ -40,10 +40,15 @@ export interface EventDetailSheetProps {
   onEdit?: (event: EventListItem) => void
   onDelete?: (event: EventListItem) => void
   onDuplicate?: (event: EventListItem) => void
-  onStatusChange?: (eventId: string, status: EventStatus) => void
+  onStatusChange?: (
+    eventId: string,
+    status: EventStatus,
+    eventDate?: string
+  ) => void | Promise<void>
   attendances?: AttendanceRecord[]
   onRecordAttendance?: (eventId: string, record: AttendanceRecord) => void
   onDeleteAttendance?: (userId: string) => void
+  onRefreshAttendances?: () => void
 }
 
 function formatDateDetails(iso: string) {
@@ -100,10 +105,10 @@ function formatDateDetails(iso: string) {
 function getGoogleCalendarUrl(event: EventListItem): string {
   const title = encodeURIComponent(event.title)
   const details = encodeURIComponent(
-    `${event.description || "Acara Komunitas Vihara Tri Maha Dharma"}\n\n(via Sekkha App)`
+    `${event.description || "Sekkha Buddhist Community Event"}\n\n(via Sekkha App)`
   )
   const location = encodeURIComponent(
-    event.location || "Vihara Tri Maha Dharma"
+    event.location || "Vihara Sekkha"
   )
   const startDate = new Date(event.event_date)
   const endDate = new Date(startDate.getTime() + 2 * 60 * 60 * 1000) // 2 hours default
@@ -114,7 +119,7 @@ function getGoogleCalendarUrl(event: EventListItem): string {
 
 function getGoogleMapsUrl(locationName: string): string {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-    `${locationName} Vihara Tri Maha Dharma`
+    `${locationName} Vihara Sekkha`
   )}`
 }
 
@@ -127,42 +132,58 @@ export function EventDetailSheet({
   onStatusChange,
   attendances = [],
   onDeleteAttendance,
+  onRefreshAttendances,
 }: EventDetailSheetProps) {
   const navigate = useNavigate()
-  const isPengurus =
-    role === "organizer" || role === "pengurus" || role === "admin"
+  const isPengurus = role === "organizer" || role === "admin"
   const [activeTab, setActiveTab] = useState<"overview" | "attendance">(
     "overview"
   )
   const [copiedLink, setCopiedLink] = useState(false)
 
-  // Unified lifecycle confirmation dialog (activate / activate-early / close)
-  type LifecycleAction = "activate" | "activate-early" | "close" | null
+  // Lifecycle actions
+  type LifecycleAction =
+    | "activate"
+    | "activate-premature"
+    | "close"
+    | "cancel"
+    | null
   const [pendingAction, setPendingAction] = useState<LifecycleAction>(null)
+  const [rescheduleModalOpen, setRescheduleModalOpen] = useState(false)
+  const [rescheduleDate, setRescheduleDate] = useState("")
+  const [rescheduleError, setRescheduleError] = useState<string | null>(null)
 
   // Status lifecycle
   const currentStatus: EventStatus = event.status ?? "scheduled"
   const isActive = currentStatus === "active"
-  const isClosed = currentStatus === "closed" || currentStatus === "done"
-  const canEdit = isPengurus && !isActive && !isClosed
+  const isClosed = currentStatus === "closed"
+  const isCancelled = currentStatus === "cancelled"
+  const canEdit = isPengurus && !isActive && !isClosed && !isCancelled
 
   const { dayName, monthShort, dayNumber, dateStr, timeStr } =
     formatDateDetails(event.event_date)
-  const tag = event.tag ?? event.event_type ?? "rutin"
+  const tag =
+    event.tag ??
+    (typeof event.event_type === "string"
+      ? event.event_type
+      : event.event_type?.code ?? "rutin")
   const colorInfo = getCategoryColor(tag)
-  const pointsReward = event.event_type === "special" ? 100 : 50
+  const pointsReward = event.point_reward ?? (event.event_type === "special" ? 100 : 50)
 
-  // Handle Activation Trigger — confirm before opening check-in.
-  // If the scheduled time has not arrived, surface an early-activation warning.
+  // Start Event action trigger
   function handleActivateClick() {
     const eventTime = new Date(event.event_date).getTime()
     const nowTime = Date.now()
-    setPendingAction(nowTime < eventTime ? "activate-early" : "activate")
+    if (nowTime < eventTime) {
+      setPendingAction("activate-premature")
+    } else {
+      setPendingAction("activate")
+    }
   }
 
-  function executeStatusChange(newStatus: EventStatus) {
+  function executeStatusChange(newStatus: EventStatus, newEventDate?: string) {
     if (onStatusChange) {
-      onStatusChange(event.id, newStatus)
+      onStatusChange(event.id, newStatus, newEventDate)
     } else {
       event.status = newStatus
     }
@@ -237,14 +258,25 @@ export function EventDetailSheet({
                 </Badge>
               )}
 
-              {!isActive && !isClosed && (
+              {isCancelled && (
+                <Badge
+                  variant="destructive"
+                  glass
+                  className="gap-1.5 rounded-full font-semibold"
+                >
+                  <AlertTriangleIcon className="size-3" />
+                  Cancelled
+                </Badge>
+              )}
+
+              {!isActive && !isClosed && !isCancelled && (
                 <Badge
                   variant="default"
                   glass
                   className="gap-1.5 rounded-full font-semibold text-[#6a6a6a]"
                 >
                   <ClockIcon className="size-3 text-[#e8b94a]" />
-                  Upcoming Event
+                  Scheduled
                 </Badge>
               )}
             </div>
@@ -307,35 +339,85 @@ export function EventDetailSheet({
           {/* Pengurus Lifecycle Action & Secondary Toolbar */}
           <div className="flex flex-col gap-3 border-t border-[#e5e5e5] pt-4 sm:flex-row sm:items-center sm:justify-between">
             {/* Left: Primary Action / Status Trigger */}
-            <div className="w-full sm:w-auto">
-              {isPengurus && !isActive && !isClosed && (
-                <button
-                  type="button"
-                  onClick={handleActivateClick}
-                  className="flex min-h-[44px] w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-[#0a0a0a] px-6 py-2.5 text-xs font-bold text-white shadow-xs transition-all hover:bg-[#1f1f1f] active:scale-[0.98] sm:w-auto sm:text-sm"
-                  title="Activate attendance check-in"
-                >
-                  <PlayIcon className="size-4 fill-[#e8b94a] text-[#e8b94a]" />
-                  <span>Activate Event Check-In</span>
-                </button>
+            <div className="flex flex-wrap items-center gap-2">
+              {isPengurus && !isActive && !isClosed && !isCancelled && (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleActivateClick}
+                    className="flex min-h-[44px] cursor-pointer items-center justify-center gap-2 rounded-full bg-[#0a0a0a] px-6 py-2.5 text-xs font-bold text-white shadow-xs transition-all hover:bg-[#1f1f1f] active:scale-[0.98] sm:text-sm"
+                    title="Start Event and open attendance check-in"
+                  >
+                    <PlayIcon className="size-4 fill-[#e8b94a] text-[#e8b94a]" />
+                    <span>Start Event</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPendingAction("cancel")}
+                    className="flex min-h-[44px] cursor-pointer items-center justify-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-4 py-2.5 text-xs font-bold text-rose-700 shadow-xs transition-all hover:bg-rose-100 active:scale-[0.98]"
+                    title="Cancel Event"
+                  >
+                    <span>Cancel Event</span>
+                  </button>
+                </>
               )}
 
               {isPengurus && isActive && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      navigate({
+                        to: "/events/scan",
+                        search: { eventId: event.id },
+                      })
+                    }
+                    className="flex min-h-[44px] cursor-pointer items-center justify-center gap-2 rounded-full bg-[#0a0a0a] px-5 py-2.5 text-xs font-bold text-white shadow-xs transition-all hover:bg-[#1f1f1f] active:scale-[0.98] sm:text-sm"
+                    title="Open live QR scanner"
+                  >
+                    <CameraIcon className="size-4 text-[#e8b94a]" />
+                    <span>Open Live Scanner</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPendingAction("close")}
+                    className="flex min-h-[44px] cursor-pointer items-center justify-center gap-2 rounded-full bg-[#1a3a3a] px-5 py-2.5 text-xs font-bold text-white shadow-xs transition-all hover:bg-[#142e2e] active:scale-[0.98] sm:text-sm"
+                    title="Close & complete this event"
+                  >
+                    <LockIcon className="size-4 text-[#e8b94a]" />
+                    <span>Close &amp; Finalize Event</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPendingAction("cancel")}
+                    className="flex min-h-[44px] cursor-pointer items-center justify-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-4 py-2.5 text-xs font-bold text-rose-700 shadow-xs transition-all hover:bg-rose-100 active:scale-[0.98]"
+                    title="Cancel Event"
+                  >
+                    <span>Cancel</span>
+                  </button>
+                </>
+              )}
+
+              {isPengurus && isCancelled && (
                 <button
                   type="button"
-                  onClick={() => setPendingAction("close")}
-                  className="flex min-h-[44px] w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-[#1a3a3a] px-6 py-2.5 text-xs font-bold text-white shadow-xs transition-all hover:bg-[#142e2e] active:scale-[0.98] sm:w-auto sm:text-sm"
-                  title="Close & complete this event"
+                  onClick={() => {
+                    setRescheduleDate("")
+                    setRescheduleError(null)
+                    setRescheduleModalOpen(true)
+                  }}
+                  className="flex min-h-[44px] cursor-pointer items-center justify-center gap-2 rounded-full bg-[#0a0a0a] px-6 py-2.5 text-xs font-bold text-white shadow-xs transition-all hover:bg-[#1f1f1f] active:scale-[0.98] sm:text-sm"
+                  title="Reschedule this event"
                 >
-                  <LockIcon className="size-4 text-[#e8b94a]" />
-                  <span>Complete &amp; Close Event</span>
+                  <CalendarIcon className="size-4 text-[#e8b94a]" />
+                  <span>Reschedule Event</span>
                 </button>
               )}
 
               {isPengurus && isClosed && (
                 <div className="flex min-h-[44px] items-center gap-2 rounded-full border border-[#e5e5e5] bg-[#fffaf0] px-4 py-2 text-xs font-semibold text-[#6a6a6a]">
                   <CheckCircle2Icon className="size-4 text-[#1a3a3a]" />
-                  <span>Event Concluded</span>
+                  <span>Event Concluded (Finalized)</span>
                 </div>
               )}
 
@@ -750,47 +832,49 @@ export function EventDetailSheet({
             </div>
 
             <AttendanceListSheet
+              eventId={event.id}
               records={attendances}
               role={role}
               isClosed={isClosed}
               onDeleteRecord={onDeleteAttendance}
+              onRefresh={onRefreshAttendances}
             />
           </div>
         </div>
       )}
 
       {/* ── Lifecycle Confirmation Dialogs (Apple HIG AlertDialog) ── */}
-      {/* Activate check-in — normal (event time reached) */}
+      {/* Activate check-in — normal */}
       <ConfirmDialog
         open={pendingAction === "activate"}
         onOpenChange={(open) => !open && setPendingAction(null)}
         variant="info"
         icon={<PlayIcon className="size-6" />}
-        title="Open Attendance Check-In?"
+        title="Start Event & Open Check-In?"
         description={
           <>
             Members will be able to self check-in via QR for{" "}
             <strong className="font-semibold text-[#0a0a0a]">
               {event.title}
             </strong>{" "}
-            once activated. You can close check-in when the event ends.
+            once activated. You can close check-in and finalize points when the event ends.
           </>
         }
-        confirmLabel="Yes, Open Check-In"
+        confirmLabel="Start Event"
         cancelLabel="Cancel"
         onConfirm={() => executeStatusChange("active")}
       />
 
-      {/* Activate check-in — early (scheduled time not reached yet) */}
+      {/* Activate check-in — premature warning */}
       <ConfirmDialog
-        open={pendingAction === "activate-early"}
+        open={pendingAction === "activate-premature"}
         onOpenChange={(open) => !open && setPendingAction(null)}
         variant="warning"
         icon={<AlertTriangleIcon className="size-6" />}
-        title="Early Activation Warning"
+        title="Early Event Start Warning"
         description={
           <>
-            The scheduled time for{" "}
+            The scheduled date & time for{" "}
             <strong className="font-semibold text-[#0a0a0a]">
               {event.title}
             </strong>{" "}
@@ -798,40 +882,148 @@ export function EventDetailSheet({
             <strong className="font-semibold text-[#0a0a0a]">
               {dayName}, {dateStr} at {timeStr} WIB
             </strong>
-            , which has not arrived yet. Are you sure you want to open
-            attendance check-in now?
+            , which has not arrived yet. Are you sure you want to start this event and open attendance check-in now?
           </>
         }
-        confirmLabel="Open Check-In Anyway"
-        cancelLabel="Not Yet"
+        confirmLabel="Start Event Now"
+        cancelLabel="Keep Scheduled"
         onConfirm={() => executeStatusChange("active")}
       />
 
-      {/* Complete & close — irreversible lock */}
+      {/* Cancel Event Dialog */}
+      <ConfirmDialog
+        open={pendingAction === "cancel"}
+        onOpenChange={(open) => !open && setPendingAction(null)}
+        variant="destructive"
+        icon={<AlertTriangleIcon className="size-6" />}
+        title="Cancel Event?"
+        description={
+          <>
+            Are you sure you want to cancel{" "}
+            <strong className="font-semibold text-[#0a0a0a]">
+              {event.title}
+            </strong>
+            ? The event will be marked as cancelled and will not accept attendances. You can reschedule it later if needed.
+          </>
+        }
+        confirmLabel="Yes, Cancel Event"
+        cancelLabel="Keep Event"
+        onConfirm={() => executeStatusChange("cancelled")}
+      />
+
+      {/* Complete & close — finalize points */}
       <ConfirmDialog
         open={pendingAction === "close"}
         onOpenChange={(open) => !open && setPendingAction(null)}
         variant="destructive"
         icon={<LockIcon className="size-6" />}
-        title="Complete & Close Event?"
+        title="Close & Finalize Event?"
         description={
           <>
             Closing{" "}
             <strong className="font-semibold text-[#0a0a0a]">
               {event.title}
             </strong>{" "}
-            will lock the attendance list for archiving. Members can no longer
-            check in, and this action{" "}
+            will lock the attendance session, finalize attendee records, and credit points to all attendees. This action{" "}
             <strong className="font-semibold text-[#0a0a0a]">
               cannot be undone
             </strong>
             .
           </>
         }
-        confirmLabel="Complete & Close"
+        confirmLabel="Close & Finalize Points"
         cancelLabel="Keep Open"
         onConfirm={() => executeStatusChange("closed")}
       />
+
+      {/* Reschedule Event Modal */}
+      {rescheduleModalOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="reschedule-modal-title"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs"
+        >
+          <div className="w-full max-w-md rounded-[24px] border border-[#e5e5e5] bg-[#fffaf0] p-6 shadow-xl text-left">
+            <div className="flex items-center justify-between border-b border-[#e5e5e5] pb-3">
+              <h3
+                id="reschedule-modal-title"
+                className="text-base font-bold text-[#0a0a0a]"
+              >
+                Reschedule Event
+              </h3>
+              <button
+                type="button"
+                onClick={() => {
+                  setRescheduleModalOpen(false)
+                  setRescheduleError(null)
+                }}
+                className="cursor-pointer rounded-full p-1 text-[#6a6a6a] hover:bg-[#faf5e8]"
+              >
+                ✕
+              </button>
+            </div>
+
+            <p className="mt-3 text-xs text-[#6a6a6a]">
+              Choose a new future date and time for{" "}
+              <strong className="text-[#0a0a0a]">{event.title}</strong>. The status will return to Scheduled.
+            </p>
+
+            <div className="mt-4 space-y-2">
+              <label className="block text-xs font-semibold text-[#0a0a0a]">
+                New Event Date & Time (WIB)
+              </label>
+              <input
+                type="datetime-local"
+                value={rescheduleDate}
+                min={new Date().toISOString().slice(0, 16)}
+                onChange={(e) => {
+                  setRescheduleDate(e.target.value)
+                  setRescheduleError(null)
+                }}
+                className="w-full rounded-[14px] border border-[#e5e5e5] bg-white px-3.5 py-2.5 text-xs text-[#0a0a0a] outline-none focus:border-[#1a3a3a] focus:ring-2 focus:ring-[#1a3a3a]/15"
+              />
+              {rescheduleError && (
+                <p className="text-[11px] font-medium text-red-600">
+                  {rescheduleError}
+                </p>
+              )}
+            </div>
+
+            <div className="mt-6 flex justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={() => {
+                  setRescheduleModalOpen(false)
+                  setRescheduleError(null)
+                }}
+                className="cursor-pointer rounded-full border border-[#e5e5e5] bg-white px-4 py-2 text-xs font-semibold text-[#0a0a0a] transition-colors hover:bg-[#faf5e8]"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!rescheduleDate) {
+                    setRescheduleError("Please select a new date and time.")
+                    return
+                  }
+                  const chosenTime = new Date(rescheduleDate).getTime()
+                  if (isNaN(chosenTime) || chosenTime < Date.now()) {
+                    setRescheduleError("New date must be in the future.")
+                    return
+                  }
+                  executeStatusChange("scheduled", rescheduleDate)
+                  setRescheduleModalOpen(false)
+                }}
+                className="cursor-pointer rounded-full bg-[#1a3a3a] px-5 py-2 text-xs font-bold text-[#e8b94a] shadow-xs transition-colors hover:bg-[#254f4f]"
+              >
+                Confirm Reschedule
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

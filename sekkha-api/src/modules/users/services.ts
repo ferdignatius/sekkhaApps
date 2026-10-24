@@ -1,16 +1,18 @@
 import { userModels } from "./models"
 import { cached, invalidate, invalidatePattern, CacheKeys } from "../../lib/cache"
-import { encrypt, decrypt } from "../../lib/crypto"
+import { encrypt, decrypt, generateBlindIndex } from "../../lib/crypto"
 import { hashPassword, verifyPassword, DEFAULT_BCRYPT_COST } from "../../lib/password"
 import { generateUniqueUserNumber } from "../../lib/userNumber"
 import { prisma } from "../../lib/prisma"
 import { redis } from "../../lib/redis"
 import { revokeToken } from "../auth"
 import { calculateWeeklyStreak } from "./internal/utils"
+import { emailVerificationStore } from "./internal/emailVerificationStore"
+import { sendEmailVerificationOtpEmail } from "../auth/internal/email"
+import crypto from "crypto"
 
 export interface UpdateProfileInput {
   name?: string
-  username?: string | null
   school?: string | null
   school_id?: string | null
   class_grade?: string | null
@@ -20,11 +22,12 @@ export interface UpdateProfileInput {
 }
 
 export const userServices = {
-  async completeOnboarding(userId: string, skipped: boolean) {
+  async completeOnboarding(userId: string, skipped: boolean = false) {
     await userModels.completeOnboarding(userId)
     await invalidate(CacheKeys.userProfile(userId))
     return { onboarding_completed: true, skipped }
   },
+
   async getProfile(userId: string) {
     const user = await cached(CacheKeys.userProfile(userId), 120, async () => {
       return userModels.findUserWithProfileAndStats(userId)
@@ -39,66 +42,48 @@ export const userServices = {
       await userModels.updateUser(user.id, { userNumber: uNum }).catch(() => {})
     }
 
+    const pendingEmail = await emailVerificationStore.getPendingEmail(userId)
+    const decryptedEmail = decrypt(user.email) || user.email || ""
+    const decryptedPhone = decrypt(user.profile?.phone) || null
+    const decryptedClassGrade = decrypt(user.profile?.classGrade) || null
+    const rawBirthDate = decrypt(user.profile?.birthDate) || null
+    const decryptedBirthDate = rawBirthDate ? new Date(rawBirthDate).toISOString().split("T")[0] : null
+    const rawGender = decrypt(user.profile?.gender) || null
+    const normalizedGender =
+      rawGender === "pria" || rawGender === "male" || rawGender === "L"
+        ? "male"
+        : rawGender === "wanita" || rawGender === "female" || rawGender === "P"
+          ? "female"
+          : rawGender
+
     return {
       id: user.id,
-      username: user.username,
-      email: decrypt(user.email) || user.email,
+      user_number: Number(uNum),
+      username: user.username || "",
       name: user.profile?.name || "",
-      school: user.profile?.school?.name || null,
-      school_id: user.profile?.schoolId || null,
-      class_grade: decrypt(user.profile?.classGrade) || null,
-      phone: decrypt(user.profile?.phone) || null,
-      birth_date: decrypt(user.profile?.birthDate) || null,
-      gender: decrypt(user.profile?.gender) || null,
-      avatar_url: null,
+      email: decryptedEmail,
+      email_verified: Boolean(user.emailVerifiedAt),
+      pending_email: pendingEmail,
       role: user.role,
-      user_number: uNum,
+      is_claimed: user.isClaimed,
+      onboarding_completed: user.onboardingCompleted,
+      school_id: user.profile?.schoolId || null,
+      school: user.profile?.school?.name || null,
+      class_grade: decryptedClassGrade,
+      phone: decryptedPhone,
+      birth_date: decryptedBirthDate,
+      gender: normalizedGender,
       points: user.stats?.points ?? 0,
-      total_attendances: user._count.attendances,
-      created_at: user.createdAt,
+      joined_at: new Date(user.createdAt).toISOString(),
     }
-  },
-
-  async getAttendances(userId: string) {
-    return cached(CacheKeys.userAttendances(userId), 60, async () => {
-      const result = await userModels.findUserAttendances(userId, 20)
-      return result.map((a) => ({
-        event_id: a.eventId,
-        event_title: a.event.title,
-        event_date: a.event.eventDate
-          ? typeof a.event.eventDate === "string"
-            ? a.event.eventDate
-            : new Date(a.event.eventDate).toISOString()
-          : new Date().toISOString(),
-        method: a.method,
-        scanned_at: a.scannedAt
-          ? typeof a.scannedAt === "string"
-            ? a.scannedAt
-            : new Date(a.scannedAt).toISOString()
-          : new Date().toISOString(),
-      }))
-    })
   },
 
   async updateProfile(userId: string, body: UpdateProfileInput, authHeader?: string) {
     const existing = await userModels.findUserWithProfileAndStats(userId)
     if (!existing) {
-      throw new Error("User not found")
-    }
-
-    let userNumber = existing.userNumber
-    if (!userNumber) {
-      userNumber = await generateUniqueUserNumber(prisma)
-    }
-
-    if (body.username && body.username.toLowerCase().trim() !== existing.username) {
-      const targetUsername = body.username.toLowerCase().trim()
-      const usernameTaken = await userModels.findUserByUsername(targetUsername)
-      if (usernameTaken && usernameTaken.id !== userId) {
-        const error = new Error(`Username @${targetUsername} is already taken by another account.`) as any
-        error.statusCode = 409
-        throw error
-      }
+      const err = new Error("User not found") as any
+      err.statusCode = 404
+      throw err
     }
 
     let resolvedSchoolId: string | null | undefined = undefined
@@ -126,11 +111,6 @@ export const userServices = {
       resolvedSchoolId = null
     }
 
-    const userData = {
-      ...(body.username !== undefined && { username: body.username ? body.username.toLowerCase().trim() : null }),
-      userNumber,
-    }
-
     const profileUpdateData = {
       ...(body.name && { name: body.name.trim() }),
       ...(resolvedSchoolId !== undefined && { schoolId: resolvedSchoolId }),
@@ -139,8 +119,9 @@ export const userServices = {
       ...(body.birth_date !== undefined && {
         birthDate: body.birth_date ? encrypt(new Date(body.birth_date).toISOString()) : null,
       }),
-      ...(body.gender !== undefined && { gender: body.gender ? encrypt(body.gender.trim()) : null }),
+      ...(body.gender !== undefined && { gender: body.gender ? encrypt(body.gender.trim().toLowerCase()) : null }),
     }
+
     const profileCreateData = {
       userId,
       name: body.name ? body.name.trim() : existing.username || "Anggota",
@@ -148,23 +129,23 @@ export const userServices = {
       classGrade: body.class_grade ? encrypt(body.class_grade.trim()) : null,
       phone: body.phone ? encrypt(body.phone.trim()) : null,
       birthDate: body.birth_date ? encrypt(new Date(body.birth_date).toISOString()) : null,
-      gender: body.gender ? encrypt(body.gender.trim()) : null,
+      gender: body.gender ? encrypt(body.gender.trim().toLowerCase()) : null,
     }
 
     const { user, profile } = await userModels.updateUserAndProfile(
       userId,
-      userData,
+      {},
       profileUpdateData,
       profileCreateData
     )
 
-    // Invalidate profile cache
+    // Invalidate caches
     await invalidate(CacheKeys.userProfile(userId))
     await invalidatePattern(`user:${userId}:home:*`)
 
-    // Update Redis session cache so /auth/verify returns the new name immediately
+    // Update Redis session cache if active
     const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null
-    const decryptedEmail = decrypt(user.email) || user.email
+    const decryptedEmail = decrypt(user.email) || user.email || ""
     if (token) {
       const updatedSession = {
         id: user.id,
@@ -176,32 +157,151 @@ export const userServices = {
       await redis.set(`auth:token:${token}`, JSON.stringify(updatedSession), "EX", 30 * 24 * 60 * 60).catch(() => {})
     }
 
-    const decryptedBirthDate = decrypt(profile.birthDate) || null
+    return this.getProfile(userId)
+  },
+
+  async requestEmailVerification(userId: string, targetEmail: string) {
+    const normalizedEmail = targetEmail.trim().toLowerCase()
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(normalizedEmail)) {
+      const err = new Error("Format alamat email tidak valid") as any
+      err.statusCode = 400
+      throw err
+    }
+
+    // Check cooldown (60 seconds)
+    const cooldownRemaining = await emailVerificationStore.getCooldownRemaining(userId)
+    if (cooldownRemaining > 0) {
+      const err = new Error(`Silakan tunggu ${cooldownRemaining} detik sebelum meminta kode verifikasi baru.`) as any
+      err.statusCode = 429
+      throw err
+    }
+
+    // O(1) Blind Index check: is email already used by another user?
+    const bindex = generateBlindIndex(normalizedEmail)
+    const existingWithEmail = bindex ? await userModels.findUserByEmailBindex(bindex) : null
+
+    if (existingWithEmail && existingWithEmail.id !== userId) {
+      // Anti-enumeration protection: return generic 200 without sending code
+      return {
+        expires_in_seconds: 600,
+        resend_after_seconds: 60,
+      }
+    }
+
+    // Generate secure 6-digit OTP
+    const otp = crypto.randomInt(100000, 1000000).toString()
+
+    // Save challenge
+    await emailVerificationStore.saveChallenge(userId, normalizedEmail, otp)
+
+    // Fetch user name for polite email greeting
+    const user = await userModels.findUserWithProfileAndStats(userId)
+    const userName = user?.profile?.name || user?.username || "Sahabat Sekkha"
+
+    // Dispatch email
+    await sendEmailVerificationOtpEmail({
+      to: normalizedEmail,
+      otp,
+      name: userName,
+    })
 
     return {
-      id: user.id,
-      username: user.username,
-      name: profile.name,
-      email: decryptedEmail,
-      school: profile.school?.name || null,
-      school_id: profile.schoolId,
-      class_grade: decrypt(profile.classGrade) || null,
-      phone: decrypt(profile.phone) || null,
-      birth_date: decryptedBirthDate ? new Date(decryptedBirthDate).toISOString() : null,
-      gender: decrypt(profile.gender) || null,
-      avatar_url: null,
-      user_number: user.userNumber,
-      role: user.role,
+      expires_in_seconds: 600,
+      resend_after_seconds: 60,
+    }
+  },
+
+  async confirmEmailVerification(userId: string, otpCode: string) {
+    if (!otpCode || otpCode.trim().length !== 6) {
+      const err = new Error("Kode verifikasi harus berupa 6 digit angka") as any
+      err.statusCode = 400
+      throw err
+    }
+
+    const result = await emailVerificationStore.verifyAndConsume(userId, otpCode)
+    if (!result.success || !result.newEmail) {
+      const err = new Error(result.error || "Kode verifikasi tidak valid") as any
+      err.statusCode = result.remainingAttempts === 0 ? 429 : 400
+      throw err
+    }
+
+    const newEmail = result.newEmail
+    const emailCipher = encrypt(newEmail)
+    const bindex = generateBlindIndex(newEmail)
+    if (!emailCipher || !bindex) {
+      const err = new Error("Gagal memproses enkripsi dan blind index email") as any
+      err.statusCode = 500
+      throw err
+    }
+
+    await userModels.updateUserEmail(userId, emailCipher, bindex)
+    await invalidate(CacheKeys.userProfile(userId))
+    await invalidatePattern(`user:${userId}:home:*`)
+
+    return {
+      email: newEmail,
+      email_verified: true,
+      is_claimed: true,
+    }
+  },
+
+  async getAttendances(userId: string, limit: number = 10, cursor?: string) {
+    const take = Math.min(Math.max(limit, 1), 50)
+    const [attendances, total] = await Promise.all([
+      userModels.findUserAttendances(userId, take, cursor),
+      userModels.countUserAttendances(userId),
+    ])
+
+    const items = attendances.map((a) => ({
+      id: a.id,
+      event_id: a.eventId,
+      event_title: a.event.title,
+      event_date: a.event.eventDate
+        ? new Date(a.event.eventDate).toISOString()
+        : new Date().toISOString(),
+      method: a.method,
+      points_earned: a.pointsEarned ?? 0,
+      scanned_at: a.scannedAt
+        ? new Date(a.scannedAt).toISOString()
+        : new Date().toISOString(),
+    }))
+
+    const nextCursor = items.length === take ? items[items.length - 1].id : null
+
+    return {
+      items,
+      pagination: {
+        next_cursor: nextCursor,
+        total,
+      },
     }
   },
 
   async getStreak(userId: string) {
     const attendances = await userModels.findUserAttendancesForStreak(userId)
-    return calculateWeeklyStreak(attendances)
+    const streak = calculateWeeklyStreak(attendances)
+    const lastAttended = attendances.length > 0 && attendances[0].scannedAt
+      ? new Date(attendances[0].scannedAt).toISOString()
+      : null
+
+    return {
+      current_streak: streak.current_streak,
+      longest_streak: streak.longest_streak,
+      last_attended: lastAttended,
+    }
   },
 
-  async getPointTransactions(userId: string) {
-    return userModels.findUserPointTransactions(userId, 20)
+  async getPointTransactions(userId: string, limit: number = 20) {
+    const raw = await userModels.findUserPointTransactions(userId, limit)
+    const items = raw.map((pt) => ({
+      id: pt.id,
+      points: pt.amount,
+      type: pt.type,
+      description: pt.description || "",
+      created_at: new Date(pt.createdAt).toISOString(),
+    }))
+    return { items }
   },
 
   async changePassword(userId: string, currentPass: string, newPass: string) {
@@ -214,7 +314,13 @@ export const userServices = {
 
     const isValid = await verifyPassword(currentPass, user.password)
     if (!isValid) {
-      const error = new Error("Incorrect current password") as any
+      const error = new Error("Kata sandi lama yang Anda masukkan tidak cocok") as any
+      error.statusCode = 400
+      throw error
+    }
+
+    if (newPass.length < 8) {
+      const error = new Error("Kata sandi baru minimal 8 karakter") as any
       error.statusCode = 400
       throw error
     }
@@ -226,7 +332,10 @@ export const userServices = {
       passwordChangedAt: new Date(),
     })
 
-    return { success: true, message: "Password updated successfully" }
+    return {
+      password_changed_by_user: true,
+      is_claimed: user.isClaimed,
+    }
   },
 
   async exportUserData(userId: string) {
@@ -239,7 +348,7 @@ export const userServices = {
       exported_at: new Date().toISOString(),
       account: {
         id: user.id,
-        user_number: user.userNumber,
+        user_number: user.userNumber ? Number(user.userNumber) : null,
         username: user.username,
         email: decrypt(user.email) || user.email,
         role: user.role,
@@ -303,7 +412,6 @@ export const userServices = {
     await userModels.deleteUserById(userId)
 
     return {
-      success: true,
       message: "Akun dan seluruh data pribadi Anda telah berhasil dihapus secara permanen.",
     }
   },

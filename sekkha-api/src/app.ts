@@ -113,6 +113,7 @@ export function createApp(): Application {
   app.use("/api/auth/forgot-password/request", otpLimiter)
   app.use("/api/auth/forgot-password/verify-otp", otpLimiter)
   app.use("/api/auth/forgot-password/reset", otpLimiter)
+  app.use("/api/users/email-verification", otpLimiter)
 
   // 3c. Dedicated Account Linking Rate Limiter (F-04/F-09: 5 attempts per 15 minutes per IP)
   const linkingLimiter = rateLimit({

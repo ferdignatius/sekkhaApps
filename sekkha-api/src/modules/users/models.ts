@@ -9,8 +9,12 @@ export const userModels = {
         id: true,
         username: true,
         email: true,
+        emailBindex: true,
+        emailVerifiedAt: true,
         role: true,
         userNumber: true,
+        isClaimed: true,
+        onboardingCompleted: true,
         createdAt: true,
         profile: {
           select: {
@@ -20,11 +24,11 @@ export const userModels = {
             phone: true,
             birthDate: true,
             gender: true,
-            school: { select: { name: true } },
+            school: { select: { id: true, name: true } },
           },
         },
         stats: {
-          select: { points: true },
+          select: { points: true, currentStreak: true, totalAttendances: true },
         },
         _count: {
           select: { attendances: true },
@@ -45,6 +49,12 @@ export const userModels = {
     })
   },
 
+  findUserByEmailBindex(emailBindex: string) {
+    return prisma.user.findUnique({
+      where: { emailBindex },
+    })
+  },
+
   updateUser(userId: string, data: Prisma.UserUpdateInput) {
     return prisma.user.update({
       where: { id: userId },
@@ -56,6 +66,19 @@ export const userModels = {
     return prisma.user.update({
       where: { id: userId },
       data: { onboardingCompleted: true },
+    })
+  },
+
+  updateUserEmail(userId: string, emailCipher: string, emailBindex: string) {
+    return prisma.user.update({
+      where: { id: userId },
+      data: {
+        email: emailCipher,
+        emailBindex,
+        emailVerifiedAt: new Date(),
+        isClaimed: true,
+        claimedAt: new Date(),
+      },
     })
   },
 
@@ -105,12 +128,20 @@ export const userModels = {
     })
   },
 
-  findUserAttendances(userId: string, take: number = 20) {
+  findUserAttendances(userId: string, take: number = 10, cursor?: string) {
     return prisma.attendance.findMany({
       where: { userId },
-      include: { event: { select: { title: true, eventDate: true } } },
+      select: {
+        id: true,
+        eventId: true,
+        method: true,
+        pointsEarned: true,
+        scannedAt: true,
+        event: { select: { title: true, eventDate: true } },
+      },
       orderBy: { scannedAt: "desc" },
-      take,
+      take: Math.min(Math.max(take, 1), 50),
+      ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
     })
   },
 
@@ -122,7 +153,6 @@ export const userModels = {
     })
   },
 
-
   countUserAttendances(userId: string) {
     return prisma.attendance.count({
       where: { userId },
@@ -132,8 +162,15 @@ export const userModels = {
   findUserPointTransactions(userId: string, take: number = 20) {
     return prisma.pointTransaction.findMany({
       where: { userId },
+      select: {
+        id: true,
+        amount: true,
+        type: true,
+        description: true,
+        createdAt: true,
+      },
       orderBy: { createdAt: "desc" },
-      take,
+      take: Math.min(Math.max(take, 1), 50),
     })
   },
 

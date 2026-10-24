@@ -1,7 +1,7 @@
 // feature/profile/components/SettingsSection
 // Complete Clay-styled Settings & Goals management with interactive sub-views
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   LogOutIcon,
   KeyRoundIcon,
@@ -12,6 +12,8 @@ import {
   AlertCircleIcon,
   ShieldCheckIcon,
   SparklesIcon,
+  MailIcon,
+  RotateCwIcon,
 } from "lucide-react"
 import { api } from "@/lib/api"
 
@@ -20,15 +22,23 @@ interface SettingsSectionProps {
   onClose?: () => void
   onChangePassword?: () => void
   onMonthlyTargetSettings?: () => void
+  currentEmail?: string | null
+  emailVerified?: boolean
+  pendingEmail?: string | null
+  onEmailUpdated?: (newEmail: string) => void
 }
 
-type SettingsView = "menu" | "target" | "password" | "logout_confirm"
+type SettingsView = "menu" | "target" | "password" | "email" | "logout_confirm"
 
 export function SettingsSection({
   onLogout,
   onClose,
   onChangePassword,
   onMonthlyTargetSettings,
+  currentEmail,
+  emailVerified = true,
+  pendingEmail,
+  onEmailUpdated,
 }: SettingsSectionProps) {
   const [currentView, setCurrentView] = useState<SettingsView>("menu")
 
@@ -84,8 +94,8 @@ export function SettingsSection({
       setPasswordLoading(true)
       setPasswordError(null)
       await api.post("/users/change-password", {
-        current_password: passwordForm.current_password,
-        new_password: passwordForm.new_password,
+        currentPassword: passwordForm.current_password,
+        newPassword: passwordForm.new_password,
       })
       setPasswordSuccess(true)
       setPasswordForm({
@@ -101,6 +111,75 @@ export function SettingsSection({
       setPasswordError(err.message || "Gagal mengubah kata sandi.")
     } finally {
       setPasswordLoading(false)
+    }
+  }
+
+  // ── 3. Email Change & Verification State ──
+  const [emailStep, setEmailStep] = useState<"request" | "verify">("request")
+  const [newEmailInput, setNewEmailInput] = useState("")
+  const [otpCodeInput, setOtpCodeInput] = useState("")
+  const [emailLoading, setEmailLoading] = useState(false)
+  const [emailError, setEmailError] = useState<string | null>(null)
+  const [emailSuccess, setEmailSuccess] = useState(false)
+  const [cooldown, setCooldown] = useState(0)
+
+  useEffect(() => {
+    if (cooldown <= 0) return
+    const interval = setInterval(() => {
+      setCooldown((prev) => (prev > 0 ? prev - 1 : 0))
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [cooldown])
+
+  const handleRequestVerificationCode = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const cleanEmail = newEmailInput.trim().toLowerCase()
+    if (!cleanEmail || !cleanEmail.includes("@")) {
+      setEmailError("Silakan masukkan alamat email yang valid.")
+      return
+    }
+
+    try {
+      setEmailLoading(true)
+      setEmailError(null)
+      await api.post("/users/email-verification/request", { email: cleanEmail })
+      setEmailStep("verify")
+      setCooldown(60)
+    } catch (err: any) {
+      setEmailError(err.message || "Gagal mengirimkan kode verifikasi.")
+    } finally {
+      setEmailLoading(false)
+    }
+  }
+
+  const handleConfirmVerificationCode = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const cleanCode = otpCodeInput.trim()
+    if (cleanCode.length !== 6) {
+      setEmailError("Kode verifikasi harus berupa 6 digit angka.")
+      return
+    }
+
+    try {
+      setEmailLoading(true)
+      setEmailError(null)
+      const res: any = await api.post("/users/email-verification/confirm", {
+        code: cleanCode,
+      })
+      setEmailSuccess(true)
+      const updatedEmail = res?.email || newEmailInput.trim().toLowerCase()
+      onEmailUpdated?.(updatedEmail)
+      setTimeout(() => {
+        setEmailSuccess(false)
+        setEmailStep("request")
+        setNewEmailInput("")
+        setOtpCodeInput("")
+        setCurrentView("menu")
+      }, 1500)
+    } catch (err: any) {
+      setEmailError(err.message || "Kode verifikasi tidak cocok atau kedaluwarsa.")
+    } finally {
+      setEmailLoading(false)
     }
   }
 
@@ -199,7 +278,7 @@ export function SettingsSection({
           <SparklesIcon className="mt-0.5 size-4 shrink-0 text-[#e8b94a]" />
           <p className="leading-relaxed">
             Target ini membantu kamu memantau progress kehadiran bulanan serta
-            mempertahankan rentetan streak dan lencana penghargaan di Sekkha.
+            mempertahankan rentetan streak dan keaktifan di Sekkha.
           </p>
         </div>
 
@@ -219,6 +298,176 @@ export function SettingsSection({
             Simpan Target
           </button>
         </div>
+      </div>
+    )
+  }
+
+  // ─── Sub-View: Ubah Alamat Email & Verifikasi ──────────────────────────────
+  if (currentView === "email") {
+    return (
+      <div className="animate-in space-y-4 text-left font-sans duration-200 fade-in-50">
+        <button
+          type="button"
+          onClick={() => {
+            setEmailError(null)
+            setEmailStep("request")
+            setCurrentView("menu")
+          }}
+          className="inline-flex cursor-pointer items-center gap-1.5 text-xs font-bold text-[#6a6a6a] transition-colors hover:text-[#0a0a0a]"
+        >
+          <ArrowLeftIcon className="size-3.5" />
+          <span>Kembali ke Pengaturan</span>
+        </button>
+
+        <div className="flex items-center gap-3 border-b border-[#e5e5e5] pb-3">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-[12px] bg-blue-100 text-blue-700 shadow-xs">
+            <MailIcon className="size-5" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-[#0a0a0a] sm:text-base">
+              Verifikasi & Ubah Email
+            </h3>
+            <p className="text-xs text-[#6a6a6a]">
+              Email aktif digunakan untuk pemulihan akun dan notifikasi resmi
+            </p>
+          </div>
+        </div>
+
+        {/* Current Email Card */}
+        <div className="rounded-[14px] border border-[#e5e5e5] bg-[#faf5e8] p-3.5">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-bold tracking-wider text-[#6a6a6a] uppercase">
+              Email Saat Ini
+            </span>
+            <span
+              className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                emailVerified
+                  ? "bg-emerald-100 text-emerald-800"
+                  : "bg-amber-100 text-amber-800"
+              }`}
+            >
+              {emailVerified ? "Terverifikasi" : "Belum Verifikasi"}
+            </span>
+          </div>
+          <p className="mt-1 font-mono text-sm font-bold text-[#0a0a0a]">
+            {currentEmail || "Belum ada email"}
+          </p>
+          {pendingEmail && (
+            <p className="mt-1 text-[11px] text-amber-700">
+              Menunggu verifikasi untuk: <strong>{pendingEmail}</strong>
+            </p>
+          )}
+        </div>
+
+        {emailError && (
+          <div className="flex items-center gap-2 rounded-[12px] border border-rose-200 bg-rose-50 p-3 text-xs font-bold text-rose-800 shadow-xs">
+            <AlertCircleIcon className="size-4 shrink-0 text-rose-600" />
+            <span>{emailError}</span>
+          </div>
+        )}
+
+        {emailSuccess && (
+          <div className="flex items-center gap-2 rounded-[12px] border border-emerald-200 bg-emerald-50 p-3 text-xs font-bold text-emerald-800 shadow-xs">
+            <CheckCircleIcon className="size-4 shrink-0 text-emerald-600" />
+            <span>Alamat email berhasil diverifikasi dan diperbarui!</span>
+          </div>
+        )}
+
+        {emailStep === "request" ? (
+          <form onSubmit={handleRequestVerificationCode} className="space-y-3.5">
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-[#0a0a0a]">
+                Alamat Email Baru *
+              </label>
+              <input
+                type="email"
+                required
+                placeholder="nama@example.com"
+                value={newEmailInput}
+                onChange={(e) => setNewEmailInput(e.target.value)}
+                className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-xs text-[#0a0a0a] shadow-xs transition-all outline-none focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] sm:text-sm"
+              />
+              <p className="text-[11px] text-[#6a6a6a]">
+                Kode OTP 6 digit akan dikirim ke alamat email baru ini.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 border-t border-[#e5e5e5] pt-3">
+              <button
+                type="button"
+                onClick={() => setCurrentView("menu")}
+                className="h-10 cursor-pointer rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-4 text-xs font-bold text-[#0a0a0a] transition-colors hover:bg-[#faf5e8]"
+              >
+                Batal
+              </button>
+              <button
+                type="submit"
+                disabled={emailLoading}
+                className="h-10 cursor-pointer rounded-[12px] bg-[#0a0a0a] px-5 text-xs font-bold text-white shadow-xs transition-colors hover:bg-[#1f1f1f] disabled:opacity-50"
+              >
+                {emailLoading ? "Mengirim Kode..." : "Kirim Kode Verifikasi"}
+              </button>
+            </div>
+          </form>
+        ) : (
+          <form onSubmit={handleConfirmVerificationCode} className="space-y-3.5">
+            <div className="rounded-[12px] border border-blue-200 bg-blue-50/70 p-3 text-xs text-blue-900">
+              Kode verifikasi telah dikirim ke <strong>{newEmailInput}</strong>.
+              Berlaku selama 10 menit.
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-[#0a0a0a]">
+                Kode Verifikasi 6 Digit *
+              </label>
+              <input
+                type="text"
+                required
+                maxLength={6}
+                placeholder="123456"
+                value={otpCodeInput}
+                onChange={(e) =>
+                  setOtpCodeInput(e.target.value.replace(/\D/g, ""))
+                }
+                className="h-12 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-center font-mono text-xl tracking-[6px] text-[#0a0a0a] shadow-xs transition-all outline-none focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a]"
+              />
+            </div>
+
+            <div className="flex items-center justify-between text-xs text-[#6a6a6a]">
+              <span>Tidak menerima kode?</span>
+              <button
+                type="button"
+                disabled={cooldown > 0 || emailLoading}
+                onClick={handleRequestVerificationCode}
+                className="inline-flex cursor-pointer items-center gap-1 font-bold text-[#0a0a0a] hover:underline disabled:cursor-not-allowed disabled:text-slate-400"
+              >
+                <RotateCwIcon className="size-3" />
+                <span>
+                  {cooldown > 0
+                    ? `Kirim Ulang (${cooldown}s)`
+                    : "Kirim Ulang Kode"}
+                </span>
+              </button>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 border-t border-[#e5e5e5] pt-3">
+              <button
+                type="button"
+                onClick={() => setEmailStep("request")}
+                className="h-10 cursor-pointer rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-4 text-xs font-bold text-[#0a0a0a] transition-colors hover:bg-[#faf5e8]"
+              >
+                Ganti Email
+              </button>
+              <button
+                type="submit"
+                disabled={emailLoading || otpCodeInput.length !== 6}
+                className="h-10 cursor-pointer rounded-[12px] bg-[#0a0a0a] px-5 text-xs font-bold text-white shadow-xs transition-colors hover:bg-[#1f1f1f] disabled:opacity-50"
+              >
+                {emailLoading ? "Memverifikasi..." : "Verifikasi & Simpan"}
+              </button>
+            </div>
+          </form>
+        )}
       </div>
     )
   }
@@ -422,13 +671,44 @@ export function SettingsSection({
             </span>
           </div>
           <p className="mt-0.5 truncate text-xs text-[#6a6a6a]">
-            Atur target kehadiran untuk streak & lencana
+            Atur target kehadiran untuk konsistensi kehadiran
           </p>
         </div>
         <ChevronRightIcon className="size-4 shrink-0 text-[#6a6a6a]" />
       </button>
 
-      {/* 2. Ubah Kata Sandi */}
+      {/* 2. Verifikasi & Ubah Email */}
+      <button
+        type="button"
+        onClick={() => setCurrentView("email")}
+        className="flex w-full cursor-pointer items-center gap-3.5 rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0] p-3.5 text-left shadow-xs transition-all hover:border-[#d5d5d5] hover:bg-[#faf5e8] active:scale-[0.99]"
+      >
+        <div className="flex size-10 shrink-0 items-center justify-center rounded-[12px] bg-blue-100 text-blue-700 shadow-xs">
+          <MailIcon className="size-5" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <p className="text-xs font-bold text-[#0a0a0a] sm:text-sm">
+              Alamat Email
+            </p>
+            <span
+              className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                emailVerified
+                  ? "border border-emerald-200 bg-emerald-50 text-emerald-800"
+                  : "border border-amber-200 bg-amber-50 text-amber-800"
+              }`}
+            >
+              {emailVerified ? "Terverifikasi" : "Belum Verifikasi"}
+            </span>
+          </div>
+          <p className="mt-0.5 truncate text-xs text-[#6a6a6a]">
+            {currentEmail || "Atur dan verifikasi email akun"}
+          </p>
+        </div>
+        <ChevronRightIcon className="size-4 shrink-0 text-[#6a6a6a]" />
+      </button>
+
+      {/* 3. Ubah Kata Sandi */}
       <button
         type="button"
         onClick={() => {
@@ -460,7 +740,7 @@ export function SettingsSection({
         <ChevronRightIcon className="size-4 shrink-0 text-[#6a6a6a]" />
       </button>
 
-      {/* 3. Keluar (Logout) */}
+      {/* 4. Keluar (Logout) */}
       <div className="pt-1">
         <button
           type="button"

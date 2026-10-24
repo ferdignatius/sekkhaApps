@@ -143,7 +143,7 @@ Masuk dengan kredensial password.
     "password": "Password123!"
   }
   ```
-  *(Catatan: `identifier` menerima `username`, `user_number`, atau email yang sudah terverifikasi).*
+  *(Catatan: `identifier` menerima `username` atau email yang sudah terverifikasi).*
 - **Response (200 OK)**:
   ```json
   {

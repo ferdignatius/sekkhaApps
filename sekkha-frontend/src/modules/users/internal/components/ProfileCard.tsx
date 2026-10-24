@@ -20,10 +20,8 @@ interface ProfileCardProps {
   phone?: string | null
   email?: string | null
   role?: string
-  userNumber?: string | null
-  avatarUrl?: string
+  userNumber?: number | string | null
   joinedAt?: string // ISO date
-  equippedBadge?: { name: string; icon: string } | null
   onEditProfile?: () => void
 }
 
@@ -64,7 +62,7 @@ export function ProfileCard({
 
   function handleCopyNumber() {
     if (!userNumber) return
-    navigator.clipboard.writeText(userNumber)
+    navigator.clipboard.writeText(String(userNumber))
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }

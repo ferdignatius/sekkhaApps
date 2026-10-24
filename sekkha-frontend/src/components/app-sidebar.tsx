@@ -501,6 +501,8 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
           maxWidth="max-w-md"
         >
           <SettingsSection
+            currentEmail={authState.email}
+            onEmailUpdated={(newEmail) => updateUser({ email: newEmail })}
             onLogout={logout}
             onClose={() => setSettingsOpen(false)}
           />

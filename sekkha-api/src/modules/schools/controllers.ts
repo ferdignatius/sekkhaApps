@@ -4,12 +4,12 @@ import { schoolServices } from "./services"
 
 export const CreateSchoolSchema = z.object({
   name: z.string().min(2, "Nama sekolah minimal 2 karakter").max(100, "Maksimal 100 karakter"),
-  type: z.enum(["SMP", "SMA", "SMK", "Universitas", "Lainnya"]).optional(),
+  type: z.enum(["SMP", "SMA", "SMK", "SMA/SMK", "Universitas", "Lainnya", "Umum"]).optional(),
 })
 
 export const UpdateSchoolSchema = z.object({
   name: z.string().min(2).max(100).optional(),
-  type: z.enum(["SMP", "SMA", "SMK", "Universitas", "Lainnya"]).optional(),
+  type: z.enum(["SMP", "SMA", "SMK", "SMA/SMK", "Universitas", "Lainnya", "Umum"]).optional(),
 })
 
 export const RequestSchoolSchema = z

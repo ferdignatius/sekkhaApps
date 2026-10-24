@@ -4,14 +4,6 @@ import { userServices } from "./services"
 
 export const UpdateProfileSchema = z.object({
   name: z.string().trim().min(1).max(100).optional(),
-  username: z
-    .string()
-    .trim()
-    .min(3, "Username must be at least 3 characters")
-    .max(30, "Username maximum 30 characters")
-    .regex(/^[a-zA-Z0-9_.]+$/, "Username may only contain letters, numbers, dots, or underscores")
-    .optional()
-    .nullable(),
   school: z.string().trim().max(100).optional().nullable(),
   school_id: z.string().optional().nullable(),
   class_grade: z.string().trim().max(50).optional().nullable(),
@@ -24,44 +16,77 @@ export const UpdateProfileSchema = z.object({
   gender: z.string().trim().max(20).optional().nullable(),
 })
 
-export const ChangePasswordSchema = z.object({
-  current_password: z.string().min(1, "Current password is required"),
-  new_password: z.string().min(8, "New password must be at least 8 characters"),
+export const RequestEmailVerificationSchema = z.object({
+  email: z.string().trim().email("Format email tidak valid"),
 })
+
+export const ConfirmEmailVerificationSchema = z.object({
+  code: z.string().trim().length(6, "Kode verifikasi harus 6 digit"),
+})
+
+export const ChangePasswordSchema = z
+  .object({
+    currentPassword: z.string().optional(),
+    current_password: z.string().optional(),
+    newPassword: z.string().optional(),
+    new_password: z.string().optional(),
+  })
+  .refine(
+    (data) => Boolean(data.currentPassword || data.current_password),
+    "Current password is required"
+  )
+  .refine(
+    (data) => {
+      const p = data.newPassword || data.new_password
+      return Boolean(p && p.length >= 8)
+    },
+    "New password must be at least 8 characters"
+  )
 
 export const DeleteAccountSchema = z.object({
   password: z.string().min(1, "Konfirmasi kata sandi diperlukan"),
+  confirmation: z.string().optional(),
 })
+
+function successEnvelope(
+  res: Response,
+  code: number = 200,
+  message: string = "Request completed successfully",
+  data: any = null
+) {
+  res.status(code).json({
+    status: "success",
+    code,
+    message,
+    data,
+  })
+}
 
 export const userControllers = {
   async completeOnboarding(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const completed = z.object({ onboarding_completed: z.literal(true), skipped: z.boolean().optional() }).parse(req.body)
       const result = await userServices.completeOnboarding(req.user!.userId, completed.skipped === true)
-      res.json({ status: "success", code: 200, message: "Onboarding completed", data: result })
-    } catch (err) {
-      next(err)
-    }
-  },
-  async getProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
-      const userId = req.user!.userId
-      const profile = await userServices.getProfile(userId)
-      if (!profile) {
-        res.status(404).json({ error: "User not found" })
-        return
-      }
-      res.json(profile)
+      successEnvelope(res, 200, "Onboarding completed", result)
     } catch (err) {
       next(err)
     }
   },
 
-  async getAttendances(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const userId = req.user!.userId
-      const attendances = await userServices.getAttendances(userId)
-      res.json(attendances)
+      const profile = await userServices.getProfile(userId)
+      if (!profile) {
+        res.status(404).json({
+          status: "fail",
+          code: 404,
+          message: "User not found",
+          data: null,
+        })
+        return
+      }
+      successEnvelope(res, 200, "Request completed successfully", profile)
     } catch (err) {
       next(err)
     }
@@ -69,16 +94,109 @@ export const userControllers = {
 
   async updateProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const body = UpdateProfileSchema.parse(req.body)
+      const rawBody = req.body || {}
+      // AC-USR-05: Forbidden fields check
+      const forbiddenKeys = ["email", "user_number", "userNumber", "username", "role", "points"]
+      const matchedForbidden = forbiddenKeys.filter((k) => k in rawBody)
+      if (matchedForbidden.length > 0) {
+        res.status(400).json({
+          status: "fail",
+          code: 400,
+          message: `Field [${matchedForbidden.join(", ")}] tidak dapat diubah via PATCH /api/users/me. Gunakan endpoint khusus verifikasi email atau ganti password.`,
+          data: null,
+        })
+        return
+      }
+
+      const body = UpdateProfileSchema.parse(rawBody)
       const userId = req.user!.userId
       const authHeader = req.headers.authorization
       const updated = await userServices.updateProfile(userId, body, authHeader)
-      res.json(updated)
+      successEnvelope(res, 200, "Profile updated successfully", updated)
     } catch (err: any) {
       if (err.statusCode) {
-        res.status(err.statusCode).json({ error: err.message })
+        res.status(err.statusCode).json({
+          status: "fail",
+          code: err.statusCode,
+          message: err.message,
+          data: null,
+        })
         return
       }
+      next(err)
+    }
+  },
+
+  async requestEmailVerification(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { email } = RequestEmailVerificationSchema.parse(req.body)
+      const userId = req.user!.userId
+      const result = await userServices.requestEmailVerification(userId, email)
+      successEnvelope(res, 200, "Verification code sent if the email is available", result)
+    } catch (err: any) {
+      if (err.statusCode) {
+        res.status(err.statusCode).json({
+          status: "fail",
+          code: err.statusCode,
+          message: err.message,
+          data: null,
+        })
+        return
+      }
+      next(err)
+    }
+  },
+
+  async confirmEmailVerification(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { code } = ConfirmEmailVerificationSchema.parse(req.body)
+      const userId = req.user!.userId
+      const result = await userServices.confirmEmailVerification(userId, code)
+      successEnvelope(res, 200, "Email verified successfully", result)
+    } catch (err: any) {
+      if (err.statusCode) {
+        res.status(err.statusCode).json({
+          status: "fail",
+          code: err.statusCode,
+          message: err.message,
+          data: null,
+        })
+        return
+      }
+      next(err)
+    }
+  },
+
+  async changePassword(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const body = ChangePasswordSchema.parse(req.body)
+      const currentPassword = body.currentPassword || body.current_password!
+      const newPassword = body.newPassword || body.new_password!
+      const userId = req.user!.userId
+      const result = await userServices.changePassword(userId, currentPassword, newPassword)
+      successEnvelope(res, 200, "Password berhasil diubah. Seluruh sesi lain telah dikeluarkan.", result)
+    } catch (err: any) {
+      if (err.statusCode) {
+        res.status(err.statusCode).json({
+          status: "fail",
+          code: err.statusCode,
+          message: err.message,
+          data: null,
+        })
+        return
+      }
+      next(err)
+    }
+  },
+
+  async getAttendances(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const userId = req.user!.userId
+      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 10
+      const cursor = req.query.cursor ? String(req.query.cursor) : undefined
+      const result = await userServices.getAttendances(userId, limit, cursor)
+      successEnvelope(res, 200, "Request completed successfully", result)
+    } catch (err) {
       next(err)
     }
   },
@@ -87,7 +205,7 @@ export const userControllers = {
     try {
       const userId = req.user!.userId
       const streak = await userServices.getStreak(userId)
-      res.json(streak)
+      successEnvelope(res, 200, "Request completed successfully", streak)
     } catch (err) {
       next(err)
     }
@@ -96,24 +214,10 @@ export const userControllers = {
   async getPointTransactions(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const userId = req.user!.userId
-      const transactions = await userServices.getPointTransactions(userId)
-      res.json(transactions)
+      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 20
+      const transactions = await userServices.getPointTransactions(userId, limit)
+      successEnvelope(res, 200, "Request completed successfully", transactions)
     } catch (err) {
-      next(err)
-    }
-  },
-
-  async changePassword(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
-      const body = ChangePasswordSchema.parse(req.body)
-      const userId = req.user!.userId
-      const result = await userServices.changePassword(userId, body.current_password, body.new_password)
-      res.json(result)
-    } catch (err: any) {
-      if (err.statusCode) {
-        res.status(err.statusCode).json({ error: err.message })
-        return
-      }
       next(err)
     }
   },
@@ -123,7 +227,12 @@ export const userControllers = {
       const userId = req.user!.userId
       const data = await userServices.exportUserData(userId)
       if (!data) {
-        res.status(404).json({ error: "Pengguna tidak ditemukan" })
+        res.status(404).json({
+          status: "fail",
+          code: 404,
+          message: "Pengguna tidak ditemukan",
+          data: null,
+        })
         return
       }
       res.setHeader("Content-Type", "application/json")
@@ -140,13 +249,36 @@ export const userControllers = {
       const userId = req.user!.userId
       const authHeader = req.headers.authorization
       const result = await userServices.deleteAccount(userId, password, authHeader)
-      res.json(result)
+      successEnvelope(res, 200, result.message, null)
     } catch (err: any) {
       if (err.statusCode) {
-        res.status(err.statusCode).json({ error: err.message })
+        res.status(err.statusCode).json({
+          status: "fail",
+          code: err.statusCode,
+          message: err.message,
+          data: null,
+        })
         return
       }
       next(err)
     }
+  },
+
+  getBadgesDisabled(req: Request, res: Response): void {
+    res.status(404).json({
+      status: "fail",
+      code: 404,
+      message: "Endpoint tidak ditemukan. Sistem badge dan level telah ditiadakan.",
+      data: null,
+    })
+  },
+
+  getLevelDisabled(req: Request, res: Response): void {
+    res.status(404).json({
+      status: "fail",
+      code: 404,
+      message: "Endpoint tidak ditemukan. Sistem badge dan level telah ditiadakan.",
+      data: null,
+    })
   },
 }

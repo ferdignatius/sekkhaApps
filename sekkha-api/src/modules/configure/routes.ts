@@ -57,8 +57,10 @@ configureRouter.put("/threshold", configureControllers.updateThresholds)
 configureRouter.get("/seasons", configureControllers.getSeasons)
 configureRouter.post("/seasons", configureControllers.createSeason)
 configureRouter.put("/seasons/:id", configureControllers.updateSeason)
+configureRouter.patch("/seasons/:id", configureControllers.updateSeason)
 configureRouter.delete("/seasons/:id", configureControllers.deleteSeason)
 configureRouter.post("/seasons/:id/activate", configureControllers.activateSeason)
+configureRouter.patch("/seasons/:id/activate", configureControllers.activateSeason)
 
 // Point Rules
 configureRouter.get("/point-rules", configureControllers.getPointRules)

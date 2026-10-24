@@ -8,7 +8,7 @@ export const leaderboardControllers = {
   async getDebug(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const users = await leaderboardModels.findDebugUsers()
-      const snapshot = await getLeaderboardSnapshot("points", true)
+      const snapshot = await getLeaderboardSnapshot("points", undefined, true)
       res.json({
         db_users_count: users.length,
         db_users: users.map((u) => ({
@@ -29,9 +29,10 @@ export const leaderboardControllers = {
 
   async getLeaderboard(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { metric = "points", refresh, roles, limit = 10 } = z
+      const { metric = "points", period, refresh, roles, limit = 10 } = z
         .object({
           metric: z.enum(["points", "streak", "attendance"]).optional(),
+          period: z.string().optional(),
           refresh: z.enum(["true", "false", "1", "0"]).optional(),
           roles: z.string().optional(),
           limit: z.coerce.number().int().min(1).max(100).default(10),
@@ -41,7 +42,7 @@ export const leaderboardControllers = {
       const userId = req.user?.userId
       const isPrivileged = req.user?.role === "organizer" || req.user?.role === "admin"
       const forceRefresh = isPrivileged && (refresh === "true" || refresh === "1")
-      const snapshot = await getLeaderboardSnapshot(metric as MetricType, forceRefresh)
+      const snapshot = await getLeaderboardSnapshot(metric as MetricType, period, forceRefresh)
 
       const requestedRoles = new Set(
         (roles || "")
@@ -91,8 +92,8 @@ export const leaderboardControllers = {
                 rank: scopedEntries.length + 1,
                 value: 0,
                 is_in_top: false,
-                name: "Kamu",
-                initials: "KM",
+                name: "You",
+                initials: "YO",
               }
             : null
 
@@ -100,10 +101,12 @@ export const leaderboardControllers = {
         entries: visibleEntries,
         my_rank: myRank,
         season: snapshot.season,
+        available_periods: snapshot.available_periods,
+        active_period: snapshot.active_period,
         community_goal: {
           current: snapshot.community_total ?? 0,
           target: snapshot.season?.target_attendance ?? 500,
-          label: "Target Absensi Komunitas Vihara",
+          label: "Community Attendance Target",
         },
         calculated_at: snapshot.calculated_at,
       })

@@ -78,6 +78,12 @@ export const configureModels = {
   findSeasonById(id: string) {
     return prisma.season.findUnique({ where: { id } })
   },
+  findSeasonByCode(code: string) {
+    return prisma.season.findUnique({ where: { code } })
+  },
+  countEventsBySeasonId(seasonId: string) {
+    return prisma.event.count({ where: { seasonId } })
+  },
   deactivateOtherSeasons(excludeId?: string) {
     return prisma.season.updateMany({
       where: excludeId ? { id: { not: excludeId } } : undefined,

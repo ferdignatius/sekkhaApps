@@ -178,7 +178,6 @@ model Season {
   endDate          DateTime @map("end_date")
   isActive         Boolean  @default(false) @map("is_active")
   targetAttendance Int      @default(500) @map("target_attendance")
-  bonusPoints      Int      @default(100) @map("bonus_points")
   description      String?
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")

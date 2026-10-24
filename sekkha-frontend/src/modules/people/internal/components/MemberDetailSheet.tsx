@@ -152,28 +152,34 @@ export function MemberDetailSheet({
           <div className="grid grid-cols-2 gap-2.5 border-t border-[#e5e5e5] pt-2 sm:grid-cols-3">
             <div className="rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] p-2.5 text-center">
               <span className="block text-[10px] font-bold tracking-wider text-[#6a6a6a] uppercase">
-                Attendance
+                Account Status
               </span>
-              <span className="text-base font-bold text-[#0a0a0a]">
-                {member.total_attendance || 0} Events
+              <span
+                className={`text-xs font-bold sm:text-sm ${
+                  member.is_claimed ? "text-emerald-700" : "text-amber-700"
+                }`}
+              >
+                {member.is_claimed ? "Claimed" : "Unclaimed"}
               </span>
             </div>
             <div className="rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] p-2.5 text-center">
               <span className="block text-[10px] font-bold tracking-wider text-[#6a6a6a] uppercase">
-                Points Earned
+                Last Attended
               </span>
-              <span className="text-base font-bold text-[#0a0a0a]">
-                {member.points || 0} Pts
+              <span className="text-xs font-bold text-[#0a0a0a] sm:text-sm">
+                {member.last_attended_at
+                  ? new Date(member.last_attended_at).toLocaleDateString()
+                  : "Never"}
               </span>
             </div>
             <div className="col-span-2 rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] p-2.5 text-center sm:col-span-1">
               <span className="block text-[10px] font-bold tracking-wider text-[#6a6a6a] uppercase">
                 Gender
               </span>
-              <span className="text-base font-bold text-[#0a0a0a]">
-                {member.gender === "L"
+              <span className="text-xs font-bold text-[#0a0a0a] sm:text-sm">
+                {member.gender === "L" || member.gender === "male"
                   ? "Male"
-                  : member.gender === "P"
+                  : member.gender === "P" || member.gender === "female"
                     ? "Female"
                     : "Not set"}
               </span>
@@ -354,7 +360,11 @@ export function MemberDetailSheet({
                     </span>
                   )}
                 </span>
-                <span>Total Attendance: {member.total_attendance || 0}x</span>
+                <span>
+                  {member.last_attended_at
+                    ? `Last attended: ${new Date(member.last_attended_at).toLocaleDateString()}`
+                    : "No attendance yet"}
+                </span>
               </div>
             </div>
 
@@ -397,11 +407,20 @@ export function MemberDetailSheet({
               {/* Reset Password */}
               <button
                 type="button"
+                disabled={member.is_claimed}
                 onClick={() => onResetPassword(member)}
-                className="flex h-11 cursor-pointer flex-col items-center justify-center gap-1 rounded-[12px] border border-[#e8b94a]/50 bg-[#e8b94a]/15 px-2 text-xs font-bold text-[#0a0a0a] transition-all hover:bg-[#e8b94a]/25 sm:flex-row sm:gap-1.5"
-                title="Reset Password to default (Sekkha[4-digit]Puggala)"
+                className={`flex h-11 flex-col items-center justify-center gap-1 rounded-[12px] border px-2 text-xs font-bold transition-all sm:flex-row sm:gap-1.5 ${
+                  member.is_claimed
+                    ? "cursor-not-allowed border-[#e5e5e5] bg-[#f0f0f0] text-[#a0a0a0] opacity-60"
+                    : "cursor-pointer border-[#e8b94a]/50 bg-[#e8b94a]/15 text-[#0a0a0a] hover:bg-[#e8b94a]/25"
+                }`}
+                title={
+                  member.is_claimed
+                    ? "Account has been claimed by the member. Members must use self-service Forgot Password."
+                    : "Reset Temporary Password (sekkha#####puggala)"
+                }
               >
-                <KeyIcon className="size-3.5 text-[#0a0a0a]" />
+                <KeyIcon className="size-3.5" />
                 <span className="text-[11px] sm:text-xs">Reset Pass</span>
               </button>
 

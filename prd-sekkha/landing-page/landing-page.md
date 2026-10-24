@@ -26,8 +26,8 @@ Halaman **Landing Page** (`/`) adalah **satu-satunya halaman publik** di Sekkha 
 
 | Role | Akses |
 | --- | --- |
-| `pengunjung (belum login)` | ✅ Lihat landing page |
-| `umat / aktivis / pengurus / admin` (sudah login) | Otomatis di-redirect ke `/home` |
+| `Visitor (Unauthenticated)` | ✅ View landing page |
+| `member / activist / organizer / admin` (Authenticated) | Otomatis di-redirect ke `/home` |
 
 Lihat `useAuthState` — hook cek token di localStorage; jika ada, di-redirect.
 
@@ -135,7 +135,7 @@ LandingFooter
 - `<title>` dinamis: "Sekkha — Komunitas Remaja Vihara Tri Maha Dharma".
 - Meta description sesuai subheadline.
 - OpenGraph tag untuk share ke social media.
-- `robots.txt` di `public/` (lihat PRD `prd-sekkha/profile/profile.md` §5.4 untuk pattern).
+- `robots.txt` di `public/` (lihat PRD `prd-sekkha/general/users/profile-and-settings.md` untuk pattern).
 - Lazy load images di bawah fold.
 
 ### 5.7. Internationalization (Future)
@@ -182,7 +182,7 @@ LandingFooter
 | **AC-08** | Pengunjung tekan Tab di awal page | Fokus pertama ke "Skip to main content" link |
 | **AC-09** | Pengunjung tekan Tab dari keyboard | Semua CTA dan nav link bisa di-reach dengan Tab |
 | **AC-10** | Pengunjung klik smooth scroll link (`#events`) | Scroll smooth ke EventsSection |
-| **AC-11** | Test bundle | `pnpm test` (atau `npm test`) lulus untuk semua test landing-page (unit + PBT) |
+| **AC-11** | Test bundle | `bun run test` lulus untuk semua test landing-page (unit + PBT) |
 | **AC-12** | `routeTree.gen.ts` | Route `/` terdaftar, mengarah ke `LandingPage` |
 | **AC-13** | Pengunjung dengan JavaScript disabled | Lihat fallback minimal (hero text + link ke `/login`) — *optional, nice-to-have* |
 
@@ -213,7 +213,7 @@ LandingFooter
 - `sekkha-frontend/public/sekkha_logo.svg` — logo
 - `DESIGN.md` (root) — design tokens (warna brand: Yellow #ffd02f, Blue #4262ff, Teal #0fbcb0)
 - `RULES.md` (root) — modular boundary rules (LandingPage = modul independen, `navItems: []`)
-- `prd-sekkha/auth/auth.md` — login/sign-up flow
-- `prd-sekkha/dashboard/dashboard.md` — tujuan redirect setelah login
+- `prd-sekkha/general/auth/auth.md` — login/sign-up flow
+- `prd-sekkha/home/home.md` — tujuan redirect setelah login
 - Skill `frontend-ui-engineering` — a11y & performance
 - Skill `browser-testing-with-devtools` — visual QA

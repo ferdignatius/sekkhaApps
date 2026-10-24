@@ -21,6 +21,8 @@ export interface AuditLogEntry {
     | "EVENT_UPDATED"
     | "EVENT_STATUS_CHANGED"
     | "EVENT_DELETED"
+    | "PEOPLE_CREATED"
+    | "TEMPORARY_PASSWORD_RESET"
     | "SYSTEM_SECURITY_ALERT"
   targetId?: string | null
   status: "SUCCESS" | "FAILURE"

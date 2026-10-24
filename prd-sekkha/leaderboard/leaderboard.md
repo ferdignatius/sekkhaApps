@@ -1,202 +1,162 @@
-# PRD: Leaderboard — Sekkha Apps
+# PRD: Season-Based Leaderboard System — Sekkha Apps
 
 | Metadata | Detail |
 | --- | --- |
 | **Dokumen** | Product Requirement Document (PRD) |
-| **Fitur** | Leaderboard (Season-based Ranking) |
+| **Fitur** | Papan Peringkat Musiman (Seasonal Leaderboard & Seva Appreciation) |
+| **Domain** | `leaderboard` / `gamification` / `seasons` |
 | **Aplikasi** | Sekkha Apps (Frontend & Backend) |
-| **Versi** | 1.0.0 |
+| **Versi** | 2.0.0 (Unified & Seasons-Integrated) |
 | **Status** | Approved / Ready for Development |
+| **Referensi Terkait** | `prd-sekkha/configure/seasons.md`, `prd-sekkha/configure/pointRules.md`, `prd-sekkha/configure/masterdata/badgeActivity.md` |
 
 ---
 
 ## 1. Ringkasan Eksekutif & Tujuan
 
-Leaderboard adalah **kompetisi sehat berbasis poin** yang di-reset per **musim (season)**. Tujuannya adalah memotivasi anggota untuk aktif mengikuti kegiatan vihara melalui gamifikasi — tanpa menghapus jejak sejarah.
-
-### 🎯 Tujuan Utama
-1. **Kompetisi sehat**: tampilkan ranking Top 3 dengan podium visual.
-2. **Musim (Season)**: periode waktu (mis. 3 bulan) yang membatasi kompetisi. Setelah season berakhir, snapshot disimpan dan member mulai dari 0 lagi.
-3. **Streak shield**: perlindungan streak untuk user yang konsisten hadir.
-4. **Community goals**: target kolektif (mis. "1000 kehadiran bulan ini") yang memperkuat rasa kebersamaan.
-5. **Transparansi**: tampilkan poin, urutan, dan delta (naik/turun) dibanding minggu lalu.
-
----
-
-## 2. Target Pengguna & Role
-
-| Role | Akses | Tampilan |
-| --- | --- | --- |
-| `umat` | ✅ | Lihat ranking global + posisi sendiri |
-| `aktivis` | ✅ | Sama + filter "aktivis only" |
-| `pengurus` | ✅ | + filter role + lihat distribusi poin |
-| `admin` | ✅ | Sama dengan pengurus |
-
-Private data (nomor HP, email) **tidak** ditampilkan. Hanya nama + avatar + poin + urutan.
+Leaderboard adalah wadah **kompetisi sehat dan apresiasi dedikasi jemaat** berbasis perolehan poin kehadiran dan pelayanan kebaktian. Sistem leaderboard dirancang dengan prinsip:
+1. **Berbasis Musim (Season-Based Zero Reset)**: Peringkat dihitung murni berdasarkan transaksi poin yang terjadi dalam rentang tanggal musim bersangkutan `[start_date, end_date]`. Setiap musim baru dimulai, semua jemaat berkompetisi kembali dari 0 poin tanpa menghapus catatan historis sebelumnya.
+2. **Tab Navigasi Musim Dinamis**: Antarmuka secara otomatis menyajikan tab periode berurutan:
+   - `[ Custom Season (e.g. Vassa 2026) ] [ Semester ] [ Annual ]` (jika ada custom season aktif), atau
+   - `[ Semester ] [ Annual ]` (jika tidak ada custom season aktif).
+3. **Penghargaan Podium Visual Top 3**: Desain Clay Card visual untuk juara 1, 2, dan 3 yang menonjolkan apresiasi komunitas.
+4. **Posisi Pribadi Mengambang (*Floating Self-Rank Card*)**: Jemaat selalu dapat melihat posisi peringkat dan perolehan poin pribadinya di layar mobile/desktop tanpa harus mencari-cari di dalam tabel.
+5. **Anti-Inflasi & Tanpa Pengali Badge**: Poin didasarkan secara murni pada presensi terverifikasi (50-70 Pts) dan tugas pelayanan ibadah resmi (+30 Pts per `badge_activities`). Seluruh gamifikasi badge dan level artifisial telah dieliminasi.
 
 ---
 
-## 3. Komponen & Alur
+## 2. Definisi Role & Aksesibilitas
 
-Berdasarkan `sekkha-frontend/src/modules/leaderboard/internal/components/LeaderboardPage.tsx` dan `sekkha-api/src/modules/leaderboard/internal/`:
+Leaderboard dapat diakses oleh seluruh jemaat dan pengurus yang telah login: `member`, `activist`, `organizer`, `admin`.
 
-### 3.1. Halaman Leaderboard (`/leaderboard`)
+| Role | Akses Leaderboard | Tampilan Khusus |
+| --- | :---: | --- |
+| `member` | v | Melihat peringkat global komunitas + posisi peringkat diri sendiri. |
+| `activist` | v | Sama dengan jemaat. |
+| `organizer` | v | Sama dengan jemaat + tombol sinkronisasi ulang cache leaderboard. |
+| `admin` | v | Sama dengan organizer. |
 
-Layout:
-- **Header**: judul "Leaderboard Musim [Nama]" + sisa waktu musim + progress bar community goal
-- **Podium Top 3**: visual (avatar + nama + poin) — juara di tengah, juara 2/3 di kiri-kanan
-- **Tabel Ranking 4-100**: list dengan avatar, nama, poin, delta (▲/▼ dibanding periode sebelumnya)
-- **Posisi sendiri**: floating card di mobile ("Kamu di posisi #42 dengan 250 poin")
-
-### 3.2. Backend Service
-
-`internal/service.ts`:
-- Hitung poin dari `attendances` + `badges` dalam window season aktif
-- Ranking di-cache di Redis (lihat `internal/cron.ts` — recompute periodik)
+> **Perlindungan Privasi**: Informasi kontak sensitif jemaat (nomor telepon, alamat, email) **tidak pernah dimunculkan** di papan peringkat publik. Hanya menampilkan: Nama, Nomor Anggota (`userNumber`), Almamater Sekolah, dan Poin Musim.
 
 ---
 
-## 4. User Stories
+## 3. Komponen Antarmuka & UX (Clay Design System)
 
-| ID | Sebagai | Saya ingin | Supaya |
-| --- | --- | --- | --- |
-| US-01 | Umat | Melihat posisi saya di ranking musim ini | Tahu seberapa aktif saya dibanding komunitas |
-| US-02 | Umat | Melihat Top 3 podium | Terinspirasi untuk masuk Top 3 |
-| US-03 | Umat | Melihat sisa waktu musim | Tahu deadline untuk push poin |
-| US-04 | Umat | Melihat community goal | Merasa bagian dari target kolektif |
-| US-05 | Umat | Melihat delta (naik/turun) minggu ini | Tahu tren saya |
-| US-06 | Pengurus | Filter ranking berdasarkan role (umat/aktivis) | Analisis kontribusi tiap segmen |
+Halaman `/leaderboard` memiliki tata letak responsif:
 
----
+### 3.1. Header & Dynamic Season Tabs
+* Judul Halaman: *"Community Leaderboard"*.
+* Subtitle: Menampilkan nama musim yang sedang dipilih, rentang tanggal, dan sisa waktu (*"Vassa Season 2026 • 32 Days Remaining"*).
+* Dynamic Tabs: Mengambil data musim dari `GET /api/configure/seasons`:
+  * Tab 1: **Custom Active Season** (mis. *Vassa Season*) — jika statusnya `is_active: true`.
+  * Tab 2: **Semester Period** (mis. *Semester 2 - 2026*).
+  * Tab 3: **Annual Period** (mis. *Year 2026*).
 
-## 5. Functional Requirements
+### 3.2. Podium Visual Top 3
+* Tiga kartu Clay terangkat (*Clay Elevation*) di bagian atas:
+  * **Juara 1 (Gold)**: Kartu tengah berukuran paling tinggi dengan aksen emas (`#e8b94a`), avatar inisial besar, mahkota juara, nama jemaat, sekolah, dan total poin musim.
+  * **Juara 2 (Silver)**: Kartu sebelah kiri dengan aksen perak halus.
+  * **Juara 3 (Bronze)**: Kartu sebelah kanan dengan aksen perunggu hangat.
 
-### 5.1. Definisi Season
+### 3.3. Daftar Peringkat Anggota (Ranks 4-100)
+* Menampilkan daftar baris kartu jemaat berurutan:
+  * Nomor Peringkat (#4, #5, #6...).
+  * Avatar inisial dengan badge role (`member` / `activist`).
+  * Nama lengkap dan almamater sekolah.
+  * Badge total poin yang dicapai di musim tersebut.
 
-- Season dikonfigurasi di master data (`/configure/rules/season`).
-- Field: `name`, `start_date`, `end_date`, `is_active`.
-- Hanya 1 season `is_active=true` pada satu waktu.
-- Cron job (lihat `internal/cron.ts`) mengecek periodik; saat `end_date` lewat, sistem:
-  1. Snapshot ranking final ke tabel historis
-  2. Tandai season `is_active=false`
-  3. (Manual) Admin membuat season baru dan aktivasi
-
-### 5.2. Perhitungan Poin
-
-Formula (lihat `prd-sekkha/masterdata/badgePresensiEvent.md`):
-
-```
-poin_event_hadir  = base_points[event_type] × attendance_streak_multiplier
-poin_badge_earned = badge.point_value (flat)
-total_poin_user   = Σ poin_event_hadir (dalam window season) + Σ poin_badge_earned
-```
-
-- **`attendance_streak_multiplier`**: 1.0 (streak 0), 1.1 (streak 3-6), 1.25 (streak 7-13), 1.5 (streak ≥14)
-- Perhitungan TIDAK real-time: recompute via cron tiap 5 menit.
-
-### 5.3. Streak Shield
-
-- Jika user **hadir event di 3 minggu terakhir secara berturut-turut**, streak dianggap **protected**.
-- Saat user absen 1x karena alasan apapun, streak tidak reset (shield aktif 1x per musim).
-
-### 5.4. Community Goals
-
-- Target kolektif yang dikonfigurasi admin (mis. "500 kehadiran bulan ini").
-- Progress = Σ semua attendance bulan ini / target.
-- Ditampilkan sebagai progress bar di header leaderboard.
+### 3.4. Kartu Posisi Diri Sendiri (Floating Sticky Bottom Bar)
+* Bar mengambang di bagian bawah layar yang menunjukkan posisi jemaat yang sedang login:
+  * *"Your Ranking: #14 • Budi Santoso • 380 Pts"*
+  * Sisa poin untuk mencapai peringkat di atasnya (*"20 Pts to reach #13"*).
 
 ---
 
-## 6. API Contract (Ringkas)
+## 4. Spesifikasi Teknis & API Contract
 
-### 6.1. `GET /api/leaderboard`
-
-**Query Params**:
-- `season?` — slug season (default: active season)
-- `role?` — filter role (`umat` / `aktivis` / `all`)
-- `limit?` — default 100, max 200
-
-**Response 200:**
-```json
-{
-  "status": "success",
-  "data": {
-    "season": {
-      "name": "Musim Semi 2026",
-      "start_date": "2026-03-01",
-      "end_date": "2026-05-31",
-      "remaining_days": 42
-    },
-    "community_goal": {
-      "label": "500 kehadiran bulan ini",
-      "current": 287,
-      "target": 500,
-      "unit": "kehadiran"
-    },
-    "top_three": [
-      { "rank": 1, "user_id": "...", "name": "Budi", "avatar_url": "...", "points": 1240, "delta": 0 },
-      { "rank": 2, "user_id": "...", "name": "Sari", "points": 1180, "delta": 1 },
-      { "rank": 3, "user_id": "...", "name": "Hendra", "points": 1050, "delta": -1 }
-    ],
-    "ranking": [ /* rank 4..N: { rank, user_id, name, points, delta, streak_weeks } */ ],
-    "me": {
-      "rank": 42,
-      "points": 250,
-      "delta": 3,
-      "streak_shield_active": false
+### 4.1. `GET /api/leaderboard`
+Mengambil data peringkat leaderboard untuk periode tertentu.
+* **Akses**: `requireAuth`.
+* **Query Parameters**:
+  * `season_id` (string cuid, opsional): ID musim spesifik.
+  * `period` (string: `semester`, `annual`, `custom`, default: `semester`).
+  * `limit` (number, default: 50, max: 100).
+* **Response Envelope (200 OK)**:
+  ```json
+  {
+    "status": "success",
+    "code": 200,
+    "message": "Leaderboard retrieved successfully",
+    "data": {
+      "season": {
+        "id": "season_vassa_2026",
+        "code": "VASSA-2026",
+        "name": "Vassa Season 2026",
+        "start_date": "2026-07-15T00:00:00.000Z",
+        "end_date": "2026-10-31T23:59:59.000Z",
+        "days_remaining": 7
+      },
+      "my_rank": {
+        "rank": 8,
+        "user_id": "cuid_my_user",
+        "user_number": 2026102401,
+        "name": "Budi Santoso",
+        "points": 420
+      },
+      "top_three": [
+        {
+          "rank": 1,
+          "user_id": "cuid_1",
+          "user_number": 2026010101,
+          "name": "Siddhartha Tan",
+          "school": "SMA Tri Ratna",
+          "points": 750
+        },
+        {
+          "rank": 2,
+          "user_id": "cuid_2",
+          "user_number": 2026010202,
+          "name": "Ananda Surya",
+          "school": "Universitas Indonesia",
+          "points": 680
+        },
+        {
+          "rank": 3,
+          "user_id": "cuid_3",
+          "user_number": 2026010303,
+          "name": "Sariputta Hendra",
+          "school": "SMK Buddhis",
+          "points": 610
+        }
+      ],
+      "rankings": [
+        {
+          "rank": 4,
+          "user_id": "cuid_4",
+          "user_number": 2026020101,
+          "name": "Moggallana Deni",
+          "school": "SMA Negeri 1",
+          "points": 540
+        }
+      ]
     }
   }
-}
-```
+  ```
 
 ---
 
-## 7. UI/UX & NFR
+## 5. Kinerja & Caching (Redis Strategy)
 
-1. **Podium Top 3**: gunakan warna medali (emas/perak/perunggu) dari DESIGN.md.
-2. **Delta indicator**: panah hijau ▲ untuk naik, merah ▼ untuk turun, gray — untuk tetap.
-3. **Mobile**: podium stack vertikal (juara 1 di atas, 2/3 di bawah), tabel ranking bisa di-scroll.
-4. **Aksesibilitas**: gunakan `<table>` semantic untuk ranking (bukan div soup).
-5. **Performance**: response di-cache Redis selama 5 menit (lihat cron job).
-
----
-
-## 8. Acceptance Criteria
-
-| ID | Skenario | Hasil yang Diharapkan |
-| --- | --- | --- |
-| **AC-01** | User buka `/leaderboard` (season aktif ada) | Header menampilkan nama season + sisa hari + progress community goal |
-| **AC-02** | Top 3 podium tampil | Juara 1 di tengah (lebih tinggi), Juara 2 & 3 di kiri-kanan |
-| **AC-03** | Ranking 4-100 tampil | Tabel dengan avatar + nama + poin + delta |
-| **AC-04** | User yang sedang login muncul di ranking | Card floating "Kamu di posisi #X dengan Y poin" |
-| **AC-05** | User diurutkan naik-turun minggu ini | Indikator ▲/▼/— di samping poin |
-| **AC-06** | Streak user ≥3 minggu berturut-turut | Badge "Streak Shield Active" di samping namanya |
-| **AC-07** | User dengan role filter `aktivis` (admin/pengurus) | Ranking hanya menampilkan aktivis |
-| **AC-08** | Belum ada season aktif | Halaman tampil empty state: "Musim baru segera dimulai" |
-| **AC-09** | User tidak login coba buka `/leaderboard` | Redirect ke `/login?redirectTo=/leaderboard` |
-
----
-
-## 9. Out of Scope
-
-- Friend-to-friend challenge / private leaderboard.
-- Pembelian poin / premium currency.
-- Pencarian user di ranking.
-
----
-
-## 10. Open Questions
-
-1. Apakah delta dihitung mingguan atau per-update cron (5 menit)?
-2. Apakah ada konsep "Wild Card" — event di akhir musim yang poin-nya dobel?
-3. Apakah perlu export ranking ke CSV untuk pengurus?
-
----
-
-## 11. Referensi
-
-- `sekkha-frontend/src/modules/leaderboard/` — implementasi frontend
-- `sekkha-api/src/modules/leaderboard/internal/service.ts` — kalkulasi poin
-- `sekkha-api/src/modules/leaderboard/internal/cron.ts` — recompute periodik
-- `prd-sekkha/masterdata/badgePresensiEvent.md` — rumus poin
-- `prd-sekkha/event/event.md` — data attendance
+1. **Big-O Aggregation**:
+   - Kalkulasi poin musiman diagregasi langsung dari tabel `point_transactions` dengan filter rentang waktu:
+     ```sql
+     SELECT user_id, SUM(points) as total_points
+     FROM point_transactions
+     WHERE created_at >= season.start_date AND created_at <= season.end_date
+     GROUP BY user_id
+     ORDER BY total_points DESC
+     LIMIT 100;
+     ```
+2. **Redis In-Memory Caching**:
+   - Hasil kalkulasi disimpan di Redis dengan key `leaderboard:<period>:<seasonId>` dan TTL **60 detik**.
+   - Event invalidasi: Ketika sebuah event ditutup (`EVENT_CLOSED` dipancarkan di EventBus), cache leaderboard musim aktif otomatis di-invalidate secara asinkron.

@@ -2,7 +2,7 @@
 
 **Status**: Draft / Pending Review  
 **Domain**: `auth` / `users`  
-**Related PRD**: `prd-sekkha/users/account-claim-simplification.md`
+**Related PRD**: `prd-sekkha/peoples/people-management.md`, `prd-sekkha/general/users/profile-and-settings.md`
 
 ---
 

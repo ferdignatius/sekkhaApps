@@ -19,6 +19,7 @@ import {
   AlertTriangleIcon,
   CheckCircleIcon,
   XIcon,
+  Share2Icon,
 } from "lucide-react"
 import QRCode from "react-qr-code"
 import { useAuth } from "@/modules/auth"
@@ -26,7 +27,7 @@ import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
 import { Button, Tabs, TabsList, TabsTrigger } from "@/components/base"
 import { Skeleton } from "@/components/ui/skeleton"
 import { peopleApi } from "../api/peopleApi"
-import type { MemberDetailDto } from "../api/peopleApi"
+import type { MemberDetailDto, ResetTemporaryPasswordResponse } from "../api/peopleApi"
 
 function formatRoleLabel(role?: string | null): string {
   if (!role) return "Member"
@@ -57,6 +58,9 @@ export function MemberDetailPage({
   const memberId = propMemberId || (params as any)?.memberId
 
   const { authState } = useAuth()
+  const isOrganizerOrAdmin =
+    authState.status === "authenticated" &&
+    (authState.role === "organizer" || authState.role === "admin")
   const isAdmin =
     authState.status === "authenticated" && authState.role === "admin"
 
@@ -67,21 +71,20 @@ export function MemberDetailPage({
     "profile"
   )
 
-  // Admin Modals
+  // Modals & Reset Credentials
   const [showRoleModal, setShowRoleModal] = useState(false)
   const [newRole, setNewRole] = useState<
-    | "member"
-    | "activist"
-    | "organizer"
-    | "admin"
-    | "umat"
-    | "aktivis"
-    | "pengurus"
+    "member" | "activist" | "organizer" | "admin"
   >("member")
   const [savingRole, setSavingRole] = useState(false)
 
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [deleting, setDeleting] = useState(false)
+
+  const [resetCredentials, setResetCredentials] =
+    useState<ResetTemporaryPasswordResponse | null>(null)
+  const [resettingPassword, setResettingPassword] = useState(false)
+  const [copiedInvite, setCopiedInvite] = useState(false)
 
   // Toast
   const [toast, setToast] = useState<{
@@ -129,18 +132,34 @@ export function MemberDetailPage({
   }
 
   async function handleResetPassword() {
-    if (!member || !isAdmin) return
-    try {
-      const res = await peopleApi.resetMemberPassword(member.id)
-      showToast(
-        res.email_sent
-          ? "Password reset. Temporary password sent to registered email."
-          : "Password reset. No temporary password delivery channel configured.",
-        res.email_sent ? "success" : "error"
-      )
-    } catch (err: any) {
-      showToast(err.message || "Failed to reset password", "error")
+    if (!member || !isOrganizerOrAdmin) return
+    if (member.is_claimed) {
+      showToast("Account already claimed. Member must use Forgot Password.", "error")
+      return
     }
+
+    try {
+      setResettingPassword(true)
+      const res = await peopleApi.resetMemberPassword(member.id)
+      setResetCredentials(res)
+      showToast("Temporary password regenerated successfully!")
+    } catch (err: any) {
+      showToast(err.message || "Failed to reset temporary password", "error")
+    } finally {
+      setResettingPassword(false)
+    }
+  }
+
+  function handleCopyWhatsAppInvitation(message?: string) {
+    if (!message) return
+    navigator.clipboard
+      .writeText(message)
+      .then(() => {
+        setCopiedInvite(true)
+        showToast("Invitation message copied for WhatsApp!")
+        setTimeout(() => setCopiedInvite(false), 2500)
+      })
+      .catch(() => showToast("Clipboard access denied.", "error"))
   }
 
   async function handleUpdateRole(e: React.FormEvent) {
@@ -314,8 +333,7 @@ export function MemberDetailPage({
                     Attendance
                   </span>
                   <span className="text-base font-bold text-[#0a0a0a]">
-                    {member.attendances?.length ?? member.total_attendance ?? 0}{" "}
-                    Events
+                    {member.attendances?.length ?? 0} Events
                   </span>
                 </div>
                 <div className="rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] p-3 text-center">
@@ -531,11 +549,7 @@ export function MemberDetailPage({
                       )}
                     </span>
                     <span>
-                      Total Attendance:{" "}
-                      {member.attendances?.length ??
-                        member.total_attendance ??
-                        0}
-                      x
+                      Total Attendance: {member.attendances?.length ?? 0}x
                     </span>
                   </div>
                 </div>
@@ -619,43 +633,64 @@ export function MemberDetailPage({
               </div>
             )}
 
-            {/* ── 6. ADMIN ACTIONS TOOLBAR ── */}
-            {isAdmin && (
+            {/* ── 6. ADMIN & ORGANIZER ACTIONS TOOLBAR ── */}
+            {isOrganizerOrAdmin && (
               <div className="space-y-3 rounded-[20px] border border-[#e5e5e5] bg-[#fffaf0] p-4 shadow-xs sm:p-5">
                 <p className="text-[11px] font-bold tracking-wider text-[#6a6a6a] uppercase">
                   Administrative Actions
                 </p>
-                <div className="grid grid-cols-3 gap-2">
+                <div className={`grid gap-2 ${isAdmin ? "grid-cols-3" : "grid-cols-1"}`}>
                   <button
                     type="button"
+                    disabled={member.is_claimed || resettingPassword}
                     onClick={handleResetPassword}
-                    className="flex h-11 cursor-pointer flex-col items-center justify-center gap-1 rounded-[12px] border border-[#e8b94a]/50 bg-[#e8b94a]/15 px-2 text-xs font-bold text-[#0a0a0a] transition-all hover:bg-[#e8b94a]/25 sm:flex-row sm:gap-1.5"
-                    title="Reset Password to default (Sekkha[4-digit]Puggala)"
+                    className={`flex h-11 flex-col items-center justify-center gap-1 rounded-[12px] border px-2 text-xs font-bold transition-all sm:flex-row sm:gap-1.5 ${
+                      member.is_claimed
+                        ? "cursor-not-allowed border-[#e5e5e5] bg-[#f0f0f0] text-[#a0a0a0] opacity-60"
+                        : "cursor-pointer border-[#e8b94a]/50 bg-[#e8b94a]/15 text-[#0a0a0a] hover:bg-[#e8b94a]/25"
+                    }`}
+                    title={
+                      member.is_claimed
+                        ? "Account has been claimed by the member. Members must use self-service Forgot Password."
+                        : "Regenerate Temporary Password (sekkha#####puggala)"
+                    }
                   >
-                    <KeyIcon className="size-3.5 text-[#0a0a0a]" />
-                    <span className="text-[11px] sm:text-xs">Reset Pass</span>
+                    <KeyIcon className="size-3.5" />
+                    <span className="text-[11px] sm:text-xs">
+                      {resettingPassword ? "Resetting..." : "Reset Temp Pass"}
+                    </span>
                   </button>
 
-                  <button
-                    type="button"
-                    onClick={() => setShowRoleModal(true)}
-                    className="flex h-11 cursor-pointer flex-col items-center justify-center gap-1 rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] px-2 text-xs font-bold text-[#0a0a0a] transition-all hover:bg-[#f5f0e0] sm:flex-row sm:gap-1.5"
-                    title="Change Account Role (Admin only)"
-                  >
-                    <ShieldCheckIcon className="size-3.5 text-[#0a0a0a]" />
-                    <span className="text-[11px] sm:text-xs">Change Role</span>
-                  </button>
+                  {isAdmin && (
+                    <button
+                      type="button"
+                      onClick={() => setShowRoleModal(true)}
+                      className="flex h-11 cursor-pointer flex-col items-center justify-center gap-1 rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] px-2 text-xs font-bold text-[#0a0a0a] transition-all hover:bg-[#f5f0e0] sm:flex-row sm:gap-1.5"
+                      title="Change Account Role (Admin only)"
+                    >
+                      <ShieldCheckIcon className="size-3.5 text-[#0a0a0a]" />
+                      <span className="text-[11px] sm:text-xs">Change Role</span>
+                    </button>
+                  )}
 
-                  <button
-                    type="button"
-                    onClick={() => setShowDeleteModal(true)}
-                    className="flex h-11 cursor-pointer flex-col items-center justify-center gap-1 rounded-[12px] border border-rose-200 bg-rose-50 px-2 text-xs font-bold text-rose-600 transition-all hover:bg-rose-100 sm:flex-row sm:gap-1.5"
-                    title="Delete Member (Admin only)"
-                  >
-                    <Trash2Icon className="size-3.5" />
-                    <span className="text-[11px] sm:text-xs">Delete</span>
-                  </button>
+                  {isAdmin && (
+                    <button
+                      type="button"
+                      onClick={() => setShowDeleteModal(true)}
+                      className="flex h-11 cursor-pointer flex-col items-center justify-center gap-1 rounded-[12px] border border-rose-200 bg-rose-50 px-2 text-xs font-bold text-rose-600 transition-all hover:bg-rose-100 sm:flex-row sm:gap-1.5"
+                      title="Delete Member (Admin only)"
+                    >
+                      <Trash2Icon className="size-3.5" />
+                      <span className="text-[11px] sm:text-xs">Delete</span>
+                    </button>
+                  )}
                 </div>
+
+                {member.is_claimed && (
+                  <p className="text-[11px] text-[#6a6a6a]">
+                    ℹ️ Account has been claimed by the member. Temporary password reset is disabled for member privacy.
+                  </p>
+                )}
               </div>
             )}
           </>
@@ -757,6 +792,149 @@ export function MemberDetailPage({
       )}
 
       {/* ── MODAL: CREDENTIALS POPUP AFTER RESET ── */}
+      {resetCredentials && (
+        <div className="fixed inset-0 z-50 flex animate-in items-center justify-center bg-black/60 p-3.5 backdrop-blur-xs fade-in sm:p-4">
+          <div className="relative max-h-[90vh] w-full max-w-lg space-y-4 overflow-y-auto rounded-[24px] border border-[#e5e5e5] bg-[#fffaf0] p-5 text-left shadow-2xl sm:p-6">
+            <div className="flex items-center gap-3 border-b border-[#e5e5e5] pb-3">
+              <div className="flex size-10 items-center justify-center rounded-[12px] bg-emerald-500 text-white shadow-xs">
+                <CheckCircleIcon className="size-6" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-[#0a0a0a] sm:text-lg">
+                  Temporary Password Regenerated!
+                </h3>
+                <p className="text-xs text-[#6a6a6a]">
+                  Share these new credentials with the member so they can log in.
+                </p>
+              </div>
+            </div>
+
+            {/* Credentials Card */}
+            <div className="space-y-3 rounded-[16px] border border-[#e8b94a]/40 bg-[#faf5e8] p-4">
+              <div>
+                <span className="block text-[10px] font-bold tracking-wider text-[#6a6a6a] uppercase">
+                  Full Name
+                </span>
+                <span className="text-sm font-bold text-[#0a0a0a]">
+                  {resetCredentials.name}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 border-t border-[#e6decb]/80 pt-2.5">
+                <div>
+                  <span className="block text-[10px] font-bold tracking-wider text-[#6a6a6a] uppercase">
+                    Member ID
+                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-mono text-sm font-bold text-[#1a3a3a]">
+                      {resetCredentials.user_number}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleCopy(resetCredentials.user_number)
+                      }
+                      className="cursor-pointer text-[#6a6a6a] hover:text-[#0a0a0a]"
+                      title="Copy Member ID"
+                    >
+                      <CopyIcon className="size-3" />
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <span className="block text-[10px] font-bold tracking-wider text-[#6a6a6a] uppercase">
+                    Username
+                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-mono text-sm font-bold text-[#1a3a3a]">
+                      @{resetCredentials.username}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleCopy(resetCredentials.username)
+                      }
+                      className="cursor-pointer text-[#6a6a6a] hover:text-[#0a0a0a]"
+                      title="Copy Username"
+                    >
+                      <CopyIcon className="size-3" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t border-[#e6decb]/80 pt-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="block text-[10px] font-bold tracking-wider text-[#6a6a6a] uppercase">
+                    New Temporary Password
+                  </span>
+                  <span className="text-[10px] font-semibold text-rose-600">
+                    *Shown once only
+                  </span>
+                </div>
+                <div className="mt-1 flex items-center justify-between rounded-[8px] border border-[#e5e5e5] bg-[#fffaf0] px-3 py-2">
+                  <span className="font-mono text-xs font-extrabold text-[#0a0a0a] select-all sm:text-sm">
+                    {resetCredentials.temporary_password}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleCopy(resetCredentials.temporary_password)
+                    }
+                    className="inline-flex cursor-pointer items-center gap-1 text-xs font-bold text-[#0a0a0a] hover:underline"
+                  >
+                    <CopyIcon className="size-3" />
+                    <span>Copy</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* WhatsApp Invite Action */}
+            <div className="space-y-2">
+              <Button
+                variant="filled"
+                type="button"
+                onClick={() =>
+                  handleCopyWhatsAppInvitation(
+                    resetCredentials.whatsapp_invite_message ||
+                      resetCredentials.copy_template
+                  )
+                }
+                className="w-full gap-2 rounded-[12px] bg-emerald-600 text-white hover:bg-emerald-700"
+              >
+                {copiedInvite ? (
+                  <CheckIcon className="size-4" />
+                ) : (
+                  <Share2Icon className="size-4" />
+                )}
+                <span>
+                  {copiedInvite
+                    ? "Copied for WhatsApp!"
+                    : "Copy WhatsApp Invitation Message"}
+                </span>
+              </Button>
+
+              <p className="text-center text-[11px] text-[#6a6a6a]">
+                Member can activate their account and set permanent password at{" "}
+                <strong>/login</strong>.
+              </p>
+            </div>
+
+            <div className="flex justify-end border-t border-[#e5e5e5] pt-3">
+              <Button
+                variant="outlined"
+                type="button"
+                onClick={() => setResetCredentials(null)}
+                className="rounded-[12px] px-6"
+              >
+                Done
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   )
 }

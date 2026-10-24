@@ -1,13 +1,17 @@
-# PRD: People Management & Account Linking (Pre-Provisioned Users & OAuth Linking) — Sekkha Apps
+# [DEPRECATED] PRD: People Management & Account Linking — Sekkha Apps
+
+> [!WARNING]
+> **STATUS: DEPRECATED / SUPERSEDED**  
+> Dokumen arsitektur lama ini telah didepresiasi dan digantikan oleh alur modern:
+> 1. **Pre-provisioning People & Credentials**: Ditangani secara lengkap dan terstandarisasi di [prd-sekkha/peoples/people-management.md](file:///c:/Users/ferdi/Documents/ferdinand_dev/PersonalProject/sekkhaApps/prd-sekkha/peoples/people-management.md).
+> 2. **Account Claim & Onboarding**: Menggunakan alur claim mandiri terintegrasi di rute `/onboarding` sesuai [prd-sekkha/peoples/people-management.md](file:///c:/Users/ferdi/Documents/ferdinand_dev/PersonalProject/sekkhaApps/prd-sekkha/peoples/people-management.md).
+> 3. **Digital Member Card & Settings**: Ditangani di [prd-sekkha/general/users/profile-and-settings.md](file:///c:/Users/ferdi/Documents/ferdinand_dev/PersonalProject/sekkhaApps/prd-sekkha/general/users/profile-and-settings.md).
 
 | Metadata | Detail |
 | --- | --- |
-| **Dokumen** | Product Requirement Document (PRD) |
-| **Fitur** | People Management (Pre-provisioning User), Auto-Linking OAuth 2.0, & Post-Login Account Linking (Klaim via Profil) |
-| **Aplikasi** | Sekkha Apps (Frontend & Backend) |
-| **Versi** | 1.0.0 |
-| **Status** | Approved / Ready for Development |
-| **Referensi Terkait** | `prd-sekkha/auth/auth.md`, `prd-sekkha/profile/profile.md`, `prd-sekkha/event/abensiEvent.md` |
+| **Dokumen** | Product Requirement Document (PRD) — *ARCHIVED* |
+| **Fitur** | Legacy People Management & Account Linking |
+| **Status** | Deprecated / Archived |
 
 ---
 

@@ -28,8 +28,9 @@ usersRouter.get("/me/attendances", requireAuth, userControllers.getAttendances)
 // GET /api/users/me/streak — Current & longest weekly streak
 usersRouter.get("/me/streak", requireAuth, userControllers.getStreak)
 
-// GET /api/users/me/point-transactions — Point mutation history
+// GET /api/users/me/point-transactions & /api/users/me/points-history — Point mutation history
 usersRouter.get("/me/point-transactions", requireAuth, userControllers.getPointTransactions)
+usersRouter.get("/me/points-history", requireAuth, userControllers.getPointTransactions)
 
 // GET /api/users/me/export — Data privacy export (GDPR / UU PDP)
 usersRouter.get("/me/export", requireAuth, userControllers.exportData)

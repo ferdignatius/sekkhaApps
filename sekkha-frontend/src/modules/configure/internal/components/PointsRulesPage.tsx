@@ -5,16 +5,19 @@ import {
   ShieldCheckIcon,
   FlameIcon,
   CalendarDaysIcon,
-  AwardIcon,
   AlertCircleIcon,
+  InfoIcon,
+  CheckCircleIcon,
+  SparklesIcon,
+  SlidersIcon,
 } from "lucide-react"
+import { Link } from "@tanstack/react-router"
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
 import { ResponsiveFormModal } from "@/components/common/ResponsiveFormModal"
 import { useAuth } from "@/modules/auth"
 import { pointRulesApi } from "../api/configureApi"
 import type { PointRuleDto } from "../api/configureApi"
 
-// Hardcoded structured rule sections
 interface RuleSectionConfig {
   id: string
   title: string
@@ -24,33 +27,27 @@ interface RuleSectionConfig {
   ruleCodes: string[]
 }
 
-const RULE_SECTIONS: RuleSectionConfig[] = [
+const SYSTEM_RULE_SECTIONS: RuleSectionConfig[] = [
   {
     id: "attendance_section",
-    title: "1. Event Attendance Points Rules",
+    title: "1. Global Attendance Rules",
     subtitle:
-      "Points earned directly by members when logging attendance in service sessions.",
+      "Baseline points awarded to members when scanning attendance at standard weekly services.",
     icon: <CalendarDaysIcon className="size-5 text-[#0a0a0a]" />,
-    badge: "Event Attendance",
-    ruleCodes: ["attendance_rutin", "attendance_special"],
-  },
-  {
-    id: "streak_section",
-    title: "2. Weekly Streak & Retention Rules",
-    subtitle:
-      "Appreciation points for members maintaining consecutive attendance consistency.",
-    icon: <FlameIcon className="size-5 text-[#e8b94a]" />,
-    badge: "Streak Gamification",
-    ruleCodes: ["streak_weekly_bonus"],
+    badge: "Attendance",
+    ruleCodes: ["attendance_rutin"],
   },
   {
     id: "engagement_section",
-    title: "3. New Member Welcome Rules",
+    title: "2. Streak & Member Engagement Rules",
     subtitle:
-      "Motivational bonus points for first-time attendees visiting the vihara.",
-    icon: <AwardIcon className="size-5 text-[#b8a4ed]" />,
+      "Appreciation points for 4-week attendance consistency and verified claimed members' first attendance.",
+    icon: <FlameIcon className="size-5 text-[#e8b94a]" />,
     badge: "Engagement",
-    ruleCodes: ["first_attendance_bonus"],
+    ruleCodes: [
+      "streak_monthly_bonus",
+      "first_attendance_bonus",
+    ],
   },
 ]
 
@@ -63,13 +60,13 @@ export function PointsRulesPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Edit Modal State
-  const [modalOpen, setModalOpen] = useState(false)
+  // Tune Policy Modal State
   const [editingRule, setEditingRule] = useState<PointRuleDto | null>(null)
-  const [editForm, setEditForm] = useState({
+  const [formData, setFormData] = useState({
     label: "",
     points: 50,
     description: "",
+    is_active: true,
   })
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
@@ -92,44 +89,55 @@ export function PointsRulesPage() {
     }
   }
 
-  function handleOpenEdit(r: PointRuleDto) {
+  function handleOpenTune(r: PointRuleDto) {
     setEditingRule(r)
-    setEditForm({
+    setFormData({
       label: r.label,
       points: r.points,
       description: r.description || "",
+      is_active: r.is_active !== false,
     })
     setFormError(null)
-    setModalOpen(true)
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!isAdmin || !editingRule) return
 
-    if (editForm.points < 0) {
-      setFormError("Point value cannot be negative.")
+    const pointsNum = Number(formData.points)
+    if (isNaN(pointsNum) || pointsNum < 0 || pointsNum > 100) {
+      setFormError(
+        "Point value must be between 0 and 100 to protect point economy from inflation."
+      )
+      return
+    }
+
+    if (!formData.label.trim()) {
+      setFormError("Rule label is required.")
       return
     }
 
     try {
       setSubmitting(true)
       setFormError(null)
+
       await pointRulesApi.update(editingRule.id, {
-        label: editForm.label.trim(),
-        points: Number(editForm.points),
-        description: editForm.description.trim() || null,
+        label: formData.label.trim(),
+        points: pointsNum,
+        description: formData.description.trim() || null,
+        is_active: formData.is_active,
       })
+
       await loadRules()
-      setModalOpen(false)
+      setEditingRule(null)
     } catch (err: any) {
+      console.error("Failed to save point rule:", err)
       setFormError(err.message || "Failed to save point rule changes.")
     } finally {
       setSubmitting(false)
     }
   }
 
-  // Helper to find rule by code
   function getRuleByCode(code: string): PointRuleDto | undefined {
     return rules.find((r) => r.code === code)
   }
@@ -140,7 +148,7 @@ export function PointsRulesPage() {
         items={[
           { label: "Configure" },
           { label: "Rules" },
-          { label: "Points Rules" },
+          { label: "Point Rules" },
         ]}
       />
 
@@ -148,40 +156,51 @@ export function PointsRulesPage() {
         {/* Header Section */}
         <div className="flex flex-col gap-4 border-b border-[#e5e5e5] pb-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-[12px] bg-[#0a0a0a] text-white shadow-xs">
-              <ZapIcon className="size-5 text-[#e8b94a]" />
+            <div className="flex size-11 shrink-0 items-center justify-center rounded-[14px] bg-[#0a0a0a] text-white shadow-xs">
+              <ZapIcon className="size-6 text-[#e8b94a]" />
             </div>
             <div className="min-w-0">
               <h1 className="text-base font-bold text-[#0a0a0a] sm:text-xl">
-                System Points Rules
+                Point Rules & Economy Policy
               </h1>
               <p className="text-xs text-[#6a6a6a]">
-                Core system point distribution rules. Point values and trigger
-                descriptions are customizable.
+                Fixed system gamification engine rules with anti-inflation parameter tuning.
               </p>
             </div>
           </div>
 
-          <div className="flex shrink-0 items-center gap-2 rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] px-3.5 py-2 text-xs font-bold text-[#0a0a0a]">
-            <ShieldCheckIcon className="size-4 text-[#0a0a0a]" />
-            <span>Core Rules System</span>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex shrink-0 items-center gap-2 rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] px-3.5 py-2 text-xs font-bold text-[#0a0a0a]">
+              <ShieldCheckIcon className="size-4 text-[#0a0a0a]" />
+              <span>{rules.length} Fixed Engine Policies</span>
+            </div>
           </div>
         </div>
 
-        {/* Info Banner */}
+        {/* Anti-Inflation Economy Banner (PRD Section 1 & Section 6) */}
         <div className="flex items-start gap-3 rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] p-4 text-xs text-[#0a0a0a] shadow-xs">
-          <ZapIcon className="mt-0.5 size-5 shrink-0 text-[#e8b94a]" />
-          <div className="space-y-0.5">
+          <InfoIcon className="mt-0.5 size-5 shrink-0 text-[#e8b94a]" />
+          <div className="space-y-1">
             <p className="text-xs font-bold text-[#0a0a0a]">
-              Automatic Calculation Mechanism
+              Point Scarcity & Anti-Inflation Guardrail
             </p>
             <p className="text-xs leading-relaxed text-[#6a6a6a]">
-              Point values below are automatically awarded when organizers
-              conclude event attendance sessions, calculate streaks, or welcome
-              new members.
+              Points represent genuine effort and dedication. To prevent points from becoming cheapened vanity metrics, every rule is strictly capped between <strong>0 and 100 points</strong>, paired with a maximum daily accumulation limit of <strong>150 points per member</strong>.
             </p>
           </div>
         </div>
+
+        {!isAdmin && (
+          <div
+            role="status"
+            className="flex items-start gap-3 rounded-[16px] border border-[#e8b94a]/50 bg-[#e8b94a]/10 p-4 text-xs text-[#3a3a3a]"
+          >
+            <ShieldCheckIcon className="mt-0.5 size-5 shrink-0 text-[#855f05]" />
+            <p className="leading-relaxed">
+              <strong className="text-[#0a0a0a]">Read-only access.</strong> You can view point rule settings, but only an Admin can tune parameter values and toggle active status.
+            </p>
+          </div>
+        )}
 
         {/* Error Alert */}
         {error && (
@@ -191,10 +210,10 @@ export function PointsRulesPage() {
           </div>
         )}
 
-        {/* Hardcoded Sections Container */}
+        {/* Rule Sections */}
         {loading ? (
           <div className="space-y-4">
-            {[1, 2, 3].map((i) => (
+            {[1, 2].map((i) => (
               <div
                 key={i}
                 className="h-44 animate-pulse rounded-[20px] border border-[#e5e5e5] bg-[#fffaf0] p-6 shadow-xs"
@@ -202,46 +221,49 @@ export function PointsRulesPage() {
             ))}
           </div>
         ) : (
-          <div className="space-y-5">
-            {RULE_SECTIONS.map((section) => (
-              <div
-                key={section.id}
-                className="space-y-4 rounded-[20px] border border-[#e5e5e5] bg-[#fffaf0] p-5 shadow-xs sm:p-6"
-              >
-                {/* Section Header */}
-                <div className="flex flex-col gap-2 border-b border-[#e5e5e5] pb-3.5 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <div className="shrink-0 rounded-[10px] border border-[#e5e5e5] bg-[#faf5e8] p-2">
-                      {section.icon}
+          <div className="space-y-6">
+            {SYSTEM_RULE_SECTIONS.map((section) => {
+              const sectionRules = section.ruleCodes
+                .map((code) => getRuleByCode(code))
+                .filter((r): r is PointRuleDto => Boolean(r))
+
+              if (sectionRules.length === 0) return null
+
+              return (
+                <div
+                  key={section.id}
+                  className="space-y-4 rounded-[20px] border border-[#e5e5e5] bg-[#fffaf0] p-5 shadow-xs sm:p-6"
+                >
+                  {/* Section Header */}
+                  <div className="flex flex-col gap-2 border-b border-[#e5e5e5] pb-3.5 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="shrink-0 rounded-[10px] border border-[#e5e5e5] bg-[#faf5e8] p-2">
+                        {section.icon}
+                      </div>
+                      <div>
+                        <h2 className="text-sm font-bold text-[#0a0a0a] sm:text-base">
+                          {section.title}
+                        </h2>
+                        <p className="text-xs text-[#6a6a6a]">
+                          {section.subtitle}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <h2 className="text-sm font-bold text-[#0a0a0a] sm:text-base">
-                        {section.title}
-                      </h2>
-                      <p className="text-xs text-[#6a6a6a]">
-                        {section.subtitle}
-                      </p>
-                    </div>
+                    <span className="self-start rounded-full border border-[#e5e5e5] bg-[#faf5e8] px-2.5 py-0.5 text-[11px] font-bold text-[#0a0a0a] sm:self-auto">
+                      {section.badge}
+                    </span>
                   </div>
-                  <span className="self-start rounded-full border border-[#e5e5e5] bg-[#faf5e8] px-2.5 py-0.5 text-[11px] font-bold text-[#0a0a0a] sm:self-auto">
-                    {section.badge}
-                  </span>
-                </div>
 
-                {/* Section Rules Cards */}
-                <div className="grid gap-3.5 sm:grid-cols-2">
-                  {section.ruleCodes.map((code) => {
-                    const rule = getRuleByCode(code)
-                    if (!rule) return null
-
-                    return (
+                  {/* Section Rules Cards */}
+                  <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
+                    {sectionRules.map((rule) => (
                       <div
                         key={rule.id}
-                        className="flex flex-col justify-between space-y-3 rounded-[14px] border border-[#e5e5e5] bg-[#faf5e8] p-4 transition-all hover:bg-[#faf5e8]/90"
+                        className="flex flex-col justify-between space-y-3 rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] p-4.5 transition-all hover:border-[#0a0a0a]/30"
                       >
-                        <div className="space-y-2">
+                        <div className="space-y-2.5">
                           <div className="flex items-center justify-between gap-2">
-                            <code className="rounded-[6px] border border-[#e5e5e5] bg-[#fffaf0] px-1.5 py-0.5 font-mono text-[10px] text-[#6a6a6a]">
+                            <code className="rounded-[6px] border border-[#e5e5e5] bg-[#fffaf0] px-2 py-0.5 font-mono text-[10px] font-bold text-[#6a6a6a]">
                               {rule.code}
                             </code>
                             <div className="inline-flex items-baseline gap-1 rounded-[8px] bg-[#0a0a0a] px-2.5 py-0.5 font-mono text-xs font-bold text-white shadow-xs">
@@ -253,46 +275,91 @@ export function PointsRulesPage() {
                           </div>
 
                           <div className="space-y-1">
-                            <h3 className="text-xs font-bold text-[#0a0a0a] sm:text-sm">
-                              {rule.label}
-                            </h3>
+                            <div className="flex items-center gap-1.5">
+                              <h3 className="text-xs font-bold text-[#0a0a0a] sm:text-sm">
+                                {rule.label}
+                              </h3>
+                              {rule.is_active === false && (
+                                <span className="rounded bg-rose-100 px-1.5 py-0.2 text-[9px] font-bold text-rose-700">
+                                  Disabled
+                                </span>
+                              )}
+                            </div>
                             <p className="text-xs leading-relaxed text-[#6a6a6a]">
-                              {rule.description || "No additional description."}
+                              {rule.description || "No additional description provided."}
                             </p>
                           </div>
                         </div>
 
                         <div className="mt-3 flex items-center justify-between border-t border-[#e5e5e5] pt-2.5">
-                          <span className="text-[11px] font-medium text-[#6a6a6a]">
-                            System Core Rule
+                          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-800">
+                            <CheckCircleIcon className="size-3 text-emerald-600" />
+                            <span>Engine Policy</span>
                           </span>
                           {isAdmin && (
                             <button
                               type="button"
-                              onClick={() => handleOpenEdit(rule)}
-                              className="flex h-8 cursor-pointer items-center gap-1 rounded-[8px] border border-[#e5e5e5] bg-[#fffaf0] px-2.5 text-xs font-bold text-[#0a0a0a] transition-colors hover:bg-[#faf5e8]"
+                              onClick={() => handleOpenTune(rule)}
+                              aria-label={`Tune ${rule.label}`}
+                              className="flex items-center gap-1 rounded-[8px] border border-[#e5e5e5] bg-[#fffaf0] px-2.5 py-1 text-[11px] font-bold text-[#0a0a0a] shadow-xs transition-colors hover:bg-[#faf5e8]"
                             >
-                              <PencilIcon className="size-3.5" />
-                              <span>Edit Value</span>
+                              <PencilIcon className="size-3" />
+                              <span>Tune Policy</span>
                             </button>
                           )}
                         </div>
                       </div>
-                    )
-                  })}
+                    ))}
+                  </div>
+                </div>
+              )
+            })}
+
+            {/* Architecture Guidance Card */}
+            <div className="rounded-[20px] border border-[#e5e5e5] bg-[#faf5e8] p-5 shadow-xs">
+              <div className="flex items-start gap-3">
+                <SparklesIcon className="mt-0.5 size-5 shrink-0 text-[#e8b94a]" />
+                <div className="space-y-1.5">
+                  <h3 className="text-xs font-bold text-[#0a0a0a] sm:text-sm">
+                    Looking to reward new activities or youth assignments?
+                  </h3>
+                  <p className="text-xs leading-relaxed text-[#6a6a6a]">
+                    Point Rules above govern automatic core platform policies (like baseline attendance, 4-week consistency streak, and verified claimed members).
+                    To introduce custom point rewards for your temple:
+                  </p>
+                  <div className="flex flex-wrap gap-2 pt-1 text-xs">
+                    <Link
+                      to="/configure/master/event-type"
+                      className="inline-flex items-center gap-1 rounded-[10px] border border-[#e5e5e5] bg-[#fffaf0] px-3 py-1.5 font-bold text-[#0a0a0a] shadow-xs hover:bg-[#f0ebd8]"
+                    >
+                      <CalendarDaysIcon className="size-3.5 text-[#0a0a0a]" />
+                      <span>Configure Event Types</span>
+                    </Link>
+                    <Link
+                      to="/configure/master/badge-activity"
+                      className="inline-flex items-center gap-1 rounded-[10px] border border-[#e5e5e5] bg-[#fffaf0] px-3 py-1.5 font-bold text-[#0a0a0a] shadow-xs hover:bg-[#f0ebd8]"
+                    >
+                      <SlidersIcon className="size-3.5 text-[#0a0a0a]" />
+                      <span>Configure Badge Activities (Service Duties)</span>
+                    </Link>
+                  </div>
                 </div>
               </div>
-            ))}
+            </div>
           </div>
         )}
       </div>
 
-      {/* Edit Rule Modal */}
+      {/* Tune Policy Modal */}
       <ResponsiveFormModal
-        isOpen={modalOpen && isAdmin}
-        onClose={() => setModalOpen(false)}
-        title="Edit Point Rule Value"
-        description={`Update points value for ${editingRule?.label || "this rule"}.`}
+        isOpen={Boolean(editingRule) && isAdmin}
+        onClose={() => setEditingRule(null)}
+        title="Tune Engine Point Policy"
+        description={
+          editingRule
+            ? `Adjust policy parameters and anti-inflation weight for "${editingRule.label}".`
+            : "Update point rule policy."
+        }
       >
         <form onSubmit={handleSubmit} className="space-y-4 text-left font-sans">
           {formError && (
@@ -303,59 +370,97 @@ export function PointsRulesPage() {
           )}
 
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-[#0a0a0a]">
-              Rule Name *
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-[#0a0a0a]">
+                System Code
+              </label>
+              <span className="text-[10px] font-bold text-[#6a6a6a]">
+                FIXED LEDGER IDENTIFIER
+              </span>
+            </div>
             <input
-              required
-              value={editForm.label}
-              onChange={(e) =>
-                setEditForm({ ...editForm, label: e.target.value })
-              }
-              className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-xs text-[#0a0a0a] shadow-xs transition-all outline-none focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] sm:text-sm"
+              disabled
+              readOnly
+              value={editingRule?.code || ""}
+              className="h-11 w-full cursor-not-allowed rounded-[12px] border border-[#e5e5e5] bg-[#f5f0e6] px-3.5 font-mono text-xs font-bold text-[#6a6a6a] shadow-xs outline-none sm:text-sm"
             />
           </div>
 
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-[#0a0a0a]">
-              Points Awarded (+Points) *
+              Rule Label <span className="text-rose-500">*</span>
             </label>
+            <input
+              required
+              value={formData.label}
+              onChange={(e) =>
+                setFormData({ ...formData, label: e.target.value })
+              }
+              placeholder="e.g. Weekly Regular Puja"
+              className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-xs text-[#0a0a0a] shadow-xs transition-all outline-none focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] sm:text-sm"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-[#0a0a0a]">
+                Awarded Points (+Points) <span className="text-rose-500">*</span>
+              </label>
+              <span className="text-[10px] font-bold text-[#6a6a6a]">
+                CEILING: 0 – 100 PTS
+              </span>
+            </div>
             <input
               type="number"
               required
               min={0}
-              max={10000}
-              value={editForm.points}
+              max={100}
+              value={formData.points}
               onChange={(e) =>
-                setEditForm({ ...editForm, points: Number(e.target.value) })
+                setFormData({ ...formData, points: Number(e.target.value) })
               }
-              className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-xs text-[#0a0a0a] shadow-xs transition-all outline-none focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] sm:text-sm"
+              className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-xs font-bold text-[#0a0a0a] shadow-xs transition-all outline-none focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] sm:text-sm"
             />
-            <p className="text-[11px] text-[#6a6a6a]">
-              Points will be automatically awarded to member accounts upon
-              trigger fulfillment.
+            <p className="text-[10px] text-[#6a6a6a]">
+              Values are capped at 100 to prevent point inflation and maintain healthy gamification economy.
             </p>
           </div>
 
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-[#0a0a0a]">
-              Description / Details
+              Description & Operational Context
             </label>
             <textarea
-              rows={3}
-              value={editForm.description}
+              rows={2}
+              value={formData.description}
               onChange={(e) =>
-                setEditForm({ ...editForm, description: e.target.value })
+                setFormData({ ...formData, description: e.target.value })
               }
               placeholder="Describe when and how these points are awarded..."
-              className="w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 py-2.5 text-xs text-[#0a0a0a] shadow-xs transition-all outline-none focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] sm:text-sm"
+              className="w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 py-2 text-xs text-[#0a0a0a] shadow-xs transition-all outline-none focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] sm:text-sm"
             />
+          </div>
+
+          <div className="rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] p-3">
+            <label className="flex cursor-pointer items-center gap-2.5">
+              <input
+                type="checkbox"
+                checked={formData.is_active}
+                onChange={(e) =>
+                  setFormData({ ...formData, is_active: e.target.checked })
+                }
+                className="size-4 rounded border-[#e5e5e5] text-[#0a0a0a] focus:ring-[#0a0a0a]"
+              />
+              <span className="text-xs font-bold text-[#0a0a0a]">
+                Rule is Active in System
+              </span>
+            </label>
           </div>
 
           <div className="flex items-center justify-end gap-2 border-t border-[#e5e5e5] pt-3">
             <button
               type="button"
-              onClick={() => setModalOpen(false)}
+              onClick={() => setEditingRule(null)}
               className="h-10 cursor-pointer rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-4 text-xs font-bold text-[#0a0a0a] transition-colors hover:bg-[#faf5e8]"
             >
               Cancel
@@ -365,7 +470,7 @@ export function PointsRulesPage() {
               disabled={submitting}
               className="h-10 cursor-pointer rounded-[12px] bg-[#0a0a0a] px-5 text-xs font-bold text-white shadow-xs transition-colors hover:bg-[#1f1f1f] disabled:opacity-50"
             >
-              {submitting ? "Saving..." : "Save Changes"}
+              {submitting ? "Saving..." : "Save Policy"}
             </button>
           </div>
         </form>

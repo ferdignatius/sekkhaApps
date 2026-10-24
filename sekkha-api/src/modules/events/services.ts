@@ -221,10 +221,8 @@ export const eventServices = {
       if (status === "closed") {
         const attendees = await tx.attendance.findMany({ where: { eventId: id } })
         if (attendees.length > 0) {
-          const typeCode = currentEvent.type?.code || "rutin"
-          const ruleCode = typeCode === "special" ? "attendance_special" : "attendance_rutin"
-          const activeRule = await tx.pointRule.findUnique({ where: { code: ruleCode } }).catch(() => null)
-          const defaultPoints = activeRule?.points ?? (typeCode === "special" ? 100 : 50)
+          const activeRule = await tx.pointRule.findUnique({ where: { code: "attendance_rutin" } }).catch(() => null)
+          const defaultPoints = currentEvent.type?.defaultPointReward ?? activeRule?.points ?? 50
 
           const existingTxs = await tx.pointTransaction.findMany({
             where: { referenceId: { in: attendees.map((a) => a.id) } },
@@ -360,8 +358,7 @@ export const eventServices = {
       }
     }
 
-    const typeCode = event.type?.code || "rutin"
-    const pointsEarned = typeCode === "special" ? 100 : 50
+    const pointsEarned = event.type?.defaultPointReward ?? 50
 
     let attendance
     try {

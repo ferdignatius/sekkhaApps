@@ -16,17 +16,17 @@ async function main() {
   console.log("🌱 Seeding 3NF database...")
 
   // Clean existing tables in reverse dependency order
-  await prisma.pointTransaction.deleteMany().catch(() => {})
-  await prisma.attendance.deleteMany().catch(() => {})
-  await prisma.badgeActivity.deleteMany().catch(() => {})
-  await prisma.event.deleteMany().catch(() => {})
-  await prisma.userStats.deleteMany().catch(() => {})
-  await prisma.userProfile.deleteMany().catch(() => {})
-  await prisma.user.deleteMany().catch(() => {})
-  await prisma.pointRule.deleteMany().catch(() => {})
-  await prisma.season.deleteMany().catch(() => {})
-  await prisma.eventType.deleteMany().catch(() => {})
-  await prisma.school.deleteMany().catch(() => {})
+  await prisma.pointTransaction.deleteMany().catch(() => { })
+  await prisma.attendance.deleteMany().catch(() => { })
+  await prisma.badgeActivity.deleteMany().catch(() => { })
+  await prisma.event.deleteMany().catch(() => { })
+  await prisma.userStats.deleteMany().catch(() => { })
+  await prisma.userProfile.deleteMany().catch(() => { })
+  await prisma.user.deleteMany().catch(() => { })
+  await prisma.pointRule.deleteMany().catch(() => { })
+  await prisma.season.deleteMany().catch(() => { })
+  await prisma.eventType.deleteMany().catch(() => { })
+  await prisma.school.deleteMany().catch(() => { })
 
   // ── 1. Master Data: Schools ─────────────────────────────────────────────────
   console.log("🏫 Seeding Master Schools...")
@@ -255,7 +255,7 @@ async function main() {
       username: "umat",
       password: await hash(umatPasswordRaw),
       role: Role.member,
-      userNumber: BigInt(26010101),
+      userNumber: "26010101",
       onboardingCompleted: true,
       profile: {
         create: {
@@ -286,7 +286,7 @@ async function main() {
       username: "aktivis",
       password: await hash(aktivisPasswordRaw),
       role: Role.activist,
-      userNumber: BigInt(26010102),
+      userNumber: "26010102",
       onboardingCompleted: true,
       profile: {
         create: {
@@ -317,7 +317,7 @@ async function main() {
       username: "pengurus",
       password: await hash(pengurusPasswordRaw),
       role: Role.organizer,
-      userNumber: BigInt(26010103),
+      userNumber: "26010103",
       onboardingCompleted: true,
       profile: {
         create: {
@@ -347,7 +347,7 @@ async function main() {
       username: "admin",
       password: await hash(adminPasswordRaw),
       role: Role.admin,
-      userNumber: BigInt(26010104),
+      userNumber: "26010104",
       onboardingCompleted: true,
       profile: {
         create: {
@@ -377,7 +377,7 @@ async function main() {
       username: "hendra",
       password: await hash("admin"),
       role: Role.member,
-      userNumber: BigInt(26010105),
+      userNumber: "26010105",
       isClaimed: false,
       onboardingCompleted: true,
       profile: {

@@ -9,7 +9,7 @@ import { api } from "@/lib/api"
 export interface EventTypeDto {
   id: string
   code: string
-  name: string
+  label: string
   color: string
   description?: string | null
   default_point_reward: number
@@ -50,12 +50,30 @@ export const seasonsApi = {
 // ─── Event Types ─────────────────────────────────────────────────────────────
 
 export const eventTypesApi = {
-  list: () => api.get<EventTypeDto[]>("/configure/event-types"),
-  create: (data: Omit<EventTypeDto, "id" | "created_at" | "updated_at">) =>
-    api.post<EventTypeDto>("/configure/event-types", data),
-  update: (id: string, data: Partial<EventTypeDto>) =>
-    api.patch<EventTypeDto>(`/configure/event-types/${id}`, data),
-  remove: (id: string) => api.delete(`/configure/event-types/${id}`),
+  list: (params?: { is_active?: boolean }) => {
+    const query =
+      params?.is_active !== undefined ? `?is_active=${params.is_active}` : ""
+    return api.get<EventTypeDto[]>(`/configure/event-types${query}`)
+  },
+  create: (data: {
+    code?: string
+    label: string
+    color: string
+    description?: string | null
+    default_point_reward?: number
+    is_active?: boolean
+  }) => api.post<{ id: string; code: string; label?: string }>("/configure/event-types", data),
+  update: (
+    id: string,
+    data: {
+      label?: string
+      color?: string
+      description?: string | null
+      default_point_reward?: number
+      is_active?: boolean
+    }
+  ) => api.put<{ id: string; code: string; label?: string }>(`/configure/event-types/${id}`, data),
+  remove: (id: string) => api.delete<{ success: boolean; message?: string }>(`/configure/event-types/${id}`),
 }
 
 // ─── Point Rules (Rules: Non-deletable, Editable) ────────────────────────────

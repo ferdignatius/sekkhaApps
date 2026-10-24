@@ -34,8 +34,20 @@ export const DEFAULT_POINT_RULES = [
 export const configureModels = {
 
   // Event Types
-  findEventTypes() {
-    return prisma.eventType.findMany({ orderBy: { label: "asc" } })
+  findEventTypes(where?: { isActive?: boolean }) {
+    return prisma.eventType.findMany({
+      where: where?.isActive !== undefined ? { isActive: where.isActive } : undefined,
+      orderBy: [{ isActive: "desc" }, { label: "asc" }],
+    })
+  },
+  findEventTypeById(id: string) {
+    return prisma.eventType.findUnique({ where: { id } })
+  },
+  findEventTypeByCode(code: string) {
+    return prisma.eventType.findUnique({ where: { code } })
+  },
+  countEventsByEventTypeId(id: string) {
+    return prisma.event.count({ where: { eventTypeId: id } })
   },
   createEventType(data: any) {
     return prisma.eventType.create({ data })

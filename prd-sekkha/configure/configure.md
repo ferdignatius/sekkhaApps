@@ -79,14 +79,19 @@ Berdasarkan `sekkha-frontend/src/modules/configure/internal/components/` dan `se
 
 ## 5. Functional Requirements
 
-### 5.1. CRUD Generic
+### 5.1. CRUD Generic & Standar Desain Responsif
 
-Setiap sub-halaman mengikuti pola:
+Setiap sub-halaman Master Data mengikuti pola arsitektur antarmuka Clay:
 
-- **List**: tabel dengan kolom sesuai entitas + filter + search + pagination.
-- **Create**: modal/form dengan field sesuai schema + Zod validation.
-- **Edit**: modal/prefill dengan data existing.
-- **Delete**: konfirmasi dialog + soft-delete (field `deleted_at`) atau hard-delete sesuai kasus.
+- **List View Responsif (Card Grid)**: Menggunakan **Responsive Clay Card Grid Layout (`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4`)** menggantikan tabel statis konvensional. Desain ini memastikan:
+  - Mobile (`< 640px`): Menumpuk vertikal 1 kolom (`grid-cols-1`), bebas clipping horizontal, dan memiliki target sentuh minimal 44px.
+  - Tablet (`640px - 1024px`): 2 kolom (`sm:grid-cols-2`).
+  - Desktop (`> 1024px`): 3 kolom (`lg:grid-cols-3`).
+  - Setiap kartu memuat identitas visual entitas (aksen warna/badge), judul/nama jelas, parameter sistem, dan tombol aksi cepat di bagian bawah.
+- **Pencarian & Filter**: Debounced search bar + horizontal chips filter kategori.
+- **Create**: Formulir terstandarisasi dengan validasi Zod (`code` di-generate otomatis sistem dalam format kebab-case dari label tanpa membebani input manual pengguna).
+- **Edit**: Halaman/modal prefill data existing dengan `code` berstatus read-only (terkunci permanen demi integritas relasional).
+- **Delete**: Konfirmasi dialog + validasi integritas relasi (pencegahan hard-delete dengan HTTP 409 Conflict jika entitas telah memiliki relasi aktif di sistem).
 
 ### 5.2. Permission Gate
 

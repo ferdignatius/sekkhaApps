@@ -1,5 +1,6 @@
 import { configureModels } from "./models"
 import { computeAndCacheLeaderboard, resolveActiveSeason } from "../leaderboard/services"
+import { AppError } from "../../lib/AppError"
 
 let defaultThresholds = {
   warningConsecutiveMissed: 2,
@@ -8,11 +9,21 @@ let defaultThresholds = {
   churnedDaysThreshold: 60,
 }
 
+function toKebabCase(str: string): string {
+  return str
+    .toLowerCase()
+    .trim()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+}
+
 export const configureServices = {
 
   // ─── Event Types ───────────────────────────────────────────────────────────
-  async getEventTypes() {
-    const types = await configureModels.findEventTypes()
+  async getEventTypes(filter?: { isActive?: boolean }) {
+    const types = await configureModels.findEventTypes(filter)
     return types.map((t) => ({
       id: t.id,
       code: t.code,
@@ -21,36 +32,107 @@ export const configureServices = {
       description: t.description,
       default_point_reward: t.defaultPointReward,
       is_active: t.isActive,
+      created_at: t.createdAt.toISOString(),
+      updated_at: t.updatedAt.toISOString(),
     }))
   },
 
-  async createEventType(data: any) {
+  async createEventType(data: {
+    code?: string
+    label: string
+    color: string
+    description?: string | null
+    default_point_reward?: number
+    is_active?: boolean
+  }) {
+    // Generate code from label if not manually provided
+    const baseCode = data.code ? toKebabCase(data.code) : toKebabCase(data.label)
+    let cleanCode = baseCode || `event-${Date.now().toString(36)}`
+
+    let candidateCode = cleanCode
+    let counter = 1
+    while (await configureModels.findEventTypeByCode(candidateCode)) {
+      if (data.code) {
+        throw new AppError(`Event type with code '${candidateCode}' already exists`, 400, "DUPLICATE_CODE")
+      }
+      candidateCode = `${cleanCode}-${counter}`
+      counter++
+    }
+    cleanCode = candidateCode
+
     const type = await configureModels.createEventType({
-      code: data.code,
-      label: data.label,
-      color: data.color,
-      description: data.description,
+      code: cleanCode,
+      label: data.label.trim(),
+      color: data.color.trim(),
+      description: data.description?.trim() || null,
       defaultPointReward: data.default_point_reward ?? 0,
       isActive: data.is_active ?? true,
     })
-    return { id: type.id, code: type.code }
+
+    return {
+      id: type.id,
+      code: type.code,
+      label: type.label,
+      color: type.color,
+      description: type.description,
+      default_point_reward: type.defaultPointReward,
+      is_active: type.isActive,
+    }
   },
 
-  async updateEventType(id: string, data: any) {
-    const type = await configureModels.updateEventType(id, {
-      ...(data.code && { code: data.code }),
-      ...(data.label && { label: data.label }),
-      ...(data.color && { color: data.color }),
-      ...(data.description !== undefined && { description: data.description }),
-      ...(data.default_point_reward !== undefined && { defaultPointReward: data.default_point_reward }),
-      ...(data.is_active !== undefined && { isActive: data.is_active }),
-    })
-    return { id: type.id, code: type.code }
+  async updateEventType(
+    id: string,
+    data: {
+      label?: string
+      color?: string
+      description?: string | null
+      default_point_reward?: number
+      is_active?: boolean
+    }
+  ) {
+    const existing = await configureModels.findEventTypeById(id)
+    if (!existing) {
+      throw new AppError("Event type not found", 404, "EVENT_TYPE_NOT_FOUND")
+    }
+
+    // Code is strictly immutable per PRD rules
+    const updateData: any = {}
+    if (data.label !== undefined) updateData.label = data.label.trim()
+    if (data.color !== undefined) updateData.color = data.color.trim()
+    if (data.description !== undefined) updateData.description = data.description ? data.description.trim() : null
+    if (data.default_point_reward !== undefined) updateData.defaultPointReward = data.default_point_reward
+    if (data.is_active !== undefined) updateData.isActive = data.is_active
+
+    const type = await configureModels.updateEventType(id, updateData)
+
+    return {
+      id: type.id,
+      code: type.code,
+      label: type.label,
+      color: type.color,
+      description: type.description,
+      default_point_reward: type.defaultPointReward,
+      is_active: type.isActive,
+    }
   },
 
   async deleteEventType(id: string) {
+    const existing = await configureModels.findEventTypeById(id)
+    if (!existing) {
+      throw new AppError("Event type not found", 404, "EVENT_TYPE_NOT_FOUND")
+    }
+
+    const inUseCount = await configureModels.countEventsByEventTypeId(id)
+    if (inUseCount > 0) {
+      throw new AppError(
+        `Cannot delete Event Type that is currently in use by ${inUseCount} event(s). Please deactivate it instead.`,
+        409,
+        "EVENT_TYPE_IN_USE"
+      )
+    }
+
     await configureModels.deleteEventType(id)
-    return { success: true }
+    return { success: true, message: "Event type deleted successfully" }
   },
 
 

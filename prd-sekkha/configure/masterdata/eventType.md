@@ -45,14 +45,11 @@ Manajemen Event Type merupakan konfigurasi internal vihara:
 
 Berikut data default yang di-seed saat inisialisasi sistem:
 
-| Code | Label (Name) | Color | Description | Default Points |
+| Code | Label | Color | Description | Default Points |
 | --- | --- | --- | --- | ---: |
-| `regular-service` | Regular Service | `#4262FF` | Kebaktian rutin mingguan pemuda vihara | 50 |
-| `meditation` | Meditation Session | `#0D9488` | Sesi meditasi dan bimbingan batin | 60 |
-| `fellowship` | Youth Gathering / Fellowship | `#F59E0B` | Temu keakraban dan kegiatan persaudaraan pemuda | 40 |
-| `training` | Workshop & Training | `#8B5CF6` | Pelatihan kepemimpinan, kepanitiaan, atau dhamma class | 75 |
-| `social-charity` | Social & Charity Activity | `#EC4899` | Bakti sosial, donor darah, dan pengabdian masyarakat | 80 |
-| `special-celebration` | Buddhist Festival / Puja | `#E11D48` | Peringatan hari besar (Waisak, Asadha, Kathina, Magha Puja) | 100 |
+| `regular-puja` | Regular Puja | `#4262FF` | Kebaktian rutin mingguan pemuda vihara | 50 |
+| `chanting` | Chanting | `#0D9488` | Sesi pelafalan paritta dan sutra kebajikan | 60 |
+| `volunteer` | Volunteer | `#EC4899` | Kegiatan bakti sosial dan aksi kerelawanan pemuda | 80 |
 
 Saat organizer memilih Event Type ketika membuat event baru:
 1. `default_point_reward` otomatis mengisi nilai poin reward event tersebut.
@@ -90,8 +87,8 @@ model EventType {
 | Field | Database Column | Type | Required | Rules & Constraints |
 | --- | --- | --- | :---: | --- |
 | `id` | `id` | `String (cuid)` | Yes | Primary Key, server-generated CUID. |
-| `code` | `code` | `String` | Yes | Unique, lowercase kebab-case (`^[a-z0-9]+(?:-[a-z0-9]+)*$`), 2-50 chars. Immutable setelah dibuat. |
-| `label` | `label` | `String` | Yes | 1-100 chars, nama tampilan yang ramah pengguna (misal: "Regular Service"). |
+| `code` | `code` | `String` | Yes | Unique, lowercase kebab-case (`^[a-z0-9]+(?:-[a-z0-9]+)*$`), 2-50 chars. Dihasilkan otomatis oleh sistem dari nilai label (kebab-case otomatis) dan ditampilkan secara read-only di form. Terkunci & immutable setelah dibuat. |
+| `label` | `label` | `String` | Yes | 1-100 chars, nama tampilan yang ramah pengguna (misal: "Regular Puja"). |
 | `color` | `color` | `String` | Yes | Hex code warna CSS, validasi regex `^#[0-9A-Fa-f]{6}$`. |
 | `description` | `description` | `String?` | No | Keterangan opsional, maksimal 500 karakter. |
 | `default_point_reward` | `default_point_reward` | `Int` | Yes | Nilai integer antara 0 s/d 10.000, default `0`. |
@@ -181,16 +178,27 @@ Field `code` adalah **identifikator semantik permanen berbasis string (kebab-cas
 ## 7. UI Requirements
 
 - **Route Administrasi**: `/configure/master/event-type`
-- **Tabel Data**:
-  - Kolom: `Code`, `Label`, `Color Swatch`, `Default Points`, `Status (Active / Inactive)`, `Updated At`, `Actions`.
-- **Form Create / Edit**:
-  - Input `code` (hanya bisa diisi saat create, disabled saat edit).
+- **Responsive Layout**: Menggunakan **Card Grid Layout Responsif** (`grid-cols-1 sm:grid-cols-2 lg:grid-cols-3`) menggantikan tabel konvensional demi pengalaman pengguna yang ramah mobile, tablet, dan desktop tanpa clipping horizontal atau scroll menyamping:
+  - Setiap kartu memuat:
+    - Garis aksen visual warna tema di bagian atas kartu.
+    - Status badge (`Active` / `Inactive`) di sudut kanan atas.
+    - Judul/Label kegiatan dalam font tebal.
+    - Kode semantik otomatis dalam format chip monospace.
+    - Default poin reward dengan icon koin.
+    - Deskripsi singkat kegiatan (maksimal 2 baris).
+    - Footer aksi: tombol toggle status cepat, tombol edit (`/configure/master/event-type/:id`), dan tombol hapus (dengan konfirmasi).
+- **Form Create**:
   - Input `label` (wajib).
-  - Color Picker & Hex Text Input (dengan visual swatch preview real-time).
-  - Input `default_point_reward` (numeric spinner, min 0, max 10.000).
+  - Field `code` (read-only): Ditampilkan dalam keadaan terkunci (disabled) dengan live preview otomatis format kebab-case saat pengguna mengetik nama `label`. Pengguna tidak dapat mengedit field ini secara manual.
+  - Color Picker murni (native color input) dengan preview swatch dan kode Hex (tanpa tombol preset warna statis).
+  - Input `default_point_reward` (numeric spinner/input, min 0, max 10.000).
   - Toggle Switch `is_active`.
   - Textarea `description`.
-- **Aksi Hapus**: Tombol hapus dicegah dan memunculkan konfirmasi penjelasan jika data sudah terhubung ke event yang ada, merekomendasikan opsi nonaktifkan saja.
+- **Form Edit**:
+  - Menampilkan `code` dalam keadaan terkunci permanen (disabled/read-only) dengan icon gembok dan penjelasan integritas data.
+  - Memperbarui `label`, `color`, `default_point_reward`, `is_active`, dan `description`.
+  - Color Picker murni (tanpa preset statis).
+- **Aksi Hapus**: Tombol hapus dicegah dan memunculkan modal dialog penjelasan jika data sudah terhubung ke event yang ada (HTTP 409 Conflict), merekomendasikan opsi nonaktifkan saja.
 - **Standar Aksesibilitas**: Minimum touch target 44px, kontras warna label memenuhi rasio WCAG AA.
 
 ---
@@ -203,9 +211,10 @@ Base route: `/api/configure/event-types`
 
 | Method | Endpoint | Access Role | Description |
 | --- | --- | --- | --- |
-| `GET` | `/api/configure/event-types` | `organizer`, `admin` | Mengambil seluruh daftar Event Type |
-| `POST` | `/api/configure/event-types` | `admin` | Membuat Event Type baru |
+| `GET` | `/api/configure/event-types` | `organizer`, `admin` | Mengambil seluruh daftar Event Type (opsional query `?is_active=true`) |
+| `POST` | `/api/configure/event-types` | `admin` | Membuat Event Type baru (`code` otomatis digenerate jika kosong) |
 | `PUT` | `/api/configure/event-types/:id` | `admin` | Mengubah label, color, points, is_active |
+| `PATCH` | `/api/configure/event-types/:id` | `admin` | Alias parsial update untuk PUT |
 | `DELETE` | `/api/configure/event-types/:id` | `admin` | Menghapus Event Type (jika belum pernah dipakai) |
 
 ### 8.2 Payload & Response Examples
@@ -216,8 +225,8 @@ Base route: `/api/configure/event-types`
 [
   {
     "id": "cly1a2b3c0000abcde",
-    "code": "regular-service",
-    "label": "Regular Service",
+    "code": "regular-puja",
+    "label": "Regular Puja",
     "color": "#4262FF",
     "description": "Kebaktian rutin mingguan pemuda vihara",
     "default_point_reward": 50,
@@ -225,10 +234,10 @@ Base route: `/api/configure/event-types`
   },
   {
     "id": "cly1a2b3c0001abcde",
-    "code": "meditation",
-    "label": "Meditation Session",
+    "code": "chanting",
+    "label": "Chanting",
     "color": "#0D9488",
-    "description": "Sesi meditasi dan bimbingan batin",
+    "description": "Sesi pelafalan paritta dan sutra kebajikan",
     "default_point_reward": 60,
     "is_active": true
   }
@@ -239,20 +248,21 @@ Base route: `/api/configure/event-types`
 **Request Body**:
 ```json
 {
-  "code": "social-charity",
-  "label": "Social & Charity Activity",
+  "label": "Volunteer",
   "color": "#EC4899",
-  "description": "Kegiatan donor darah dan bakti sosial masyarakat",
+  "description": "Kegiatan bakti sosial dan aksi kerelawanan pemuda",
   "default_point_reward": 80,
   "is_active": true
 }
 ```
+*Catatan: Parameter `code` bersifat opsional saat POST; jika tidak dikirimkan, server akan otomatis mengubah `label` menjadi kebab-case unik (`volunteer`).*
 
 **Response (201 Created)**:
 ```json
 {
   "id": "cly1a2b3c0002abcde",
-  "code": "social-charity"
+  "code": "volunteer",
+  "label": "Volunteer"
 }
 ```
 

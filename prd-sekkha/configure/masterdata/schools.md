@@ -189,15 +189,23 @@ Umat di Step 3 Onboarding
 
 ### 7.2 Configure Module Component (Admin & Organizer)
 - **Route**: `/configure/master/school`
+- **Responsive Layout**: Menggunakan **Responsive Clay Card Grid Layout** (`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4`) menggantikan tabel konvensional untuk memastikan tampilan adaptif di mobile, tablet, dan desktop tanpa clipping horizontal atau scroll menyamping.
+- **Kartu Direktori Sekolah**:
+  - Judul/Nama Sekolah (bold, tautan ke detail sekolah `/configure/master/school/:id`).
+  - Badge kategori jenjang (`SMP`, `SMA/SMK`, `Universitas`, `Umum`).
+  - Lokasi kota/wilayah dengan icon `MapPin`.
+  - Indikator sosial proof: jumlah umat terhubung dari almamater tersebut dengan icon `Users`.
+  - Status keaktifan (`Aktif` / `Nonaktif`) dan tombol aksi *"Lihat Detail"*.
+- **Filter & Search**:
+  - Filter jenjang menggunakan chip horizontal: `Semua`, `SMP`, `SMA/SMK`, `Universitas`, `Umum`.
+  - Search bar interaktif dengan debounced search.
 - **Tab Antrean Pengajuan (Pending Queue)**:
   - Tersedia bagi role `organizer` dan `admin`.
-  - Menampilkan nama sekolah, tipe (`SMA/SMK`, dst.), nama pemohon (`requested_by`), tanggal diajukan.
-  - Aksi: Tombol **Approve** (centang hijau) dan **Reject** (silang merah).
-- **Tab Master Data (Approved Schools)**:
+  - Card layout menampilkan nama sekolah yang diajukan umat, tipe almamater, kota, dan tanggal pengajuan.
+  - Aksi verifikasi: Tombol **Approve** (centang hijau) dan **Reject** (silang merah).
+- **Master Data CRUD (Approved Schools)**:
   - CRUD penuh eksklusif bagi role `admin`.
-  - Filter tipe: Semua, SMP, SMA/SMK, Universitas, Umum.
-  - Filter status keaktifan: Aktif / Non-aktif.
-  - Menampilkan counter total anggota yang terdaftar dari masing-masing sekolah.
+  - Tombol aksi *"Tambah Sekolah"* (`/configure/master/school/new`).
 
 ---
 

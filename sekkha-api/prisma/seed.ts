@@ -54,20 +54,48 @@ async function main() {
 
   // ── 2. Master Data: Event Types ──────────────────────────────────────────────
   console.log("🎯 Seeding Master Event Types...")
-  const eventTypeRutin = await prisma.eventType.create({
-    data: { code: "rutin", label: "Kebaktian Rutin", color: "#4262ff" },
-  })
-  const eventTypeSpecial = await prisma.eventType.create({
-    data: { code: "special", label: "Special Event", color: "#ffd02f" },
-  })
-  await prisma.eventType.createMany({
-    data: [
-      { code: "retreat", label: "Retreat", color: "#ff9999" },
-      { code: "meditasi", label: "Meditasi", color: "#0fbcb0" },
-      { code: "sosial", label: "Bakti Sosial", color: "#fde0f0" },
-    ],
-    skipDuplicates: true,
-  })
+  const eventTypesData = [
+    {
+      code: "regular-puja",
+      label: "Regular Puja",
+      color: "#4262FF",
+      description: "Kebaktian rutin mingguan pemuda vihara",
+      defaultPointReward: 50,
+      isActive: true,
+    },
+    {
+      code: "chanting",
+      label: "Chanting",
+      color: "#0D9488",
+      description: "Sesi pelafalan paritta dan sutra kebajikan",
+      defaultPointReward: 60,
+      isActive: true,
+    },
+    {
+      code: "volunteer",
+      label: "Volunteer",
+      color: "#EC4899",
+      description: "Kegiatan bakti sosial dan aksi kerelawanan pemuda",
+      defaultPointReward: 80,
+      isActive: true,
+    },
+  ]
+
+  const seededEventTypes: Record<string, any> = {}
+  for (const et of eventTypesData) {
+    const record = await prisma.eventType.upsert({
+      where: { code: et.code },
+      update: {
+        label: et.label,
+        color: et.color,
+        description: et.description,
+        defaultPointReward: et.defaultPointReward,
+        isActive: et.isActive,
+      },
+      create: et,
+    })
+    seededEventTypes[et.code] = record
+  }
 
   // ── 3. Master Data: Seasons ──────────────────────────────────────────────────
   console.log("📅 Seeding Master Season...")
@@ -278,9 +306,9 @@ async function main() {
       description: "Kebaktian rutin remaja Buddhis Sekkha.",
       location: "Dhammasala Utama Vihara",
       eventDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
-      eventTypeId: eventTypeRutin.id,
+      eventTypeId: seededEventTypes["regular-puja"].id,
       seasonId: activeSeason.id,
-      tag: "rutin",
+      tag: "Regular Puja",
       status: "scheduled",
       qrCode: "SEKKHA-EVT-001",
     },
@@ -292,9 +320,9 @@ async function main() {
       description: "Pelatihan meditasi kesadaran penuh untuk generasi muda.",
       location: "Ruang Meditasi Lt. 2",
       eventDate: new Date(Date.now() + 9 * 24 * 60 * 60 * 1000),
-      eventTypeId: eventTypeSpecial.id,
+      eventTypeId: seededEventTypes["chanting"].id,
       seasonId: activeSeason.id,
-      tag: "meditasi",
+      tag: "Chanting",
       status: "scheduled",
       qrCode: "SEKKHA-EVT-002",
     },

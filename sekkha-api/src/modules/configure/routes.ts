@@ -31,6 +31,7 @@ configureRouter.use((req, res, next) => {
 configureRouter.get("/event-types", configureControllers.getEventTypes)
 configureRouter.post("/event-types", configureControllers.createEventType)
 configureRouter.put("/event-types/:id", configureControllers.updateEventType)
+configureRouter.patch("/event-types/:id", configureControllers.updateEventType)
 configureRouter.delete("/event-types/:id", configureControllers.deleteEventType)
 
 // Threshold

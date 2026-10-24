@@ -4,10 +4,38 @@ import { configureServices } from "./services"
 
 
 export const EventTypeSchema = z.object({
-  code: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
-  label: z.string().min(1),
-  color: z.string().min(1),
-  description: z.string().max(500).optional(),
+  code: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .min(2, "Code must be at least 2 characters")
+    .max(50, "Code cannot exceed 50 characters")
+    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Code must be lowercase kebab-case (e.g. regular-puja)")
+    .optional(),
+  label: z
+    .string({ required_error: "Label is required" })
+    .trim()
+    .min(1, "Label is required")
+    .max(100, "Label cannot exceed 100 characters"),
+  color: z
+    .string({ required_error: "Color is required" })
+    .trim()
+    .regex(/^#[0-9A-Fa-f]{6}$/, "Color must be a valid 6-digit hex code (e.g. #4262FF)"),
+  description: z.string().trim().max(500, "Description cannot exceed 500 characters").optional().nullable(),
+  default_point_reward: z
+    .number()
+    .int("Points must be an integer")
+    .min(0, "Points must be non-negative")
+    .max(10000, "Points cannot exceed 10,000")
+    .optional()
+    .default(0),
+  is_active: z.boolean().optional().default(true),
+})
+
+export const EventTypeUpdateSchema = z.object({
+  label: z.string().trim().min(1, "Label is required").max(100).optional(),
+  color: z.string().trim().regex(/^#[0-9A-Fa-f]{6}$/, "Color must be a valid 6-digit hex code").optional(),
+  description: z.string().trim().max(500).optional().nullable(),
   default_point_reward: z.number().int().min(0).max(10000).optional(),
   is_active: z.boolean().optional(),
 })
@@ -42,9 +70,16 @@ export const PointRuleUpdateSchema = z.object({
 export const configureControllers = {
 
   // Event Types
-  async getEventTypes(_req: Request, res: Response, next: NextFunction) {
+  async getEventTypes(req: Request, res: Response, next: NextFunction) {
     try {
-      res.json(await configureServices.getEventTypes())
+      const isActiveParam = req.query.is_active
+      let filter: { isActive?: boolean } | undefined = undefined
+      if (isActiveParam === "true") {
+        filter = { isActive: true }
+      } else if (isActiveParam === "false") {
+        filter = { isActive: false }
+      }
+      res.json(await configureServices.getEventTypes(filter))
     } catch (err) { next(err) }
   },
   async createEventType(req: Request, res: Response, next: NextFunction) {
@@ -56,7 +91,7 @@ export const configureControllers = {
   async updateEventType(req: Request, res: Response, next: NextFunction) {
     try {
       const id = req.params.id as string
-      const body = EventTypeSchema.partial().parse(req.body)
+      const body = EventTypeUpdateSchema.parse(req.body)
       res.json(await configureServices.updateEventType(id, body))
     } catch (err) { next(err) }
   },

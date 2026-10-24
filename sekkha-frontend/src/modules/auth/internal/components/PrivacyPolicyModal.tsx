@@ -76,9 +76,15 @@ export function PrivacyPolicyModal({
           </div>
 
           <section className="space-y-1.5">
-            <h4 className="text-sm font-bold text-[#0a0a0a]">1. Introduction</h4>
+            <h4 className="text-sm font-bold text-[#0a0a0a]">
+              1. Introduction
+            </h4>
             <p>
-              Welcome to <strong>Sekkha Apps</strong>, a Buddhist temple youth community platform supporting activity tracking, attendance check-in, and a gamified experience. Your privacy is our top priority. This Privacy Policy outlines how we collect, use, store, and protect your personal data when using the Sekkha application.
+              Welcome to <strong>Sekkha Apps</strong>, a Buddhist temple youth
+              community platform supporting activity tracking, attendance
+              check-in, and a gamified experience. Your privacy is our top
+              priority. This Privacy Policy outlines how we collect, use, store,
+              and protect your personal data when using the Sekkha application.
             </p>
           </section>
 
@@ -87,20 +93,29 @@ export function PrivacyPolicyModal({
               2. Information We Collect
             </h4>
             <p>
-              To provide a safe and organized community experience, we collect the following information:
+              To provide a safe and organized community experience, we collect
+              the following information:
             </p>
             <ul className="list-disc space-y-1 pl-5 text-[#3a3a3a]">
               <li>
-                <strong>Account & Identity Details:</strong> Full legal name, email address, phone/WhatsApp number, school or campus name, date of birth, gender, and your username.
+                <strong>Account & Identity Details:</strong> Full legal name,
+                email address, phone/WhatsApp number, school or campus name,
+                date of birth, gender, and your username.
               </li>
               <li>
-                <strong>Member Number & QR Code:</strong> A unique Member ID automatically generated for temple event attendance and verification.
+                <strong>Member Number & QR Code:</strong> A unique Member ID
+                automatically generated for temple event attendance and
+                verification.
               </li>
               <li>
-                <strong>Attendance & Participation Records:</strong> Event check-in history, arrival timestamps, duty roles (Puja, Chanting, Committee, etc.), and gamification points/badges.
+                <strong>Attendance & Participation Records:</strong> Event
+                check-in history, arrival timestamps, duty roles (Puja,
+                Chanting, Committee, etc.), and gamification points/badges.
               </li>
               <li>
-                <strong>Community Activity:</strong> Discussion forum contributions, public posts, and private support requests to temple youth advisors.
+                <strong>Community Activity:</strong> Discussion forum
+                contributions, public posts, and private support requests to
+                temple youth advisors.
               </li>
             </ul>
           </section>
@@ -110,16 +125,22 @@ export function PrivacyPolicyModal({
               3. How We Use Your Information
             </h4>
             <p>
-              Collected data is used solely for the internal purposes of the temple youth community, including:
+              Collected data is used solely for the internal purposes of the
+              temple youth community, including:
             </p>
             <ul className="list-disc space-y-1 pl-5 text-[#3a3a3a]">
               <li>Verifying the identity of temple community members.</li>
-              <li>Recording and monitoring attendance at regular services and special events.</li>
               <li>
-                Calculating gamification points, attendance streaks, achievement badges, and community leaderboard rankings.
+                Recording and monitoring attendance at regular services and
+                special events.
               </li>
               <li>
-                Providing aggregated engagement analytics to assist temple leaders in supporting community members.
+                Calculating gamification points, attendance streaks, achievement
+                badges, and community leaderboard rankings.
+              </li>
+              <li>
+                Providing aggregated engagement analytics to assist temple
+                leaders in supporting community members.
               </li>
             </ul>
           </section>
@@ -129,7 +150,11 @@ export function PrivacyPolicyModal({
               4. Data Security & Confidentiality
             </h4>
             <p>
-              We apply modern encryption security standards (including bcrypt password hashing and authenticated JWT tokens). Your password is encrypted and can never be viewed by anyone, including temple leaders. We will <strong>never sell or rent</strong> your personal information to any third party.
+              We apply modern encryption security standards (including bcrypt
+              password hashing and authenticated JWT tokens). Your password is
+              encrypted and can never be viewed by anyone, including temple
+              leaders. We will <strong>never sell or rent</strong> your personal
+              information to any third party.
             </p>
           </section>
 
@@ -140,19 +165,26 @@ export function PrivacyPolicyModal({
             <p>As a member, you have full rights to:</p>
             <ul className="list-disc space-y-1 pl-5 text-[#3a3a3a]">
               <li>
-                View and update your profile information anytime via Profile Settings.
+                View and update your profile information anytime via Profile
+                Settings.
               </li>
               <li>Change your account password independently at any time.</li>
               <li>
-                Contact administrators or temple leaders to request account deactivation or correction of membership data.
+                Contact administrators or temple leaders to request account
+                deactivation or correction of membership data.
               </li>
             </ul>
           </section>
 
           <section className="space-y-1.5">
-            <h4 className="text-sm font-bold text-[#0a0a0a]">6. Consent & Agreement</h4>
+            <h4 className="text-sm font-bold text-[#0a0a0a]">
+              6. Consent & Agreement
+            </h4>
             <p>
-              By checking the agreement box and clicking <em>"I Understand & Agree"</em>, you acknowledge that you have read, understood, and agreed to all terms of the Sekkha Apps Privacy Policy.
+              By checking the agreement box and clicking{" "}
+              <em>"I Understand & Agree"</em>, you acknowledge that you have
+              read, understood, and agreed to all terms of the Sekkha Apps
+              Privacy Policy.
             </p>
           </section>
 
@@ -171,9 +203,7 @@ export function PrivacyPolicyModal({
           ) : (
             <div className="flex items-center gap-1.5 text-xs font-medium text-[#6a6a6a]">
               <ArrowDownIcon className="size-3.5 animate-bounce text-[#0a0a0a]" />
-              <span>
-                Scroll to the bottom to enable agreement.
-              </span>
+              <span>Scroll to the bottom to enable agreement.</span>
             </div>
           )}
         </div>

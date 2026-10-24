@@ -16,7 +16,6 @@ export interface SchoolOption {
   id: string
   name: string
   type: string
-  city: string
   userCount?: number
 }
 
@@ -244,7 +243,7 @@ export function SchoolCombobox({
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Type school name or city..."
+                placeholder="Type school name..."
                 className="h-9 w-full rounded-[8px] border border-[#e5e5e5] bg-white pr-8 pl-9 text-xs font-medium text-[#0a0a0a] transition-all outline-none placeholder:text-[#767676] focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a]"
               />
               {search && (
@@ -324,10 +323,6 @@ export function SchoolCombobox({
                         </span>
                       </div>
                       <div className="mt-0.5 flex items-center gap-1.5">
-                        <span className="text-[10px] font-medium text-[#6a6a6a]">
-                          {item.city}
-                        </span>
-                        <span className="text-[10px] text-[#6a6a6a]">•</span>
                         <span className="py-0.2 rounded-[4px] bg-[#ebe6d6] px-1.5 text-[9px] font-bold text-[#0a0a0a]">
                           {item.type}
                         </span>

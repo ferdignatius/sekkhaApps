@@ -127,15 +127,15 @@ model UserStats {
 
 enum SchoolStatus {
   pending
-  approved
-  rejected
+  active
+  cancel
 }
 
 model School {
   id          String       @id @default(cuid())
   name        String       @unique
-  type        String?      // "SMP" | "SMA" | "SMK" | "Universitas" | "Umum"
-  status      SchoolStatus @default(approved)
+  type        String?      // "SMP" | "SMA/SMK" | "Universitas" | "Umum"
+  status      SchoolStatus @default(active)
   isActive    Boolean      @default(true) @map("is_active")
   requestedBy String?      @map("requested_by")
   reviewedBy  String?      @map("reviewed_by")

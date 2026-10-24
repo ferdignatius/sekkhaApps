@@ -7,7 +7,5 @@ export const schoolsModule: AppModule = {
   name: "schools",
   register(app: Application) {
     app.use("/api/schools", schoolsRouter)
-    // Seed master schools asynchronously on boot
-    void schoolServices.ensureMasterSchoolsSeeded()
   },
 }

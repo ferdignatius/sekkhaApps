@@ -90,7 +90,7 @@ export const userServices = {
     if (body.school_id !== undefined) {
       if (body.school_id) {
         const school = await prisma.school.findUnique({ where: { id: body.school_id } })
-        if (!school || school.status !== "approved" || !school.isActive) {
+        if (!school || school.status !== "active" || !school.isActive) {
           const error = new Error("Sekolah yang dipilih belum disetujui atau tidak aktif.") as any
           error.statusCode = 400
           throw error
@@ -102,7 +102,7 @@ export const userServices = {
     } else if (body.school) {
       const trimmedSchool = body.school.trim()
       const existingSchool = await userModels.findSchoolByName(trimmedSchool)
-      if (existingSchool && existingSchool.status === "approved" && existingSchool.isActive) {
+      if (existingSchool && existingSchool.status === "active" && existingSchool.isActive) {
         resolvedSchoolId = existingSchool.id
       } else {
         resolvedSchoolId = null

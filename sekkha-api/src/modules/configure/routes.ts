@@ -16,7 +16,16 @@ configureRouter.post("/school-requests", schoolControllers.requestSchool)
 // Other configure routes require organizer/admin role
 configureRouter.use(requireRole("organizer", "admin"))
 
-// Read-only for organizer: all mutating methods (POST, PUT, PATCH, DELETE) require admin role
+// School request review workflow (Accessible to Organizer & Admin per PRD)
+configureRouter.get("/schools/pending", schoolControllers.getPendingRequests)
+configureRouter.get("/school-requests", schoolControllers.getPendingRequests)
+configureRouter.get("/schools/:id", schoolControllers.getSchoolById)
+configureRouter.post("/schools/:id/approve", schoolControllers.approveSchool)
+configureRouter.post("/schools/:id/reject", schoolControllers.rejectSchool)
+configureRouter.post("/school-requests/:id/accept", schoolControllers.approveSchool)
+configureRouter.post("/school-requests/:id/reject", schoolControllers.rejectSchool)
+
+// Read-only for organizer: all other mutating methods (POST, PUT, PATCH, DELETE) require admin role
 configureRouter.use((req, res, next) => {
   if (req.method !== "GET" && req.method !== "HEAD" && req.method !== "OPTIONS") {
     if (req.user?.role !== "admin") {
@@ -26,6 +35,12 @@ configureRouter.use((req, res, next) => {
   }
   next()
 })
+
+// School Master Data Direct CRUD (Admin only)
+configureRouter.post("/schools", schoolControllers.createSchool)
+configureRouter.put("/schools/:id", schoolControllers.updateSchool)
+configureRouter.patch("/schools/:id", schoolControllers.updateSchool)
+configureRouter.delete("/schools/:id", schoolControllers.deleteSchool)
 
 // Event Types
 configureRouter.get("/event-types", configureControllers.getEventTypes)

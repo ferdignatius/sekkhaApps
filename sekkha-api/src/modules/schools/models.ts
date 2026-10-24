@@ -10,7 +10,7 @@ export const schoolModels = {
     return prisma.school.upsert({
       where: { name },
       update: { type },
-      create: { name, type, status: "approved", isActive: true },
+      create: { name, type, status: "active", isActive: true },
     })
   },
 
@@ -53,6 +53,11 @@ export const schoolModels = {
   findSchoolById(id: string) {
     return prisma.school.findUnique({
       where: { id },
+      include: {
+        _count: {
+          select: { profiles: true },
+        },
+      },
     })
   },
 
@@ -61,7 +66,7 @@ export const schoolModels = {
       data: {
         name: data.name,
         type: data.type,
-        status: "approved",
+        status: "active",
         isActive: true,
       },
     })
@@ -98,6 +103,51 @@ export const schoolModels = {
   deleteSchool(id: string) {
     return prisma.school.delete({
       where: { id },
+    })
+  },
+
+  findPendingRequests() {
+    return prisma.school.findMany({
+      where: { status: "pending" },
+      include: {
+        requester: {
+          select: {
+            id: true,
+            username: true,
+            email: true,
+            profile: { select: { name: true } },
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    })
+  },
+
+  approveSchool(id: string, reviewerId: string) {
+    return prisma.school.update({
+      where: { id },
+      data: {
+        status: "active",
+        isActive: true,
+        reviewedBy: reviewerId,
+      },
+      include: {
+        _count: { select: { profiles: true } },
+      },
+    })
+  },
+
+  rejectSchool(id: string, reviewerId: string) {
+    return prisma.school.update({
+      where: { id },
+      data: {
+        status: "cancel",
+        isActive: false,
+        reviewedBy: reviewerId,
+      },
+      include: {
+        _count: { select: { profiles: true } },
+      },
     })
   },
 }

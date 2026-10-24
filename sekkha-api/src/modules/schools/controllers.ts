@@ -2,41 +2,120 @@ import type { Request, Response, NextFunction } from "express"
 import { z } from "zod"
 import { schoolServices } from "./services"
 
+export const SchoolTypeSchema = z.enum(["SMP", "SMA/SMK", "Universitas", "Umum"])
+
 export const CreateSchoolSchema = z.object({
-  name: z.string().min(2, "Nama sekolah minimal 2 karakter").max(100, "Maksimal 100 karakter"),
-  type: z.enum(["SMP", "SMA", "SMK", "SMA/SMK", "Universitas", "Lainnya", "Umum"]).optional(),
+  name: z.string().trim().min(2, "School name must be at least 2 characters").max(100, "Maximum 100 characters"),
+  type: SchoolTypeSchema.optional(),
+  is_active: z.boolean().optional(),
 })
 
 export const UpdateSchoolSchema = z.object({
-  name: z.string().min(2).max(100).optional(),
-  type: z.enum(["SMP", "SMA", "SMK", "SMA/SMK", "Universitas", "Lainnya", "Umum"]).optional(),
+  name: z.string().trim().min(2).max(100).optional(),
+  type: SchoolTypeSchema.optional(),
+  is_active: z.boolean().optional(),
 })
 
-export const RequestSchoolSchema = z
-  .object({
-    name: z.string().trim().min(2, "Nama sekolah minimal 2 karakter").max(100).optional(),
-    requested_name: z.string().trim().min(2, "Nama sekolah minimal 2 karakter").max(100).optional(),
-    type: z.string().trim().max(50).optional(),
-    requested_type: z.string().trim().max(50).optional(),
-  })
-  .refine((data) => data.name || data.requested_name, {
-    message: "Nama sekolah wajib diisi",
-    path: ["name"],
-  })
+export const RequestSchoolSchema = z.object({
+  name: z.string().trim().min(2, "School name must be at least 2 characters").max(100, "Maximum 100 characters"),
+  type: SchoolTypeSchema.optional(),
+})
 
 export const schoolControllers = {
   async getSchools(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const search = typeof req.query.search === "string" ? req.query.search : ""
+      const type = typeof req.query.type === "string" ? req.query.type : undefined
+      const isActiveParam = req.query.is_active
+      let isActive: boolean | undefined = undefined
+      if (isActiveParam === "true") isActive = true
+      else if (isActiveParam === "false") isActive = false
+
       const limit = Number(req.query.limit) || Number(req.query.page_size) || 100
-      const result = await schoolServices.getSchools(search, limit)
+      const result = await schoolServices.getSchools({ search, type, isActive, limit })
       res.json({
         status: "success",
         code: 200,
         message: "Schools retrieved successfully",
         data: result.schools,
         schools: result.schools,
+        items: result.schools,
         total: result.total,
+      })
+    } catch (err) {
+      next(err)
+    }
+  },
+
+  async getSchoolById(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id
+      if (!id) {
+        res.status(400).json({ error: "ID parameter is required" })
+        return
+      }
+      const school = await schoolServices.getSchoolById(id)
+      res.json({
+        status: "success",
+        code: 200,
+        message: "School retrieved successfully",
+        data: school,
+      })
+    } catch (err) {
+      next(err)
+    }
+  },
+
+  async getPendingRequests(_req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const requests = await schoolServices.getPendingRequests()
+      res.json({
+        status: "success",
+        code: 200,
+        message: "Pending school requests retrieved successfully",
+        data: requests,
+        items: requests,
+        total: requests.length,
+      })
+    } catch (err) {
+      next(err)
+    }
+  },
+
+  async approveSchool(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id
+      if (!id) {
+        res.status(400).json({ error: "ID parameter is required" })
+        return
+      }
+      const reviewerId = req.user!.userId
+      const result = await schoolServices.approveSchoolRequest(id, reviewerId)
+      res.json({
+        status: "success",
+        code: 200,
+        message: "School request approved successfully",
+        data: result,
+      })
+    } catch (err) {
+      next(err)
+    }
+  },
+
+  async rejectSchool(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id
+      if (!id) {
+        res.status(400).json({ error: "ID parameter is required" })
+        return
+      }
+      const reviewerId = req.user!.userId
+      const result = await schoolServices.rejectSchoolRequest(id, reviewerId)
+      res.json({
+        status: "success",
+        code: 200,
+        message: "School request rejected",
+        data: result,
       })
     } catch (err) {
       next(err)
@@ -46,8 +125,8 @@ export const schoolControllers = {
   async requestSchool(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const parsed = RequestSchoolSchema.parse(req.body)
-      const name = (parsed.name || parsed.requested_name)!.trim()
-      const type = (parsed.type || parsed.requested_type || "Umum").trim()
+      const name = parsed.name.trim()
+      const type = (parsed.type || "Umum").trim()
       const userId = req.user!.userId
       const result = await schoolServices.requestSchool(userId, { name, type })
       res.status(201).json({
@@ -56,11 +135,7 @@ export const schoolControllers = {
         message: "Pengajuan sekolah berhasil dikirim dan menunggu persetujuan",
         data: result,
       })
-    } catch (err: any) {
-      if (err.statusCode) {
-        res.status(err.statusCode).json({ error: err.message })
-        return
-      }
+    } catch (err) {
       next(err)
     }
   },
@@ -80,12 +155,16 @@ export const schoolControllers = {
     try {
       const body = CreateSchoolSchema.parse(req.body)
       const result = await schoolServices.createSchool(body)
-      res.status(201).json(result)
-    } catch (err: any) {
-      if (err.statusCode) {
-        res.status(err.statusCode).json({ error: err.message })
-        return
-      }
+      res.status(201).json({
+        status: "success",
+        code: 201,
+        message: "School created successfully",
+        data: result,
+        id: result.id,
+        name: result.name,
+        type: result.type,
+      })
+    } catch (err) {
       next(err)
     }
   },
@@ -100,12 +179,16 @@ export const schoolControllers = {
 
       const body = UpdateSchoolSchema.parse(req.body)
       const result = await schoolServices.updateSchool(id, body)
-      res.json(result)
-    } catch (err: any) {
-      if (err.statusCode) {
-        res.status(err.statusCode).json({ error: err.message })
-        return
-      }
+      res.json({
+        status: "success",
+        code: 200,
+        message: "School updated successfully",
+        data: result,
+        id: result.id,
+        name: result.name,
+        type: result.type,
+      })
+    } catch (err) {
       next(err)
     }
   },
@@ -119,12 +202,12 @@ export const schoolControllers = {
       }
 
       const result = await schoolServices.deleteSchool(id)
-      res.json(result)
-    } catch (err: any) {
-      if (err.statusCode) {
-        res.status(err.statusCode).json({ error: err.message })
-        return
-      }
+      res.json({
+        status: "success",
+        code: 200,
+        ...result,
+      })
+    } catch (err) {
       next(err)
     }
   },

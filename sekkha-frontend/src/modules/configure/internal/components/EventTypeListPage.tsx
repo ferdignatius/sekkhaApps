@@ -30,18 +30,24 @@ import {
 export function EventTypePage() {
   const navigate = useNavigate()
   const { authState } = useAuth()
-  const isAdmin = authState.status === "authenticated" && authState.role === "admin"
+  const isAdmin =
+    authState.status === "authenticated" && authState.role === "admin"
 
   const [eventTypes, setEventTypes] = useState<EventTypeDto[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
-  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all")
+  const [statusFilter, setStatusFilter] = useState<
+    "all" | "active" | "inactive"
+  >("all")
   const [actionError, setActionError] = useState<string | null>(null)
 
   // Dialog states
   const [itemToDelete, setItemToDelete] = useState<EventTypeDto | null>(null)
   const [deleting, setDeleting] = useState(false)
-  const [conflictItem, setConflictItem] = useState<{ item: EventTypeDto; message: string } | null>(null)
+  const [conflictItem, setConflictItem] = useState<{
+    item: EventTypeDto
+    message: string
+  } | null>(null)
 
   const fetchEventTypes = async () => {
     try {
@@ -83,7 +89,12 @@ export function EventTypePage() {
     const inactive = total - active
     const avgPoints =
       total > 0
-        ? Math.round(eventTypes.reduce((acc, t) => acc + (t.default_point_reward || 0), 0) / total)
+        ? Math.round(
+            eventTypes.reduce(
+              (acc, t) => acc + (t.default_point_reward || 0),
+              0
+            ) / total
+          )
         : 0
     return { total, active, inactive, avgPoints }
   }, [eventTypes])
@@ -93,7 +104,9 @@ export function EventTypePage() {
     try {
       await eventTypesApi.update(item.id, { is_active: !item.is_active })
       setEventTypes((prev) =>
-        prev.map((t) => (t.id === item.id ? { ...t, is_active: !t.is_active } : t))
+        prev.map((t) =>
+          t.id === item.id ? { ...t, is_active: !t.is_active } : t
+        )
       )
     } catch (err: any) {
       setActionError(err?.message || "Failed to update event type status")
@@ -109,7 +122,11 @@ export function EventTypePage() {
       setItemToDelete(null)
     } catch (err: any) {
       const msg = err?.message || ""
-      if (err?.status === 409 || msg.includes("currently in use") || msg.includes("relasi")) {
+      if (
+        err?.status === 409 ||
+        msg.includes("currently in use") ||
+        msg.includes("relasi")
+      ) {
         setConflictItem({
           item: itemToDelete,
           message:
@@ -130,7 +147,9 @@ export function EventTypePage() {
     try {
       await eventTypesApi.update(conflictItem.item.id, { is_active: false })
       setEventTypes((prev) =>
-        prev.map((t) => (t.id === conflictItem.item.id ? { ...t, is_active: false } : t))
+        prev.map((t) =>
+          t.id === conflictItem.item.id ? { ...t, is_active: false } : t
+        )
       )
       setConflictItem(null)
     } catch (err: any) {
@@ -160,13 +179,16 @@ export function EventTypePage() {
                 Event Types Master Data
               </h1>
               <p className="text-xs text-[#6a6a6a]">
-                Classify event categories, visual theme colors, and default point rewards.
+                Classify event categories, visual theme colors, and default
+                point rewards.
               </p>
             </div>
           </div>
           {isAdmin && (
             <Button
-              onClick={() => void navigate({ to: "/configure/master/event-type/new" })}
+              onClick={() =>
+                void navigate({ to: "/configure/master/event-type/new" })
+              }
               className="h-10 gap-2 rounded-[12px] bg-[#0a0a0a] px-4 text-xs font-bold text-white shadow-xs hover:bg-[#222]"
             >
               <PlusIcon className="size-4" />
@@ -195,22 +217,29 @@ export function EventTypePage() {
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Card className="rounded-[16px] border border-[#e5e5e5] bg-white p-4 shadow-2xs">
             <p className="text-xs text-[#6a6a6a]">Total Event Types</p>
-            <p className="mt-1 text-2xl font-black text-[#0a0a0a]">{stats.total}</p>
+            <p className="mt-1 text-2xl font-black text-[#0a0a0a]">
+              {stats.total}
+            </p>
           </Card>
           <Card className="rounded-[16px] border border-[#e5e5e5] bg-white p-4 shadow-2xs">
             <p className="text-xs text-[#6a6a6a]">Active Types</p>
-            <p className="mt-1 text-2xl font-black text-[#0d9488]">{stats.active}</p>
+            <p className="mt-1 text-2xl font-black text-[#0d9488]">
+              {stats.active}
+            </p>
           </Card>
           <Card className="rounded-[16px] border border-[#e5e5e5] bg-white p-4 shadow-2xs">
             <p className="text-xs text-[#6a6a6a]">Inactive Types</p>
-            <p className="mt-1 text-2xl font-black text-[#6a6a6a]">{stats.inactive}</p>
+            <p className="mt-1 text-2xl font-black text-[#6a6a6a]">
+              {stats.inactive}
+            </p>
           </Card>
           <Card className="rounded-[16px] border border-[#e5e5e5] bg-white p-4 shadow-2xs">
             <p className="flex items-center gap-1 text-xs text-[#6a6a6a]">
               <CoinsIcon className="size-3 text-[#e8b94a]" /> Average Points
             </p>
             <p className="mt-1 text-2xl font-black text-[#0a0a0a]">
-              {stats.avgPoints} <span className="text-xs font-normal text-[#6a6a6a]">pts</span>
+              {stats.avgPoints}{" "}
+              <span className="text-xs font-normal text-[#6a6a6a]">pts</span>
             </p>
           </Card>
         </div>
@@ -229,7 +258,11 @@ export function EventTypePage() {
           <div className="flex items-center gap-1.5 self-start sm:self-auto">
             {(["all", "active", "inactive"] as const).map((key) => {
               const active = statusFilter === key
-              const labels = { all: "All", active: "Active", inactive: "Inactive" }
+              const labels = {
+                all: "All",
+                active: "Active",
+                inactive: "Inactive",
+              }
               return (
                 <button
                   key={key}
@@ -261,8 +294,12 @@ export function EventTypePage() {
         ) : filteredTypes.length === 0 ? (
           <div className="rounded-[20px] border border-[#e5e5e5] bg-white py-16 text-center shadow-2xs">
             <TagIcon className="mx-auto size-10 text-[#6a6a6a]/40" />
-            <p className="mt-3 text-sm font-semibold text-[#0a0a0a]">No event types found</p>
-            <p className="mt-1 text-xs text-[#6a6a6a]">Try adjusting your search keyword or status filter.</p>
+            <p className="mt-3 text-sm font-semibold text-[#0a0a0a]">
+              No event types found
+            </p>
+            <p className="mt-1 text-xs text-[#6a6a6a]">
+              Try adjusting your search keyword or status filter.
+            </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -311,7 +348,7 @@ export function EventTypePage() {
                       <CoinsIcon className="size-3 text-[#e8b94a]" />
                       {type.default_point_reward} Pts
                     </span>
-                    <span className="font-mono text-[10px] uppercase text-[#8a8a8a]">
+                    <span className="font-mono text-[10px] text-[#8a8a8a] uppercase">
                       {type.color}
                     </span>
                   </div>
@@ -369,7 +406,10 @@ export function EventTypePage() {
       </div>
 
       {/* Delete Confirmation Modal */}
-      <Dialog open={Boolean(itemToDelete)} onOpenChange={(open) => !open && setItemToDelete(null)}>
+      <Dialog
+        open={Boolean(itemToDelete)}
+        onOpenChange={(open) => !open && setItemToDelete(null)}
+      >
         <DialogContent className="max-w-md rounded-[20px] bg-white p-6">
           <DialogHeader>
             <div className="mb-2 flex size-10 items-center justify-center rounded-full bg-[#ef4444]/10 text-[#ef4444]">
@@ -379,9 +419,10 @@ export function EventTypePage() {
               Delete Event Type "{itemToDelete?.label}"?
             </DialogTitle>
             <DialogDescription className="text-xs text-[#6a6a6a]">
-              This operation will permanently delete <strong>{itemToDelete?.code}</strong>. If this
-              event type is linked to existing events or activities, deletion will be blocked to
-              maintain data integrity.
+              This operation will permanently delete{" "}
+              <strong>{itemToDelete?.code}</strong>. If this event type is
+              linked to existing events or activities, deletion will be blocked
+              to maintain data integrity.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="mt-4 flex gap-2">
@@ -406,7 +447,10 @@ export function EventTypePage() {
       </Dialog>
 
       {/* 409 Conflict In-Use Modal */}
-      <Dialog open={Boolean(conflictItem)} onOpenChange={(open) => !open && setConflictItem(null)}>
+      <Dialog
+        open={Boolean(conflictItem)}
+        onOpenChange={(open) => !open && setConflictItem(null)}
+      >
         <DialogContent className="max-w-md rounded-[20px] bg-white p-6">
           <DialogHeader>
             <div className="mb-2 flex size-10 items-center justify-center rounded-full bg-[#f59e0b]/10 text-[#f59e0b]">
@@ -420,8 +464,9 @@ export function EventTypePage() {
             </DialogDescription>
           </DialogHeader>
           <div className="mt-2 rounded-[12px] bg-[#faf5e8] p-3 text-xs text-[#8a7a5a]">
-            💡 <strong>Recommendation:</strong> Deactivate this event type instead. Existing events will
-            remain intact, and this type will no longer appear when creating new events.
+            💡 <strong>Recommendation:</strong> Deactivate this event type
+            instead. Existing events will remain intact, and this type will no
+            longer appear when creating new events.
           </div>
           <DialogFooter className="mt-4 flex gap-2">
             <Button

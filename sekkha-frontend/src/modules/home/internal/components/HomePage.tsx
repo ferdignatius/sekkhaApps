@@ -13,13 +13,11 @@ import {
   SearchIcon,
   SettingsIcon,
   TicketIcon,
-  HeartHandshakeIcon,
   TrophyIcon,
   UsersIcon,
   UserIcon,
   LayoutGridIcon,
   BarChart3Icon,
-  ClockIcon,
   XIcon,
   SparklesIcon,
   ChevronRightIcon,
@@ -38,6 +36,13 @@ function formatEventDate(iso: string): string {
   })
 }
 
+function getTimeGreeting(): string {
+  const hour = new Date().getHours()
+  if (hour >= 4 && hour < 12) return "Good morning"
+  if (hour >= 12 && hour < 17) return "Good afternoon"
+  return "Good evening"
+}
+
 type HomeEvent = {
   id: string
   title: string
@@ -53,6 +58,16 @@ type HomeActivity = {
   scanned_at: string
 }
 
+type HomeSeason = {
+  id: string
+  name: string
+  code: string | null
+  start_date: string
+  end_date: string
+  target_attendance: number
+  days_left: number
+}
+
 type HomeDashboard = {
   profile: {
     name: string
@@ -65,6 +80,7 @@ type HomeDashboard = {
     longest_streak: number
     last_attended: string | null
   }
+  season?: HomeSeason | null
   events: HomeEvent[]
   activities: HomeActivity[]
 }
@@ -97,8 +113,8 @@ export function HomePage() {
         if (!isMounted) return
         setError(
           cause instanceof Error && cause.name === "AbortError"
-            ? "Dashboard timeout. Coba lagi."
-            : "Dashboard gagal dimuat. Coba lagi."
+            ? "Dashboard timed out. Please try again."
+            : "Failed to load dashboard. Please try again."
         )
       } finally {
         window.clearTimeout(timeoutId)
@@ -136,6 +152,7 @@ export function HomePage() {
   const activities = dashboard?.activities ?? []
 
   const nextEvent = events[0] ?? null
+  const activeSeason = dashboard?.season ?? null
 
   // State for "See More" (Lainnya) modal and in-modal menu search
   const [showAllMenusModal, setShowAllMenusModal] = useState(false)
@@ -184,14 +201,6 @@ export function HomePage() {
             bg: "bg-[#1a3a3a]",
             iconColor: "text-white",
             href: "/insight",
-          },
-          {
-            id: "recency",
-            label: "Recency Alerts",
-            icon: ClockIcon,
-            bg: "bg-[#faf5e8] border border-[#e5e5e5]",
-            iconColor: "text-[#0a0a0a]",
-            href: "/recency-alerts",
           },
         ]
       : []),
@@ -282,42 +291,16 @@ export function HomePage() {
             items: [
               {
                 id: "insight",
-                label: "Community Insights",
+                label: "Community & Contributor Insights",
                 description:
-                  "Attendance trends, community demographics, and engagement metrics",
+                  "Attendance trends, community demographics, and Seva contributor records",
                 icon: BarChart3Icon,
                 bg: "bg-[#ffb084]",
                 iconColor: "text-[#0a0a0a]",
                 href: "/insight",
                 badge: "Analytics",
                 keywords:
-                  "insight community analytics reports stats charts data trends analitik grafik data",
-              },
-              {
-                id: "contributions",
-                label: "Contributor Insights",
-                description:
-                  "Review volunteer hours, committee contributions, and seva records",
-                icon: HeartHandshakeIcon,
-                bg: "bg-[#b8a4ed]",
-                iconColor: "text-[#0a0a0a]",
-                href: "/pengurus-contribution",
-                badge: "Service",
-                keywords:
-                  "contributions contributor insights volunteers service seva records kontribusi pengurus panitia",
-              },
-              {
-                id: "recency",
-                label: "Recency Alerts",
-                description:
-                  "Monitor member absence recency for pastoral follow-up",
-                icon: ClockIcon,
-                bg: "bg-[#ff4d8b]",
-                iconColor: "text-white",
-                href: "/recency-alerts",
-                badge: "Care",
-                keywords:
-                  "recency alerts pastoral follow-up care inactive absence peringatan keaktifan",
+                  "insight community analytics reports stats charts data trends seva contributor board analitik grafik data",
               },
             ],
           },
@@ -361,17 +344,30 @@ export function HomePage() {
                 keywords: "points rules aturan poin penilaian merit bobot",
               },
               {
-                id: "thresholds",
-                label: "Threshold Settings",
+                id: "seasons",
+                label: "Seasons & Periods",
                 description:
-                  "Adjust absence duration triggers for pastoral early warning",
-                icon: ClockIcon,
+                  "Manage competition periods, calendar seasons, and target metrics",
+                icon: TrophyIcon,
+                bg: "bg-[#e8b94a]",
+                iconColor: "text-[#0a0a0a]",
+                href: "/configure/rules/season",
+                badge: "Rules",
+                keywords:
+                  "seasons periods semester annual vassa musim kompetisi target",
+              },
+              {
+                id: "badge-activities",
+                label: "Service Activities",
+                description:
+                  "Configure Seva duty roles, MC, liturgical chanting, and bonus points",
+                icon: SparklesIcon,
                 bg: "bg-[#ff4d8b]",
                 iconColor: "text-white",
-                href: "/configure/early-warning/threshold",
-                badge: "Alerts",
+                href: "/configure/master/badge-activity",
+                badge: "Master",
                 keywords:
-                  "thresholds silent churn early warning batas absensi tidak aktif",
+                  "service activities seva tugas kebaktian mc puja bonus merit",
               },
             ],
           },
@@ -431,7 +427,7 @@ export function HomePage() {
                 className="mb-3 flex items-center justify-between gap-3 rounded-[16px] border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-800"
               >
                 <span>
-                  {dashboard ? `Data lama ditampilkan. ${error}` : error}
+                  {dashboard ? `Showing cached data. ${error}` : error}
                 </span>
                 <button
                   type="button"
@@ -473,7 +469,7 @@ export function HomePage() {
                     {/* Typographic Hierarchy */}
                     <div className="min-w-0 flex-1">
                       <p className="text-xs font-semibold tracking-tight text-[#6a6a6a]">
-                        Namo Buddhaya
+                        {getTimeGreeting()}
                       </p>
                       <h1
                         className="mt-0.5 truncate text-xl leading-tight font-bold tracking-tight text-[#0a0a0a] sm:text-2xl"
@@ -720,10 +716,122 @@ export function HomePage() {
                 </div>
               </div>
 
-              {/* Dhamma Wisdom Widget */}
-              <div id="dhamma-wisdom-card" className="flex h-full flex-col">
-                <DhammaWidget />
+              {/* Active Season Progress Card */}
+              <div
+                aria-labelledby="active-season-heading"
+                className="relative flex h-full flex-col justify-between overflow-hidden rounded-[28px] border border-[#e5e5e5] bg-[#faf5e8]/85 p-5 shadow-xs backdrop-blur-md sm:p-6"
+              >
+                {/* Decorative background watermark */}
+                <TrophyIcon className="pointer-events-none absolute -right-3 -bottom-3 size-24 rotate-12 text-[#ff4d8b]/10" />
+
+                <div className="relative z-10 flex flex-1 flex-col">
+                  {/* Header: Title + Action */}
+                  <div className="mb-4 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2.5">
+                      <span className="flex size-9 shrink-0 items-center justify-center rounded-[12px] bg-[#0a0a0a] text-[#e8b94a] shadow-xs">
+                        <TrophyIcon className="size-4.5" />
+                      </span>
+                      <div className="min-w-0">
+                        <h3
+                          id="active-season-heading"
+                          className="truncate text-sm font-bold text-[#0a0a0a]"
+                        >
+                          {activeSeason?.name || "Active Season"}
+                        </h3>
+                        <p className="text-[11px] text-[#6a6a6a]">
+                          Community Standings
+                        </p>
+                      </div>
+                    </div>
+
+                    <Link
+                      to="/leaderboard"
+                      aria-label="View Leaderboard"
+                      title="View Leaderboard"
+                      className="group flex size-9 items-center justify-center rounded-full border border-[#e5e5e5] bg-[#fffaf0]/80 text-[#6a6a6a] transition-all hover:border-[#0a0a0a]/20 hover:bg-[#fffaf0] hover:text-[#0a0a0a] active:scale-90"
+                    >
+                      <ChevronRightIcon className="size-4.5 transition-transform group-hover:translate-x-0.5" />
+                    </Link>
+                  </div>
+
+                  {/* Inner Status Card */}
+                  <div className="flex min-h-[130px] flex-1 flex-col justify-between rounded-[20px] border border-[#e5e5e5]/80 bg-[#fffaf0]/90 p-4.5 shadow-2xs backdrop-blur-sm sm:min-h-[145px]">
+                    <div className="flex flex-col gap-2">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <Badge
+                          variant="ochre"
+                          size="sm"
+                          className="gap-1.5 rounded-full px-2.5 py-0.5 font-semibold"
+                        >
+                          <SparklesIcon className="size-3 text-[#0a0a0a]" />
+                          {activeSeason
+                            ? `${activeSeason.days_left} Days Remaining`
+                            : "Season Ongoing"}
+                        </Badge>
+                        <span className="text-xs font-semibold text-[#6a6a6a]">
+                          {totalPoints.toLocaleString("en-US")} Season Pts
+                        </span>
+                      </div>
+
+                      <div className="mt-1">
+                        <div className="flex items-center justify-between text-xs font-semibold text-[#0a0a0a]">
+                          <span>
+                            Target: {activeSeason?.target_attendance ?? 500} Check-ins
+                          </span>
+                          <span className="font-bold text-[#e8b94a]">
+                            {currentStreak}w Streak
+                          </span>
+                        </div>
+                        <div
+                          role="progressbar"
+                          aria-label="Season activity progress"
+                          aria-valuemin={0}
+                          aria-valuemax={100}
+                          aria-valuenow={Math.min(
+                            100,
+                            Math.round(
+                              (totalPoints /
+                                (activeSeason?.target_attendance ?? 500)) *
+                                100
+                            )
+                          )}
+                          className="mt-2 h-2.5 w-full overflow-hidden rounded-full border border-[#e5e5e5] bg-[#f5f0e0]"
+                        >
+                          <div
+                            className="h-full rounded-full bg-gradient-to-r from-[#e8b94a] to-[#ff4d8b] transition-all duration-500"
+                            style={{
+                              width: `${Math.max(
+                                5,
+                                Math.min(
+                                  100,
+                                  Math.round(
+                                    (totalPoints /
+                                      (activeSeason?.target_attendance ?? 500)) *
+                                      100
+                                  )
+                                )
+                              )}%`,
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <Link
+                      to="/leaderboard"
+                      className="group mt-3 flex items-center justify-between border-t border-[#e5e5e5]/80 pt-2.5 text-xs font-semibold text-[#1a3a3a] transition-all hover:text-black"
+                    >
+                      <span>Check Your Rank on Leaderboard</span>
+                      <ChevronRightIcon className="size-4 text-[#0a0a0a] transition-transform group-hover:translate-x-0.5" />
+                    </Link>
+                  </div>
+                </div>
               </div>
+            </div>
+
+            {/* Dhamma Wisdom Widget */}
+            <div id="dhamma-wisdom-card">
+              <DhammaWidget />
             </div>
           </section>
 
@@ -759,7 +867,7 @@ export function HomePage() {
                 </ul>
               ) : (
                 <p className="py-3 text-center text-xs text-[#6a6a6a]">
-                  Belum ada aktivitas terbaru.
+                  No recent activity yet.
                 </p>
               )}
             </div>

@@ -7,20 +7,26 @@ export const usersRouter: Router = Router()
 // GET /api/users/me — Current authenticated user profile
 usersRouter.get("/me", requireAuth, userControllers.getProfile)
 
-// PATCH /api/users/me — Update personal profile details
+// PATCH & PUT /api/users/me and PUT /api/users/me/profile — Update personal profile details
 usersRouter.patch("/me", requireAuth, userControllers.updateProfile)
+usersRouter.put("/me", requireAuth, userControllers.updateProfile)
+usersRouter.put("/me/profile", requireAuth, userControllers.updateProfile)
 
 // PATCH /api/users/me/onboarding — Mark onboarding completed
 usersRouter.patch("/me/onboarding", requireAuth, userControllers.completeOnboarding)
 
-// POST /api/users/email-verification/request — Request 6-digit OTP for email verification / change
+// POST /api/users/email-verification/request & /request-otp — Request 6-digit OTP for email change
 usersRouter.post("/email-verification/request", requireAuth, userControllers.requestEmailVerification)
+usersRouter.post("/email-verification/request-otp", requireAuth, userControllers.requestEmailVerification)
 
-// POST /api/users/email-verification/confirm — Confirm 6-digit OTP code to verify new email
+// POST /api/users/email-verification/confirm & /verify & /verify-otp — Confirm 6-digit OTP code
 usersRouter.post("/email-verification/confirm", requireAuth, userControllers.confirmEmailVerification)
+usersRouter.post("/email-verification/verify", requireAuth, userControllers.confirmEmailVerification)
+usersRouter.post("/email-verification/verify-otp", requireAuth, userControllers.confirmEmailVerification)
 
-// POST /api/users/change-password — Update password
+// POST & PUT /api/users/change-password — Update password
 usersRouter.post("/change-password", requireAuth, userControllers.changePassword)
+usersRouter.put("/change-password", requireAuth, userControllers.changePassword)
 
 // GET /api/users/me/attendances — Recent event attendances
 usersRouter.get("/me/attendances", requireAuth, userControllers.getAttendances)

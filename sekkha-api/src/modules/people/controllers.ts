@@ -21,20 +21,12 @@ export const CreateMemberSchema = z.object({
   school_id: z.string().trim().optional().nullable().or(z.literal("")),
   school: z.string().trim().max(100).optional().nullable().or(z.literal("")),
   phone: z.string().trim().max(20).optional().nullable().or(z.literal("")),
-  gender: z.enum(["male", "female"]).optional().nullable().or(z.literal("")),
   date_of_birth: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format (YYYY-MM-DD)")
     .optional()
     .nullable()
     .or(z.literal("")),
-  birth_date: z
-    .string()
-    .refine((v) => !v || !isNaN(Date.parse(v)), "Invalid date format")
-    .optional()
-    .nullable()
-    .or(z.literal("")),
-  address: z.string().max(255).optional().nullable().or(z.literal("")),
   email: z.string().trim().email("Invalid email format").max(255).optional().nullable().or(z.literal("")),
   username: z
     .string()
@@ -53,20 +45,12 @@ export const UpdateMemberSchema = z.object({
   school_id: z.string().trim().optional().nullable().or(z.literal("")),
   school: z.string().trim().max(100).optional().nullable().or(z.literal("")),
   phone: z.string().trim().max(20).optional().nullable().or(z.literal("")),
-  gender: z.enum(["male", "female"]).optional().nullable().or(z.literal("")),
   date_of_birth: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format (YYYY-MM-DD)")
     .optional()
     .nullable()
     .or(z.literal("")),
-  birth_date: z
-    .string()
-    .refine((v) => !v || !isNaN(Date.parse(v)), "Invalid date format")
-    .optional()
-    .nullable()
-    .or(z.literal("")),
-  address: z.string().max(255).optional().nullable().or(z.literal("")),
   email: z.string().trim().email().max(255).optional().nullable().or(z.literal("")),
   username: z
     .string()

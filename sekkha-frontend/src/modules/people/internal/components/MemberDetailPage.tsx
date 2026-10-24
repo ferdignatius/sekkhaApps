@@ -327,7 +327,7 @@ export function MemberDetailPage({
               </div>
 
               {/* Quick Stats Grid */}
-              <div className="grid grid-cols-2 gap-2.5 border-t border-[#e5e5e5] pt-3 sm:grid-cols-3">
+              <div className="grid grid-cols-2 gap-2.5 border-t border-[#e5e5e5] pt-3">
                 <div className="rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] p-3 text-center">
                   <span className="block text-[10px] font-bold tracking-wider text-[#6a6a6a] uppercase">
                     Attendance
@@ -342,18 +342,6 @@ export function MemberDetailPage({
                   </span>
                   <span className="text-base font-bold text-[#0a0a0a]">
                     {member.points || 0} Pts
-                  </span>
-                </div>
-                <div className="col-span-2 rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] p-3 text-center sm:col-span-1">
-                  <span className="block text-[10px] font-bold tracking-wider text-[#6a6a6a] uppercase">
-                    Gender
-                  </span>
-                  <span className="text-base font-bold text-[#0a0a0a]">
-                    {member.gender === "L"
-                      ? "Male"
-                      : member.gender === "P"
-                        ? "Female"
-                        : "Not set"}
                   </span>
                 </div>
               </div>
@@ -612,7 +600,6 @@ export function MemberDetailPage({
                               month: "short",
                               year: "numeric",
                             })}{" "}
-                            • {att.location}
                           </p>
                         </div>
                         <span className="rounded-full border border-[#e5e5e5] bg-[#faf5e8] px-2.5 py-0.5 text-xs font-bold text-[#0a0a0a]">

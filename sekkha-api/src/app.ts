@@ -2,7 +2,7 @@ import express, { type Application } from "express"
 import cors from "cors"
 import helmet from "helmet"
 import compression from "compression"
-import rateLimit from "express-rate-limit"
+import rateLimit, { MemoryStore, type Store } from "express-rate-limit"
 import cookieParser from "cookie-parser"
 import { RedisStore } from "rate-limit-redis"
 import { errorHandler } from "./middleware/errorHandler"
@@ -26,14 +26,72 @@ import { pengurusModule } from "./modules/pengurus/module"
 import { schoolsModule } from "./modules/schools/module"
 import { homeModule } from "./modules/home/module"
 
-// ─── Distributed Rate Limiter Factory (F-09 Remediation) ──────────────────────
+// ─── Distributed & Resilient Rate Limiter Factory (F-09) ──────────────────────
+class ResilientRateLimitStore implements Store {
+  private memStore = new MemoryStore()
+  private redisStore: RedisStore
+
+  constructor(prefix: string) {
+    this.redisStore = new RedisStore({
+      sendCommand: async (...args: string[]) => {
+        return (redis.call as any)(args[0], ...args.slice(1))
+      },
+      prefix: `rl:${prefix}:`,
+    })
+  }
+
+  init(options: any) {
+    this.memStore.init(options)
+    this.redisStore.init?.(options)?.catch?.(() => {})
+  }
+
+  async increment(key: string) {
+    if (redis.status === "ready") {
+      try {
+        return await this.redisStore.increment(key)
+      } catch {
+        // Fall back to memory store if Redis request fails
+      }
+    }
+    return this.memStore.increment(key)
+  }
+
+  async decrement(key: string) {
+    if (redis.status === "ready") {
+      try {
+        return await this.redisStore.decrement(key)
+      } catch {
+        // Fall back
+      }
+    }
+    return this.memStore.decrement(key)
+  }
+
+  async resetKey(key: string) {
+    if (redis.status === "ready") {
+      try {
+        return await this.redisStore.resetKey(key)
+      } catch {
+        // Fall back
+      }
+    }
+    return this.memStore.resetKey(key)
+  }
+
+  async resetAll() {
+    if (redis.status === "ready") {
+      try {
+        return await (this.redisStore as any).resetAll?.()
+      } catch {
+        // Fall back
+      }
+    }
+    return this.memStore.resetAll?.()
+  }
+}
+
 function createRateLimitStore(prefix: string) {
-  return new RedisStore({
-    sendCommand: async (...args: string[]) => {
-      return (redis.call as any)(args[0], ...args.slice(1))
-    },
-    prefix: `rl:${prefix}:`,
-  })
+  return new ResilientRateLimitStore(prefix)
 }
 
 export const modules: AppModule[] = [
@@ -77,7 +135,7 @@ export function createApp(): Application {
     standardHeaders: true,
     legacyHeaders: false,
     store: createRateLimitStore("global"),
-    passOnStoreError: false,
+    passOnStoreError: true,
     message: { error: "Too many requests from this IP. Please try again later." },
   })
   app.use(globalLimiter)
@@ -89,7 +147,7 @@ export function createApp(): Application {
     standardHeaders: true,
     legacyHeaders: false,
     store: createRateLimitStore("auth"),
-    passOnStoreError: false,
+    passOnStoreError: true,
     message: { error: "Terlalu banyak percobaan autentikasi. Silakan tunggu 15 menit." },
   })
   app.use("/api/auth/login", authLimiter)
@@ -104,7 +162,7 @@ export function createApp(): Application {
     standardHeaders: true,
     legacyHeaders: false,
     store: createRateLimitStore("otp"),
-    passOnStoreError: false,
+    passOnStoreError: true,
     message: { error: "Terlalu banyak permintaan OTP dari IP ini. Silakan tunggu 15 menit." },
   })
   app.use("/api/auth/register-request", otpLimiter)
@@ -122,7 +180,7 @@ export function createApp(): Application {
     standardHeaders: true,
     legacyHeaders: false,
     store: createRateLimitStore("linking"),
-    passOnStoreError: false,
+    passOnStoreError: true,
     message: { error: "Terlalu banyak percobaan penautan akun dari IP ini. Silakan tunggu 15 menit." },
   })
   app.use("/api/people/link-legacy-account", linkingLimiter)
@@ -134,7 +192,7 @@ export function createApp(): Application {
     standardHeaders: true,
     legacyHeaders: false,
     store: createRateLimitStore("schools"),
-    passOnStoreError: false,
+    passOnStoreError: true,
     message: { error: "Terlalu banyak permintaan statistik sekolah. Silakan tunggu sebentar." },
   })
   app.use("/api/schools/stats", schoolStatsLimiter)

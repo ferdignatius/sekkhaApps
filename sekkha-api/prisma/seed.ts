@@ -16,9 +16,9 @@ async function main() {
   console.log("🌱 Seeding 3NF database...")
 
   // Clean existing tables in reverse dependency order
-  await prisma.userBadge.deleteMany().catch(() => {})
   await prisma.pointTransaction.deleteMany().catch(() => {})
   await prisma.attendance.deleteMany().catch(() => {})
+  await prisma.badgeActivity.deleteMany().catch(() => {})
   await prisma.event.deleteMany().catch(() => {})
   await prisma.userStats.deleteMany().catch(() => {})
   await prisma.userProfile.deleteMany().catch(() => {})
@@ -30,34 +30,43 @@ async function main() {
 
   // ── 1. Master Data: Schools ─────────────────────────────────────────────────
   console.log("🏫 Seeding Master Schools...")
-  const schoolTMD = await prisma.school.create({
-    data: { name: "SMA/SMK Tri Maha Dharma", type: "SMA/SMK" },
-  })
-  const schoolSMAN1 = await prisma.school.create({
-    data: { name: "SMA/SMK Negeri 1 Jakarta", type: "SMA/SMK" },
-  })
-  const schoolUI = await prisma.school.create({
-    data: { name: "Universitas Indonesia", type: "Universitas" },
-  })
-  const schoolHQ = await prisma.school.create({
-    data: { name: "Sekkha Headquarter", type: "Umum" },
-  })
-  await prisma.school.createMany({
-    data: [
-      { name: "SMA/SMK Dharma Widya", type: "SMA/SMK" },
-      { name: "SMA/SMK Cinta Kasih Tzu Chi", type: "SMA/SMK" },
-      { name: "SMA/SMK Tri Ratna", type: "SMA/SMK" },
-      { name: "SMP Tri Maha Dharma", type: "SMP" },
-      { name: "SMP Dharma Widya", type: "SMP" },
-      { name: "SMP Cinta Kasih Tzu Chi", type: "SMP" },
-      { name: "Universitas Bina Nusantara (BINUS)", type: "Universitas" },
-      { name: "Universitas Tarumanagara (UNTAR)", type: "Universitas" },
-      { name: "Universitas Multimedia Nusantara (UMN)", type: "Universitas" },
-      { name: "STAB Kertarajasa", type: "Universitas" },
-      { name: "Umum", type: "Umum" },
-    ],
-    skipDuplicates: true,
-  })
+  const initialSchools = [
+    { name: "SMA/SMK Tri Maha Dharma", type: "SMA/SMK" },
+    { name: "SMA/SMK Negeri 1 Jakarta", type: "SMA/SMK" },
+    { name: "Universitas Indonesia", type: "Universitas" },
+    { name: "Sekkha Headquarter", type: "Umum" },
+    { name: "SMA/SMK Dharma Widya", type: "SMA/SMK" },
+    { name: "SMA/SMK Cinta Kasih Tzu Chi", type: "SMA/SMK" },
+    { name: "SMA/SMK Tri Ratna", type: "SMA/SMK" },
+    { name: "SMP Tri Maha Dharma", type: "SMP" },
+    { name: "SMP Dharma Widya", type: "SMP" },
+    { name: "SMP Cinta Kasih Tzu Chi", type: "SMP" },
+    { name: "SMP Strada Bakti Mulia", type: "SMP" },
+    { name: "SMP Negeri 1", type: "SMP" },
+    { name: "SMK Bina Mandiri", type: "SMA/SMK" },
+    { name: "Universitas Bina Nusantara (BINUS)", type: "Universitas" },
+    { name: "Universitas Tarumanagara (UNTAR)", type: "Universitas" },
+    { name: "Universitas Multimedia Nusantara (UMN)", type: "Universitas" },
+    { name: "Universitas Bunda Mulia", type: "Universitas" },
+    { name: "Universitas Buddhi Dharma", type: "Universitas" },
+    { name: "STAB Kertarajasa", type: "Universitas" },
+    { name: "Umum", type: "Umum" },
+  ]
+
+  const seededSchools: Record<string, any> = {}
+  for (const s of initialSchools) {
+    const record = await prisma.school.upsert({
+      where: { name: s.name },
+      update: { type: s.type, status: "active", isActive: true },
+      create: { name: s.name, type: s.type, status: "active", isActive: true },
+    })
+    seededSchools[s.name] = record
+  }
+
+  const schoolTMD = seededSchools["SMA/SMK Tri Maha Dharma"]
+  const schoolSMAN1 = seededSchools["SMA/SMK Negeri 1 Jakarta"]
+  const schoolUI = seededSchools["Universitas Indonesia"]
+  const schoolHQ = seededSchools["Sekkha Headquarter"]
 
   // ── 2. Master Data: Event Types ──────────────────────────────────────────────
   console.log("🎯 Seeding Master Event Types...")
@@ -180,8 +189,9 @@ async function main() {
     },
   ]
 
+  const seededPointRules: Record<string, any> = {}
   for (const pr of pointRulesData) {
-    await prisma.pointRule.upsert({
+    const record = await prisma.pointRule.upsert({
       where: { code: pr.code },
       update: {
         label: pr.label,
@@ -191,26 +201,7 @@ async function main() {
       },
       create: pr,
     })
-  }
-
-
-  // ── 6. Master Data: Schools ─────────────────────────────────────────────────
-  console.log("🏫 Seeding Master Schools...")
-  const initialSchools = [
-    { name: "SMP Strada Bakti Mulia", type: "SMP" },
-    { name: "SMP Negeri 1", type: "SMP" },
-    { name: "SMK Bina Mandiri", type: "SMA/SMK" },
-    { name: "Umum", type: "Umum" },
-    { name: "Universitas Bunda Mulia", type: "Universitas" },
-    { name: "Universitas Bina Nusantara", type: "Universitas" },
-    { name: "Universitas Buddhi Dharma", type: "Universitas" },
-  ]
-  for (const s of initialSchools) {
-    await prisma.school.upsert({
-      where: { name: s.name },
-      update: { type: s.type, status: "active", isActive: true },
-      create: { name: s.name, type: s.type, status: "active", isActive: true },
-    })
+    seededPointRules[pr.code] = record
   }
 
   // ── 6b. Master Data: Badge Activities (Service Duties) ─────────────────────
@@ -264,7 +255,7 @@ async function main() {
       username: "umat",
       password: await hash(umatPasswordRaw),
       role: Role.member,
-      userNumber: "26010101",
+      userNumber: BigInt(26010101),
       onboardingCompleted: true,
       profile: {
         create: {
@@ -295,7 +286,7 @@ async function main() {
       username: "aktivis",
       password: await hash(aktivisPasswordRaw),
       role: Role.activist,
-      userNumber: "26010102",
+      userNumber: BigInt(26010102),
       onboardingCompleted: true,
       profile: {
         create: {
@@ -326,7 +317,7 @@ async function main() {
       username: "pengurus",
       password: await hash(pengurusPasswordRaw),
       role: Role.organizer,
-      userNumber: "26010103",
+      userNumber: BigInt(26010103),
       onboardingCompleted: true,
       profile: {
         create: {
@@ -356,7 +347,7 @@ async function main() {
       username: "admin",
       password: await hash(adminPasswordRaw),
       role: Role.admin,
-      userNumber: "26010104",
+      userNumber: BigInt(26010104),
       onboardingCompleted: true,
       profile: {
         create: {
@@ -386,7 +377,7 @@ async function main() {
       username: "hendra",
       password: await hash("admin"),
       role: Role.member,
-      userNumber: "26010105",
+      userNumber: BigInt(26010105),
       isClaimed: false,
       onboardingCompleted: true,
       profile: {
@@ -418,7 +409,6 @@ async function main() {
       eventDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
       eventTypeId: seededEventTypes["regular-puja"].id,
       seasonId: activeSeason.id,
-      tag: "Regular Puja",
       status: "scheduled",
       qrCode: "SEKKHA-EVT-001",
     },
@@ -432,7 +422,6 @@ async function main() {
       eventDate: new Date(Date.now() + 9 * 24 * 60 * 60 * 1000),
       eventTypeId: seededEventTypes["chanting"].id,
       seasonId: activeSeason.id,
-      tag: "Chanting",
       status: "scheduled",
       qrCode: "SEKKHA-EVT-002",
     },
@@ -451,7 +440,7 @@ async function main() {
   await prisma.pointTransaction.create({
     data: {
       userId: umatUser.id,
-      ruleId: ruleRutin.id,
+      ruleId: seededPointRules["attendance_rutin"]?.id,
       amount: 50,
       type: "attendance",
       description: `Kehadiran: ${event1.title}`,

@@ -1,7 +1,16 @@
 node_modules
 dist
 .env
+.env.*
+!.env.example
+*.log
 npm-debug.log
 .git
 .gitignore
 README.md
+Dockerfile
+docker-compose*.yml
+__tests__
+*.test.ts
+*.pbt.test.ts
+.old_modules*

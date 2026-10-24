@@ -149,7 +149,7 @@ export function MemberDetailSheet({
           </div>
 
           {/* Quick Stats Grid */}
-          <div className="grid grid-cols-2 gap-2.5 border-t border-[#e5e5e5] pt-2 sm:grid-cols-3">
+          <div className="grid grid-cols-2 gap-2.5 border-t border-[#e5e5e5] pt-2">
             <div className="rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] p-2.5 text-center">
               <span className="block text-[10px] font-bold tracking-wider text-[#6a6a6a] uppercase">
                 Account Status
@@ -170,18 +170,6 @@ export function MemberDetailSheet({
                 {member.last_attended_at
                   ? new Date(member.last_attended_at).toLocaleDateString()
                   : "Never"}
-              </span>
-            </div>
-            <div className="col-span-2 rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] p-2.5 text-center sm:col-span-1">
-              <span className="block text-[10px] font-bold tracking-wider text-[#6a6a6a] uppercase">
-                Gender
-              </span>
-              <span className="text-xs font-bold text-[#0a0a0a] sm:text-sm">
-                {member.gender === "L" || member.gender === "male"
-                  ? "Male"
-                  : member.gender === "P" || member.gender === "female"
-                    ? "Female"
-                    : "Not set"}
               </span>
             </div>
           </div>

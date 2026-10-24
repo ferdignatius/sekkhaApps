@@ -1,10 +1,8 @@
 import { useEffect, useState, useRef } from "react"
-import { Link } from "@tanstack/react-router"
 import {
   UsersIcon,
   AlertTriangleIcon,
   BarChart3Icon,
-  ChevronRightIcon,
   CalendarIcon,
   ShieldCheckIcon,
   RefreshCwIcon,
@@ -14,6 +12,7 @@ import {
   TagIcon,
   TrendingUpIcon,
   ChevronDownIcon,
+  AwardIcon,
 } from "lucide-react"
 import {
   CartesianGrid,
@@ -44,6 +43,7 @@ import {
   fetchInsightMetricsParams,
   MASTER_EVENT_CATEGORIES,
 } from "../api/insightApi"
+import { PengurusContributionTab } from "./PengurusContributionTab"
 import type {
   InsightMetricsResponse,
   RoleSegmentFilter,
@@ -68,6 +68,8 @@ const MONTH_NAMES = [
 ]
 
 export function InsightPage() {
+  const [activeTab, setActiveTab] = useState<"vitality" | "contributors">("vitality")
+
   // Period & Category Controls
   const [timeUnit, setTimeUnit] = useState<TimeUnit>("year") // "year" | "month"
 
@@ -265,28 +267,61 @@ export function InsightPage() {
                 </h1>
               </div>
               <p className="text-caption sm:text-body-sm max-w-2xl leading-relaxed text-sekkha-slate">
-                Interactive macro analytics dashboard. Track attendance rates
-                and absence patterns across Members, Activists, and Organizers.
+                Macro analytics dashboard & Seva contributor tracking for community organizers.
               </p>
             </div>
 
             {/* Refresh Button */}
-            <div className="flex w-full shrink-0 items-center gap-2 sm:w-auto">
-              <button
-                type="button"
-                onClick={loadMetrics}
-                className="text-caption-bold flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-sekkha-hairline-soft bg-sekkha-surface px-3.5 py-2 font-bold text-sekkha-ink shadow-2xs transition hover:bg-sekkha-hairline-soft sm:w-auto"
-                title="Refresh Data"
-              >
-                <RefreshCwIcon
-                  className={`size-4 ${isLoading ? "animate-spin text-sekkha-brand-blue" : ""}`}
-                />
-                <span>Refresh Data</span>
-              </button>
-            </div>
+            {activeTab === "vitality" && (
+              <div className="flex w-full shrink-0 items-center gap-2 sm:w-auto">
+                <button
+                  type="button"
+                  onClick={loadMetrics}
+                  className="text-caption-bold flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-sekkha-hairline-soft bg-sekkha-surface px-3.5 py-2 font-bold text-sekkha-ink shadow-2xs transition hover:bg-sekkha-hairline-soft sm:w-auto"
+                  title="Refresh Data"
+                >
+                  <RefreshCwIcon
+                    className={`size-4 ${isLoading ? "animate-spin text-sekkha-brand-blue" : ""}`}
+                  />
+                  <span>Refresh Data</span>
+                </button>
+              </div>
+            )}
           </div>
 
-          {/* ── INTERACTIVE PERIOD & CATEGORY CONTROL PANEL ── */}
+          {/* ── SECTION TABS ── */}
+          <div className="flex flex-wrap items-center gap-2 border-b border-sekkha-hairline-soft pb-2">
+            <button
+              type="button"
+              onClick={() => setActiveTab("vitality")}
+              className={`inline-flex cursor-pointer items-center gap-2 rounded-xl px-4 py-2 text-caption-bold font-bold transition-all ${
+                activeTab === "vitality"
+                  ? "bg-sekkha-brand-blue text-white shadow-xs"
+                  : "border border-sekkha-hairline-soft bg-sekkha-surface text-sekkha-slate hover:bg-sekkha-canvas hover:text-sekkha-ink"
+              }`}
+            >
+              <BarChart3Icon className="size-4" />
+              <span>Community Vitality & Trends</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("contributors")}
+              className={`inline-flex cursor-pointer items-center gap-2 rounded-xl px-4 py-2 text-caption-bold font-bold transition-all ${
+                activeTab === "contributors"
+                  ? "bg-sekkha-brand-blue text-white shadow-xs"
+                  : "border border-sekkha-hairline-soft bg-sekkha-surface text-sekkha-slate hover:bg-sekkha-canvas hover:text-sekkha-ink"
+              }`}
+            >
+              <AwardIcon className="size-4" />
+              <span>Seva & Contributor Board</span>
+            </button>
+          </div>
+
+          {activeTab === "contributors" ? (
+            <PengurusContributionTab />
+          ) : (
+            <>
+              {/* ── INTERACTIVE PERIOD & CATEGORY CONTROL PANEL ── */}
           <div className="flex flex-col gap-3.5 rounded-2xl border border-sekkha-hairline-soft bg-sekkha-canvas p-3.5 shadow-xs sm:rounded-3xl sm:p-5">
             {/* Top Row: Dropdowns for Basis Waktu + Multi-Select Kategori Event + Multi-Select Comparison Dropdown */}
             <div className="flex flex-col items-stretch justify-between gap-2.5 border-b border-sekkha-hairline-soft pb-3.5 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3 sm:pb-4">
@@ -840,24 +875,13 @@ export function InsightPage() {
                         <AlertTriangleIcon className="size-4" />
                       </span>
                       <h2 className="text-caption-bold sm:text-body-sm-medium font-bold text-sekkha-ink">
-                        Community Engagement Health (Silent-Churn)
+                        Community Engagement Health
                       </h2>
                     </div>
                     <p className="text-micro sm:text-caption max-w-xl text-sekkha-slate">
-                      Macro data integrated with{" "}
-                      <strong>Silent-Churn Alert</strong>. Track member activity
-                      segmentation to prevent long-term dropouts.
+                      Macro community attendance frequency and consistency segmentation across all registered members.
                     </p>
                   </div>
-
-                  {/* Direct Link to /recency-alerts */}
-                  <Link
-                    to="/recency-alerts"
-                    className="text-caption-bold inline-flex w-full shrink-0 cursor-pointer items-center justify-center gap-2 rounded-xl bg-sekkha-brand-blue px-3.5 py-2.5 font-bold text-white shadow-xs transition hover:bg-blue-600 active:scale-95 sm:w-auto"
-                  >
-                    <span>Manage in Silent-Churn Alert</span>
-                    <ChevronRightIcon className="size-4" />
-                  </Link>
                 </div>
 
                 {/* Combined Progress Bar */}
@@ -1067,8 +1091,10 @@ export function InsightPage() {
               </div>
             </>
           )}
-        </div>
-      </div>
-    </main>
-  )
+        </>
+      )}
+    </div>
+  </div>
+</main>
+)
 }

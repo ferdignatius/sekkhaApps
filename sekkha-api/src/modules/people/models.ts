@@ -66,7 +66,6 @@ export const peopleModels = {
             phone: true,
             schoolId: true,
             birthDate: true,
-            gender: true,
             school: { select: { id: true, name: true } },
           },
         },
@@ -86,7 +85,6 @@ export const peopleModels = {
               select: {
                 title: true,
                 eventDate: true,
-                location: true,
               },
             },
           },

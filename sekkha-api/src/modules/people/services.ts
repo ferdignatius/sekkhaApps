@@ -203,13 +203,13 @@ export const peopleServices = {
       phone: canViewSensitive && member.profile?.phone ? decrypt(member.profile.phone) || null : null,
       school: member.profile?.school?.name || null,
       school_id: member.profile?.schoolId || null,
-      birth_date:
+      date_of_birth:
         canViewSensitive && member.profile?.birthDate
           ? decrypt(member.profile.birthDate) || null
           : null,
-      gender:
-        canViewSensitive && member.profile?.gender
-          ? decrypt(member.profile.gender) || null
+      birth_date:
+        canViewSensitive && member.profile?.birthDate
+          ? decrypt(member.profile.birthDate) || null
           : null,
       role: member.role,
       is_claimed: member.isClaimed ?? true,
@@ -219,7 +219,6 @@ export const peopleServices = {
         id: a.id,
         event_title: a.event?.title || "Event",
         event_date: a.event?.eventDate ? new Date(a.event.eventDate).toISOString() : new Date().toISOString(),
-        location: a.event?.location || "—",
         method: a.method,
         points_earned: canViewSensitive ? a.pointsEarned || 50 : 0,
         scanned_at: new Date(a.scannedAt).toISOString(),
@@ -233,15 +232,12 @@ export const peopleServices = {
     school_id?: string | null
     school?: string | null
     phone?: string | null
-    gender?: "male" | "female" | string | null
     date_of_birth?: string | null
-    birth_date?: string | null
-    address?: string | null
     email?: string | null
     username?: string | null
   }, actor?: CurrentUser) {
     const role = data.role === "activist" ? "activist" : "member"
-    const birthDateVal = data.date_of_birth || data.birth_date || null
+    const birthDateVal = data.date_of_birth || null
 
     let resolvedSchoolId = data.school_id || null
     if (!resolvedSchoolId && data.school) {
@@ -284,7 +280,6 @@ export const peopleServices = {
                 phone: data.phone ? encrypt(data.phone.trim()) : null,
                 schoolId: resolvedSchoolId,
                 birthDate: birthDateVal ? encrypt(new Date(birthDateVal).toISOString()) : null,
-                gender: data.gender ? encrypt(data.gender.trim()) : null,
               },
             },
             stats: {
@@ -398,7 +393,6 @@ export const peopleServices = {
     if (birthDateVal !== undefined) {
       profileData.birthDate = birthDateVal ? encrypt(new Date(birthDateVal).toISOString()) : null
     }
-    if (data.gender !== undefined) profileData.gender = data.gender ? encrypt(data.gender.trim()) : null
 
     const { updatedUser, updatedProfile } = await peopleModels.transaction(async (tx) => {
       const updatedUser = await tx.user.update({ where: { id }, data: userData })
@@ -411,7 +405,6 @@ export const peopleServices = {
           phone: data.phone ? encrypt(data.phone.trim()) : null,
           schoolId: resolvedSchoolId || null,
           birthDate: birthDateVal ? encrypt(new Date(birthDateVal).toISOString()) : null,
-          gender: data.gender ? encrypt(data.gender.trim()) : null,
         },
         include: { school: true },
       })

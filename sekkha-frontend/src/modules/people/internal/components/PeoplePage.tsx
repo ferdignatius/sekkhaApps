@@ -342,9 +342,7 @@ export function PeoplePage() {
     role: "member",
     school_id: "",
     phone: "",
-    gender: "",
     date_of_birth: "",
-    address: "",
   })
   const [updateForm, setUpdateForm] = useState<UpdateMemberPayload>({})
   const [submitting, setSubmitting] = useState(false)
@@ -423,9 +421,7 @@ export function PeoplePage() {
         role: createForm.role || "member",
         school_id: createForm.school_id || null,
         phone: createForm.phone?.trim() || null,
-        gender: createForm.gender || null,
         date_of_birth: createForm.date_of_birth || null,
-        address: createForm.address?.trim() || null,
       })
 
       setShowCreateModal(false)
@@ -435,9 +431,7 @@ export function PeoplePage() {
         role: "member",
         school_id: "",
         phone: "",
-        gender: "",
         date_of_birth: "",
-        address: "",
       })
       await loadData()
       showToast(`Member "${created.name}" registered successfully!`)
@@ -921,7 +915,7 @@ export function PeoplePage() {
               </div>
             </div>
 
-            {/* Phone & Gender */}
+            {/* Phone & Date of Birth */}
             <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <label htmlFor="people-create-phone" className="text-xs font-bold text-[#0a0a0a]">
@@ -938,25 +932,6 @@ export function PeoplePage() {
               </div>
 
               <div className="space-y-1.5">
-                <label htmlFor="people-create-gender" className="text-xs font-bold text-[#0a0a0a]">
-                  Gender
-                </label>
-                <select
-                  id="people-create-gender"
-                  value={createForm.gender || ""}
-                  onChange={(e) => setCreateForm({ ...createForm, gender: e.target.value })}
-                  className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-sm text-[#0a0a0a] transition-colors outline-none focus:border-[#0a0a0a]"
-                >
-                  <option value="">Not specified</option>
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Date of Birth & Address */}
-            <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
-              <div className="space-y-1.5">
                 <label htmlFor="people-create-dob" className="text-xs font-bold text-[#0a0a0a]">
                   Date of Birth
                 </label>
@@ -967,20 +942,6 @@ export function PeoplePage() {
                   onChange={(e) =>
                     setCreateForm({ ...createForm, date_of_birth: e.target.value })
                   }
-                  className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-sm text-[#0a0a0a] transition-colors outline-none focus:border-[#0a0a0a]"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label htmlFor="people-create-address" className="text-xs font-bold text-[#0a0a0a]">
-                  Address / Notes
-                </label>
-                <input
-                  id="people-create-address"
-                  type="text"
-                  value={createForm.address || ""}
-                  onChange={(e) => setCreateForm({ ...createForm, address: e.target.value })}
-                  placeholder="Optional address"
                   className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-sm text-[#0a0a0a] transition-colors outline-none focus:border-[#0a0a0a]"
                 />
               </div>

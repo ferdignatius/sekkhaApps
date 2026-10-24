@@ -18,7 +18,7 @@ Kumpulan PRD yang menjadi **sumber kebenaran kebutuhan produk** sebelum implemen
 | `schools/` | Master sekolah & statistik distribusi jemaat | `schools.md` | [`api-contract.md#modul-8-master-data-sekolah-apischools`](api-contract.md#modul-8-master-data-sekolah-apischools) | Approved (v1.4.1) |
 | `configure/` | Master data UI, aturan poin, season, threshold | `configure.md` | [`api-contract.md#modul-9-konfigurasi--gamifikasi-master-apiconfigure`](api-contract.md#modul-9-konfigurasi--gamifikasi-master-apiconfigure) | Approved (v1.4.1) |
 | `landing-page/` | Halaman publik pra-login (hero, features, CTA) | `landing-page.md` | — | Approved (v1.0.0) |
-| `pengurus/` | Recency alerts (early warning), analitik vihara | `peopleManagementAndAccountLinking.md` | [`api-contract.md#modul-7-analitik-pengurus--early-warning-alerts-apipengurus`](api-contract.md#modul-7-analitik-pengurus--early-warning-alerts-apipengurus) | Approved (v1.4.1) |
+| `pengurus/` | Community insights & Seva contributor leadership dashboard | `pengurus-analytics-and-pastoral.md` | [`api-contract.md#modul-7-analitik-pengurus--early-warning-alerts-apipengurus`](api-contract.md#modul-7-analitik-pengurus--early-warning-alerts-apipengurus) | Approved (v2.1.0) |
 
 ## Tujuan Folder Ini
 

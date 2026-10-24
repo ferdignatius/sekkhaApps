@@ -1025,82 +1025,13 @@ Menerbitkan ulang password dummy untuk anggota yang belum claim. Password lama l
 
 ---
 
-## Modul 7: Analitik Pengurus & Early Warning Alerts (`/api/pengurus`)
+## Modul 7: Analitik Pengurus & Contributor Insights (`/api/pengurus`)
 
-Deteksi risiko ketidakhadiran jemaat (*Silent Churn*), tindak lanjut pastoral (*Recency Alerts*), dan metrik tren kesehatan vihara.
+Dashboard analitik terpadu (`/insight`) untuk memantau retensi jemaat, tren kehadiran komunitas, serta distribusi beban penugasan pelayanan ibadah (*Seva Contributor Board*).
 
-### 1. `GET /api/pengurus/recency-alerts`
-Mengambil daftar jemaat yang berisiko pasif berdasarkan frekuensi ketidakhadiran beruntun (*consecutive missed events*).
-- **Akses**: Organizer & Admin (`requireRole("organizer", "admin")`)
-- **Query Parameters**:
-  - `level` (`all` | `normal` | `warning` | `at_risk` | `lost`, default: `all`)
-    - `normal`: Bolos 0-1 kali.
-    - `warning`: Bolos 2 kali berturut-turut.
-    - `at_risk`: Bolos 3 kali berturut-turut (butuh perhatian pastoral).
-    - `lost`: Tidak hadir 4+ kali berturut-turut.
-  - `search` (string): Pencarian nama, nomor anggota, atau telepon.
-  - `sortBy` (`longest_absence` | `name` | `consecutive_missed`, default: `longest_absence`)
-- **Response (200 OK)**:
-  ```json
-  {
-    "summary": {
-      "total_members": 142,
-      "normal_count": 110,
-      "warning_count": 18,
-      "at_risk_count": 9,
-      "lost_count": 5
-    },
-    "members": [
-      {
-        "user_id": "usr_ghi789",
-        "name": "Kevin Wijaya",
-        "user_number": "202610230019",
-        "role": "member",
-        "school": "SMA Tarakanita 1",
-        "phone": "08129876543",
-        "level": "at_risk",
-        "consecutive_missed": 3,
-        "days_since_last_attendance": 21,
-        "last_attended_date": "2026-08-23T09:00:00.000Z",
-        "attendance_rate": 45
-      }
-    ]
-  }
-  ```
+> **Catatan**: Fitur *Pastoral Recency Alerts* ditangguhkan ke perencanaan masa depan (*Post-MVP Roadmap*) per prinsip YAGNI (lihat dokumen PRD [pengurus-analytics-and-pastoral.md](file:///c:/Users/ferdi/Documents/ferdinand_dev/PersonalProject/sekkhaApps/prd-sekkha/pengurus/pengurus-analytics-and-pastoral.md) Bagian 6).
 
-### 2. `GET /api/pengurus/recency-alerts/:userId`
-Detail presensi dan metrik ketidakhadiran seorang jemaat untuk keperluan konseling.
-- **Akses**: Organizer & Admin (`requireRole("organizer", "admin")`)
-- **Response (200 OK)**:
-  ```json
-  {
-    "user": {
-      "id": "usr_ghi789",
-      "name": "Kevin Wijaya",
-      "email": "kevin@example.com",
-      "user_number": "202610230019",
-      "phone": "08129876543",
-      "school": "SMA Tarakanita 1",
-      "joined_at": "2026-01-10T00:00:00.000Z"
-    },
-    "metrics": {
-      "consecutive_missed": 3,
-      "days_since_last": 21,
-      "attendance_rate": 45,
-      "status": "at_risk"
-    },
-    "attendance_history": [
-      {
-        "event_id": "evt_sunday_01",
-        "event_title": "Kebaktian Remaja",
-        "event_date": "2026-08-23T09:00:00.000Z",
-        "status": "present"
-      }
-    ]
-  }
-  ```
-
-### 3. `GET /api/pengurus/insight`
+### 1. `GET /api/pengurus/insight`
 Mengambil data analitik komprehensif kehadiran vihara, tren periode, retensi jemaat, perbandingan tahunan, serta segmentasi masa keanggotaan (*tenure*).
 - **Akses**: Organizer & Admin (`requireRole("organizer", "admin")`)
 - **Query Parameters**:

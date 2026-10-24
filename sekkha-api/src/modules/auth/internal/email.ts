@@ -30,16 +30,6 @@ function getMailTransporter() {
 }
 
 /**
- * Helper to determine whether OTP should be printed to console for local development.
- * Strictly forbidden in production or when real SMTP credentials are provided.
- */
-function shouldLogOtpDev(): boolean {
-  const isProduction = process.env.NODE_ENV === "production"
-  const isSmtpConfigured = Boolean(process.env.SMTP_USER && process.env.SMTP_PASS)
-  return !isProduction && !isSmtpConfigured
-}
-
-/**
  * Masks an email address for safe logging without exposing PII (e.g. j***e@example.com).
  */
 function maskEmail(email: string): string {
@@ -64,13 +54,6 @@ function escapeHtml(str: string): string {
  * Sends a registration OTP email via Gmail SMTP (Nodemailer).
  */
 export async function sendRegisterOtpEmail({ to, otp, name }: SendOtpParams): Promise<{ success: boolean; error?: string }> {
-  // Only log OTP in non-production environment when SMTP is not configured
-  if (shouldLogOtpDev()) {
-    console.log(`\n======================================================`)
-    console.log(`🔑 [DEV ONLY - SMTP Unconfigured] Registration OTP for: ${to}`)
-    console.log(`👉 OTP CODE: ${otp} (Valid for 5 minutes)`)
-    console.log(`======================================================\n`)
-  }
 
   const recipientName = escapeHtml(name ? name : "Sahabat Sekkha")
   const fromEmail = process.env.EMAIL_FROM || `Sekkha Apps <${process.env.SMTP_USER || "noreply@sekkha.com"}>`
@@ -164,12 +147,9 @@ export async function sendRegisterOtpEmail({ to, otp, name }: SendOtpParams): Pr
       })
       const recipientLog = process.env.NODE_ENV === "production" ? maskEmail(to) : to
       console.log(`✅ [Gmail SMTP Success] Email sent to ${recipientLog}. Message ID:`, info.messageId)
-      return { success: true }
     } catch (err: any) {
       console.warn(`⚠️ [Gmail SMTP Error]:`, err?.message || err)
     }
-  } else if (shouldLogOtpDev()) {
-    console.log(`ℹ️ [Gmail SMTP Info] SMTP credentials not set in .env. OTP logged above for development.`)
   } else if (process.env.NODE_ENV === "production") {
     console.warn(`⚠️ [Mail Warning] SMTP credentials not configured in production.`)
   }
@@ -181,13 +161,6 @@ export async function sendRegisterOtpEmail({ to, otp, name }: SendOtpParams): Pr
  * Sends a password reset OTP email via Gmail SMTP (Nodemailer).
  */
 export async function sendForgotPasswordOtpEmail({ to, otp, name }: SendOtpParams): Promise<{ success: boolean; error?: string }> {
-  // Only log OTP in non-production environment when SMTP is not configured
-  if (shouldLogOtpDev()) {
-    console.log(`\n======================================================`)
-    console.log(`🔑 [DEV ONLY - SMTP Unconfigured] Password Reset OTP for: ${to}`)
-    console.log(`👉 OTP CODE: ${otp} (Valid for 5 minutes)`)
-    console.log(`======================================================\n`)
-  }
 
   const recipientName = escapeHtml(name ? name : "Sahabat Sekkha")
   const fromEmail = process.env.EMAIL_FROM || `Sekkha Apps <${process.env.SMTP_USER || "noreply@sekkha.com"}>`
@@ -278,13 +251,10 @@ export async function sendForgotPasswordOtpEmail({ to, otp, name }: SendOtpParam
         html: htmlContent,
       })
       const recipientLog = process.env.NODE_ENV === "production" ? maskEmail(to) : to
-      console.log(`✅ [Gmail SMTP Success] Forgot password OTP sent to ${recipientLog}. Message ID:`, info.messageId)
       return { success: true }
     } catch (err: any) {
       console.warn(`⚠️ [Gmail SMTP Error]:`, err?.message || err)
     }
-  } else if (shouldLogOtpDev()) {
-    console.log(`ℹ️ [Gmail SMTP Info] SMTP credentials not set in .env. OTP logged above for development.`)
   } else if (process.env.NODE_ENV === "production") {
     console.warn(`⚠️ [Mail Warning] SMTP credentials not configured in production.`)
   }
@@ -329,8 +299,83 @@ export async function sendTemporaryPasswordEmail({ to, tempPassword, name }: Sen
     } catch (err: any) {
       console.warn(`⚠️ [Gmail SMTP Error]:`, err?.message || err)
     }
-  } else if (shouldLogOtpDev()) {
-    console.log(`ℹ️ [DEV ONLY - SMTP Unconfigured] Temporary password delivery skipped for ${maskEmail(to)}.`)
+  }
+
+  return { success: true }
+}
+
+/**
+ * Sends an email verification OTP email via Gmail SMTP (Nodemailer).
+ */
+export async function sendEmailVerificationOtpEmail({ to, otp, name }: SendOtpParams): Promise<{ success: boolean; error?: string }> {
+
+  const recipientName = escapeHtml(name || "Sahabat Sekkha")
+  const fromEmail = process.env.EMAIL_FROM || `Sekkha Apps <${process.env.SMTP_USER || "noreply@sekkha.com"}>`
+
+  const htmlContent = `
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kode Verifikasi Email Sekkha</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #fffaf0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #0a0a0a;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #fffaf0; padding: 40px 20px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" max-width="520" cellspacing="0" cellpadding="0" border="0" style="max-width: 520px; background-color: #ffffff; border: 1px solid #e5e5e5; border-radius: 24px; padding: 36px 32px; box-shadow: 0 4px 20px rgba(10, 10, 10, 0.04);">
+          <tr>
+            <td align="center" style="padding-bottom: 24px;">
+              <div style="display: inline-block; background-color: #0a0a0a; color: #ffffff; padding: 12px 20px; border-radius: 16px; font-weight: 800; font-size: 18px; letter-spacing: 1px;">
+                ✨ SEKHA APPS
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <h1 style="font-size: 20px; font-weight: 800; margin: 0 0 12px 0; color: #0a0a0a;">Verifikasi Alamat Email</h1>
+              <p style="font-size: 14px; line-height: 22px; color: #4a4a4a; margin: 0 0 24px 0;">
+                Halo <strong>${recipientName}</strong>, Anda meminta verifikasi alamat email baru untuk akun Sekkha Anda. Masukkan 6 digit kode OTP berikut:
+              </p>
+              <div style="background-color: #faf5e8; border: 1px dashed #e8b94a; border-radius: 16px; padding: 24px; text-align: center; margin-bottom: 24px;">
+                <span style="font-family: 'Courier New', Courier, monospace; font-size: 36px; font-weight: 800; letter-spacing: 8px; color: #0a0a0a; display: inline-block;">
+                  ${otp}
+                </span>
+                <p style="margin: 8px 0 0 0; font-size: 12px; font-weight: 600; color: #8a7a5a;">
+                  ⏱️ Berlaku selama 10 menit
+                </p>
+              </div>
+              <p style="font-size: 12px; line-height: 18px; color: #8a8a8a; margin: 0;">
+                Jika Anda tidak merasa meminta verifikasi ini, abaikan email ini. Alamat email Anda tidak akan diubah tanpa konfirmasi kode ini.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `
+
+  const transporter = getMailTransporter()
+  if (transporter) {
+    try {
+      const info = await transporter.sendMail({
+        from: fromEmail,
+        to,
+        subject: `${otp} adalah Kode Verifikasi Email Sekkha Anda`,
+        html: htmlContent,
+      })
+      const recipientLog = process.env.NODE_ENV === "production" ? maskEmail(to) : to
+      console.log(`✅ [Gmail SMTP Success] Email verification OTP sent to ${recipientLog}. Message ID:`, info.messageId)
+      return { success: true }
+    } catch (err: any) {
+      console.warn(`⚠️ [Gmail SMTP Error]:`, err?.message || err)
+    }
+  } else if (process.env.NODE_ENV === "production") {
+    console.warn(`⚠️ [Mail Warning] SMTP credentials not configured in production.`)
   }
 
   return { success: true }

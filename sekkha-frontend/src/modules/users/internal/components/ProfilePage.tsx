@@ -67,18 +67,21 @@ interface UserProfile {
   name: string
   username?: string | null
   email: string
+  email_verified?: boolean
+  pending_email?: string | null
   school?: string | null
+  school_id?: string | null
+  class_grade?: string | null
   phone?: string | null
-  birthDate?: string | null
   birth_date?: string | null
   gender?: string | null
   role: string
-  user_number?: string | null
-  userNumber?: string | null
+  user_number?: number | string | null
   points?: number
   total_attendances?: number
-  avatarUrl?: string | null
-  createdAt?: string
+  is_claimed?: boolean
+  onboarding_completed?: boolean
+  joined_at?: string
 }
 
 interface UserStreakData {
@@ -189,7 +192,9 @@ export function ProfilePage() {
       }
 
       if (attendancesRes.status === "fulfilled" && attendancesRes.value) {
-        setAttendances(attendancesRes.value || [])
+        const rawAtt = attendancesRes.value as any
+        const list = Array.isArray(rawAtt) ? rawAtt : (rawAtt?.items || [])
+        setAttendances(list)
       } else {
         setAttendances([])
       }
@@ -207,7 +212,7 @@ export function ProfilePage() {
 
   function handleOpenEditModal() {
     if (!profile) return
-    const rawBirthDate = profile.birth_date || profile.birthDate || ""
+    const rawBirthDate = profile.birth_date || ""
     const formattedBirthDate = rawBirthDate ? rawBirthDate.split("T")[0] : ""
 
     setEditForm({
@@ -216,7 +221,7 @@ export function ProfilePage() {
       school: profile.school || "",
       phone: profile.phone || "",
       birth_date: formattedBirthDate,
-      gender: profile.gender === "P" ? "Female" : "Male",
+      gender: profile.gender === "P" || profile.gender === "female" ? "Female" : "Male",
     })
     setShowEditModal(true)
   }
@@ -227,10 +232,9 @@ export function ProfilePage() {
     try {
       const payload: any = {
         name: editForm.name.trim(),
-        username: editForm.username.trim() || undefined,
         school: editForm.school.trim() || undefined,
         phone: editForm.phone.trim() || undefined,
-        gender: editForm.gender === "Female" ? "P" : "L",
+        gender: editForm.gender === "Female" ? "female" : "male",
       }
 
       if (editForm.birth_date) {
@@ -306,7 +310,7 @@ export function ProfilePage() {
   const school = profile?.school || ""
   // Render blank when no real member number is available — avoid flashing a
   // derived placeholder (e.g. "SKH-1234") before the backend responds.
-  const memberId = profile?.user_number || profile?.userNumber || ""
+  const memberId = String(profile?.user_number ?? "")
   const totalPoints = profile?.points ?? 0
   const currentStreak =
     streakData?.currentStreak ?? (streakData as any)?.current_streak ?? 0
@@ -776,8 +780,7 @@ export function ProfilePage() {
                           Activity & Participation Analytics
                         </h3>
                         <p className="text-xs text-[#6a6a6a]">
-                          Real-time breakdown of attendance, streaks, points,
-                          and badges
+                          Real-time breakdown of attendance, streaks, and points
                         </p>
                       </div>
                     </div>
@@ -919,8 +922,8 @@ export function ProfilePage() {
                         </div>
                         <p className="text-xs leading-relaxed text-[#6a6a6a]">
                           {currentStreak > 0
-                            ? "Maintain your active weekly attendance streak to unlock new badges and higher karma points!"
-                            : "Attend upcoming events to reignite your streak and earn achievement points."}
+                            ? "Pertahankan rentetan streak kehadiran mingguan untuk meraih akumulasi poin yang konsisten!"
+                            : "Ikuti kebaktian dan event mendatang untuk mengaktifkan streak kehadiran kamu."}
                         </p>
                       </div>
 
@@ -1366,12 +1369,12 @@ export function ProfilePage() {
                 />
               </div>
 
-              {/* Username */}
+              {/* Username (Immutable System Generated) */}
               <div className="space-y-1">
                 <label className="text-xs font-bold text-[#0a0a0a]">
                   Login Username{" "}
                   <span className="text-[11px] font-normal text-[#6a6a6a]">
-                    (Unique handle for login)
+                    (Dibuat otomatis oleh sistem, tidak dapat diubah)
                   </span>
                 </label>
                 <div className="relative">
@@ -1380,17 +1383,9 @@ export function ProfilePage() {
                   </span>
                   <input
                     type="text"
+                    disabled
                     value={editForm.username}
-                    onChange={(e) =>
-                      setEditForm((prev) => ({
-                        ...prev,
-                        username: e.target.value
-                          .toLowerCase()
-                          .replace(/[^a-z0-9_.]/g, ""),
-                      }))
-                    }
-                    placeholder="username.handle"
-                    className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] pr-3.5 pl-8 font-mono text-xs text-[#0a0a0a] outline-none focus:border-[#0a0a0a] sm:text-sm"
+                    className="h-11 w-full cursor-not-allowed rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] pr-3.5 pl-8 font-mono text-xs text-[#6a6a6a] opacity-80 sm:text-sm"
                   />
                 </div>
               </div>
@@ -1852,6 +1847,22 @@ export function ProfilePage() {
         description="Manage your goals, account preferences, and privacy."
       >
         <SettingsSection
+          currentEmail={profile?.email || authState.email}
+          emailVerified={profile?.email_verified ?? true}
+          pendingEmail={profile?.pending_email}
+          onEmailUpdated={(newEmail) => {
+            setProfile((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    email: newEmail,
+                    email_verified: true,
+                    pending_email: null,
+                  }
+                : prev
+            )
+            showToast("Alamat email berhasil diperbarui!")
+          }}
           onLogout={() => {
             setSettingsOpen(false)
             logout()

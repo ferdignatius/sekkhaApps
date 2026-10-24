@@ -57,12 +57,12 @@ Role resmi sistem menggunakan standar Bahasa Inggris:
   * Efisien, murni numerik, dan hemat ruang penyimpanan.
   * Bersifat *immutable* (tidak dapat diedit atau diperbarui setelah diterbitkan).
   * Divalidasi dengan database *unique constraint* dan penanganan retry transaksi jika terjadi benturan nomor urut (*race condition*).
-  * Dapat digunakan langsung sebagai identifier login pada `POST /api/auth/login`.
+  * Berfungsi murni sebagai nomor identitas anggota (kartu anggota/presensi) dan **TIDAK dapat digunakan sebagai kredensial login**.
 
 ### 3.2. Nama Pengguna Otomatis (`username`)
 
 * Dibuat otomatis oleh sistem dari nama yang dinormalisasi (lowercase, alfanumerik) + angka random (contoh: `budi48291`).
-* Unik dan berfungsi sebagai identifier login alternatif.
+* Unik dan berfungsi sebagai identifier login alternatif selain email.
 
 ### 3.3. Email & Status Verifikasi (`email`, `email_verified`, `pending_email`)
 
@@ -70,12 +70,13 @@ Role resmi sistem menggunakan standar Bahasa Inggris:
 * **Akun Registrasi Mandiri**: `email` langsung berstatus terverifikasi (`email_verified: true`) karena berhasil melalui alur OTP awal.
 * **Pergantian Email**: Email baru masuk ke `pending_email` dan tidak menggantikan `email` lama sebelum kode verifikasi valid dimasukkan.
 
-### 3.4. Login Identifier Multi-Akses
+### 3.4. Login Identifier (Username & Email)
 
-Endpoint `POST /api/auth/login` menerima salah satu dari 3 kredensial sebagai field `identifier`:
+Endpoint `POST /api/auth/login` menerima salah satu dari 2 kredensial sebagai field `identifier`:
 1. `username`
-2. `userNumber` (atau `user_number`)
-3. `email` (hanya email yang sudah berstatus terverifikasi)
+2. `email` (hanya email yang sudah berstatus terverifikasi)
+
+*(Catatan: `userNumber` adalah nomor keanggotaan/kartu jemaat, bukan kredensial login).*
 
 ---
 
@@ -87,7 +88,7 @@ Saat Organizer membuat jemaat manual via `POST /api/people/members`, sistem mene
 - Password dummy sementara (`sekkha` + 5 angka random + `puggala`, misal: `sekkha73104puggala`), disimpan ter-hash.
 
 **Proses Claim Mandiri**:
-1. Jemaat login pertama kali menggunakan `username` atau `userNumber` dengan password dummy.
+1. Jemaat login pertama kali menggunakan `username` dengan password dummy.
 2. Respons login mengembalikan flag `requires_password_change: true` dan token onboarding terbatas.
 3. Jemaat wajib mengganti password via `POST /api/users/change-password`.
 4. Jemaat memasukkan email via `POST /api/users/email-verification/request`.

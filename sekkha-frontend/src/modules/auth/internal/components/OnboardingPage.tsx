@@ -32,8 +32,7 @@ interface SimilarUsersStats {
 
 const SCHOOL_TYPES = [
   { label: "Junior High (SMP)", value: "SMP" },
-  { label: "Senior High (SMA)", value: "SMA" },
-  { label: "Vocational High (SMK)", value: "SMK" },
+  { label: "Senior & Vocational High (SMA/SMK)", value: "SMA/SMK" },
   { label: "University", value: "Universitas" },
   { label: "General / Other", value: "Umum" },
 ] as const
@@ -84,7 +83,7 @@ export function OnboardingPage() {
   // School Request Modal State
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false)
   const [requestName, setRequestName] = useState("")
-  const [requestType, setRequestType] = useState<SchoolTypeValue>("SMA")
+  const [requestType, setRequestType] = useState<SchoolTypeValue>("SMA/SMK")
   const [requestSubmitting, setRequestSubmitting] = useState(false)
   const [requestError, setRequestError] = useState<string | null>(null)
 
@@ -92,16 +91,19 @@ export function OnboardingPage() {
   const [stats, setStats] = useState<SimilarUsersStats | null>(null)
   const [loadingStats, setLoadingStats] = useState(false)
 
-  // Grade levels only applicable to SMP, SMA, and SMK
+  // Grade levels only applicable to SMP, SMA/SMK (supports legacy SMA/SMK as well)
   const hasGradeLevel =
     selectedSchoolType === "SMP" ||
+    selectedSchoolType === "SMA/SMK" ||
     selectedSchoolType === "SMA" ||
     selectedSchoolType === "SMK"
 
   const availableGradeOptions =
     selectedSchoolType === "SMP"
       ? SMP_GRADE_OPTIONS
-      : selectedSchoolType === "SMA" || selectedSchoolType === "SMK"
+      : selectedSchoolType === "SMA/SMK" ||
+          selectedSchoolType === "SMA" ||
+          selectedSchoolType === "SMK"
         ? SMA_SMK_GRADE_OPTIONS
         : []
 
@@ -284,7 +286,10 @@ export function OnboardingPage() {
     setSelectedSchoolType(nextType)
 
     const nextHasGrade =
-      nextType === "SMP" || nextType === "SMA" || nextType === "SMK"
+      nextType === "SMP" ||
+      nextType === "SMA/SMK" ||
+      nextType === "SMA" ||
+      nextType === "SMK"
 
     setProfileForm((prev) => ({
       ...prev,
@@ -296,7 +301,7 @@ export function OnboardingPage() {
 
   function handleOpenRequestModal(searchTerm: string) {
     setRequestName(searchTerm.trim())
-    setRequestType("SMA")
+    setRequestType("SMA/SMK")
     setRequestError(null)
     setIsRequestModalOpen(true)
   }

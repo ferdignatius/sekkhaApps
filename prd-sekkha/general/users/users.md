@@ -354,14 +354,26 @@ Mengambil riwayat transaksi perolehan atau penggunaan poin jemaat.
 Mengekspor seluruh data pribadi pengguna dalam format JSON (Kepatuhan UU PDP).
 - **Akses**: Terautentikasi (`requireAuth`).
 
-### 7.11. `POST /api/users/me/delete-account`
-Permintaan mandiri penghapusan akun secara permanen.
+### 7.12. `GET /api/users/me/card` (Kartu Anggota Digital & QR Presensi)
+Mengambil data kartu anggota digital jemaat beserta representasi QR Code statis permanen.
 - **Akses**: Terautentikasi (`requireAuth`).
-- **Request Body**:
+- **Karakteristik QR Code**:
+  - Meng-encode string statis unik nomor anggota: **`userNumber`** (misal: `"2026102301"`).
+  - **Permanen & Tanpa Kedaluwarsa (*No Rolling Expiry*)**: QR Code tidak berubah, dapat dicetak di kartu fisik/lanyard, disimpan sebagai gambar galeri, dan tetap dapat dipindai saat smartphone jemaat offline / tanpa kuota data.
+- **Response 200 OK**:
   ```json
   {
-    "password": "Password123!",
-    "confirmation": "DELETE"
+    "status": "success",
+    "code": 200,
+    "message": "Member card retrieved successfully",
+    "data": {
+      "user_number": 2026102301,
+      "name": "Budi Santoso",
+      "role": "member",
+      "school": "SMA Negeri 1 Jakarta",
+      "qr_payload": "2026102301",
+      "joined_at": "2026-10-23T00:00:00.000Z"
+    }
   }
   ```
 
@@ -380,3 +392,4 @@ Permintaan mandiri penghapusan akun secara permanen.
 | **AC-USR-07** | User memasukkan kode verifikasi email yang benar ke `POST /api/users/email-verification/confirm` | Email aktif berubah ke email baru, `pendingEmail` di-reset `null`, `emailVerifiedAt` terisi waktu sekarang. |
 | **AC-USR-08** | Percobaan input kode verifikasi salah hingga 5 kali | Challenge terkunci/batal, percobaan ke-6 ditolak dengan kode error `429 Too Many Requests` / `400 Challenge Expired`. |
 | **AC-USR-09** | User mengakses `/api/users/me/badges` atau `/api/users/me/level` | Mengembalikan respons `404 Not Found` (endpoint ditiadakan). |
+| **AC-USR-10** | User membuka kartu anggota di `/profile/qr` | Menampilkan kartu anggota dengan QR statis berisi `userNumber`, nama, dan sekolah yang dapat di-scan panitia offline. |

@@ -159,6 +159,36 @@ async function main() {
     })
   }
 
+  // ── 6b. Master Data: Badge Activities (Service Duties) ─────────────────────
+  console.log("🎖️ Seeding Master Badge Activities...")
+  const initialBadgeActivities = [
+    {
+      code: "mc",
+      label: "Master of Ceremony (MC)",
+      bonusPoints: 30,
+      description: "Memandu jalannya susunan acara kebaktian / seminar / gathering.",
+    },
+    {
+      code: "puja-leader",
+      label: "Puja Leader",
+      bonusPoints: 30,
+      description: "Memimpin pembacaan paritta, gatha, sutra, dan persembahan altar.",
+    },
+    {
+      code: "musician",
+      label: "Musician",
+      bonusPoints: 30,
+      description: "Mengiringi lagu Buddhis / meditasi dengan alat musik / keyboard.",
+    },
+  ]
+  for (const ba of initialBadgeActivities) {
+    await prisma.badgeActivity.upsert({
+      where: { code: ba.code },
+      update: { label: ba.label, bonusPoints: ba.bonusPoints, description: ba.description, isActive: true },
+      create: { code: ba.code, label: ba.label, bonusPoints: ba.bonusPoints, description: ba.description, isActive: true },
+    })
+  }
+
   // ── 7. Seed Accounts (3NF: User + UserProfile + UserStats) ──────────────────
   console.log("👤 Seeding Normalized Users...")
   const umatEmail = process.env.DUMMY_UMAT_EMAIL || "umat@sekkha.com"

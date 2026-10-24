@@ -8,347 +8,386 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from "./routes/__root"
-import { Route as IndexRouteImport } from "./routes/index"
-import { Route as AuthenticatedRouteImport } from "./routes/_authenticated"
-import { Route as ForgotPasswordRouteImport } from "./routes/forgot-password"
-import { Route as LoginRouteImport } from "./routes/login"
-import { Route as SignUpRouteImport } from "./routes/sign-up"
-import { Route as AuthenticatedInsightRouteImport } from "./routes/_authenticated/insight"
-import { Route as AuthenticatedOnboardingRouteImport } from "./routes/_authenticated/onboarding"
-import { Route as AuthenticatedPengurusContributionRouteImport } from "./routes/_authenticated/pengurus-contribution"
-import { Route as AuthenticatedRecencyAlertsRouteImport } from "./routes/_authenticated/recency-alerts"
-import { Route as AuthenticatedEventsIndexRouteImport } from "./routes/_authenticated/events/index"
-import { Route as AuthenticatedEventsScanRouteImport } from "./routes/_authenticated/events/scan"
-import { Route as AuthenticatedHomeIndexRouteImport } from "./routes/_authenticated/home/index"
-import { Route as AuthenticatedHomeProfileRouteImport } from "./routes/_authenticated/home/profile"
-import { Route as AuthenticatedLeaderboardIndexRouteImport } from "./routes/_authenticated/leaderboard/index"
-import { Route as AuthenticatedPeopleIndexRouteImport } from "./routes/_authenticated/people/index"
-import { Route as AuthenticatedPeopleMemberIdRouteImport } from "./routes/_authenticated/people/$memberId"
-import { Route as AuthenticatedConfigureEarlyWarningThresholdRouteImport } from "./routes/_authenticated/configure/early-warning/threshold"
-import { Route as AuthenticatedConfigureMasterEventTypeRouteImport } from "./routes/_authenticated/configure/master/event-type"
-import { Route as AuthenticatedConfigureMasterSchoolRouteImport } from "./routes/_authenticated/configure/master/school"
-import { Route as AuthenticatedConfigureMasterSeasonRouteImport } from "./routes/_authenticated/configure/master/season"
-import { Route as AuthenticatedConfigureRulesPointsRouteImport } from "./routes/_authenticated/configure/rules/points"
-import { Route as AuthenticatedConfigureRulesSeasonRouteImport } from "./routes/_authenticated/configure/rules/season"
-import { Route as AuthenticatedConfigureMasterEventTypeCategoryIdRouteImport } from "./routes/_authenticated/configure/master/event-type.$categoryId"
-import { Route as AuthenticatedConfigureMasterEventTypeNewRouteImport } from "./routes/_authenticated/configure/master/event-type.new"
-import { Route as AuthenticatedConfigureMasterSchoolSchoolIdRouteImport } from "./routes/_authenticated/configure/master/school.$schoolId"
-import { Route as AuthenticatedConfigureMasterSchoolNewRouteImport } from "./routes/_authenticated/configure/master/school.new"
+import { Route as rootRouteImport } from './routes/__root'
+import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
+import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as SignUpRouteImport } from './routes/sign-up'
+import { Route as AuthenticatedInsightRouteImport } from './routes/_authenticated/insight'
+import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
+import { Route as AuthenticatedPengurusContributionRouteImport } from './routes/_authenticated/pengurus-contribution'
+import { Route as AuthenticatedRecencyAlertsRouteImport } from './routes/_authenticated/recency-alerts'
+import { Route as AuthenticatedEventsIndexRouteImport } from './routes/_authenticated/events/index'
+import { Route as AuthenticatedEventsScanRouteImport } from './routes/_authenticated/events/scan'
+import { Route as AuthenticatedHomeIndexRouteImport } from './routes/_authenticated/home/index'
+import { Route as AuthenticatedHomeProfileRouteImport } from './routes/_authenticated/home/profile'
+import { Route as AuthenticatedLeaderboardIndexRouteImport } from './routes/_authenticated/leaderboard/index'
+import { Route as AuthenticatedPeopleIndexRouteImport } from './routes/_authenticated/people/index'
+import { Route as AuthenticatedPeopleMemberIdRouteImport } from './routes/_authenticated/people/$memberId'
+import { Route as AuthenticatedConfigureEarlyWarningThresholdRouteImport } from './routes/_authenticated/configure/early-warning/threshold'
+import { Route as AuthenticatedConfigureMasterBadgeActivityRouteImport } from './routes/_authenticated/configure/master/badge-activity'
+import { Route as AuthenticatedConfigureMasterEventTypeRouteImport } from './routes/_authenticated/configure/master/event-type'
+import { Route as AuthenticatedConfigureMasterSchoolRouteImport } from './routes/_authenticated/configure/master/school'
+import { Route as AuthenticatedConfigureMasterSeasonRouteImport } from './routes/_authenticated/configure/master/season'
+import { Route as AuthenticatedConfigureRulesPointsRouteImport } from './routes/_authenticated/configure/rules/points'
+import { Route as AuthenticatedConfigureRulesSeasonRouteImport } from './routes/_authenticated/configure/rules/season'
+import { Route as AuthenticatedConfigureMasterBadgeActivityBadgeActivityIdRouteImport } from './routes/_authenticated/configure/master/badge-activity.$badgeActivityId'
+import { Route as AuthenticatedConfigureMasterBadgeActivityNewRouteImport } from './routes/_authenticated/configure/master/badge-activity.new'
+import { Route as AuthenticatedConfigureMasterEventTypeCategoryIdRouteImport } from './routes/_authenticated/configure/master/event-type.$categoryId'
+import { Route as AuthenticatedConfigureMasterEventTypeNewRouteImport } from './routes/_authenticated/configure/master/event-type.new'
+import { Route as AuthenticatedConfigureMasterSchoolSchoolIdRouteImport } from './routes/_authenticated/configure/master/school.$schoolId'
+import { Route as AuthenticatedConfigureMasterSchoolNewRouteImport } from './routes/_authenticated/configure/master/school.new'
 
 const IndexRoute = IndexRouteImport.update({
-  id: "/",
-  path: "/",
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
-  id: "/_authenticated",
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
-  id: "/forgot-password",
-  path: "/forgot-password",
+  id: '/forgot-password',
+  path: '/forgot-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
-  id: "/login",
-  path: "/login",
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SignUpRoute = SignUpRouteImport.update({
-  id: "/sign-up",
-  path: "/sign-up",
+  id: '/sign-up',
+  path: '/sign-up',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedInsightRoute = AuthenticatedInsightRouteImport.update({
-  id: "/insight",
-  path: "/insight",
+  id: '/insight',
+  path: '/insight',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedOnboardingRoute = AuthenticatedOnboardingRouteImport.update({
-  id: "/onboarding",
-  path: "/onboarding",
+  id: '/onboarding',
+  path: '/onboarding',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedPengurusContributionRoute =
   AuthenticatedPengurusContributionRouteImport.update({
-    id: "/pengurus-contribution",
-    path: "/pengurus-contribution",
+    id: '/pengurus-contribution',
+    path: '/pengurus-contribution',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedRecencyAlertsRoute =
   AuthenticatedRecencyAlertsRouteImport.update({
-    id: "/recency-alerts",
-    path: "/recency-alerts",
+    id: '/recency-alerts',
+    path: '/recency-alerts',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedEventsIndexRoute =
   AuthenticatedEventsIndexRouteImport.update({
-    id: "/events/",
-    path: "/events/",
+    id: '/events/',
+    path: '/events/',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedEventsScanRoute = AuthenticatedEventsScanRouteImport.update({
-  id: "/events/scan",
-  path: "/events/scan",
+  id: '/events/scan',
+  path: '/events/scan',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedHomeIndexRoute = AuthenticatedHomeIndexRouteImport.update({
-  id: "/home/",
-  path: "/home/",
+  id: '/home/',
+  path: '/home/',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedHomeProfileRoute =
   AuthenticatedHomeProfileRouteImport.update({
-    id: "/home/profile",
-    path: "/home/profile",
+    id: '/home/profile',
+    path: '/home/profile',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedLeaderboardIndexRoute =
   AuthenticatedLeaderboardIndexRouteImport.update({
-    id: "/leaderboard/",
-    path: "/leaderboard/",
+    id: '/leaderboard/',
+    path: '/leaderboard/',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedPeopleIndexRoute =
   AuthenticatedPeopleIndexRouteImport.update({
-    id: "/people/",
-    path: "/people/",
+    id: '/people/',
+    path: '/people/',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedPeopleMemberIdRoute =
   AuthenticatedPeopleMemberIdRouteImport.update({
-    id: "/people/$memberId",
-    path: "/people/$memberId",
+    id: '/people/$memberId',
+    path: '/people/$memberId',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedConfigureEarlyWarningThresholdRoute =
   AuthenticatedConfigureEarlyWarningThresholdRouteImport.update({
-    id: "/configure/early-warning/threshold",
-    path: "/configure/early-warning/threshold",
+    id: '/configure/early-warning/threshold',
+    path: '/configure/early-warning/threshold',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedConfigureMasterBadgeActivityRoute =
+  AuthenticatedConfigureMasterBadgeActivityRouteImport.update({
+    id: '/configure/master/badge-activity',
+    path: '/configure/master/badge-activity',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedConfigureMasterEventTypeRoute =
   AuthenticatedConfigureMasterEventTypeRouteImport.update({
-    id: "/configure/master/event-type",
-    path: "/configure/master/event-type",
+    id: '/configure/master/event-type',
+    path: '/configure/master/event-type',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedConfigureMasterSchoolRoute =
   AuthenticatedConfigureMasterSchoolRouteImport.update({
-    id: "/configure/master/school",
-    path: "/configure/master/school",
+    id: '/configure/master/school',
+    path: '/configure/master/school',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedConfigureMasterSeasonRoute =
   AuthenticatedConfigureMasterSeasonRouteImport.update({
-    id: "/configure/master/season",
-    path: "/configure/master/season",
+    id: '/configure/master/season',
+    path: '/configure/master/season',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedConfigureRulesPointsRoute =
   AuthenticatedConfigureRulesPointsRouteImport.update({
-    id: "/configure/rules/points",
-    path: "/configure/rules/points",
+    id: '/configure/rules/points',
+    path: '/configure/rules/points',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedConfigureRulesSeasonRoute =
   AuthenticatedConfigureRulesSeasonRouteImport.update({
-    id: "/configure/rules/season",
-    path: "/configure/rules/season",
+    id: '/configure/rules/season',
+    path: '/configure/rules/season',
     getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedConfigureMasterBadgeActivityBadgeActivityIdRoute =
+  AuthenticatedConfigureMasterBadgeActivityBadgeActivityIdRouteImport.update({
+    id: '/$badgeActivityId',
+    path: '/$badgeActivityId',
+    getParentRoute: () => AuthenticatedConfigureMasterBadgeActivityRoute,
+  } as any)
+const AuthenticatedConfigureMasterBadgeActivityNewRoute =
+  AuthenticatedConfigureMasterBadgeActivityNewRouteImport.update({
+    id: '/new',
+    path: '/new',
+    getParentRoute: () => AuthenticatedConfigureMasterBadgeActivityRoute,
   } as any)
 const AuthenticatedConfigureMasterEventTypeCategoryIdRoute =
   AuthenticatedConfigureMasterEventTypeCategoryIdRouteImport.update({
-    id: "/$categoryId",
-    path: "/$categoryId",
+    id: '/$categoryId',
+    path: '/$categoryId',
     getParentRoute: () => AuthenticatedConfigureMasterEventTypeRoute,
   } as any)
 const AuthenticatedConfigureMasterEventTypeNewRoute =
   AuthenticatedConfigureMasterEventTypeNewRouteImport.update({
-    id: "/new",
-    path: "/new",
+    id: '/new',
+    path: '/new',
     getParentRoute: () => AuthenticatedConfigureMasterEventTypeRoute,
   } as any)
 const AuthenticatedConfigureMasterSchoolSchoolIdRoute =
   AuthenticatedConfigureMasterSchoolSchoolIdRouteImport.update({
-    id: "/$schoolId",
-    path: "/$schoolId",
+    id: '/$schoolId',
+    path: '/$schoolId',
     getParentRoute: () => AuthenticatedConfigureMasterSchoolRoute,
   } as any)
 const AuthenticatedConfigureMasterSchoolNewRoute =
   AuthenticatedConfigureMasterSchoolNewRouteImport.update({
-    id: "/new",
-    path: "/new",
+    id: '/new',
+    path: '/new',
     getParentRoute: () => AuthenticatedConfigureMasterSchoolRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
-  "/": typeof IndexRoute
-  "/forgot-password": typeof ForgotPasswordRoute
-  "/login": typeof LoginRoute
-  "/sign-up": typeof SignUpRoute
-  "/insight": typeof AuthenticatedInsightRoute
-  "/onboarding": typeof AuthenticatedOnboardingRoute
-  "/pengurus-contribution": typeof AuthenticatedPengurusContributionRoute
-  "/recency-alerts": typeof AuthenticatedRecencyAlertsRoute
-  "/events/scan": typeof AuthenticatedEventsScanRoute
-  "/home/profile": typeof AuthenticatedHomeProfileRoute
-  "/people/$memberId": typeof AuthenticatedPeopleMemberIdRoute
-  "/events/": typeof AuthenticatedEventsIndexRoute
-  "/home/": typeof AuthenticatedHomeIndexRoute
-  "/leaderboard/": typeof AuthenticatedLeaderboardIndexRoute
-  "/people/": typeof AuthenticatedPeopleIndexRoute
-  "/configure/early-warning/threshold": typeof AuthenticatedConfigureEarlyWarningThresholdRoute
-  "/configure/master/event-type": typeof AuthenticatedConfigureMasterEventTypeRouteWithChildren
-  "/configure/master/school": typeof AuthenticatedConfigureMasterSchoolRouteWithChildren
-  "/configure/master/season": typeof AuthenticatedConfigureMasterSeasonRoute
-  "/configure/rules/points": typeof AuthenticatedConfigureRulesPointsRoute
-  "/configure/rules/season": typeof AuthenticatedConfigureRulesSeasonRoute
-  "/configure/master/event-type/$categoryId": typeof AuthenticatedConfigureMasterEventTypeCategoryIdRoute
-  "/configure/master/event-type/new": typeof AuthenticatedConfigureMasterEventTypeNewRoute
-  "/configure/master/school/$schoolId": typeof AuthenticatedConfigureMasterSchoolSchoolIdRoute
-  "/configure/master/school/new": typeof AuthenticatedConfigureMasterSchoolNewRoute
+  '/': typeof IndexRoute
+  '/forgot-password': typeof ForgotPasswordRoute
+  '/login': typeof LoginRoute
+  '/sign-up': typeof SignUpRoute
+  '/insight': typeof AuthenticatedInsightRoute
+  '/onboarding': typeof AuthenticatedOnboardingRoute
+  '/pengurus-contribution': typeof AuthenticatedPengurusContributionRoute
+  '/recency-alerts': typeof AuthenticatedRecencyAlertsRoute
+  '/events/scan': typeof AuthenticatedEventsScanRoute
+  '/home/profile': typeof AuthenticatedHomeProfileRoute
+  '/people/$memberId': typeof AuthenticatedPeopleMemberIdRoute
+  '/events/': typeof AuthenticatedEventsIndexRoute
+  '/home/': typeof AuthenticatedHomeIndexRoute
+  '/leaderboard/': typeof AuthenticatedLeaderboardIndexRoute
+  '/people/': typeof AuthenticatedPeopleIndexRoute
+  '/configure/early-warning/threshold': typeof AuthenticatedConfigureEarlyWarningThresholdRoute
+  '/configure/master/badge-activity': typeof AuthenticatedConfigureMasterBadgeActivityRouteWithChildren
+  '/configure/master/event-type': typeof AuthenticatedConfigureMasterEventTypeRouteWithChildren
+  '/configure/master/school': typeof AuthenticatedConfigureMasterSchoolRouteWithChildren
+  '/configure/master/season': typeof AuthenticatedConfigureMasterSeasonRoute
+  '/configure/rules/points': typeof AuthenticatedConfigureRulesPointsRoute
+  '/configure/rules/season': typeof AuthenticatedConfigureRulesSeasonRoute
+  '/configure/master/badge-activity/$badgeActivityId': typeof AuthenticatedConfigureMasterBadgeActivityBadgeActivityIdRoute
+  '/configure/master/badge-activity/new': typeof AuthenticatedConfigureMasterBadgeActivityNewRoute
+  '/configure/master/event-type/$categoryId': typeof AuthenticatedConfigureMasterEventTypeCategoryIdRoute
+  '/configure/master/event-type/new': typeof AuthenticatedConfigureMasterEventTypeNewRoute
+  '/configure/master/school/$schoolId': typeof AuthenticatedConfigureMasterSchoolSchoolIdRoute
+  '/configure/master/school/new': typeof AuthenticatedConfigureMasterSchoolNewRoute
 }
 export interface FileRoutesByTo {
-  "/": typeof IndexRoute
-  "/forgot-password": typeof ForgotPasswordRoute
-  "/login": typeof LoginRoute
-  "/sign-up": typeof SignUpRoute
-  "/insight": typeof AuthenticatedInsightRoute
-  "/onboarding": typeof AuthenticatedOnboardingRoute
-  "/pengurus-contribution": typeof AuthenticatedPengurusContributionRoute
-  "/recency-alerts": typeof AuthenticatedRecencyAlertsRoute
-  "/events/scan": typeof AuthenticatedEventsScanRoute
-  "/home/profile": typeof AuthenticatedHomeProfileRoute
-  "/people/$memberId": typeof AuthenticatedPeopleMemberIdRoute
-  "/events": typeof AuthenticatedEventsIndexRoute
-  "/home": typeof AuthenticatedHomeIndexRoute
-  "/leaderboard": typeof AuthenticatedLeaderboardIndexRoute
-  "/people": typeof AuthenticatedPeopleIndexRoute
-  "/configure/early-warning/threshold": typeof AuthenticatedConfigureEarlyWarningThresholdRoute
-  "/configure/master/event-type": typeof AuthenticatedConfigureMasterEventTypeRouteWithChildren
-  "/configure/master/school": typeof AuthenticatedConfigureMasterSchoolRouteWithChildren
-  "/configure/master/season": typeof AuthenticatedConfigureMasterSeasonRoute
-  "/configure/rules/points": typeof AuthenticatedConfigureRulesPointsRoute
-  "/configure/rules/season": typeof AuthenticatedConfigureRulesSeasonRoute
-  "/configure/master/event-type/$categoryId": typeof AuthenticatedConfigureMasterEventTypeCategoryIdRoute
-  "/configure/master/event-type/new": typeof AuthenticatedConfigureMasterEventTypeNewRoute
-  "/configure/master/school/$schoolId": typeof AuthenticatedConfigureMasterSchoolSchoolIdRoute
-  "/configure/master/school/new": typeof AuthenticatedConfigureMasterSchoolNewRoute
+  '/': typeof IndexRoute
+  '/forgot-password': typeof ForgotPasswordRoute
+  '/login': typeof LoginRoute
+  '/sign-up': typeof SignUpRoute
+  '/insight': typeof AuthenticatedInsightRoute
+  '/onboarding': typeof AuthenticatedOnboardingRoute
+  '/pengurus-contribution': typeof AuthenticatedPengurusContributionRoute
+  '/recency-alerts': typeof AuthenticatedRecencyAlertsRoute
+  '/events/scan': typeof AuthenticatedEventsScanRoute
+  '/home/profile': typeof AuthenticatedHomeProfileRoute
+  '/people/$memberId': typeof AuthenticatedPeopleMemberIdRoute
+  '/events': typeof AuthenticatedEventsIndexRoute
+  '/home': typeof AuthenticatedHomeIndexRoute
+  '/leaderboard': typeof AuthenticatedLeaderboardIndexRoute
+  '/people': typeof AuthenticatedPeopleIndexRoute
+  '/configure/early-warning/threshold': typeof AuthenticatedConfigureEarlyWarningThresholdRoute
+  '/configure/master/badge-activity': typeof AuthenticatedConfigureMasterBadgeActivityRouteWithChildren
+  '/configure/master/event-type': typeof AuthenticatedConfigureMasterEventTypeRouteWithChildren
+  '/configure/master/school': typeof AuthenticatedConfigureMasterSchoolRouteWithChildren
+  '/configure/master/season': typeof AuthenticatedConfigureMasterSeasonRoute
+  '/configure/rules/points': typeof AuthenticatedConfigureRulesPointsRoute
+  '/configure/rules/season': typeof AuthenticatedConfigureRulesSeasonRoute
+  '/configure/master/badge-activity/$badgeActivityId': typeof AuthenticatedConfigureMasterBadgeActivityBadgeActivityIdRoute
+  '/configure/master/badge-activity/new': typeof AuthenticatedConfigureMasterBadgeActivityNewRoute
+  '/configure/master/event-type/$categoryId': typeof AuthenticatedConfigureMasterEventTypeCategoryIdRoute
+  '/configure/master/event-type/new': typeof AuthenticatedConfigureMasterEventTypeNewRoute
+  '/configure/master/school/$schoolId': typeof AuthenticatedConfigureMasterSchoolSchoolIdRoute
+  '/configure/master/school/new': typeof AuthenticatedConfigureMasterSchoolNewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  "/": typeof IndexRoute
-  "/_authenticated": typeof AuthenticatedRouteWithChildren
-  "/forgot-password": typeof ForgotPasswordRoute
-  "/login": typeof LoginRoute
-  "/sign-up": typeof SignUpRoute
-  "/_authenticated/insight": typeof AuthenticatedInsightRoute
-  "/_authenticated/onboarding": typeof AuthenticatedOnboardingRoute
-  "/_authenticated/pengurus-contribution": typeof AuthenticatedPengurusContributionRoute
-  "/_authenticated/recency-alerts": typeof AuthenticatedRecencyAlertsRoute
-  "/_authenticated/events/scan": typeof AuthenticatedEventsScanRoute
-  "/_authenticated/home/profile": typeof AuthenticatedHomeProfileRoute
-  "/_authenticated/people/$memberId": typeof AuthenticatedPeopleMemberIdRoute
-  "/_authenticated/events/": typeof AuthenticatedEventsIndexRoute
-  "/_authenticated/home/": typeof AuthenticatedHomeIndexRoute
-  "/_authenticated/leaderboard/": typeof AuthenticatedLeaderboardIndexRoute
-  "/_authenticated/people/": typeof AuthenticatedPeopleIndexRoute
-  "/_authenticated/configure/early-warning/threshold": typeof AuthenticatedConfigureEarlyWarningThresholdRoute
-  "/_authenticated/configure/master/event-type": typeof AuthenticatedConfigureMasterEventTypeRouteWithChildren
-  "/_authenticated/configure/master/school": typeof AuthenticatedConfigureMasterSchoolRouteWithChildren
-  "/_authenticated/configure/master/season": typeof AuthenticatedConfigureMasterSeasonRoute
-  "/_authenticated/configure/rules/points": typeof AuthenticatedConfigureRulesPointsRoute
-  "/_authenticated/configure/rules/season": typeof AuthenticatedConfigureRulesSeasonRoute
-  "/_authenticated/configure/master/event-type/$categoryId": typeof AuthenticatedConfigureMasterEventTypeCategoryIdRoute
-  "/_authenticated/configure/master/event-type/new": typeof AuthenticatedConfigureMasterEventTypeNewRoute
-  "/_authenticated/configure/master/school/$schoolId": typeof AuthenticatedConfigureMasterSchoolSchoolIdRoute
-  "/_authenticated/configure/master/school/new": typeof AuthenticatedConfigureMasterSchoolNewRoute
+  '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteWithChildren
+  '/forgot-password': typeof ForgotPasswordRoute
+  '/login': typeof LoginRoute
+  '/sign-up': typeof SignUpRoute
+  '/_authenticated/insight': typeof AuthenticatedInsightRoute
+  '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
+  '/_authenticated/pengurus-contribution': typeof AuthenticatedPengurusContributionRoute
+  '/_authenticated/recency-alerts': typeof AuthenticatedRecencyAlertsRoute
+  '/_authenticated/events/scan': typeof AuthenticatedEventsScanRoute
+  '/_authenticated/home/profile': typeof AuthenticatedHomeProfileRoute
+  '/_authenticated/people/$memberId': typeof AuthenticatedPeopleMemberIdRoute
+  '/_authenticated/events/': typeof AuthenticatedEventsIndexRoute
+  '/_authenticated/home/': typeof AuthenticatedHomeIndexRoute
+  '/_authenticated/leaderboard/': typeof AuthenticatedLeaderboardIndexRoute
+  '/_authenticated/people/': typeof AuthenticatedPeopleIndexRoute
+  '/_authenticated/configure/early-warning/threshold': typeof AuthenticatedConfigureEarlyWarningThresholdRoute
+  '/_authenticated/configure/master/badge-activity': typeof AuthenticatedConfigureMasterBadgeActivityRouteWithChildren
+  '/_authenticated/configure/master/event-type': typeof AuthenticatedConfigureMasterEventTypeRouteWithChildren
+  '/_authenticated/configure/master/school': typeof AuthenticatedConfigureMasterSchoolRouteWithChildren
+  '/_authenticated/configure/master/season': typeof AuthenticatedConfigureMasterSeasonRoute
+  '/_authenticated/configure/rules/points': typeof AuthenticatedConfigureRulesPointsRoute
+  '/_authenticated/configure/rules/season': typeof AuthenticatedConfigureRulesSeasonRoute
+  '/_authenticated/configure/master/badge-activity/$badgeActivityId': typeof AuthenticatedConfigureMasterBadgeActivityBadgeActivityIdRoute
+  '/_authenticated/configure/master/badge-activity/new': typeof AuthenticatedConfigureMasterBadgeActivityNewRoute
+  '/_authenticated/configure/master/event-type/$categoryId': typeof AuthenticatedConfigureMasterEventTypeCategoryIdRoute
+  '/_authenticated/configure/master/event-type/new': typeof AuthenticatedConfigureMasterEventTypeNewRoute
+  '/_authenticated/configure/master/school/$schoolId': typeof AuthenticatedConfigureMasterSchoolSchoolIdRoute
+  '/_authenticated/configure/master/school/new': typeof AuthenticatedConfigureMasterSchoolNewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | "/"
-    | "/forgot-password"
-    | "/login"
-    | "/sign-up"
-    | "/insight"
-    | "/onboarding"
-    | "/pengurus-contribution"
-    | "/recency-alerts"
-    | "/events/scan"
-    | "/home/profile"
-    | "/people/$memberId"
-    | "/events/"
-    | "/home/"
-    | "/leaderboard/"
-    | "/people/"
-    | "/configure/early-warning/threshold"
-    | "/configure/master/event-type"
-    | "/configure/master/school"
-    | "/configure/master/season"
-    | "/configure/rules/points"
-    | "/configure/rules/season"
-    | "/configure/master/event-type/$categoryId"
-    | "/configure/master/event-type/new"
-    | "/configure/master/school/$schoolId"
-    | "/configure/master/school/new"
+    | '/'
+    | '/forgot-password'
+    | '/login'
+    | '/sign-up'
+    | '/insight'
+    | '/onboarding'
+    | '/pengurus-contribution'
+    | '/recency-alerts'
+    | '/events/scan'
+    | '/home/profile'
+    | '/people/$memberId'
+    | '/events/'
+    | '/home/'
+    | '/leaderboard/'
+    | '/people/'
+    | '/configure/early-warning/threshold'
+    | '/configure/master/badge-activity'
+    | '/configure/master/event-type'
+    | '/configure/master/school'
+    | '/configure/master/season'
+    | '/configure/rules/points'
+    | '/configure/rules/season'
+    | '/configure/master/badge-activity/$badgeActivityId'
+    | '/configure/master/badge-activity/new'
+    | '/configure/master/event-type/$categoryId'
+    | '/configure/master/event-type/new'
+    | '/configure/master/school/$schoolId'
+    | '/configure/master/school/new'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | "/"
-    | "/forgot-password"
-    | "/login"
-    | "/sign-up"
-    | "/insight"
-    | "/onboarding"
-    | "/pengurus-contribution"
-    | "/recency-alerts"
-    | "/events/scan"
-    | "/home/profile"
-    | "/people/$memberId"
-    | "/events"
-    | "/home"
-    | "/leaderboard"
-    | "/people"
-    | "/configure/early-warning/threshold"
-    | "/configure/master/event-type"
-    | "/configure/master/school"
-    | "/configure/master/season"
-    | "/configure/rules/points"
-    | "/configure/rules/season"
-    | "/configure/master/event-type/$categoryId"
-    | "/configure/master/event-type/new"
-    | "/configure/master/school/$schoolId"
-    | "/configure/master/school/new"
+    | '/'
+    | '/forgot-password'
+    | '/login'
+    | '/sign-up'
+    | '/insight'
+    | '/onboarding'
+    | '/pengurus-contribution'
+    | '/recency-alerts'
+    | '/events/scan'
+    | '/home/profile'
+    | '/people/$memberId'
+    | '/events'
+    | '/home'
+    | '/leaderboard'
+    | '/people'
+    | '/configure/early-warning/threshold'
+    | '/configure/master/badge-activity'
+    | '/configure/master/event-type'
+    | '/configure/master/school'
+    | '/configure/master/season'
+    | '/configure/rules/points'
+    | '/configure/rules/season'
+    | '/configure/master/badge-activity/$badgeActivityId'
+    | '/configure/master/badge-activity/new'
+    | '/configure/master/event-type/$categoryId'
+    | '/configure/master/event-type/new'
+    | '/configure/master/school/$schoolId'
+    | '/configure/master/school/new'
   id:
-    | "__root__"
-    | "/"
-    | "/_authenticated"
-    | "/forgot-password"
-    | "/login"
-    | "/sign-up"
-    | "/_authenticated/insight"
-    | "/_authenticated/onboarding"
-    | "/_authenticated/pengurus-contribution"
-    | "/_authenticated/recency-alerts"
-    | "/_authenticated/events/scan"
-    | "/_authenticated/home/profile"
-    | "/_authenticated/people/$memberId"
-    | "/_authenticated/events/"
-    | "/_authenticated/home/"
-    | "/_authenticated/leaderboard/"
-    | "/_authenticated/people/"
-    | "/_authenticated/configure/early-warning/threshold"
-    | "/_authenticated/configure/master/event-type"
-    | "/_authenticated/configure/master/school"
-    | "/_authenticated/configure/master/season"
-    | "/_authenticated/configure/rules/points"
-    | "/_authenticated/configure/rules/season"
-    | "/_authenticated/configure/master/event-type/$categoryId"
-    | "/_authenticated/configure/master/event-type/new"
-    | "/_authenticated/configure/master/school/$schoolId"
-    | "/_authenticated/configure/master/school/new"
+    | '__root__'
+    | '/'
+    | '/_authenticated'
+    | '/forgot-password'
+    | '/login'
+    | '/sign-up'
+    | '/_authenticated/insight'
+    | '/_authenticated/onboarding'
+    | '/_authenticated/pengurus-contribution'
+    | '/_authenticated/recency-alerts'
+    | '/_authenticated/events/scan'
+    | '/_authenticated/home/profile'
+    | '/_authenticated/people/$memberId'
+    | '/_authenticated/events/'
+    | '/_authenticated/home/'
+    | '/_authenticated/leaderboard/'
+    | '/_authenticated/people/'
+    | '/_authenticated/configure/early-warning/threshold'
+    | '/_authenticated/configure/master/badge-activity'
+    | '/_authenticated/configure/master/event-type'
+    | '/_authenticated/configure/master/school'
+    | '/_authenticated/configure/master/season'
+    | '/_authenticated/configure/rules/points'
+    | '/_authenticated/configure/rules/season'
+    | '/_authenticated/configure/master/badge-activity/$badgeActivityId'
+    | '/_authenticated/configure/master/badge-activity/new'
+    | '/_authenticated/configure/master/event-type/$categoryId'
+    | '/_authenticated/configure/master/event-type/new'
+    | '/_authenticated/configure/master/school/$schoolId'
+    | '/_authenticated/configure/master/school/new'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -359,192 +398,231 @@ export interface RootRouteChildren {
   SignUpRoute: typeof SignUpRoute
 }
 
-declare module "@tanstack/react-router" {
+declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    "/": {
-      id: "/"
-      path: "/"
-      fullPath: "/"
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    "/_authenticated": {
-      id: "/_authenticated"
-      path: ""
-      fullPath: "/"
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
       preLoaderRoute: typeof AuthenticatedRouteImport
       parentRoute: typeof rootRouteImport
     }
-    "/forgot-password": {
-      id: "/forgot-password"
-      path: "/forgot-password"
-      fullPath: "/forgot-password"
+    '/forgot-password': {
+      id: '/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
       preLoaderRoute: typeof ForgotPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
-    "/login": {
-      id: "/login"
-      path: "/login"
-      fullPath: "/login"
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    "/sign-up": {
-      id: "/sign-up"
-      path: "/sign-up"
-      fullPath: "/sign-up"
+    '/sign-up': {
+      id: '/sign-up'
+      path: '/sign-up'
+      fullPath: '/sign-up'
       preLoaderRoute: typeof SignUpRouteImport
       parentRoute: typeof rootRouteImport
     }
-    "/_authenticated/insight": {
-      id: "/_authenticated/insight"
-      path: "/insight"
-      fullPath: "/insight"
+    '/_authenticated/insight': {
+      id: '/_authenticated/insight'
+      path: '/insight'
+      fullPath: '/insight'
       preLoaderRoute: typeof AuthenticatedInsightRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    "/_authenticated/onboarding": {
-      id: "/_authenticated/onboarding"
-      path: "/onboarding"
-      fullPath: "/onboarding"
+    '/_authenticated/onboarding': {
+      id: '/_authenticated/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
       preLoaderRoute: typeof AuthenticatedOnboardingRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    "/_authenticated/pengurus-contribution": {
-      id: "/_authenticated/pengurus-contribution"
-      path: "/pengurus-contribution"
-      fullPath: "/pengurus-contribution"
+    '/_authenticated/pengurus-contribution': {
+      id: '/_authenticated/pengurus-contribution'
+      path: '/pengurus-contribution'
+      fullPath: '/pengurus-contribution'
       preLoaderRoute: typeof AuthenticatedPengurusContributionRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    "/_authenticated/recency-alerts": {
-      id: "/_authenticated/recency-alerts"
-      path: "/recency-alerts"
-      fullPath: "/recency-alerts"
+    '/_authenticated/recency-alerts': {
+      id: '/_authenticated/recency-alerts'
+      path: '/recency-alerts'
+      fullPath: '/recency-alerts'
       preLoaderRoute: typeof AuthenticatedRecencyAlertsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    "/_authenticated/events/": {
-      id: "/_authenticated/events/"
-      path: "/events"
-      fullPath: "/events/"
+    '/_authenticated/events/': {
+      id: '/_authenticated/events/'
+      path: '/events'
+      fullPath: '/events/'
       preLoaderRoute: typeof AuthenticatedEventsIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    "/_authenticated/events/scan": {
-      id: "/_authenticated/events/scan"
-      path: "/events/scan"
-      fullPath: "/events/scan"
+    '/_authenticated/events/scan': {
+      id: '/_authenticated/events/scan'
+      path: '/events/scan'
+      fullPath: '/events/scan'
       preLoaderRoute: typeof AuthenticatedEventsScanRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    "/_authenticated/home/": {
-      id: "/_authenticated/home/"
-      path: "/home"
-      fullPath: "/home/"
+    '/_authenticated/home/': {
+      id: '/_authenticated/home/'
+      path: '/home'
+      fullPath: '/home/'
       preLoaderRoute: typeof AuthenticatedHomeIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    "/_authenticated/home/profile": {
-      id: "/_authenticated/home/profile"
-      path: "/home/profile"
-      fullPath: "/home/profile"
+    '/_authenticated/home/profile': {
+      id: '/_authenticated/home/profile'
+      path: '/home/profile'
+      fullPath: '/home/profile'
       preLoaderRoute: typeof AuthenticatedHomeProfileRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    "/_authenticated/leaderboard/": {
-      id: "/_authenticated/leaderboard/"
-      path: "/leaderboard"
-      fullPath: "/leaderboard/"
+    '/_authenticated/leaderboard/': {
+      id: '/_authenticated/leaderboard/'
+      path: '/leaderboard'
+      fullPath: '/leaderboard/'
       preLoaderRoute: typeof AuthenticatedLeaderboardIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    "/_authenticated/people/": {
-      id: "/_authenticated/people/"
-      path: "/people"
-      fullPath: "/people/"
+    '/_authenticated/people/': {
+      id: '/_authenticated/people/'
+      path: '/people'
+      fullPath: '/people/'
       preLoaderRoute: typeof AuthenticatedPeopleIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    "/_authenticated/people/$memberId": {
-      id: "/_authenticated/people/$memberId"
-      path: "/people/$memberId"
-      fullPath: "/people/$memberId"
+    '/_authenticated/people/$memberId': {
+      id: '/_authenticated/people/$memberId'
+      path: '/people/$memberId'
+      fullPath: '/people/$memberId'
       preLoaderRoute: typeof AuthenticatedPeopleMemberIdRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    "/_authenticated/configure/early-warning/threshold": {
-      id: "/_authenticated/configure/early-warning/threshold"
-      path: "/configure/early-warning/threshold"
-      fullPath: "/configure/early-warning/threshold"
+    '/_authenticated/configure/early-warning/threshold': {
+      id: '/_authenticated/configure/early-warning/threshold'
+      path: '/configure/early-warning/threshold'
+      fullPath: '/configure/early-warning/threshold'
       preLoaderRoute: typeof AuthenticatedConfigureEarlyWarningThresholdRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    "/_authenticated/configure/master/event-type": {
-      id: "/_authenticated/configure/master/event-type"
-      path: "/configure/master/event-type"
-      fullPath: "/configure/master/event-type"
+    '/_authenticated/configure/master/badge-activity': {
+      id: '/_authenticated/configure/master/badge-activity'
+      path: '/configure/master/badge-activity'
+      fullPath: '/configure/master/badge-activity'
+      preLoaderRoute: typeof AuthenticatedConfigureMasterBadgeActivityRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/configure/master/event-type': {
+      id: '/_authenticated/configure/master/event-type'
+      path: '/configure/master/event-type'
+      fullPath: '/configure/master/event-type'
       preLoaderRoute: typeof AuthenticatedConfigureMasterEventTypeRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    "/_authenticated/configure/master/school": {
-      id: "/_authenticated/configure/master/school"
-      path: "/configure/master/school"
-      fullPath: "/configure/master/school"
+    '/_authenticated/configure/master/school': {
+      id: '/_authenticated/configure/master/school'
+      path: '/configure/master/school'
+      fullPath: '/configure/master/school'
       preLoaderRoute: typeof AuthenticatedConfigureMasterSchoolRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    "/_authenticated/configure/master/season": {
-      id: "/_authenticated/configure/master/season"
-      path: "/configure/master/season"
-      fullPath: "/configure/master/season"
+    '/_authenticated/configure/master/season': {
+      id: '/_authenticated/configure/master/season'
+      path: '/configure/master/season'
+      fullPath: '/configure/master/season'
       preLoaderRoute: typeof AuthenticatedConfigureMasterSeasonRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    "/_authenticated/configure/rules/points": {
-      id: "/_authenticated/configure/rules/points"
-      path: "/configure/rules/points"
-      fullPath: "/configure/rules/points"
+    '/_authenticated/configure/rules/points': {
+      id: '/_authenticated/configure/rules/points'
+      path: '/configure/rules/points'
+      fullPath: '/configure/rules/points'
       preLoaderRoute: typeof AuthenticatedConfigureRulesPointsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    "/_authenticated/configure/rules/season": {
-      id: "/_authenticated/configure/rules/season"
-      path: "/configure/rules/season"
-      fullPath: "/configure/rules/season"
+    '/_authenticated/configure/rules/season': {
+      id: '/_authenticated/configure/rules/season'
+      path: '/configure/rules/season'
+      fullPath: '/configure/rules/season'
       preLoaderRoute: typeof AuthenticatedConfigureRulesSeasonRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    "/_authenticated/configure/master/event-type/$categoryId": {
-      id: "/_authenticated/configure/master/event-type/$categoryId"
-      path: "/$categoryId"
-      fullPath: "/configure/master/event-type/$categoryId"
+    '/_authenticated/configure/master/badge-activity/$badgeActivityId': {
+      id: '/_authenticated/configure/master/badge-activity/$badgeActivityId'
+      path: '/$badgeActivityId'
+      fullPath: '/configure/master/badge-activity/$badgeActivityId'
+      preLoaderRoute: typeof AuthenticatedConfigureMasterBadgeActivityBadgeActivityIdRouteImport
+      parentRoute: typeof AuthenticatedConfigureMasterBadgeActivityRoute
+    }
+    '/_authenticated/configure/master/badge-activity/new': {
+      id: '/_authenticated/configure/master/badge-activity/new'
+      path: '/new'
+      fullPath: '/configure/master/badge-activity/new'
+      preLoaderRoute: typeof AuthenticatedConfigureMasterBadgeActivityNewRouteImport
+      parentRoute: typeof AuthenticatedConfigureMasterBadgeActivityRoute
+    }
+    '/_authenticated/configure/master/event-type/$categoryId': {
+      id: '/_authenticated/configure/master/event-type/$categoryId'
+      path: '/$categoryId'
+      fullPath: '/configure/master/event-type/$categoryId'
       preLoaderRoute: typeof AuthenticatedConfigureMasterEventTypeCategoryIdRouteImport
       parentRoute: typeof AuthenticatedConfigureMasterEventTypeRoute
     }
-    "/_authenticated/configure/master/event-type/new": {
-      id: "/_authenticated/configure/master/event-type/new"
-      path: "/new"
-      fullPath: "/configure/master/event-type/new"
+    '/_authenticated/configure/master/event-type/new': {
+      id: '/_authenticated/configure/master/event-type/new'
+      path: '/new'
+      fullPath: '/configure/master/event-type/new'
       preLoaderRoute: typeof AuthenticatedConfigureMasterEventTypeNewRouteImport
       parentRoute: typeof AuthenticatedConfigureMasterEventTypeRoute
     }
-    "/_authenticated/configure/master/school/$schoolId": {
-      id: "/_authenticated/configure/master/school/$schoolId"
-      path: "/$schoolId"
-      fullPath: "/configure/master/school/$schoolId"
+    '/_authenticated/configure/master/school/$schoolId': {
+      id: '/_authenticated/configure/master/school/$schoolId'
+      path: '/$schoolId'
+      fullPath: '/configure/master/school/$schoolId'
       preLoaderRoute: typeof AuthenticatedConfigureMasterSchoolSchoolIdRouteImport
       parentRoute: typeof AuthenticatedConfigureMasterSchoolRoute
     }
-    "/_authenticated/configure/master/school/new": {
-      id: "/_authenticated/configure/master/school/new"
-      path: "/new"
-      fullPath: "/configure/master/school/new"
+    '/_authenticated/configure/master/school/new': {
+      id: '/_authenticated/configure/master/school/new'
+      path: '/new'
+      fullPath: '/configure/master/school/new'
       preLoaderRoute: typeof AuthenticatedConfigureMasterSchoolNewRouteImport
       parentRoute: typeof AuthenticatedConfigureMasterSchoolRoute
     }
   }
 }
+
+interface AuthenticatedConfigureMasterBadgeActivityRouteChildren {
+  AuthenticatedConfigureMasterBadgeActivityBadgeActivityIdRoute: typeof AuthenticatedConfigureMasterBadgeActivityBadgeActivityIdRoute
+  AuthenticatedConfigureMasterBadgeActivityNewRoute: typeof AuthenticatedConfigureMasterBadgeActivityNewRoute
+}
+
+const AuthenticatedConfigureMasterBadgeActivityRouteChildren: AuthenticatedConfigureMasterBadgeActivityRouteChildren =
+  {
+    AuthenticatedConfigureMasterBadgeActivityBadgeActivityIdRoute:
+      AuthenticatedConfigureMasterBadgeActivityBadgeActivityIdRoute,
+    AuthenticatedConfigureMasterBadgeActivityNewRoute:
+      AuthenticatedConfigureMasterBadgeActivityNewRoute,
+  }
+
+const AuthenticatedConfigureMasterBadgeActivityRouteWithChildren =
+  AuthenticatedConfigureMasterBadgeActivityRoute._addFileChildren(
+    AuthenticatedConfigureMasterBadgeActivityRouteChildren,
+  )
 
 interface AuthenticatedConfigureMasterEventTypeRouteChildren {
   AuthenticatedConfigureMasterEventTypeCategoryIdRoute: typeof AuthenticatedConfigureMasterEventTypeCategoryIdRoute
@@ -561,7 +639,7 @@ const AuthenticatedConfigureMasterEventTypeRouteChildren: AuthenticatedConfigure
 
 const AuthenticatedConfigureMasterEventTypeRouteWithChildren =
   AuthenticatedConfigureMasterEventTypeRoute._addFileChildren(
-    AuthenticatedConfigureMasterEventTypeRouteChildren
+    AuthenticatedConfigureMasterEventTypeRouteChildren,
   )
 
 interface AuthenticatedConfigureMasterSchoolRouteChildren {
@@ -579,7 +657,7 @@ const AuthenticatedConfigureMasterSchoolRouteChildren: AuthenticatedConfigureMas
 
 const AuthenticatedConfigureMasterSchoolRouteWithChildren =
   AuthenticatedConfigureMasterSchoolRoute._addFileChildren(
-    AuthenticatedConfigureMasterSchoolRouteChildren
+    AuthenticatedConfigureMasterSchoolRouteChildren,
   )
 
 interface AuthenticatedRouteChildren {
@@ -595,6 +673,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedLeaderboardIndexRoute: typeof AuthenticatedLeaderboardIndexRoute
   AuthenticatedPeopleIndexRoute: typeof AuthenticatedPeopleIndexRoute
   AuthenticatedConfigureEarlyWarningThresholdRoute: typeof AuthenticatedConfigureEarlyWarningThresholdRoute
+  AuthenticatedConfigureMasterBadgeActivityRoute: typeof AuthenticatedConfigureMasterBadgeActivityRouteWithChildren
   AuthenticatedConfigureMasterEventTypeRoute: typeof AuthenticatedConfigureMasterEventTypeRouteWithChildren
   AuthenticatedConfigureMasterSchoolRoute: typeof AuthenticatedConfigureMasterSchoolRouteWithChildren
   AuthenticatedConfigureMasterSeasonRoute: typeof AuthenticatedConfigureMasterSeasonRoute
@@ -617,6 +696,8 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedPeopleIndexRoute: AuthenticatedPeopleIndexRoute,
   AuthenticatedConfigureEarlyWarningThresholdRoute:
     AuthenticatedConfigureEarlyWarningThresholdRoute,
+  AuthenticatedConfigureMasterBadgeActivityRoute:
+    AuthenticatedConfigureMasterBadgeActivityRouteWithChildren,
   AuthenticatedConfigureMasterEventTypeRoute:
     AuthenticatedConfigureMasterEventTypeRouteWithChildren,
   AuthenticatedConfigureMasterSchoolRoute:
@@ -630,7 +711,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
-  AuthenticatedRouteChildren
+  AuthenticatedRouteChildren,
 )
 
 const rootRouteChildren: RootRouteChildren = {
@@ -643,12 +724,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from "./router.tsx"
-import type { createStart } from "@tanstack/react-start"
-declare module "@tanstack/react-start" {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}

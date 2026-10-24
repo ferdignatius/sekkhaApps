@@ -113,4 +113,63 @@ export const configureModels = {
   updatePointRule(id: string, data: any) {
     return (prisma as any).pointRule.update({ where: { id }, data })
   },
+
+  // Badge Activities (Master Data)
+  findBadgeActivities(where?: { isActive?: boolean; search?: string }) {
+    return prisma.badgeActivity.findMany({
+      where: {
+        ...(where?.isActive !== undefined ? { isActive: where.isActive } : {}),
+        ...(where?.search
+          ? {
+              OR: [
+                { label: { contains: where.search, mode: "insensitive" } },
+                { description: { contains: where.search, mode: "insensitive" } },
+              ],
+            }
+          : {}),
+      },
+      orderBy: [{ isActive: "desc" }, { label: "asc" }],
+    })
+  },
+  findBadgeActivityById(id: string) {
+    return prisma.badgeActivity.findUnique({
+      where: { id },
+      include: {
+        _count: {
+          select: { attendances: true },
+        },
+      },
+    })
+  },
+  findBadgeActivityByCode(code: string) {
+    return prisma.badgeActivity.findUnique({ where: { code } })
+  },
+  countAttendancesByBadgeActivityId(id: string) {
+    return prisma.attendance.count({ where: { badgeActivityId: id } })
+  },
+  createBadgeActivity(data: {
+    code: string
+    label: string
+    description?: string | null
+    bonusPoints?: number
+    isActive?: boolean
+  }) {
+    return prisma.badgeActivity.create({ data })
+  },
+  updateBadgeActivity(
+    id: string,
+    data: {
+      code?: string
+      label?: string
+      description?: string | null
+      bonusPoints?: number
+      isActive?: boolean
+    }
+  ) {
+    return prisma.badgeActivity.update({ where: { id }, data })
+  },
+  deleteBadgeActivity(id: string) {
+    return prisma.badgeActivity.delete({ where: { id } })
+  },
 }
+

@@ -70,6 +70,7 @@ export const eventTypesApi = {
   update: (
     id: string,
     data: {
+      code?: string
       label?: string
       color?: string
       description?: string | null
@@ -179,3 +180,53 @@ export const schoolsApi = {
   rejectRequest: (id: string, review_note?: string) =>
     api.post(`/configure/schools/${id}/reject`, { review_note }),
 }
+
+// ─── Badge Activities (Master Data) ──────────────────────────────────────────
+
+export interface BadgeActivityDto {
+  id: string
+  code: string
+  label: string
+  description?: string | null
+  bonus_points: number
+  is_active: boolean
+  attendances_count?: number
+  created_at?: string
+  updated_at?: string
+}
+
+export const badgeActivitiesApi = {
+  list: (params?: { is_active?: boolean; search?: string }) => {
+    const q = new URLSearchParams()
+    if (params?.is_active !== undefined) q.append("is_active", String(params.is_active))
+    if (params?.search) q.append("search", params.search)
+    const queryString = q.toString() ? `?${q.toString()}` : ""
+    return api.get<any>(`/configure/badge-activities${queryString}`).then((res) => {
+      if (Array.isArray(res)) return res as BadgeActivityDto[]
+      if (Array.isArray(res?.data)) return res.data as BadgeActivityDto[]
+      return []
+    })
+  },
+  get: (id: string) =>
+    api.get<any>(`/configure/badge-activities/${id}`).then((res) => (res?.data || res) as BadgeActivityDto),
+  create: (data: {
+    code?: string
+    label: string
+    description?: string | null
+    bonus_points?: number
+    is_active?: boolean
+  }) => api.post<BadgeActivityDto>("/configure/badge-activities", data),
+  update: (
+    id: string,
+    data: {
+      code?: string
+      label?: string
+      description?: string | null
+      bonus_points?: number
+      is_active?: boolean
+    }
+  ) => api.patch<BadgeActivityDto>(`/configure/badge-activities/${id}`, data),
+  remove: (id: string) =>
+    api.delete<{ success: boolean; message?: string }>(`/configure/badge-activities/${id}`),
+}
+

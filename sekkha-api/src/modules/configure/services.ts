@@ -83,6 +83,7 @@ export const configureServices = {
   async updateEventType(
     id: string,
     data: {
+      code?: string
       label?: string
       color?: string
       description?: string | null
@@ -95,13 +96,31 @@ export const configureServices = {
       throw new AppError("Event type not found", 404, "EVENT_TYPE_NOT_FOUND")
     }
 
-    // Code is strictly immutable per PRD rules
     const updateData: any = {}
     if (data.label !== undefined) updateData.label = data.label.trim()
     if (data.color !== undefined) updateData.color = data.color.trim()
     if (data.description !== undefined) updateData.description = data.description ? data.description.trim() : null
     if (data.default_point_reward !== undefined) updateData.defaultPointReward = data.default_point_reward
     if (data.is_active !== undefined) updateData.isActive = data.is_active
+
+    // Auto-sync code from label (or explicit code)
+    const baseCode = data.code ? toKebabCase(data.code) : (data.label ? toKebabCase(data.label) : null)
+    if (baseCode && baseCode !== existing.code) {
+      let candidateCode = baseCode
+      let counter = 1
+      while (true) {
+        const found = await configureModels.findEventTypeByCode(candidateCode)
+        if (!found || found.id === id) {
+          break
+        }
+        if (data.code) {
+          throw new AppError(`Event type with code '${candidateCode}' already exists`, 400, "DUPLICATE_CODE")
+        }
+        candidateCode = `${baseCode}-${counter}`
+        counter++
+      }
+      updateData.code = candidateCode
+    }
 
     const type = await configureModels.updateEventType(id, updateData)
 
@@ -231,4 +250,162 @@ export const configureServices = {
       ...(data.description !== undefined && { description: data.description }),
     })
   },
+
+  // ─── Badge Activities (Master Data) ─────────────────────────────────────────
+  async getBadgeActivities(filter?: { isActive?: boolean; search?: string }) {
+    const list = await configureModels.findBadgeActivities(filter)
+    return list.map((b) => ({
+      id: b.id,
+      code: b.code,
+      label: b.label,
+      description: b.description,
+      bonus_points: b.bonusPoints,
+      is_active: b.isActive,
+      created_at: b.createdAt.toISOString(),
+      updated_at: b.updatedAt.toISOString(),
+    }))
+  },
+
+  async getBadgeActivityById(id: string) {
+    const b = await configureModels.findBadgeActivityById(id)
+    if (!b) {
+      throw new AppError("Badge activity not found", 404, "BADGE_ACTIVITY_NOT_FOUND")
+    }
+    return {
+      id: b.id,
+      code: b.code,
+      label: b.label,
+      description: b.description,
+      bonus_points: b.bonusPoints,
+      is_active: b.isActive,
+      attendances_count: b._count.attendances,
+      created_at: b.createdAt.toISOString(),
+      updated_at: b.updatedAt.toISOString(),
+    }
+  },
+
+  async createBadgeActivity(data: {
+    code?: string
+    label: string
+    description?: string | null
+    bonus_points?: number
+    is_active?: boolean
+  }) {
+    // Generate clean kebab-case code from label if not provided
+    const baseCode = data.code ? toKebabCase(data.code) : toKebabCase(data.label)
+    let cleanCode = baseCode || `duty-${Date.now().toString(36)}`
+
+    // Guarantee uniqueness with incremental suffix (O(1) average lookup via index)
+    let candidateCode = cleanCode
+    let counter = 1
+    while (await configureModels.findBadgeActivityByCode(candidateCode)) {
+      if (data.code) {
+        throw new AppError(`Badge activity with code '${candidateCode}' already exists`, 400, "DUPLICATE_CODE")
+      }
+      candidateCode = `${cleanCode}-${counter}`
+      counter++
+    }
+    cleanCode = candidateCode
+
+    const created = await configureModels.createBadgeActivity({
+      code: cleanCode,
+      label: data.label.trim(),
+      description: data.description?.trim() || null,
+      bonusPoints: data.bonus_points ?? 30,
+      isActive: data.is_active ?? true,
+    })
+
+    return {
+      id: created.id,
+      code: created.code,
+      label: created.label,
+      description: created.description,
+      bonus_points: created.bonusPoints,
+      is_active: created.isActive,
+      created_at: created.createdAt.toISOString(),
+      updated_at: created.updatedAt.toISOString(),
+    }
+  },
+
+  async updateBadgeActivity(
+    id: string,
+    data: {
+      code?: string
+      label?: string
+      description?: string | null
+      bonus_points?: number
+      is_active?: boolean
+    }
+  ) {
+    const existing = await configureModels.findBadgeActivityById(id)
+    if (!existing) {
+      throw new AppError("Badge activity not found", 404, "BADGE_ACTIVITY_NOT_FOUND")
+    }
+
+    const updatePayload: {
+      code?: string
+      label?: string
+      description?: string | null
+      bonusPoints?: number
+      isActive?: boolean
+    } = {}
+
+    if (data.label !== undefined) updatePayload.label = data.label.trim()
+    if (data.description !== undefined) updatePayload.description = data.description?.trim() || null
+    if (data.bonus_points !== undefined) updatePayload.bonusPoints = data.bonus_points
+    if (data.is_active !== undefined) updatePayload.isActive = data.is_active
+
+    // Auto-sync code from label (or explicit code)
+    const baseCode = data.code ? toKebabCase(data.code) : (data.label ? toKebabCase(data.label) : null)
+    if (baseCode && baseCode !== existing.code) {
+      let candidateCode = baseCode
+      let counter = 1
+      while (true) {
+        const found = await configureModels.findBadgeActivityByCode(candidateCode)
+        if (!found || found.id === id) {
+          break
+        }
+        if (data.code) {
+          throw new AppError(`Badge activity with code '${candidateCode}' already exists`, 400, "DUPLICATE_CODE")
+        }
+        candidateCode = `${baseCode}-${counter}`
+        counter++
+      }
+      updatePayload.code = candidateCode
+    }
+
+    const updated = await configureModels.updateBadgeActivity(id, updatePayload)
+
+    return {
+      id: updated.id,
+      code: updated.code,
+      label: updated.label,
+      description: updated.description,
+      bonus_points: updated.bonusPoints,
+      is_active: updated.isActive,
+      created_at: updated.createdAt.toISOString(),
+      updated_at: updated.updatedAt.toISOString(),
+    }
+  },
+
+  async deleteBadgeActivity(id: string) {
+    const existing = await configureModels.findBadgeActivityById(id)
+    if (!existing) {
+      throw new AppError("Badge activity not found", 404, "BADGE_ACTIVITY_NOT_FOUND")
+    }
+
+    // Relational Integrity: In-Use Safe Delete Protection (O(1) indexed check)
+    const usageCount = await configureModels.countAttendancesByBadgeActivityId(id)
+    if (usageCount > 0) {
+      throw new AppError(
+        "Badge activity cannot be deleted because it is already linked to attendance records. Deactivate it instead.",
+        409,
+        "BADGE_ACTIVITY_IN_USE"
+      )
+    }
+
+    await configureModels.deleteBadgeActivity(id)
+    return { success: true, message: "Badge activity deleted successfully" }
+  },
 }
+

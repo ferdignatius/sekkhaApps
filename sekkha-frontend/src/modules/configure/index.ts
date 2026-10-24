@@ -10,6 +10,9 @@ export { PointsRulesPage } from "./internal/components/PointsRulesPage"
 export { SchoolPage } from "./internal/components/SchoolPage"
 export { SchoolFormPage } from "./internal/components/SchoolFormPage"
 export { SchoolDetailPage } from "./internal/components/SchoolDetailPage"
+export { BadgeActivityListPage } from "./internal/components/BadgeActivityListPage"
+export { BadgeActivityCreatePage } from "./internal/components/BadgeActivityPage"
+export { BadgeActivityDetailPage } from "./internal/components/BadgeActivityDetailPage"
 export const configureModule: ModuleDefinition = {
   name: "configure",
   navItems: [],
@@ -28,6 +31,12 @@ export const configureModule: ModuleDefinition = {
           label: "Event Categories",
           to: "/configure/master/event-type",
           icon: "Tag",
+          hasRoute: true,
+        },
+        {
+          label: "Badge Activity",
+          to: "/configure/master/badge-activity",
+          icon: "Award",
           hasRoute: true,
         },
       ],

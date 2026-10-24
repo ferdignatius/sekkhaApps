@@ -17,6 +17,9 @@ export const DomainEvents = {
 
   /** Fired by Gamification logic after a badge is earned. */
   BADGE_EARNED: "badge.earned",
+
+  /** Fired by Events module after an event is closed and points are finalized. */
+  EVENT_CLOSED: "event.closed",
 } as const
 
 // ─── Payload Types ───────────────────────────────────────────────────────────
@@ -37,4 +40,11 @@ export interface BadgeEarnedPayload {
   userId: string
   badgeId: string
   badgeName: string
+}
+
+export interface EventClosedPayload {
+  eventId: string
+  pointReward: number
+  totalAttendees: number
+  pointsDistributed: boolean
 }

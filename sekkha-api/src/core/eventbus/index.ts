@@ -5,4 +5,5 @@ export type {
   UserRegisteredPayload,
   AttendanceRecordedPayload,
   BadgeEarnedPayload,
+  EventClosedPayload,
 } from "./events"

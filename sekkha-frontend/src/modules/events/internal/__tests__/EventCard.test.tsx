@@ -36,14 +36,14 @@ describe("EventCard Business Component (FE-16)", () => {
     expect(handleClick).toHaveBeenCalledTimes(1)
   })
 
-  it("renders Draft badge when status is draft", () => {
-    const draftEvent: EventListItem = {
+  it("renders Closed badge when status is closed", () => {
+    const closedEvent: EventListItem = {
       ...sampleEvent,
-      status: "draft",
+      status: "closed",
     }
-    render(<EventCard event={draftEvent} onClick={vi.fn()} />)
+    render(<EventCard event={closedEvent} onClick={vi.fn()} />)
 
-    expect(screen.getByText("Draft")).toBeTruthy()
+    expect(screen.getByText("Closed")).toBeTruthy()
   })
 
   it("renders Cancelled badge when status is cancelled", () => {
@@ -53,7 +53,7 @@ describe("EventCard Business Component (FE-16)", () => {
     }
     render(<EventCard event={cancelledEvent} onClick={vi.fn()} />)
 
-    expect(screen.getByText("Dibatalkan")).toBeTruthy()
+    expect(screen.getByText("Cancelled")).toBeTruthy()
   })
 
   it("renders Today indicator when event date is today", () => {

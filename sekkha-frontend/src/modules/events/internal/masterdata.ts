@@ -11,9 +11,6 @@ export type UserRoleName =
   | "organizer"
   | "activist"
   | "member"
-  | "pengurus"
-  | "aktivis"
-  | "umat"
 
 export const ALL_USER_ROLES: {
   id: UserRoleName
@@ -139,7 +136,7 @@ export const DEFAULT_CATEGORIES: EventCategoryItem[] = [
     autofillTitle: "Routine Sunday Service",
     autofillLocation: "Main Dhammasala Vihara Sekkha",
     autofillDesc: "Routine service session with Vihara Sekkha community.",
-    target_roles: ["admin", "pengurus", "aktivis", "umat"],
+    target_roles: ["admin", "organizer", "activist", "member"],
   },
   {
     id: "cat-2",
@@ -154,7 +151,7 @@ export const DEFAULT_CATEGORIES: EventCategoryItem[] = [
     autofillTitle: "Special Festival Service",
     autofillLocation: "Vihara Sekkha",
     autofillDesc: "Major holiday celebration and special puja.",
-    target_roles: ["admin", "pengurus", "aktivis", "umat"],
+    target_roles: ["admin", "organizer", "activist", "member"],
   },
   {
     id: "cat-3",
@@ -169,7 +166,7 @@ export const DEFAULT_CATEGORIES: EventCategoryItem[] = [
     autofillTitle: "Spiritual Character Retreat",
     autofillLocation: "Vihara Meditation Pavilion",
     autofillDesc: "Intensive retreat and spiritual cultivation.",
-    target_roles: ["admin", "pengurus", "aktivis", "umat"],
+    target_roles: ["admin", "organizer", "activist", "member"],
   },
   {
     id: "cat-4",
@@ -184,7 +181,7 @@ export const DEFAULT_CATEGORIES: EventCategoryItem[] = [
     autofillTitle: "Group Meditation Session",
     autofillLocation: "Meditation Hall",
     autofillDesc: "Bhavana practice and mindfulness training.",
-    target_roles: ["admin", "pengurus", "aktivis", "umat"],
+    target_roles: ["admin", "organizer", "activist", "member"],
   },
   {
     id: "cat-5",
@@ -199,7 +196,7 @@ export const DEFAULT_CATEGORIES: EventCategoryItem[] = [
     autofillTitle: "Community Social Service",
     autofillLocation: "Vihara Sekkha",
     autofillDesc: "Charity drives and community outreach.",
-    target_roles: ["admin", "pengurus", "aktivis", "umat"],
+    target_roles: ["admin", "organizer", "activist", "member"],
   },
   {
     id: "cat-6",
@@ -214,7 +211,7 @@ export const DEFAULT_CATEGORIES: EventCategoryItem[] = [
     autofillTitle: "General Vihara Activity",
     autofillLocation: "Vihara Sekkha",
     autofillDesc: "General community event.",
-    target_roles: ["admin", "pengurus", "aktivis", "umat"],
+    target_roles: ["admin", "organizer", "activist", "member"],
   },
 ]
 
@@ -280,28 +277,9 @@ export function getAccessibleCategories(
 ): EventCategoryItem[] {
   const cats = getMasterCategories(activeOnly)
   const role = (userRole || "member").toLowerCase()
-  const normalizedRole =
-    role === "umat"
-      ? "member"
-      : role === "aktivis"
-        ? "activist"
-        : role === "pengurus"
-          ? "organizer"
-          : role
   return cats.filter((c) => {
     if (!c.target_roles || c.target_roles.length === 0) return true
-    return c.target_roles.some((r) => {
-      const nr = r.toLowerCase()
-      const normalizedTarget =
-        nr === "umat"
-          ? "member"
-          : nr === "aktivis"
-            ? "activist"
-            : nr === "pengurus"
-              ? "organizer"
-              : nr
-      return normalizedTarget === normalizedRole
-    })
+    return c.target_roles.some((r) => r.toLowerCase() === role)
   })
 }
 

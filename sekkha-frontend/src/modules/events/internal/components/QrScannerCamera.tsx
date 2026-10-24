@@ -167,9 +167,9 @@ export function QrScannerCamera({
         setIsScanningActive(true)
         setIsInitializing(false)
       } catch (err: any) {
-        console.error("Gagal memulai kamera scanner:", err)
+        console.error("Failed to start camera scanner:", err)
         let msg =
-          "Gagal mengakses kamera. Pastikan izin kamera sudah diberikan di browser."
+          "Failed to access camera. Please ensure camera permission is granted in your browser."
 
         if (
           err?.name === "NotAllowedError" ||
@@ -177,24 +177,24 @@ export function QrScannerCamera({
           err?.name === "PermissionDeniedError"
         ) {
           msg =
-            "Izin kamera ditolak. Harap klik ikon gembok/pengaturan di samping URL browser Anda dan pilih 'Izinkan Kamera', lalu muat ulang halaman."
+            "Camera permission was denied. Please click the padlock or site settings icon in your browser URL bar and allow camera access, then reload."
         } else if (
           err?.name === "NotFoundError" ||
           err?.name === "DevicesNotFoundError"
         ) {
-          msg = "Kamera tidak ditemukan pada perangkat Anda."
+          msg = "No camera found on your device."
         } else if (
           err?.name === "NotReadableError" ||
           err?.name === "TrackStartError"
         ) {
           msg =
-            "Kamera sedang digunakan oleh aplikasi lain (misal Zoom, Meet, atau tab lain). Harap tutup aplikasi tersebut."
+            "Camera is currently being used by another application or tab (e.g., Zoom, Google Meet). Please close other camera apps."
         } else if (
           err?.message?.includes("secure context") ||
           (typeof window !== "undefined" && !window.isSecureContext)
         ) {
           msg =
-            "Browser hanya mengizinkan kamera pada localhost atau HTTPS. Jika mengakses via IP lokal (misal 192.168.x.x), browser memblokir kamera."
+            "Browsers only allow camera streaming on localhost or HTTPS secure origins."
         }
 
         setCameraError(msg)
@@ -217,7 +217,7 @@ export function QrScannerCamera({
       !["localhost", "127.0.0.1", "[::1]"].includes(window.location.hostname)
     ) {
       setIsInsecureContext(true)
-      setCameraError("Kamera memerlukan koneksi aman (HTTPS atau localhost).")
+      setCameraError("Camera streaming requires a secure origin (HTTPS or localhost).")
       setIsInitializing(false)
       return
     }
@@ -263,9 +263,9 @@ export function QrScannerCamera({
           }
         }
       } catch (err: any) {
-        console.error("Inisialisasi scanner gagal:", err)
+        console.error("Scanner initialization failed:", err)
         if (isMounted) {
-          setCameraError(err?.message || "Gagal menginisialisasi kamera.")
+          setCameraError(err?.message || "Failed to initialize camera.")
           setIsInitializing(false)
         }
       }
@@ -336,9 +336,9 @@ export function QrScannerCamera({
       const decodedText = await scannerRef.current.scanFile(file, true)
       handleDecoded(decodedText)
     } catch (err: any) {
-      console.warn("Gagal membaca QR dari gambar:", err)
+      console.warn("Failed to read QR from image:", err)
       setCameraError(
-        "Tidak dapat menemukan atau membaca QR code dari gambar yang diunggah. Pastikan gambar jelas dan tidak buram."
+        "Could not detect a valid QR code in the uploaded image. Please ensure the image is clear and focused."
       )
     } finally {
       setProcessingFile(false)
@@ -377,7 +377,7 @@ export function QrScannerCamera({
           >
             <RefreshCwIcon className="size-8 animate-spin text-amber-400" />
             <p className="text-caption font-medium">
-              Menghubungkan ke kamera...
+              Connecting to camera...
             </p>
           </div>
         )}
@@ -390,11 +390,11 @@ export function QrScannerCamera({
             </div>
             <div className="space-y-1">
               <p className="text-caption-bold text-amber-300">
-                Kamera Diblokir (Non-HTTPS)
+                Camera Blocked (Non-HTTPS)
               </p>
               <p className="text-caption max-w-xs leading-relaxed text-slate-300">
-                Browser hanya mengizinkan kamera pada <code>localhost</code>{" "}
-                atau <code>https://</code>.
+                Browser only permits camera access on <code>localhost</code>{" "}
+                or <code>https://</code>.
               </p>
             </div>
             <button
@@ -403,7 +403,7 @@ export function QrScannerCamera({
               className="text-caption-bold flex min-h-[44px] cursor-pointer items-center gap-1.5 rounded-[12px] bg-[#e8b94a] px-3.5 py-2 font-bold text-[#1a3a3a] shadow-sm transition-all hover:bg-amber-400 focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#102828] focus-visible:outline-none"
             >
               <ImageIcon className="size-4" />
-              <span>Unggah Foto QR Code</span>
+              <span>Upload QR Code Image</span>
             </button>
           </div>
         )}
@@ -420,7 +420,7 @@ export function QrScannerCamera({
             </div>
             <div className="space-y-1">
               <p className="text-caption-bold text-rose-300">
-                Kamera Belum Terbuka
+                Camera Unavailable
               </p>
               <p className="max-w-xs text-[11px] leading-relaxed text-slate-300">
                 {cameraError}
@@ -434,7 +434,7 @@ export function QrScannerCamera({
                 className="text-caption flex min-h-[44px] cursor-pointer items-center gap-1.5 rounded-[12px] bg-white/15 px-3 py-1.5 font-semibold text-white shadow-xs transition-all hover:bg-white/25 focus-visible:ring-2 focus-visible:ring-[#e8b94a] focus-visible:outline-none"
               >
                 <RefreshCwIcon className="size-3.5" />
-                <span>Coba Lagi</span>
+                <span>Try Again</span>
               </button>
 
               <button
@@ -443,7 +443,7 @@ export function QrScannerCamera({
                 className="text-caption flex min-h-[44px] cursor-pointer items-center gap-1.5 rounded-[12px] bg-[#e8b94a] px-3 py-1.5 font-bold text-[#1a3a3a] shadow-xs transition-all hover:bg-amber-400 focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#102828] focus-visible:outline-none"
               >
                 <ImageIcon className="size-3.5" />
-                <span>Pilih Foto QR</span>
+                <span>Select QR Image</span>
               </button>
             </div>
           </div>
@@ -454,7 +454,7 @@ export function QrScannerCamera({
           <div className="absolute inset-0 z-25 flex flex-col items-center justify-center gap-2 bg-[#102828]/95 text-white backdrop-blur-xs">
             <RefreshCwIcon className="size-7 animate-spin text-amber-400" />
             <p className="text-caption font-medium">
-              Membaca QR dari gambar...
+              Scanning QR from image...
             </p>
           </div>
         )}
@@ -484,7 +484,7 @@ export function QrScannerCamera({
             {/* Hint Tag under Viewfinder */}
             <div className="mt-4">
               <span className="text-caption rounded-full border border-white/15 bg-[#102828]/90 px-4 py-1.5 font-medium text-white/95 shadow-md backdrop-blur-md">
-                Arahkan QR ke dalam kotak
+                Align QR inside the frame
               </span>
             </div>
           </div>
@@ -495,7 +495,7 @@ export function QrScannerCamera({
           <div className="absolute inset-0 z-30 flex animate-in flex-col items-center justify-center gap-2 bg-emerald-950/85 text-emerald-300 backdrop-blur-xs duration-200 fade-in zoom-in">
             <CheckCircle2Icon className="size-14 animate-bounce text-emerald-400" />
             <p className="text-title-sm font-bold text-white">
-              QR Berhasil Terdeteksi!
+              QR Code Detected!
             </p>
           </div>
         )}
@@ -520,7 +520,7 @@ export function QrScannerCamera({
                 className="flex shrink-0 items-center gap-1 text-[11px] font-semibold text-slate-400"
               >
                 <CameraIcon className="size-3.5" />
-                <span>Kamera:</span>
+                <span>Camera:</span>
               </label>
               <select
                 id="camera-select"
@@ -530,20 +530,20 @@ export function QrScannerCamera({
               >
                 {cameras.map((cam, idx) => (
                   <option key={cam.id} value={cam.id}>
-                    {cam.label || `Kamera ${idx + 1}`}
+                    {cam.label || `Camera ${idx + 1}`}
                   </option>
                 ))}
               </select>
             </div>
           ) : (
-            <span className="text-[11px] text-slate-400">Scanner Aktif</span>
+            <span className="text-[11px] text-slate-400">Scanner Active</span>
           )}
 
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
             className="flex shrink-0 cursor-pointer items-center gap-1 rounded-lg border border-slate-700 bg-slate-900 px-2 py-1 text-[11px] font-medium text-slate-300 transition-all hover:border-slate-500 hover:text-white"
-            title="Scan dari Foto / Screenshot QR"
+            title="Scan from photo or screenshot"
           >
             <ImageIcon className="size-3.5 text-amber-400" />
             <span>Upload QR</span>

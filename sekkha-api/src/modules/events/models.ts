@@ -8,6 +8,9 @@ export const eventModels = {
       include: {
         type: true,
         season: true,
+        _count: {
+          select: { attendances: true },
+        },
       },
       orderBy: { eventDate: "asc" },
       skip,
@@ -21,6 +24,9 @@ export const eventModels = {
       include: {
         type: true,
         season: true,
+        _count: {
+          select: { attendances: true },
+        },
       },
     })
   },
@@ -31,9 +37,13 @@ export const eventModels = {
       select: {
         id: true,
         title: true,
-        type: { select: { code: true, defaultPointReward: true } },
+        eventDate: true,
+        pointReward: true,
+        maxLateMinutes: true,
+        latePenaltyPoints: true,
         status: true,
         qrCode: true,
+        type: { select: { code: true, label: true, defaultPointReward: true } },
       },
     })
   },
@@ -44,7 +54,7 @@ export const eventModels = {
       where: {
         OR: [
           { id: identifier },
-          ...(isNum ? [{ userNumber: parseInt(identifier, 10) }] : []),
+          ...(isNum ? [{ userNumber: BigInt(identifier) }] : []),
           { username: identifier.toLowerCase() },
         ],
       },
@@ -52,7 +62,12 @@ export const eventModels = {
         id: true,
         userNumber: true,
         role: true,
-        profile: { select: { name: true } },
+        profile: {
+          select: {
+            name: true,
+            school: { select: { name: true } },
+          },
+        },
       },
     })
   },
@@ -65,7 +80,18 @@ export const eventModels = {
           eventId,
         },
       },
-      select: { id: true, scannedAt: true, pointsEarned: true },
+      select: {
+        id: true,
+        userId: true,
+        eventId: true,
+        pointsEarned: true,
+        isLate: true,
+        latePenaltyApplied: true,
+        badgeBonusPoints: true,
+        isFinalized: true,
+        scannedAt: true,
+        badgeActivity: { select: { label: true } },
+      },
     })
   },
 
@@ -74,6 +100,11 @@ export const eventModels = {
     eventId: string
     method: "qr" | "manual"
     pointsEarned: number
+    isLate?: boolean
+    latePenaltyApplied?: number
+    badgeActivityId?: string | null
+    badgeBonusPoints?: number
+    isFinalized?: boolean
   }) {
     return prisma.attendance.create({
       data: {
@@ -81,11 +112,43 @@ export const eventModels = {
         eventId: data.eventId,
         method: data.method,
         pointsEarned: data.pointsEarned,
+        isLate: data.isLate ?? false,
+        latePenaltyApplied: data.latePenaltyApplied ?? 0,
+        badgeActivityId: data.badgeActivityId || null,
+        badgeBonusPoints: data.badgeBonusPoints ?? 0,
+        isFinalized: data.isFinalized ?? false,
+      },
+      include: {
+        badgeActivity: { select: { label: true } },
       },
     })
   },
 
-  findEventAttendances(eventId: string, skip = 0, take = 50) {
+  updateAttendance(
+    id: string,
+    data: {
+      badgeActivityId?: string | null
+      badgeBonusPoints?: number
+    }
+  ) {
+    return prisma.attendance.update({
+      where: { id },
+      data: {
+        badgeBonusPoints: data.badgeBonusPoints,
+        badgeActivity:
+          data.badgeActivityId !== undefined
+            ? data.badgeActivityId
+              ? { connect: { id: data.badgeActivityId } }
+              : { disconnect: true }
+            : undefined,
+      },
+      include: {
+        badgeActivity: { select: { label: true, bonusPoints: true } },
+      },
+    })
+  },
+
+  findEventAttendances(eventId: string, skip = 0, take = 100) {
     return prisma.attendance.findMany({
       where: { eventId },
       include: {
@@ -93,7 +156,21 @@ export const eventModels = {
           select: {
             id: true,
             userNumber: true,
-            profile: { select: { name: true } },
+            role: true,
+            profile: {
+              select: {
+                name: true,
+                school: { select: { name: true } },
+              },
+            },
+          },
+        },
+        badgeActivity: {
+          select: {
+            id: true,
+            code: true,
+            label: true,
+            bonusPoints: true,
           },
         },
       },
@@ -101,6 +178,10 @@ export const eventModels = {
       skip,
       take,
     })
+  },
+
+  countEventAttendances(eventId: string) {
+    return prisma.attendance.count({ where: { eventId } })
   },
 
   createEvent(data: Prisma.EventCreateInput) {
@@ -137,5 +218,9 @@ export const eventModels = {
 
   findEventTypeById(id: string) {
     return prisma.eventType.findUnique({ where: { id } })
+  },
+
+  findBadgeActivityById(id: string) {
+    return prisma.badgeActivity.findUnique({ where: { id } })
   },
 }

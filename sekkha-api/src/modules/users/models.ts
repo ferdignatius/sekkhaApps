@@ -23,6 +23,7 @@ export const userModels = {
             classGrade: true,
             phone: true,
             birthDate: true,
+            gender: true,
             school: { select: { id: true, name: true } },
           },
         },

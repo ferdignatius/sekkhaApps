@@ -158,9 +158,9 @@ export function HomePage() {
   const [showAllMenusModal, setShowAllMenusModal] = useState(false)
   const [menuSearchQuery, setMenuSearchQuery] = useState("")
 
-  const isPengurus = role === "pengurus" || role === "admin"
-  const isAktivis = role === "aktivis"
-  const canAccessTeams = isAktivis || isPengurus
+  const isPengurus =
+    role === "organizer" || role === "pengurus" || role === "admin"
+  const canAccessPeople = isPengurus
 
   // 8 Primary Quick Access Items for Home (Clay 6-Color Palette)
   const primaryQuickAccessItems = [
@@ -180,7 +180,7 @@ export function HomePage() {
       iconColor: "text-white",
       href: "/leaderboard",
     },
-    ...(canAccessTeams
+    ...(canAccessPeople
       ? [
           {
             id: "people",
@@ -247,7 +247,7 @@ export function HomePage() {
           keywords:
             "leaderboard ranking score points merit standings peringkat klasemen skor",
         },
-        ...(canAccessTeams
+        ...(canAccessPeople
           ? [
               {
                 id: "people",

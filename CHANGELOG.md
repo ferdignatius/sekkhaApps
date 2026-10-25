@@ -19,6 +19,13 @@ All notable changes to Sekkha Apps. Semver (`MAJOR.MINOR.PATCH`); newest on top.
   - Ensured rate limiters skip `OPTIONS` preflight requests (`skipPreflight`).
   - Added unit test suite `cors.test.ts` verifying origin normalization and wildcard resolution.
 
+### Security
+- Restricted People module access strictly to `organizer` (pengurus) and `admin`:
+  - **Backend**: Restricted `GET /api/people` (list) and `GET /api/people/:id` (detail) to `requireRole("organizer", "admin")`, disallowing unauthorized queries from `member` and `activist`.
+  - **Frontend Navigation**: Moved `/people` from general navigation items to `pengurusNavItems` so it is hidden from desktop sidebar and mobile bottom dock for non-organizer/admin users.
+  - **Frontend Route Guards**: Added `beforeLoad` route guards on `/people` and `/people/$memberId` redirecting non-pengurus to `/home`.
+  - **Defense-in-depth**: Added client-side redirect effects in `PeoplePage` and `MemberDetailPage` components and filtered quick-access tiles on `HomePage`.
+
 ## [1.0.0] - 2026-10-19
 
 ### Added

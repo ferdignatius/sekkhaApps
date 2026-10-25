@@ -100,11 +100,18 @@ export function MemberDetailPage({
     setTimeout(() => setToast(null), 3000)
   }
 
+  // Defense-in-depth: Redirect non-organizer/non-admin users to home
   useEffect(() => {
-    if (memberId) {
+    if (authState.status === "authenticated" && !isOrganizerOrAdmin) {
+      navigate({ to: "/home" })
+    }
+  }, [authState.status, isOrganizerOrAdmin, navigate])
+
+  useEffect(() => {
+    if (memberId && isOrganizerOrAdmin) {
       loadMember()
     }
-  }, [memberId])
+  }, [memberId, isOrganizerOrAdmin])
 
   async function loadMember() {
     if (!memberId) return

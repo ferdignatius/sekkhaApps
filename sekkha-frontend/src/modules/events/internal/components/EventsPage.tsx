@@ -2,7 +2,7 @@
 // Events page: month calendar with colored dots + event list below.
 // Strictly adhering to Clay Design System: consistent 12px control radius, warm cream canvas, custom dropdown, and full English localization.
 
-import { useState, useMemo, useEffect, useRef } from "react"
+import { useState, useMemo, useEffect, useRef, useCallback } from "react"
 import {
   PlusIcon,
   CalendarDaysIcon,
@@ -28,12 +28,19 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { EventCard } from "./EventCard"
 import { EventDetailSheet } from "./EventDetailSheet"
 import { EventForm } from "./EventForm"
-import { getAccessibleCategories, getCategoryColor } from "../masterdata"
+import {
+  getAccessibleCategories,
+  getCategoryColor,
+  getEventTag,
+  syncMasterCategories,
+} from "../masterdata"
+import type { EventCategoryItem } from "../masterdata"
 import type {
   EventListItem,
   CreateEventPayload,
   AttendanceRecord,
 } from "../types"
+import { hexToTagColors } from "../types"
 
 const EventsResponseSchema = z.array(
   z.object({
@@ -121,6 +128,12 @@ function formatMonthLabel(month: Date): string {
   return month.toLocaleDateString("en-US", { month: "long", year: "numeric" })
 }
 
+function formatMonthParam(date: Date): string {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, "0")
+  return `${y}-${m}`
+}
+
 const MONTH_NAMES_SHORT = [
   "Jan",
   "Feb",
@@ -167,10 +180,59 @@ export function EventsPage() {
   const [deletingEvent, setDeletingEvent] = useState(false)
   const monthPickerRef = useRef<HTMLDivElement>(null)
 
-  // Dynamic Accessible Categories for logged in User Role
+  const [masterCategories, setMasterCategories] = useState<EventCategoryItem[]>(() =>
+    getAccessibleCategories(role, true)
+  )
+
+  useEffect(() => {
+    let cancelled = false
+    async function fetchMasterCategories() {
+      const items = await syncMasterCategories()
+      if (!cancelled && items && items.length > 0) {
+        setMasterCategories(items)
+      }
+    }
+    fetchMasterCategories()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  // Dynamic Accessible Categories for logged in User Role, merged with actual event types from API
   const accessibleCategories = useMemo(() => {
-    return getAccessibleCategories(role, true)
-  }, [role])
+    const baseCats =
+      masterCategories.length > 0
+        ? masterCategories.filter((c) => c.is_active !== false)
+        : getAccessibleCategories(role, true)
+    const existingTags = new Set(baseCats.map((c) => c.tag.toLowerCase()))
+    const extraCats: typeof baseCats = []
+
+    events.forEach((ev) => {
+      const tag = getEventTag(ev).toLowerCase()
+      if (tag && !existingTags.has(tag)) {
+        existingTags.add(tag)
+        const et =
+          ev.event_type && typeof ev.event_type === "object"
+            ? ev.event_type
+            : null
+        const color = et?.color || "#4262FF"
+        const tagStyles = hexToTagColors(color)
+        extraCats.push({
+          id: et?.id || `type-${tag}`,
+          tag,
+          name: et?.label || et?.code || tag,
+          bg: tagStyles.bg,
+          text: tagStyles.text,
+          dot: tagStyles.dot,
+          points: et?.default_point_reward ?? 50,
+          is_active: true,
+          colorHex: color,
+        })
+      }
+    })
+
+    return [...baseCats, ...extraCats]
+  }, [role, events, masterCategories])
 
   const accessibleTagsSet = useMemo(() => {
     return new Set(accessibleCategories.map((c) => c.tag.toLowerCase()))
@@ -201,27 +263,84 @@ export function EventsPage() {
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [])
 
-  // Load events from backend API
+  // Month cache for instant navigation between months
+  const [eventsCache, setEventsCache] = useState<
+    Record<string, EventListItem[]>
+  >({})
+
+  const activeMonthParam = formatMonthParam(activeMonth)
+
+  const loadEvents = useCallback(
+    async (targetDate = activeMonth, force = false) => {
+      const monthParam = formatMonthParam(targetDate)
+      if (!force && eventsCache[monthParam]) {
+        setEvents(eventsCache[monthParam])
+        return
+      }
+
+      try {
+        setLoadingEvents(true)
+        const data = await api.get<EventListItem[]>(
+          `/events?month=${monthParam}&page=1&limit=100`,
+          {
+            schema: EventsResponseSchema,
+          }
+        )
+        setEventsCache((prev) => ({ ...prev, [monthParam]: data }))
+        setEvents(data)
+      } catch (err) {
+        console.error("Failed to load events from server:", err)
+      } finally {
+        setLoadingEvents(false)
+      }
+    },
+    [activeMonth, eventsCache]
+  )
+
+  // Load events for active month
   useEffect(() => {
-    loadEvents()
-  }, [])
-
-  async function loadEvents() {
-    try {
-      setLoadingEvents(true)
-      const data = await api.get<EventListItem[]>("/events", {
-        schema: EventsResponseSchema,
-      })
-      setEvents(data)
-    } catch (err) {
-      console.error("Failed to load events from server:", err)
-      setEvents([])
-    } finally {
-      setLoadingEvents(false)
+    if (!debouncedSearchQuery.trim()) {
+      loadEvents(activeMonth)
     }
-  }
+  }, [activeMonthParam, debouncedSearchQuery])
 
-  // Attendance records keyed by event id
+  // Global search when user types in search query
+  useEffect(() => {
+    const q = debouncedSearchQuery.trim()
+    if (!q) {
+      const monthParam = formatMonthParam(activeMonth)
+      if (eventsCache[monthParam]) {
+        setEvents(eventsCache[monthParam])
+      } else {
+        loadEvents(activeMonth)
+      }
+      return
+    }
+
+    let cancelled = false
+    async function searchEvents() {
+      try {
+        setLoadingEvents(true)
+        const data = await api.get<EventListItem[]>(
+          `/events?search=${encodeURIComponent(q)}&page=1&limit=50`,
+          { schema: EventsResponseSchema }
+        )
+        if (!cancelled) {
+          setEvents(data)
+        }
+      } catch (err) {
+        console.warn("Event search error:", err)
+      } finally {
+        if (!cancelled) setLoadingEvents(false)
+      }
+    }
+    void searchEvents()
+    return () => {
+      cancelled = true
+    }
+  }, [debouncedSearchQuery])
+
+  // Attendance records keyed by event id (only fetched on demand for pengurus/admin)
   const [attendances, setAttendances] = useState<
     Record<string, AttendanceRecord[]>
   >({})
@@ -233,6 +352,23 @@ export function EventsPage() {
       const url = new URL(window.location.href)
       url.searchParams.set("eventId", ev.id)
       window.history.pushState({ eventId: ev.id }, "", url.toString())
+    }
+
+    // Lazy load fresh full event detail only when user opens detail
+    api
+      .get<EventListItem>(`/events/${ev.id}`)
+      .then((fullDetail) => {
+        if (fullDetail) {
+          setSelected(fullDetail)
+        }
+      })
+      .catch((err) => {
+        console.warn("Failed to fetch fresh event detail:", err)
+      })
+
+    // Lazy load attendances ONLY if user is pengurus/admin
+    if (isPengurus) {
+      loadEventAttendances(ev.id)
     }
   }
 
@@ -254,45 +390,37 @@ export function EventsPage() {
         if (found) {
           setSelected(found)
           setView("detail")
-          return
         }
       }
 
-      // If not found in loaded events list (e.g. direct link), fetch directly from API
-      if (!loadingEvents) {
-        api
-          .get<EventListItem>(`/events/${eventIdParam}`)
-          .then((directEvent) => {
-            if (directEvent) {
-              setSelected(directEvent)
-              setView("detail")
+      // Fetch detail on demand
+      api
+        .get<EventListItem>(`/events/${eventIdParam}`)
+        .then((directEvent) => {
+          if (directEvent) {
+            setSelected(directEvent)
+            setView("detail")
+            if (isPengurus) {
+              loadEventAttendances(directEvent.id)
             }
-          })
-          .catch((err) => {
-            console.warn("Event from eventId param not found:", err)
-          })
-      }
+          }
+        })
+        .catch((err) => {
+          console.warn("Event from eventId param not found:", err)
+        })
     }
 
     syncFromUrl()
     window.addEventListener("popstate", syncFromUrl)
     return () => window.removeEventListener("popstate", syncFromUrl)
-  }, [events, loadingEvents])
-
-  useEffect(() => {
-    if (selected?.id) {
-      loadEventAttendances(selected.id)
-    }
-  }, [selected?.id])
+  }, [events, isPengurus])
 
   async function loadEventAttendances(eventId: string) {
     try {
-      const data = await api.get<any>(
-        `/events/${eventId}/attendances`
-      )
+      const data = await api.get<any>(`/events/${eventId}/attendances`)
       const list: AttendanceRecord[] = Array.isArray(data)
         ? data
-        : data?.attendances ?? []
+        : (data?.attendances ?? [])
       setAttendances((prev) => ({ ...prev, [eventId]: list }))
     } catch (err) {
       console.error("Failed to load event attendances:", err)
@@ -307,14 +435,14 @@ export function EventsPage() {
   const dotMap = useMemo<Record<string, EventDotItem[]>>(() => {
     const map: Record<string, EventDotItem[]> = {}
     events.forEach((ev) => {
-      const tag = (ev.tag ?? ev.event_type ?? "rutin").toLowerCase()
+      const tag = getEventTag(ev).toLowerCase()
       if (!accessibleTagsSet.has(tag)) return
 
       const key = toDateKey(ev.event_date)
       if (!key) return
       if (!map[key]) map[key] = []
 
-      const colorInfo = getCategoryColor(tag)
+      const colorInfo = getCategoryColor(ev)
       map[key].push({
         colorHex: colorInfo.hex,
       })
@@ -325,7 +453,7 @@ export function EventsPage() {
   // Filtered Events
   const listedEvents = useMemo(() => {
     let base = events.filter((ev) => {
-      const tag = (ev.tag ?? ev.event_type ?? "rutin").toLowerCase()
+      const tag = getEventTag(ev).toLowerCase()
       return accessibleTagsSet.has(tag)
     })
 
@@ -339,7 +467,13 @@ export function EventsPage() {
         const locMatch = (ev.location ?? "").toLowerCase().includes(q)
         const descMatch = (ev.description ?? "").toLowerCase().includes(q)
         const tagMatch = (ev.tag ?? "").toLowerCase().includes(q)
-        const typeMatch = (ev.event_type ?? "").toLowerCase().includes(q)
+        const typeMatch = (
+          typeof ev.event_type === "string"
+            ? ev.event_type
+            : (ev.event_type?.label ?? ev.event_type?.code ?? "")
+        )
+          .toLowerCase()
+          .includes(q)
         return titleMatch || locMatch || descMatch || tagMatch || typeMatch
       })
     } else {
@@ -353,8 +487,7 @@ export function EventsPage() {
     if (selectedCategoryTag !== "all") {
       base = base.filter(
         (ev) =>
-          (ev.tag ?? ev.event_type ?? "").toLowerCase() ===
-          selectedCategoryTag.toLowerCase()
+          getEventTag(ev).toLowerCase() === selectedCategoryTag.toLowerCase()
       )
     }
 
@@ -377,7 +510,7 @@ export function EventsPage() {
       } else {
         await api.post("/events", payload)
       }
-      await loadEvents()
+      await loadEvents(activeMonth, true)
       setEditTarget(null)
       setFormOpen(false)
     } catch (err) {
@@ -460,8 +593,15 @@ export function EventsPage() {
                           description: ev.description ?? "",
                           location: ev.location ?? "",
                           event_date: ev.event_date,
-                          event_type: ev.event_type,
-                          tag: ev.tag,
+                          event_type:
+                            typeof ev.event_type === "string"
+                              ? (ev.event_type as any)
+                              : ev.event_type?.code,
+                          event_type_id:
+                            typeof ev.event_type === "object"
+                              ? ev.event_type?.id
+                              : undefined,
+                          tag: getEventTag(ev),
                         }
                         const dup = await api.post<EventListItem>(
                           "/events",
@@ -520,10 +660,10 @@ export function EventsPage() {
                           `/events/${eventId}/status`,
                           updatePayload
                         )
-                        await loadEvents()
+                        await loadEvents(activeMonth, true)
                       } catch (err) {
                         console.error("Failed to update event status:", err)
-                        await loadEvents()
+                        await loadEvents(activeMonth, true)
                       }
                     }
                   : undefined

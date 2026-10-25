@@ -42,8 +42,14 @@ eventsRouter.get(
 )
 
 
-// PATCH /api/events/:id/attendances/:userId/badge-activity — Assign service role to attendee (Organizer & Admin only)
+// PATCH & POST /api/events/:id/attendances/:userId/badge-activity — Assign service role to attendee (Organizer & Admin only)
 eventsRouter.patch(
+  "/:id/attendances/:userId/badge-activity",
+  requireAuth,
+  requireRole("organizer", "admin"),
+  eventControllers.assignBadgeActivity
+)
+eventsRouter.post(
   "/:id/attendances/:userId/badge-activity",
   requireAuth,
   requireRole("organizer", "admin"),

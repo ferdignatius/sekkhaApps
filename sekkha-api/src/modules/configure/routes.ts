@@ -13,6 +13,10 @@ configureRouter.use(requireAuth)
 configureRouter.get("/schools", schoolControllers.getSchools)
 configureRouter.post("/school-requests", schoolControllers.requestSchool)
 
+// Master data catalogs (Accessible to all authenticated members)
+configureRouter.get("/event-types", configureControllers.getEventTypes)
+configureRouter.get("/badge-activities", configureControllers.getBadgeActivities)
+
 // Other configure routes require organizer/admin role
 configureRouter.use(requireRole("organizer", "admin"))
 

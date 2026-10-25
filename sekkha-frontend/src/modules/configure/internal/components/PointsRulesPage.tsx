@@ -44,10 +44,7 @@ const SYSTEM_RULE_SECTIONS: RuleSectionConfig[] = [
       "Appreciation points for 4-week attendance consistency and verified claimed members' first attendance.",
     icon: <FlameIcon className="size-5 text-[#e8b94a]" />,
     badge: "Engagement",
-    ruleCodes: [
-      "streak_monthly_bonus",
-      "first_attendance_bonus",
-    ],
+    ruleCodes: ["streak_monthly_bonus", "first_attendance_bonus"],
   },
 ]
 
@@ -164,7 +161,8 @@ export function PointsRulesPage() {
                 Point Rules & Economy Policy
               </h1>
               <p className="text-xs text-[#6a6a6a]">
-                Fixed system gamification engine rules with anti-inflation parameter tuning.
+                Fixed system gamification engine rules with anti-inflation
+                parameter tuning.
               </p>
             </div>
           </div>
@@ -185,7 +183,11 @@ export function PointsRulesPage() {
               Point Scarcity & Anti-Inflation Guardrail
             </p>
             <p className="text-xs leading-relaxed text-[#6a6a6a]">
-              Points represent genuine effort and dedication. To prevent points from becoming cheapened vanity metrics, every rule is strictly capped between <strong>0 and 100 points</strong>, paired with a maximum daily accumulation limit of <strong>150 points per member</strong>.
+              Points represent genuine effort and dedication. To prevent points
+              from becoming cheapened vanity metrics, every rule is strictly
+              capped between <strong>0 and 100 points</strong>, paired with a
+              maximum daily accumulation limit of{" "}
+              <strong>150 points per member</strong>.
             </p>
           </div>
         </div>
@@ -197,7 +199,9 @@ export function PointsRulesPage() {
           >
             <ShieldCheckIcon className="mt-0.5 size-5 shrink-0 text-[#855f05]" />
             <p className="leading-relaxed">
-              <strong className="text-[#0a0a0a]">Read-only access.</strong> You can view point rule settings, but only an Admin can tune parameter values and toggle active status.
+              <strong className="text-[#0a0a0a]">Read-only access.</strong> You
+              can view point rule settings, but only an Admin can tune parameter
+              values and toggle active status.
             </p>
           </div>
         )}
@@ -280,13 +284,14 @@ export function PointsRulesPage() {
                                 {rule.label}
                               </h3>
                               {rule.is_active === false && (
-                                <span className="rounded bg-rose-100 px-1.5 py-0.2 text-[9px] font-bold text-rose-700">
+                                <span className="py-0.2 rounded bg-rose-100 px-1.5 text-[9px] font-bold text-rose-700">
                                   Disabled
                                 </span>
                               )}
                             </div>
                             <p className="text-xs leading-relaxed text-[#6a6a6a]">
-                              {rule.description || "No additional description provided."}
+                              {rule.description ||
+                                "No additional description provided."}
                             </p>
                           </div>
                         </div>
@@ -324,8 +329,10 @@ export function PointsRulesPage() {
                     Looking to reward new activities or youth assignments?
                   </h3>
                   <p className="text-xs leading-relaxed text-[#6a6a6a]">
-                    Point Rules above govern automatic core platform policies (like baseline attendance, 4-week consistency streak, and verified claimed members).
-                    To introduce custom point rewards for your temple:
+                    Point Rules above govern automatic core platform policies
+                    (like baseline attendance, 4-week consistency streak, and
+                    verified claimed members). To introduce custom point rewards
+                    for your temple:
                   </p>
                   <div className="flex flex-wrap gap-2 pt-1 text-xs">
                     <Link
@@ -404,7 +411,8 @@ export function PointsRulesPage() {
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <label className="text-xs font-bold text-[#0a0a0a]">
-                Awarded Points (+Points) <span className="text-rose-500">*</span>
+                Awarded Points (+Points){" "}
+                <span className="text-rose-500">*</span>
               </label>
               <span className="text-[10px] font-bold text-[#6a6a6a]">
                 CEILING: 0 – 100 PTS
@@ -422,7 +430,8 @@ export function PointsRulesPage() {
               className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-xs font-bold text-[#0a0a0a] shadow-xs transition-all outline-none focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] sm:text-sm"
             />
             <p className="text-[10px] text-[#6a6a6a]">
-              Values are capped at 100 to prevent point inflation and maintain healthy gamification economy.
+              Values are capped at 100 to prevent point inflation and maintain
+              healthy gamification economy.
             </p>
           </div>
 

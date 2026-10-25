@@ -96,12 +96,15 @@ export function BadgeActivityCreatePage() {
 
   return (
     <main className="min-h-screen bg-[#fffaf0] p-4 font-sans text-[#0a0a0a] sm:p-6 lg:p-8">
-      <div className="mx-auto max-w-2xl space-y-6">
+      <div className="mx-auto max-w-7xl space-y-6">
         {/* Breadcrumb Navigation */}
         <PageBreadcrumb
           items={[
             { label: "Configure", href: "/configure/master/badge-activity" },
-            { label: "Badge Activity", href: "/configure/master/badge-activity" },
+            {
+              label: "Badge Activity",
+              href: "/configure/master/badge-activity",
+            },
             { label: "New Role" },
           ]}
         />
@@ -109,7 +112,9 @@ export function BadgeActivityCreatePage() {
         {/* Back Link */}
         <button
           type="button"
-          onClick={() => void navigate({ to: "/configure/master/badge-activity" })}
+          onClick={() =>
+            void navigate({ to: "/configure/master/badge-activity" })
+          }
           className="inline-flex items-center gap-1.5 text-xs font-bold text-[#6a6a6a] hover:text-[#0a0a0a]"
         >
           <ArrowLeftIcon className="size-4" />
@@ -127,7 +132,8 @@ export function BadgeActivityCreatePage() {
             </h1>
           </div>
           <p className="mt-1 text-xs text-[#6a6a6a]">
-            Add a new service duty role for youth operational activities (MC, Puja Leader, Musician, etc.).
+            Add a new service duty role for youth operational activities (MC,
+            Puja Leader, Musician, etc.).
           </p>
         </div>
 
@@ -250,7 +256,9 @@ export function BadgeActivityCreatePage() {
                 type="button"
                 variant="outline"
                 disabled={saving}
-                onClick={() => void navigate({ to: "/configure/master/badge-activity" })}
+                onClick={() =>
+                  void navigate({ to: "/configure/master/badge-activity" })
+                }
                 className="rounded-[10px] border-[#e5e5e5] text-xs font-bold text-[#0a0a0a]"
               >
                 Cancel

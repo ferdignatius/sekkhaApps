@@ -53,6 +53,13 @@ export const leaderboardModels = {
             name: true,
           },
         },
+        stats: {
+          select: {
+            points: true,
+            currentStreak: true,
+            totalAttendances: true,
+          },
+        },
       },
     })
   },

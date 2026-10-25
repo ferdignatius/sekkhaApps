@@ -145,7 +145,6 @@ export const peopleServices = {
     })
 
     const items = rawMembers.map((m) => {
-      const rawPhone = m.profile?.phone ? decrypt(m.profile.phone) : null
       return {
         id: m.id,
         user_number: m.userNumber ? Number(m.userNumber) : null,
@@ -153,13 +152,7 @@ export const peopleServices = {
         name: m.profile?.name || m.username || "Member",
         role: m.role,
         is_claimed: m.isClaimed ?? true,
-        school: m.profile?.school?.name || null,
-        school_id: m.profile?.schoolId || null,
-        phone: isPrivileged ? rawPhone : null,
         created_at: new Date(m.createdAt).toISOString(),
-        last_attended_at: m.stats?.lastActivityAt
-          ? new Date(m.stats.lastActivityAt).toISOString()
-          : null,
       }
     })
 

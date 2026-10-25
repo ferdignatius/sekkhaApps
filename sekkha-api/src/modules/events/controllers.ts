@@ -15,7 +15,7 @@ export const CreateEventSchema = z.object({
   event_date: z
     .string({ required_error: "Tanggal pelaksanaan wajib diisi" })
     .refine((val) => !isNaN(Date.parse(val)), "Format tanggal event tidak valid"),
-  event_type: z.enum(["rutin", "special"]).optional(),
+  event_type: z.string().optional(),
   event_type_id: z.string().optional(),
   season_id: z.string().optional(),
   tag: z.string().max(50).optional(),
@@ -50,15 +50,17 @@ export const eventControllers = {
       const userRole = req.user?.role || "member"
       const isPrivileged = userRole === "organizer" || userRole === "admin"
       const page = Math.max(1, parseInt(req.query.page as string, 10) || 1)
-      const limit = Math.min(50, Math.max(1, parseInt(req.query.limit as string, 10) || 20))
+      const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string, 10) || 50))
       const status = req.query.status ? String(req.query.status) : undefined
       const event_type_id = req.query.event_type_id ? String(req.query.event_type_id) : undefined
       const month = req.query.month ? String(req.query.month) : undefined
+      const search = typeof req.query.search === "string" ? req.query.search : undefined
 
       const result = await eventServices.listEvents(userRole, isPrivileged, page, limit, {
         status,
         event_type_id,
         month,
+        search,
       })
 
       res.json({

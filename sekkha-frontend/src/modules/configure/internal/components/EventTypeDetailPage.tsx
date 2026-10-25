@@ -173,7 +173,7 @@ export function EventTypeDetailPage() {
   if (loading) {
     return (
       <main className="min-h-screen bg-[#fffaf0] p-6 text-left font-sans">
-        <div className="mx-auto max-w-3xl space-y-4">
+        <div className="mx-auto max-w-7xl space-y-4">
           <div className="h-8 w-40 animate-pulse rounded bg-[#e5e5e5]" />
           <div className="h-64 animate-pulse rounded-[20px] border border-[#e5e5e5] bg-white" />
         </div>
@@ -216,7 +216,7 @@ export function EventTypeDetailPage() {
         ]}
       />
 
-      <div className="mx-auto max-w-3xl space-y-6 px-3.5 py-4 sm:px-6 md:px-8">
+      <div className="mx-auto max-w-7xl space-y-6 px-3.5 py-4 sm:px-6 md:px-8">
         <button
           type="button"
           onClick={() => void navigate({ to: "/configure/master/event-type" })}

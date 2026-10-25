@@ -115,7 +115,6 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
     .flatMap((m) => m.navItems)
     .filter((item) => {
       if (item.to === "/home/profile") return false
-      if (role === "member" && item.to === "/people") return false
       return true
     })
   const pengurusNavItems = activeModules.flatMap(

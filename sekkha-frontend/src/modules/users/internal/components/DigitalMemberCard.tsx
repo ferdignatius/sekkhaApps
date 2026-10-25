@@ -130,7 +130,7 @@ export function DigitalMemberCard({
     <div className="space-y-4">
       {/* ── HIG PHYSICAL/DIGITAL MEMBER CARD (1.586 : 1 Standard Ratio) ── */}
       <div
-        className={`relative overflow-hidden rounded-[22px] border p-5 sm:p-6 transition-all duration-300 ${roleCardStyles.cardBg}`}
+        className={`relative overflow-hidden rounded-[22px] border p-5 transition-all duration-300 sm:p-6 ${roleCardStyles.cardBg}`}
         style={{ minHeight: "220px" }}
       >
         {/* Subtle Specular Top Highlight */}
@@ -187,7 +187,9 @@ export function DigitalMemberCard({
               </h3>
 
               {username && (
-                <p className={`font-mono text-xs font-semibold ${roleCardStyles.subtext}`}>
+                <p
+                  className={`font-mono text-xs font-semibold ${roleCardStyles.subtext}`}
+                >
                   @{username}
                 </p>
               )}
@@ -208,8 +210,12 @@ export function DigitalMemberCard({
 
               {school && (
                 <div className="flex items-center gap-1.5 pt-1 text-xs">
-                  <GraduationCapIcon className={`size-3.5 ${roleCardStyles.subtext}`} />
-                  <span className={`truncate text-xs font-medium ${roleCardStyles.subtext}`}>
+                  <GraduationCapIcon
+                    className={`size-3.5 ${roleCardStyles.subtext}`}
+                  />
+                  <span
+                    className={`truncate text-xs font-medium ${roleCardStyles.subtext}`}
+                  >
                     {school}
                   </span>
                 </div>

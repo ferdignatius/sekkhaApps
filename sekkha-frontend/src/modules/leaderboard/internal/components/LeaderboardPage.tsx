@@ -697,7 +697,7 @@ export function LeaderboardPage() {
                       )}
                       <span>{period.name}</span>
                       {period.is_custom && (
-                        <span className="rounded-full bg-[#e8b94a] px-1.5 py-0.2 text-[9px] font-extrabold text-[#0a0a0a] uppercase">
+                        <span className="py-0.2 rounded-full bg-[#e8b94a] px-1.5 text-[9px] font-extrabold text-[#0a0a0a] uppercase">
                           Special
                         </span>
                       )}
@@ -985,48 +985,6 @@ export function LeaderboardPage() {
 
             {/* Right Sidebar Widgets (Desktop) */}
             <aside className="space-y-4 md:col-span-4">
-              {/* My Rank Sidebar Widget (Desktop) */}
-              <div className="hidden space-y-3 rounded-[20px] border border-[#e6decb]/80 bg-[#faf5e8]/90 p-4 shadow-2xs backdrop-blur-md sm:p-5 md:block">
-                <div className="flex items-center gap-3">
-                  <div className="flex size-11 shrink-0 items-center justify-center rounded-[12px] bg-[#0a0a0a] text-xs font-bold text-white uppercase shadow-xs">
-                    {myRankData?.initials || "AS"}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5">
-                      <span className="truncate text-sm font-bold text-[#0a0a0a]">
-                        {myRankData?.name || "Sekkha Member"}
-                      </span>
-                      <span className="py-0.2 shrink-0 rounded-[4px] bg-[#0a0a0a] px-1.5 text-[9px] font-extrabold text-white uppercase">
-                        You
-                      </span>
-                    </div>
-                    <p className="text-xs font-medium text-[#6a6a6a]">
-                      {seasonData?.name || "Current season"}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-center gap-4 rounded-[12px] border border-[#e6decb]/80 bg-[#fffaf0]/90 p-3 shadow-2xs backdrop-blur-sm">
-                  <div className="flex-1 text-center">
-                    <p className="text-base font-black text-[#0a0a0a]">
-                      #{myRank}
-                    </p>
-                    <p className="text-[10px] font-bold text-[#6a6a6a]">
-                      Rank ({roleGroupLabel})
-                    </p>
-                  </div>
-                  <div className="h-7 w-px bg-[#e5e5e5]" />
-                  <div className="flex-1 text-center">
-                    <p className="text-base font-black text-[#0a0a0a]">
-                      {myValue.toLocaleString("en-US")}
-                    </p>
-                    <p className="text-[10px] font-bold text-[#6a6a6a] capitalize">
-                      {metricUnit}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
               {/* Mobile: disclose secondary goal details only when requested. */}
               <details className="group rounded-[20px] border border-[#e6decb]/80 bg-[#fffaf0]/90 shadow-2xs md:hidden">
                 <summary className="flex min-h-[52px] cursor-pointer list-none items-center gap-2.5 px-3.5 py-2.5 focus-visible:ring-2 focus-visible:ring-[#0a0a0a] focus-visible:outline-none focus-visible:ring-inset [&::-webkit-details-marker]:hidden">
@@ -1141,7 +1099,7 @@ export function LeaderboardPage() {
         <div
           role="region"
           aria-label="Your ranking quick view"
-          className="fixed bottom-20 left-3.5 right-3.5 z-40 mx-auto max-w-lg rounded-[20px] border border-[#0a0a0a]/10 bg-[#0a0a0a]/92 px-4 py-3 text-white shadow-xl backdrop-blur-xl transition-all sm:left-6 sm:right-6 md:bottom-6"
+          className="fixed right-3.5 bottom-20 left-3.5 z-40 mx-auto max-w-lg rounded-[20px] border border-[#0a0a0a]/10 bg-[#0a0a0a]/92 px-4 py-3 text-white shadow-xl backdrop-blur-xl transition-all sm:right-6 sm:left-6 md:bottom-6"
         >
           <div className="flex items-center justify-between gap-3">
             <div className="flex min-w-0 items-center gap-2.5">

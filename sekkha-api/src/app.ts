@@ -223,6 +223,7 @@ export function createApp(): Application {
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
     optionsSuccessStatus: 204,
+    maxAge: 86400,
   }
 
   app.use(cors(corsOptions))

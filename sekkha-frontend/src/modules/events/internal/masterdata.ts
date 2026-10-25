@@ -3,14 +3,11 @@
 // Eliminates hardcoded categories, badges, and time presets.
 
 import type { AttendanceBadge } from "./types"
+import { api } from "@/lib/api"
 
 // ─── 1. Kategori Event Master Data ────────────────────────────────────────────
 
-export type UserRoleName =
-  | "admin"
-  | "organizer"
-  | "activist"
-  | "member"
+export type UserRoleName = "admin" | "organizer" | "activist" | "member"
 
 export const ALL_USER_ROLES: {
   id: UserRoleName
@@ -124,93 +121,48 @@ export interface EventCategoryItem {
 
 export const DEFAULT_CATEGORIES: EventCategoryItem[] = [
   {
-    id: "cat-1",
-    tag: "rutin",
-    name: "Routine",
-    bg: "bg-sky-100/90",
-    text: "text-sky-800",
-    dot: "bg-sky-500",
+    id: "cmvmnorpy000k11joreumudbp",
+    tag: "regular-puja",
+    name: "Regular Puja",
+    bg: "bg-[#4262FF]/10",
+    text: "text-[#4262FF]",
+    dot: "bg-[#4262FF]",
     points: 50,
     is_active: true,
-    colorHex: "#0284c7",
-    autofillTitle: "Routine Sunday Service",
+    colorHex: "#4262FF",
+    autofillTitle: "Regular Puja",
     autofillLocation: "Main Dhammasala Vihara Sekkha",
-    autofillDesc: "Routine service session with Vihara Sekkha community.",
+    autofillDesc: "Kebaktian rutin mingguan pemuda vihara",
     target_roles: ["admin", "organizer", "activist", "member"],
   },
   {
-    id: "cat-2",
-    tag: "special",
-    name: "Special",
-    bg: "bg-amber-100/90",
-    text: "text-amber-800",
-    dot: "bg-amber-500",
-    points: 100,
-    is_active: true,
-    colorHex: "#d97706",
-    autofillTitle: "Special Festival Service",
-    autofillLocation: "Vihara Sekkha",
-    autofillDesc: "Major holiday celebration and special puja.",
-    target_roles: ["admin", "organizer", "activist", "member"],
-  },
-  {
-    id: "cat-3",
-    tag: "retreat",
-    name: "Retreat",
-    bg: "bg-purple-100/90",
-    text: "text-purple-800",
-    dot: "bg-purple-500",
-    points: 150,
-    is_active: true,
-    colorHex: "#9333ea",
-    autofillTitle: "Spiritual Character Retreat",
-    autofillLocation: "Vihara Meditation Pavilion",
-    autofillDesc: "Intensive retreat and spiritual cultivation.",
-    target_roles: ["admin", "organizer", "activist", "member"],
-  },
-  {
-    id: "cat-4",
-    tag: "meditasi",
-    name: "Meditation",
-    bg: "bg-emerald-100/90",
-    text: "text-emerald-800",
-    dot: "bg-emerald-500",
+    id: "cmvmnorq0000l11jo8krahg9v",
+    tag: "chanting",
+    name: "Chanting",
+    bg: "bg-[#0D9488]/10",
+    text: "text-[#0D9488]",
+    dot: "bg-[#0D9488]",
     points: 60,
     is_active: true,
-    colorHex: "#059669",
-    autofillTitle: "Group Meditation Session",
+    colorHex: "#0D9488",
+    autofillTitle: "Chanting",
     autofillLocation: "Meditation Hall",
-    autofillDesc: "Bhavana practice and mindfulness training.",
+    autofillDesc: "Sesi pelafalan paritta dan sutra kebajikan",
     target_roles: ["admin", "organizer", "activist", "member"],
   },
   {
-    id: "cat-5",
-    tag: "sosial",
-    name: "Social",
-    bg: "bg-rose-100/90",
-    text: "text-rose-800",
-    dot: "bg-rose-500",
-    points: 40,
+    id: "cmvmnorq2000m11jogyq78k6x",
+    tag: "volunteer",
+    name: "Volunteer",
+    bg: "bg-[#EC4899]/10",
+    text: "text-[#EC4899]",
+    dot: "bg-[#EC4899]",
+    points: 80,
     is_active: true,
-    colorHex: "#e11d48",
-    autofillTitle: "Community Social Service",
+    colorHex: "#EC4899",
+    autofillTitle: "Volunteer",
     autofillLocation: "Vihara Sekkha",
-    autofillDesc: "Charity drives and community outreach.",
-    target_roles: ["admin", "organizer", "activist", "member"],
-  },
-  {
-    id: "cat-6",
-    tag: "basic",
-    name: "General",
-    bg: "bg-blue-100/90",
-    text: "text-blue-800",
-    dot: "bg-blue-500",
-    points: 30,
-    is_active: true,
-    colorHex: "#4f46e5",
-    autofillTitle: "General Vihara Activity",
-    autofillLocation: "Vihara Sekkha",
-    autofillDesc: "General community event.",
+    autofillDesc: "Kegiatan bakti sosial dan aksi kerelawanan pemuda",
     target_roles: ["admin", "organizer", "activist", "member"],
   },
 ]
@@ -261,12 +213,53 @@ const STORAGE_KEYS = {
   BADGES: "sekkha_master_badges",
 }
 
-export function getMasterCategories(activeOnly = false): EventCategoryItem[] {
-  let res = DEFAULT_CATEGORIES
+export async function syncMasterCategories(): Promise<EventCategoryItem[]> {
   try {
-    const raw = localStorage.getItem(STORAGE_KEYS.CATEGORIES)
-    if (raw) res = JSON.parse(raw)
-  } catch {}
+    const data = await api.get<any[]>("/configure/event-types")
+    if (Array.isArray(data) && data.length > 0) {
+      const items: EventCategoryItem[] = data.map((t) => {
+        const hex = t.color || "#4262FF"
+        return {
+          id: t.id,
+          tag: t.code,
+          name: t.label,
+          colorHex: hex,
+          bg: `bg-[${hex}]/10`,
+          text: `text-[${hex}]`,
+          dot: `bg-[${hex}]`,
+          points: t.default_point_reward ?? 50,
+          is_active: t.is_active !== false,
+          autofillTitle: t.label,
+          autofillLocation: "Vihara Sekkha",
+          autofillDesc:
+            t.description || `${t.label} session with Sekkha community members.`,
+          target_roles: ["admin", "organizer", "activist", "member"],
+        }
+      })
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(items))
+        } catch {}
+      }
+      return items
+    }
+  } catch (err) {
+    console.warn("Could not sync master categories from API:", err)
+  }
+  return getMasterCategories()
+}
+
+export function getMasterCategories(activeOnly = false): EventCategoryItem[] {
+  let res: EventCategoryItem[] = []
+  if (typeof window !== "undefined") {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEYS.CATEGORIES)
+      if (raw) res = JSON.parse(raw)
+    } catch {}
+  }
+  if (!res || res.length === 0) {
+    res = DEFAULT_CATEGORIES
+  }
   if (activeOnly) return res.filter((c) => c.is_active !== false)
   return res
 }
@@ -289,6 +282,7 @@ export function getCategoryByTag(
   if (!tagOrName) return undefined
   const cats = getMasterCategories(false)
   const lower = tagOrName.toLowerCase().trim()
+
   return cats.find(
     (c) =>
       c.tag.toLowerCase() === lower ||
@@ -297,14 +291,76 @@ export function getCategoryByTag(
   )
 }
 
-export function getCategoryColor(tagOrName?: string | null): {
+export function getEventTag(
+  ev?: {
+    tag?: string | null
+    event_type?: any
+  } | null
+): string {
+  if (!ev) return ""
+  // Priority 1: master data event_type object (has code & label from database)
+  if (ev.event_type && typeof ev.event_type === "object") {
+    if (typeof ev.event_type.code === "string" && ev.event_type.code.trim()) {
+      return ev.event_type.code.trim().toLowerCase()
+    }
+    if (typeof ev.event_type.label === "string" && ev.event_type.label.trim()) {
+      return ev.event_type.label.trim().toLowerCase()
+    }
+  }
+  // Priority 2: specific tag if present
+  if (typeof ev.tag === "string" && ev.tag.trim()) {
+    return ev.tag.trim().toLowerCase()
+  }
+  // Priority 3: event_type string
+  if (typeof ev.event_type === "string" && ev.event_type.trim()) {
+    return ev.event_type.trim().toLowerCase()
+  }
+  return ""
+}
+
+function formatCategoryLabel(str?: string | null): string {
+  if (!str) return "Event"
+  return str
+    .split(/[-_\s]+/)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(" ")
+}
+
+export function getCategoryColor(
+  tagOrEvent?: string | { tag?: string | null; event_type?: any } | null
+): {
   hex: string
   bgStyle: React.CSSProperties
   dotStyle: React.CSSProperties
   name: string
 } {
-  const item = getCategoryByTag(tagOrName)
-  const hex = item?.colorHex || "#0284c7"
+  // If an event object or event_type object is provided, extract directly from master data
+  if (tagOrEvent && typeof tagOrEvent === "object") {
+    const et = tagOrEvent.event_type
+    if (et && typeof et === "object") {
+      const hex = et.color || "#4262FF"
+      const name = et.label || formatCategoryLabel(et.code)
+      return {
+        hex,
+        bgStyle: {
+          backgroundColor: `${hex}1a`,
+          color: hex,
+          borderColor: `${hex}40`,
+        },
+        dotStyle: {
+          backgroundColor: hex,
+        },
+        name,
+      }
+    }
+  }
+
+  const rawTagOrName =
+    typeof tagOrEvent === "string" ? tagOrEvent : getEventTag(tagOrEvent)
+  const item = getCategoryByTag(rawTagOrName)
+  const hex = item?.colorHex || "#4262FF"
+  const name = item?.name ?? formatCategoryLabel(rawTagOrName)
+
   return {
     hex,
     bgStyle: {
@@ -315,7 +371,7 @@ export function getCategoryColor(tagOrName?: string | null): {
     dotStyle: {
       backgroundColor: hex,
     },
-    name: item?.name ?? tagOrName ?? "Rutin",
+    name,
   }
 }
 

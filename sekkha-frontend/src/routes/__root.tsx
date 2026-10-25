@@ -71,6 +71,29 @@ export const Route = createRootRoute({
     ],
   }),
   component: RootComponent,
+  errorComponent: ({ error, reset }) => (
+    <main className="container mx-auto flex min-h-screen flex-col items-center justify-center p-4 text-center font-sans">
+      <div className="max-w-md space-y-4 rounded-[20px] border border-[#e5e5e5] bg-[#fffaf0] p-6 shadow-xs">
+        <h2 className="text-lg font-bold text-[#0a0a0a]">Something went wrong</h2>
+        <p className="text-xs text-[#6a6a6a]">
+          {error instanceof Error ? error.message : "An unexpected error occurred."}
+        </p>
+        <button
+          type="button"
+          onClick={() => {
+            if (typeof window !== "undefined") {
+              window.location.reload()
+            } else {
+              reset()
+            }
+          }}
+          className="cursor-pointer rounded-[12px] bg-[#0a0a0a] px-4 py-2 text-xs font-semibold text-white shadow-xs transition-all hover:bg-[#1a1a1a]"
+        >
+          Reload Page
+        </button>
+      </div>
+    </main>
+  ),
   notFoundComponent: () => (
     <main className="container mx-auto p-4 pt-16">
       <h1>404</h1>

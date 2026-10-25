@@ -6,7 +6,7 @@ import {
 import { ConfigureSkeleton } from "@/components/common/PageSkeletons"
 
 export const Route = createFileRoute(
-  "/_authenticated/configure/early-warning/threshold"
+  "/_authenticated/configure/master/school/$schoolId"
 )({
   beforeLoad: ({ context }) => {
     const role = (context as any).authState.role
@@ -15,7 +15,7 @@ export const Route = createFileRoute(
     }
   },
   component: lazyRouteComponent(() =>
-    import("@/modules/configure").then((m) => ({ default: m.ThresholdPage }))
+    import("@/modules/configure").then((m) => ({ default: m.SchoolDetailPage }))
   ),
   pendingComponent: ConfigureSkeleton,
 })

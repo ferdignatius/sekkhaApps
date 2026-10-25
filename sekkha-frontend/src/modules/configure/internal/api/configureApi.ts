@@ -37,8 +37,12 @@ export interface SeasonDto {
 
 export const seasonsApi = {
   list: () => api.get<SeasonDto[]>("/configure/seasons"),
-  create: (data: Omit<SeasonDto, "id" | "total_attendances" | "created_at" | "updated_at" | "days_left">) =>
-    api.post<SeasonDto>("/configure/seasons", data),
+  create: (
+    data: Omit<
+      SeasonDto,
+      "id" | "total_attendances" | "created_at" | "updated_at" | "days_left"
+    >
+  ) => api.post<SeasonDto>("/configure/seasons", data),
   update: (id: string, data: Partial<SeasonDto>) =>
     api.patch<SeasonDto>(`/configure/seasons/${id}`, data),
   remove: (id: string) => api.delete(`/configure/seasons/${id}`),
@@ -104,7 +108,11 @@ export interface PointRuleDto {
 }
 
 export const pointRulesApi = {
-  list: (params?: { is_active?: boolean; category?: string; search?: string }) => {
+  list: (params?: {
+    is_active?: boolean
+    category?: string
+    search?: string
+  }) => {
     const searchParams = new URLSearchParams()
     if (params?.is_active !== undefined) {
       searchParams.append("is_active", String(params.is_active))
@@ -118,7 +126,8 @@ export const pointRulesApi = {
     const q = searchParams.toString() ? `?${searchParams.toString()}` : ""
     return api.get<PointRuleDto[]>(`/configure/point-rules${q}`)
   },
-  getById: (id: string) => api.get<PointRuleDto>(`/configure/point-rules/${id}`),
+  getById: (id: string) =>
+    api.get<PointRuleDto>(`/configure/point-rules/${id}`),
   update: (
     id: string,
     data: {
@@ -220,17 +229,22 @@ export interface BadgeActivityDto {
 export const badgeActivitiesApi = {
   list: (params?: { is_active?: boolean; search?: string }) => {
     const q = new URLSearchParams()
-    if (params?.is_active !== undefined) q.append("is_active", String(params.is_active))
+    if (params?.is_active !== undefined)
+      q.append("is_active", String(params.is_active))
     if (params?.search) q.append("search", params.search)
     const queryString = q.toString() ? `?${q.toString()}` : ""
-    return api.get<any>(`/configure/badge-activities${queryString}`).then((res) => {
-      if (Array.isArray(res)) return res as BadgeActivityDto[]
-      if (Array.isArray(res?.data)) return res.data as BadgeActivityDto[]
-      return []
-    })
+    return api
+      .get<any>(`/configure/badge-activities${queryString}`)
+      .then((res) => {
+        if (Array.isArray(res)) return res as BadgeActivityDto[]
+        if (Array.isArray(res?.data)) return res.data as BadgeActivityDto[]
+        return []
+      })
   },
   get: (id: string) =>
-    api.get<any>(`/configure/badge-activities/${id}`).then((res) => (res?.data || res) as BadgeActivityDto),
+    api
+      .get<any>(`/configure/badge-activities/${id}`)
+      .then((res) => (res?.data || res) as BadgeActivityDto),
   create: (data: {
     code?: string
     label: string
@@ -249,6 +263,7 @@ export const badgeActivitiesApi = {
     }
   ) => api.patch<BadgeActivityDto>(`/configure/badge-activities/${id}`, data),
   remove: (id: string) =>
-    api.delete<{ success: boolean; message?: string }>(`/configure/badge-activities/${id}`),
+    api.delete<{ success: boolean; message?: string }>(
+      `/configure/badge-activities/${id}`
+    ),
 }
-

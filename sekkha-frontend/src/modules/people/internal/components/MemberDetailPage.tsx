@@ -27,7 +27,10 @@ import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
 import { Button, Tabs, TabsList, TabsTrigger } from "@/components/base"
 import { Skeleton } from "@/components/ui/skeleton"
 import { peopleApi } from "../api/peopleApi"
-import type { MemberDetailDto, ResetTemporaryPasswordResponse } from "../api/peopleApi"
+import type {
+  MemberDetailDto,
+  ResetTemporaryPasswordResponse,
+} from "../api/peopleApi"
 
 function formatRoleLabel(role?: string | null): string {
   if (!role) return "Member"
@@ -134,7 +137,10 @@ export function MemberDetailPage({
   async function handleResetPassword() {
     if (!member || !isOrganizerOrAdmin) return
     if (member.is_claimed) {
-      showToast("Account already claimed. Member must use Forgot Password.", "error")
+      showToast(
+        "Account already claimed. Member must use Forgot Password.",
+        "error"
+      )
       return
     }
 
@@ -242,446 +248,457 @@ export function MemberDetailPage({
         </div>
       )}
 
-      <div className="mx-auto max-w-4xl space-y-5 px-3.5 py-4 pb-36 sm:pb-24 md:px-8 md:pb-12">
-        {loading ? (
-          <div className="space-y-4">
-            <div className="space-y-4 rounded-[24px] border border-[#e5e5e5] bg-[#faf5e8] p-6 shadow-xs">
-              <div className="flex items-center gap-4">
-                <Skeleton className="size-20 rounded-[16px]" />
-                <div className="flex-1 space-y-2">
-                  <Skeleton className="h-7 w-48 rounded-[8px]" />
-                  <Skeleton className="h-5 w-32 rounded-[6px]" />
+      <div className="px-3.5 py-4 pb-36 sm:px-6 sm:py-6 sm:pb-24 md:px-8 md:pb-12 lg:px-12">
+        <div className="mx-auto max-w-7xl space-y-5">
+          {loading ? (
+            <div className="space-y-4">
+              <div className="space-y-4 rounded-[24px] border border-[#e5e5e5] bg-[#faf5e8] p-6 shadow-xs">
+                <div className="flex items-center gap-4">
+                  <Skeleton className="size-20 rounded-[16px]" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-7 w-48 rounded-[8px]" />
+                    <Skeleton className="h-5 w-32 rounded-[6px]" />
+                  </div>
                 </div>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <Skeleton className="h-20 rounded-[16px]" />
+                <Skeleton className="h-20 rounded-[16px]" />
+                <Skeleton className="h-20 rounded-[16px]" />
               </div>
             </div>
-            <div className="grid grid-cols-3 gap-3">
-              <Skeleton className="h-20 rounded-[16px]" />
-              <Skeleton className="h-20 rounded-[16px]" />
-              <Skeleton className="h-20 rounded-[16px]" />
+          ) : !member ? (
+            <div className="space-y-2 rounded-[24px] border border-dashed border-[#e5e5e5] bg-[#faf5e8] p-10 text-center">
+              <UserIcon className="mx-auto size-10 text-[#6a6a6a]/40" />
+              <h3 className="text-sm font-bold text-[#0a0a0a]">
+                Member Not Found
+              </h3>
+              <p className="text-xs text-[#6a6a6a]">
+                This member profile could not be found or has been deleted.
+              </p>
             </div>
-          </div>
-        ) : !member ? (
-          <div className="space-y-2 rounded-[24px] border border-dashed border-[#e5e5e5] bg-[#faf5e8] p-10 text-center">
-            <UserIcon className="mx-auto size-10 text-[#6a6a6a]/40" />
-            <h3 className="text-sm font-bold text-[#0a0a0a]">
-              Member Not Found
-            </h3>
-            <p className="text-xs text-[#6a6a6a]">
-              This member profile could not be found or has been deleted.
-            </p>
-          </div>
-        ) : (
-          <>
-            {/* ── 1. CLAY HERO PROFILE BANNER ── */}
-            <div className="space-y-4 rounded-[20px] border border-[#e5e5e5] bg-[#faf5e8] p-5 shadow-xs sm:rounded-[24px] sm:p-7">
-              <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-                <div className="flex min-w-0 items-center gap-4">
-                  <div className="flex size-16 shrink-0 items-center justify-center rounded-[16px] bg-[#e8b94a] text-xl font-bold text-[#0a0a0a] uppercase shadow-xs sm:size-20 sm:text-2xl">
-                    {initials}
-                  </div>
-                  <div className="min-w-0 space-y-1">
-                    <h1 className="text-lg leading-tight font-bold break-words text-[#0a0a0a] sm:text-2xl">
-                      {member.name}
-                    </h1>
-                    <div className="flex flex-wrap items-center gap-2">
-                      {member.username && (
-                        <span className="rounded-[6px] bg-[#1a3a3a]/10 px-2 py-0.5 font-mono text-xs font-bold text-[#1a3a3a]">
-                          @{member.username}
-                        </span>
-                      )}
-                      <span
-                        className={`inline-block rounded-full border px-2.5 py-0.5 text-xs font-semibold ${roleBadgeStyle[member.role] || roleBadgeStyle.umat}`}
-                      >
-                        {formatRoleLabel(member.role)}
-                      </span>
-                      <span
-                        className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${member.is_claimed ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-amber-200 bg-amber-50 text-amber-800"}`}
-                      >
-                        {member.is_claimed ? "Claimed Account" : "Unclaimed"}
-                      </span>
+          ) : (
+            <>
+              {/* ── 1. CLAY HERO PROFILE BANNER ── */}
+              <div className="space-y-4 rounded-[20px] border border-[#e5e5e5] bg-[#faf5e8] p-5 shadow-xs sm:rounded-[24px] sm:p-7">
+                <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+                  <div className="flex min-w-0 items-center gap-4">
+                    <div className="flex size-16 shrink-0 items-center justify-center rounded-[16px] bg-[#e8b94a] text-xl font-bold text-[#0a0a0a] uppercase shadow-xs sm:size-20 sm:text-2xl">
+                      {initials}
                     </div>
-                  </div>
-                </div>
-
-                {/* Member ID Pill */}
-                {member.user_number && (
-                  <div className="flex shrink-0 items-center justify-between border-t border-[#e5e5e5] pt-2 sm:flex-col sm:items-end sm:border-t-0 sm:pt-0">
-                    <span className="text-[10px] font-bold tracking-wider text-[#6a6a6a] uppercase">
-                      Member ID
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => handleCopy(member.user_number)}
-                      className="flex cursor-pointer items-center gap-1.5 rounded-[8px] border border-[#e5e5e5] bg-[#fffaf0] px-3 py-1 font-mono text-xs font-bold text-[#0a0a0a] transition-colors hover:bg-[#f5f0e0] sm:text-sm"
-                      title="Click to copy ID"
-                    >
-                      <span>{member.user_number}</span>
-                      {copied ? (
-                        <CheckIcon className="size-3.5 text-emerald-600" />
-                      ) : (
-                        <CopyIcon className="size-3.5 text-[#6a6a6a]" />
-                      )}
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* Quick Stats Grid */}
-              <div className="grid grid-cols-2 gap-2.5 border-t border-[#e5e5e5] pt-3">
-                <div className="rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] p-3 text-center">
-                  <span className="block text-[10px] font-bold tracking-wider text-[#6a6a6a] uppercase">
-                    Attendance
-                  </span>
-                  <span className="text-base font-bold text-[#0a0a0a]">
-                    {member.attendances?.length ?? 0} Events
-                  </span>
-                </div>
-                <div className="rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] p-3 text-center">
-                  <span className="block text-[10px] font-bold tracking-wider text-[#6a6a6a] uppercase">
-                    Points Earned
-                  </span>
-                  <span className="text-base font-bold text-[#0a0a0a]">
-                    {member.points || 0} Pts
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* ── 2. SEGMENTED TAB SWITCHER ── */}
-            <Tabs
-              value={activeTab}
-              onValueChange={(val) => setActiveTab(val as any)}
-              variant="pill"
-            >
-              <TabsList className="w-full">
-                <TabsTrigger value="profile" className="flex-1">
-                  <UserIcon className="size-3.5 shrink-0" />
-                  <span className="hidden sm:inline">Profile Information</span>
-                  <span className="sm:hidden">Profile</span>
-                </TabsTrigger>
-
-                <TabsTrigger value="card" className="flex-1">
-                  <QrCodeIcon className="size-3.5 shrink-0" />
-                  <span className="hidden sm:inline">Digital ID & QR Card</span>
-                  <span className="sm:hidden">ID Card</span>
-                </TabsTrigger>
-
-                <TabsTrigger value="attendance" className="flex-1">
-                  <ClockIcon className="size-3.5 shrink-0" />
-                  <span className="hidden sm:inline">
-                    Attendance ({member.attendances?.length || 0})
-                  </span>
-                  <span className="sm:hidden">
-                    History ({member.attendances?.length || 0})
-                  </span>
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
-
-            {/* ── 3. TAB 1: PROFILE INFORMATION ── */}
-            {activeTab === "profile" && (
-              <div className="divide-y divide-[#f0f0f0] overflow-hidden rounded-[20px] border border-[#e5e5e5] bg-[#fffaf0] text-xs shadow-xs">
-                {/* Phone / WhatsApp */}
-                <div className="flex items-center justify-between p-3.5 sm:px-5">
-                  <div className="flex items-center gap-2.5 text-[#6a6a6a]">
-                    <PhoneIcon className="size-4 text-[#0a0a0a]" />
-                    <span className="font-semibold">Phone / WhatsApp</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-[#0a0a0a]">
-                      {member.phone || "—"}
-                    </span>
-                    {cleanPhone && (
-                      <a
-                        href={`https://wa.me/${cleanPhone}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-1 rounded-[6px] bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-700 transition-colors hover:bg-emerald-100"
-                        title="Open in WhatsApp"
-                      >
-                        <span>WhatsApp</span>
-                        <ExternalLinkIcon className="size-3" />
-                      </a>
-                    )}
-                  </div>
-                </div>
-
-                {/* Email */}
-                <div className="flex items-center justify-between p-3.5 sm:px-5">
-                  <div className="flex items-center gap-2.5 text-[#6a6a6a]">
-                    <MailIcon className="size-4 text-[#0a0a0a]" />
-                    <span className="font-semibold">Email</span>
-                  </div>
-                  <span className="font-medium text-[#0a0a0a]">
-                    {member.email || "—"}
-                  </span>
-                </div>
-
-                {/* School / College */}
-                <div className="flex items-center justify-between p-3.5 sm:px-5">
-                  <div className="flex items-center gap-2.5 text-[#6a6a6a]">
-                    <SchoolIcon className="size-4 text-[#0a0a0a]" />
-                    <span className="font-semibold">School / College</span>
-                  </div>
-                  <span className="font-medium text-[#0a0a0a]">
-                    {member.school || "—"}
-                  </span>
-                </div>
-
-                {/* Birth Date */}
-                <div className="flex items-center justify-between p-3.5 sm:px-5">
-                  <div className="flex items-center gap-2.5 text-[#6a6a6a]">
-                    <CalendarIcon className="size-4 text-[#0a0a0a]" />
-                    <span className="font-semibold">Birth Date</span>
-                  </div>
-                  <span className="font-medium text-[#0a0a0a]">
-                    {member.birth_date
-                      ? new Date(member.birth_date).toLocaleDateString(
-                          "en-US",
-                          {
-                            day: "numeric",
-                            month: "long",
-                            year: "numeric",
-                          }
-                        )
-                      : "—"}
-                  </span>
-                </div>
-
-                {/* Registered Date */}
-                <div className="flex items-center justify-between p-3.5 sm:px-5">
-                  <div className="flex items-center gap-2.5 text-[#6a6a6a]">
-                    <SparklesIcon className="size-4 text-[#0a0a0a]" />
-                    <span className="font-semibold">Member Since</span>
-                  </div>
-                  <span className="font-medium text-[#0a0a0a]">
-                    {member.created_at
-                      ? new Date(member.created_at).toLocaleDateString(
-                          "en-US",
-                          {
-                            day: "numeric",
-                            month: "short",
-                            year: "numeric",
-                          }
-                        )
-                      : "—"}
-                  </span>
-                </div>
-              </div>
-            )}
-
-            {/* ── 4. TAB 2: DIGITAL ID & QR CARD ── */}
-            {activeTab === "card" && (
-              <div className="space-y-4">
-                <div className="space-y-4 rounded-[20px] border border-[#e5e5e5] bg-[#faf5e8] p-5 shadow-xs sm:p-6">
-                  <div className="flex items-center justify-between border-b border-[#e5e5e5] pb-3">
-                    <div>
-                      <p className="text-xs font-bold text-[#0a0a0a]">
-                        Sekkha Community
-                      </p>
-                      <p className="text-[11px] font-medium text-[#6a6a6a]">
-                        Official Membership ID Card
-                      </p>
-                    </div>
-                    <span
-                      className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${roleBadgeStyle[member.role] || roleBadgeStyle.umat}`}
-                    >
-                      {formatRoleLabel(member.role)}
-                    </span>
-                  </div>
-
-                  <div className="flex flex-col items-center justify-center space-y-3 py-3">
-                    <div className="rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0] p-4 shadow-xs">
-                      <QRCode
-                        value={member.user_number || member.id}
-                        size={150}
-                        style={{
-                          height: "auto",
-                          maxWidth: "100%",
-                          width: "100%",
-                        }}
-                        viewBox="0 0 256 256"
-                      />
-                    </div>
-
-                    <div className="space-y-0.5 text-center">
-                      <p className="text-sm font-bold text-[#0a0a0a] sm:text-base">
+                    <div className="min-w-0 space-y-1">
+                      <h1 className="text-lg leading-tight font-bold break-words text-[#0a0a0a] sm:text-2xl">
                         {member.name}
-                      </p>
-                      <p className="font-mono text-xs font-bold text-[#1a3a3a]">
-                        {member.user_number || "—"} ({member.school || "Member"}
-                        )
-                      </p>
+                      </h1>
+                      <div className="flex flex-wrap items-center gap-2">
+                        {member.username && (
+                          <span className="rounded-[6px] bg-[#1a3a3a]/10 px-2 py-0.5 font-mono text-xs font-bold text-[#1a3a3a]">
+                            @{member.username}
+                          </span>
+                        )}
+                        <span
+                          className={`inline-block rounded-full border px-2.5 py-0.5 text-xs font-semibold ${roleBadgeStyle[member.role] || roleBadgeStyle.umat}`}
+                        >
+                          {formatRoleLabel(member.role)}
+                        </span>
+                        <span
+                          className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${member.is_claimed ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-amber-200 bg-amber-50 text-amber-800"}`}
+                        >
+                          {member.is_claimed ? "Claimed Account" : "Unclaimed"}
+                        </span>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between border-t border-[#e5e5e5] pt-2 text-xs text-[#6a6a6a]">
-                    <span className="inline-flex items-center gap-1.5">
-                      <span>Status:</span>
-                      {member.is_claimed ? (
-                        <span className="inline-flex items-center gap-1 font-semibold text-emerald-600">
-                          <CheckCircleIcon
-                            className="size-3.5"
-                            aria-hidden="true"
-                          />
-                          Active Account
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 font-semibold text-amber-600">
-                          <AlertTriangleIcon
-                            className="size-3.5"
-                            aria-hidden="true"
-                          />
-                          Unclaimed
-                        </span>
-                      )}
+                  {/* Member ID Pill */}
+                  {member.user_number && (
+                    <div className="flex shrink-0 items-center justify-between border-t border-[#e5e5e5] pt-2 sm:flex-col sm:items-end sm:border-t-0 sm:pt-0">
+                      <span className="text-[10px] font-bold tracking-wider text-[#6a6a6a] uppercase">
+                        Member ID
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleCopy(member.user_number)}
+                        className="flex cursor-pointer items-center gap-1.5 rounded-[8px] border border-[#e5e5e5] bg-[#fffaf0] px-3 py-1 font-mono text-xs font-bold text-[#0a0a0a] transition-colors hover:bg-[#f5f0e0] sm:text-sm"
+                        title="Click to copy ID"
+                      >
+                        <span>{member.user_number}</span>
+                        {copied ? (
+                          <CheckIcon className="size-3.5 text-emerald-600" />
+                        ) : (
+                          <CopyIcon className="size-3.5 text-[#6a6a6a]" />
+                        )}
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Quick Stats Grid */}
+                <div className="grid grid-cols-2 gap-2.5 border-t border-[#e5e5e5] pt-3">
+                  <div className="rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] p-3 text-center">
+                    <span className="block text-[10px] font-bold tracking-wider text-[#6a6a6a] uppercase">
+                      Attendance
                     </span>
-                    <span>
-                      Total Attendance: {member.attendances?.length ?? 0}x
+                    <span className="text-base font-bold text-[#0a0a0a]">
+                      {member.attendances?.length ?? 0} Events
+                    </span>
+                  </div>
+                  <div className="rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] p-3 text-center">
+                    <span className="block text-[10px] font-bold tracking-wider text-[#6a6a6a] uppercase">
+                      Points Earned
+                    </span>
+                    <span className="text-base font-bold text-[#0a0a0a]">
+                      {member.points || 0} Pts
                     </span>
                   </div>
                 </div>
-
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleCopy(member.user_number)}
-                    className="flex h-11 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] text-xs font-semibold text-[#0a0a0a] transition-colors hover:bg-[#faf5e8] sm:text-sm"
-                  >
-                    {copied ? (
-                      <CheckIcon className="size-4 text-emerald-600" />
-                    ) : (
-                      <CopyIcon className="size-4 text-[#6a6a6a]" />
-                    )}
-                    <span>{copied ? "Copied!" : "Copy Member ID"}</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => window.print()}
-                    className="flex h-11 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-[12px] bg-[#0a0a0a] text-xs font-bold text-white shadow-xs transition-all hover:bg-[#1f1f1f] sm:text-sm"
-                  >
-                    <PrinterIcon className="size-4" />
-                    <span>Print Card</span>
-                  </button>
-                </div>
               </div>
-            )}
 
-            {/* ── 5. TAB 3: ATTENDANCE HISTORY ── */}
-            {activeTab === "attendance" && (
-              <div className="space-y-3 rounded-[20px] border border-[#e5e5e5] bg-[#fffaf0] p-5 shadow-xs">
-                <div className="flex items-center justify-between border-b border-[#e5e5e5] pb-2.5">
-                  <h3 className="text-sm font-bold text-[#0a0a0a]">
-                    Event Attendance Records
-                  </h3>
-                  <span className="text-xs text-[#6a6a6a]">
-                    Total {member.attendances?.length || 0} Events
-                  </span>
-                </div>
+              {/* ── 2. SEGMENTED TAB SWITCHER ── */}
+              <Tabs
+                value={activeTab}
+                onValueChange={(val) => setActiveTab(val as any)}
+                variant="pill"
+              >
+                <TabsList className="w-full">
+                  <TabsTrigger value="profile" className="flex-1">
+                    <UserIcon className="size-3.5 shrink-0" />
+                    <span className="hidden sm:inline">
+                      Profile Information
+                    </span>
+                    <span className="sm:hidden">Profile</span>
+                  </TabsTrigger>
 
-                {member.attendances && member.attendances.length > 0 ? (
-                  <div className="divide-y divide-[#f0f0f0]">
-                    {member.attendances.map((att) => (
-                      <div
-                        key={att.id}
-                        className="flex items-center justify-between rounded-[10px] px-1 py-3 transition-colors hover:bg-[#faf5e8]"
-                      >
-                        <div>
-                          <p className="text-xs font-bold text-[#0a0a0a] sm:text-sm">
-                            {att.event_title}
-                          </p>
-                          <p className="text-xs text-[#6a6a6a]">
-                            {new Date(
-                              att.scanned_at || att.event_date
-                            ).toLocaleDateString("en-US", {
-                              weekday: "short",
+                  <TabsTrigger value="card" className="flex-1">
+                    <QrCodeIcon className="size-3.5 shrink-0" />
+                    <span className="hidden sm:inline">
+                      Digital ID & QR Card
+                    </span>
+                    <span className="sm:hidden">ID Card</span>
+                  </TabsTrigger>
+
+                  <TabsTrigger value="attendance" className="flex-1">
+                    <ClockIcon className="size-3.5 shrink-0" />
+                    <span className="hidden sm:inline">
+                      Attendance ({member.attendances?.length || 0})
+                    </span>
+                    <span className="sm:hidden">
+                      History ({member.attendances?.length || 0})
+                    </span>
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+
+              {/* ── 3. TAB 1: PROFILE INFORMATION ── */}
+              {activeTab === "profile" && (
+                <div className="divide-y divide-[#f0f0f0] overflow-hidden rounded-[20px] border border-[#e5e5e5] bg-[#fffaf0] text-xs shadow-xs">
+                  {/* Phone / WhatsApp */}
+                  <div className="flex items-center justify-between p-3.5 sm:px-5">
+                    <div className="flex items-center gap-2.5 text-[#6a6a6a]">
+                      <PhoneIcon className="size-4 text-[#0a0a0a]" />
+                      <span className="font-semibold">Phone / WhatsApp</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-[#0a0a0a]">
+                        {member.phone || "—"}
+                      </span>
+                      {cleanPhone && (
+                        <a
+                          href={`https://wa.me/${cleanPhone}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1 rounded-[6px] bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-700 transition-colors hover:bg-emerald-100"
+                          title="Open in WhatsApp"
+                        >
+                          <span>WhatsApp</span>
+                          <ExternalLinkIcon className="size-3" />
+                        </a>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Email */}
+                  <div className="flex items-center justify-between p-3.5 sm:px-5">
+                    <div className="flex items-center gap-2.5 text-[#6a6a6a]">
+                      <MailIcon className="size-4 text-[#0a0a0a]" />
+                      <span className="font-semibold">Email</span>
+                    </div>
+                    <span className="font-medium text-[#0a0a0a]">
+                      {member.email || "—"}
+                    </span>
+                  </div>
+
+                  {/* School / College */}
+                  <div className="flex items-center justify-between p-3.5 sm:px-5">
+                    <div className="flex items-center gap-2.5 text-[#6a6a6a]">
+                      <SchoolIcon className="size-4 text-[#0a0a0a]" />
+                      <span className="font-semibold">School / College</span>
+                    </div>
+                    <span className="font-medium text-[#0a0a0a]">
+                      {member.school || "—"}
+                    </span>
+                  </div>
+
+                  {/* Birth Date */}
+                  <div className="flex items-center justify-between p-3.5 sm:px-5">
+                    <div className="flex items-center gap-2.5 text-[#6a6a6a]">
+                      <CalendarIcon className="size-4 text-[#0a0a0a]" />
+                      <span className="font-semibold">Birth Date</span>
+                    </div>
+                    <span className="font-medium text-[#0a0a0a]">
+                      {member.birth_date
+                        ? new Date(member.birth_date).toLocaleDateString(
+                            "en-US",
+                            {
+                              day: "numeric",
+                              month: "long",
+                              year: "numeric",
+                            }
+                          )
+                        : "—"}
+                    </span>
+                  </div>
+
+                  {/* Registered Date */}
+                  <div className="flex items-center justify-between p-3.5 sm:px-5">
+                    <div className="flex items-center gap-2.5 text-[#6a6a6a]">
+                      <SparklesIcon className="size-4 text-[#0a0a0a]" />
+                      <span className="font-semibold">Member Since</span>
+                    </div>
+                    <span className="font-medium text-[#0a0a0a]">
+                      {member.created_at
+                        ? new Date(member.created_at).toLocaleDateString(
+                            "en-US",
+                            {
                               day: "numeric",
                               month: "short",
                               year: "numeric",
-                            })}{" "}
-                          </p>
-                        </div>
-                        <span className="rounded-full border border-[#e5e5e5] bg-[#faf5e8] px-2.5 py-0.5 text-xs font-bold text-[#0a0a0a]">
-                          +{att.points_earned} Pts
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="space-y-1 py-8 text-center text-xs text-[#6a6a6a]">
-                    <ClockIcon className="mx-auto size-8 text-[#6a6a6a]/40" />
-                    <p className="font-bold text-[#0a0a0a]">
-                      No recorded attendance yet
-                    </p>
-                    <p>This member has not checked into any events so far.</p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* ── 6. ADMIN & ORGANIZER ACTIONS TOOLBAR ── */}
-            {isOrganizerOrAdmin && (
-              <div className="space-y-3 rounded-[20px] border border-[#e5e5e5] bg-[#fffaf0] p-4 shadow-xs sm:p-5">
-                <p className="text-[11px] font-bold tracking-wider text-[#6a6a6a] uppercase">
-                  Administrative Actions
-                </p>
-                <div className={`grid gap-2 ${isAdmin ? "grid-cols-3" : "grid-cols-1"}`}>
-                  <button
-                    type="button"
-                    disabled={member.is_claimed || resettingPassword}
-                    onClick={handleResetPassword}
-                    className={`flex h-11 flex-col items-center justify-center gap-1 rounded-[12px] border px-2 text-xs font-bold transition-all sm:flex-row sm:gap-1.5 ${
-                      member.is_claimed
-                        ? "cursor-not-allowed border-[#e5e5e5] bg-[#f0f0f0] text-[#a0a0a0] opacity-60"
-                        : "cursor-pointer border-[#e8b94a]/50 bg-[#e8b94a]/15 text-[#0a0a0a] hover:bg-[#e8b94a]/25"
-                    }`}
-                    title={
-                      member.is_claimed
-                        ? "Account has been claimed by the member. Members must use self-service Forgot Password."
-                        : "Regenerate Temporary Password (sekkha#####puggala)"
-                    }
-                  >
-                    <KeyIcon className="size-3.5" />
-                    <span className="text-[11px] sm:text-xs">
-                      {resettingPassword ? "Resetting..." : "Reset Temp Pass"}
+                            }
+                          )
+                        : "—"}
                     </span>
-                  </button>
+                  </div>
+                </div>
+              )}
 
-                  {isAdmin && (
+              {/* ── 4. TAB 2: DIGITAL ID & QR CARD ── */}
+              {activeTab === "card" && (
+                <div className="space-y-4">
+                  <div className="space-y-4 rounded-[20px] border border-[#e5e5e5] bg-[#faf5e8] p-5 shadow-xs sm:p-6">
+                    <div className="flex items-center justify-between border-b border-[#e5e5e5] pb-3">
+                      <div>
+                        <p className="text-xs font-bold text-[#0a0a0a]">
+                          Sekkha Community
+                        </p>
+                        <p className="text-[11px] font-medium text-[#6a6a6a]">
+                          Official Membership ID Card
+                        </p>
+                      </div>
+                      <span
+                        className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${roleBadgeStyle[member.role] || roleBadgeStyle.umat}`}
+                      >
+                        {formatRoleLabel(member.role)}
+                      </span>
+                    </div>
+
+                    <div className="flex flex-col items-center justify-center space-y-3 py-3">
+                      <div className="rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0] p-4 shadow-xs">
+                        <QRCode
+                          value={member.user_number || member.id}
+                          size={150}
+                          style={{
+                            height: "auto",
+                            maxWidth: "100%",
+                            width: "100%",
+                          }}
+                          viewBox="0 0 256 256"
+                        />
+                      </div>
+
+                      <div className="space-y-0.5 text-center">
+                        <p className="text-sm font-bold text-[#0a0a0a] sm:text-base">
+                          {member.name}
+                        </p>
+                        <p className="font-mono text-xs font-bold text-[#1a3a3a]">
+                          {member.user_number || "—"} (
+                          {member.school || "Member"})
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between border-t border-[#e5e5e5] pt-2 text-xs text-[#6a6a6a]">
+                      <span className="inline-flex items-center gap-1.5">
+                        <span>Status:</span>
+                        {member.is_claimed ? (
+                          <span className="inline-flex items-center gap-1 font-semibold text-emerald-600">
+                            <CheckCircleIcon
+                              className="size-3.5"
+                              aria-hidden="true"
+                            />
+                            Active Account
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 font-semibold text-amber-600">
+                            <AlertTriangleIcon
+                              className="size-3.5"
+                              aria-hidden="true"
+                            />
+                            Unclaimed
+                          </span>
+                        )}
+                      </span>
+                      <span>
+                        Total Attendance: {member.attendances?.length ?? 0}x
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2">
                     <button
                       type="button"
-                      onClick={() => setShowRoleModal(true)}
-                      className="flex h-11 cursor-pointer flex-col items-center justify-center gap-1 rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] px-2 text-xs font-bold text-[#0a0a0a] transition-all hover:bg-[#f5f0e0] sm:flex-row sm:gap-1.5"
-                      title="Change Account Role (Admin only)"
+                      onClick={() => handleCopy(member.user_number)}
+                      className="flex h-11 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] text-xs font-semibold text-[#0a0a0a] transition-colors hover:bg-[#faf5e8] sm:text-sm"
                     >
-                      <ShieldCheckIcon className="size-3.5 text-[#0a0a0a]" />
-                      <span className="text-[11px] sm:text-xs">Change Role</span>
+                      {copied ? (
+                        <CheckIcon className="size-4 text-emerald-600" />
+                      ) : (
+                        <CopyIcon className="size-4 text-[#6a6a6a]" />
+                      )}
+                      <span>{copied ? "Copied!" : "Copy Member ID"}</span>
                     </button>
-                  )}
 
-                  {isAdmin && (
                     <button
                       type="button"
-                      onClick={() => setShowDeleteModal(true)}
-                      className="flex h-11 cursor-pointer flex-col items-center justify-center gap-1 rounded-[12px] border border-rose-200 bg-rose-50 px-2 text-xs font-bold text-rose-600 transition-all hover:bg-rose-100 sm:flex-row sm:gap-1.5"
-                      title="Delete Member (Admin only)"
+                      onClick={() => window.print()}
+                      className="flex h-11 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-[12px] bg-[#0a0a0a] text-xs font-bold text-white shadow-xs transition-all hover:bg-[#1f1f1f] sm:text-sm"
                     >
-                      <Trash2Icon className="size-3.5" />
-                      <span className="text-[11px] sm:text-xs">Delete</span>
+                      <PrinterIcon className="size-4" />
+                      <span>Print Card</span>
                     </button>
+                  </div>
+                </div>
+              )}
+
+              {/* ── 5. TAB 3: ATTENDANCE HISTORY ── */}
+              {activeTab === "attendance" && (
+                <div className="space-y-3 rounded-[20px] border border-[#e5e5e5] bg-[#fffaf0] p-5 shadow-xs">
+                  <div className="flex items-center justify-between border-b border-[#e5e5e5] pb-2.5">
+                    <h3 className="text-sm font-bold text-[#0a0a0a]">
+                      Event Attendance Records
+                    </h3>
+                    <span className="text-xs text-[#6a6a6a]">
+                      Total {member.attendances?.length || 0} Events
+                    </span>
+                  </div>
+
+                  {member.attendances && member.attendances.length > 0 ? (
+                    <div className="divide-y divide-[#f0f0f0]">
+                      {member.attendances.map((att) => (
+                        <div
+                          key={att.id}
+                          className="flex items-center justify-between rounded-[10px] px-1 py-3 transition-colors hover:bg-[#faf5e8]"
+                        >
+                          <div>
+                            <p className="text-xs font-bold text-[#0a0a0a] sm:text-sm">
+                              {att.event_title}
+                            </p>
+                            <p className="text-xs text-[#6a6a6a]">
+                              {new Date(
+                                att.scanned_at || att.event_date
+                              ).toLocaleDateString("en-US", {
+                                weekday: "short",
+                                day: "numeric",
+                                month: "short",
+                                year: "numeric",
+                              })}{" "}
+                            </p>
+                          </div>
+                          <span className="rounded-full border border-[#e5e5e5] bg-[#faf5e8] px-2.5 py-0.5 text-xs font-bold text-[#0a0a0a]">
+                            +{att.points_earned} Pts
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="space-y-1 py-8 text-center text-xs text-[#6a6a6a]">
+                      <ClockIcon className="mx-auto size-8 text-[#6a6a6a]/40" />
+                      <p className="font-bold text-[#0a0a0a]">
+                        No recorded attendance yet
+                      </p>
+                      <p>This member has not checked into any events so far.</p>
+                    </div>
                   )}
                 </div>
+              )}
 
-                {member.is_claimed && (
-                  <p className="text-[11px] text-[#6a6a6a]">
-                    ℹ️ Account has been claimed by the member. Temporary password reset is disabled for member privacy.
+              {/* ── 6. ADMIN & ORGANIZER ACTIONS TOOLBAR ── */}
+              {isOrganizerOrAdmin && (
+                <div className="space-y-3 rounded-[20px] border border-[#e5e5e5] bg-[#fffaf0] p-4 shadow-xs sm:p-5">
+                  <p className="text-[11px] font-bold tracking-wider text-[#6a6a6a] uppercase">
+                    Administrative Actions
                   </p>
-                )}
-              </div>
-            )}
-          </>
-        )}
+                  <div
+                    className={`grid gap-2 ${isAdmin ? "grid-cols-3" : "grid-cols-1"}`}
+                  >
+                    <button
+                      type="button"
+                      disabled={member.is_claimed || resettingPassword}
+                      onClick={handleResetPassword}
+                      className={`flex h-11 flex-col items-center justify-center gap-1 rounded-[12px] border px-2 text-xs font-bold transition-all sm:flex-row sm:gap-1.5 ${
+                        member.is_claimed
+                          ? "cursor-not-allowed border-[#e5e5e5] bg-[#f0f0f0] text-[#a0a0a0] opacity-60"
+                          : "cursor-pointer border-[#e8b94a]/50 bg-[#e8b94a]/15 text-[#0a0a0a] hover:bg-[#e8b94a]/25"
+                      }`}
+                      title={
+                        member.is_claimed
+                          ? "Account has been claimed by the member. Members must use self-service Forgot Password."
+                          : "Regenerate Temporary Password (sekkha#####puggala)"
+                      }
+                    >
+                      <KeyIcon className="size-3.5" />
+                      <span className="text-[11px] sm:text-xs">
+                        {resettingPassword ? "Resetting..." : "Reset Temp Pass"}
+                      </span>
+                    </button>
+
+                    {isAdmin && (
+                      <button
+                        type="button"
+                        onClick={() => setShowRoleModal(true)}
+                        className="flex h-11 cursor-pointer flex-col items-center justify-center gap-1 rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] px-2 text-xs font-bold text-[#0a0a0a] transition-all hover:bg-[#f5f0e0] sm:flex-row sm:gap-1.5"
+                        title="Change Account Role (Admin only)"
+                      >
+                        <ShieldCheckIcon className="size-3.5 text-[#0a0a0a]" />
+                        <span className="text-[11px] sm:text-xs">
+                          Change Role
+                        </span>
+                      </button>
+                    )}
+
+                    {isAdmin && (
+                      <button
+                        type="button"
+                        onClick={() => setShowDeleteModal(true)}
+                        className="flex h-11 cursor-pointer flex-col items-center justify-center gap-1 rounded-[12px] border border-rose-200 bg-rose-50 px-2 text-xs font-bold text-rose-600 transition-all hover:bg-rose-100 sm:flex-row sm:gap-1.5"
+                        title="Delete Member (Admin only)"
+                      >
+                        <Trash2Icon className="size-3.5" />
+                        <span className="text-[11px] sm:text-xs">Delete</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {member.is_claimed && (
+                    <p className="text-[11px] text-[#6a6a6a]">
+                      ℹ️ Account has been claimed by the member. Temporary
+                      password reset is disabled for member privacy.
+                    </p>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </div>
 
       {/* ── MODAL: CHANGE ROLE (Admin only) ── */}
@@ -791,7 +808,8 @@ export function MemberDetailPage({
                   Temporary Password Regenerated!
                 </h3>
                 <p className="text-xs text-[#6a6a6a]">
-                  Share these new credentials with the member so they can log in.
+                  Share these new credentials with the member so they can log
+                  in.
                 </p>
               </div>
             </div>
@@ -818,9 +836,7 @@ export function MemberDetailPage({
                     </span>
                     <button
                       type="button"
-                      onClick={() =>
-                        handleCopy(resetCredentials.user_number)
-                      }
+                      onClick={() => handleCopy(resetCredentials.user_number)}
                       className="cursor-pointer text-[#6a6a6a] hover:text-[#0a0a0a]"
                       title="Copy Member ID"
                     >
@@ -839,9 +855,7 @@ export function MemberDetailPage({
                     </span>
                     <button
                       type="button"
-                      onClick={() =>
-                        handleCopy(resetCredentials.username)
-                      }
+                      onClick={() => handleCopy(resetCredentials.username)}
                       className="cursor-pointer text-[#6a6a6a] hover:text-[#0a0a0a]"
                       title="Copy Username"
                     >

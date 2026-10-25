@@ -3,7 +3,7 @@
 // Used on desktop (md+). On mobile the bottom dock is used instead.
 
 import { Link, useRouterState } from "@tanstack/react-router"
-import { LayoutDashboardIcon, UserIcon, LogOutIcon } from "lucide-react"
+import { HomeIcon, UserIcon, LogOutIcon } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -22,7 +22,7 @@ const NAV_ITEMS = [
   {
     label: "Home",
     to: "/home",
-    icon: LayoutDashboardIcon,
+    icon: HomeIcon,
   },
   {
     label: "Profile",

@@ -157,7 +157,9 @@ export function SeasonPage() {
         await seasonsApi.update(editingSeason.id, {
           name: formData.name.trim(),
           start_date: new Date(formData.start_date).toISOString(),
-          end_date: new Date(formData.end_date + "T23:59:59.999Z").toISOString(),
+          end_date: new Date(
+            formData.end_date + "T23:59:59.999Z"
+          ).toISOString(),
           target_attendance: Number(formData.target_attendance) || 500,
           is_active: formData.is_active,
           description: formData.description.trim() || null,
@@ -167,7 +169,9 @@ export function SeasonPage() {
           name: formData.name.trim(),
           code: formData.code.trim() || undefined,
           start_date: new Date(formData.start_date).toISOString(),
-          end_date: new Date(formData.end_date + "T23:59:59.999Z").toISOString(),
+          end_date: new Date(
+            formData.end_date + "T23:59:59.999Z"
+          ).toISOString(),
           target_attendance: Number(formData.target_attendance) || 500,
           is_active: formData.is_active,
           description: formData.description.trim() || null,
@@ -216,7 +220,11 @@ export function SeasonPage() {
     } catch (err: any) {
       console.error("Failed to delete season:", err)
       // Check for 409 Conflict / SEASON_IN_USE
-      if (err.status === 409 || err.message?.includes("SEASON_IN_USE") || err.message?.includes("linked")) {
+      if (
+        err.status === 409 ||
+        err.message?.includes("SEASON_IN_USE") ||
+        err.message?.includes("linked")
+      ) {
         setConflictSeason(deletingSeason)
         setDeleteModalOpen(false)
       } else {
@@ -270,7 +278,8 @@ export function SeasonPage() {
                 Leaderboard Seasons & Competition Periods
               </h1>
               <p className="text-xs text-[#6a6a6a]">
-                Configure standard calendar timeframes, community attendance goals, and custom active periods.
+                Configure standard calendar timeframes, community attendance
+                goals, and custom active periods.
               </p>
             </div>
           </div>
@@ -301,8 +310,12 @@ export function SeasonPage() {
               Fair Competition & Zero-Reset Principle
             </p>
             <p className="text-xs leading-relaxed text-[#6a6a6a]">
-              Every season resets competition points to <strong>0</strong> so all members have an equal opportunity to compete. Lifetime points remain safely archived in user profiles.
-              At most <strong>one (1) custom season</strong> can be active at a time; when active, it appears as the primary left-most tab on the Leaderboard.
+              Every season resets competition points to <strong>0</strong> so
+              all members have an equal opportunity to compete. Lifetime points
+              remain safely archived in user profiles. At most{" "}
+              <strong>one (1) custom season</strong> can be active at a time;
+              when active, it appears as the primary left-most tab on the
+              Leaderboard.
             </p>
           </div>
         </div>
@@ -314,7 +327,9 @@ export function SeasonPage() {
           >
             <ShieldCheckIcon className="mt-0.5 size-5 shrink-0 text-[#855f05]" />
             <p className="leading-relaxed">
-              <strong className="text-[#0a0a0a]">Read-only access.</strong> You can view season settings, but only an Admin can create, modify dates, or activate a custom season.
+              <strong className="text-[#0a0a0a]">Read-only access.</strong> You
+              can view season settings, but only an Admin can create, modify
+              dates, or activate a custom season.
             </p>
           </div>
         )}
@@ -359,16 +374,28 @@ export function SeasonPage() {
                 </span>
               </div>
               <p className="text-xs leading-relaxed text-[#6a6a6a]">
-                Evaluates attendance and points in 6-month cycles (Sem 1: Jan 1 – Jun 30, Sem 2: Jul 1 – Dec 31). Resets to 0 at the start of each semester.
+                Evaluates attendance and points in 6-month cycles (Sem 1: Jan 1
+                – Jun 30, Sem 2: Jul 1 – Dec 31). Resets to 0 at the start of
+                each semester.
               </p>
               <div className="flex items-center gap-4 rounded-[10px] border border-[#e5e5e5] bg-[#faf5e8] p-2.5 text-xs">
                 <div>
-                  <span className="block text-[10px] text-[#6a6a6a]">Community Goal</span>
-                  <span className="font-bold text-[#0a0a0a]">500 Check-ins</span>
+                  <span className="block text-[10px] text-[#6a6a6a]">
+                    Community Goal
+                  </span>
+                  <span className="font-bold text-[#0a0a0a]">
+                    500 Check-ins
+                  </span>
                 </div>
                 <div className="border-l border-[#e5e5e5] pl-4">
-                  <span className="block text-[10px] text-[#6a6a6a]">Tab Order</span>
-                  <span className="font-bold text-[#0a0a0a]">{activeCustomSeason ? "Position 2 (Middle)" : "Position 1 (Default)"}</span>
+                  <span className="block text-[10px] text-[#6a6a6a]">
+                    Tab Order
+                  </span>
+                  <span className="font-bold text-[#0a0a0a]">
+                    {activeCustomSeason
+                      ? "Position 2 (Middle)"
+                      : "Position 1 (Default)"}
+                  </span>
                 </div>
               </div>
             </div>
@@ -390,16 +417,27 @@ export function SeasonPage() {
                 </span>
               </div>
               <p className="text-xs leading-relaxed text-[#6a6a6a]">
-                Accumulates annual dedication from Jan 1 through Dec 31. Resets automatically on January 1st at 00:00.
+                Accumulates annual dedication from Jan 1 through Dec 31. Resets
+                automatically on January 1st at 00:00.
               </p>
               <div className="flex items-center gap-4 rounded-[10px] border border-[#e5e5e5] bg-[#faf5e8] p-2.5 text-xs">
                 <div>
-                  <span className="block text-[10px] text-[#6a6a6a]">Community Goal</span>
-                  <span className="font-bold text-[#0a0a0a]">1,000 Check-ins</span>
+                  <span className="block text-[10px] text-[#6a6a6a]">
+                    Community Goal
+                  </span>
+                  <span className="font-bold text-[#0a0a0a]">
+                    1,000 Check-ins
+                  </span>
                 </div>
                 <div className="border-l border-[#e5e5e5] pl-4">
-                  <span className="block text-[10px] text-[#6a6a6a]">Tab Order</span>
-                  <span className="font-bold text-[#0a0a0a]">{activeCustomSeason ? "Position 3 (Right-most)" : "Position 2 (Right-most)"}</span>
+                  <span className="block text-[10px] text-[#6a6a6a]">
+                    Tab Order
+                  </span>
+                  <span className="font-bold text-[#0a0a0a]">
+                    {activeCustomSeason
+                      ? "Position 3 (Right-most)"
+                      : "Position 2 (Right-most)"}
+                  </span>
                 </div>
               </div>
             </div>
@@ -414,7 +452,8 @@ export function SeasonPage() {
                 Custom Seasons (Special Campaigns)
               </h2>
               <p className="text-xs text-[#6a6a6a]">
-                Only <strong>one custom season</strong> can be active at a time (e.g. Vassa, Intensive Retreat, Youth Camp).
+                Only <strong>one custom season</strong> can be active at a time
+                (e.g. Vassa, Intensive Retreat, Youth Camp).
               </p>
             </div>
             {activeCustomSeason && (
@@ -441,7 +480,8 @@ export function SeasonPage() {
                 No Custom Seasons Configured
               </h3>
               <p className="mt-1 max-w-sm text-xs text-[#6a6a6a]">
-                You can create custom seasonal periods such as Vassa or holiday youth retreats.
+                You can create custom seasonal periods such as Vassa or holiday
+                youth retreats.
               </p>
               {isAdmin && (
                 <button
@@ -461,7 +501,9 @@ export function SeasonPage() {
                 const progressPct = Math.min(
                   100,
                   Math.round(
-                    ((season.total_attendances || 0) / (season.target_attendance || 500)) * 100
+                    ((season.total_attendances || 0) /
+                      (season.target_attendance || 500)) *
+                      100
                   )
                 )
 
@@ -499,7 +541,8 @@ export function SeasonPage() {
 
                       {/* Description */}
                       <p className="line-clamp-2 text-xs leading-relaxed text-[#6a6a6a]">
-                        {season.description || "No specific description provided for this custom season."}
+                        {season.description ||
+                          "No specific description provided for this custom season."}
                       </p>
 
                       {/* Date Range & Days Left */}
@@ -517,7 +560,8 @@ export function SeasonPage() {
                           )}
                         </div>
                         <p className="font-bold text-[#0a0a0a]">
-                          {formatDateDisplay(season.start_date)} – {formatDateDisplay(season.end_date)}
+                          {formatDateDisplay(season.start_date)} –{" "}
+                          {formatDateDisplay(season.end_date)}
                         </p>
                       </div>
 
@@ -529,7 +573,8 @@ export function SeasonPage() {
                             <span>Community Goal</span>
                           </span>
                           <span className="font-bold text-[#0a0a0a]">
-                            {season.total_attendances || 0} / {season.target_attendance} ({progressPct}%)
+                            {season.total_attendances || 0} /{" "}
+                            {season.target_attendance} ({progressPct}%)
                           </span>
                         </div>
                         {/* Progress Bar */}
@@ -558,7 +603,9 @@ export function SeasonPage() {
                               onClick={() => handleActivate(season)}
                               className="cursor-pointer text-xs font-bold text-[#0a0a0a] underline underline-offset-4 transition-colors hover:text-[#e8b94a] disabled:opacity-50"
                             >
-                              {activatingId === season.id ? "Activating..." : "Set as Active"}
+                              {activatingId === season.id
+                                ? "Activating..."
+                                : "Set as Active"}
                             </button>
                           )
                         )}
@@ -597,7 +644,9 @@ export function SeasonPage() {
       <ResponsiveFormModal
         isOpen={modalOpen && isAdmin}
         onClose={() => setModalOpen(false)}
-        title={editingSeason ? "Edit Season Configuration" : "Add Custom Season"}
+        title={
+          editingSeason ? "Edit Season Configuration" : "Add Custom Season"
+        }
         description={
           editingSeason
             ? `Update timeframe and goals for ${editingSeason.name}.`
@@ -631,7 +680,9 @@ export function SeasonPage() {
               <label className="text-xs font-bold text-[#0a0a0a]">
                 Season Code (Auto-synced, Read-Only)
               </label>
-              <span className="text-[10px] font-bold text-[#6a6a6a]">UPPERCASE KEBAB-CASE</span>
+              <span className="text-[10px] font-bold text-[#6a6a6a]">
+                UPPERCASE KEBAB-CASE
+              </span>
             </div>
             <input
               type="text"
@@ -641,7 +692,8 @@ export function SeasonPage() {
               className="h-11 w-full cursor-not-allowed rounded-[12px] border border-[#e5e5e5] bg-[#f5f0e6] px-3.5 font-mono text-xs font-bold text-[#6a6a6a] shadow-xs outline-none sm:text-sm"
             />
             <p className="text-[10px] text-[#6a6a6a]">
-              The code is automatically generated from the season name and is read-only to preserve relational integrity.
+              The code is automatically generated from the season name and is
+              read-only to preserve relational integrity.
             </p>
           </div>
 
@@ -693,7 +745,8 @@ export function SeasonPage() {
               className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-xs text-[#0a0a0a] shadow-xs transition-all outline-none focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] sm:text-sm"
             />
             <p className="text-[10px] text-[#6a6a6a]">
-              Collective community milestone goal for all members combined (e.g. 500 attendances).
+              Collective community milestone goal for all members combined (e.g.
+              500 attendances).
             </p>
           </div>
 
@@ -728,7 +781,9 @@ export function SeasonPage() {
                   Set as Active Custom Season
                 </span>
                 <p className="text-[11px] text-[#6a6a6a]">
-                  Only 1 custom season can be active at a time. Activating this will automatically archive any previously active custom season.
+                  Only 1 custom season can be active at a time. Activating this
+                  will automatically archive any previously active custom
+                  season.
                 </p>
               </div>
             </label>
@@ -747,7 +802,11 @@ export function SeasonPage() {
               disabled={submitting}
               className="h-10 cursor-pointer rounded-[12px] bg-[#0a0a0a] px-5 text-xs font-bold text-white shadow-xs transition-colors hover:bg-[#1f1f1f] disabled:opacity-50"
             >
-              {submitting ? "Saving..." : editingSeason ? "Update Season" : "Create Season"}
+              {submitting
+                ? "Saving..."
+                : editingSeason
+                  ? "Update Season"
+                  : "Create Season"}
             </button>
           </div>
         </form>
@@ -773,7 +832,9 @@ export function SeasonPage() {
               Confirm deletion of season: &ldquo;{deletingSeason?.name}&rdquo;
             </p>
             <p className="mt-1 text-[11px] text-rose-700">
-              This action cannot be undone. Seasons that are currently linked to existing event records cannot be deleted to preserve attendance audit integrity.
+              This action cannot be undone. Seasons that are currently linked to
+              existing event records cannot be deleted to preserve attendance
+              audit integrity.
             </p>
           </div>
 
@@ -808,15 +869,20 @@ export function SeasonPage() {
           <div className="flex items-start gap-3 rounded-[12px] border border-amber-200 bg-amber-50 p-3.5 text-xs text-amber-900">
             <AlertTriangleIcon className="mt-0.5 size-5 shrink-0 text-amber-600" />
             <div className="space-y-1">
-              <p className="font-bold">Historical Attendance Integrity Protected</p>
+              <p className="font-bold">
+                Historical Attendance Integrity Protected
+              </p>
               <p className="text-[11px] leading-relaxed text-amber-800">
-                &ldquo;{conflictSeason?.name}&rdquo; has recorded events and attendance transactions. To protect member points and attendance history, the database prevents hard deletion.
+                &ldquo;{conflictSeason?.name}&rdquo; has recorded events and
+                attendance transactions. To protect member points and attendance
+                history, the database prevents hard deletion.
               </p>
             </div>
           </div>
 
           <p className="text-xs text-[#6a6a6a]">
-            Instead of deleting, you can deactivate this season so it no longer appears as the active custom season on the leaderboard.
+            Instead of deleting, you can deactivate this season so it no longer
+            appears as the active custom season on the leaderboard.
           </p>
 
           <div className="flex items-center justify-end gap-2 border-t border-[#e5e5e5] pt-3">

@@ -36,11 +36,15 @@ export function BadgeActivityListPage() {
   const [badgeActivities, setBadgeActivities] = useState<BadgeActivityDto[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
-  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all")
+  const [statusFilter, setStatusFilter] = useState<
+    "all" | "active" | "inactive"
+  >("all")
   const [actionError, setActionError] = useState<string | null>(null)
 
   // Dialog states
-  const [itemToDelete, setItemToDelete] = useState<BadgeActivityDto | null>(null)
+  const [itemToDelete, setItemToDelete] = useState<BadgeActivityDto | null>(
+    null
+  )
   const [deleting, setDeleting] = useState(false)
   const [conflictItem, setConflictItem] = useState<{
     item: BadgeActivityDto
@@ -122,7 +126,9 @@ export function BadgeActivityListPage() {
   const handleDeactivateFromConflict = async () => {
     if (!conflictItem) return
     try {
-      await badgeActivitiesApi.update(conflictItem.item.id, { is_active: false })
+      await badgeActivitiesApi.update(conflictItem.item.id, {
+        is_active: false,
+      })
       setConflictItem(null)
       await fetchBadgeActivities()
     } catch (err: any) {
@@ -154,7 +160,8 @@ export function BadgeActivityListPage() {
               </h1>
             </div>
             <p className="mt-1 text-xs text-[#6a6a6a] sm:text-sm">
-              Standardize youth service roles (MC, Puja Leader, Musician) and duty point rewards (+30 Pts).
+              Standardize youth service roles (MC, Puja Leader, Musician) and
+              duty point rewards (+30 Pts).
             </p>
           </div>
 
@@ -307,7 +314,7 @@ export function BadgeActivityListPage() {
                         <span className="flex size-7 items-center justify-center rounded-[8px] bg-[#fbbf24]/20 text-[#d97706]">
                           <AwardIcon className="size-4" />
                         </span>
-                        <h3 className="text-sm font-black text-[#0a0a0a] group-hover:text-[#d97706] transition">
+                        <h3 className="text-sm font-black text-[#0a0a0a] transition group-hover:text-[#d97706]">
                           {item.label}
                         </h3>
                       </div>
@@ -398,8 +405,8 @@ export function BadgeActivityListPage() {
             </DialogTitle>
             <DialogDescription className="mt-2 text-xs text-[#6a6a6a]">
               Are you sure you want to permanently delete{" "}
-              <strong className="text-[#0a0a0a]">{itemToDelete?.label}</strong> (
-              <code>{itemToDelete?.code}</code>)? This action cannot be undone.
+              <strong className="text-[#0a0a0a]">{itemToDelete?.label}</strong>{" "}
+              (<code>{itemToDelete?.code}</code>)? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
 
@@ -442,7 +449,9 @@ export function BadgeActivityListPage() {
           <div className="mt-4 rounded-[12px] bg-[#fffaf0] p-3.5 text-xs text-[#92400e]">
             <p className="font-bold">Recommended Pastoral Care Action:</p>
             <p className="mt-0.5">
-              Instead of deleting, deactivate this role so it will no longer appear in future event attendance dropdowns while keeping past audit records safe.
+              Instead of deleting, deactivate this role so it will no longer
+              appear in future event attendance dropdowns while keeping past
+              audit records safe.
             </p>
           </div>
 

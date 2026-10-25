@@ -12,8 +12,8 @@ describe("EventCard Business Component (FE-16)", () => {
     description: "Kebaktian rutin pemuda-pemudi vihara.",
     event_date: new Date(Date.now() + 86400000).toISOString(), // tomorrow
     location: "Dhammasala Utama",
-    tag: "meditasi",
-    event_type: "rutin",
+    tag: "meditation",
+    event_type: "routine",
     status: "scheduled",
   }
 
@@ -64,5 +64,25 @@ describe("EventCard Business Component (FE-16)", () => {
     render(<EventCard event={todayEvent} onClick={vi.fn()} />)
 
     expect(screen.getByText("Today")).toBeTruthy()
+  })
+
+  it("handles event_type as an object without crashing (API compatibility)", () => {
+    const objectTypeEvent: EventListItem = {
+      id: "evt-002",
+      title: "Workshop Mindfulness",
+      location: "Ruang Diskusi",
+      event_date: new Date(Date.now() + 86400000).toISOString(),
+      status: "scheduled",
+      event_type: {
+        id: "type-1",
+        code: "workshop",
+        label: "Workshop",
+        color: "#10b981",
+      },
+    }
+    render(<EventCard event={objectTypeEvent} onClick={vi.fn()} />)
+
+    expect(screen.getByText("Workshop Mindfulness")).toBeTruthy()
+    expect(screen.getByText("Workshop")).toBeTruthy()
   })
 })

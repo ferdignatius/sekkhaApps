@@ -31,7 +31,7 @@ import type {
   AttendanceRecord,
   EventStatus,
 } from "../types"
-import { getCategoryColor } from "../masterdata"
+import { getCategoryColor, getEventTag } from "../masterdata"
 
 export interface EventDetailSheetProps {
   event: EventListItem
@@ -107,9 +107,7 @@ function getGoogleCalendarUrl(event: EventListItem): string {
   const details = encodeURIComponent(
     `${event.description || "Sekkha Buddhist Community Event"}\n\n(via Sekkha App)`
   )
-  const location = encodeURIComponent(
-    event.location || "Vihara Sekkha"
-  )
+  const location = encodeURIComponent(event.location || "Vihara Sekkha")
   const startDate = new Date(event.event_date)
   const endDate = new Date(startDate.getTime() + 2 * 60 * 60 * 1000) // 2 hours default
   const formatGCalDate = (d: Date) => d.toISOString().replace(/-|:|\.\d+/g, "")
@@ -143,11 +141,7 @@ export function EventDetailSheet({
 
   // Lifecycle actions
   type LifecycleAction =
-    | "activate"
-    | "activate-premature"
-    | "close"
-    | "cancel"
-    | null
+    "activate" | "activate-premature" | "close" | "cancel" | null
   const [pendingAction, setPendingAction] = useState<LifecycleAction>(null)
   const [rescheduleModalOpen, setRescheduleModalOpen] = useState(false)
   const [rescheduleDate, setRescheduleDate] = useState("")
@@ -162,13 +156,14 @@ export function EventDetailSheet({
 
   const { dayName, monthShort, dayNumber, dateStr, timeStr } =
     formatDateDetails(event.event_date)
-  const tag =
-    event.tag ??
-    (typeof event.event_type === "string"
-      ? event.event_type
-      : event.event_type?.code ?? "rutin")
-  const colorInfo = getCategoryColor(tag)
-  const pointsReward = event.point_reward ?? (event.event_type === "special" ? 100 : 50)
+  const tag = getEventTag(event)
+  const colorInfo = getCategoryColor(event)
+  const pointsReward =
+    event.point_reward ??
+    (typeof event.event_type === "object"
+      ? event.event_type?.default_point_reward
+      : undefined) ??
+    (tag === "special" ? 100 : 50)
 
   // Start Event action trigger
   function handleActivateClick() {
@@ -857,7 +852,8 @@ export function EventDetailSheet({
             <strong className="font-semibold text-[#0a0a0a]">
               {event.title}
             </strong>{" "}
-            once activated. You can close check-in and finalize points when the event ends.
+            once activated. You can close check-in and finalize points when the
+            event ends.
           </>
         }
         confirmLabel="Start Event"
@@ -882,12 +878,15 @@ export function EventDetailSheet({
             <strong className="font-semibold text-[#0a0a0a]">
               {dayName}, {dateStr} at {timeStr} WIB
             </strong>
-            , which has not arrived yet. Are you sure you want to start this event and open attendance check-in now?
+            , which has not arrived yet. Are you sure you want to start this
+            event and open attendance check-in now?
           </>
         }
         confirmLabel="Start Event Now"
         cancelLabel="Keep Scheduled"
-        onConfirm={() => executeStatusChange("active")}
+        onConfirm={() =>
+          executeStatusChange("active", new Date().toISOString())
+        }
       />
 
       {/* Cancel Event Dialog */}
@@ -903,7 +902,8 @@ export function EventDetailSheet({
             <strong className="font-semibold text-[#0a0a0a]">
               {event.title}
             </strong>
-            ? The event will be marked as cancelled and will not accept attendances. You can reschedule it later if needed.
+            ? The event will be marked as cancelled and will not accept
+            attendances. You can reschedule it later if needed.
           </>
         }
         confirmLabel="Yes, Cancel Event"
@@ -924,7 +924,8 @@ export function EventDetailSheet({
             <strong className="font-semibold text-[#0a0a0a]">
               {event.title}
             </strong>{" "}
-            will lock the attendance session, finalize attendee records, and credit points to all attendees. This action{" "}
+            will lock the attendance session, finalize attendee records, and
+            credit points to all attendees. This action{" "}
             <strong className="font-semibold text-[#0a0a0a]">
               cannot be undone
             </strong>
@@ -944,7 +945,7 @@ export function EventDetailSheet({
           aria-labelledby="reschedule-modal-title"
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs"
         >
-          <div className="w-full max-w-md rounded-[24px] border border-[#e5e5e5] bg-[#fffaf0] p-6 shadow-xl text-left">
+          <div className="w-full max-w-md rounded-[24px] border border-[#e5e5e5] bg-[#fffaf0] p-6 text-left shadow-xl">
             <div className="flex items-center justify-between border-b border-[#e5e5e5] pb-3">
               <h3
                 id="reschedule-modal-title"
@@ -966,7 +967,8 @@ export function EventDetailSheet({
 
             <p className="mt-3 text-xs text-[#6a6a6a]">
               Choose a new future date and time for{" "}
-              <strong className="text-[#0a0a0a]">{event.title}</strong>. The status will return to Scheduled.
+              <strong className="text-[#0a0a0a]">{event.title}</strong>. The
+              status will return to Scheduled.
             </p>
 
             <div className="mt-4 space-y-2">

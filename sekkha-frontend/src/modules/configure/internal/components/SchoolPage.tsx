@@ -127,8 +127,7 @@ export function SchoolPage() {
     return schools.filter((s) => {
       const matchesSearch = !q || s.name.toLowerCase().includes(q)
 
-      const matchesType =
-        typeFilter === "all" ? true : s.type === typeFilter
+      const matchesType = typeFilter === "all" ? true : s.type === typeFilter
 
       return matchesSearch && matchesType
     })

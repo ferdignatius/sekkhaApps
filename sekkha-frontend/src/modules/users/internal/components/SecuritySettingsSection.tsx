@@ -41,7 +41,9 @@ export function SecuritySettingsSection({
   const [passwordSuccess, setPasswordSuccess] = useState(false)
 
   // Email Change & OTP State
-  const [emailStep, setEmailStep] = useState<"idle" | "request" | "verify">("idle")
+  const [emailStep, setEmailStep] = useState<"idle" | "request" | "verify">(
+    "idle"
+  )
   const [newEmail, setNewEmail] = useState("")
   const [otpDigits, setOtpDigits] = useState(["", "", "", "", "", ""])
   const [cooldown, setCooldown] = useState(0)
@@ -93,7 +95,9 @@ export function SecuritySettingsSection({
         new_password: "",
         confirm_password: "",
       })
-      onToast("Password updated successfully! Other sessions have been signed out.")
+      onToast(
+        "Password updated successfully! Other sessions have been signed out."
+      )
       setTimeout(() => setPasswordSuccess(false), 3000)
     } catch (err: any) {
       onToast(err.message || "Failed to update password", "error")
@@ -144,7 +148,10 @@ export function SecuritySettingsSection({
   }
 
   // Handle Backspace navigation in OTP
-  function handleOtpKeyDown(index: number, e: React.KeyboardEvent<HTMLInputElement>) {
+  function handleOtpKeyDown(
+    index: number,
+    e: React.KeyboardEvent<HTMLInputElement>
+  ) {
     if (e.key === "Backspace" && !otpDigits[index] && index > 0) {
       otpInputRefs.current[index - 1]?.focus()
     }
@@ -153,7 +160,10 @@ export function SecuritySettingsSection({
   // Handle OTP paste
   function handleOtpPaste(e: React.ClipboardEvent<HTMLInputElement>) {
     e.preventDefault()
-    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6)
+    const pasted = e.clipboardData
+      .getData("text")
+      .replace(/\D/g, "")
+      .slice(0, 6)
     if (!pasted) return
 
     const newDigits = [...otpDigits]
@@ -241,7 +251,7 @@ export function SecuritySettingsSection({
                     }))
                   }
                   placeholder="Enter current password"
-                  className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] pr-10 pl-3.5 text-xs font-semibold text-[#0a0a0a] outline-none transition-colors focus:border-[#0a0a0a] focus:bg-[#fffaf0] sm:text-sm"
+                  className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] pr-10 pl-3.5 text-xs font-semibold text-[#0a0a0a] transition-colors outline-none focus:border-[#0a0a0a] focus:bg-[#fffaf0] sm:text-sm"
                 />
                 <button
                   type="button"
@@ -275,7 +285,7 @@ export function SecuritySettingsSection({
                     }))
                   }
                   placeholder="Minimum 8 characters"
-                  className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] pr-10 pl-3.5 text-xs font-semibold text-[#0a0a0a] outline-none transition-colors focus:border-[#0a0a0a] focus:bg-[#fffaf0] sm:text-sm"
+                  className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] pr-10 pl-3.5 text-xs font-semibold text-[#0a0a0a] transition-colors outline-none focus:border-[#0a0a0a] focus:bg-[#fffaf0] sm:text-sm"
                 />
                 <button
                   type="button"
@@ -307,7 +317,7 @@ export function SecuritySettingsSection({
                   }))
                 }
                 placeholder="Re-enter new password"
-                className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] px-3.5 text-xs font-semibold text-[#0a0a0a] outline-none transition-colors focus:border-[#0a0a0a] focus:bg-[#fffaf0] sm:text-sm"
+                className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] px-3.5 text-xs font-semibold text-[#0a0a0a] transition-colors outline-none focus:border-[#0a0a0a] focus:bg-[#fffaf0] sm:text-sm"
               />
             </div>
           </div>
@@ -342,7 +352,8 @@ export function SecuritySettingsSection({
               Email Address & OTP Verification
             </h3>
             <p className="text-xs text-[#6a6a6a]">
-              Change email securely protected by 6-digit cryptographic verification
+              Change email securely protected by 6-digit cryptographic
+              verification
             </p>
           </div>
         </div>
@@ -423,7 +434,7 @@ export function SecuritySettingsSection({
                 value={newEmail}
                 onChange={(e) => setNewEmail(e.target.value)}
                 placeholder="e.g. yourname@domain.com"
-                className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-xs font-semibold text-[#0a0a0a] outline-none transition-colors focus:border-[#0a0a0a] sm:text-sm"
+                className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-xs font-semibold text-[#0a0a0a] transition-colors outline-none focus:border-[#0a0a0a] sm:text-sm"
               />
             </div>
 
@@ -459,7 +470,8 @@ export function SecuritySettingsSection({
                   Step 2: Enter 6-Digit Verification Code
                 </h4>
                 <p className="text-[11px] text-[#6a6a6a]">
-                  Sent to <strong>{newEmail}</strong>. Code valid for 10 minutes.
+                  Sent to <strong>{newEmail}</strong>. Code valid for 10
+                  minutes.
                 </p>
               </div>
               <button
@@ -503,7 +515,7 @@ export function SecuritySettingsSection({
                   onChange={(e) => handleOtpChange(idx, e.target.value)}
                   onKeyDown={(e) => handleOtpKeyDown(idx, e)}
                   onPaste={handleOtpPaste}
-                  className="size-11 rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] text-center font-mono text-base font-bold text-[#0a0a0a] outline-none transition-colors focus:border-[#0a0a0a] focus:ring-2 focus:ring-[#0a0a0a]/20 sm:size-12 sm:text-lg"
+                  className="size-11 rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] text-center font-mono text-base font-bold text-[#0a0a0a] transition-colors outline-none focus:border-[#0a0a0a] focus:ring-2 focus:ring-[#0a0a0a]/20 sm:size-12 sm:text-lg"
                 />
               ))}
             </div>
@@ -574,7 +586,9 @@ export function SecuritySettingsSection({
 
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs font-bold text-[#0a0a0a]">Sign out of Sekkha</p>
+            <p className="text-xs font-bold text-[#0a0a0a]">
+              Sign out of Sekkha
+            </p>
             <p className="text-[11px] text-[#6a6a6a]">
               End your active session securely on this browser
             </p>
@@ -599,8 +613,8 @@ export function SecuritySettingsSection({
               Confirm Sign Out
             </h3>
             <p className="text-xs leading-relaxed text-[#6a6a6a]">
-              Are you sure you want to end your current session? You will need your
-              username or member ID to sign back in.
+              Are you sure you want to end your current session? You will need
+              your username or member ID to sign back in.
             </p>
 
             <div className="flex gap-2.5 pt-2">

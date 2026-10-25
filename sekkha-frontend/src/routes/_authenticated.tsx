@@ -62,12 +62,12 @@ export async function routeGuardBeforeLoad(
   context: RouterContext,
   locationHref: string
 ): Promise<void> {
-  if (context.authState.status === "loading") {
-    await waitForAuthResolution(context, 3000)
-  }
   const token = safeStorage.getItem("sekkha_access_token")
+  if (!token && context.authState?.status === "loading") {
+    await waitForAuthResolution(context, 1000)
+  }
   const isAuthenticated =
-    context.authState.status === "authenticated" ||
+    context.authState?.status === "authenticated" ||
     (token !== null && token !== "")
 
   if (!isAuthenticated) {

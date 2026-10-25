@@ -59,8 +59,8 @@ export const activeModules: ModuleDefinition[] = [
   homeModule,
   eventsModule,
   leaderboardModule,
+  peopleModule,
   profileModule,
   configureModule,
-  peopleModule,
   pengurusModule,
 ]

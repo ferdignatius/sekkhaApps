@@ -12,6 +12,13 @@ All notable changes to Sekkha Apps. Semver (`MAJOR.MINOR.PATCH`); newest on top.
 ### Changed
 - Upgraded `PrivacyPolicyModal` in registration flow to support bilingual toggling between full Indonesian PDP-compliant legal terms and English summary with scroll-to-bottom agreement verification.
 
+### Fixed
+- Resolved CORS preflight blockage for Vercel origins (e.g., `https://sekkha-puggala.vercel.app`):
+  - Moved CORS middleware to the top before rate limiters and route handlers in `sekkha-api/src/app.ts`.
+  - Implemented regex wildcard resolution supporting patterns like `https://*.vercel.app` in `isOriginAllowed`.
+  - Ensured rate limiters skip `OPTIONS` preflight requests (`skipPreflight`).
+  - Added unit test suite `cors.test.ts` verifying origin normalization and wildcard resolution.
+
 ## [1.0.0] - 2026-10-19
 
 ### Added

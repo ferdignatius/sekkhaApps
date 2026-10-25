@@ -74,9 +74,13 @@ export const Route = createRootRoute({
   errorComponent: ({ error, reset }) => (
     <main className="container mx-auto flex min-h-screen flex-col items-center justify-center p-4 text-center font-sans">
       <div className="max-w-md space-y-4 rounded-[20px] border border-[#e5e5e5] bg-[#fffaf0] p-6 shadow-xs">
-        <h2 className="text-lg font-bold text-[#0a0a0a]">Something went wrong</h2>
+        <h2 className="text-lg font-bold text-[#0a0a0a]">
+          Something went wrong
+        </h2>
         <p className="text-xs text-[#6a6a6a]">
-          {error instanceof Error ? error.message : "An unexpected error occurred."}
+          {error instanceof Error
+            ? error.message
+            : "An unexpected error occurred."}
         </p>
         <button
           type="button"

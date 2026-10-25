@@ -8,11 +8,11 @@
     "build": "tsc",
     "test": "bun test",
     "start": "bun dist/server.js",
-    "db:generate": "bunx prisma generate",
-    "db:migrate": "bunx prisma migrate dev",
-    "db:push": "bunx prisma db push",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:push": "prisma db push",
     "db:seed": "bun prisma/seed.ts",
-    "db:studio": "bunx prisma studio"
+    "db:studio": "prisma studio"
   },
   "dependencies": {
     "@prisma/client": "6.9.0",
@@ -33,7 +33,8 @@
     "nodemailer": "^9.1.0",
     "rate-limit-redis": "^6.0.1",
     "tsx": "4.19.4",
-    "zod": "3.24.4"
+    "zod": "3.24.4",
+    "prisma": "6.9.0"
   },
   "devDependencies": {
     "@types/bcryptjs": "2.4.6",

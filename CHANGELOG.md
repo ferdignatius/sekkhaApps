@@ -2,6 +2,16 @@
 
 All notable changes to Sekkha Apps. Semver (`MAJOR.MINOR.PATCH`); newest on top. Entries are curated for humans — see git log for the full history.
 
+## [Unreleased]
+
+### Added
+- Comprehensive bilingual (Bahasa Indonesia & English) Privacy Policy compliant with Indonesian Law No. 27 of 2022 on Personal Data Protection (UU PDP) and tailored for Vihara Tri Maha Dharma Buddhist youth community (`privacyContent.ts`).
+- Dedicated public `/privacy` page route with quick table of contents, print layout, and bilingual language switch.
+- Unit tests for `PrivacyPolicyDocument` and `PrivacyPolicyPage`.
+
+### Changed
+- Upgraded `PrivacyPolicyModal` in registration flow to support bilingual toggling between full Indonesian PDP-compliant legal terms and English summary with scroll-to-bottom agreement verification.
+
 ## [1.0.0] - 2026-10-19
 
 ### Added

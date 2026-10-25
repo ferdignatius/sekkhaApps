@@ -182,27 +182,27 @@ export function HomePage() {
     },
     ...(canAccessTeams
       ? [
-        {
-          id: "people",
-          label: "People",
-          icon: UsersIcon,
-          bg: "bg-[#ffb084]",
-          iconColor: "text-[#0a0a0a]",
-          href: "/people",
-        },
-      ]
+          {
+            id: "people",
+            label: "People",
+            icon: UsersIcon,
+            bg: "bg-[#ffb084]",
+            iconColor: "text-[#0a0a0a]",
+            href: "/people",
+          },
+        ]
       : []),
     ...(isPengurus
       ? [
-        {
-          id: "insight",
-          label: "Community Insights",
-          icon: BarChart3Icon,
-          bg: "bg-[#1a3a3a]",
-          iconColor: "text-white",
-          href: "/insight",
-        },
-      ]
+          {
+            id: "insight",
+            label: "Community Insights",
+            icon: BarChart3Icon,
+            bg: "bg-[#1a3a3a]",
+            iconColor: "text-white",
+            href: "/insight",
+          },
+        ]
       : []),
     {
       id: "see-more",
@@ -249,20 +249,20 @@ export function HomePage() {
         },
         ...(canAccessTeams
           ? [
-            {
-              id: "people",
-              label: "People",
-              description:
-                "Temple member database, service teams, and community roles",
-              icon: UsersIcon,
-              bg: "bg-[#ffb084]",
-              iconColor: "text-[#0a0a0a]",
-              href: "/people",
-              badge: "Directory",
-              keywords:
-                "people teams ministry fellowship community committees members direktori tim kepengurusan umat",
-            },
-          ]
+              {
+                id: "people",
+                label: "People",
+                description:
+                  "Temple member database, service teams, and community roles",
+                icon: UsersIcon,
+                bg: "bg-[#ffb084]",
+                iconColor: "text-[#0a0a0a]",
+                href: "/people",
+                badge: "Directory",
+                keywords:
+                  "people teams ministry fellowship community committees members direktori tim kepengurusan umat",
+              },
+            ]
           : []),
       ],
     },
@@ -286,92 +286,92 @@ export function HomePage() {
     },
     ...(isPengurus
       ? [
-        {
-          category: "Organizer & Analytics",
-          items: [
-            {
-              id: "insight",
-              label: "Community & Contributor Insights",
-              description:
-                "Attendance trends, community demographics, and Seva contributor records",
-              icon: BarChart3Icon,
-              bg: "bg-[#ffb084]",
-              iconColor: "text-[#0a0a0a]",
-              href: "/insight",
-              badge: "Analytics",
-              keywords:
-                "insight community analytics reports stats charts data trends seva contributor board analitik grafik data",
-            },
-          ],
-        },
-        {
-          category: "Master Data & Configuration",
-          items: [
-            {
-              id: "schools",
-              label: "Schools Directory",
-              description:
-                "Manage student Buddhist fellowships (KMB) and school databases",
-              icon: SettingsIcon,
-              bg: "bg-[#faf5e8] border border-[#e5e5e5]",
-              iconColor: "text-[#0a0a0a]",
-              href: "/configure/master/school",
-              badge: "Master",
-              keywords: "schools kmb kampus sekolah universitas master data",
-            },
-            {
-              id: "event-types",
-              label: "Event Categories",
-              description:
-                "Manage activity types, service categories, and liturgical tags",
-              icon: CalendarIcon,
-              bg: "bg-[#ffb084]",
-              iconColor: "text-[#0a0a0a]",
-              href: "/configure/master/event-type",
-              badge: "Master",
-              keywords: "event types categories jenis kegiatan puja kategori",
-            },
-            {
-              id: "points-rules",
-              label: "Point Rules",
-              description:
-                "Define attendance merit multipliers and points scoring logic",
-              icon: SparklesIcon,
-              bg: "bg-[#1a3a3a]",
-              iconColor: "text-white",
-              href: "/configure/rules/points",
-              badge: "Rules",
-              keywords: "points rules aturan poin penilaian merit bobot",
-            },
-            {
-              id: "seasons",
-              label: "Seasons & Periods",
-              description:
-                "Manage competition periods, calendar seasons, and target metrics",
-              icon: TrophyIcon,
-              bg: "bg-[#e8b94a]",
-              iconColor: "text-[#0a0a0a]",
-              href: "/configure/rules/season",
-              badge: "Rules",
-              keywords:
-                "seasons periods semester annual vassa musim kompetisi target",
-            },
-            {
-              id: "badge-activities",
-              label: "Service Activities",
-              description:
-                "Configure Seva duty roles, MC, liturgical chanting, and bonus points",
-              icon: SparklesIcon,
-              bg: "bg-[#ff4d8b]",
-              iconColor: "text-white",
-              href: "/configure/master/badge-activity",
-              badge: "Master",
-              keywords:
-                "service activities seva tugas kebaktian mc puja bonus merit",
-            },
-          ],
-        },
-      ]
+          {
+            category: "Organizer & Analytics",
+            items: [
+              {
+                id: "insight",
+                label: "Community & Contributor Insights",
+                description:
+                  "Attendance trends, community demographics, and Seva contributor records",
+                icon: BarChart3Icon,
+                bg: "bg-[#ffb084]",
+                iconColor: "text-[#0a0a0a]",
+                href: "/insight",
+                badge: "Analytics",
+                keywords:
+                  "insight community analytics reports stats charts data trends seva contributor board analitik grafik data",
+              },
+            ],
+          },
+          {
+            category: "Master Data & Configuration",
+            items: [
+              {
+                id: "schools",
+                label: "Schools Directory",
+                description:
+                  "Manage student Buddhist fellowships (KMB) and school databases",
+                icon: SettingsIcon,
+                bg: "bg-[#faf5e8] border border-[#e5e5e5]",
+                iconColor: "text-[#0a0a0a]",
+                href: "/configure/master/school",
+                badge: "Master",
+                keywords: "schools kmb kampus sekolah universitas master data",
+              },
+              {
+                id: "event-types",
+                label: "Event Categories",
+                description:
+                  "Manage activity types, service categories, and liturgical tags",
+                icon: CalendarIcon,
+                bg: "bg-[#ffb084]",
+                iconColor: "text-[#0a0a0a]",
+                href: "/configure/master/event-type",
+                badge: "Master",
+                keywords: "event types categories jenis kegiatan puja kategori",
+              },
+              {
+                id: "points-rules",
+                label: "Point Rules",
+                description:
+                  "Define attendance merit multipliers and points scoring logic",
+                icon: SparklesIcon,
+                bg: "bg-[#1a3a3a]",
+                iconColor: "text-white",
+                href: "/configure/rules/points",
+                badge: "Rules",
+                keywords: "points rules aturan poin penilaian merit bobot",
+              },
+              {
+                id: "seasons",
+                label: "Seasons & Periods",
+                description:
+                  "Manage competition periods, calendar seasons, and target metrics",
+                icon: TrophyIcon,
+                bg: "bg-[#e8b94a]",
+                iconColor: "text-[#0a0a0a]",
+                href: "/configure/rules/season",
+                badge: "Rules",
+                keywords:
+                  "seasons periods semester annual vassa musim kompetisi target",
+              },
+              {
+                id: "badge-activities",
+                label: "Service Activities",
+                description:
+                  "Configure Seva duty roles, MC, liturgical chanting, and bonus points",
+                icon: SparklesIcon,
+                bg: "bg-[#ff4d8b]",
+                iconColor: "text-white",
+                href: "/configure/master/badge-activity",
+                badge: "Master",
+                keywords:
+                  "service activities seva tugas kebaktian mc puja bonus merit",
+              },
+            ],
+          },
+        ]
       : []),
   ]
 
@@ -398,7 +398,8 @@ export function HomePage() {
 
   const topBarActions = (
     <div className="flex items-center gap-2">
-      <button disabled
+      <button
+        disabled
         type="button"
         onClick={() => setShowQrModal(true)}
         aria-label="Attendance QR Code"
@@ -793,7 +794,7 @@ export function HomePage() {
                             Math.round(
                               (totalPoints /
                                 (activeSeason?.target_attendance ?? 500)) *
-                              100
+                                100
                             )
                           )}
                           className="mt-2 h-2.5 w-full overflow-hidden rounded-full border border-[#e5e5e5] bg-[#f5f0e0]"
@@ -809,7 +810,7 @@ export function HomePage() {
                                     (totalPoints /
                                       (activeSeason?.target_attendance ??
                                         500)) *
-                                    100
+                                      100
                                   )
                                 )
                               )}%`,
@@ -960,7 +961,7 @@ export function HomePage() {
                             type="button"
                             onClick={() => {
                               setShowAllMenusModal(false)
-                                ; (item as any).onClick()
+                              ;(item as any).onClick()
                             }}
                             className="group flex w-full cursor-pointer items-center gap-3 rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] px-3.5 py-3 text-left transition-all hover:border-[#0a0a0a]/20 hover:bg-[#f5f0e0] active:scale-[0.98]"
                           >

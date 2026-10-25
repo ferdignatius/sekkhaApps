@@ -180,8 +180,8 @@ export function EventsPage() {
   const [deletingEvent, setDeletingEvent] = useState(false)
   const monthPickerRef = useRef<HTMLDivElement>(null)
 
-  const [masterCategories, setMasterCategories] = useState<EventCategoryItem[]>(() =>
-    getAccessibleCategories(role, true)
+  const [masterCategories, setMasterCategories] = useState<EventCategoryItem[]>(
+    () => getAccessibleCategories(role, true)
   )
 
   useEffect(() => {

@@ -3,6 +3,7 @@
 // Design: Apple HIG iOS dock — frosted glass, warm canvas tint, ochre active state.
 
 import { Link, useRouterState } from "@tanstack/react-router"
+import { useAuth } from "@/modules/auth"
 import { activeModules } from "@/shell/registry"
 import { iconMap } from "@/shell/icon-map"
 
@@ -17,10 +18,20 @@ const DOCK_ORDER: Record<string, number> = {
 export function MobileDock() {
   const { location } = useRouterState()
   const pathname = location.pathname
+  const { authState } = useAuth()
+
+  const role = authState?.status === "authenticated" ? authState.role : null
+  const isPengurus = role === "organizer" || role === "admin"
 
   const navItems = activeModules
-    .flatMap((module) =>
-      module.navItems.map((item) => ({
+    .flatMap((module) => {
+      const items = [...module.navItems]
+      if (isPengurus && module.pengurusNavItems) {
+        items.push(
+          ...module.pengurusNavItems.filter((item) => item.to in DOCK_ORDER)
+        )
+      }
+      return items.map((item) => ({
         ...item,
         icon: iconMap[item.icon],
         isActive:
@@ -28,7 +39,7 @@ export function MobileDock() {
             ? pathname === "/home" || pathname === "/home/"
             : pathname.startsWith(item.to),
       }))
-    )
+    })
     .sort((a, b) => (DOCK_ORDER[a.to] ?? 99) - (DOCK_ORDER[b.to] ?? 99))
 
   return (

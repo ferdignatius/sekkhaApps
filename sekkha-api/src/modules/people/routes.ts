@@ -4,13 +4,13 @@ import { peopleControllers } from "./controllers"
 
 export const peopleRouter: Router = Router()
 
-// 1. List members (member, activist, organizer, admin)
-peopleRouter.get("/", requireAuth, requireRole("member", "activist", "organizer", "admin"), peopleControllers.getMembers)
-peopleRouter.get("/members", requireAuth, requireRole("member", "activist", "organizer", "admin"), peopleControllers.getMembers)
+// 1. List members (organizer, admin only)
+peopleRouter.get("/", requireAuth, requireRole("organizer", "admin"), peopleControllers.getMembers)
+peopleRouter.get("/members", requireAuth, requireRole("organizer", "admin"), peopleControllers.getMembers)
 
-// 2. Member detail (member, activist, organizer, admin)
-peopleRouter.get("/:id", requireAuth, requireRole("member", "activist", "organizer", "admin"), peopleControllers.getMemberDetail)
-peopleRouter.get("/members/:id", requireAuth, requireRole("member", "activist", "organizer", "admin"), peopleControllers.getMemberDetail)
+// 2. Member detail (organizer, admin only)
+peopleRouter.get("/:id", requireAuth, requireRole("organizer", "admin"), peopleControllers.getMemberDetail)
+peopleRouter.get("/members/:id", requireAuth, requireRole("organizer", "admin"), peopleControllers.getMemberDetail)
 
 // 3. Add new member / Pre-provisioning (organizer, admin)
 peopleRouter.post("/", requireAuth, requireRole("organizer", "admin"), peopleControllers.createMember)

@@ -368,10 +368,19 @@ export function PeoplePage() {
   } | null>(null)
   const [copiedInvite, setCopiedInvite] = useState(false)
 
+  // Defense-in-depth: Redirect non-organizer/non-admin users to home
+  useEffect(() => {
+    if (authState.status === "authenticated" && !isOrganizerOrAdmin) {
+      navigate({ to: "/home" })
+    }
+  }, [authState.status, isOrganizerOrAdmin, navigate])
+
   // Load verified schools for dropdown
   useEffect(() => {
-    peopleApi.getVerifiedSchools().then(setVerifiedSchools)
-  }, [])
+    if (isOrganizerOrAdmin) {
+      peopleApi.getVerifiedSchools().then(setVerifiedSchools)
+    }
+  }, [isOrganizerOrAdmin])
 
   // Reset pagination when filter/search changes
   useEffect(() => {

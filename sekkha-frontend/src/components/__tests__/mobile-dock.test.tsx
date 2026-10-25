@@ -55,8 +55,34 @@ function renderDock(role: UserRole = "activist") {
 }
 
 describe("MobileDock", () => {
-  it("renders navigation items from the registry in order", () => {
+  it("renders standard navigation items in order without People for 'activist'", () => {
     renderDock("activist")
+
+    const links = screen.getAllByRole("link")
+    const labels = links.map((link) => link.textContent?.trim())
+
+    expect(labels).toEqual(["Home", "Events", "Leaderboard", "Profile"])
+    expect(links.map((link) => link.getAttribute("href"))).toEqual([
+      "/home",
+      "/events",
+      "/leaderboard",
+      "/home/profile",
+    ])
+    expect(screen.queryByText("People")).toBeNull()
+  })
+
+  it("hides People menu when user role is 'member'", () => {
+    renderDock("member")
+
+    const links = screen.getAllByRole("link")
+    const labels = links.map((link) => link.textContent?.trim())
+
+    expect(labels).toEqual(["Home", "Events", "Leaderboard", "Profile"])
+    expect(screen.queryByText("People")).toBeNull()
+  })
+
+  it("renders all 5 items including People in order when user role is 'organizer'", () => {
+    renderDock("organizer")
 
     const links = screen.getAllByRole("link")
     const labels = links.map((link) => link.textContent?.trim())
@@ -75,10 +101,11 @@ describe("MobileDock", () => {
       "/people",
       "/home/profile",
     ])
+    expect(screen.getByText("People")).toBeDefined()
   })
 
-  it("renders all 5 items including People in order when user role is 'member'", () => {
-    renderDock("member")
+  it("renders all 5 items including People in order when user role is 'admin'", () => {
+    renderDock("admin")
 
     const links = screen.getAllByRole("link")
     const labels = links.map((link) => link.textContent?.trim())
@@ -90,7 +117,7 @@ describe("MobileDock", () => {
       "People",
       "Profile",
     ])
-    expect(screen.queryByText("People")).not.toBeNull()
+    expect(screen.getByText("People")).toBeDefined()
   })
 
   it("sets aria-current='page' on the active route", () => {

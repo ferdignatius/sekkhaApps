@@ -5,6 +5,6 @@ export { MemberDetailPage } from "./internal/components/MemberDetailPage"
 
 export const peopleModule: ModuleDefinition = {
   name: "people",
-  navItems: [{ label: "People", to: "/people", icon: "Users" }],
-  pengurusNavItems: [],
+  navItems: [],
+  pengurusNavItems: [{ label: "People", to: "/people", icon: "Users" }],
 }

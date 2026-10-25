@@ -235,12 +235,24 @@ async function computeAndCacheLeaderboardInternal(periodTarget?: LeaderboardPeri
               .slice(0, 2)
               .map((w) => (w && w[0] ? w[0].toUpperCase() : ""))
               .join("") || "AS"
-          const attendanceCount = attendanceByUser.get(u.id) ?? 0
+          const attendanceCount = Math.max(
+            attendanceByUser.get(u.id) ?? 0,
+            u.stats?.totalAttendances ?? 0
+          )
+          const pointsCount = Math.max(
+            pointsByUser.get(u.id) ?? 0,
+            u.stats?.points ?? 0
+          )
+          const streakCount = Math.max(
+            u.stats?.currentStreak ?? 0,
+            attendanceByUser.get(u.id) ?? 0
+          )
+
           const val =
             metric === "points"
-              ? pointsByUser.get(u.id) ?? 0
+              ? pointsCount
               : metric === "streak"
-                ? Math.min(attendanceCount, 12)
+                ? streakCount
                 : attendanceCount
 
           return {
@@ -260,9 +272,14 @@ async function computeAndCacheLeaderboardInternal(periodTarget?: LeaderboardPeri
           rank: idx + 1,
         }))
 
+      const communityTotal = Math.max(
+        totalAttendances,
+        users.reduce((acc, u) => acc + (u.stats?.totalAttendances ?? 0), 0)
+      )
+
       const snapshot: LeaderboardSnapshot = {
         entries: list,
-        community_total: totalAttendances,
+        community_total: communityTotal,
         season: seasonInfo,
         available_periods: periods,
         active_period: activePeriod,
@@ -313,7 +330,7 @@ export async function getLeaderboardSnapshot(
         const raw = await redis.get(cacheKey)
         if (raw) {
           const parsed = JSON.parse(raw) as LeaderboardSnapshot
-          const isStale = parsed.entries?.some((e) => !e.role)
+          const isStale = parsed.entries?.some((e) => !e.role) || parsed.entries?.every((e) => e.value === 0)
           if (!isStale) {
             // Always ensure available_periods are updated to real-time status
             parsed.available_periods = periods
@@ -328,7 +345,7 @@ export async function getLeaderboardSnapshot(
 
     const cachedMem = memoryLeaderboardCache.get(cacheKey)
     if (cachedMem) {
-      const isStale = cachedMem.entries?.some((e) => !e.role)
+      const isStale = cachedMem.entries?.some((e) => !e.role) || cachedMem.entries?.every((e) => e.value === 0)
       if (!isStale) {
         cachedMem.available_periods = periods
         cachedMem.active_period = targetPeriod

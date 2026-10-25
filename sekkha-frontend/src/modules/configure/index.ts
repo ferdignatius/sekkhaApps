@@ -4,7 +4,6 @@ import type { ModuleDefinition } from "@/shell/registry"
 export { EventTypePage } from "./internal/components/EventTypeListPage"
 export { EventTypeCreatePage } from "./internal/components/EventTypePage"
 export { EventTypeDetailPage } from "./internal/components/EventTypeDetailPage"
-export { ThresholdPage } from "./internal/components/ThresholdPage"
 export { SeasonPage } from "./internal/components/SeasonPage"
 export { PointsRulesPage } from "./internal/components/PointsRulesPage"
 export { SchoolPage } from "./internal/components/SchoolPage"
@@ -55,18 +54,6 @@ export const configureModule: ModuleDefinition = {
           label: "Point Rules",
           to: "/configure/rules/points",
           icon: "Zap",
-          hasRoute: true,
-        },
-      ],
-    },
-    {
-      label: "Early Warning",
-      icon: "Bell",
-      items: [
-        {
-          label: "Threshold Settings",
-          to: "/configure/early-warning/threshold",
-          icon: "Bell",
           hasRoute: true,
         },
       ],

@@ -1,7 +1,7 @@
 // feature/events/components/EventForm
 // Create / edit event form for pengurus+ with unified categories, masterdata autofill, & optional location.
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   AlertCircleIcon,
   CalendarIcon,
@@ -12,14 +12,10 @@ import {
   CheckIcon,
 } from "lucide-react"
 import { useAuth } from "@/modules/auth"
+import { api } from "@/lib/api"
 import { DateTimePickerPopover } from "@/components/ui/DateTimePickerPopover"
-import type {
-  CreateEventPayload,
-  EventListItem,
-  EventTag,
-  EventType,
-} from "../types"
-import { getAccessibleCategories } from "../masterdata"
+import type { CreateEventPayload, EventListItem } from "../types"
+import { getAccessibleCategories, getEventTag } from "../masterdata"
 
 interface EventFormProps {
   /** If provided, pre-fill the form for editing */
@@ -49,7 +45,8 @@ function isoToLocal(iso: string): string {
 }
 
 export interface CategoryOption {
-  id: EventTag
+  id: string
+  code: string
   label: string
   bg: string
   colorHex?: string
@@ -74,24 +71,84 @@ export function EventForm({
   const role = authState.status === "authenticated" ? authState.role : null
 
   // Dynamic Accessible Master Data category options for logged-in user
-  const categoryOptions: CategoryOption[] = getAccessibleCategories(
-    role,
-    true
-  ).map((cat) => ({
-    id: cat.tag as EventTag,
-    label: cat.name,
-    bg: `${cat.bg} ${cat.text}`,
-    colorHex: cat.colorHex,
-    autofill: {
-      title: cat.autofillTitle ?? `${cat.name} Activity`,
-      location: cat.autofillLocation ?? "Vihara Sekkha",
-      description:
-        cat.autofillDesc ??
-        `${cat.name} session with Sekkha community members.`,
-    },
-  }))
+  const [categories, setCategories] = useState<CategoryOption[]>(() => {
+    return getAccessibleCategories(role, true).map((cat) => ({
+      id: cat.id,
+      code: cat.tag,
+      label: cat.name,
+      bg: `${cat.bg} ${cat.text}`,
+      colorHex: cat.colorHex,
+      autofill: {
+        title: cat.autofillTitle ?? `${cat.name} Activity`,
+        location: cat.autofillLocation ?? "Vihara Sekkha",
+        description:
+          cat.autofillDesc ??
+          `${cat.name} session with Sekkha community members.`,
+      },
+    }))
+  })
 
-  const [tag, setTag] = useState<EventTag | undefined>(initial?.tag)
+  // Load latest event types from backend API
+  useEffect(() => {
+    let cancelled = false
+    async function loadDynamicCategories() {
+      try {
+        const types = await api.get<any[]>("/configure/event-types?is_active=true")
+        if (cancelled) return
+        if (Array.isArray(types) && types.length > 0) {
+          const mapped: CategoryOption[] = types.map((t) => {
+            const hex = t.color || "#4262FF"
+            return {
+              id: t.id,
+              code: t.code,
+              label: t.label,
+              bg: `bg-[${hex}]/10 text-[${hex}]`,
+              colorHex: hex,
+              autofill: {
+                title: t.label,
+                location: "Vihara Sekkha",
+                description:
+                  t.description || `${t.label} session with Sekkha community members.`,
+              },
+            }
+          })
+          setCategories(mapped)
+        }
+      } catch (err) {
+        console.warn("Could not load dynamic event types in EventForm:", err)
+      }
+    }
+    loadDynamicCategories()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const [selectedTypeId, setSelectedTypeId] = useState<string | undefined>(() => {
+    if (initial?.event_type && typeof initial.event_type === "object") {
+      return initial.event_type.id
+    }
+    return undefined
+  })
+
+  // Pre-select category if editing an existing event
+  useEffect(() => {
+    if (categories.length > 0 && !selectedTypeId && initial) {
+      const match = categories.find(
+        (c) =>
+          c.id ===
+            (initial.event_type && typeof initial.event_type === "object"
+              ? initial.event_type.id
+              : undefined) ||
+          c.code.toLowerCase() === getEventTag(initial).toLowerCase() ||
+          c.label.toLowerCase() === getEventTag(initial).toLowerCase()
+      )
+      if (match) {
+        setSelectedTypeId(match.id)
+      }
+    }
+  }, [categories, initial, selectedTypeId])
+
   const [title, setTitle] = useState(initial?.title ?? "")
   const [description, setDescription] = useState(initial?.description ?? "")
   const [location, setLocation] = useState(initial?.location ?? "")
@@ -113,26 +170,26 @@ export function EventForm({
       delete next.tag
       return next
     })
-    if (tag === cat.id) {
-      setTag(undefined)
+    if (selectedTypeId === cat.id) {
+      setSelectedTypeId(undefined)
       return
     }
-    setTag(cat.id)
+    setSelectedTypeId(cat.id)
     if (
       !title.trim() ||
-      categoryOptions.some((c) => c.autofill.title === title)
+      categories.some((c) => c.autofill.title === title)
     ) {
       setTitle(cat.autofill.title)
     }
     if (
       !location.trim() ||
-      categoryOptions.some((c) => c.autofill.location === location)
+      categories.some((c) => c.autofill.location === location)
     ) {
       setLocation(cat.autofill.location)
     }
     if (
       !description.trim() ||
-      categoryOptions.some((c) => c.autofill.description === description)
+      categories.some((c) => c.autofill.description === description)
     ) {
       setDescription(cat.autofill.description)
     }
@@ -142,7 +199,7 @@ export function EventForm({
     e.preventDefault()
 
     const errs: Record<string, string> = {}
-    if (!tag) {
+    if (!selectedTypeId) {
       errs.tag = "Event category is required"
     }
     if (!title.trim()) {
@@ -152,7 +209,10 @@ export function EventForm({
       errs.event_date = "Event date and time is required"
     } else if (Number.isNaN(new Date(eventDate).getTime())) {
       errs.event_date = "Choose a valid date and time"
-    } else if (!initial?.id && new Date(eventDate).getTime() < Date.now() - 60000) {
+    } else if (
+      !initial?.id &&
+      new Date(eventDate).getTime() < Date.now() - 60000
+    ) {
       errs.event_date = "Event date cannot be in the past"
     }
 
@@ -163,14 +223,16 @@ export function EventForm({
 
     setErrors({})
     setInternalSubmitting(true)
+    const chosenType = categories.find((c) => c.id === selectedTypeId)
     try {
       await onSubmit({
         title: title.trim(),
         description: description.trim(),
         event_date: localToIso(eventDate),
         location: location.trim() ? location.trim() : "Vihara Sekkha",
-        tag,
-        event_type: (tag === "special" ? "special" : "rutin") as EventType,
+        event_type_id: selectedTypeId,
+        event_type: chosenType?.code,
+        tag: chosenType?.code,
       })
     } finally {
       setInternalSubmitting(false)
@@ -234,8 +296,8 @@ export function EventForm({
           aria-describedby={errors.tag ? "ev-category-error" : undefined}
           className="flex flex-wrap gap-2"
         >
-          {categoryOptions.map((cat) => {
-            const isSelected = tag === cat.id
+          {categories.map((cat) => {
+            const isSelected = selectedTypeId === cat.id
 
             return (
               <button
@@ -244,13 +306,37 @@ export function EventForm({
                 onClick={() => handleSelectCategory(cat)}
                 role="radio"
                 aria-checked={isSelected}
+                style={
+                  isSelected && cat.colorHex
+                    ? {
+                        backgroundColor: cat.colorHex,
+                        borderColor: cat.colorHex,
+                        color: "#ffffff",
+                      }
+                    : !isSelected && cat.colorHex
+                      ? {
+                          borderColor: `${cat.colorHex}40`,
+                          backgroundColor: `${cat.colorHex}0d`,
+                          color: "#1a1a1a",
+                        }
+                      : undefined
+                }
                 className={`flex min-h-[44px] cursor-pointer items-center gap-1.5 rounded-[12px] border px-3.5 py-1.5 text-xs font-bold transition-all focus-visible:ring-2 focus-visible:ring-[#0a0a0a] focus-visible:ring-offset-2 focus-visible:outline-none ${
                   isSelected
                     ? "border-[#0a0a0a] bg-[#0a0a0a] text-white shadow-xs"
                     : "border-[#e5e5e5] bg-[#fffaf0] text-[#6a6a6a] hover:bg-[#faf5e8] hover:text-[#0a0a0a]"
                 }`}
               >
-                {isSelected && <CheckIcon className="size-3.5 text-white" />}
+                {isSelected ? (
+                  <CheckIcon className="size-3.5 text-white" />
+                ) : (
+                  cat.colorHex && (
+                    <span
+                      className="size-2 rounded-full"
+                      style={{ backgroundColor: cat.colorHex }}
+                    />
+                  )
+                )}
                 <span>{cat.label}</span>
               </button>
             )

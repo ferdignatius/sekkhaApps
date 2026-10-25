@@ -217,7 +217,9 @@ export function QrScannerCamera({
       !["localhost", "127.0.0.1", "[::1]"].includes(window.location.hostname)
     ) {
       setIsInsecureContext(true)
-      setCameraError("Camera streaming requires a secure origin (HTTPS or localhost).")
+      setCameraError(
+        "Camera streaming requires a secure origin (HTTPS or localhost)."
+      )
       setIsInitializing(false)
       return
     }
@@ -376,9 +378,7 @@ export function QrScannerCamera({
             className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 bg-[#102828]/95 text-white backdrop-blur-xs"
           >
             <RefreshCwIcon className="size-8 animate-spin text-amber-400" />
-            <p className="text-caption font-medium">
-              Connecting to camera...
-            </p>
+            <p className="text-caption font-medium">Connecting to camera...</p>
           </div>
         )}
 
@@ -393,8 +393,8 @@ export function QrScannerCamera({
                 Camera Blocked (Non-HTTPS)
               </p>
               <p className="text-caption max-w-xs leading-relaxed text-slate-300">
-                Browser only permits camera access on <code>localhost</code>{" "}
-                or <code>https://</code>.
+                Browser only permits camera access on <code>localhost</code> or{" "}
+                <code>https://</code>.
               </p>
             </div>
             <button

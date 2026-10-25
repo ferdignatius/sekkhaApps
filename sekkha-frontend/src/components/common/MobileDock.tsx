@@ -3,29 +3,33 @@
 // Design: Apple HIG iOS dock — frosted glass, warm canvas tint, ochre active state.
 
 import { Link, useRouterState } from "@tanstack/react-router"
-import { useAuth } from "@/modules/auth"
 import { activeModules } from "@/shell/registry"
 import { iconMap } from "@/shell/icon-map"
+
+const DOCK_ORDER: Record<string, number> = {
+  "/home": 1,
+  "/events": 2,
+  "/leaderboard": 3,
+  "/people": 4,
+  "/home/profile": 5,
+}
 
 export function MobileDock() {
   const { location } = useRouterState()
   const pathname = location.pathname
-  const { authState } = useAuth()
-  const role = authState.status === "authenticated" ? authState.role : null
 
-  const allNavItems = activeModules.flatMap((module) =>
-    module.navItems.map((item) => ({
-      ...item,
-      icon: iconMap[item.icon],
-      isActive:
-        item.to === "/home"
-          ? pathname === "/home" || pathname === "/home/"
-          : pathname.startsWith(item.to),
-      hidden: role === "member" && item.to === "/people",
-    }))
-  )
-
-  const navItems = allNavItems.filter((item) => !item.hidden)
+  const navItems = activeModules
+    .flatMap((module) =>
+      module.navItems.map((item) => ({
+        ...item,
+        icon: iconMap[item.icon],
+        isActive:
+          item.to === "/home"
+            ? pathname === "/home" || pathname === "/home/"
+            : pathname.startsWith(item.to),
+      }))
+    )
+    .sort((a, b) => (DOCK_ORDER[a.to] ?? 99) - (DOCK_ORDER[b.to] ?? 99))
 
   return (
     /* Safe-area aware floating dock */

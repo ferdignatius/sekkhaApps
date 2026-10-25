@@ -75,7 +75,9 @@ export function PointsLedger({ totalPoints = 0 }: PointsLedgerProps) {
             className="flex size-8 cursor-pointer items-center justify-center rounded-[8px] border border-[#e5e5e5] bg-[#fffaf0] text-[#6a6a6a] hover:bg-[#faf5e8] hover:text-[#0a0a0a] disabled:opacity-50"
             title="Refresh Ledger"
           >
-            <RefreshCwIcon className={`size-3.5 ${refreshing ? "animate-spin" : ""}`} />
+            <RefreshCwIcon
+              className={`size-3.5 ${refreshing ? "animate-spin" : ""}`}
+            />
           </button>
         </div>
       </div>
@@ -134,7 +136,7 @@ export function PointsLedger({ totalPoints = 0 }: PointsLedgerProps) {
                         </span>
                       </span>
 
-                      <span className="rounded-full bg-[#f0f0f0] px-2 py-0.2 text-[10px] font-semibold text-[#0a0a0a] uppercase">
+                      <span className="py-0.2 rounded-full bg-[#f0f0f0] px-2 text-[10px] font-semibold text-[#0a0a0a] uppercase">
                         {tx.type || "system"}
                       </span>
                     </div>
@@ -162,9 +164,12 @@ export function PointsLedger({ totalPoints = 0 }: PointsLedgerProps) {
       ) : (
         <div className="space-y-2 py-8 text-center text-[#6a6a6a]">
           <SparklesIcon className="mx-auto size-8 text-[#6a6a6a]/40" />
-          <p className="text-xs font-bold text-[#0a0a0a]">No Point Transactions Yet</p>
+          <p className="text-xs font-bold text-[#0a0a0a]">
+            No Point Transactions Yet
+          </p>
           <p className="text-xs">
-            Attend temple fellowship events or volunteer for service duties to earn karma points.
+            Attend temple fellowship events or volunteer for service duties to
+            earn karma points.
           </p>
         </div>
       )}

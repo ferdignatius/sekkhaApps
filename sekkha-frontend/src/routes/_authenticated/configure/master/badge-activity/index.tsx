@@ -6,7 +6,7 @@ import {
 import { ConfigureSkeleton } from "@/components/common/PageSkeletons"
 
 export const Route = createFileRoute(
-  "/_authenticated/configure/master/badge-activity"
+  "/_authenticated/configure/master/badge-activity/"
 )({
   beforeLoad: ({ context }) => {
     const role = (context as any).authState.role

@@ -15,7 +15,7 @@ type CreateEventInput = {
   description?: string
   location?: string
   event_date: string
-  event_type?: "rutin" | "special"
+  event_type?: string
   event_type_id?: string
   season_id?: string
   tag?: string
@@ -31,15 +31,16 @@ export const eventServices = {
     userRole: string,
     isPrivileged: boolean,
     page = 1,
-    limit = 20,
+    limit = 50,
     filters?: {
       status?: string
       event_type_id?: string
       month?: string
+      search?: string
     }
   ) {
     const validPage = Math.max(1, page)
-    const validLimit = Math.min(50, Math.max(1, limit))
+    const validLimit = Math.min(100, Math.max(1, limit))
     const skip = (validPage - 1) * validLimit
 
     const andConditions: PrismaTypes.EventWhereInput[] = []
@@ -83,6 +84,17 @@ export const eventServices = {
           gte: startOfMonth,
           lte: endOfMonth,
         },
+      })
+    }
+
+    if (filters?.search && typeof filters.search === "string" && filters.search.trim()) {
+      const q = filters.search.trim()
+      andConditions.push({
+        OR: [
+          { title: { contains: q, mode: "insensitive" } },
+          { location: { contains: q, mode: "insensitive" } },
+          { description: { contains: q, mode: "insensitive" } },
+        ],
       })
     }
 
@@ -178,7 +190,7 @@ export const eventServices = {
       throw new AppError("Event date cannot be in the past", 400, "EVENT_DATE_PAST")
     }
 
-    let eventTypeId = body.event_type_id
+    let eventTypeId = body.event_type_id || (body as any).eventTypeId
     let eventType = null
     if (eventTypeId) {
       eventType = await eventModels.findEventTypeById(eventTypeId)
@@ -284,7 +296,13 @@ export const eventServices = {
       }
     }
 
-    let eventTypeId = body.event_type_id
+    let eventTypeId = body.event_type_id || (body as any).eventTypeId
+    if (!eventTypeId && body.event_type) {
+      const typeByCode = await prisma.eventType.findUnique({
+        where: { code: body.event_type },
+      })
+      if (typeByCode) eventTypeId = typeByCode.id
+    }
     if (!eventTypeId && body.tag) {
       const typeByTag = await prisma.eventType.findFirst({
         where: {
@@ -361,25 +379,33 @@ export const eventServices = {
         return { event: currentEvent, totalAttendees: 0, pointsDistributed: false }
       }
 
+      let updatedEventDate: Date | undefined
+
       // 1. Validation for "active" transition
       if (normalizedTarget === "active") {
         if (currentStatus !== "scheduled") {
           throw new AppError("Only scheduled events can be started.", 400, "INVALID_STATUS_TRANSITION")
         }
-        // PRD Section 4 & Section 8.4: event_date <= current date
+
         const scheduledTime = new Date(currentEvent.eventDate).getTime()
         const nowTime = Date.now()
-        if (scheduledTime > nowTime) {
-          throw new AppError(
-            "Event cannot be started before its scheduled date and time",
-            400,
-            "START_EVENT_PREMATURE"
-          )
+
+        if (rescheduleDate) {
+          const parsedDate = new Date(rescheduleDate)
+          if (!isNaN(parsedDate.getTime())) {
+            updatedEventDate = parsedDate
+          }
+        }
+
+        // Allow organizer/admin to start event early.
+        // If event is started before scheduled date/time and no explicit date was passed,
+        // update eventDate to now so attendance timing and calculations are accurate.
+        if (scheduledTime > nowTime && !updatedEventDate) {
+          updatedEventDate = new Date()
         }
       }
 
       // 2. Validation for "scheduled" (Reschedule from cancel)
-      let updatedEventDate: Date | undefined
       if (normalizedTarget === "scheduled") {
         if (currentStatus !== "cancel") {
           throw new AppError("Only cancelled events can be rescheduled.", 400, "INVALID_STATUS_TRANSITION")

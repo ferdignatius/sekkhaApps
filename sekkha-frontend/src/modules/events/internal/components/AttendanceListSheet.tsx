@@ -72,13 +72,19 @@ export function AttendanceListSheet({
   const isEditable = isPengurus && !isClosed
 
   const [localRecords, setLocalRecords] = useState<AttendanceRecord[]>(records)
-  const [deleteTarget, setDeleteTarget] = useState<AttendanceRecord | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<AttendanceRecord | null>(
+    null
+  )
   const [badgePickerTarget, setBadgePickerTarget] =
     useState<AttendanceRecord | null>(null)
-  const [badgeActivities, setBadgeActivities] = useState<BadgeActivityOption[]>([])
+  const [badgeActivities, setBadgeActivities] = useState<BadgeActivityOption[]>(
+    []
+  )
   const [loadingBadges, setLoadingBadges] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
-  const [filterMethod, setFilterMethod] = useState<"all" | "qr" | "manual">("all")
+  const [filterMethod, setFilterMethod] = useState<"all" | "qr" | "manual">(
+    "all"
+  )
   const [currentPage, setCurrentPage] = useState(1)
 
   useEffect(() => {
@@ -116,7 +122,6 @@ export function AttendanceListSheet({
     return { total, qr, manual, late, points }
   }, [displayRecords])
 
-
   // ── Assign Badge Activity ──
   async function handleAssignBadgeActivity(
     userId: string,
@@ -124,10 +129,15 @@ export function AttendanceListSheet({
   ) {
     if (!eventId) return
     try {
-      await api.post(`/events/${eventId}/attendances/${userId}/badge-activity`, {
-        badge_activity_id: badgeActivityId,
-      })
-      const selectedBadge = badgeActivities.find((b) => b.id === badgeActivityId)
+      await api.patch(
+        `/events/${eventId}/attendances/${userId}/badge-activity`,
+        {
+          badge_activity_id: badgeActivityId,
+        }
+      )
+      const selectedBadge = badgeActivities.find(
+        (b) => b.id === badgeActivityId
+      )
       setLocalRecords((prev) =>
         prev.map((rec) =>
           rec.user_id === userId
@@ -135,7 +145,9 @@ export function AttendanceListSheet({
                 ...rec,
                 badge_activity_id: badgeActivityId,
                 badge_activity: selectedBadge ? selectedBadge.label : null,
-                badge_bonus_points: selectedBadge ? selectedBadge.bonusPoints : 0,
+                badge_bonus_points: selectedBadge
+                  ? selectedBadge.bonusPoints
+                  : 0,
               }
             : rec
         )
@@ -371,7 +383,7 @@ export function AttendanceListSheet({
                           {rec.name}
                         </p>
                         {rec.role && (
-                          <span className="rounded-full bg-black/[0.05] px-2 py-0.2 text-[10px] font-semibold text-[#6a6a6a] uppercase">
+                          <span className="py-0.2 rounded-full bg-black/[0.05] px-2 text-[10px] font-semibold text-[#6a6a6a] uppercase">
                             {rec.role}
                           </span>
                         )}
@@ -565,7 +577,7 @@ export function AttendanceListSheet({
       {/* ── 5. Service Role (Badge Activity) Assignment Modal ── */}
       {badgePickerTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-xs">
-          <div className="w-full max-w-md space-y-4 rounded-[24px] border border-[#e5e5e5] bg-[#fffaf0] p-5 shadow-2xl animate-in zoom-in-95">
+          <div className="w-full max-w-md animate-in space-y-4 rounded-[24px] border border-[#e5e5e5] bg-[#fffaf0] p-5 shadow-2xl zoom-in-95">
             <div className="flex items-start justify-between">
               <div>
                 <span className="inline-flex items-center gap-1.5 text-xs font-bold text-[#1a3a3a]">
@@ -576,7 +588,8 @@ export function AttendanceListSheet({
                   {badgePickerTarget.name}
                 </h3>
                 <p className="text-xs text-[#6a6a6a]">
-                  Select the duty role performed by this member for seva bonus points.
+                  Select the duty role performed by this member for seva bonus
+                  points.
                 </p>
               </div>
               <button
@@ -611,36 +624,41 @@ export function AttendanceListSheet({
                   )}
                 </button>
 
-              {badgeActivities.map((act) => {
-                const isSelected =
-                  badgePickerTarget.badge_activity_id === act.id
-                return (
-                  <button
-                    key={act.id}
-                    type="button"
-                    onClick={() =>
-                      handleAssignBadgeActivity(badgePickerTarget.user_id, act.id)
-                    }
-                    className={`flex min-h-[44px] w-full cursor-pointer items-center justify-between rounded-[14px] border p-3 text-xs transition-all ${
-                      isSelected
-                        ? "border-[#0a0a0a] bg-white font-bold text-[#0a0a0a] ring-1 ring-black"
-                        : "border-[#e5e5e5] bg-[#faf5e8] text-[#6a6a6a] hover:bg-white"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <AwardIcon className="size-4 text-[#e8b94a]" />
-                      <span className="font-bold text-[#0a0a0a]">{act.label}</span>
-                    </div>
-                    <span className="rounded-full border border-[#e8b94a]/50 bg-[#e8b94a]/20 px-2 py-0.5 text-[11px] font-bold text-[#0a0a0a]">
-                      +{act.bonusPoints} Pts
-                    </span>
-                  </button>
-                )
-              })}
-            </div>
-          )}
+                {badgeActivities.map((act) => {
+                  const isSelected =
+                    badgePickerTarget.badge_activity_id === act.id
+                  return (
+                    <button
+                      key={act.id}
+                      type="button"
+                      onClick={() =>
+                        handleAssignBadgeActivity(
+                          badgePickerTarget.user_id,
+                          act.id
+                        )
+                      }
+                      className={`flex min-h-[44px] w-full cursor-pointer items-center justify-between rounded-[14px] border p-3 text-xs transition-all ${
+                        isSelected
+                          ? "border-[#0a0a0a] bg-white font-bold text-[#0a0a0a] ring-1 ring-black"
+                          : "border-[#e5e5e5] bg-[#faf5e8] text-[#6a6a6a] hover:bg-white"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <AwardIcon className="size-4 text-[#e8b94a]" />
+                        <span className="font-bold text-[#0a0a0a]">
+                          {act.label}
+                        </span>
+                      </div>
+                      <span className="rounded-full border border-[#e8b94a]/50 bg-[#e8b94a]/20 px-2 py-0.5 text-[11px] font-bold text-[#0a0a0a]">
+                        +{act.bonusPoints} Pts
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
       )}
 
       {/* ── 6. Confirmation Dialog for Attendee Deletion ── */}

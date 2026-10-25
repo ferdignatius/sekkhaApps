@@ -36,12 +36,7 @@ function isTodayEvent(iso: string): boolean {
 
 export function EventCard({ event, onClick }: EventCardProps) {
   const { day, time } = formatDate(event.event_date)
-  const tag =
-    event.tag ??
-    (typeof event.event_type === "string"
-      ? event.event_type
-      : event.event_type?.code ?? "rutin")
-  const colorInfo = getCategoryColor(tag)
+  const colorInfo = getCategoryColor(event)
   const isLive = isTodayEvent(event.event_date)
   const status = event.status ?? "scheduled"
 

@@ -29,7 +29,9 @@ export function PersonalProfileSection({
 }: PersonalProfileSectionProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [submitting, setSubmitting] = useState(false)
-  const [verifiedSchools, setVerifiedSchools] = useState<VerifiedSchoolDto[]>([])
+  const [verifiedSchools, setVerifiedSchools] = useState<VerifiedSchoolDto[]>(
+    []
+  )
 
   // Form state
   const [formData, setFormData] = useState<UpdateProfilePayload>({
@@ -42,7 +44,10 @@ export function PersonalProfileSection({
 
   // Load verified schools for dropdown
   useEffect(() => {
-    userApi.getVerifiedSchools().then(setVerifiedSchools).catch(() => {})
+    userApi
+      .getVerifiedSchools()
+      .then(setVerifiedSchools)
+      .catch(() => {})
   }, [])
 
   // Sync profile data to form state
@@ -240,7 +245,10 @@ export function PersonalProfileSection({
         </div>
       ) : (
         /* ── STATE 2: EDIT MODE (INLINE IN-PAGE FORM — NO POPUP MODAL) ── */
-        <form onSubmit={handleSubmit} className="animate-in space-y-4 duration-200 fade-in">
+        <form
+          onSubmit={handleSubmit}
+          className="animate-in space-y-4 duration-200 fade-in"
+        >
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {/* Full Name */}
             <div className="space-y-1.5">
@@ -255,7 +263,7 @@ export function PersonalProfileSection({
                   setFormData((prev) => ({ ...prev, name: e.target.value }))
                 }
                 placeholder="Enter your full name"
-                className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] px-3.5 text-xs font-semibold text-[#0a0a0a] outline-none transition-colors focus:border-[#0a0a0a] focus:bg-[#fffaf0] sm:text-sm"
+                className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] px-3.5 text-xs font-semibold text-[#0a0a0a] transition-colors outline-none focus:border-[#0a0a0a] focus:bg-[#fffaf0] sm:text-sm"
               />
             </div>
 
@@ -271,7 +279,7 @@ export function PersonalProfileSection({
                   setFormData((prev) => ({ ...prev, phone: e.target.value }))
                 }
                 placeholder="e.g. 08123456789"
-                className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] px-3.5 text-xs font-semibold text-[#0a0a0a] outline-none transition-colors focus:border-[#0a0a0a] focus:bg-[#fffaf0] sm:text-sm"
+                className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] px-3.5 text-xs font-semibold text-[#0a0a0a] transition-colors outline-none focus:border-[#0a0a0a] focus:bg-[#fffaf0] sm:text-sm"
               />
             </div>
 
@@ -293,7 +301,7 @@ export function PersonalProfileSection({
                     school: selectedSchool ? selectedSchool.name : "",
                   }))
                 }}
-                className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] px-3.5 text-xs font-semibold text-[#0a0a0a] outline-none transition-colors focus:border-[#0a0a0a] focus:bg-[#fffaf0] sm:text-sm"
+                className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] px-3.5 text-xs font-semibold text-[#0a0a0a] transition-colors outline-none focus:border-[#0a0a0a] focus:bg-[#fffaf0] sm:text-sm"
               >
                 <option value="">-- Select verified school --</option>
                 {verifiedSchools.map((sch) => (
@@ -318,7 +326,7 @@ export function PersonalProfileSection({
                     date_of_birth: e.target.value,
                   }))
                 }
-                className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] px-3.5 text-xs font-semibold text-[#0a0a0a] outline-none transition-colors focus:border-[#0a0a0a] focus:bg-[#fffaf0] sm:text-sm"
+                className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] px-3.5 text-xs font-semibold text-[#0a0a0a] transition-colors outline-none focus:border-[#0a0a0a] focus:bg-[#fffaf0] sm:text-sm"
               />
             </div>
           </div>

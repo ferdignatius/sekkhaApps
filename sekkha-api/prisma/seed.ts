@@ -252,10 +252,11 @@ async function main() {
     data: {
       email: encrypt(umatEmail),
       emailBindex: generateBlindIndex(umatEmail),
+      emailVerifiedAt: new Date(),
       username: "umat",
       password: await hash(umatPasswordRaw),
       role: Role.member,
-      userNumber: "26010101",
+      userNumber: BigInt(26010101),
       onboardingCompleted: true,
       profile: {
         create: {
@@ -283,10 +284,11 @@ async function main() {
     data: {
       email: encrypt(aktivisEmail),
       emailBindex: generateBlindIndex(aktivisEmail),
+      emailVerifiedAt: new Date(),
       username: "aktivis",
       password: await hash(aktivisPasswordRaw),
       role: Role.activist,
-      userNumber: "26010102",
+      userNumber: BigInt(26010102),
       onboardingCompleted: true,
       profile: {
         create: {
@@ -314,10 +316,11 @@ async function main() {
     data: {
       email: encrypt(pengurusEmail),
       emailBindex: generateBlindIndex(pengurusEmail),
+      emailVerifiedAt: new Date(),
       username: "pengurus",
       password: await hash(pengurusPasswordRaw),
       role: Role.organizer,
-      userNumber: "26010103",
+      userNumber: BigInt(26010103),
       onboardingCompleted: true,
       profile: {
         create: {
@@ -344,10 +347,11 @@ async function main() {
     data: {
       email: encrypt(adminEmail),
       emailBindex: generateBlindIndex(adminEmail),
+      emailVerifiedAt: new Date(),
       username: "admin",
       password: await hash(adminPasswordRaw),
       role: Role.admin,
-      userNumber: "26010104",
+      userNumber: BigInt(26010104),
       onboardingCompleted: true,
       profile: {
         create: {
@@ -374,10 +378,11 @@ async function main() {
     data: {
       email: encrypt("hendra@sekkha.local"),
       emailBindex: generateBlindIndex("hendra@sekkha.local"),
+      emailVerifiedAt: new Date(),
       username: "hendra",
       password: await hash("admin"),
       role: Role.member,
-      userNumber: "26010105",
+      userNumber: BigInt(26010105),
       isClaimed: false,
       onboardingCompleted: true,
       profile: {

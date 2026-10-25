@@ -4,6 +4,7 @@
 // bukan React component langsung. Shell resolve icon di sini.
 
 import {
+  HomeIcon,
   LayoutDashboardIcon,
   CalendarDaysIcon,
   TrophyIcon,
@@ -28,6 +29,7 @@ import {
 import type { LucideIcon } from "lucide-react"
 
 export const iconMap: Record<string, LucideIcon> = {
+  Home: HomeIcon,
   LayoutDashboard: LayoutDashboardIcon,
   CalendarDays: CalendarDaysIcon,
   Trophy: TrophyIcon,

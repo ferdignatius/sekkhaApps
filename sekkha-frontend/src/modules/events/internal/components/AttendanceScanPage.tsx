@@ -41,7 +41,9 @@ interface RecentScanItem {
 
 function playScanChime() {
   try {
-    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)()
+    const ctx = new (
+      window.AudioContext || (window as any).webkitAudioContext
+    )()
     const osc = ctx.createOscillator()
     const gain = ctx.createGain()
     osc.type = "sine"
@@ -58,7 +60,9 @@ function playScanChime() {
 
 function playWarningBuzz() {
   try {
-    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)()
+    const ctx = new (
+      window.AudioContext || (window as any).webkitAudioContext
+    )()
     const osc = ctx.createOscillator()
     const gain = ctx.createGain()
     osc.type = "sawtooth"
@@ -87,8 +91,12 @@ export function AttendanceScanPage() {
   const [loadingEvent, setLoadingEvent] = useState(true)
   const [eventError, setEventError] = useState<string | null>(null)
 
-  const [pengurusMode, setPengurusMode] = useState<"camera" | "search">("camera")
-  const [cameras, setCameras] = useState<Array<{ id: string; label: string }>>([])
+  const [pengurusMode, setPengurusMode] = useState<"camera" | "search">(
+    "camera"
+  )
+  const [cameras, setCameras] = useState<Array<{ id: string; label: string }>>(
+    []
+  )
   const [activeCameraId, setActiveCameraId] = useState<string>("")
   const [isHistoryDrawerOpen, setIsHistoryDrawerOpen] = useState(false)
 
@@ -98,7 +106,9 @@ export function AttendanceScanPage() {
   const [manualUserNumber, setManualUserNumber] = useState("")
 
   // Attendance state
-  const [sessionAttendedIds, setSessionAttendedIds] = useState<Set<string>>(new Set())
+  const [sessionAttendedIds, setSessionAttendedIds] = useState<Set<string>>(
+    new Set()
+  )
   const [recentScans, setRecentScans] = useState<RecentScanItem[]>([])
   const [sessionSuccessCount, setSessionSuccessCount] = useState(0)
 
@@ -140,7 +150,9 @@ export function AttendanceScanPage() {
     let cancelled = false
     async function loadScannerContext() {
       if (!eventId) {
-        setEventError("Please select an event first to launch the attendance scanner.")
+        setEventError(
+          "Please select an event first to launch the attendance scanner."
+        )
         setLoadingEvent(false)
         return
       }
@@ -161,7 +173,9 @@ export function AttendanceScanPage() {
           ? attData
           : attData?.attendances || []
 
-        setSessionAttendedIds(new Set(list.map((r) => r.user_id).filter(Boolean)))
+        setSessionAttendedIds(
+          new Set(list.map((r) => r.user_id).filter(Boolean))
+        )
         setSessionSuccessCount(list.length)
 
         // Populate initial scan list from server
@@ -184,7 +198,9 @@ export function AttendanceScanPage() {
         if (cancelled) return
         console.error("Failed to prepare scanner context:", error)
         setEvent(null)
-        setEventError("Failed to load event details. Please verify your connection.")
+        setEventError(
+          "Failed to load event details. Please verify your connection."
+        )
       } finally {
         if (!cancelled) setLoadingEvent(false)
       }
@@ -210,8 +226,13 @@ export function AttendanceScanPage() {
         .then((res) => {
           if (res) {
             setMemberProfile({
-              name: res.profile?.name || res.name || authState.name || "Sekkha Member",
-              userNumber: res.userNumber || res.user_number || res.id || authState.userId,
+              name:
+                res.profile?.name ||
+                res.name ||
+                authState.name ||
+                "Sekkha Member",
+              userNumber:
+                res.userNumber || res.user_number || res.id || authState.userId,
               role: res.role || authState.role || "member",
             })
           }
@@ -384,7 +405,10 @@ export function AttendanceScanPage() {
   }
 
   // ── Manual Attendance Recording ──
-  async function recordManualAttendance(targetNumberOrId: string, memberName?: string) {
+  async function recordManualAttendance(
+    targetNumberOrId: string,
+    memberName?: string
+  ) {
     if (!eventId || !targetNumberOrId) return
 
     const nowFormatted = new Date().toLocaleTimeString("en-US", {
@@ -494,7 +518,6 @@ export function AttendanceScanPage() {
     }
   }
 
-
   const currentCamLabel = useMemo(() => {
     const found = cameras.find((c) => c.id === activeCameraId)
     if (!found) return "Rear Camera"
@@ -520,20 +543,25 @@ export function AttendanceScanPage() {
       <div className="absolute inset-x-0 top-0 z-30 flex items-center justify-between border-b border-white/10 bg-[#102828]/85 p-3 backdrop-blur-xl sm:p-4">
         <button
           type="button"
-          onClick={() => navigate({ to: "/events", search: eventId ? { eventId } : undefined })}
+          onClick={() =>
+            navigate({
+              to: "/events",
+              search: eventId ? { eventId } : undefined,
+            })
+          }
           className="flex size-10 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-white/10 text-white transition-all hover:bg-white/20 active:scale-95"
           title="Back to Events"
         >
           <ArrowLeftIcon className="size-4" />
         </button>
 
-        <div className="min-w-0 max-w-[60%] text-center">
+        <div className="max-w-[60%] min-w-0 text-center">
           <p className="text-caption truncate font-bold text-white">
             {loadingEvent
               ? "Loading Session..."
               : eventError
-              ? "Event Not Found"
-              : event?.title || "Attendance Session"}
+                ? "Event Not Found"
+                : event?.title || "Attendance Session"}
           </p>
           <div className="flex items-center justify-center gap-1.5 text-[10px] text-amber-300">
             <span className="size-1.5 animate-pulse rounded-full bg-emerald-400" />
@@ -619,7 +647,9 @@ export function AttendanceScanPage() {
               </div>
             )}
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-bold leading-tight">{lastFeedback.title}</p>
+              <p className="text-xs leading-tight font-bold">
+                {lastFeedback.title}
+              </p>
               <p className="mt-0.5 text-[11px] leading-tight opacity-90">
                 {lastFeedback.subtitle}
               </p>
@@ -736,7 +766,10 @@ export function AttendanceScanPage() {
                             <button
                               type="button"
                               onClick={() => {
-                                void recordManualAttendance(p.user_number || p.id, p.name)
+                                void recordManualAttendance(
+                                  p.user_number || p.id,
+                                  p.name
+                                )
                                 setSearchQuery("")
                               }}
                               className="rounded-lg bg-white/15 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-white/25"
@@ -765,7 +798,8 @@ export function AttendanceScanPage() {
                   {event?.title || "Sekkha Community Event"}
                 </h4>
                 <p className="text-xs text-zinc-400">
-                  Present this QR code to the event organizers at the registration desk.
+                  Present this QR code to the event organizers at the
+                  registration desk.
                 </p>
               </div>
 
@@ -881,7 +915,9 @@ export function AttendanceScanPage() {
           <button
             type="button"
             onClick={() => {
-              setPengurusMode((prev) => (prev === "camera" ? "search" : "camera"))
+              setPengurusMode((prev) =>
+                prev === "camera" ? "search" : "camera"
+              )
               setIsHistoryDrawerOpen(false)
             }}
             className={`flex min-h-[44px] cursor-pointer items-center gap-1.5 rounded-full border px-4 py-2 text-xs font-bold shadow-lg backdrop-blur-xl transition-all active:scale-95 ${

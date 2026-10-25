@@ -9,7 +9,7 @@ export interface UpcomingEvent {
   title: string
   location: string
   event_date: string // ISO 8601
-  event_type: "rutin" | "special"
+  event_type: string
 }
 
 interface NextEventCardProps {
@@ -33,6 +33,11 @@ function formatEventTime(isoDate: string): string {
 }
 
 export function NextEventCard({ event }: NextEventCardProps) {
+  const eventTypeLabel = event?.event_type
+    ? event.event_type.charAt(0).toUpperCase() + event.event_type.slice(1)
+    : "Routine"
+  const isRoutine = eventTypeLabel.toLowerCase() === "routine"
+
   return (
     <section
       aria-labelledby="next-event-heading"
@@ -59,13 +64,13 @@ export function NextEventCard({ event }: NextEventCardProps) {
           {/* Event type badge + title */}
           <div className="flex items-start gap-2">
             <span
-              className={`mt-0.5 shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-bold ${
-                event.event_type === "rutin"
+              className={`mt-0.5 shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-bold capitalize ${
+                isRoutine
                   ? "border border-emerald-200 bg-emerald-100 text-emerald-800"
                   : "border border-[#ffb084]/50 bg-[#ffb084]/25 text-[#0a0a0a]"
               }`}
             >
-              {event.event_type === "rutin" ? "Routine" : "Special"}
+              {eventTypeLabel}
             </span>
             <p className="text-sm leading-snug font-bold text-[#0a0a0a]">
               {event.title}

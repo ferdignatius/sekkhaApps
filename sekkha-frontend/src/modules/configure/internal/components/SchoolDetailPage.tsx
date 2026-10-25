@@ -170,7 +170,7 @@ export function SchoolDetailPage() {
   if (loading) {
     return (
       <main className="min-h-screen bg-[#fffaf0] p-6 text-left font-sans">
-        <div className="mx-auto max-w-2xl animate-pulse space-y-4">
+        <div className="mx-auto max-w-7xl animate-pulse space-y-4">
           <div className="h-8 w-48 rounded-[12px] bg-[#e5e5e5]" />
           <div className="h-64 rounded-[20px] bg-white p-6 shadow-2xs" />
         </div>
@@ -214,7 +214,7 @@ export function SchoolDetailPage() {
         ]}
       />
 
-      <div className="mx-auto max-w-3xl space-y-6 px-3.5 py-4 sm:px-6 md:px-8">
+      <div className="mx-auto max-w-7xl space-y-6 px-3.5 py-4 sm:px-6 md:px-8">
         {/* Top Navigation */}
         <div className="flex items-center justify-between">
           <Button

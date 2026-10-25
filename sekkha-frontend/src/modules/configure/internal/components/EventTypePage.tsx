@@ -108,7 +108,7 @@ export function EventTypeCreatePage() {
         ]}
       />
 
-      <div className="mx-auto max-w-3xl space-y-6 px-3.5 py-4 sm:px-6 md:px-8">
+      <div className="mx-auto max-w-7xl space-y-6 px-3.5 py-4 sm:px-6 md:px-8">
         <button
           type="button"
           onClick={() => void navigate({ to: "/configure/master/event-type" })}

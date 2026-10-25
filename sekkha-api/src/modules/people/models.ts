@@ -35,14 +35,6 @@ export const peopleModels = {
         profile: {
           select: {
             name: true,
-            phone: true,
-            schoolId: true,
-            school: { select: { id: true, name: true } },
-          },
-        },
-        stats: {
-          select: {
-            lastActivityAt: true,
           },
         },
       },

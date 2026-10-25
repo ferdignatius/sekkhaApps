@@ -6,7 +6,7 @@ import {
 import { ConfigureSkeleton } from "@/components/common/PageSkeletons"
 
 export const Route = createFileRoute(
-  "/_authenticated/configure/master/event-type"
+  "/_authenticated/configure/master/event-type/$categoryId"
 )({
   beforeLoad: ({ context }) => {
     const role = (context as any).authState.role
@@ -15,7 +15,9 @@ export const Route = createFileRoute(
     }
   },
   component: lazyRouteComponent(() =>
-    import("@/modules/configure").then((m) => ({ default: m.EventTypePage }))
+    import("@/modules/configure").then((m) => ({
+      default: m.EventTypeDetailPage,
+    }))
   ),
   pendingComponent: ConfigureSkeleton,
 })

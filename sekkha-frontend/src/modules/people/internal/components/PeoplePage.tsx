@@ -12,8 +12,6 @@ import {
   CheckIcon,
   ShieldCheckIcon,
   ChevronRightIcon,
-  PhoneIcon,
-  GraduationCapIcon,
   Share2Icon,
 } from "lucide-react"
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
@@ -156,7 +154,9 @@ function CommunityRoleChart({
                       strokeDashoffset={organizerOffset}
                       className="cursor-pointer transition-all duration-300 hover:opacity-85"
                       onClick={() =>
-                        onFilterChange(activeFilter === "organizer" ? "all" : "organizer")
+                        onFilterChange(
+                          activeFilter === "organizer" ? "all" : "organizer"
+                        )
                       }
                     />
                   )}
@@ -172,7 +172,9 @@ function CommunityRoleChart({
                       strokeDashoffset={memberOffset}
                       className="cursor-pointer transition-all duration-300 hover:opacity-85"
                       onClick={() =>
-                        onFilterChange(activeFilter === "member" ? "all" : "member")
+                        onFilterChange(
+                          activeFilter === "member" ? "all" : "member"
+                        )
                       }
                     />
                   )}
@@ -188,7 +190,9 @@ function CommunityRoleChart({
                       strokeDashoffset={activistOffset}
                       className="cursor-pointer transition-all duration-300 hover:opacity-85"
                       onClick={() =>
-                        onFilterChange(activeFilter === "activist" ? "all" : "activist")
+                        onFilterChange(
+                          activeFilter === "activist" ? "all" : "activist"
+                        )
                       }
                     />
                   )}
@@ -205,14 +209,20 @@ function CommunityRoleChart({
                   ? "cursor-pointer hover:scale-105"
                   : "pointer-events-none cursor-default"
               }`}
-              title={activeFilter !== "all" ? "Click to reset to all members" : "Total Members"}
+              title={
+                activeFilter !== "all"
+                  ? "Click to reset to all members"
+                  : "Total Members"
+              }
             >
               <span className="text-xl leading-none font-black text-[#0a0a0a] sm:text-2xl">
                 {total}
               </span>
               <span
                 className={`mt-0.5 text-[9px] font-bold tracking-wider uppercase ${
-                  activeFilter !== "all" ? "text-[#0a0a0a] underline" : "text-[#6a6a6a]"
+                  activeFilter !== "all"
+                    ? "text-[#0a0a0a] underline"
+                    : "text-[#6a6a6a]"
                 }`}
               >
                 {activeFilter !== "all" ? "Reset" : "Total"}
@@ -237,7 +247,8 @@ function CommunityRoleChart({
               )}
             </div>
             <p className="mt-0.5 text-xs text-[#6a6a6a]">
-              Community breakdown by youth roles. Click a card to filter the directory.
+              Community breakdown by youth roles. Click a card to filter the
+              directory.
             </p>
           </div>
         </div>
@@ -304,7 +315,8 @@ export function PeoplePage() {
   const isOrganizerOrAdmin =
     authState.status === "authenticated" &&
     (authState.role === "organizer" || authState.role === "admin")
-  const isAdmin = authState.status === "authenticated" && authState.role === "admin"
+  const isAdmin =
+    authState.status === "authenticated" && authState.role === "admin"
 
   const [members, setMembers] = useState<MemberDto[]>([])
   const [totalItems, setTotalItems] = useState(0)
@@ -328,11 +340,14 @@ export function PeoplePage() {
   const [pageSize, setPageSize] = useState(15)
 
   // Master data
-  const [verifiedSchools, setVerifiedSchools] = useState<VerifiedSchoolDto[]>([])
+  const [verifiedSchools, setVerifiedSchools] = useState<VerifiedSchoolDto[]>(
+    []
+  )
 
   // Modals
   const [showCreateModal, setShowCreateModal] = useState(false)
-  const [createdCredentials, setCreatedCredentials] = useState<CreateMemberResponse | null>(null)
+  const [createdCredentials, setCreatedCredentials] =
+    useState<CreateMemberResponse | null>(null)
   const [editingMember, setEditingMember] = useState<MemberDto | null>(null)
   const [deletingMember, setDeletingMember] = useState<MemberDto | null>(null)
 
@@ -366,7 +381,13 @@ export function PeoplePage() {
   // Fetch paginated & filtered data from API
   useEffect(() => {
     loadData()
-  }, [currentPage, pageSize, debouncedSearchQuery, roleFilter, claimStatusFilter])
+  }, [
+    currentPage,
+    pageSize,
+    debouncedSearchQuery,
+    roleFilter,
+    claimStatusFilter,
+  ])
 
   function showToast(text: string, type: "success" | "error" = "success") {
     setToastMessage({ text, type })
@@ -450,7 +471,9 @@ export function PeoplePage() {
     try {
       setSubmitting(true)
       await peopleApi.updateMember(editingMember.id, { role: updateForm.role })
-      showToast(`Role for "${editingMember.name}" updated to ${updateForm.role?.toUpperCase()}`)
+      showToast(
+        `Role for "${editingMember.name}" updated to ${updateForm.role?.toUpperCase()}`
+      )
       setEditingMember(null)
       await loadData()
     } catch (err: any) {
@@ -478,7 +501,10 @@ export function PeoplePage() {
   }
 
   // Copy helper
-  function handleCopy(text?: string | number | null, successMessage: string = "Copied to clipboard!") {
+  function handleCopy(
+    text?: string | number | null,
+    successMessage: string = "Copied to clipboard!"
+  ) {
     if (!text) return
     navigator.clipboard
       .writeText(String(text))
@@ -507,7 +533,8 @@ export function PeoplePage() {
   const roleBadgeStyle: Record<string, string> = {
     admin: "bg-[#ff4d8b]/15 text-[#ff4d8b] border-[#ff4d8b]/30 font-semibold",
     organizer: "bg-[#1a3a3a] text-white border-[#1a3a3a] font-semibold",
-    activist: "bg-[#b8a4ed]/30 text-[#0a0a0a] border-[#b8a4ed]/50 font-semibold",
+    activist:
+      "bg-[#b8a4ed]/30 text-[#0a0a0a] border-[#b8a4ed]/50 font-semibold",
     member: "bg-[#f5f0e0] text-[#0a0a0a] border-[#e5e5e5] font-semibold",
   }
 
@@ -607,7 +634,8 @@ export function PeoplePage() {
                 <p className="text-xs text-[#6a6a6a]">
                   Showing {totalItems === 0 ? 0 : startIndex + 1}–{endIndex} of{" "}
                   {totalItems} members
-                  {(roleFilter !== "all" || claimStatusFilter !== "all") && " (filtered)"}
+                  {(roleFilter !== "all" || claimStatusFilter !== "all") &&
+                    " (filtered)"}
                 </p>
               </div>
 
@@ -631,7 +659,7 @@ export function PeoplePage() {
                 {Array.from({ length: 8 }).map((_, idx) => (
                   <div
                     key={idx}
-                    className="flex h-[135px] animate-pulse flex-col justify-between rounded-[16px] border border-[#e6decb]/80 bg-[#faf5e8]/90 p-3.5 shadow-2xs backdrop-blur-sm sm:h-[180px] sm:p-4"
+                    className="flex h-[130px] animate-pulse flex-col justify-between rounded-[16px] border border-[#e6decb]/80 bg-[#faf5e8]/90 p-3.5 shadow-2xs backdrop-blur-sm sm:h-[150px] sm:p-4"
                   >
                     <div className="space-y-3">
                       <div className="flex items-start justify-between">
@@ -648,7 +676,9 @@ export function PeoplePage() {
             ) : members.length === 0 ? (
               <div className="flex min-h-[260px] flex-col items-center justify-center rounded-[20px] border border-dashed border-[#e6decb]/80 bg-[#fffaf0]/90 p-8 text-center backdrop-blur-sm">
                 <UsersIcon className="mb-2 size-10 text-[#6a6a6a]/40" />
-                <p className="text-sm font-bold text-[#0a0a0a]">No members found</p>
+                <p className="text-sm font-bold text-[#0a0a0a]">
+                  No members found
+                </p>
                 <p className="mt-1 max-w-xs text-xs text-[#6a6a6a]">
                   Try adjusting your search query or filter settings.
                 </p>
@@ -721,8 +751,8 @@ export function PeoplePage() {
                           </div>
                         </div>
 
-                        {/* Status & School info */}
-                        <div className="mt-2.5 space-y-1 text-[11px] text-[#6a6a6a]">
+                        {/* Status */}
+                        <div className="mt-2.5 text-[11px] text-[#6a6a6a]">
                           {/* Claim Status Badge */}
                           <div>
                             {m.is_claimed ? (
@@ -737,19 +767,6 @@ export function PeoplePage() {
                               </span>
                             )}
                           </div>
-
-                          {m.school && (
-                            <p className="hidden items-center gap-1.5 truncate sm:flex">
-                              <GraduationCapIcon className="size-3 shrink-0 text-[#6a6a6a]" />
-                              <span className="truncate">{m.school}</span>
-                            </p>
-                          )}
-                          {m.phone && (
-                            <p className="hidden items-center gap-1.5 truncate sm:flex">
-                              <PhoneIcon className="size-2.5 shrink-0 text-[#6a6a6a]" />
-                              <span className="truncate">{m.phone}</span>
-                            </p>
-                          )}
                         </div>
                       </div>
 
@@ -768,7 +785,9 @@ export function PeoplePage() {
             {totalItems > 0 && (
               <div className="flex flex-col gap-3 rounded-[16px] border border-[#e6decb]/80 bg-[#fffaf0]/90 p-3 text-xs text-[#0a0a0a] shadow-2xs backdrop-blur-sm sm:flex-row sm:items-center sm:justify-between sm:p-4">
                 <Field orientation="horizontal" className="w-fit">
-                  <FieldLabel htmlFor="select-rows-per-page">Items per page</FieldLabel>
+                  <FieldLabel htmlFor="select-rows-per-page">
+                    Items per page
+                  </FieldLabel>
                   <Select
                     value={String(pageSize)}
                     onValueChange={(val) => {
@@ -800,8 +819,8 @@ export function PeoplePage() {
                     <strong className="text-[#0a0a0a]">
                       {totalItems === 0 ? 0 : startIndex + 1}–{endIndex}
                     </strong>{" "}
-                    of <strong className="text-[#0a0a0a]">{totalItems}</strong> (Page{" "}
-                    {currentPage} of {totalPages})
+                    of <strong className="text-[#0a0a0a]">{totalItems}</strong>{" "}
+                    (Page {currentPage} of {totalPages})
                   </span>
 
                   <Pagination className="mx-0 w-auto">
@@ -821,7 +840,9 @@ export function PeoplePage() {
                           href="#"
                           onClick={(e) => {
                             e.preventDefault()
-                            setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                            setCurrentPage((prev) =>
+                              Math.min(totalPages, prev + 1)
+                            )
                           }}
                           disabled={currentPage >= totalPages}
                         />
@@ -852,7 +873,10 @@ export function PeoplePage() {
               role="alert"
               className="flex items-start gap-2.5 rounded-[12px] border border-[#ef4444]/30 bg-[#ef4444]/5 p-3 text-xs font-semibold text-[#991b1b]"
             >
-              <AlertTriangleIcon className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+              <AlertTriangleIcon
+                className="mt-0.5 size-4 shrink-0"
+                aria-hidden="true"
+              />
               <span>{createError}</span>
             </div>
           )}
@@ -860,7 +884,10 @@ export function PeoplePage() {
           <div className="space-y-3.5">
             {/* Full Name */}
             <div className="space-y-1.5">
-              <label htmlFor="people-create-name" className="text-xs font-bold text-[#0a0a0a]">
+              <label
+                htmlFor="people-create-name"
+                className="text-xs font-bold text-[#0a0a0a]"
+              >
                 Full Name <span className="text-[#ef4444]">*</span>
               </label>
               <input
@@ -868,7 +895,9 @@ export function PeoplePage() {
                 type="text"
                 required
                 value={createForm.name}
-                onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
+                onChange={(e) =>
+                  setCreateForm({ ...createForm, name: e.target.value })
+                }
                 placeholder="e.g. Budi Santoso"
                 className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-sm text-[#0a0a0a] transition-colors outline-none focus:border-[#0a0a0a] focus:ring-2 focus:ring-[#0a0a0a]/15"
               />
@@ -877,14 +906,20 @@ export function PeoplePage() {
             {/* Role & School */}
             <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <label htmlFor="people-create-role" className="text-xs font-bold text-[#0a0a0a]">
+                <label
+                  htmlFor="people-create-role"
+                  className="text-xs font-bold text-[#0a0a0a]"
+                >
                   Initial Role
                 </label>
                 <select
                   id="people-create-role"
                   value={createForm.role || "member"}
                   onChange={(e) =>
-                    setCreateForm({ ...createForm, role: e.target.value as any })
+                    setCreateForm({
+                      ...createForm,
+                      role: e.target.value as any,
+                    })
                   }
                   className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-sm text-[#0a0a0a] transition-colors outline-none focus:border-[#0a0a0a]"
                 >
@@ -894,14 +929,20 @@ export function PeoplePage() {
               </div>
 
               <div className="space-y-1.5">
-                <label htmlFor="people-create-school" className="text-xs font-bold text-[#0a0a0a]">
+                <label
+                  htmlFor="people-create-school"
+                  className="text-xs font-bold text-[#0a0a0a]"
+                >
                   School / Institution
                 </label>
                 <select
                   id="people-create-school"
                   value={createForm.school_id || ""}
                   onChange={(e) =>
-                    setCreateForm({ ...createForm, school_id: e.target.value || null })
+                    setCreateForm({
+                      ...createForm,
+                      school_id: e.target.value || null,
+                    })
                   }
                   className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-sm text-[#0a0a0a] transition-colors outline-none focus:border-[#0a0a0a]"
                 >
@@ -918,21 +959,29 @@ export function PeoplePage() {
             {/* Phone & Date of Birth */}
             <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <label htmlFor="people-create-phone" className="text-xs font-bold text-[#0a0a0a]">
+                <label
+                  htmlFor="people-create-phone"
+                  className="text-xs font-bold text-[#0a0a0a]"
+                >
                   Phone Number / WhatsApp
                 </label>
                 <input
                   id="people-create-phone"
                   type="tel"
                   value={createForm.phone || ""}
-                  onChange={(e) => setCreateForm({ ...createForm, phone: e.target.value })}
+                  onChange={(e) =>
+                    setCreateForm({ ...createForm, phone: e.target.value })
+                  }
                   placeholder="e.g. 08123456789"
                   className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-sm text-[#0a0a0a] transition-colors outline-none focus:border-[#0a0a0a]"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label htmlFor="people-create-dob" className="text-xs font-bold text-[#0a0a0a]">
+                <label
+                  htmlFor="people-create-dob"
+                  className="text-xs font-bold text-[#0a0a0a]"
+                >
                   Date of Birth
                 </label>
                 <input
@@ -940,7 +989,10 @@ export function PeoplePage() {
                   type="date"
                   value={createForm.date_of_birth || ""}
                   onChange={(e) =>
-                    setCreateForm({ ...createForm, date_of_birth: e.target.value })
+                    setCreateForm({
+                      ...createForm,
+                      date_of_birth: e.target.value,
+                    })
                   }
                   className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-sm text-[#0a0a0a] transition-colors outline-none focus:border-[#0a0a0a]"
                 />
@@ -987,7 +1039,8 @@ export function PeoplePage() {
                   Member Pre-Provisioned!
                 </h3>
                 <p className="text-xs text-[#6a6a6a]">
-                  Share these temporary credentials with the member for initial login.
+                  Share these temporary credentials with the member for initial
+                  login.
                 </p>
               </div>
             </div>
@@ -1015,7 +1068,10 @@ export function PeoplePage() {
                     <button
                       type="button"
                       onClick={() =>
-                        handleCopy(createdCredentials.user_number, "Member ID copied!")
+                        handleCopy(
+                          createdCredentials.user_number,
+                          "Member ID copied!"
+                        )
                       }
                       className="cursor-pointer text-[#6a6a6a] hover:text-[#0a0a0a]"
                       title="Copy Member ID"
@@ -1036,7 +1092,10 @@ export function PeoplePage() {
                     <button
                       type="button"
                       onClick={() =>
-                        handleCopy(createdCredentials.username, "Username copied!")
+                        handleCopy(
+                          createdCredentials.username,
+                          "Username copied!"
+                        )
                       }
                       className="cursor-pointer text-[#6a6a6a] hover:text-[#0a0a0a]"
                       title="Copy Username"
@@ -1183,9 +1242,15 @@ export function PeoplePage() {
                   className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-xs font-semibold text-[#0a0a0a] outline-none focus:border-[#0a0a0a] sm:text-sm"
                 >
                   <option value="member">Member (Regular Community)</option>
-                  <option value="activist">Activist (Volunteer & Duties)</option>
-                  <option value="organizer">Organizer (Operations & Events)</option>
-                  {isAdmin && <option value="admin">Admin (System Master)</option>}
+                  <option value="activist">
+                    Activist (Volunteer & Duties)
+                  </option>
+                  <option value="organizer">
+                    Organizer (Operations & Events)
+                  </option>
+                  {isAdmin && (
+                    <option value="admin">Admin (System Master)</option>
+                  )}
                 </select>
               </div>
 
@@ -1222,12 +1287,15 @@ export function PeoplePage() {
                 <h3 className="text-sm font-bold text-[#0a0a0a] sm:text-base">
                   Delete Member?
                 </h3>
-                <p className="text-xs text-[#6a6a6a]">This action cannot be undone</p>
+                <p className="text-xs text-[#6a6a6a]">
+                  This action cannot be undone
+                </p>
               </div>
             </div>
 
             <p className="text-xs leading-relaxed text-[#6a6a6a] sm:text-sm">
-              Are you sure you want to delete <strong>"{deletingMember.name}"</strong> (
+              Are you sure you want to delete{" "}
+              <strong>"{deletingMember.name}"</strong> (
               {deletingMember.user_number || "No ID"})?
             </p>
 

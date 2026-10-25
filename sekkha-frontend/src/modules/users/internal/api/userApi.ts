@@ -60,7 +60,9 @@ export const userApi = {
     return res
   },
 
-  updateProfile: async (payload: UpdateProfilePayload): Promise<UserProfileDto> => {
+  updateProfile: async (
+    payload: UpdateProfilePayload
+  ): Promise<UserProfileDto> => {
     // Try PUT /users/me/profile first, fallback to PATCH /users/me
     try {
       const res = await api.put<any>("/users/me/profile", payload)
@@ -73,7 +75,9 @@ export const userApi = {
     }
   },
 
-  getPointsHistory: async (limit: number = 50): Promise<PointTransactionDto[]> => {
+  getPointsHistory: async (
+    limit: number = 50
+  ): Promise<PointTransactionDto[]> => {
     try {
       const res = await api.get<any>(`/users/me/points-history?limit=${limit}`)
       if (Array.isArray(res)) return res
@@ -82,7 +86,9 @@ export const userApi = {
       return []
     } catch {
       try {
-        const fallback = await api.get<any>(`/users/me/point-transactions?limit=${limit}`)
+        const fallback = await api.get<any>(
+          `/users/me/point-transactions?limit=${limit}`
+        )
         if (Array.isArray(fallback)) return fallback
         if (fallback && Array.isArray(fallback.data)) return fallback.data
         if (fallback && Array.isArray(fallback.items)) return fallback.items
@@ -93,7 +99,9 @@ export const userApi = {
     }
   },
 
-  changePassword: async (payload: ChangePasswordPayload): Promise<{ success: boolean; message?: string }> => {
+  changePassword: async (
+    payload: ChangePasswordPayload
+  ): Promise<{ success: boolean; message?: string }> => {
     const res = await api.post<any>("/users/change-password", {
       current_password: payload.current_password,
       currentPassword: payload.current_password,
@@ -105,7 +113,10 @@ export const userApi = {
 
   requestEmailVerification: async (
     newEmail: string
-  ): Promise<{ expires_in_seconds?: number; resend_after_seconds?: number }> => {
+  ): Promise<{
+    expires_in_seconds?: number
+    resend_after_seconds?: number
+  }> => {
     const res = await api.post<any>("/users/email-verification/request", {
       email: newEmail.trim().toLowerCase(),
       new_email: newEmail.trim().toLowerCase(),

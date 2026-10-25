@@ -103,11 +103,12 @@ Compose akan otomatis:
 Jalankan push schema Prisma dan seeding data awal langsung di dalam container yang berjalan:
 
 ```bash
-# Sync Schema Prisma ke PostgreSQL
-docker exec -it sekkha-api npx prisma db push
+# Sync Schema Prisma ke PostgreSQL (menggunakan Prisma 6 terpasang)
+docker compose exec sekkha-api bun run db:push
+# atau eksplisit versi: docker compose exec sekkha-api bunx prisma@6.9.0 db push
 
 # Run Seed Akun Test & Master Data (Home, Event, Leaderboard)
-docker exec -it sekkha-api npm run db:seed
+docker compose exec -e ALLOW_PROD_SEED=true sekkha-api bun run db:seed
 ```
 
 ---

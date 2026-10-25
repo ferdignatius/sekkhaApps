@@ -8,8 +8,10 @@ dotenv.config()
 const prisma = new PrismaClient()
 
 async function main() {
-  if (process.env.NODE_ENV === "production") {
+  if (process.env.NODE_ENV === "production" && process.env.ALLOW_PROD_SEED !== "true" && process.env.ALLOW_SEED !== "true") {
     console.error("❌ CRITICAL: Seeding database is strictly prohibited in production environment!")
+    console.error("💡 If you are intentionally initializing a fresh production database, pass ALLOW_PROD_SEED=true:")
+    console.error("   ALLOW_PROD_SEED=true bun prisma/seed.ts")
     process.exit(1)
   }
 

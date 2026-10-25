@@ -19,7 +19,7 @@ COPY tsconfig.json ./
 COPY src ./src
 
 # Generate Prisma client and compile TypeScript
-RUN bunx prisma generate
+RUN bun run db:generate
 RUN bun run build
 
 # Strip dev artifacts (TypeScript declarations and source maps) & Prisma temp files
@@ -40,14 +40,17 @@ ENV PORT=4000
 # Copy package manifests directly with bun ownership
 COPY --chown=bun:bun package.json bun.lock* ./
 COPY --chown=bun:bun prisma ./prisma/
+COPY --chown=bun:bun src/lib ./src/lib
 
 # Install only production dependencies
 RUN --mount=type=cache,id=bun,target=/root/.bun/install/cache \
     bun install --production --frozen-lockfile || bun install --production
 
-# Copy generated Prisma client from builder directly with bun ownership
+# Copy generated Prisma client and CLI from builder directly with bun ownership
 COPY --chown=bun:bun --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --chown=bun:bun --from=builder /app/node_modules/@prisma/client ./node_modules/@prisma/client
+COPY --chown=bun:bun --from=builder /app/node_modules/prisma ./node_modules/prisma
+COPY --chown=bun:bun --from=builder /app/node_modules/.bin ./node_modules/.bin
 
 # Copy compiled JavaScript code directly with bun ownership
 COPY --chown=bun:bun --from=builder /app/dist ./dist

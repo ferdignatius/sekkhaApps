@@ -232,7 +232,8 @@ export async function syncMasterCategories(): Promise<EventCategoryItem[]> {
           autofillTitle: t.label,
           autofillLocation: "Vihara Sekkha",
           autofillDesc:
-            t.description || `${t.label} session with Sekkha community members.`,
+            t.description ||
+            `${t.label} session with Sekkha community members.`,
           target_roles: ["admin", "organizer", "activist", "member"],
         }
       })

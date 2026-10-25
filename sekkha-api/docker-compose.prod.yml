@@ -15,7 +15,7 @@ services:
       - data-tier
 
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider https://sekkha.ferdignatius.my.id/health || exit 1"]
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:$${PORT:-4000}/health || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -24,10 +24,10 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.50"
-          memory: 512M
+          cpus: "1.00"
+          memory: 2048M
         reservations:
-          memory: 128M
+          memory: 256M
 
     logging:
       driver: "json-file"

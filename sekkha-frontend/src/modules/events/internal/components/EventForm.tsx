@@ -93,7 +93,9 @@ export function EventForm({
     let cancelled = false
     async function loadDynamicCategories() {
       try {
-        const types = await api.get<any[]>("/configure/event-types?is_active=true")
+        const types = await api.get<any[]>(
+          "/configure/event-types?is_active=true"
+        )
         if (cancelled) return
         if (Array.isArray(types) && types.length > 0) {
           const mapped: CategoryOption[] = types.map((t) => {
@@ -108,7 +110,8 @@ export function EventForm({
                 title: t.label,
                 location: "Vihara Sekkha",
                 description:
-                  t.description || `${t.label} session with Sekkha community members.`,
+                  t.description ||
+                  `${t.label} session with Sekkha community members.`,
               },
             }
           })
@@ -124,12 +127,14 @@ export function EventForm({
     }
   }, [])
 
-  const [selectedTypeId, setSelectedTypeId] = useState<string | undefined>(() => {
-    if (initial?.event_type && typeof initial.event_type === "object") {
-      return initial.event_type.id
+  const [selectedTypeId, setSelectedTypeId] = useState<string | undefined>(
+    () => {
+      if (initial?.event_type && typeof initial.event_type === "object") {
+        return initial.event_type.id
+      }
+      return undefined
     }
-    return undefined
-  })
+  )
 
   // Pre-select category if editing an existing event
   useEffect(() => {
@@ -175,10 +180,7 @@ export function EventForm({
       return
     }
     setSelectedTypeId(cat.id)
-    if (
-      !title.trim() ||
-      categories.some((c) => c.autofill.title === title)
-    ) {
+    if (!title.trim() || categories.some((c) => c.autofill.title === title)) {
       setTitle(cat.autofill.title)
     }
     if (

@@ -3,11 +3,22 @@ import { z } from "zod"
 import { userServices } from "./services"
 
 export const UpdateProfileSchema = z.object({
+  username: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .min(3, "Username must be at least 3 characters")
+    .max(30, "Username maximum 30 characters")
+    .regex(/^[a-zA-Z0-9_.]+$/, "Username may only contain letters, numbers, dots, or underscores")
+    .optional(),
   name: z.string().trim().min(1, "Name must be at least 1 character").max(100).optional(),
   school: z.string().trim().max(100).optional().nullable(),
   school_id: z.string().optional().nullable(),
   phone: z.string().trim().max(20).optional().nullable(),
   date_of_birth: z.string().optional().nullable(),
+  birth_date: z.string().optional().nullable(),
+  class_grade: z.string().trim().max(50).optional().nullable(),
+  gender: z.string().trim().max(20).optional().nullable(),
 })
 
 export const RequestEmailVerificationSchema = z
@@ -101,7 +112,7 @@ export const userControllers = {
     try {
       const rawBody = req.body || {}
       // AC-USR-05: Forbidden fields check
-      const forbiddenKeys = ["email", "user_number", "userNumber", "username", "role", "points"]
+      const forbiddenKeys = ["email", "user_number", "userNumber", "role", "points"]
       const matchedForbidden = forbiddenKeys.filter((k) => k in rawBody)
       if (matchedForbidden.length > 0) {
         res.status(400).json({

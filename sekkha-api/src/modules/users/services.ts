@@ -1,4 +1,5 @@
 import { userModels } from "./models"
+import type { Prisma } from "@prisma/client"
 import { cached, invalidate, invalidatePattern, CacheKeys } from "../../lib/cache"
 import { encrypt, decrypt, generateBlindIndex } from "../../lib/crypto"
 import { hashPassword, verifyPassword, DEFAULT_BCRYPT_COST } from "../../lib/password"
@@ -12,11 +13,15 @@ import { sendEmailVerificationOtpEmail } from "../auth/internal/email"
 import crypto from "crypto"
 
 export interface UpdateProfileInput {
+  username?: string
   name?: string
   school?: string | null
   school_id?: string | null
   phone?: string | null
   date_of_birth?: string | null
+  birth_date?: string | null
+  class_grade?: string | null
+  gender?: string | null
 }
 
 export const userServices = {
@@ -44,6 +49,8 @@ export const userServices = {
     const decryptedPhone = decrypt(user.profile?.phone) || null
     const rawBirthDate = decrypt(user.profile?.birthDate) || null
     const decryptedBirthDate = rawBirthDate ? new Date(rawBirthDate).toISOString().split("T")[0] : null
+    const decryptedClassGrade = decrypt(user.profile?.classGrade) || null
+    const decryptedGender = decrypt(user.profile?.gender) || null
     return {
       id: user.id,
       user_number: Number(uNum),
@@ -56,8 +63,11 @@ export const userServices = {
       onboarding_completed: user.onboardingCompleted,
       school_id: user.profile?.schoolId || null,
       school: user.profile?.school?.name || null,
+      class_grade: decryptedClassGrade,
       phone: decryptedPhone,
       date_of_birth: decryptedBirthDate,
+      birth_date: decryptedBirthDate,
+      gender: decryptedGender,
       stats: {
         total_points: user.stats?.points ?? 0,
         current_streak: user.stats?.currentStreak ?? 0,
@@ -100,12 +110,36 @@ export const userServices = {
       resolvedSchoolId = null
     }
 
-    const birthDateVal = body.date_of_birth
+    const userData: Prisma.UserUpdateInput = {}
+
+    if (body.username !== undefined) {
+      const cleanUsername = body.username.trim().toLowerCase()
+      if (cleanUsername !== existing.username) {
+        const taken = await userModels.findUserByUsername(cleanUsername)
+        if (taken && taken.id !== userId) {
+          const err = new Error("Username sudah digunakan") as any
+          err.statusCode = 409
+          err.status = 409
+          throw err
+        }
+        userData.username = cleanUsername
+      }
+    }
+
+    const birthDateVal = body.birth_date !== undefined ? body.birth_date : body.date_of_birth
+    const classGradeVal = body.class_grade
+    const genderVal = body.gender
 
     const profileUpdateData = {
       ...(body.name && { name: body.name.trim() }),
       ...(resolvedSchoolId !== undefined && { schoolId: resolvedSchoolId }),
       ...(body.phone !== undefined && { phone: body.phone ? encrypt(body.phone.trim()) : null }),
+      ...(classGradeVal !== undefined && {
+        classGrade: classGradeVal ? encrypt(classGradeVal.trim()) : null,
+      }),
+      ...(genderVal !== undefined && {
+        gender: genderVal ? encrypt(genderVal.trim()) : null,
+      }),
       ...(birthDateVal !== undefined && {
         birthDate: birthDateVal ? encrypt(new Date(birthDateVal).toISOString()) : null,
       }),
@@ -113,16 +147,17 @@ export const userServices = {
 
     const profileCreateData = {
       userId,
-      name: body.name ? body.name.trim() : existing.username || "Member",
+      name: body.name ? body.name.trim() : (userData.username as string) || existing.username || "Member",
       schoolId: resolvedSchoolId || null,
-      classGrade: null,
+      classGrade: classGradeVal ? encrypt(classGradeVal.trim()) : null,
+      gender: genderVal ? encrypt(genderVal.trim()) : null,
       phone: body.phone ? encrypt(body.phone.trim()) : null,
       birthDate: birthDateVal ? encrypt(new Date(birthDateVal).toISOString()) : null,
     }
 
     const { user, profile } = await userModels.updateUserAndProfile(
       userId,
-      {},
+      userData,
       profileUpdateData,
       profileCreateData
     )

@@ -106,21 +106,67 @@ export const modules: AppModule[] = [
   homeModule,
 ]
 
+export function isOriginAllowed(origin: string, rawOrigins: string[] = []): boolean {
+  const normalizedOrigin = origin.trim().replace(/\/$/, "")
+
+  if (
+    process.env.NODE_ENV !== "production" &&
+    (/^https?:\/\/localhost(:\d+)?$/.test(normalizedOrigin) || /^https?:\/\/127\.0\.0\.1(:\d+)?$/.test(normalizedOrigin))
+  ) {
+    return true
+  }
+
+  return rawOrigins.some((allowed) => {
+    if (allowed === "*" || allowed === normalizedOrigin) {
+      return true
+    }
+    // Wildcard support: e.g. "https://*.vercel.app" or "*.vercel.app"
+    if (allowed.includes("*")) {
+      const regexPattern = "^" + allowed.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*") + "$"
+      return new RegExp(regexPattern).test(normalizedOrigin)
+    }
+    return false
+  })
+}
+
 export function createApp(): Application {
   const app = express()
 
   // Trust reverse proxy (Docker, Nginx, Caddy, Cloudflare) for accurate client IP rate limiting
   app.set("trust proxy", process.env.TRUST_PROXY || 1)
 
+  // ─── Security & Core Middleware ──────────────────────────────────────────────
+
+  // 1. CORS Configuration (Must run BEFORE rate limiters & route handlers so OPTIONS preflight is never blocked)
+  const rawOrigins = process.env.CORS_ORIGIN
+    ? process.env.CORS_ORIGIN.split(",").map((origin) => origin.trim().replace(/\/$/, ""))
+    : ["http://localhost:3000", "http://localhost:5173", "http://localhost:4173"]
+
+  const corsOptions: cors.CorsOptions = {
+    origin: (origin, callback) => {
+      if (!origin || isOriginAllowed(origin, rawOrigins)) {
+        return callback(null, true)
+      }
+      return callback(null, false)
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept", "Origin", "Cookie"],
+    exposedHeaders: ["Set-Cookie"],
+    optionsSuccessStatus: 204,
+    maxAge: 86400,
+  }
+
+  app.use(cors(corsOptions))
+  app.options(/(.*)/, cors(corsOptions))
+
   // ─── Request Logger (Live Real-Time Activity Feed) ───────────────────────────
   app.use(requestLogger)
 
-  // ─── Security & Core Middleware ──────────────────────────────────────────────
-
-  // 1. High-Performance Gzip/Brotli Payload Compression (60-80% payload size reduction)
+  // 2. High-Performance Gzip/Brotli Payload Compression (60-80% payload size reduction)
   app.use(compression())
 
-  // 2. Security Headers (Helmet)
+  // 3. Security Headers (Helmet)
   app.use(
     helmet({
       crossOriginResourcePolicy: { policy: "cross-origin" },
@@ -128,7 +174,9 @@ export function createApp(): Application {
     })
   )
 
-  // 3. Global Rate Limiter (300 requests per minute per IP)
+  const skipPreflight = (req: express.Request) => req.method === "OPTIONS"
+
+  // 4. Global Rate Limiter (300 requests per minute per IP)
   const globalLimiter = rateLimit({
     windowMs: 60 * 1000,
     max: 300,
@@ -136,11 +184,12 @@ export function createApp(): Application {
     legacyHeaders: false,
     store: createRateLimitStore("global"),
     passOnStoreError: true,
+    skip: skipPreflight,
     message: { error: "Too many requests from this IP. Please try again later." },
   })
   app.use(globalLimiter)
 
-  // 3a. Sensitive Auth Rate Limiter (30 requests per 15 minutes per IP for login/register/reset)
+  // 4a. Sensitive Auth Rate Limiter (30 requests per 15 minutes per IP for login/register/reset)
   const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 30,
@@ -148,6 +197,7 @@ export function createApp(): Application {
     legacyHeaders: false,
     store: createRateLimitStore("auth"),
     passOnStoreError: true,
+    skip: skipPreflight,
     message: { error: "Terlalu banyak percobaan autentikasi. Silakan tunggu 15 menit." },
   })
   app.use("/api/auth/login", authLimiter)
@@ -155,7 +205,7 @@ export function createApp(): Application {
   app.use("/api/auth/refresh", authLimiter)
   app.use("/api/users/change-password", authLimiter)
 
-  // 3b. Dedicated OTP Rate Limiter (5 requests per 15 minutes per IP to prevent brute-force attacks)
+  // 4b. Dedicated OTP Rate Limiter (5 requests per 15 minutes per IP to prevent brute-force attacks)
   const otpLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 5,
@@ -163,6 +213,7 @@ export function createApp(): Application {
     legacyHeaders: false,
     store: createRateLimitStore("otp"),
     passOnStoreError: true,
+    skip: skipPreflight,
     message: { error: "Terlalu banyak permintaan OTP dari IP ini. Silakan tunggu 15 menit." },
   })
   app.use("/api/auth/register-request", otpLimiter)
@@ -173,7 +224,7 @@ export function createApp(): Application {
   app.use("/api/auth/forgot-password/reset", otpLimiter)
   app.use("/api/users/email-verification", otpLimiter)
 
-  // 3c. Dedicated Account Linking Rate Limiter (F-04/F-09: 5 attempts per 15 minutes per IP)
+  // 4c. Dedicated Account Linking Rate Limiter (F-04/F-09: 5 attempts per 15 minutes per IP)
   const linkingLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 5,
@@ -181,11 +232,12 @@ export function createApp(): Application {
     legacyHeaders: false,
     store: createRateLimitStore("linking"),
     passOnStoreError: true,
+    skip: skipPreflight,
     message: { error: "Terlalu banyak percobaan penautan akun dari IP ini. Silakan tunggu 15 menit." },
   })
   app.use("/api/people/link-legacy-account", linkingLimiter)
 
-  // 3d. Schools Stats Rate Limiter (F-12: prevent cheap decryption DoS)
+  // 4d. Schools Stats Rate Limiter (F-12: prevent cheap decryption DoS)
   const schoolStatsLimiter = rateLimit({
     windowMs: 60 * 1000,
     max: 30,
@@ -193,41 +245,10 @@ export function createApp(): Application {
     legacyHeaders: false,
     store: createRateLimitStore("schools"),
     passOnStoreError: true,
+    skip: skipPreflight,
     message: { error: "Terlalu banyak permintaan statistik sekolah. Silakan tunggu sebentar." },
   })
   app.use("/api/schools/stats", schoolStatsLimiter)
-
-  // 4. CORS Configuration
-  const rawOrigins = process.env.CORS_ORIGIN
-    ? process.env.CORS_ORIGIN.split(",").map((origin) => origin.trim().replace(/\/$/, ""))
-    : ["http://localhost:3000", "http://localhost:5173", "http://localhost:4173"]
-
-  const isOriginAllowed = (origin: string): boolean => {
-    if (
-      process.env.NODE_ENV !== "production" &&
-      (/^https?:\/\/localhost(:\d+)?$/.test(origin) || /^https?:\/\/127\.0\.0\.1(:\d+)?$/.test(origin))
-    ) {
-      return true
-    }
-    return rawOrigins.includes(origin)
-  }
-
-  const corsOptions: cors.CorsOptions = {
-    origin: (origin, callback) => {
-      if (!origin || isOriginAllowed(origin)) {
-        return callback(null, true)
-      }
-      return callback(null, false)
-    },
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
-    optionsSuccessStatus: 204,
-    maxAge: 86400,
-  }
-
-  app.use(cors(corsOptions))
-  app.options("*", cors(corsOptions))
 
   // 5. Body parser with strict payload size limit
   app.use(express.json({ limit: "1mb" }))

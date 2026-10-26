@@ -15,8 +15,8 @@ export function canViewEvent(
   visibility: EventVisibility
 ): boolean {
   if (canManageEvent(role)) return true
-  // Cancelled or draft events are invisible to regular members and activists
-  if (status === "draft" || status === "cancelled" || (status as string) === "cancel") return false
+  // Cancelled events are invisible to regular members and activists
+  if (status === "cancel") return false
   // Organizer visibility is hidden from non-managers
   if (visibility === "organizer") return false
   // Activist visibility is hidden from regular members

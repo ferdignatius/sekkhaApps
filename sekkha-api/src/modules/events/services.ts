@@ -60,15 +60,9 @@ export const eventServices = {
 
     // 2. Query Filters
     if (filters?.status) {
-      if (filters.status === "cancel" || filters.status === "cancelled") {
-        andConditions.push({
-          status: { in: ["cancel" as any, "cancelled" as any] },
-        })
-      } else {
-        andConditions.push({
-          status: filters.status as any,
-        })
-      }
+      andConditions.push({
+        status: filters.status as any,
+      })
     }
 
     if (filters?.event_type_id) {
@@ -111,10 +105,7 @@ export const eventServices = {
         typeof e.eventDate === "string"
           ? e.eventDate
           : new Date(e.eventDate).toISOString(),
-      status:
-        e.status === ("cancelled" as any) || e.status === ("cancel" as any)
-          ? "cancel"
-          : e.status,
+      status: e.status,
       visibility: e.visibility,
       point_reward: e.pointReward,
       max_late_minutes: e.maxLateMinutes ?? 30,
@@ -153,10 +144,7 @@ export const eventServices = {
         typeof event.eventDate === "string"
           ? event.eventDate
           : new Date(event.eventDate).toISOString(),
-      status:
-        event.status === ("cancelled" as any) || event.status === ("cancel" as any)
-          ? "cancel"
-          : event.status,
+      status: event.status,
       visibility: event.visibility,
       point_reward: event.pointReward,
       max_late_minutes: event.maxLateMinutes ?? 30,
@@ -345,7 +333,7 @@ export const eventServices = {
     return {
       id: event.id,
       title: event.title,
-      status: event.status === ("cancelled" as any) || event.status === ("cancel" as any) ? "cancel" : event.status,
+      status: event.status,
       visibility: event.visibility,
     }
   },
@@ -357,8 +345,7 @@ export const eventServices = {
     targetStatus: string,
     rescheduleDate?: string
   ) {
-    const normalizedTarget =
-      targetStatus === "cancelled" || targetStatus === "cancel" ? "cancel" : targetStatus
+    const normalizedTarget = targetStatus
 
     const result = await prisma.$transaction(async (tx) => {
       const currentEvent = await tx.event.findUnique({
@@ -370,10 +357,7 @@ export const eventServices = {
         throw new AppError("Event tidak ditemukan", 404, "EVENT_NOT_FOUND")
       }
 
-      const currentStatus =
-        currentEvent.status === ("cancelled" as any) || currentEvent.status === ("cancel" as any)
-          ? "cancel"
-          : currentEvent.status
+      const currentStatus = currentEvent.status
 
       if (currentStatus === normalizedTarget) {
         return { event: currentEvent, totalAttendees: 0, pointsDistributed: false }
@@ -427,13 +411,10 @@ export const eventServices = {
         }
       }
 
-      const dbTargetStatus =
-        normalizedTarget === "cancel" ? ("cancel" as any) : normalizedTarget
-
       const updated = await tx.event.update({
         where: { id },
         data: {
-          status: dbTargetStatus,
+          status: normalizedTarget as any,
           ...(updatedEventDate && { eventDate: updatedEventDate }),
         },
         include: { type: true },

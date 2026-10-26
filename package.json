@@ -14,6 +14,11 @@
     "build:api": "bun --filter sekkha-api build",
     "build:web": "bun --filter sekkha-frontend build",
     "build": "bun --filter \"*\" build",
+    "db:migrate": "bun --filter sekkha-api db:migrate",
+    "db:migrate:deploy": "bun --filter sekkha-api db:migrate:deploy",
+    "db:migrate:status": "bun --filter sekkha-api db:migrate:status",
+    "db:generate": "bun --filter sekkha-api db:generate",
+    "db:seed": "bun --filter sekkha-api db:seed",
     "release": "bun scripts/release.mjs"
   },
   "overrides": {

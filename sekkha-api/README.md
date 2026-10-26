@@ -29,8 +29,11 @@ Ini akan menyalakan secara otomatis:
 
 ### 2. Inisialisasi Database & Seeding di Server Baru
 ```bash
-docker exec -it sekkha-api npx prisma db push
-docker exec -it sekkha-api npm run db:seed
+# Eksekusi migrasi production (aman, menggunakan prisma migrate deploy)
+docker compose exec sekkha-api bun run db:migrate:deploy
+
+# Jalankan Seeding Akun & Master Data (khusus fresh setup pertama kali)
+docker compose exec -e ALLOW_PROD_SEED=true sekkha-api bun run db:seed
 ```
 
 ---
@@ -80,7 +83,7 @@ Compose akan otomatis:
 
 ---
 
-### 5. Konfigurasi di Nginx Proxy Manager (NPM)
+### 4. Konfigurasi di Nginx Proxy Manager (NPM)
 1. Buka dasbor NPM di browser.
 2. Masuk ke **Hosts** ➔ **Proxy Hosts** ➔ Klik **Add Proxy Host**.
 3. Di tab **Details**:
@@ -99,17 +102,72 @@ Compose akan otomatis:
 
 ---
 
-### 6. Inisialisasi Database & Seed Data di Container
-Jalankan push schema Prisma dan seeding data awal langsung di dalam container yang berjalan:
+### 5. Inisialisasi Database & Seed Data di Container
+Jalankan migrasi database resmi dan seeding data awal di container:
 
 ```bash
-# Sync Schema Prisma ke PostgreSQL (menggunakan Prisma 6 terpasang)
-docker compose exec sekkha-api bun run db:push
-# atau eksplisit versi: docker compose exec sekkha-api bunx prisma@6.9.0 db push
+# Terapkan migrasi skema ke PostgreSQL production
+docker compose exec sekkha-api bun run db:migrate:deploy
 
-# Run Seed Akun Test & Master Data (Home, Event, Leaderboard)
+# Cek status migrasi yang telah diterapkan
+docker compose exec sekkha-api bun run db:migrate:status
+
+# Run Seed Akun Master & Initial Data (hanya jika database masih kosong)
 docker compose exec -e ALLOW_PROD_SEED=true sekkha-api bun run db:seed
 ```
+
+---
+
+## Manajemen Migrasi Database (Prisma Migration Workflow)
+
+Sekkha API menggunakan alur **Prisma Migrate** resmi untuk menjamin integritas data dan zero downtime di lingkungan production.
+
+### Perintah Script Database
+
+| Script | Command | Kapan Digunakan |
+| :--- | :--- | :--- |
+| `bun run db:generate` | `prisma generate` | Menghasilkan TypeScript client setelah schema diubah. |
+| `bun run db:migrate` | `prisma migrate dev` | **Hanya di Local/Dev**: membuat file migrasi SQL baru dan menerapkan ke DB lokal. |
+| `bun run db:migrate:deploy` | `prisma migrate deploy` | **Production Only**: mengeksekusi migrasi yang belum terpasang secara non-interaktif. |
+| `bun run db:migrate:status` | `prisma migrate status` | Memeriksa apakah ada migrasi yang belum dieksekusi di database target. |
+| `bun run db:seed` | `bun prisma/seed.ts` | Mengisi data master dan akun default ke database. |
+| `bun run db:studio` | `prisma studio` | Membuka GUI Prisma Studio di browser untuk inspeksi data. |
+
+### Alur Migrasi Jika Ada Perubahan Schema Pasca-Production
+
+Jika di masa mendatang ada perubahan struktur tabel atau kolom setelah sistem live di production:
+
+1. **Di Komputer Development (Lokal):**
+   * Modifikasi file `prisma/schema.prisma` sesuai kebutuhan baru.
+   * Buat file migrasi SQL terkomit:
+     ```bash
+     bunx prisma migrate dev --name <deskripsi_singkat>
+     # Contoh: bunx prisma migrate dev --name add_bio_to_user_profile
+     ```
+   * Periksa isi file SQL yang dihasilkan di folder `prisma/migrations/<timestamp>_<nama>/migration.sql`.
+   * Jalankan pengujian di lokal (`bun run build` dan test).
+   * Commit file `schema.prisma` dan folder `prisma/migrations/` ke branch Git (`main` / `production`).
+
+2. **Di Server Production:**
+   * Pull perubahan kode terbaru:
+     ```bash
+     git pull origin production
+     ```
+   * Eksekusi migrasi ke PostgreSQL production:
+     ```bash
+     bun run db:migrate:deploy
+     # Jika menggunakan Docker:
+     docker compose exec sekkha-api bun run db:migrate:deploy
+     ```
+   * *`prisma migrate deploy` membaca tabel internal `_prisma_migrations`, mendeteksi file SQL baru, dan menjalankannya secara atomik (transaksional) tanpa mereset data.*
+
+### Aturan Keamanan Database Production:
+* ⚠️ **JANGAN PERNAH** menjalankan `prisma db push` atau `prisma migrate dev` di server production.
+* Menambah kolom baru yang bersifat `NOT NULL` wajib menyertakan nilai `@default(...)` agar tidak ditolak oleh baris data yang sudah ada.
+* Sebelum migrasi skala besar (misal me-rename tabel/kolom), lakukan backup database terlebih dahulu:
+  ```bash
+  docker compose exec postgres pg_dump -U sekkha sekkha_db > backup_$(date +%Y%m%d).sql
+  ```
 
 ---
 
@@ -129,18 +187,19 @@ docker compose exec -e ALLOW_PROD_SEED=true sekkha-api bun run db:seed
 Jika ingin menjalankan backend secara lokal tanpa VPS:
 
 ```bash
-# 1. Jalankan PostgreSQL & Redis Lokal (opsional)
-docker compose up -d
+# 1. Jalankan PostgreSQL & Redis Lokal
+docker compose up -d postgres redis
 
 # 2. Install Dependencies
-npm install
+bun install
 
-# 3. Setup Database & Seed
-npm run db:push
-npm run db:seed
+# 3. Setup Database (Generate Client + Migrate Dev + Seed)
+bun run db:generate
+bun run db:migrate
+bun run db:seed
 
-# 4. Run Dev Server
-npm run dev
+# 4. Jalankan Dev Server
+bun run dev
 ```
 
 Server lokal berjalan di `http://localhost:4000/api`.

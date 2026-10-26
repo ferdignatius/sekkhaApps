@@ -151,7 +151,7 @@ export function EventDetailSheet({
   const currentStatus: EventStatus = event.status ?? "scheduled"
   const isActive = currentStatus === "active"
   const isClosed = currentStatus === "closed"
-  const isCancelled = currentStatus === "cancelled"
+  const isCancelled = currentStatus === "cancel"
   const canEdit = isPengurus && !isActive && !isClosed && !isCancelled
 
   const { dayName, monthShort, dayNumber, dateStr, timeStr } =
@@ -908,7 +908,7 @@ export function EventDetailSheet({
         }
         confirmLabel="Yes, Cancel Event"
         cancelLabel="Keep Event"
-        onConfirm={() => executeStatusChange("cancelled")}
+        onConfirm={() => executeStatusChange("cancel")}
       />
 
       {/* Complete & close — finalize points */}

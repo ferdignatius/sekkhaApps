@@ -53,52 +53,70 @@ Komunikasi antar-modul di backend dilakukan lewat **EventBus** (in-memory) — p
 ## Quick Start
 
 ### Prerequisites
-- Node.js >= 18
+- [Bun](https://bun.sh/) >= 1.2
 - Docker & Docker Compose
-- npm
+- PostgreSQL 16 & Redis
 
-### 1. Clone & Setup
+### 1. Setup Monorepo
 
 ```bash
-cd sekkhaApps
+# Install seluruh dependency monorepo (root lockfile: bun.lock)
+bun install
 ```
 
-### 2. Jalankan Backend
+### 2. Jalankan Database Lokal (Docker)
 
 ```bash
 cd sekkha-api
-
-# Start PostgreSQL + pgAdmin
-docker-compose up -d
-
-# Install dependencies
-npm install
-
-# Generate Prisma client + migrate + seed
-npm run db:generate
-npm run db:migrate
-npm run db:seed
-
-# Start dev server
-npm run dev
+docker compose up -d postgres redis
+cd ..
 ```
 
-API jalan di `http://localhost:4000`
-pgAdmin di `http://localhost:5050` (admin@sekkha.local / admin123)
-
-### 3. Jalankan Frontend
+### 3. Setup Database (Generate Client + Migration + Seed)
 
 ```bash
-cd sekkha-main-app
-
-# Install dependencies
-npm install
-
-# Start dev server
-npm run dev
+# Generate Prisma Client & Migrate
+bun run db:generate
+bun run db:migrate
+bun run db:seed
 ```
 
-Frontend jalan di `http://localhost:3000`
+### 4. Menjalankan Aplikasi (Development)
+
+```bash
+# Menjalankan Backend (:4000) dan Frontend (:3000) sekaligus:
+bun dev
+
+# Atau jalankan secara terpisah per workspace:
+bun run dev:api    # Sekkha API on http://localhost:4000
+bun run dev:web    # Sekkha Frontend on http://localhost:3000
+```
+
+---
+
+## Panduan Migrasi Database Production
+
+| Perintah | Deskripsi | Lingkungan |
+| :--- | :--- | :--- |
+| `bun run db:migrate` | Membuat migrasi baru dan update DB lokal (`prisma migrate dev`) | **Development Only** |
+| `bun run db:migrate:deploy` | Menjalankan migrasi pending secara transaksional (`prisma migrate deploy`) | **Production Only** |
+| `bun run db:migrate:status` | Memeriksa status file migrasi yang terpasang di database | Development & Production |
+| `bun run db:generate` | Menghasilkan `@prisma/client` TypeScript types | Development & Build |
+
+### Alur Perubahan Database Pasca-Production:
+1. **Di Lokal**: Ubah `sekkha-api/prisma/schema.prisma` lalu buat migrasi baru:
+   ```bash
+   bunx --cwd sekkha-api prisma migrate dev --name <nama_perubahan>
+   ```
+2. **Review & Test**: Cek file `.sql` yang dihasilkan di `sekkha-api/prisma/migrations/`, lalu jalankan tes (`bun --filter sekkha-frontend test` dan `bun run build`).
+3. **Commit & Push**: Commit file schema dan folder migrations ke git (`production`).
+4. **Deploy ke Production Server**:
+   ```bash
+   # Di server production / CI-CD:
+   bun run db:migrate:deploy
+   # Atau jika di dalam container Docker:
+   docker compose exec sekkha-api bun run db:migrate:deploy
+   ```
 
 ## Credentials (Development)
 

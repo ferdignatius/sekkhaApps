@@ -33,26 +33,12 @@ async function main() {
   // ── 1. Master Data: Schools ─────────────────────────────────────────────────
   console.log("🏫 Seeding Master Schools...")
   const initialSchools = [
-    { name: "SMA/SMK Tri Maha Dharma", type: "SMA/SMK" },
-    { name: "SMA/SMK Negeri 1 Jakarta", type: "SMA/SMK" },
-    { name: "Universitas Indonesia", type: "Universitas" },
-    { name: "Sekkha Headquarter", type: "Umum" },
-    { name: "SMA/SMK Dharma Widya", type: "SMA/SMK" },
-    { name: "SMA/SMK Cinta Kasih Tzu Chi", type: "SMA/SMK" },
-    { name: "SMA/SMK Tri Ratna", type: "SMA/SMK" },
-    { name: "SMP Tri Maha Dharma", type: "SMP" },
-    { name: "SMP Dharma Widya", type: "SMP" },
-    { name: "SMP Cinta Kasih Tzu Chi", type: "SMP" },
     { name: "SMP Strada Bakti Mulia", type: "SMP" },
+    { name: "Universitas Bina Nusantara (BINUS)", type: "Universitas" },
     { name: "SMP Negeri 1", type: "SMP" },
     { name: "SMK Bina Mandiri", type: "SMA/SMK" },
-    { name: "Universitas Bina Nusantara (BINUS)", type: "Universitas" },
-    { name: "Universitas Tarumanagara (UNTAR)", type: "Universitas" },
-    { name: "Universitas Multimedia Nusantara (UMN)", type: "Universitas" },
-    { name: "Universitas Bunda Mulia", type: "Universitas" },
     { name: "Universitas Buddhi Dharma", type: "Universitas" },
-    { name: "STAB Kertarajasa", type: "Universitas" },
-    { name: "Umum", type: "Umum" },
+    { name: "Universitas Multimedia Nusantara (UMN)", type: "Universitas" },
   ]
 
   const seededSchools: Record<string, any> = {}
@@ -65,10 +51,12 @@ async function main() {
     seededSchools[s.name] = record
   }
 
-  const schoolTMD = seededSchools["SMA/SMK Tri Maha Dharma"]
-  const schoolSMAN1 = seededSchools["SMA/SMK Negeri 1 Jakarta"]
-  const schoolUI = seededSchools["Universitas Indonesia"]
-  const schoolHQ = seededSchools["Sekkha Headquarter"]
+  const schoolBaktiMulia = seededSchools["SMP Strada Bakti Mulia"]
+  const schoolBINUS = seededSchools["Universitas Bina Nusantara (BINUS)"]
+  const schoolSMPN1 = seededSchools["SMP Negeri 1"]
+  const schoolBinaMandiri = seededSchools["SMK Bina Mandiri"]
+  const schoolBuddhi = seededSchools["Universitas Buddhi Dharma"]
+  const schoolUMN = seededSchools["Universitas Multimedia Nusantara (UMN)"]
 
   // ── 2. Master Data: Event Types ──────────────────────────────────────────────
   console.log("🎯 Seeding Master Event Types...")
@@ -99,9 +87,8 @@ async function main() {
     },
   ]
 
-  const seededEventTypes: Record<string, any> = {}
   for (const et of eventTypesData) {
-    const record = await prisma.eventType.upsert({
+    await prisma.eventType.upsert({
       where: { code: et.code },
       update: {
         label: et.label,
@@ -112,7 +99,6 @@ async function main() {
       },
       create: et,
     })
-    seededEventTypes[et.code] = record
   }
 
   // ── 3. Master Data: Seasons ──────────────────────────────────────────────────
@@ -150,7 +136,7 @@ async function main() {
   })
 
   // Active Custom Season: e.g. Vassa
-  const activeSeason = await prisma.season.upsert({
+  await prisma.season.upsert({
     where: { code: `VASSA-${year}` },
     update: { isActive: true },
     create: {
@@ -164,8 +150,7 @@ async function main() {
     },
   })
 
-
-  // ── 5. Master Data: Point Rules ─────────────────────────────────────────────
+  // ── 4. Master Data: Point Rules ─────────────────────────────────────────────
   console.log("📜 Seeding Master Point Rules...")
   const pointRulesData = [
     {
@@ -191,9 +176,8 @@ async function main() {
     },
   ]
 
-  const seededPointRules: Record<string, any> = {}
   for (const pr of pointRulesData) {
-    const record = await prisma.pointRule.upsert({
+    await prisma.pointRule.upsert({
       where: { code: pr.code },
       update: {
         label: pr.label,
@@ -203,10 +187,9 @@ async function main() {
       },
       create: pr,
     })
-    seededPointRules[pr.code] = record
   }
 
-  // ── 6b. Master Data: Badge Activities (Service Duties) ─────────────────────
+  // ── 5. Master Data: Badge Activities (Service Duties) ─────────────────────
   console.log("🎖️ Seeding Master Badge Activities...")
   const initialBadgeActivities = [
     {
@@ -236,7 +219,7 @@ async function main() {
     })
   }
 
-  // ── 7. Seed Accounts (3NF: User + UserProfile + UserStats) ──────────────────
+  // ── 6. Seed Accounts (3NF: User + UserProfile + UserStats) ──────────────────
   console.log("👤 Seeding Normalized Users...")
   const umatEmail = process.env.DUMMY_UMAT_EMAIL || "umat@sekkha.com"
   const umatPasswordRaw = process.env.DUMMY_UMAT_PASSWORD || "password123"
@@ -250,7 +233,7 @@ async function main() {
   const hash = async (pwd: string) => hashPassword(pwd, DEFAULT_BCRYPT_COST)
 
   // UMAT
-  const umatUser = await prisma.user.create({
+  await prisma.user.create({
     data: {
       email: encrypt(umatEmail),
       emailBindex: generateBlindIndex(umatEmail),
@@ -264,25 +247,24 @@ async function main() {
         create: {
           name: "Sari Dewi (Umat)",
           phone: encrypt("081234567890"),
-          schoolId: schoolTMD.id,
-          gender: encrypt("wanita"),
+          schoolId: schoolBaktiMulia?.id,
           birthDate: encrypt(new Date("2008-05-15").toISOString()),
           classGrade: encrypt("11"),
         },
       },
       stats: {
         create: {
-          points: 150,
-          totalAttendances: 3,
-          currentStreak: 2,
-          lastActivityAt: new Date(),
+          points: 0,
+          totalAttendances: 0,
+          currentStreak: 0,
+          lastActivityAt: null,
         },
       },
     },
   })
 
   // AKTIVIS
-  const aktivisUser = await prisma.user.create({
+  await prisma.user.create({
     data: {
       email: encrypt(aktivisEmail),
       emailBindex: generateBlindIndex(aktivisEmail),
@@ -296,25 +278,24 @@ async function main() {
         create: {
           name: "Budi Santoso (Aktivis)",
           phone: encrypt("081298765432"),
-          schoolId: schoolSMAN1.id,
-          gender: encrypt("pria"),
+          schoolId: schoolBinaMandiri?.id,
           birthDate: encrypt(new Date("2006-03-20").toISOString()),
           classGrade: encrypt("12"),
         },
       },
       stats: {
         create: {
-          points: 550,
-          totalAttendances: 10,
-          currentStreak: 5,
-          lastActivityAt: new Date(),
+          points: 0,
+          totalAttendances: 0,
+          currentStreak: 0,
+          lastActivityAt: null,
         },
       },
     },
   })
 
   // PENGURUS
-  const pengurusUser = await prisma.user.create({
+  await prisma.user.create({
     data: {
       email: encrypt(pengurusEmail),
       emailBindex: generateBlindIndex(pengurusEmail),
@@ -328,24 +309,23 @@ async function main() {
         create: {
           name: "Budi Wijaya (Pengurus)",
           phone: encrypt("081311223344"),
-          schoolId: schoolUI.id,
-          gender: encrypt("pria"),
+          schoolId: schoolBuddhi?.id,
           birthDate: encrypt(new Date("2001-11-10").toISOString()),
         },
       },
       stats: {
         create: {
-          points: 1200,
-          totalAttendances: 24,
-          currentStreak: 12,
-          lastActivityAt: new Date(),
+          points: 0,
+          totalAttendances: 0,
+          currentStreak: 0,
+          lastActivityAt: null,
         },
       },
     },
   })
 
   // ADMIN
-  const adminUser = await prisma.user.create({
+  await prisma.user.create({
     data: {
       email: encrypt(adminEmail),
       emailBindex: generateBlindIndex(adminEmail),
@@ -359,108 +339,27 @@ async function main() {
         create: {
           name: "Admin Sekkha",
           phone: encrypt("081199887766"),
-          schoolId: schoolHQ.id,
-          gender: encrypt("pria"),
+          schoolId: schoolUMN?.id,
           birthDate: encrypt(new Date("1998-07-01").toISOString()),
         },
       },
       stats: {
         create: {
-          points: 5000,
-          totalAttendances: 50,
-          currentStreak: 20,
-          lastActivityAt: new Date(),
+          points: 0,
+          totalAttendances: 0,
+          currentStreak: 0,
+          lastActivityAt: null,
         },
       },
-    },
-  })
-
-  // Legacy Hendra
-  const legacyHendra = await prisma.user.create({
-    data: {
-      email: encrypt("hendra@sekkha.local"),
-      emailBindex: generateBlindIndex("hendra@sekkha.local"),
-      emailVerifiedAt: new Date(),
-      username: "hendra",
-      password: await hash("admin"),
-      role: Role.member,
-      userNumber: BigInt(26010105),
-      isClaimed: false,
-      onboardingCompleted: true,
-      profile: {
-        create: {
-          name: "Hendra Kusuma",
-          schoolId: schoolTMD.id,
-          phone: encrypt("081566778899"),
-          gender: encrypt("pria"),
-        },
-      },
-      stats: {
-        create: {
-          points: 50,
-          totalAttendances: 1,
-        },
-      },
-    },
-  })
-
-
-
-  // ── 9. Seed Sample Events with Master Data Relations ────────────────────────
-  console.log("🎉 Seeding Events...")
-  const event1 = await prisma.event.create({
-    data: {
-      title: "Kebaktian Remaja Minggu Pagi",
-      description: "Kebaktian rutin remaja Buddhis Sekkha.",
-      location: "Dhammasala Utama Vihara",
-      eventDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
-      eventTypeId: seededEventTypes["regular-puja"].id,
-      seasonId: activeSeason.id,
-      status: "scheduled",
-      qrCode: "SEKKHA-EVT-001",
-    },
-  })
-
-  const event2 = await prisma.event.create({
-    data: {
-      title: "Workshop Dhamma & Mindfulness",
-      description: "Pelatihan meditasi kesadaran penuh untuk generasi muda.",
-      location: "Ruang Meditasi Lt. 2",
-      eventDate: new Date(Date.now() + 9 * 24 * 60 * 60 * 1000),
-      eventTypeId: seededEventTypes["chanting"].id,
-      seasonId: activeSeason.id,
-      status: "scheduled",
-      qrCode: "SEKKHA-EVT-002",
-    },
-  })
-
-  // Seed sample attendances & point transactions
-  await prisma.attendance.create({
-    data: {
-      userId: umatUser.id,
-      eventId: event1.id,
-      method: "qr",
-      pointsEarned: 50,
-    },
-  })
-
-  await prisma.pointTransaction.create({
-    data: {
-      userId: umatUser.id,
-      ruleId: seededPointRules["attendance_rutin"]?.id,
-      amount: 50,
-      type: "attendance",
-      description: `Kehadiran: ${event1.title}`,
-      referenceId: event1.id,
     },
   })
 
   console.log("✅ Database Seeded Successfully to 3NF!")
   console.log("----------------------------------------")
-  console.log(`📌 [UMAT]     : ${umatEmail} / [CONFIGURED IN ENV]`)
-  console.log(`📌 [AKTIVIS]  : ${aktivisEmail} / [CONFIGURED IN ENV]`)
-  console.log(`📌 [PENGURUS] : ${pengurusEmail} / [CONFIGURED IN ENV]`)
-  console.log(`📌 [ADMIN]    : ${adminEmail} / [CONFIGURED IN ENV]`)
+  console.log(`📌 [UMAT]     : ${umatEmail} / ${umatPasswordRaw}`)
+  console.log(`📌 [AKTIVIS]  : ${aktivisEmail} / ${aktivisPasswordRaw}`)
+  console.log(`📌 [PENGURUS] : ${pengurusEmail} / ${pengurusPasswordRaw}`)
+  console.log(`📌 [ADMIN]    : ${adminEmail} / ${adminPasswordRaw}`)
   console.log("----------------------------------------")
 }
 

@@ -28,10 +28,13 @@ import { homeModule } from "./modules/home/module"
 
 // ─── Distributed & Resilient Rate Limiter Factory (F-09) ──────────────────────
 class ResilientRateLimitStore implements Store {
+  public localKeys = true
+  public prefix: string
   private memStore = new MemoryStore()
   private redisStore: RedisStore
 
   constructor(prefix: string) {
+    this.prefix = `rl:${prefix}:`
     this.redisStore = new RedisStore({
       sendCommand: async (...args: string[]) => {
         return (redis.call as any)(args[0], ...args.slice(1))
@@ -185,6 +188,7 @@ export function createApp(): Application {
     store: createRateLimitStore("global"),
     passOnStoreError: true,
     skip: skipPreflight,
+    validate: { singleCount: false },
     message: { error: "Too many requests from this IP. Please try again later." },
   })
   app.use(globalLimiter)
@@ -198,6 +202,7 @@ export function createApp(): Application {
     store: createRateLimitStore("auth"),
     passOnStoreError: true,
     skip: skipPreflight,
+    validate: { singleCount: false },
     message: { error: "Terlalu banyak percobaan autentikasi. Silakan tunggu 15 menit." },
   })
   app.use("/api/auth/login", authLimiter)
@@ -214,6 +219,7 @@ export function createApp(): Application {
     store: createRateLimitStore("otp"),
     passOnStoreError: true,
     skip: skipPreflight,
+    validate: { singleCount: false },
     message: { error: "Terlalu banyak permintaan OTP dari IP ini. Silakan tunggu 15 menit." },
   })
   app.use("/api/auth/register-request", otpLimiter)
@@ -224,20 +230,7 @@ export function createApp(): Application {
   app.use("/api/auth/forgot-password/reset", otpLimiter)
   app.use("/api/users/email-verification", otpLimiter)
 
-  // 4c. Dedicated Account Linking Rate Limiter (F-04/F-09: 5 attempts per 15 minutes per IP)
-  const linkingLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 5,
-    standardHeaders: true,
-    legacyHeaders: false,
-    store: createRateLimitStore("linking"),
-    passOnStoreError: true,
-    skip: skipPreflight,
-    message: { error: "Terlalu banyak percobaan penautan akun dari IP ini. Silakan tunggu 15 menit." },
-  })
-  app.use("/api/people/link-legacy-account", linkingLimiter)
-
-  // 4d. Schools Stats Rate Limiter (F-12: prevent cheap decryption DoS)
+  // 4c. Schools Stats Rate Limiter (F-12: prevent cheap decryption DoS)
   const schoolStatsLimiter = rateLimit({
     windowMs: 60 * 1000,
     max: 30,
@@ -246,6 +239,7 @@ export function createApp(): Application {
     store: createRateLimitStore("schools"),
     passOnStoreError: true,
     skip: skipPreflight,
+    validate: { singleCount: false },
     message: { error: "Terlalu banyak permintaan statistik sekolah. Silakan tunggu sebentar." },
   })
   app.use("/api/schools/stats", schoolStatsLimiter)

@@ -59,10 +59,6 @@ model User {
   isClaimed             Boolean   @default(true) @map("is_claimed")
   onboardingCompleted   Boolean   @default(false) @map("onboarding_completed")
   claimedAt             DateTime? @map("claimed_at")
-  claimedByUserId       String?   @map("claimed_by_user_id")
-  claimPin              String?   @map("claim_pin") // Tier 1: One-way bcrypt hash (12 rounds) — never exposed via API
-  claimPinExpiresAt     DateTime? @map("claim_pin_expires_at")
-  failedClaimAttempts   Int       @default(0) @map("failed_claim_attempts")
   passwordChangedByUser Boolean   @default(false) @map("password_changed_by_user")
   passwordChangedAt     DateTime? @map("password_changed_at")
   createdAt             DateTime  @default(now()) @map("created_at")
@@ -77,8 +73,6 @@ model User {
   pointTransactions      PointTransaction[]
   submittedSchools       School[]           @relation("SchoolRequester")
   reviewedSchools        School[]           @relation("SchoolReviewer")
-  claimedByUser          User?              @relation("UserClaimLink", fields: [claimedByUserId], references: [id], onDelete: SetNull)
-  claimedUsers           User[]             @relation("UserClaimLink")
 
   @@index([role])
   @@index([isClaimed])
@@ -95,7 +89,6 @@ model UserProfile {
   schoolId   String?  @map("school_id")
   classGrade String?  @map("class_grade") // Tier 2: AES-256-GCM ciphertext
   birthDate  String?  @map("birth_date") // Tier 2: AES-256-GCM ciphertext of ISO date string
-  gender     String?  @map("gender") // Tier 2: AES-256-GCM ciphertext ("pria" | "wanita")
   updatedAt  DateTime @updatedAt @map("updated_at")
 
   user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)

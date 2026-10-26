@@ -18,7 +18,6 @@ export const UpdateProfileSchema = z.object({
   date_of_birth: z.string().optional().nullable(),
   birth_date: z.string().optional().nullable(),
   class_grade: z.string().trim().max(50).optional().nullable(),
-  gender: z.string().trim().max(20).optional().nullable(),
 })
 
 export const RequestEmailVerificationSchema = z

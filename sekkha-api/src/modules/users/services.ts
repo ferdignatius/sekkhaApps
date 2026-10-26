@@ -21,7 +21,6 @@ export interface UpdateProfileInput {
   date_of_birth?: string | null
   birth_date?: string | null
   class_grade?: string | null
-  gender?: string | null
 }
 
 export const userServices = {
@@ -50,7 +49,6 @@ export const userServices = {
     const rawBirthDate = decrypt(user.profile?.birthDate) || null
     const decryptedBirthDate = rawBirthDate ? new Date(rawBirthDate).toISOString().split("T")[0] : null
     const decryptedClassGrade = decrypt(user.profile?.classGrade) || null
-    const decryptedGender = decrypt(user.profile?.gender) || null
     return {
       id: user.id,
       user_number: Number(uNum),
@@ -67,7 +65,6 @@ export const userServices = {
       phone: decryptedPhone,
       date_of_birth: decryptedBirthDate,
       birth_date: decryptedBirthDate,
-      gender: decryptedGender,
       stats: {
         total_points: user.stats?.points ?? 0,
         current_streak: user.stats?.currentStreak ?? 0,
@@ -128,7 +125,6 @@ export const userServices = {
 
     const birthDateVal = body.birth_date !== undefined ? body.birth_date : body.date_of_birth
     const classGradeVal = body.class_grade
-    const genderVal = body.gender
 
     const profileUpdateData = {
       ...(body.name && { name: body.name.trim() }),
@@ -136,9 +132,6 @@ export const userServices = {
       ...(body.phone !== undefined && { phone: body.phone ? encrypt(body.phone.trim()) : null }),
       ...(classGradeVal !== undefined && {
         classGrade: classGradeVal ? encrypt(classGradeVal.trim()) : null,
-      }),
-      ...(genderVal !== undefined && {
-        gender: genderVal ? encrypt(genderVal.trim()) : null,
       }),
       ...(birthDateVal !== undefined && {
         birthDate: birthDateVal ? encrypt(new Date(birthDateVal).toISOString()) : null,
@@ -150,7 +143,6 @@ export const userServices = {
       name: body.name ? body.name.trim() : (userData.username as string) || existing.username || "Member",
       schoolId: resolvedSchoolId || null,
       classGrade: classGradeVal ? encrypt(classGradeVal.trim()) : null,
-      gender: genderVal ? encrypt(genderVal.trim()) : null,
       phone: body.phone ? encrypt(body.phone.trim()) : null,
       birthDate: birthDateVal ? encrypt(new Date(birthDateVal).toISOString()) : null,
     }

@@ -2,7 +2,7 @@
 // Shared types for the events feature, shaped after the API contract.
 
 export type EventType = string
-export type EventStatus = "scheduled" | "active" | "cancelled" | "closed"
+export type EventStatus = "scheduled" | "active" | "cancel" | "closed"
 
 export type AttendanceMethod = "qr" | "manual"
 export type UserRole = "member" | "activist" | "organizer" | "admin"

@@ -18,11 +18,9 @@ enum Role {
 }
 
 enum EventStatus {
-  draft
   scheduled
   active
   closed
-  cancelled
   cancel
 }
 

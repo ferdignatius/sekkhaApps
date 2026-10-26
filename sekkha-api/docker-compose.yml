@@ -43,10 +43,10 @@ services:
     env_file:
       - .env
     environment:
-      - NODE_ENV=development
-      - PORT=4000
-      - DATABASE_URL=postgresql://sekkha:sekkha_secret@postgres:5432/sekkha_db?schema=public
-      - REDIS_URL=redis://redis:6379
+      - NODE_ENV=${NODE_ENV:-production}
+      - PORT=${PORT:-4000}
+      - DATABASE_URL=${DATABASE_URL:-postgresql://sekkha:sekkha_secret@postgres:5432/sekkha_db?schema=public}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379}
     depends_on:
       postgres:
         condition: service_healthy

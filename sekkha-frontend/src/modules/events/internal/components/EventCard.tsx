@@ -90,7 +90,7 @@ export function EventCard({ event, onClick }: EventCardProps) {
               )}
 
               {/* Status: Cancelled */}
-              {status === "cancelled" && (
+              {status === "cancel" && (
                 <Badge variant="destructive" glass>
                   Cancelled
                 </Badge>

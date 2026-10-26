@@ -49,7 +49,7 @@ describe("EventCard Business Component (FE-16)", () => {
   it("renders Cancelled badge when status is cancelled", () => {
     const cancelledEvent: EventListItem = {
       ...sampleEvent,
-      status: "cancelled",
+      status: "cancel",
     }
     render(<EventCard event={cancelledEvent} onClick={vi.fn()} />)
 

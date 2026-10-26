@@ -29,7 +29,7 @@ export const CreateEventSchema = z.object({
 export const UpdateEventSchema = CreateEventSchema.partial()
 
 export const UpdateStatusSchema = z.object({
-  status: z.enum(["active", "closed", "cancel", "cancelled", "scheduled"]),
+  status: z.enum(["active", "closed", "cancel", "scheduled"]),
   event_date: z.string().optional(),
 })
 

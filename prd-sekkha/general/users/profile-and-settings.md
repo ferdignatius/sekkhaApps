@@ -6,7 +6,7 @@
 | **Fitur** | Profil Pribadi, Kartu Anggota Digital, Pengaturan Akun, Ganti Password, & OTP Email |
 | **Domain** | `users` / `profile` / `auth` |
 | **Aplikasi** | Sekkha Apps (Frontend & Backend) |
-| **Versi** | 2.0.0 (Unified Specification) |
+| **Versi** | 2.3.0 (2-Factor OTP Authentication on Change Password) |
 | **Status** | Approved / Ready for Development |
 | **Referensi Terkait** | `prd-sekkha/general/users/users.md`, `prd-sekkha/general/users/email-verification-for-account-claim.md`, `prd-sekkha/configure/masterdata/schools.md` |
 
@@ -14,14 +14,18 @@
 
 ## 1. Ringkasan Eksekutif & Tujuan
 
-Profil dan Pengaturan Akun adalah pusat identitas mandiri bagi setiap jemaat vihara yang telah terdaftar di Sekkha Apps (`/home/profile`). Modul ini menggabungkan:
-1. **Identitas Komunitas (Digital Member Card)**: Kartu identitas permanen berdesain minimalis sesuai standar HIG (Apple Human Interface Guidelines) yang menampilkan Nama Lengkap, Nomor Anggota (`userNumber`), Almamater Sekolah/Institusi, Tanggal Bergabung, Role Badge dengan tema warna unik per role, serta **QR Code Statis Permanen** berkontras tinggi untuk presensi event di vihara tanpa ticker ringkasan yang mengacaukan visual kartu.
-2. **Manajemen Data Pribadi (In-Page Inline Form)**: Jemaat dapat memperbarui profil langsung di halaman (*in-place inline editing* tanpa modal popup), mencakup nama lengkap, nomor WhatsApp, tanggal lahir, dan sekolah almamater.
+Profil dan Pengaturan Akun adalah pusat identitas mandiri bagi setiap jemaat vihara yang telah terdaftar di Sekkha Apps (`/profile`). Modul ini menggabungkan:
+1. **Identitas Komunitas (Digital Member Card) & Hero Header**: Kartu identitas permanen berdesain minimalis sesuai standar HIG (Apple Human Interface Guidelines) yang menampilkan Nama Lengkap, Nomor Anggota (`userNumber`), Almamater Sekolah/Institusi, Tanggal Bergabung, Role Badge dengan tema warna unik per role, serta **QR Code Statis Permanen** berkontras tinggi untuk presensi event. Hero header profil menampilkan ringkasan **Karma Points** dan **Weekly Streak** (dengan ikon api aktif).
+2. **Manajemen Data Pribadi (In-Page Inline Form)**: Jemaat dapat memperbarui profil langsung di halaman (*in-place inline editing* tanpa modal popup), mencakup nama lengkap, **username unik**, nomor WhatsApp, tanggal lahir, dan sekolah almamater (terhubung langsung ke `GET /api/schools`).
 3. **Buku Besar Poin Transparan (*Points Ledger / History*)**: Riwayat mutasi perolehan poin yang transparan (`/api/users/me/points-history`) mencakup tanggal kegiatan, jenis transaksi (kehadiran rutin, tugas pelayanan ibadah, bonus streak, dll.), poin masuk/keluar, dan saldo akhir.
-4. **Keamanan Akun & Pengaturan (*Account Settings*)**:
-   - Ganti Password mandiri dengan verifikasi password lama.
-   - Ganti Email mandiri yang dilindungi oleh **Sistem OTP 6-Digit Kriptografis** anti-pembajakan akun (*anti-takeover*) dan *blind index hashing*.
-5. **Standarisasi Bahasa**: 100% Bahasa Inggris di seluruh antarmuka profil dan pengaturan.
+4. **Keamanan Akun & Pengaturan (*Account Security & 2FA*)**:
+   - **Ganti Password Mandiri dengan Proteksi 2-Faktor (OTP 6-Digit)**: Verifikasi password lama, pengiriman 6-digit OTP ke email terdaftar, dan verifikasi kode sebelum kata sandi diperbarui. Menerbitkan token sesi baru secara otomatis sehingga sesi aktif tidak terputus (anti-401 loop).
+   - **Ganti Email Mandiri dengan OTP 6-Digit**: Dilindungi oleh **Sistem OTP 6-Digit Kriptografis** anti-pembajakan akun (*anti-takeover*) dan *blind index hashing*.
+5. **Navigasi Tunggal & Layout Standard**:
+   - Menghapus modal pop-up "Settings & Goals" yang duplikat di sidebar. Seluruh konfigurasi profil dan pengaturan akun terpusat di `/profile`.
+   - Rute resmi profil adalah `/profile` (seluruh navigasi, dock mobile, dan menu user langsung mengarah ke `/profile`).
+   - Lebar kontainer halaman distandarisasi ke `max-w-7xl` selaras dengan halaman utama lainnya (Home, Community Insights, Events).
+6. **Standarisasi Bahasa**: 100% Bahasa Inggris di seluruh antarmuka profil dan pengaturan.
 
 ---
 
@@ -42,15 +46,18 @@ Fitur Profil & Pengaturan Akun berlaku universal untuk seluruh role jemaat dan p
 
 ## 3. Komponen Utama & Alur Pengguna (User Flows)
 
-Halaman `/home/profile` memiliki 3 tab terorganisir dengan Clay & HIG Design System:
+Halaman `/profile` menggunakan kontainer standar `max-w-7xl` dengan 3 tab terorganisir sesuai Clay & HIG Design System:
 
 ```
-[ Tab 1: Member Card & ID ]  |  [ Tab 2: Personal Profile ]  |  [ Tab 3: Security & Settings ]
+[ Tab 1: Member Card & Points ]  |  [ Tab 2: Personal Profile ]  |  [ Tab 3: Security & Settings ]
 ```
 
 ### 3.1. Tab 1: Digital Member ID Card & Points History
+* **Hero Stats Counter**: Di bagian header profil, sistem menampilkan dua indikator statistik utama secara berdampingan:
+  * **Karma Points**: Total akumulasi poin kebaikan saat ini (`{totalPoints} Pts`).
+  * **Weekly Streak**: Jumlah minggu berturut-turut kehadiran jemaat dengan ikon api bernyawa (`{currentStreak} Minggu`).
 * **Kartu Anggota Digital (HIG-Compliant Minimalist Design)**:
-  * **Filosofi Desain**: Mengikuti standar Apple Human Interface Guidelines (HIG) untuk digital pass / identity card — bersih, minimalis, proporsional, dan bebas dari clutter. Ticker ringkasan (poin/streak) dieliminasi dari kartu agar murni berfungsi sebagai tanda pengenal resmi dan instrumen presensi.
+  * **Filosofi Desain**: Mengikuti standar Apple Human Interface Guidelines (HIG) untuk digital pass / identity card — bersih, minimalis, proporsional, dan bebas dari clutter. Kartu memuat chip ringkasan poin dan streak secara harmonis tanpa mengganggu fungsi QR code.
   * **Aspek Rasio & Bentuk**: Standar ID-1 ISO/IEC 7810 rasio ~1.586 : 1 (`aspect-[1.586/1]` responsif), dengan sudut melengkung halus squircle (`rounded-[20px]` atau `rounded-[22px]`).
   * **Layering & Depth**: Hairline border specular halus (`border border-white/25` atau `border border-black/10`), depth shadow ambient occlusion (`shadow-md`).
   * **Diferensiasi Tema Warna Kartu Tiap Role**:
@@ -72,33 +79,52 @@ Halaman `/home/profile` memiliki 3 tab terorganisir dengan Clay & HIG Design Sys
 
 ### 3.2. Tab 2: Personal Profile (In-Page Inline Edit Form)
 * **Desain Interaksi Tanpa Modal (*No Popup Dialog*)**:
-  * Tab profil **TIDAK menggunakan modal atau drawer popup**. Pengeditan data dilakukan langsung di tempat (*in-place inline editing*) pada halaman `/home/profile`.
+  * Tab profil **TIDAK menggunakan modal atau drawer popup**. Pengeditan data dilakukan langsung di tempat (*in-place inline editing*) pada halaman `/profile`.
   * **State 1: View Mode (Default / Read-Only)**:
     * Menampilkan kartu ringkasan informasi data diri jemaat dalam layout dua kolom yang rapi dan terstruktur.
-    * Memuat info: Full Name, Username, Phone Number (WhatsApp), School / University Almamater, dan Date of Birth.
+    * Memuat info: Full Name, Username (`@username`), Phone Number (WhatsApp), School / University Almamater, dan Date of Birth.
     * Tombol *"Edit Profile"* di pojok kanan atas kartu dengan ikon pensil.
   * **State 2: Edit Mode (Inline Form Transition)**:
     * Saat user mengklik *"Edit Profile"*, kartu data profil langsung bertransformasi menjadi form interaktif di halaman yang sama (animasi transisi halus fade/slide tanpa layout shift).
     * **Field Input Form**:
-      * **Full Name** *(Input teks, wajib, min 2 karakter)*.
+      * **Full Name** *(Input teks, wajib, min 1 karakter)*.
+      * **Username** *(Input teks dengan prefix `@`, wajib, min 3 s.d. 30 karakter, format regex `[a-z0-9._]`, divalidasi keunikan oleh server)*.
       * **Phone Number / WhatsApp** *(Input nomor telepon, e.g. `08123456789`)*.
-      * **School / University** *(Dropdown interaktif dari master data `/configure/schools`, menampilkan institusi terverifikasi)*.
+      * **School / University** *(Dropdown interaktif dari master data `GET /api/schools`, menampilkan institusi terverifikasi aktif)*.
       * **Date of Birth** *(Input tanggal / Datepicker `YYYY-MM-DD`)*.
     * **Tombol Aksi Bawah Form**:
       * Tombol *"Cancel"*: Mengembalikan form ke View Mode tanpa menyimpan perubahan (reset ke data sebelumnya).
-      * Tombol *"Save Changes"*: Memvalidasi payload dan memanggil `PUT /api/users/me/profile`. Menampilkan indikator loading saat proses penyimpanan dan notifikasi toast sukses, lalu otomatis kembali ke View Mode dengan data terbaru.
+      * Tombol *"Save Changes"*: Memvalidasi payload dan memanggil `PUT /api/users/me/profile` (atau fallback `PATCH /api/users/me`). Menampilkan indikator loading saat proses penyimpanan dan notifikasi toast sukses, lalu otomatis kembali ke View Mode dengan data terbaru.
 
-### 3.3. Tab 3: Account Security & OTP Email Verification
+### 3.3. Tab 3: Account Security & OTP Verification (Two-Factor Protection)
 
-#### A. Ganti Password Mandiri
-1. User memasukkan:
-   - Current Password *(Wajib)*
-   - New Password *(Wajib, min 8 karakter, kombinasi huruf & angka)*
-   - Confirm New Password *(Wajib, harus sama)*
-2. Saat submit (`POST /api/users/change-password`):
-   - Server memvalidasi hash `bcrypt` password lama.
-   - Jika valid, server meng-hash password baru dan meng-update database.
-   - Sesi lama di-refresh dan notifikasi sukses ditampilkan.
+#### A. Ganti Password Mandiri dengan Verifikasi 2FA (OTP 6-Digit)
+1. **Langkah 1: Input Kata Sandi & Request OTP (`POST /api/users/change-password/request-otp`)**
+   - User memasukkan:
+     - Current Password *(Wajib)*
+     - New Password *(Wajib, min 8 karakter)*
+     - Confirm New Password *(Wajib, harus sama)*
+   - User menekan tombol *"Lanjutkan & Minta Kode OTP"*.
+   - Server memvalidasi hash `bcrypt` password lama user. Jika password lama salah, server langsung menolak dengan `400 Bad Request` ("Kata sandi lama yang Anda masukkan tidak cocok") tanpa mengirim OTP (mencegah spam/penyalahgunaan email).
+   - Jika password lama valid:
+     - Server memeriksa cooldown permintaan OTP (maksimal 1 request per 60 detik). Jika masih cooldown, server merespons `429 Too Many Requests`.
+     - Server menghasilkan kode 6 digit numerik acak kriptografis (`crypto.randomInt(100000, 1000000)`).
+     - Server menyimpan challenge di cache/Redis dengan key `otp:change-password:<userId>` dan waktu kedaluwarsa **10 menit** (600 detik).
+     - Server mengirimkan email keamanan resmi ke alamat email terdaftar user.
+     - Frontend beralih secara mulus ke tampilan **Langkah 2 (Input 6-Digit OTP)**.
+
+2. **Langkah 2: Verifikasi OTP & Update Kata Sandi (`POST /api/users/change-password`)**
+   - User memasukkan 6 digit kode OTP pada input box khusus (mendukung auto-focus antar digit dan paste clipboard).
+   - Terdapat tombol *"Kirim Ulang Kode"* dengan hitung mundur timer 60 detik (*resend cooldown*).
+   - User dapat menekan tombol *"Kembali / Ubah Sandi"* jika ingin mengoreksi password sebelum finalisasi.
+   - Saat submit, server memverifikasi:
+     - Kesesuaian kode OTP (maksimal 5 kali percobaan salah, setelah itu challenge dibatalkan otomatis demi keamanan).
+     - Validitas password lama & syarat minimal 8 karakter password baru.
+   - Jika verifikasi berhasil:
+     - Server meng-hash password baru, memperbarui `passwordChangedAt = new Date()`, dan **menerbitkan `accessToken` baru** di response body.
+     - Client langsung memperbarui token akses di `localStorage` dan mereset in-memory cache API sehingga sesi user yang sedang aktif tetap berjalan mulus tanpa terkena blokir `401 Unauthorized`.
+     - Seluruh sesi login di perangkat lain secara otomatis dikeluarkan (*session revocation*).
+     - Tampilan kembali ke form utama dengan notifikasi sukses.
 
 #### B. Ganti Email Mandiri dengan OTP 6-Digit (Anti-Account-Takeover)
 Alur penggantian email dirancang dengan standar keamanan perbankan/fintech:
@@ -108,7 +134,7 @@ Alur penggantian email dirancang dengan standar keamanan perbankan/fintech:
    - Server membuat OTP 6 digit acak numerik (mis. `482910`).
    - Server mengenkripsi OTP dengan hashing (SHA-256) dan menyimpan di redis/cache/database dengan waktu kedaluwarsa **10 menit**.
    - Server mengirimkan email resmi berisi kode OTP ke alamat email baru.
-2. **Langkah 2: Verifikasi OTP (`POST /api/users/email-verification/verify`)**
+2. **Langkah 2: Verifikasi OTP (`POST /api/users/email-verification/confirm`)**
    - User diarahkan ke dialog input OTP 6 digit (input otomatis berpindah fokus antar kotak digit).
    - User memasukkan kode 6 digit.
    - Server memvalidasi kode OTP:
@@ -121,12 +147,15 @@ Alur penggantian email dirancang dengan standar keamanan perbankan/fintech:
 ## 4. Spesifikasi Sistem OTP (One-Time Password)
 
 Untuk menjamin keamanan maksimal tanpa risiko eksploitasi brute-force:
-1. **Format Kode**: 6 digit numerik (`crypto.randomInt(100000, 999999)`).
+1. **Format Kode**: 6 digit numerik (`crypto.randomInt(100000, 1000000)`).
 2. **Masa Berlaku (TTL)**: Tepat **10 menit** (600 detik).
-3. **Penyimpanan**: Disimpan di cache/Redis dengan key `otp:email_change:<userId>` yang memuat hash kode OTP, new email bindex, counter percobaan, dan timestamp.
+3. **Penyimpanan Cache/Redis**:
+   - Ganti Email: `otp:email-verify:<userId>`
+   - Ganti Password: `otp:change-password:<userId>`
+   - Cooldown: `otp:email-verify:cooldown:<userId>` dan `otp:change-password:cooldown:<userId>` (60 detik)
+   - Percobaan Salah: `otp:email-verify:attempts:<userId>` dan `otp:change-password:attempts:<userId>` (maksimal 5 kali percobaan gagal berturut-turut).
 4. **Rate Limiting & Anti-Abuse**:
    - Maksimal request kirim OTP: **1 kali per 60 detik** (cooldown resend).
-   - Maksimal permintaan per user: **3 kali per 1 jam**.
    - Maksimal salah input kode OTP: **5 kali berturut-turut**. Jika gagal 5 kali, sesi verifikasi otomatis dibatalkan (*invalidated*).
 5. **Anti-Enumeration & Privacy**:
    - Kolom email jemaat dienkripsi menggunakan AES-256-GCM saat istirahat (*at rest*).
@@ -206,17 +235,55 @@ Memvalidasi kode OTP 6 digit dan meng-update email resmi.
   ```
 * **Response**: `200 OK` (Message: *"Email updated and verified successfully"*).
 
-### 5.5. `POST /api/users/change-password`
-Ganti password akun mandiri.
+### 5.5. `POST /api/users/change-password/request-otp`
+Meminta 6-digit kode OTP ke email terdaftar untuk mengonfirmasi perubahan kata sandi.
+* **Headers**: `Authorization: Bearer <accessToken>`
+* **Request Body (Opsional untuk pre-verifikasi)**:
+  ```json
+  {
+    "current_password": "currentPassword123"
+  }
+  ```
+* **Response (200 OK)**:
+  ```json
+  {
+    "status": "success",
+    "code": 200,
+    "message": "Kode OTP telah dikirim ke email terdaftar Anda",
+    "data": {
+      "expires_in_seconds": 600,
+      "resend_after_seconds": 60,
+      "masked_email": "bu***@gmail.com"
+    }
+  }
+  ```
+
+### 5.6. `POST /api/users/change-password`
+Verifikasi OTP dan eksekusi ganti kata sandi mandiri.
+* **Headers**: `Authorization: Bearer <accessToken>`
 * **Request Body**:
   ```typescript
   export const ChangePasswordSchema = z.object({
     current_password: z.string().min(1, "Current password is required"),
     new_password: z.string().min(8, "New password must be at least 8 characters"),
+    otp: z.string().trim().length(6, "6-digit verification code (OTP) is required")
   })
   ```
+* **Response (200 OK)**:
+  ```json
+  {
+    "status": "success",
+    "code": 200,
+    "message": "Password berhasil diubah. Seluruh sesi lain telah dikeluarkan.",
+    "data": {
+      "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+      "password_changed_by_user": true,
+      "is_claimed": true
+    }
+  }
+  ```
 
-### 5.6. `GET /api/users/me/points-history`
+### 5.7. `GET /api/users/me/points-history`
 Mengambil buku besar catatan mutasi poin pengguna yang login.
 * **Response Envelope**:
   ```json
@@ -260,7 +327,7 @@ Mengambil buku besar catatan mutasi poin pengguna yang login.
     * `admin`: Obsidian Titanium (`#18181B` -> `#09090B`), teks `#FAFAFA`, aksen `#E8B94A` / `#D4AF37`.
   * **QR Code Scanner-Ready**: QR code statis ditempatkan pada background putih murni (`#FFFFFF`) beradius `rounded-[14px]` agar pantulan cahaya latar tidak mengganggu sensor scanner optik kamera saat presensi di vihara.
 * **Inline In-Page Form Interaction (No Modal Popup)**:
-  * Mengeliminasi disrupsi konteks modal popup. User mengedit data profil langsung di halaman `/home/profile` dengan transisi in-place.
+  * Mengeliminasi disrupsi konteks modal popup. User mengedit data profil langsung di halaman `/profile` dengan transisi in-place.
   * Focus ring aksesibel (`focus-visible:ring-2 focus-visible:ring-[#0a0a0a]`), touch target minimal 44x44px sesuai pedoman HIG accessibility.
 * **OTP Input Component**: Menggunakan 6 kotak input terpisah dengan transisi fokus otomatis, paste clipboard support, dan hitung mundur timer 60 detik untuk tombol *"Resend OTP"*.
 * **Semua Label Bahasa Inggris**: *"Digital Member ID"*, *"Personal Information"*, *"Edit Profile"*, *"Save Changes"*, *"Cancel"*, *"Account Security"*, *"Change Password"*, *"Verify New Email"*, *"Enter 6-Digit OTP"*, *"Points Ledger"*.

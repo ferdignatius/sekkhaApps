@@ -26,7 +26,7 @@ const NAV_ITEMS = [
   },
   {
     label: "Profile",
-    to: "/home/profile",
+    to: "/profile",
     icon: UserIcon,
   },
 ] as const

@@ -381,3 +381,85 @@ export async function sendEmailVerificationOtpEmail({ to, otp, name }: SendOtpPa
   return { success: true }
 }
 
+/**
+ * Sends a password change 6-digit OTP email via Gmail SMTP (Nodemailer).
+ */
+export async function sendChangePasswordOtpEmail({ to, otp, name }: SendOtpParams): Promise<{ success: boolean; error?: string }> {
+  const recipientName = escapeHtml(name || "Sahabat Sekkha")
+  const fromEmail = process.env.EMAIL_FROM || `Sekkha Apps <${process.env.SMTP_USER || "noreply@sekkha.com"}>`
+
+  const htmlContent = `
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kode Keamanan Ganti Kata Sandi Sekkha</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #fffaf0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #0a0a0a;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #fffaf0; padding: 40px 20px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" max-width="520" cellspacing="0" cellpadding="0" border="0" style="max-width: 520px; background-color: #ffffff; border: 1px solid #e5e5e5; border-radius: 24px; padding: 36px 32px; box-shadow: 0 4px 20px rgba(10, 10, 10, 0.04);">
+          <tr>
+            <td align="center" style="padding-bottom: 24px;">
+              <div style="display: inline-block; background-color: #0a0a0a; color: #ffffff; padding: 12px 20px; border-radius: 16px; font-weight: 800; font-size: 18px; letter-spacing: 1px;">
+                ✨ SEKHA APPS
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <h1 style="font-size: 20px; font-weight: 800; margin: 0 0 12px 0; color: #0a0a0a;">Verifikasi Ubah Kata Sandi</h1>
+              <p style="font-size: 14px; line-height: 22px; color: #4a4a4a; margin: 0 0 24px 0;">
+                Halo <strong>${recipientName}</strong>, akun Sekkha Anda sedang melakukan permintaan perubahan kata sandi. Masukkan 6 digit kode OTP berikut untuk menyelesaikan pergantian kata sandi:
+              </p>
+              <div style="background-color: #faf5e8; border: 1px dashed #e8b94a; border-radius: 16px; padding: 24px; text-align: center; margin-bottom: 24px;">
+                <span style="font-family: 'Courier New', Courier, monospace; font-size: 36px; font-weight: 800; letter-spacing: 8px; color: #0a0a0a; display: inline-block;">
+                  ${otp}
+                </span>
+                <p style="margin: 8px 0 0 0; font-size: 12px; font-weight: 600; color: #8a7a5a;">
+                  ⏱️ Berlaku selama 10 menit
+                </p>
+              </div>
+              <p style="font-size: 12px; line-height: 18px; color: #dc2626; margin: 0 0 8px 0; font-weight: 600;">
+                ⚠️ Jangan berikan kode OTP ini kepada siapa pun, termasuk pihak yang mengaku dari Sekkha Apps.
+              </p>
+              <p style="font-size: 12px; line-height: 18px; color: #8a8a8a; margin: 0;">
+                Jika Anda tidak merasa meminta perubahan kata sandi ini, abaikan email ini dan pastikan akun Anda tetap aman.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `
+
+  const transporter = getMailTransporter()
+  if (transporter) {
+    try {
+      const info = await transporter.sendMail({
+        from: fromEmail,
+        to,
+        subject: `${otp} adalah Kode OTP Ubah Kata Sandi Akun Sekkha Anda`,
+        html: htmlContent,
+      })
+      const recipientLog = process.env.NODE_ENV === "production" ? maskEmail(to) : to
+      console.log(`✅ [Gmail SMTP Success] Change password OTP sent to ${recipientLog}. Message ID:`, info.messageId)
+      return { success: true }
+    } catch (err: any) {
+      console.warn(`⚠️ [Gmail SMTP Error]:`, err?.message || err)
+    }
+  } else if (process.env.NODE_ENV === "production") {
+    console.warn(`⚠️ [Mail Warning] SMTP credentials not configured in production.`)
+  } else {
+    console.log(`🔐 [Password Change OTP] Code for ${to}: ${otp}`)
+  }
+
+  return { success: true }
+}
+
+

@@ -36,6 +36,7 @@ export function PersonalProfileSection({
   // Form state
   const [formData, setFormData] = useState<UpdateProfilePayload>({
     name: "",
+    username: "",
     phone: "",
     school_id: "",
     school: "",
@@ -58,6 +59,7 @@ export function PersonalProfileSection({
 
       setFormData({
         name: profile.name || "",
+        username: profile.username || "",
         phone: profile.phone || "",
         school_id: profile.school_id || "",
         school: profile.school || "",
@@ -77,6 +79,7 @@ export function PersonalProfileSection({
 
     setFormData({
       name: profile.name || "",
+      username: profile.username || "",
       phone: profile.phone || "",
       school_id: profile.school_id || "",
       school: profile.school || "",
@@ -91,11 +94,28 @@ export function PersonalProfileSection({
       onToast("Full name is required", "error")
       return
     }
+    if (!formData.username?.trim()) {
+      onToast("Username is required", "error")
+      return
+    }
+    const cleanUsername = formData.username.trim().toLowerCase()
+    if (cleanUsername.length < 3 || cleanUsername.length > 30) {
+      onToast("Username must be between 3 and 30 characters", "error")
+      return
+    }
+    if (!/^[a-z0-9._]+$/.test(cleanUsername)) {
+      onToast(
+        "Username may only contain lowercase letters, numbers, dots, and underscores",
+        "error"
+      )
+      return
+    }
 
     setSubmitting(true)
     try {
       const payload: UpdateProfilePayload = {
         name: formData.name.trim(),
+        username: cleanUsername,
         phone: formData.phone?.trim() || null,
         school_id: formData.school_id || null,
         school: formData.school?.trim() || null,
@@ -228,19 +248,6 @@ export function PersonalProfileSection({
                 {formattedDisplayDob}
               </p>
             </div>
-
-            {/* Date of Birth */}
-            <div className="space-y-1 rounded-[14px] border border-[#e5e5e5] bg-[#faf5e8] p-3.5">
-              <div className="flex items-center gap-1.5">
-                <CalendarIcon className="size-3 text-[#6a6a6a]" />
-                <span className="text-[10px] font-bold tracking-wider text-[#6a6a6a] uppercase">
-                  Date of Birth
-                </span>
-              </div>
-              <p className="text-sm font-semibold text-[#0a0a0a]">
-                {formattedDisplayDob}
-              </p>
-            </div>
           </div>
         </div>
       ) : (
@@ -265,6 +272,35 @@ export function PersonalProfileSection({
                 placeholder="Enter your full name"
                 className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] px-3.5 text-xs font-semibold text-[#0a0a0a] transition-colors outline-none focus:border-[#0a0a0a] focus:bg-[#fffaf0] sm:text-sm"
               />
+            </div>
+
+            {/* Username */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-[#0a0a0a]">
+                Username <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <span className="absolute top-1/2 left-3.5 -translate-y-1/2 font-mono text-xs font-bold text-[#6a6a6a]">
+                  @
+                </span>
+                <input
+                  type="text"
+                  required
+                  minLength={3}
+                  maxLength={30}
+                  value={formData.username || ""}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      username: e.target.value
+                        .toLowerCase()
+                        .replace(/[^a-z0-9._]/g, ""),
+                    }))
+                  }
+                  placeholder="username"
+                  className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] pr-3.5 pl-8 font-mono text-xs font-semibold text-[#0a0a0a] transition-colors outline-none focus:border-[#0a0a0a] focus:bg-[#fffaf0] sm:text-sm"
+                />
+              </div>
             </div>
 
             {/* Phone Number */}

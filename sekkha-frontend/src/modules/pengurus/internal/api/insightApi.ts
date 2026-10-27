@@ -117,10 +117,11 @@ export interface InsightMetricsResponse {
     totalActiveMembers: MetricDelta
     avgAttendanceRate: MetricDelta
     retentionRate: MetricDelta
-    atRiskMembersCount: MetricDelta
+    totalSevaSessions: MetricDelta
+    atRiskMembersCount?: MetricDelta
   }
   trendChartData: TrendChartPoint[]
-  silentChurnHealth: SilentChurnHealth
+  silentChurnHealth?: SilentChurnHealth
   roleComparison: RoleComparisonData
   eventCategories: EventCategoryMetric[]
   tenureBreakdown: TenureSegment[]

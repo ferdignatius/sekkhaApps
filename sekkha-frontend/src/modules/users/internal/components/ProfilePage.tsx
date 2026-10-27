@@ -8,6 +8,7 @@ import {
   GraduationCapIcon,
   MailIcon,
   PhoneIcon,
+  FlameIcon,
 } from "lucide-react"
 import { useAuth } from "@/modules/auth"
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
@@ -76,6 +77,7 @@ export function ProfilePage() {
   const school = profile?.school || ""
   const memberId = profile?.user_number ? String(profile.user_number) : ""
   const totalPoints = profile?.stats?.total_points ?? 0
+  const currentStreak = profile?.stats?.current_streak ?? 0
 
   const userInitials =
     displayName
@@ -105,7 +107,7 @@ export function ProfilePage() {
       <PageBreadcrumb items={[{ label: "Profile" }]} showBack={false} />
 
       <div className="px-3.5 py-4 sm:px-6 sm:py-6 md:px-8 lg:px-12">
-        <div className="mx-auto max-w-5xl space-y-6">
+        <div className="mx-auto max-w-7xl space-y-6">
           {/* ── TOAST NOTIFICATION ── */}
           {toast && (
             <div
@@ -207,15 +209,33 @@ export function ProfilePage() {
                     </div>
                   </div>
 
-                  {/* Points Pill Counter */}
-                  <div className="flex items-center gap-2 self-start rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] p-3 text-right shadow-2xs sm:self-center">
-                    <div>
-                      <span className="block text-[9px] font-bold tracking-wider text-[#6a6a6a] uppercase">
-                        Karma Points
-                      </span>
-                      <span className="font-mono text-base font-black text-[#0a0a0a] sm:text-lg">
-                        {totalPoints.toLocaleString("en-US")} Pts
-                      </span>
+                  {/* Stats Pill Counters: Points & Streak */}
+                  <div className="flex flex-wrap items-center gap-2.5 self-start sm:self-center">
+                    {/* Points Counter */}
+                    <div className="flex items-center gap-2 rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] px-3.5 py-2.5 text-right shadow-2xs">
+                      <div className="text-left">
+                        <span className="block text-[9px] font-bold tracking-wider text-[#6a6a6a] uppercase">
+                          Karma Points
+                        </span>
+                        <span className="font-mono text-base font-black text-[#0a0a0a] sm:text-lg">
+                          {totalPoints.toLocaleString("en-US")} Pts
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Streak Counter */}
+                    <div className="flex items-center gap-2.5 rounded-[16px] border border-[#f5d799] bg-[#fff3db] px-3.5 py-2.5 text-left shadow-2xs">
+                      <div className="flex size-8 shrink-0 items-center justify-center rounded-[10px] bg-[#f59e0b] text-white shadow-2xs">
+                        <FlameIcon className="size-4.5 fill-current text-white animate-pulse" />
+                      </div>
+                      <div>
+                        <span className="block text-[9px] font-bold tracking-wider text-[#92400e] uppercase">
+                          Weekly Streak
+                        </span>
+                        <span className="font-mono text-base font-black text-[#78350f] sm:text-lg">
+                          {currentStreak} {currentStreak === 1 ? "Week" : "Weeks"}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -266,7 +286,8 @@ export function ProfilePage() {
                       school={school}
                       joinedAt={profile?.joined_at}
                       username={profile?.username}
-                      onToast={showToast}
+                      points={totalPoints}
+                      currentStreak={currentStreak}
                     />
 
                     {/* Points Ledger List */}

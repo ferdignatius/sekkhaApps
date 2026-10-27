@@ -18,11 +18,11 @@ import { Route as SignUpRouteImport } from './routes/sign-up'
 import { Route as AuthenticatedInsightRouteImport } from './routes/_authenticated/insight'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
 import { Route as AuthenticatedPengurusContributionRouteImport } from './routes/_authenticated/pengurus-contribution'
+import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedRecencyAlertsRouteImport } from './routes/_authenticated/recency-alerts'
 import { Route as AuthenticatedEventsIndexRouteImport } from './routes/_authenticated/events/index'
 import { Route as AuthenticatedEventsScanRouteImport } from './routes/_authenticated/events/scan'
 import { Route as AuthenticatedHomeIndexRouteImport } from './routes/_authenticated/home/index'
-import { Route as AuthenticatedHomeProfileRouteImport } from './routes/_authenticated/home/profile'
 import { Route as AuthenticatedLeaderboardIndexRouteImport } from './routes/_authenticated/leaderboard/index'
 import { Route as AuthenticatedPeopleIndexRouteImport } from './routes/_authenticated/people/index'
 import { Route as AuthenticatedPeopleMemberIdRouteImport } from './routes/_authenticated/people/$memberId'
@@ -84,6 +84,11 @@ const AuthenticatedPengurusContributionRoute =
     path: '/pengurus-contribution',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedRecencyAlertsRoute =
   AuthenticatedRecencyAlertsRouteImport.update({
     id: '/recency-alerts',
@@ -106,12 +111,6 @@ const AuthenticatedHomeIndexRoute = AuthenticatedHomeIndexRouteImport.update({
   path: '/home/',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedHomeProfileRoute =
-  AuthenticatedHomeProfileRouteImport.update({
-    id: '/home/profile',
-    path: '/home/profile',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
 const AuthenticatedLeaderboardIndexRoute =
   AuthenticatedLeaderboardIndexRouteImport.update({
     id: '/leaderboard/',
@@ -212,9 +211,9 @@ export interface FileRoutesByFullPath {
   '/insight': typeof AuthenticatedInsightRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/pengurus-contribution': typeof AuthenticatedPengurusContributionRoute
+  '/profile': typeof AuthenticatedProfileRoute
   '/recency-alerts': typeof AuthenticatedRecencyAlertsRoute
   '/events/scan': typeof AuthenticatedEventsScanRoute
-  '/home/profile': typeof AuthenticatedHomeProfileRoute
   '/people/$memberId': typeof AuthenticatedPeopleMemberIdRoute
   '/events/': typeof AuthenticatedEventsIndexRoute
   '/home/': typeof AuthenticatedHomeIndexRoute
@@ -242,9 +241,9 @@ export interface FileRoutesByTo {
   '/insight': typeof AuthenticatedInsightRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/pengurus-contribution': typeof AuthenticatedPengurusContributionRoute
+  '/profile': typeof AuthenticatedProfileRoute
   '/recency-alerts': typeof AuthenticatedRecencyAlertsRoute
   '/events/scan': typeof AuthenticatedEventsScanRoute
-  '/home/profile': typeof AuthenticatedHomeProfileRoute
   '/people/$memberId': typeof AuthenticatedPeopleMemberIdRoute
   '/events': typeof AuthenticatedEventsIndexRoute
   '/home': typeof AuthenticatedHomeIndexRoute
@@ -274,9 +273,9 @@ export interface FileRoutesById {
   '/_authenticated/insight': typeof AuthenticatedInsightRoute
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
   '/_authenticated/pengurus-contribution': typeof AuthenticatedPengurusContributionRoute
+  '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/recency-alerts': typeof AuthenticatedRecencyAlertsRoute
   '/_authenticated/events/scan': typeof AuthenticatedEventsScanRoute
-  '/_authenticated/home/profile': typeof AuthenticatedHomeProfileRoute
   '/_authenticated/people/$memberId': typeof AuthenticatedPeopleMemberIdRoute
   '/_authenticated/events/': typeof AuthenticatedEventsIndexRoute
   '/_authenticated/home/': typeof AuthenticatedHomeIndexRoute
@@ -306,9 +305,9 @@ export interface FileRouteTypes {
     | '/insight'
     | '/onboarding'
     | '/pengurus-contribution'
+    | '/profile'
     | '/recency-alerts'
     | '/events/scan'
-    | '/home/profile'
     | '/people/$memberId'
     | '/events/'
     | '/home/'
@@ -336,9 +335,9 @@ export interface FileRouteTypes {
     | '/insight'
     | '/onboarding'
     | '/pengurus-contribution'
+    | '/profile'
     | '/recency-alerts'
     | '/events/scan'
-    | '/home/profile'
     | '/people/$memberId'
     | '/events'
     | '/home'
@@ -367,9 +366,9 @@ export interface FileRouteTypes {
     | '/_authenticated/insight'
     | '/_authenticated/onboarding'
     | '/_authenticated/pengurus-contribution'
+    | '/_authenticated/profile'
     | '/_authenticated/recency-alerts'
     | '/_authenticated/events/scan'
-    | '/_authenticated/home/profile'
     | '/_authenticated/people/$memberId'
     | '/_authenticated/events/'
     | '/_authenticated/home/'
@@ -463,6 +462,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPengurusContributionRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/profile': {
+      id: '/_authenticated/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof AuthenticatedProfileRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/recency-alerts': {
       id: '/_authenticated/recency-alerts'
       path: '/recency-alerts'
@@ -489,13 +495,6 @@ declare module '@tanstack/react-router' {
       path: '/home'
       fullPath: '/home/'
       preLoaderRoute: typeof AuthenticatedHomeIndexRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/home/profile': {
-      id: '/_authenticated/home/profile'
-      path: '/home/profile'
-      fullPath: '/home/profile'
-      preLoaderRoute: typeof AuthenticatedHomeProfileRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/leaderboard/': {
@@ -610,9 +609,9 @@ interface AuthenticatedRouteChildren {
   AuthenticatedInsightRoute: typeof AuthenticatedInsightRoute
   AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
   AuthenticatedPengurusContributionRoute: typeof AuthenticatedPengurusContributionRoute
+  AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedRecencyAlertsRoute: typeof AuthenticatedRecencyAlertsRoute
   AuthenticatedEventsScanRoute: typeof AuthenticatedEventsScanRoute
-  AuthenticatedHomeProfileRoute: typeof AuthenticatedHomeProfileRoute
   AuthenticatedPeopleMemberIdRoute: typeof AuthenticatedPeopleMemberIdRoute
   AuthenticatedEventsIndexRoute: typeof AuthenticatedEventsIndexRoute
   AuthenticatedHomeIndexRoute: typeof AuthenticatedHomeIndexRoute
@@ -637,9 +636,9 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,
   AuthenticatedPengurusContributionRoute:
     AuthenticatedPengurusContributionRoute,
+  AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedRecencyAlertsRoute: AuthenticatedRecencyAlertsRoute,
   AuthenticatedEventsScanRoute: AuthenticatedEventsScanRoute,
-  AuthenticatedHomeProfileRoute: AuthenticatedHomeProfileRoute,
   AuthenticatedPeopleMemberIdRoute: AuthenticatedPeopleMemberIdRoute,
   AuthenticatedEventsIndexRoute: AuthenticatedEventsIndexRoute,
   AuthenticatedHomeIndexRoute: AuthenticatedHomeIndexRoute,

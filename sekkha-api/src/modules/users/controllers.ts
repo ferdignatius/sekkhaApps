@@ -17,46 +17,25 @@ export const UpdateProfileSchema = z.object({
   phone: z.string().trim().max(20).optional().nullable(),
   date_of_birth: z.string().optional().nullable(),
   birth_date: z.string().optional().nullable(),
-  class_grade: z.string().trim().max(50).optional().nullable(),
 })
 
-export const RequestEmailVerificationSchema = z
-  .object({
-    email: z.string().trim().email("Invalid email format").optional(),
-    new_email: z.string().trim().email("Invalid email format").optional(),
-  })
-  .refine((d) => Boolean(d.email || d.new_email), "Email address is required")
+export const RequestEmailVerificationSchema = z.object({
+  email: z.string().trim().email("Invalid email format"),
+})
 
-export const ConfirmEmailVerificationSchema = z
-  .object({
-    code: z.string().trim().length(6, "Verification code must be 6 digits").optional(),
-    otp_code: z.string().trim().length(6, "Verification code must be 6 digits").optional(),
-    otpCode: z.string().trim().length(6, "Verification code must be 6 digits").optional(),
-    new_email: z.string().trim().email().optional(),
-  })
-  .refine(
-    (d) => Boolean(d.code || d.otp_code || d.otpCode),
-    "Verification code is required"
-  )
+export const ConfirmEmailVerificationSchema = z.object({
+  code: z.string().trim().length(6, "Verification code must be 6 digits"),
+})
 
-export const ChangePasswordSchema = z
-  .object({
-    currentPassword: z.string().optional(),
-    current_password: z.string().optional(),
-    newPassword: z.string().optional(),
-    new_password: z.string().optional(),
-  })
-  .refine(
-    (data) => Boolean(data.currentPassword || data.current_password),
-    "Current password is required"
-  )
-  .refine(
-    (data) => {
-      const p = data.newPassword || data.new_password
-      return Boolean(p && p.length >= 8)
-    },
-    "New password must be at least 8 characters"
-  )
+export const RequestChangePasswordOtpSchema = z.object({
+  current_password: z.string().optional(),
+})
+
+export const ChangePasswordSchema = z.object({
+  current_password: z.string().min(1, "Current password is required"),
+  new_password: z.string().min(8, "New password must be at least 8 characters"),
+  otp: z.string().trim().length(6, "Verification code must be 6 digits"),
+})
 
 export const DeleteAccountSchema = z.object({
   password: z.string().min(1, "Konfirmasi kata sandi diperlukan"),
@@ -144,10 +123,9 @@ export const userControllers = {
 
   async requestEmailVerification(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const parsed = RequestEmailVerificationSchema.parse(req.body)
-      const targetEmail = parsed.new_email || parsed.email!
+      const { email } = RequestEmailVerificationSchema.parse(req.body)
       const userId = req.user!.userId
-      const result = await userServices.requestEmailVerification(userId, targetEmail)
+      const result = await userServices.requestEmailVerification(userId, email)
       successEnvelope(res, 200, "Verification code sent if the email is available", result)
     } catch (err: any) {
       if (err.statusCode) {
@@ -165,8 +143,7 @@ export const userControllers = {
 
   async confirmEmailVerification(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const parsed = ConfirmEmailVerificationSchema.parse(req.body)
-      const code = (parsed.code || parsed.otp_code || parsed.otpCode)!
+      const { code } = ConfirmEmailVerificationSchema.parse(req.body)
       const userId = req.user!.userId
       const result = await userServices.confirmEmailVerification(userId, code)
       successEnvelope(res, 200, "Email verified successfully", result)
@@ -184,14 +161,37 @@ export const userControllers = {
     }
   },
 
+  async requestChangePasswordOtp(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const body = RequestChangePasswordOtpSchema.parse(req.body)
+      const userId = req.user!.userId
+      const result = await userServices.requestChangePasswordOtp(userId, body.current_password)
+      successEnvelope(res, 200, "Verification code sent to your registered email", result)
+    } catch (err: any) {
+      if (err.statusCode) {
+        res.status(err.statusCode).json({
+          status: "fail",
+          code: err.statusCode,
+          message: err.message,
+          data: null,
+        })
+        return
+      }
+      next(err)
+    }
+  },
+
   async changePassword(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const body = ChangePasswordSchema.parse(req.body)
-      const currentPassword = body.currentPassword || body.current_password!
-      const newPassword = body.newPassword || body.new_password!
       const userId = req.user!.userId
-      const result = await userServices.changePassword(userId, currentPassword, newPassword)
-      successEnvelope(res, 200, "Password berhasil diubah. Seluruh sesi lain telah dikeluarkan.", result)
+      const result = await userServices.changePassword(
+        userId,
+        body.current_password,
+        body.new_password,
+        body.otp
+      )
+      successEnvelope(res, 200, "Password updated successfully. All other sessions have been signed out.", result)
     } catch (err: any) {
       if (err.statusCode) {
         res.status(err.statusCode).json({

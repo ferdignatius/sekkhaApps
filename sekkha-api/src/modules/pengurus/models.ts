@@ -35,6 +35,7 @@ export const pengurusModels = {
             userId: true,
             pointsEarned: true,
             scannedAt: true,
+            badgeActivityId: true,
           },
         },
       },

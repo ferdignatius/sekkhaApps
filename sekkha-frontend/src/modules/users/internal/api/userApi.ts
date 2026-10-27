@@ -25,6 +25,7 @@ export interface UserProfileDto {
 }
 
 export interface UpdateProfilePayload {
+  username?: string
   name?: string
   phone?: string | null
   school_id?: string | null
@@ -45,6 +46,20 @@ export interface PointTransactionDto {
 export interface ChangePasswordPayload {
   current_password: string
   new_password: string
+  otp: string
+}
+
+export interface RequestChangePasswordOtpResult {
+  expires_in_seconds?: number
+  resend_after_seconds?: number
+  masked_email?: string
+}
+
+export interface ChangePasswordResult {
+  success?: boolean
+  message?: string
+  accessToken?: string
+  password_changed_by_user?: boolean
 }
 
 export interface VerifiedSchoolDto {
@@ -99,16 +114,24 @@ export const userApi = {
     }
   },
 
+  requestChangePasswordOtp: async (
+    currentPassword?: string
+  ): Promise<RequestChangePasswordOtpResult> => {
+    const res = await api.post<any>("/users/change-password/request-otp", {
+      current_password: currentPassword,
+    })
+    return res?.data || res
+  },
+
   changePassword: async (
     payload: ChangePasswordPayload
-  ): Promise<{ success: boolean; message?: string }> => {
+  ): Promise<ChangePasswordResult> => {
     const res = await api.post<any>("/users/change-password", {
       current_password: payload.current_password,
-      currentPassword: payload.current_password,
       new_password: payload.new_password,
-      newPassword: payload.new_password,
+      otp: payload.otp,
     })
-    return res
+    return res?.data || res
   },
 
   requestEmailVerification: async (
@@ -119,35 +142,33 @@ export const userApi = {
   }> => {
     const res = await api.post<any>("/users/email-verification/request", {
       email: newEmail.trim().toLowerCase(),
-      new_email: newEmail.trim().toLowerCase(),
     })
     return res?.data || res
   },
 
   confirmEmailVerification: async (
-    code: string,
-    newEmail?: string
+    code: string
   ): Promise<{ email: string; email_verified: boolean }> => {
     const res = await api.post<any>("/users/email-verification/confirm", {
       code: code.trim(),
-      otp_code: code.trim(),
-      new_email: newEmail ? newEmail.trim().toLowerCase() : undefined,
     })
     return res?.data || res
   },
 
   getVerifiedSchools: async (): Promise<VerifiedSchoolDto[]> => {
     try {
-      const res = await api.get<any>("/schools/verified")
+      const res = await api.get<any>("/schools?limit=100&is_active=true")
       if (Array.isArray(res)) return res
       if (res && Array.isArray(res.data)) return res.data
+      if (res && Array.isArray(res.schools)) return res.schools
       if (res && Array.isArray(res.items)) return res.items
       return []
     } catch {
       try {
-        const fallback = await api.get<any>("/configure/master/schools")
+        const fallback = await api.get<any>("/schools")
         if (Array.isArray(fallback)) return fallback
         if (fallback && Array.isArray(fallback.data)) return fallback.data
+        if (fallback && Array.isArray(fallback.schools)) return fallback.schools
         if (fallback && Array.isArray(fallback.items)) return fallback.items
         return []
       } catch {

@@ -66,7 +66,7 @@ describe("MobileDock", () => {
       "/home",
       "/events",
       "/leaderboard",
-      "/home/profile",
+      "/profile",
     ])
     expect(screen.queryByText("People")).toBeNull()
   })
@@ -99,7 +99,7 @@ describe("MobileDock", () => {
       "/events",
       "/leaderboard",
       "/people",
-      "/home/profile",
+      "/profile",
     ])
     expect(screen.getByText("People")).toBeDefined()
   })

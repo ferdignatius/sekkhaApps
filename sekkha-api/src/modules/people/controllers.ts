@@ -12,7 +12,7 @@ export const ListMembersQuerySchema = z.object({
     .default("all"),
   school_id: z.string().trim().optional(),
   page: z.coerce.number().int().min(1).max(100_000).default(1),
-  limit: z.coerce.number().int().min(1).max(100).default(20),
+  limit: z.coerce.number().int().min(1).max(500).default(20),
 })
 
 export const CreateMemberSchema = z.object({

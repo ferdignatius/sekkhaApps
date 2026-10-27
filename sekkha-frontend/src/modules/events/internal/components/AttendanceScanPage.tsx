@@ -245,7 +245,7 @@ export function AttendanceScanPage() {
   useEffect(() => {
     if (isPengurus) {
       peopleApi
-        .listMembers({ limit: 150, page: 1 })
+        .listMembers({ limit: 100, page: 1 })
         .then((data: any) => {
           const items = Array.isArray(data) ? data : data?.items || []
           setPeopleList(items)

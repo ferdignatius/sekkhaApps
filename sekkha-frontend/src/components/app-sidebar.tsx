@@ -9,7 +9,6 @@ import {
   ChevronRightIcon,
   ShieldCheckIcon,
   UserIcon,
-  SettingsIcon,
   ChevronUpIcon,
 } from "lucide-react"
 import {
@@ -37,8 +36,6 @@ import {
 import { useAuth } from "@/modules/auth"
 import type { UserRole } from "@/modules/auth"
 import { api } from "@/lib/api"
-import { ResponsiveFormModal } from "@/components/common/ResponsiveFormModal"
-import { SettingsSection } from "@/modules/users/internal/components/SettingsSection"
 import { activeModules } from "@/shell/registry"
 import { iconMap } from "@/shell/icon-map"
 import { cn } from "@/lib/utils"
@@ -49,7 +46,6 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const pathname = location.pathname
   const { state, toggleSidebar } = useSidebar()
   const [showProfileMenu, setShowProfileMenu] = useState(false)
-  const [settingsOpen, setSettingsOpen] = useState(false)
   const profileMenuRef = useRef<HTMLDivElement>(null)
 
   // Synchronize fresh user profile (including updated Full Name) on mount and on update events.
@@ -114,7 +110,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const mainNavItems = activeModules
     .flatMap((m) => m.navItems)
     .filter((item) => {
-      if (item.to === "/home/profile") return false
+      if (item.to === "/profile") return false
       return true
     })
   const pengurusNavItems = activeModules.flatMap(
@@ -420,25 +416,13 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
           (authState.status === "authenticated" || userId) && (
             <div className="absolute right-2.5 bottom-full left-2.5 z-50 mb-2 animate-in space-y-0.5 rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0]/95 p-1.5 shadow-2xl backdrop-blur-xl fade-in-0 slide-in-from-bottom-2 group-data-[collapsible=icon]:left-12 group-data-[collapsible=icon]:w-48">
               <Link
-                to="/home/profile"
+                to="/profile"
                 onClick={() => setShowProfileMenu(false)}
                 className="flex items-center gap-2.5 rounded-[10px] px-3 py-2 text-xs font-semibold text-[#0a0a0a] transition-colors hover:bg-[#f5f0e0]"
               >
                 <UserIcon className="size-4 text-[#0a0a0a]" />
-                <span>View Profile</span>
+                <span>User Profile</span>
               </Link>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setShowProfileMenu(false)
-                  setSettingsOpen(true)
-                }}
-                className="flex w-full cursor-pointer items-center gap-2.5 rounded-[10px] px-3 py-2 text-xs font-semibold text-[#0a0a0a] transition-colors hover:bg-[#f5f0e0]"
-              >
-                <SettingsIcon className="size-4 text-[#6a6a6a]" />
-                <span>Settings & Goals</span>
-              </button>
 
               <div className="my-1 border-t border-[#e5e5e5]" />
 
@@ -491,21 +475,6 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
             />
           </button>
         )}
-
-        {/* Global Settings Modal triggered from bottom menu */}
-        <ResponsiveFormModal
-          open={settingsOpen}
-          onOpenChange={setSettingsOpen}
-          title="Settings & Goals"
-          maxWidth="max-w-md"
-        >
-          <SettingsSection
-            currentEmail={authState.email}
-            onEmailUpdated={(newEmail) => updateUser({ email: newEmail })}
-            onLogout={logout}
-            onClose={() => setSettingsOpen(false)}
-          />
-        </ResponsiveFormModal>
       </SidebarFooter>
 
       <SidebarRail />

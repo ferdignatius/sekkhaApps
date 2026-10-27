@@ -24,7 +24,11 @@ usersRouter.post("/email-verification/confirm", requireAuth, userControllers.con
 usersRouter.post("/email-verification/verify", requireAuth, userControllers.confirmEmailVerification)
 usersRouter.post("/email-verification/verify-otp", requireAuth, userControllers.confirmEmailVerification)
 
-// POST & PUT /api/users/change-password — Update password
+// POST /api/users/change-password/request-otp — Request 6-digit OTP for password change
+usersRouter.post("/change-password/request-otp", requireAuth, userControllers.requestChangePasswordOtp)
+usersRouter.post("/change-password/otp", requireAuth, userControllers.requestChangePasswordOtp)
+
+// POST & PUT /api/users/change-password — Update password (requires OTP verification)
 usersRouter.post("/change-password", requireAuth, userControllers.changePassword)
 usersRouter.put("/change-password", requireAuth, userControllers.changePassword)
 

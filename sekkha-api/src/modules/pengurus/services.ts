@@ -193,11 +193,6 @@ export const pengurusServices = {
         retentionRate = primaryActiveCount > 0 ? 85 : 0
       }
 
-      // At-Risk Members Count: consecutiveMissed >= 2 or inactive in past 30 days
-      const atRiskUsers = targetUsers.filter((u) => u.consecutiveMissed >= 2)
-      const atRiskCount = atRiskUsers.length
-      const atRiskDelta = atRiskCount > 3 ? -1 : 0
-
       // 4. Trend Chart Data
       let trendChartData: Array<{ label: string; [key: string]: number | string }> = []
 
@@ -227,24 +222,26 @@ export const pengurusServices = {
         })
       }
 
-      // 5. Silent Churn Health
-      const totalTargetMembers = Math.max(1, targetUsers.length)
-      const normalMembers = targetUsers.filter((u) => u.consecutiveMissed < 2).length
-      const warningMembers = targetUsers.filter((u) => u.consecutiveMissed === 2).length
-      const atRiskTierMembers = targetUsers.filter((u) => u.consecutiveMissed === 3).length
-      const lostMembers = targetUsers.filter((u) => u.consecutiveMissed >= 4).length
-
-      const silentChurnHealth = {
-        totalMembers: targetUsers.length,
-        normalCount: normalMembers,
-        warningCount: warningMembers,
-        atRiskCount: atRiskTierMembers,
-        lostCount: lostMembers,
-        normalPercent: Math.round((normalMembers / totalTargetMembers) * 100),
-        warningPercent: Math.round((warningMembers / totalTargetMembers) * 100),
-        atRiskPercent: Math.round((atRiskTierMembers / totalTargetMembers) * 100),
-        lostPercent: Math.round((lostMembers / totalTargetMembers) * 100),
+      // 5. Total Seva Sessions (Duties performed in period)
+      const countSevaSessions = (evList: typeof events) => {
+        let count = 0
+        for (const ev of evList) {
+          for (const att of ev.attendances) {
+            if ((att as any).badgeActivityId && targetUserIds.has(att.userId)) {
+              count++
+            }
+          }
+        }
+        return count
       }
+
+      const primarySevaCount = countSevaSessions(primaryEvents)
+      const compareSevaCount = countSevaSessions(compareEvents)
+      const sevaDelta = compareSevaCount > 0
+        ? Math.round(((primarySevaCount - compareSevaCount) / compareSevaCount) * 100)
+        : 0
+
+      const totalTargetMembers = Math.max(1, targetUsers.length)
 
       // 6. Role Comparison Breakdown
       const getRoleDetail = (roleName: string) => {
@@ -374,15 +371,14 @@ export const pengurusServices = {
             isPositive: retentionRate >= 80,
             description: `Recurring active members`,
           },
-          atRiskMembersCount: {
-            value: atRiskCount,
-            deltaText: atRiskDelta <= 0 ? `${atRiskDelta} members` : `+${atRiskDelta} members`,
-            isPositive: atRiskDelta <= 0,
-            description: `Needs pastoral care & follow-up`,
+          totalSevaSessions: {
+            value: primarySevaCount,
+            deltaText: sevaDelta >= 0 ? `+${sevaDelta}%` : `${sevaDelta}%`,
+            isPositive: sevaDelta >= 0,
+            description: `Active seva service duties`,
           },
         },
         trendChartData,
-        silentChurnHealth,
         roleComparison,
         eventCategories,
         tenureBreakdown,

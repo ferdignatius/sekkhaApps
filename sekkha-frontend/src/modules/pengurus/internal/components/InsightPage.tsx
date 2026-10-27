@@ -1,7 +1,6 @@
 import { useEffect, useState, useRef } from "react"
 import {
   UsersIcon,
-  AlertTriangleIcon,
   BarChart3Icon,
   CalendarIcon,
   ShieldCheckIcon,
@@ -642,30 +641,28 @@ export function InsightPage() {
                       </div>
                     </div>
 
-                    {/* Card 4: Silent-Churn At-Risk Members */}
-                    <div className="flex flex-col justify-between rounded-2xl border border-rose-500/30 bg-rose-500/5 p-4 shadow-xs transition hover:shadow-md sm:p-4.5">
+                    {/* Card 4: Total Seva Duty Sessions */}
+                    <div className="flex flex-col justify-between rounded-2xl border border-sekkha-hairline-soft bg-sekkha-canvas p-4 shadow-xs transition hover:shadow-md sm:p-4.5">
                       <div className="flex items-start justify-between gap-2">
                         <div>
-                          <p className="text-caption font-semibold text-rose-700 dark:text-rose-400">
-                            At-Risk Members (Churn)
+                          <p className="text-caption font-medium text-sekkha-slate">
+                            Total Seva Duties
                           </p>
-                          <h3 className="text-heading-4 sm:text-heading-3 mt-1 font-extrabold text-rose-700 dark:text-rose-400">
-                            {data.summary.atRiskMembersCount.value}{" "}
-                            <span className="text-caption font-normal text-rose-600">
-                              Members
-                            </span>
+                          <h3 className="text-heading-4 sm:text-heading-3 mt-1 font-extrabold text-sekkha-ink">
+                            {data.summary.totalSevaSessions?.value ?? 0}
                           </h3>
                         </div>
-                        <span className="flex size-9 shrink-0 items-center justify-center rounded-2xl bg-rose-500/20 text-rose-600 sm:size-10">
-                          <AlertTriangleIcon className="size-4.5 sm:size-5" />
+                        <span className="flex size-9 shrink-0 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600 sm:size-10">
+                          <AwardIcon className="size-4.5 sm:size-5" />
                         </span>
                       </div>
-                      <div className="text-micro mt-3.5 flex items-center justify-between border-t border-rose-500/20 pt-2.5 sm:mt-4">
-                        <span className="inline-flex items-center gap-0.5 rounded-lg bg-emerald-500/10 px-2 py-0.5 font-bold text-emerald-600">
-                          {data.summary.atRiskMembersCount.deltaText}
+                      <div className="text-micro mt-3.5 flex items-center justify-between border-t border-sekkha-hairline-soft/80 pt-2.5 sm:mt-4">
+                        <span className="inline-flex items-center gap-0.5 rounded-lg bg-emerald-500/10 px-2 py-0.5 font-bold text-emerald-600 dark:text-emerald-400">
+                          {data.summary.totalSevaSessions?.deltaText ?? "+0%"}
                         </span>
-                        <span className="truncate text-rose-700/80 dark:text-rose-400/80">
-                          {data.summary.atRiskMembersCount.description}
+                        <span className="max-w-[130px] truncate text-sekkha-slate">
+                          {data.summary.totalSevaSessions?.description ??
+                            "Active volunteer duties"}
                         </span>
                       </div>
                     </div>
@@ -877,81 +874,7 @@ export function InsightPage() {
                     </CardContent>
                   </Card>
 
-                  {/* ── 3. STRATEGIC INTEGRATION WIDGET: SILENT-CHURN HEALTH OVERVIEW ── */}
-                  <div className="space-y-3.5 rounded-2xl border border-sekkha-brand-blue/20 bg-gradient-to-br from-sekkha-brand-blue/5 via-sekkha-canvas to-sekkha-surface p-4 shadow-xs sm:space-y-4 sm:rounded-3xl sm:p-6">
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-rose-500/10 text-rose-600">
-                            <AlertTriangleIcon className="size-4" />
-                          </span>
-                          <h2 className="text-caption-bold sm:text-body-sm-medium font-bold text-sekkha-ink">
-                            Community Engagement Health
-                          </h2>
-                        </div>
-                        <p className="text-micro sm:text-caption max-w-xl text-sekkha-slate">
-                          Macro community attendance frequency and consistency
-                          segmentation across all registered members.
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Combined Progress Bar */}
-                    <div className="space-y-2">
-                      <div className="flex h-3.5 w-full overflow-hidden rounded-full border border-sekkha-hairline-soft bg-sekkha-surface p-0.5 sm:h-4">
-                        <div
-                          style={{
-                            width: `${data.silentChurnHealth.normalPercent}%`,
-                          }}
-                          className="rounded-l-full bg-emerald-500 transition-all duration-500"
-                          title={`Normal: ${data.silentChurnHealth.normalCount} (${data.silentChurnHealth.normalPercent}%)`}
-                        />
-                        <div
-                          style={{
-                            width: `${data.silentChurnHealth.warningPercent}%`,
-                          }}
-                          className="bg-amber-400 transition-all duration-500"
-                          title={`Warning: ${data.silentChurnHealth.warningCount} (${data.silentChurnHealth.warningPercent}%)`}
-                        />
-                        <div
-                          style={{
-                            width: `${data.silentChurnHealth.atRiskPercent}%`,
-                          }}
-                          className="bg-amber-600 transition-all duration-500"
-                          title={`At Risk: ${data.silentChurnHealth.atRiskCount} (${data.silentChurnHealth.atRiskPercent}%)`}
-                        />
-                        <div
-                          style={{
-                            width: `${data.silentChurnHealth.lostPercent}%`,
-                          }}
-                          className="rounded-r-full bg-rose-500 transition-all duration-500"
-                          title={`Lost: ${data.silentChurnHealth.lostCount} (${data.silentChurnHealth.lostPercent}%)`}
-                        />
-                      </div>
-
-                      {/* Health Level Badges Grid */}
-                      <div className="text-micro grid grid-cols-2 gap-2 pt-1 sm:grid-cols-4">
-                        <div className="flex items-center justify-between rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1.5 font-bold text-emerald-700 sm:py-2 dark:text-emerald-400">
-                          <span>🟢 Normal</span>
-                          <span>{data.silentChurnHealth.normalCount}</span>
-                        </div>
-                        <div className="flex items-center justify-between rounded-xl border border-amber-500/20 bg-amber-500/10 px-2.5 py-1.5 font-bold text-amber-700 sm:py-2 dark:text-amber-400">
-                          <span>🟡 Warning</span>
-                          <span>{data.silentChurnHealth.warningCount}</span>
-                        </div>
-                        <div className="flex items-center justify-between rounded-xl border border-orange-500/20 bg-orange-500/10 px-2.5 py-1.5 font-bold text-orange-700 sm:py-2 dark:text-orange-400">
-                          <span>🟠 At Risk</span>
-                          <span>{data.silentChurnHealth.atRiskCount}</span>
-                        </div>
-                        <div className="flex items-center justify-between rounded-xl border border-rose-500/20 bg-rose-500/10 px-2.5 py-1.5 font-bold text-rose-700 sm:py-2 dark:text-rose-400">
-                          <span>🔴 Lost</span>
-                          <span>{data.silentChurnHealth.lostCount}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* ── 4. SEGMENT ANALYTICS: PERBANDINGAN ROLE UMAT, AKTIVIS, & PENGURUS ── */}
+                  {/* ── 3. SEGMENT ANALYTICS: PERBANDINGAN ROLE UMAT, AKTIVIS, & PENGURUS ── */}
                   <div className="grid grid-cols-1 gap-4 sm:gap-5 md:grid-cols-3">
                     {/* 1. ROLE UMAT Card */}
                     <div className="space-y-3 rounded-2xl border border-sekkha-hairline-soft bg-sekkha-canvas p-4 shadow-xs sm:rounded-3xl sm:p-5">

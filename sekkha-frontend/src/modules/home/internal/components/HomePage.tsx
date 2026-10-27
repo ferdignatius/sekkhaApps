@@ -277,7 +277,7 @@ export function HomePage() {
           icon: UserIcon,
           bg: "bg-[#1a3a3a]",
           iconColor: "text-white",
-          href: "/home/profile",
+          href: "/profile",
           badge: "Account",
           keywords:
             "profile settings account user preferences security password akun profil",

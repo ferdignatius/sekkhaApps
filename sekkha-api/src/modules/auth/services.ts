@@ -78,7 +78,7 @@ function getJwtSecret(): string {
   return secret
 }
 
-function generateToken(
+export function generateToken(
   userId: string,
   role: string,
   name?: string,

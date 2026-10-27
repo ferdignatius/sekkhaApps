@@ -12,7 +12,7 @@ const DOCK_ORDER: Record<string, number> = {
   "/events": 2,
   "/leaderboard": 3,
   "/people": 4,
-  "/home/profile": 5,
+  "/profile": 5,
 }
 
 export function MobileDock() {

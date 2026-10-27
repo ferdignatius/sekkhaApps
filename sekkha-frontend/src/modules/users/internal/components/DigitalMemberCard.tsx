@@ -7,6 +7,7 @@ import {
   PrinterIcon,
   ShieldCheckIcon,
   SparklesIcon,
+  FlameIcon,
   XIcon,
   GraduationCapIcon,
 } from "lucide-react"
@@ -20,7 +21,8 @@ interface DigitalMemberCardProps {
   school?: string | null
   joinedAt?: string
   username?: string | null
-  onToast?: (message: string, type?: "success" | "error") => void
+  points?: number
+  currentStreak?: number
 }
 
 export function DigitalMemberCard({
@@ -30,7 +32,8 @@ export function DigitalMemberCard({
   school,
   joinedAt,
   username,
-  onToast,
+  points,
+  currentStreak,
 }: DigitalMemberCardProps) {
   const [copied, setCopied] = useState(false)
   const [showEnlargeQr, setShowEnlargeQr] = useState(false)
@@ -43,12 +46,9 @@ export function DigitalMemberCard({
       .writeText(memberIdStr)
       .then(() => {
         setCopied(true)
-        onToast?.("Member ID copied to clipboard!")
         setTimeout(() => setCopied(false), 2000)
       })
-      .catch(() => {
-        onToast?.("Failed to copy Member ID", "error")
-      })
+      .catch(() => {})
   }
 
   function handlePrint() {
@@ -218,6 +218,28 @@ export function DigitalMemberCard({
                   >
                     {school}
                   </span>
+                </div>
+              )}
+
+              {/* Stats badges inside card */}
+              {(points !== undefined || currentStreak !== undefined) && (
+                <div className="flex flex-wrap items-center gap-1.5 pt-2">
+                  {points !== undefined && (
+                    <span
+                      className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold ${roleCardStyles.badge}`}
+                    >
+                      <SparklesIcon className="size-2.5" />
+                      <span>{points.toLocaleString("en-US")} Pts</span>
+                    </span>
+                  )}
+                  {currentStreak !== undefined && (
+                    <span
+                      className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold ${roleCardStyles.badge}`}
+                    >
+                      <FlameIcon className="size-2.5 fill-current" />
+                      <span>{currentStreak} Wk Streak</span>
+                    </span>
+                  )}
                 </div>
               )}
             </div>

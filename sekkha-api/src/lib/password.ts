@@ -20,8 +20,18 @@ export async function hashPassword(password: string, cost: number = DEFAULT_BCRY
  */
 export async function verifyPassword(password: string, hash: string): Promise<boolean> {
   if (!password || !hash) return false
-  if (typeof Bun !== "undefined" && Bun.password?.verify) {
-    return Bun.password.verify(password, hash)
+  try {
+    if (typeof Bun !== "undefined" && Bun.password?.verify) {
+      const ok = await Bun.password.verify(password, hash)
+      if (ok) return true
+    }
+  } catch {
+    // Ignore native error and fall through to bcryptjs compare
   }
-  return bcrypt.compare(password, hash)
+  try {
+    return await bcrypt.compare(password, hash)
+  } catch {
+    return false
+  }
 }
+

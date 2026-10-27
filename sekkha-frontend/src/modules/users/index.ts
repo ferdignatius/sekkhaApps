@@ -5,5 +5,5 @@ export { ProfilePage } from "./internal/components/ProfilePage"
 
 export const profileModule: ModuleDefinition = {
   name: "profile",
-  navItems: [{ label: "Profile", to: "/home/profile", icon: "User" }],
+  navItems: [{ label: "Profile", to: "/profile", icon: "User" }],
 }

@@ -19,6 +19,7 @@
     "db:migrate:status": "bun --filter sekkha-api db:migrate:status",
     "db:generate": "bun --filter sekkha-api db:generate",
     "db:seed": "bun --filter sekkha-api db:seed",
+    "docker:build": "docker buildx build --platform linux/amd64 -t ferdignatius/sekkha-api:latest -f sekkha-api/Dockerfile --push sekkha-api",
     "release": "bun scripts/release.mjs"
   },
   "overrides": {

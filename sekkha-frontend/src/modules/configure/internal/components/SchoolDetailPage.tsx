@@ -2,7 +2,6 @@ import { useEffect, useState } from "react"
 import { useNavigate, useParams } from "@tanstack/react-router"
 import {
   GraduationCapIcon,
-  ArrowLeftIcon,
   UsersIcon,
   AlertTriangleIcon,
   Trash2Icon,
@@ -209,24 +208,18 @@ export function SchoolDetailPage() {
         items={[
           { label: "Configure" },
           { label: "Master Data" },
-          { label: "Schools & Universities" },
+          {
+            label: "Schools & Universities",
+            href: "/configure/master/school",
+          },
           { label: school.name },
         ]}
+        onBack={() => void navigate({ to: "/configure/master/school" })}
       />
 
       <div className="mx-auto max-w-7xl space-y-6 px-3.5 py-4 sm:px-6 md:px-8">
-        {/* Top Navigation */}
-        <div className="flex items-center justify-between">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => void navigate({ to: "/configure/master/school" })}
-            className="gap-2 rounded-[12px] border-[#e5e5e5] bg-white text-xs font-semibold hover:bg-[#faf5e8]"
-          >
-            <ArrowLeftIcon className="size-4" />
-            Back to Directory
-          </Button>
-
+        {/* Status Badge */}
+        <div className="flex justify-end">
           <Badge
             variant={isActive ? "secondary" : "outline"}
             className={

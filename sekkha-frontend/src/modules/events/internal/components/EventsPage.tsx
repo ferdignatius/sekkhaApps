@@ -15,7 +15,7 @@ import {
   XIcon,
 } from "lucide-react"
 import { useAuth } from "@/modules/auth"
-import { api } from "@/lib/api"
+import { api, clearApiCache } from "@/lib/api"
 import { z } from "zod"
 
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
@@ -385,35 +385,36 @@ export function EventsPage() {
         return
       }
 
-      if (events.length > 0) {
-        const found = events.find((e) => e.id === eventIdParam)
-        if (found) {
-          setSelected(found)
-          setView("detail")
+      // Check if current selected is already this event — don't overwrite if already open!
+      setSelected((curr) => {
+        if (curr && curr.id === eventIdParam) {
+          return curr
         }
-      }
 
-      // Fetch detail on demand
-      api
-        .get<EventListItem>(`/events/${eventIdParam}`)
-        .then((directEvent) => {
-          if (directEvent) {
-            setSelected(directEvent)
-            setView("detail")
-            if (isPengurus) {
-              loadEventAttendances(directEvent.id)
+        // Fetch detail on demand with noCache to avoid stale memory cache
+        api
+          .get<EventListItem>(`/events/${eventIdParam}`, { noCache: true })
+          .then((directEvent) => {
+            if (directEvent) {
+              setSelected(directEvent)
+              setView("detail")
+              if (isPengurus) {
+                loadEventAttendances(directEvent.id)
+              }
             }
-          }
-        })
-        .catch((err) => {
-          console.warn("Event from eventId param not found:", err)
-        })
+          })
+          .catch((err) => {
+            console.warn("Event from eventId param not found:", err)
+          })
+
+        return curr
+      })
     }
 
     syncFromUrl()
     window.addEventListener("popstate", syncFromUrl)
     return () => window.removeEventListener("popstate", syncFromUrl)
-  }, [events, isPengurus])
+  }, [isPengurus])
 
   async function loadEventAttendances(eventId: string) {
     try {
@@ -632,6 +633,18 @@ export function EventsPage() {
                           ).toISOString()
                         }
 
+                        // 1. Optimistic update for immediate UI feedback
+                        setSelected((prev) =>
+                          prev && prev.id === eventId
+                            ? {
+                                ...prev,
+                                status: newStatus,
+                                ...(updatePayload.event_date
+                                  ? { event_date: updatePayload.event_date }
+                                  : {}),
+                              }
+                            : prev
+                        )
                         setEvents((prev) =>
                           prev.map((e) =>
                             e.id === eventId
@@ -645,24 +658,43 @@ export function EventsPage() {
                               : e
                           )
                         )
-                        setSelected((prev) =>
-                          prev && prev.id === eventId
-                            ? {
-                                ...prev,
-                                status: newStatus,
-                                ...(updatePayload.event_date
-                                  ? { event_date: updatePayload.event_date }
-                                  : {}),
-                              }
-                            : prev
-                        )
+                        setEventsCache((prev) => {
+                          const next: Record<string, EventListItem[]> = {}
+                          for (const key of Object.keys(prev)) {
+                            next[key] = prev[key].map((e) =>
+                              e.id === eventId
+                                ? {
+                                    ...e,
+                                    status: newStatus,
+                                    ...(updatePayload.event_date
+                                      ? { event_date: updatePayload.event_date }
+                                      : {}),
+                                  }
+                                : e
+                            )
+                          }
+                          return next
+                        })
+
+                        // 2. Call API patch
                         await api.patch(
                           `/events/${eventId}/status`,
                           updatePayload
                         )
+                        clearApiCache()
+
+                        // 3. Reload month events to ensure server truth
                         await loadEvents(activeMonth, true)
                       } catch (err) {
                         console.error("Failed to update event status:", err)
+                        // In case of error, re-fetch server state
+                        try {
+                          const fresh = await api.get<EventListItem>(
+                            `/events/${eventId}`,
+                            { noCache: true }
+                          )
+                          if (fresh) setSelected(fresh)
+                        } catch {}
                         await loadEvents(activeMonth, true)
                       }
                     }

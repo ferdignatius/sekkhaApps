@@ -2,7 +2,6 @@ import { useEffect, useState } from "react"
 import { useNavigate, useParams } from "@tanstack/react-router"
 import {
   TagIcon,
-  ArrowLeftIcon,
   CoinsIcon,
   LockIcon,
   AlertTriangleIcon,
@@ -211,20 +210,13 @@ export function EventTypeDetailPage() {
         items={[
           { label: "Configure" },
           { label: "Master Data" },
-          { label: "Event Types" },
+          { label: "Event Types", href: "/configure/master/event-type" },
           { label: item.label },
         ]}
+        onBack={() => void navigate({ to: "/configure/master/event-type" })}
       />
 
       <div className="mx-auto max-w-7xl space-y-6 px-3.5 py-4 sm:px-6 md:px-8">
-        <button
-          type="button"
-          onClick={() => void navigate({ to: "/configure/master/event-type" })}
-          className="inline-flex items-center gap-2 text-xs font-bold text-[#6a6a6a] transition-colors hover:text-[#0a0a0a]"
-        >
-          <ArrowLeftIcon className="size-4" />
-          Back to Event Types
-        </button>
 
         <Card className="rounded-[20px] border border-[#e5e5e5] bg-white p-6 shadow-sm sm:p-8">
           <div className="flex flex-col justify-between gap-4 border-b border-[#f0ece1] pb-5 sm:flex-row sm:items-center">

@@ -2,7 +2,6 @@ import { useState } from "react"
 import { useNavigate } from "@tanstack/react-router"
 import {
   AwardIcon,
-  ArrowLeftIcon,
   CoinsIcon,
   AlertTriangleIcon,
   LockIcon,
@@ -107,19 +106,10 @@ export function BadgeActivityCreatePage() {
             },
             { label: "New Role" },
           ]}
-        />
-
-        {/* Back Link */}
-        <button
-          type="button"
-          onClick={() =>
+          onBack={() =>
             void navigate({ to: "/configure/master/badge-activity" })
           }
-          className="inline-flex items-center gap-1.5 text-xs font-bold text-[#6a6a6a] hover:text-[#0a0a0a]"
-        >
-          <ArrowLeftIcon className="size-4" />
-          <span>Back to Roles</span>
-        </button>
+        />
 
         {/* Header Section */}
         <div>

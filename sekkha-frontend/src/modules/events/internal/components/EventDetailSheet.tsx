@@ -177,10 +177,9 @@ export function EventDetailSheet({
   }
 
   function executeStatusChange(newStatus: EventStatus, newEventDate?: string) {
+    event.status = newStatus
     if (onStatusChange) {
-      onStatusChange(event.id, newStatus, newEventDate)
-    } else {
-      event.status = newStatus
+      void onStatusChange(event.id, newStatus, newEventDate)
     }
     setPendingAction(null)
   }
@@ -233,11 +232,11 @@ export function EventDetailSheet({
               {/* Status Badge */}
               {isActive && (
                 <Badge
-                  variant="teal"
+                  variant="emerald"
                   glass
-                  className="gap-1.5 rounded-full font-semibold text-[#1a3a3a]"
+                  className="gap-1.5 rounded-full font-semibold text-emerald-700"
                 >
-                  <span className="size-1.5 animate-ping rounded-full bg-[#1a3a3a]" />
+                  <span className="size-1.5 animate-ping rounded-full bg-emerald-600" />
                   Active Check-In Open
                 </Badge>
               )}
@@ -450,11 +449,10 @@ export function EventDetailSheet({
                   type="button"
                   disabled={!canEdit}
                   onClick={() => canEdit && onEdit?.(event)}
-                  className={`flex min-h-[44px] items-center justify-center gap-1 rounded-full border px-2.5 py-1.5 text-xs font-semibold shadow-xs transition-all sm:min-h-[44px] sm:gap-1.5 sm:px-3.5 ${
-                    canEdit
+                  className={`flex min-h-[44px] items-center justify-center gap-1 rounded-full border px-2.5 py-1.5 text-xs font-semibold shadow-xs transition-all sm:min-h-[44px] sm:gap-1.5 sm:px-3.5 ${canEdit
                       ? "cursor-pointer border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] hover:bg-[#faf5e8] active:scale-95"
                       : "cursor-not-allowed border-[#e5e5e5]/50 bg-black/[0.02] text-[#6a6a6a]"
-                  }`}
+                    }`}
                   title={
                     canEdit ? "Edit Event Details" : "Locked (Cannot edit)"
                   }
@@ -515,11 +513,10 @@ export function EventDetailSheet({
             aria-controls="event-overview-panel"
             tabIndex={activeTab === "overview" ? 0 : -1}
             onClick={() => setActiveTab("overview")}
-            className={`flex min-h-[44px] items-center justify-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition-all focus-visible:ring-2 focus-visible:ring-[#0a0a0a] focus-visible:ring-offset-2 focus-visible:outline-none sm:min-w-32 sm:px-5 sm:text-sm ${
-              activeTab === "overview"
+            className={`flex min-h-[44px] items-center justify-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition-all focus-visible:ring-2 focus-visible:ring-[#0a0a0a] focus-visible:ring-offset-2 focus-visible:outline-none sm:min-w-32 sm:px-5 sm:text-sm ${activeTab === "overview"
                 ? "bg-[#0a0a0a] text-white shadow-xs"
                 : "text-[#6a6a6a] hover:text-[#0a0a0a]"
-            }`}
+              }`}
           >
             <InfoIcon className="size-4" />
             <span>Overview</span>
@@ -533,20 +530,18 @@ export function EventDetailSheet({
             aria-controls="event-attendance-panel"
             tabIndex={activeTab === "attendance" ? 0 : -1}
             onClick={() => setActiveTab("attendance")}
-            className={`flex min-h-[44px] items-center justify-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition-all focus-visible:ring-2 focus-visible:ring-[#0a0a0a] focus-visible:ring-offset-2 focus-visible:outline-none sm:min-w-32 sm:px-5 sm:text-sm ${
-              activeTab === "attendance"
+            className={`flex min-h-[44px] items-center justify-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition-all focus-visible:ring-2 focus-visible:ring-[#0a0a0a] focus-visible:ring-offset-2 focus-visible:outline-none sm:min-w-32 sm:px-5 sm:text-sm ${activeTab === "attendance"
                 ? "bg-[#0a0a0a] text-white shadow-xs"
                 : "text-[#6a6a6a] hover:text-[#0a0a0a]"
-            }`}
+              }`}
           >
             <UsersIcon className="size-4" />
             <span>Attendance</span>
             <span
-              className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${
-                activeTab === "attendance"
+              className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${activeTab === "attendance"
                   ? "bg-white/20 text-white"
                   : "bg-black/[0.08] text-[#0a0a0a]"
-              }`}
+                }`}
             >
               {attendances.length}
             </span>

@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { useNavigate } from "@tanstack/react-router"
-import { GraduationCapIcon, ArrowLeftIcon, AlertCircleIcon } from "lucide-react"
+import { GraduationCapIcon, AlertCircleIcon } from "lucide-react"
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
 import { schoolsApi } from "../api/configureApi"
 import { Button } from "@/components/base/Button"
@@ -58,24 +58,16 @@ export function SchoolFormPage() {
         items={[
           { label: "Configure" },
           { label: "Master Data" },
-          { label: "Schools & Universities" },
+          {
+            label: "Schools & Universities",
+            href: "/configure/master/school",
+          },
           { label: "Add Institution" },
         ]}
+        onBack={() => void navigate({ to: "/configure/master/school" })}
       />
 
       <div className="mx-auto max-w-7xl space-y-6 px-3.5 py-4 sm:px-6 md:px-8">
-        {/* Back Button */}
-        <div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => void navigate({ to: "/configure/master/school" })}
-            className="gap-2 rounded-[12px] border-[#e5e5e5] bg-white text-xs font-semibold hover:bg-[#faf5e8]"
-          >
-            <ArrowLeftIcon className="size-4" />
-            Back to Directory
-          </Button>
-        </div>
 
         {/* Error Banner */}
         {errorMsg && (

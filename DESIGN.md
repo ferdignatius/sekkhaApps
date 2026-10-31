@@ -20,6 +20,23 @@ Clay is visual reference, not product identity. HIG is interaction reference, no
 
 Do not add raw hex values, arbitrary radius values, custom shadows, or parallel material systems in feature code. Extend tokens only when an actual product need exists.
 
+## Apple Human Interface Guidelines (HIG) Principles
+
+HIG mendefinisikan kualitas interaksi, konsistensi, dan ergonomi pengguna:
+
+### 1. Core Principles
+- **Clarity**: Antarmuka terbaca jelas, teks tajam dan mudah dibaca di setiap ukuran layar, ikon komunikatif, affordance interaktif terlihat gamblang.
+- **Deference**: UI membantu pengguna fokus pada konten dan tugas utama dengan meminimalkan visual clutter yang tidak esensial.
+- **Depth**: Lapisan visual, elevasi terukur, dan transisi halus menyampaikan hierarki serta mempermudah pemahaman struktur antarmuka.
+
+### 2. Key Interaction Patterns
+- **Navigation**: Struktur navigasi hirarkis atau flat yang konsisten. Desktop via sidebar terstruktur; mobile via bottom dock dengan primary destinations dan grouped overflow.
+- **Touch Targets & User Interaction**: Target sentuh interaktif minimum 44×44pt (44px) untuk semua kontrol mobile/tablet. Feedback visual seketika saat di-tap/klik.
+- **Modality**: Gunakan modal view/sheet hanya saat butuh fokus pengguna menyelesaikan satu sub-task spesifik tanpa mengacaukan konteks kerja utama. Sediakan dismiss yang jelas (keyboard escape, backdrop, tombol cancel).
+- **Loading & State Feedback**: Hindari layar kosong tanpa konteks. Selalu sediakan skeleton placeholder saat fetching, serta empty state dengan next action terarah.
+- **Feedback & Motion**: Gerakan antarmuka harus bermakna dan mendukung pemahaman (respect `prefers-reduced-motion`). Feedback animasi memperkuat konfirmasi aksi.
+- **System Capabilities**: Integrasikan kemampuan platform seperti shortcut keyboard, auto-focus input pertama form modal, dan safe-area insets mobile.
+
 ## Visual tokens
 
 ### Color

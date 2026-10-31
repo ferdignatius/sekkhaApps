@@ -120,9 +120,91 @@ The source of truth is `sekkha-api/prisma/schema.prisma`. All legacy out-of-scop
   - Session Revocation: Password changes and resets immediately revoke all user refresh tokens and invalidate older JWTs (`passwordChangedAt`).
 - **Timing Oracle Mitigation**: Login endpoint runs dummy bcrypt hash verification when a user identifier is not found to equalize response times and prevent enumeration.
 
+## Architecture & Conventions (from RULES.md)
+
+### Component Structure (Shared Kernel)
+
+```
+sekkha-frontend/src/components/
+├── ui/              # ← shadcn generated, JANGAN DIUBAH
+│   ├── button.tsx
+│   ├── dialog.tsx
+│   └── ...
+│
+├── base/            # ← shadcn yang di-customize sesuai DESIGN.md
+│   ├── Button.tsx   #   wrap ui/button + variant/size Sekkha
+│   ├── Input.tsx
+│   ├── Badge.tsx
+│   └── ...
+│
+└── common/          # ← komponen komposit (gabungan beberapa base)
+    ├── AppTable.tsx
+    ├── AppModal.tsx
+    └── ...
+```
+
+Logika layer component:
+```
+ui/button.tsx          → component shadcn murni
+    ↓
+base/Button.tsx        → styling sesuai tokens DESIGN.md
+    ↓
+common/AppTable.tsx    → pakai base/Button di dalamnya
+    ↓
+modules/<name>/...     → pakai common/ atau base/ langsung
+```
+
+### Module Structure (Frontend)
+
+```
+sekkha-frontend/src/modules/<nama-modul>/
+├── internal/          # Privat — semua implementasi di sini
+│   ├── components/    # UI khusus modul, tidak dipakai modul lain
+│   ├── hooks/         # data fetching / logic khusus modul
+│   ├── api/           # call ke backend endpoint modul via @/lib/api
+│   └── types.ts       # type definitions internal
+│
+└── index.ts           # Publik — export yang boleh dipakai dari luar
+                       # + ModuleDefinition untuk Shell Registry
+```
+
+**Aturan Frontend Module:**
+1. **Internal = privat**: File di `internal/` HANYA boleh diakses dari dalam modul itu sendiri.
+2. **index.ts = kontrak publik**: Modul lain dan Shell hanya boleh import dari `index.ts`.
+3. **ModuleDefinition wajib**: Setiap modul wajib export `ModuleDefinition` yang mendaftarkan `navItems` ke registry.
+4. **Shared components pakai Shared Kernel**: Modul pakai `@/components/base/` dan `@/components/common/` — DILARANG menduplikasi komponen global di dalam modul.
+
+### Module Structure (Backend)
+
+```
+sekkha-api/src/modules/<nama-modul>/
+├── routes.ts          # Endpoint Express & middleware (requireAuth, requireRole)
+├── controllers.ts     # HTTP handlers: thin, parse + validasi Zod + delegate ke services
+├── services.ts        # Otak bisnis: business logic, query Prisma, cache & eventbus.publish()
+├── models.ts          # TypeScript interfaces, DTOs & Zod schemas
+├── module.ts          # Kontrak publik AppModule: register(app) + subscribe?()
+├── index.ts           # Barrel export publik untuk konsumsi luar
+└── internal/          # (Opsional) Helper privat khusus modul (cron, sse, email, otpStore, dll.)
+```
+
+**Aturan Backend Module:**
+1. **module.ts & index.ts = kontrak publik**: `src/app.ts` / `src/server.ts` hanya mengimpor `module.ts` atau fungsi publik lewat `index.ts`.
+2. **Controller tipis (`controllers.ts`)**: Hanya ekstrak input (`req.body`, `req.params`, `req.query`), validasi Zod, delegasi ke `services.ts`, kirim response JSON. Dilarang query Prisma langsung di controller.
+3. **Service = brain (`services.ts`)**: Semua business logic, aturan bisnis, query Prisma, cache invalidation, dan `eventbus.publish()` berada di sini.
+4. **Internal = privat (`internal/`)**: Helper privat modul dilarang diimpor modul lain.
+5. **EventBus untuk cross-module**: Modul A memicu efek modul B HANYA via domain event EventBus (`src/core/eventbus`). Dilarang import service lintas modul.
+
+### Git & Commit Conventions (Niche Commits)
+
+1. **No Auto-Commit**: Agent dilarang commit mandiri. Commit dilakukan hanya bila diinstruksikan eksplisit oleh user.
+2. **Satu commit = satu topik**: Jangan campur fitur beda domain dalam satu commit.
+3. **Format pesan commit**: `v<target> - <type>(<scope>): <summary>` untuk judul, plus body bullet bila perubahan non-trivial (`feat:`, `fix:`, `refactor:`, `chore:`, `docs:`, dll.).
+4. **Verifikasi sebelum commit**: API → `bun run build` (tsc) & `bun test`; Frontend → `lint` → `typecheck` → `test`.
+5. **CHANGELOG diisi saat perubahan**: Setiap fitur/fix wajib catat entri ke `[Unreleased]` di `CHANGELOG.md` (Added/Changed/Fixed/Removed). Saat release, pindahkan ke `[X.Y.Z] - tanggal`.
+
 ## Architecture: modular monolith + shell/registry
 
-Before non-trivial features, read `RULES.md` (conventions) and the PRD in `prd-sekkha/<domain>/` (PRDs are the product source of truth; PR code should trace to them).
+Sebelum fitur non-trivial, baca PRD di `prd-sekkha/<domain>/` (PRD adalah source of truth produk).
 
 Frontend (`sekkha-frontend/src/`):
 
@@ -150,9 +232,21 @@ Per-folder rules live in READMEs next to the code (`sekkha-*/src/**/README.md`) 
 - Run `db:generate` after editing `prisma/schema.prisma`. Run `db:push` (or `db:migrate --name <name>`) to sync schema changes to PostgreSQL.
 - Tests are colocated (`__tests__/`, `*.test.ts(x)`); property-based tests are `*.pbt.test.ts` (fast-check). Vitest uses `vitest.config.ts`, deliberately separate from `vite.config.ts` because TanStack Start/Nitro plugins bundle their own React and break unit tests. jsdom + globals; `src/test-setup.ts` stubs IntersectionObserver for framer-motion.
 - Prettier: no semicolons, double quotes, print width 80, Tailwind class sorting (`cn`/`cva` aware) — `sekkha-frontend/.prettierrc`.
-- `agent-skills/` is a gitignored upstream clone (addyosmani/agent-skills); the installed skills live in `.agents/skills/`. Neither is project code — don't edit or build them.
+- `agent-skills/` & `.agents/skills/`: Koleksi agent skills untuk referensi praktik engineering terbaik. Coding agent WAJIB membaca skill terkait di folder ini sebelum implementasi untuk memaksimalkan kualitas output.
 - Branches: `main`, `staging`, `development`, `production`. Active development happens on **`development`**.
 - Conventional Commits (`feat:`, `fix:`, `chore:`…).
+
+## Coding Agent Rules & Engineering Standards
+
+1. **Alignment PRD & Monorepo (Source of Truth)**: Sebelum dan selama implementasi, agent wajib memverifikasi keselarasan penuh antara dokumen PRD di `prd-sekkha/<domain>/`, modul backend di `sekkha-api/`, dan modul frontend di `sekkha-frontend/`. Kontrak API (endpoints, payloads, data types), domain logic, serta state/UI harus konsisten tanpa deviasi liar.
+2. **Agent Skills Reference**: Sebelum merancang atau menulis kode, agent wajib membaca dan merujuk skill terkait di `agent-skills/` (atau `.agents/skills/`) sesuai kebutuhan task.
+3. **No Auto-Commit**: Agent DILARANG melakukan auto-commit secara mandiri. Hanya buat commit saat diminta secara eksplisit oleh user.
+4. **Confidence Scoring**: Setiap respon/prompt agent WAJIB menyertakan skor confidence (contoh: `Confidence: 95%`) beserta justification ringkas untuk memastikan keselarasan pemahaman antara user dan agent.
+5. **Engineering Principles**:
+   - **YAGNI**: Terapkan prinsip "You Aren't Gonna Need It". Jangan membuat abstraksi spekulatif, file kosong, atau fitur berlebih yang belum diminta.
+   - **Clean Code**: Struktur rapi, penamaan deskriptif, fungsi modular berfokus satu tanggung jawab (SRP), minim redundansi, mudah diuji dan dirawat.
+   - **Big O Optimization**: Optimalkan algoritma dan query database dari segi waktu dan memori (utamakan $O(1)$ lookup via hash map/set/index, hindari $O(n^2)$ pada collections).
+   - **Maximum Security (OWASP Top 10)**: Validasi dan sanitasi ketat di semua trust boundaries (Zod/Prisma), cegah injection, pastikan auth guard & RBAC di setiap route, enkripsi PII, lindungi session dan tokens.
 
 ## Release & Versioning
 

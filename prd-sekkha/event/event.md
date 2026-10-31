@@ -28,7 +28,7 @@ Alur utama:
 
 Role dalam seluruh sistem Sekkha menggunakan terminologi Bahasa Inggris resmi: `member`, `activist`, `organizer`, dan `admin`.
 
-| Role | Lihat Event | Buat / Edit / Hapus Event | Ubah Status (Action Button) | Take Presensi QR / Manual | Lihat & Ekspor Rekap Kehadiran |
+| Role | Lihat Event | Buat / Edit / Hapus Event | Ubah Status (Action Button) | Take Presensi QR / Manual | Lihat Rekap Kehadiran |
 | --- | :---: | :---: | :---: | :---: | :---: |
 | `member` | v (sesuai `visibility`) | x | x | x | x |
 | `activist` | v (sesuai `visibility`) | x | x | x | x |
@@ -99,7 +99,7 @@ Perubahan status dilakukan secara eksplisit melalui **Action Buttons** kontekstu
 ### Aturan Transisi Action Button:
 1. **Status `scheduled`**:
    - Tombol **"Start Event" (Mulai Acara)**: Mengubah status menjadi `active`. Scanner presensi aktif dan siap menerima data jemaat.
-     - **Validasi Waktu Mulai**: Event hanya dapat diaktifkan jika tanggal & jam event sudah tiba atau telah terlewati (**`event_date <= current date`** / waktu saat tombol ditekan). Jika panitia mencoba menekan "Start Event" sebelum tanggal/jam event (`event_date > current date`), tombol berstatus disabled / request ditolak dengan pesan error: *"Event belum dapat dimulai sebelum tanggal dan jam pelaksanaan"*.
+     - **Validasi Waktu Mulai**: Event **tidak boleh diaktifkan jika tanggal saat ini sudah melewati tanggal yang ditetapkan pada event (`current date > event_date`)**. Aktivasi diizinkan selama tanggal saat ini berada pada atau sebelum jadwal pelaksanaan (`current date <= event_date`). Apabila jadwal event sudah terlewat (`current date > event_date`), tombol "Start Event" berstatus disabled / request ditolak dengan `400 Bad Request`, sehingga event tersebut harus dijadwalkan ulang (*reschedule*) atau dibatalkan (*cancel*).
    - Tombol **"Cancel Event" (Batalkan Acara)**: Membuka modal konfirmasi pembatalan. Jika dikonfirmasi, status berubah menjadi `cancel`.
 2. **Status `active`**:
    - Tombol **"Close & Finalize Event" (Tutup & Finalisasi Poin)**: Mengubah status menjadi `closed`. Sesi scanner ditutup, rekap kehadiran dikunci, dan sistem secara otomatis mengeksekusi pembagian poin ke seluruh jemaat hadir serta memperbarui streak mingguan jemaat.
@@ -197,7 +197,6 @@ Visibilitas menentukan siapa yang dapat melihat jadwal event:
   * **Badge Keterlambatan (*Late Badge*)**:
     * Muncul otomatis sebagai badge **"Late (-15 Pts)"** di samping nama jemaat jika jemaat di-scan melewati batas toleransi `max_late_minutes`.
   * Pembatalan presensi: Tombol hapus kehadiran peserta tertentu (`DELETE /api/events/:id/attendances/:userId`) selama event belum berstatus `closed`.
-  * Fitur ekspor data kehadiran (CSV/Excel).
 
 ---
 
@@ -382,7 +381,7 @@ Mengubah status siklus event secara aman. Mendukung transisi status termasuk pem
   }
   ```
   *(Status tujuan valid: `active`, `closed`, `cancel`, atau `scheduled` khusus jika status saat ini `cancel`).*
-  - **Validasi Transisi ke `active`**: Transisi status menjadi `active` hanya diizinkan jika waktu sekarang sudah mencapai atau melewati jadwal event (**`event.event_date <= current date`**). Jika panitia mencoba mengaktifkan event sebelum jadwalnya tiba (`event.event_date > current date`), server menolak dengan `400 Bad Request` dan pesan error: `"Event cannot be started before its scheduled date and time"`.
+  - **Validasi Transisi ke `active`**: Transisi status menjadi `active` **tidak diizinkan jika tanggal saat ini sudah melewati tanggal pelaksanaan event (`current date > event.event_date`)** — acara yang sudah terlewat jadwalnya wajib di-*reschedule* atau di-*cancel*. Aktivasi diizinkan pada atau sebelum tanggal pelaksanaan (`current date <= event.event_date`). Jika panitia mencoba mengaktifkan event yang tanggalnya sudah terlewat (`current date > event.event_date`), server menolak dengan `400 Bad Request` dan pesan error: `"Event cannot be activated because its scheduled date has already passed"`.
   - **Validasi Reschedule**: Saat mengubah status dari `cancel` ke `scheduled`, field `event_date` wajib disertakan dan harus **`event_date >= current date`**.
 - **Response 200 OK (Start Event)**:
   ```json
@@ -396,12 +395,12 @@ Mengubah status siklus event secara aman. Mendukung transisi status termasuk pem
     }
   }
   ```
-- **Error 400 Bad Request (Start Event Prematur)**:
+- **Error 400 Bad Request (Start Event Kadaluwarsa / Tanggal Terlewati)**:
   ```json
   {
     "status": "error",
     "code": 400,
-    "message": "Event cannot be started before its scheduled date and time"
+    "message": "Event cannot be activated because its scheduled date has already passed"
   }
   ```
 - **Response 200 OK (Close Event)**:
@@ -516,9 +515,9 @@ Menghapus event permanen.
 | --- | --- | --- |
 | **AC-EVT-01** | `activist` mencoba mengakses `/events/:id/scan` atau POST absensi | Server menolak dengan `403 Forbidden`. Hak operasional scanner eksklusif untuk organizer/admin. |
 | **AC-EVT-02** | `activist` mencoba mengakses `/events/:id/attendances` (Rekap Presensi) | Server menolak dengan `403 Forbidden`. UI tidak menampilkan menu rekap pada role aktivis. |
-| **AC-EVT-03** | `organizer` membuka rekap presensi di `/events/:id/attendances` | Berhasil menampilkan total kehadiran, daftar peserta, nomor anggota, dan tombol hapus/ekspor. |
+| **AC-EVT-03** | `organizer` membuka rekap presensi di `/events/:id/attendances` | Berhasil menampilkan total kehadiran, daftar peserta, nomor anggota, dan tombol hapus (selama status `active`). |
 | **AC-EVT-04** | Form create/edit event dibuka oleh organizer | Field status **tidak ada** berupa dropdown. Event baru otomatis tersimpan sebagai `scheduled`. |
-| **AC-EVT-05** | Organizer mengklik tombol action "Start Event" pada event `scheduled` saat jadwal sudah tiba (`event_date <= current date`) | Status event berubah menjadi `active` via `PATCH /api/events/:id/status`. Scanner presensi aktif. Data kehadiran disimpan berstatus draft dan poin belum dikreditkan. |
+| **AC-EVT-05** | Organizer mengklik tombol action "Start Event" pada event `scheduled` pada atau sebelum tanggal jadwalnya (`current date <= event_date`) | Status event berubah menjadi `active` via `PATCH /api/events/:id/status`. Scanner presensi aktif. Data kehadiran disimpan berstatus draft dan poin belum dikreditkan. |
 | **AC-EVT-06** | Organizer mengklik tombol action "Close & Finalize Event" pada event `active` | Status event berubah menjadi `closed`. Sesi scanner ditutup dan poin seluruh jemaat hadir langsung dikreditkan secara batch. |
 | **AC-EVT-07** | Organizer mengklik tombol action "Cancel Event" | Menampilkan modal konfirmasi, setelah disetujui status berubah menjadi `cancel`. Tidak ada pembagian poin. |
 | **AC-EVT-08** | Pemilihan Event Type saat membuat event baru | Pilihan diambil dari master data `event_types`. Field poin default terisi otomatis sesuai `default_point_reward`. |
@@ -527,6 +526,6 @@ Menghapus event permanen.
 | **AC-EVT-11** | Presensi QR ganda terhadap user yang sama pada satu event | Mengembalikan error `409 Conflict` dengan pesan "Peserta sudah tercatat hadir". |
 | **AC-EVT-12** | Organizer membuat event baru dengan tanggal lampau (`event_date < current date`) | Validasi frontend & backend menolak dengan `400 Bad Request` dan pesan error "Event date cannot be in the past". Event hanya tersimpan jika `event_date >= current date`. |
 | **AC-EVT-13** | Organizer menekan tombol action "Reschedule Event" pada event `cancel` | Menampilkan modal pemilihan tanggal baru (`event_date >= current date`). Setelah disimpan, status event berubah kembali menjadi `scheduled` via `PATCH /api/events/:id/status`. |
-| **AC-EVT-14** | Organizer mencoba menekan "Start Event" sebelum jadwal kegiatan tiba (`event_date > current date`) | Tombol di UI disabled / request `PATCH status: active` ditolak oleh backend dengan `400 Bad Request` dan pesan "Event cannot be started before its scheduled date and time". |
+| **AC-EVT-14** | Organizer mencoba menekan "Start Event" ketika tanggal saat ini sudah melewati jadwal pelaksanaan event (`current date > event_date`) | Tombol di UI disabled / request `PATCH status: active` ditolak oleh backend dengan `400 Bad Request` dan pesan "Event cannot be activated because its scheduled date has already passed" (event harus di-reschedule atau di-cancel). |
 
 

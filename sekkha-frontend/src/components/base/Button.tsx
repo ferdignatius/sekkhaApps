@@ -27,7 +27,7 @@ export interface ButtonProps extends React.ComponentProps<"button"> {
 }
 
 const BASE_CLASSES =
-  "group/button inline-flex shrink-0 cursor-pointer items-center justify-center whitespace-nowrap font-semibold transition-all select-none disabled:pointer-events-none disabled:bg-[#e5e5e5] disabled:text-[#6a6a6a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0a0a0a] focus-visible:ring-offset-2 active:scale-[0.97] min-h-[44px]"
+  "group/button inline-flex shrink-0 cursor-pointer items-center justify-center whitespace-nowrap font-semibold transition-all select-none disabled:pointer-events-none disabled:bg-[#e5e5e5] disabled:text-[#6a6a6a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0a0a0a] focus-visible:ring-offset-2 active:scale-[0.97]"
 
 const variantClasses: Record<SekkhaButtonVariant, string> = {
   // ─── Material Design 3 Canonical Variants (Clay Material) ───

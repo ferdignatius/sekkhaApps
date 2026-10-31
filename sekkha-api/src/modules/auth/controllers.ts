@@ -11,7 +11,7 @@ import {
   ResetPasswordSchema,
 } from "./internal/validation"
 import * as service from "./services"
-import { apiSuccess } from "../../lib/apiResponse"
+import { apiSuccess, apiFailure } from "../../lib/apiResponse"
 
 function publicAuthResult(result: service.AuthResult) {
   const { refreshToken: _refreshToken, ...publicResult } = result
@@ -29,7 +29,7 @@ function setRefreshCookie(res: Response, refreshToken?: string) {
     secure: isProduction,
     sameSite: isProduction ? "strict" : "lax",
     path: "/api/auth",
-    maxAge: 7 * 24 * 60 * 60 * 1000,
+    maxAge: service.getRefreshTokenTtlSeconds() * 1000,
   })
 }
 
@@ -106,7 +106,7 @@ export async function handleRefreshSession(req: Request, res: Response, next: Ne
     const refreshToken = req.cookies?.sekkha_refresh_token
 
     if (!refreshToken) {
-      apiSuccess(res, 401, "Refresh token not found", null)
+      apiFailure(res, 401, "Refresh token not found", null)
       return
     }
 
@@ -167,7 +167,7 @@ export async function handleForgotPassword(req: Request, res: Response, next: Ne
 export async function handleVerify(req: Request, res: Response) {
   const header = req.headers.authorization
   if (!header?.startsWith("Bearer ")) {
-    apiSuccess(res, 401, "Token not found", null)
+    apiFailure(res, 401, "Token not found", null)
     return
   }
 
@@ -176,7 +176,7 @@ export async function handleVerify(req: Request, res: Response) {
     const user = await service.verifyToken(token)
     apiSuccess(res, 200, "Token valid", user)
   } catch {
-    apiSuccess(res, 401, "Invalid token", null)
+    apiFailure(res, 401, "Invalid token", null)
   }
 }
 

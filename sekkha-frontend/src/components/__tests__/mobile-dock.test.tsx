@@ -2,7 +2,7 @@
 // Tests that MobileDock navigation items match the sidebar order and permissions.
 
 import { describe, it, expect, vi, afterEach } from "vitest"
-import { render, screen, cleanup } from "@testing-library/react"
+import { render, screen, cleanup, fireEvent } from "@testing-library/react"
 import { MobileDock } from "@/components/common/MobileDock"
 import { AuthContext } from "@/modules/auth/internal/context/AuthContext"
 import { initialAuthState } from "@/modules/auth/internal/context/authReducer"
@@ -129,5 +129,17 @@ describe("MobileDock", () => {
 
     const homeLink = screen.getByRole("link", { name: /home/i })
     expect(homeLink.getAttribute("aria-current")).toBeNull()
+  })
+
+  it("allows organizer/admin to open More menu for /insight and /configure/master/event-type", () => {
+    renderDock("organizer")
+
+    const moreBtn = screen.getByRole("button", { name: /more/i })
+    fireEvent.click(moreBtn)
+
+    const allLinks = screen.getAllByRole("link")
+    const hrefs = allLinks.map((link) => link.getAttribute("href"))
+    expect(hrefs).toContain("/insight")
+    expect(hrefs).toContain("/configure/master/event-type")
   })
 })

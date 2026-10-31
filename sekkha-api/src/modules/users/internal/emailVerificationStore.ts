@@ -25,6 +25,13 @@ function hashOtp(otp: string): string {
   return crypto.createHash("sha256").update(otp.trim()).digest("hex")
 }
 
+function timingSafeEqualHex(a: string, b: string): boolean {
+  const bufA = Buffer.from(a, "utf8")
+  const bufB = Buffer.from(b, "utf8")
+  if (bufA.length !== bufB.length) return false
+  return crypto.timingSafeEqual(bufA, bufB)
+}
+
 export const emailVerificationStore = {
   /**
    * Checks if user is currently in cooldown period.
@@ -119,7 +126,6 @@ export const emailVerificationStore = {
     const inputHash = hashOtp(inputOtp)
 
     let challenge: EmailVerificationChallenge | null = null
-    let currentAttempts = 0
 
     try {
       if (redis.status === "ready" || redis.status === "connect") {
@@ -128,20 +134,20 @@ export const emailVerificationStore = {
           return { success: false, error: "Kode verifikasi telah kedaluwarsa atau belum pernah diminta." }
         }
         challenge = JSON.parse(raw) as EmailVerificationChallenge
-        currentAttempts = parseInt((await redis.get(attemptsKey)) || "0", 10)
 
-        if (challenge.otpHashed !== inputHash) {
-          currentAttempts += 1
+        if (!timingSafeEqualHex(challenge.otpHashed, inputHash)) {
+          const currentAttempts = await redis.incr(attemptsKey)
+          if (currentAttempts === 1) {
+            await redis.expire(attemptsKey, OTP_TTL_SECONDS)
+          }
           if (currentAttempts >= MAX_VERIFY_ATTEMPTS) {
-            await redis.del(challengeKey)
-            await redis.del(attemptsKey)
+            await redis.del(challengeKey, attemptsKey)
             return {
               success: false,
               error: "Kode verifikasi salah sebanyak 5 kali. Permintaan verifikasi email dibatalkan demi keamanan akun Anda. Silakan minta kode baru.",
               remainingAttempts: 0,
             }
           }
-          await redis.set(attemptsKey, currentAttempts.toString(), "EX", OTP_TTL_SECONDS)
           const remaining = MAX_VERIFY_ATTEMPTS - currentAttempts
           return {
             success: false,
@@ -151,8 +157,7 @@ export const emailVerificationStore = {
         }
 
         // OTP Valid: consume challenge
-        await redis.del(challengeKey)
-        await redis.del(attemptsKey)
+        await redis.del(challengeKey, attemptsKey)
         return { success: true, newEmail: challenge.newEmail }
       }
     } catch {}
@@ -163,7 +168,7 @@ export const emailVerificationStore = {
       return { success: false, error: "Kode verifikasi telah kedaluwarsa atau belum pernah diminta." }
     }
 
-    if (entry.challenge.otpHashed !== inputHash) {
+    if (!timingSafeEqualHex(entry.challenge.otpHashed, inputHash)) {
       entry.attempts += 1
       if (entry.attempts >= MAX_VERIFY_ATTEMPTS) {
         clearTimeout(entry.timer)

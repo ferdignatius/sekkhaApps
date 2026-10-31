@@ -1,7 +1,7 @@
 // feature/leaderboard/components/LeaderboardPage
 // Overhauled UI/UX strictly aligned with Clay Design System (DESIGN.md)
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useMemo } from "react"
 import {
   TrophyIcon,
   StarIcon,
@@ -311,11 +311,11 @@ function LeaderboardRow({
               You
             </span>
           )}
-          {entry.role && entry.role !== "umat" && (
+          {entry.role && entry.role !== "umat" && entry.role !== "member" && (
             <Badge variant="teal" size="sm" className="capitalize">
               {entry.role === "admin"
                 ? "Admin"
-                : entry.role === "pengurus"
+                : entry.role === "pengurus" || entry.role === "organizer"
                   ? "Organizer"
                   : "Activist"}
             </Badge>
@@ -351,31 +351,62 @@ export function LeaderboardPage() {
     authState.status === "authenticated" ? (authState.userId ?? "") : ""
   const userRole =
     authState.status === "authenticated" ? authState.role : "member"
-  const isPengurusOrAdmin = userRole === "admin" || userRole === "organizer"
-  const isAktivis = userRole === "activist"
+  const isPengurusOrAdmin =
+    userRole === "admin" ||
+    userRole === "organizer" ||
+    (userRole as string) === "pengurus"
+  const isAktivis =
+    userRole === "activist" || (userRole as string) === "aktivis"
   const isUmatOnly = !isPengurusOrAdmin && !isAktivis
 
   const [metric, setMetric] = useState<LeaderboardMetric>("points")
 
-  // Multi-select role checkboxes (default: all checked for pengurus/admin)
-  const [selectedRoles, setSelectedRoles] = useState<RoleCheckboxKey[]>([
-    "umat",
-    "aktivis",
-    "pengurus",
-  ])
+  // Multi-select role checkboxes (default: all available checked for role)
+  const [selectedRoles, setSelectedRoles] = useState<RoleCheckboxKey[]>(() =>
+    isAktivis ? ["umat", "aktivis"] : ["umat", "aktivis", "pengurus"]
+  )
+
+  useEffect(() => {
+    if (isAktivis) {
+      setSelectedRoles((prev) => {
+        const next = prev.filter(
+          (r): r is RoleCheckboxKey => r === "umat" || r === "aktivis"
+        )
+        return next.length === prev.length
+          ? prev
+          : next.length > 0
+            ? next
+            : ["umat", "aktivis"]
+      })
+    }
+  }, [isAktivis])
 
   function toggleRole(role: RoleCheckboxKey) {
     setSelectedRoles((prev) => {
-      if (prev.includes(role)) {
-        if (prev.length === 1) return prev // keep at least 1 checked
-        return prev.filter((r) => r !== role)
+      const base = isAktivis
+        ? prev.filter(
+            (r): r is RoleCheckboxKey => r === "umat" || r === "aktivis"
+          )
+        : prev
+      if (base.includes(role)) {
+        if (base.length === 1) return base // keep at least 1 checked
+        return base.filter((r) => r !== role)
       } else {
-        return [...prev, role]
+        return [...base, role]
       }
     })
   }
 
-  const activeRoles: RoleCheckboxKey[] = isUmatOnly ? ["umat"] : selectedRoles
+  const activeRoles: RoleCheckboxKey[] = useMemo(() => {
+    if (isUmatOnly) return ["umat"]
+    if (isAktivis) {
+      const filtered = selectedRoles.filter(
+        (r): r is RoleCheckboxKey => r === "umat" || r === "aktivis"
+      )
+      return filtered.length > 0 ? filtered : ["umat", "aktivis"]
+    }
+    return selectedRoles
+  }, [isUmatOnly, isAktivis, selectedRoles])
   const roleScope = activeRoles.join(",")
 
   const [entries, setEntries] = useState<LeaderboardEntry[]>([])
@@ -507,33 +538,46 @@ export function LeaderboardPage() {
     setReloadToken((token) => token + 1)
   }
 
-  const validEntries = (Array.isArray(entries) ? entries : []).filter(
-    (e): e is LeaderboardEntry =>
-      Boolean(e) && typeof e === "object" && typeof e.value === "number"
+  const validEntries = useMemo(
+    () =>
+      (Array.isArray(entries) ? entries : []).filter(
+        (e): e is LeaderboardEntry =>
+          Boolean(e) && typeof e === "object" && typeof e.value === "number"
+      ),
+    [entries]
   )
 
   // Dynamic filter by role with recalculation of ranks
-  const filteredEntries = validEntries
-    .filter((entry) => {
-      const rawRole = (entry.role || "umat").toLowerCase()
-      const normalizedRole: RoleCheckboxKey =
-        rawRole === "admin" || rawRole === "pengurus"
-          ? "pengurus"
-          : rawRole === "aktivis"
-            ? "aktivis"
-            : "umat"
-      return activeRoles.includes(normalizedRole)
-    })
-    .map((entry, idx) => ({
-      ...entry,
-      rank: idx + 1,
-    }))
+  const filteredEntries = useMemo(
+    () =>
+      validEntries
+        .filter((entry) => {
+          const rawRole = (entry.role || "umat").toLowerCase()
+          const normalizedRole: RoleCheckboxKey =
+            rawRole === "admin" ||
+            rawRole === "organizer" ||
+            rawRole === "pengurus"
+              ? "pengurus"
+              : rawRole === "activist" || rawRole === "aktivis"
+                ? "aktivis"
+                : "umat"
+          return activeRoles.includes(normalizedRole)
+        })
+        .map((entry, idx) => ({
+          ...entry,
+          rank: idx + 1,
+        })),
+    [validEntries, activeRoles]
+  )
 
   const podium = filteredEntries.slice(0, 3)
   // Show ranks 4 through 100 in the main list
   const rest = filteredEntries.slice(3, 100)
 
-  const myFilteredIdx = filteredEntries.findIndex((e) => e.user_id === myId)
+  const myFilteredIdx = useMemo(
+    () => filteredEntries.findIndex((e) => e.user_id === myId),
+    [filteredEntries, myId]
+  )
   const isUserInTop100 = myFilteredIdx >= 0 && myFilteredIdx < 100
 
   const metricUnit =

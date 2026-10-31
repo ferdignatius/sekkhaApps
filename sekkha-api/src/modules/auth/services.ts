@@ -30,15 +30,22 @@ import {
   incrementForgotPasswordOtpAttempts,
   savePasswordResetToken,
   verifyAndConsumePasswordResetToken,
-  hashOtp,
+  timingSafeEqualOtpHash,
 } from "./internal/otpStore"
 import {
   saveRefreshToken,
-  verifyAndRotateRefreshToken,
+  verifyAndRotateRefreshTokenRecord,
   revokeRefreshToken,
+  revokeAllUserRefreshTokens,
+  getRefreshTokenTtlSeconds,
+  parseDurationToSeconds,
 } from "./internal/refreshTokenStore"
 import { sendRegisterOtpEmail, sendForgotPasswordOtpEmail } from "./internal/email"
 import { revokeToken, isTokenRevoked } from "./internal/tokenRevocation"
+
+// Dummy bcrypt hash used only to equalize response timing when a user identifier does not exist (OWASP timing-oracle mitigation)
+const DUMMY_BCRYPT_HASH =
+  process.env.DUMMY_BCRYPT_HASH || "$2b$10$CwTycUXWue0Thq9StjUM0uJ8D0R6V7W8X9Y0Z1a2b3c4d5e6f7g8h"
 
 // ─── Service ─────────────────────────────────────────────────────────────────
 // Business logic layer. Orchestrates repository calls + publishes domain events.
@@ -54,8 +61,11 @@ function getJwtExpiry(): string {
   return process.env.JWT_EXPIRES_IN || "15m" // 15m short-lived access token
 }
 
-export const ACCESS_TOKEN_TTL_SECONDS = 15 * 60 // 15 minutes
-export const REFRESH_TOKEN_TTL_SECONDS = 7 * 24 * 60 * 60 // 7 days
+export function getAccessTokenTtlSeconds(): number {
+  return parseDurationToSeconds(process.env.JWT_EXPIRES_IN, 15 * 60)
+}
+
+export { getRefreshTokenTtlSeconds }
 
 function hashSessionKey(token: string): string {
   return createHash("sha256").update(token.trim()).digest("hex")
@@ -64,7 +74,7 @@ function hashSessionKey(token: string): string {
 async function cacheUserSession(token: string, userData: any) {
   try {
     const key = `auth:session:${hashSessionKey(token)}`
-    await redis.set(key, JSON.stringify(userData), "EX", ACCESS_TOKEN_TTL_SECONDS)
+    await redis.set(key, JSON.stringify(userData), "EX", getAccessTokenTtlSeconds())
   } catch {
     // Non-blocking fallback if Redis is offline
   }
@@ -167,7 +177,7 @@ export async function verifyRegisterOtp(input: VerifyRegisterOtpInput): Promise<
     throw err
   }
 
-  if (!consumed && payload.otpHashed !== hashOtp(input.otp)) {
+  if (!consumed && !timingSafeEqualOtpHash(payload.otpHashed, input.otp)) {
     const attempts = await incrementRegistrationOtpAttempts(normalizedEmail)
     if (attempts >= 5) {
       const err = new Error(
@@ -206,7 +216,7 @@ export async function verifyRegisterOtp(input: VerifyRegisterOtpInput): Promise<
 
   const token = generateToken(user.id, user.role, user.name, user.passwordChangedAt)
   const refreshToken = randomBytes(32).toString("hex")
-  await saveRefreshToken(user.id, refreshToken, REFRESH_TOKEN_TTL_SECONDS)
+  await saveRefreshToken(user.id, refreshToken, getRefreshTokenTtlSeconds())
 
   const userData = {
     id: user.id,
@@ -237,7 +247,7 @@ export async function verifyRegisterOtp(input: VerifyRegisterOtpInput): Promise<
 
   return {
     accessToken: token,
-    expiresInSeconds: ACCESS_TOKEN_TTL_SECONDS,
+    expiresInSeconds: getAccessTokenTtlSeconds(),
     refreshToken,
     user: userData,
   }
@@ -320,7 +330,7 @@ export async function registerUser(input: RegisterInput): Promise<AuthResult> {
 
   const token = generateToken(user.id, user.role, user.name, user.passwordChangedAt)
   const refreshToken = randomBytes(32).toString("hex")
-  await saveRefreshToken(user.id, refreshToken, REFRESH_TOKEN_TTL_SECONDS)
+  await saveRefreshToken(user.id, refreshToken, getRefreshTokenTtlSeconds())
 
   const userData = {
     id: user.id,
@@ -349,7 +359,7 @@ export async function registerUser(input: RegisterInput): Promise<AuthResult> {
 
   return {
     accessToken: token,
-    expiresInSeconds: ACCESS_TOKEN_TTL_SECONDS,
+    expiresInSeconds: getAccessTokenTtlSeconds(),
     refreshToken,
     user: userData,
   }
@@ -362,6 +372,7 @@ export async function loginUser(input: LoginInput): Promise<AuthResult> {
   const identifier = input.identifier
   const user = await repo.findUserByIdentifier(identifier)
   if (!user || !user.password) {
+    await verifyPassword(input.password, DUMMY_BCRYPT_HASH)
     auditLogger.log({
       actorId: "unknown",
       action: "AUTH_LOGIN_FAILED",
@@ -407,7 +418,7 @@ export async function loginUser(input: LoginInput): Promise<AuthResult> {
   }
 
   await Promise.all([
-    saveRefreshToken(user.id, refreshToken, REFRESH_TOKEN_TTL_SECONDS),
+    saveRefreshToken(user.id, refreshToken, getRefreshTokenTtlSeconds()),
     cacheUserSession(token, userData),
   ])
 
@@ -421,7 +432,7 @@ export async function loginUser(input: LoginInput): Promise<AuthResult> {
 
   return {
     accessToken: token,
-    expiresInSeconds: ACCESS_TOKEN_TTL_SECONDS,
+    expiresInSeconds: getAccessTokenTtlSeconds(),
     refreshToken,
     user: userData,
   }
@@ -486,23 +497,29 @@ export async function verifyToken(token: string) {
  * Refreshes an existing session via refresh token rotation (F-23 & FE-01 Remediation).
  */
 export async function refreshSession(refreshToken: string): Promise<AuthResult> {
-  const userId = await verifyAndRotateRefreshToken(refreshToken)
-  if (!userId) {
+  const record = await verifyAndRotateRefreshTokenRecord(refreshToken)
+  if (!record) {
     const err = new Error("Sesi telah kedaluwarsa atau token tidak valid. Silakan login kembali.") as Error & { status: number }
     err.status = 401
     throw err
   }
 
-  const user = await repo.findUserById(userId)
+  const user = await repo.findUserById(record.userId)
   if (!user) {
     const err = new Error("Akun pengguna tidak ditemukan") as Error & { status: number }
     err.status = 401
     throw err
   }
 
+  if (user.passwordChangedAt && record.createdAt < user.passwordChangedAt.getTime()) {
+    const err = new Error("Kata sandi telah diperbarui. Silakan masuk kembali.") as Error & { status: number }
+    err.status = 401
+    throw err
+  }
+
   const newAccessToken = generateToken(user.id, user.role, user.name, user.passwordChangedAt)
   const newRefreshToken = randomBytes(32).toString("hex")
-  await saveRefreshToken(user.id, newRefreshToken, REFRESH_TOKEN_TTL_SECONDS)
+  await saveRefreshToken(user.id, newRefreshToken, getRefreshTokenTtlSeconds())
 
   const userData = {
     id: user.id,
@@ -517,7 +534,7 @@ export async function refreshSession(refreshToken: string): Promise<AuthResult> 
 
   return {
     accessToken: newAccessToken,
-    expiresInSeconds: ACCESS_TOKEN_TTL_SECONDS,
+    expiresInSeconds: getAccessTokenTtlSeconds(),
     refreshToken: newRefreshToken,
     user: userData,
   }
@@ -585,7 +602,8 @@ export async function forgotPasswordRequest(input: ForgotPasswordRequestInput) {
  */
 export async function forgotPasswordVerifyOtp(input: ForgotPasswordVerifyOtpInput) {
   const normalizedEmail = input.email.toLowerCase().trim()
-  const payload = await getForgotPasswordOtp(normalizedEmail)
+  const consumed = await consumeForgotPasswordOtp(normalizedEmail, input.otp)
+  const payload = consumed || (await getForgotPasswordOtp(normalizedEmail))
 
   if (!payload) {
     const err = new Error("Kode OTP telah kedaluwarsa atau belum diminta. Silakan ajukan ulang.") as Error & { status: number }
@@ -593,7 +611,7 @@ export async function forgotPasswordVerifyOtp(input: ForgotPasswordVerifyOtpInpu
     throw err
   }
 
-  if (payload.otpHashed !== hashOtp(input.otp)) {
+  if (!consumed && !timingSafeEqualOtpHash(payload.otpHashed, input.otp)) {
     const attempts = await incrementForgotPasswordOtpAttempts(normalizedEmail)
     if (attempts >= 5) {
       const err = new Error(
@@ -639,8 +657,8 @@ export async function resetPassword(input: ResetPasswordInput) {
   } else if (input.otp) {
     // Backwards-compatible fallback
     const consumed = await consumeForgotPasswordOtp(normalizedEmail, input.otp)
-    const payload = consumed || await getForgotPasswordOtp(normalizedEmail)
-    if (!payload || payload.otpHashed !== hashOtp(input.otp)) {
+    const payload = consumed || (await getForgotPasswordOtp(normalizedEmail))
+    if (!payload || (!consumed && !timingSafeEqualOtpHash(payload.otpHashed, input.otp))) {
       const err = new Error("Kode OTP salah atau sesi telah kedaluwarsa.") as Error & { status: number }
       err.status = 400
       throw err
@@ -655,6 +673,7 @@ export async function resetPassword(input: ResetPasswordInput) {
 
   const hashedPassword = await hashPassword(input.newPassword, DEFAULT_BCRYPT_COST)
   await repo.updateUserPassword(targetUserId, hashedPassword)
+  await revokeAllUserRefreshTokens(targetUserId)
 
   auditLogger.log({
     actorId: targetUserId,

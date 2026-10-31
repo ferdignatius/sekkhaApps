@@ -351,6 +351,11 @@ export function OnboardingPage() {
         skipped,
       })
 
+      updateUser({
+        ...(profileForm.name ? { name: profileForm.name } : {}),
+        onboardingCompleted: true,
+      })
+
       window.dispatchEvent(
         new CustomEvent("sekkha:profile_updated", {
           detail: { name: profileForm.name },

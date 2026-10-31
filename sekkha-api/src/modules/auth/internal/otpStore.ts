@@ -38,8 +38,31 @@ end
 return false
 `
 
+const CONSUME_RESET_TOKEN_SCRIPT = `
+local raw = redis.call('GET', KEYS[1])
+if not raw then return nil end
+local expected = ARGV[1]
+local marker = '"tokenHashed":"' .. expected .. '"'
+if string.find(raw, marker, 1, true) then
+  redis.call('DEL', KEYS[1])
+  return raw
+end
+return false
+`
+
 export function hashOtp(otp: string): string {
   return crypto.createHash("sha256").update(otp.trim()).digest("hex")
+}
+
+export function timingSafeEqualHex(a: string, b: string): boolean {
+  const bufA = Buffer.from(a, "utf8")
+  const bufB = Buffer.from(b, "utf8")
+  if (bufA.length !== bufB.length) return false
+  return crypto.timingSafeEqual(bufA, bufB)
+}
+
+export function timingSafeEqualOtpHash(expectedHash: string, inputOtp: string): boolean {
+  return timingSafeEqualHex(expectedHash, hashOtp(inputOtp))
 }
 
 async function consumeOtp<T>(key: string, otp: string): Promise<T | false | null> {
@@ -309,13 +332,19 @@ export async function verifyAndConsumePasswordResetToken(email: string, token: s
 
   try {
     if (redis.status === "ready" || redis.status === "connect") {
-      const raw = await redis.get(key)
-      if (raw) {
+      const raw = (await redis.eval(
+        CONSUME_RESET_TOKEN_SCRIPT,
+        1,
+        key,
+        tokenHashed
+      )) as string | boolean | null
+      if (typeof raw === "string") {
         const parsed = JSON.parse(raw) as { userId: string; tokenHashed: string }
-        if (parsed.tokenHashed === tokenHashed) {
-          await redis.del(key)
+        if (timingSafeEqualHex(parsed.tokenHashed, tokenHashed)) {
           return parsed.userId
         }
+      } else if (raw === false) {
+        return null
       }
     }
   } catch {
@@ -323,7 +352,7 @@ export async function verifyAndConsumePasswordResetToken(email: string, token: s
   }
 
   const item = resetTokenStore.get(normalizedEmail)
-  if (item && item.tokenHashed === tokenHashed) {
+  if (item && timingSafeEqualHex(item.tokenHashed, tokenHashed)) {
     clearTimeout(item.timer)
     resetTokenStore.delete(normalizedEmail)
     return item.userId

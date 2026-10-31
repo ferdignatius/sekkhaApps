@@ -100,18 +100,4 @@ export const leaderboardModels = {
       _sum: { amount: true },
     })
   },
-
-  findDebugUsers() {
-    return prisma.user.findMany({
-      select: {
-        id: true,
-        email: true,
-        role: true,
-        isClaimed: true,
-        userNumber: true,
-        profile: { select: { name: true } },
-        stats: { select: { points: true } },
-      },
-    })
-  },
 }

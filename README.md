@@ -6,10 +6,12 @@ Aplikasi komunitas remaja vihara dengan sistem gamifikasi untuk memantau keaktif
 
 ```
 sekkhaApps/
-├── sekkha-main-app/     # Frontend (React + TanStack Router)
-├── sekkha-api/          # Backend (Express + Prisma + PostgreSQL)
+├── sekkha-frontend/     # Frontend (TanStack Start + React 19 + Tailwind v4 + shadcn/ui)
+├── sekkha-api/          # Backend (Express + Prisma + PostgreSQL, berjalan di atas Bun)
+├── prd-sekkha/          # Product Requirements Documents (PRD) & Master API Contract
 ├── DESIGN.md            # Design tokens & UI guidelines
-└── RULES.md             # Coding conventions
+├── RULES.md             # Coding conventions
+└── AGENTS.md            # Guidance untuk AI coding agents
 ```
 
 ### Prinsip Modular
@@ -20,42 +22,47 @@ Komunikasi antar-modul di backend dilakukan lewat **EventBus** (in-memory) — p
 
 ## Tech Stack
 
-### Frontend (`sekkha-main-app/`)
+### Frontend (`sekkha-frontend/`)
 | Layer | Tech |
 |-------|------|
-| Framework | React 19 + TypeScript |
+| Framework | TanStack Start (SSR) + React 19 + TypeScript |
 | Router | TanStack Router (file-based) |
 | Styling | Tailwind CSS v4 + shadcn/ui |
 | Build | Vite + Nitro |
+| Testing | Vitest + Fast-Check (Property-Based Testing) |
 | Font | Roobert PRO (heading), Inter (body) |
 
 ### Backend (`sekkha-api/`)
 | Layer | Tech |
 |-------|------|
-| Runtime | Node.js + TypeScript |
+| Runtime | Bun + TypeScript |
 | Framework | Express.js |
 | ORM | Prisma |
-| Database | PostgreSQL 16 (Docker) |
-| Auth | JWT + bcrypt |
+| Database | PostgreSQL 16 (`localhost:5432`) + Redis opsional (`localhost:6379`) |
+| Auth | JWT (Access Token + HttpOnly Refresh Cookie) + bcrypt |
 | Validation | Zod |
-| EventBus | In-memory (Node.js EventEmitter) |
+| EventBus | In-memory (`Node.js EventEmitter`) |
 
-## Fitur Utama
+## Modul & Fitur Utama (9 Modul)
 
-- **Home** — Dashboard gamifikasi: streak, poin, level bar, misi mingguan, mini leaderboard
-- **Events** — Kalender event + RSVP + QR attendance + pengelolaan event (pengurus)
-- **Leaderboard** — Season-based ranking, podium top 3, streak shield, community goals
-- **Komunitas** — Forum diskusi (Reddit-like) + Curhat (tiket privat ke pengurus)
-- **Profil** — Stats hero, attendance tracker bulanan, achievements/badge collection
-- **Configure** — Master data (Badge, Level, Event Type, Achievement) — Read-Only bagi `pengurus`, Full CRUD bagi `admin`. Disembunyikan bagi `umat` (user biasa) & `aktivis`.
-- **Insight & Analysis** — Metrics + early warning anggota berisiko — Khusus `pengurus` & `admin`. Disembunyikan bagi `umat` (user biasa) & `aktivis`.
+1. **`landing-page`** *(Frontend)* — Halaman publik pra-login (Hero, Features, School Stats, CTA).
+2. **`auth`** — Registrasi berbasis OTP email, login (email / username / 10-digit `userNumber`), lupa password 3-tahap, onboarding, dan manajemen sesi JWT.
+3. **`home`** — Dashboard gamifikasi utama: ringkasan Karma Points, Weekly Streak, jadwal kegiatan terdekat, dan riwayat aktivitas terbaru.
+4. **`events`** — Kalender & daftar event vihara, Action-Button state transition (`scheduled` → `active` → `closed` / `cancel`), scanner presensi QR berkelanjutan, serta rekap kehadiran dan penugasan pelayanan (*Badge Activity*).
+5. **`leaderboard`** — Papan peringkat berbasis *season* (Points, Streak, Attendance), podium Top 3, dan *Community Goal*.
+6. **`people`** — Direktori anggota jemaat & *pre-provisioning* anggota baru oleh pengurus (`organizer` / `admin`) lengkap dengan pembuatan kredensial sementara otomatis.
+7. **`users`** — Profil pribadi (`/profile`), kartu anggota digital berstandar HIG dengan QR Code statis permanen (`userNumber`), buku besar mutasi poin (*Points History*), ganti password 2FA (OTP), verifikasi ganti email (OTP), serta ekspor/hapus akun (kepatuhan UU PDP).
+8. **`pengurus`** — Dashboard *Community Insights & Analytics* (`/insight`) untuk memantau tren kehadiran, retensi jemaat, *silent churn health*, dan *Seva Contributor Board* (khusus `organizer` & `admin`).
+9. **`configure` & `schools`** — Master data & aturan sistem: Direktori Sekolah (`schools`), Kategori Acara (`event-types`), Peran Pelayanan (`badge-activities`), Periode Musim (`seasons`), dan Aturan Poin (`point-rules`). Read-only bagi `organizer`, Full CRUD bagi `admin`, serta disembunyikan dari `member` dan `activist`.
 
 ## Quick Start
 
 ### Prerequisites
 - [Bun](https://bun.sh/) >= 1.2
-- Docker & Docker Compose
-- PostgreSQL 16 & Redis
+- PostgreSQL 16 berjalan secara lokal di `localhost:5432`
+- Redis berjalan secara lokal di `localhost:6379` *(opsional — jika tidak tersedia, aplikasi tetap berjalan dengan fallback in-memory dan menonaktifkan cache Redis)*
+
+> **Catatan Docker**: File `sekkha-api/docker-compose.yml` dan `sekkha-api/Dockerfile` diperuntukkan bagi **deployment production** (menggunakan image `ferdignatius/sekkha-api` dan external network). Untuk development lokal, jalankan PostgreSQL secara langsung di mesin lokal Anda dan sesuaikan `DATABASE_URL` pada `sekkha-api/.env` (salin dari `sekkha-api/.env.example`).
 
 ### 1. Setup Monorepo
 
@@ -64,32 +71,37 @@ Komunikasi antar-modul di backend dilakukan lewat **EventBus** (in-memory) — p
 bun install
 ```
 
-### 2. Jalankan Database Lokal (Docker)
+### 2. Setup Database (Generate Client + Migration + Seed)
 
 ```bash
-cd sekkha-api
-docker compose up -d postgres redis
-cd ..
-```
-
-### 3. Setup Database (Generate Client + Migration + Seed)
-
-```bash
-# Generate Prisma Client & Migrate
+# Generate Prisma Client, jalankan migrasi, dan isi data awal (seed)
 bun run db:generate
 bun run db:migrate
 bun run db:seed
 ```
 
-### 4. Menjalankan Aplikasi (Development)
+### 3. Menjalankan Aplikasi (Development)
 
 ```bash
 # Menjalankan Backend (:4000) dan Frontend (:3000) sekaligus:
 bun dev
 
 # Atau jalankan secara terpisah per workspace:
-bun run dev:api    # Sekkha API on http://localhost:4000
-bun run dev:web    # Sekkha Frontend on http://localhost:3000
+bun dev:api    # Sekkha API di http://localhost:4000
+bun dev:web    # Sekkha Frontend di http://localhost:3000
+```
+
+### 4. Build & Verifikasi
+
+```bash
+# Build seluruh workspace (API + Frontend)
+bun run build
+bun run build:api
+bun run build:web
+
+# Menjalankan unit test
+cd sekkha-api && bun test
+cd sekkha-frontend && bun run test
 ```
 
 ---
@@ -114,26 +126,25 @@ bun run dev:web    # Sekkha Frontend on http://localhost:3000
    ```bash
    # Di server production / CI-CD:
    bun run db:migrate:deploy
-   # Atau jika di dalam container Docker:
+   # Atau jika di dalam container Docker production:
    docker compose exec sekkha-api bun run db:migrate:deploy
    ```
 
-## Credentials (Development)
+## Credentials (Development Seed)
 
-| Role | Email | Password |
-|------|-------|----------|
-| Admin | `admin@sekkha.local` | admin |
-| Pengurus | `budi@sekkha.local` | admin |
-| Aktivis | `joko@sekkha.local` | admin |
-| Umat (User Biasa) | `hendra@sekkha.local` | admin |
-| Umat (User Biasa) | `sari@sekkha.local` | admin |
+Sesuai `sekkha-api/prisma/seed.ts`, akun development berikut tersedia setelah menjalankan `bun run db:seed`:
 
-> Frontend juga masih support dummy login: email `admin`, password `admin` (bypass validation)
+| Role | Email | Username | Password |
+|------|-------|----------|----------|
+| `admin` | `admin@sekkha.com` | `admin` | `password123` |
+| `organizer` | `organizer@sekkha.com` | `organizer` | `password123` |
+| `activist` | `activist@sekkha.com` | `activist` | `password123` |
+| `member` | `member@sekkha.com` | `member` | `password123` |
 
 ## Struktur Frontend (Modular)
 
 ```
-sekkha-main-app/src/
+sekkha-frontend/src/
 ├── components/                ← Shared Kernel (ui-kit)
 │   ├── ui/                    # shadcn generated (jangan diubah)
 │   ├── base/                  # shadcn yang di-customize
@@ -141,33 +152,32 @@ sekkha-main-app/src/
 ├── shell/                     ← Aplikasi Utama (Orchestrator)
 │   ├── registry.ts            # Daftar modul aktif + nav items
 │   └── icon-map.ts            # String icon → React component
-├── modules/                   ← Modul-modul independen
+├── modules/                   ← Modul-modul fitur independen
 │   ├── auth/
-│   │   ├── internal/          # Privat (login, register, hooks, context)
-│   │   │   ├── components/
-│   │   │   ├── hooks/
-│   │   │   ├── api/
-│   │   │   └── context/
-│   │   └── index.ts           # Publik (ekspos ke Shell & modul lain)
-│   ├── events/
-│   │   ├── internal/          # Privat (halaman, hooks, types)
+│   │   ├── internal/          # Privat (login, register, onboarding, hooks, context)
+│   │   └── index.ts           # Publik (ekspos ke Shell & route)
+│   ├── home/
+│   │   ├── internal/
 │   │   └── index.ts
-│   ├── dashboard/
+│   ├── events/
 │   │   ├── internal/
 │   │   └── index.ts
 │   ├── leaderboard/
 │   │   ├── internal/
 │   │   └── index.ts
-│   ├── community/
+│   ├── people/
 │   │   ├── internal/
 │   │   └── index.ts
-│   ├── profile/
-│   │   ├── internal/
+│   ├── users/
+│   │   ├── internal/          # Profil pribadi, Digital Member Card, keamanan akun
+│   │   └── index.ts
+│   ├── pengurus/
+│   │   ├── internal/          # Community Insights & Seva Contributor Board
 │   │   └── index.ts
 │   ├── configure/
-│   │   ├── internal/
+│   │   ├── internal/          # Master data (Schools, Event Types, Badge Activity, Seasons, Point Rules)
 │   │   └── index.ts
-│   └── pengurus/
+│   └── landing-page/
 │       ├── internal/
 │       └── index.ts
 ├── routes/                    # TanStack Router file-based routing
@@ -203,167 +213,90 @@ sekkha-api/src/
 │   ├── redis.ts               # Redis connection
 │   └── cache.ts               # Caching utilities
 ├── middleware/
-│   ├── auth.ts                # JWT verification + role guard
+│   ├── auth.ts                # JWT verification + role guard (requireAuth, requireRole)
+│   ├── requestLogger.ts
 │   └── errorHandler.ts
-├── modules/
-│   ├── auth/
-│   │   ├── module.ts          # register() — mount routes
-│   │   └── internal/
-│   │       ├── router.ts      # Express router
-│   │       ├── handler.ts     # Request handlers (thin)
-│   │       ├── service.ts     # Business logic + eventbus.publish()
-│   │       ├── repository.ts  # Prisma queries
-│   │       └── validation.ts  # Zod schemas
-│   ├── events/
-│   │   ├── module.ts          # register() + subscribe()
-│   │   └── internal/
-│   │       ├── router.ts
-│   │       └── subscribers.ts # Event handlers (user.registered → auto RSVP)
-│   ├── users/
-│   │   ├── module.ts
-│   │   └── internal/router.ts
-│   ├── configure/
-│   │   ├── module.ts
-│   │   └── internal/router.ts
-│   ├── leaderboard/
-│   │   ├── module.ts
-│   │   └── internal/router.ts
-│   └── community/
-│       ├── module.ts
-│       └── internal/router.ts
-└── index.ts                   # Entry point — loops modules, register + subscribe
+├── modules/                   ← 9 Modul Backend (auth, users, home, events, leaderboard, people, pengurus, schools, configure)
+│   └── <nama-modul>/
+│       ├── routes.ts          # Definisi endpoint Express & middleware guard
+│       ├── controllers.ts     # HTTP request/response handlers & validasi input
+│       ├── services.ts        # Logika bisnis utama, query Prisma & eventbus.publish()
+│       ├── models.ts          # TypeScript interfaces, DTOs & Zod schemas
+│       ├── module.ts          # Implementasi AppModule (register & subscribe)
+│       ├── index.ts           # Public barrel export
+│       └── internal/          # (Opsional) Helper privat khusus modul (cron, sse, email, otpStore, dll.)
+├── app.ts                     # Konfigurasi Express app & registrasi AppModule[]
+└── server.ts                  # Entry point server (bun --watch src/server.ts)
 ```
 
 ### Cara Kerja Module Pattern (Backend)
 
 ```typescript
-// index.ts — Entry point
-const modules: AppModule[] = [authModule, usersModule, eventsModule, ...]
+// app.ts — Registrasi rute modul
+export const modules: AppModule[] = [
+  authModule,
+  usersModule,
+  eventsModule,
+  configureModule,
+  leaderboardModule,
+  peopleModule,
+  pengurusModule,
+  schoolsModule,
+  homeModule,
+]
 
-modules.forEach(m => m.register(app))   // Mount routes
-modules.forEach(m => m.subscribe?.())   // Wire EventBus listeners
+modules.forEach((m) => m.register(app)) // Mount routes
+
+// server.ts — Inisialisasi EventBus subscribers saat boot
+modules.forEach((m) => m.subscribe?.())
 ```
 
-Menambah modul baru = buat folder + import di `index.ts` + tambahkan ke array.
+Menambah modul baru = buat folder di `src/modules/<nama>/` + import di `src/app.ts` + tambahkan ke array `modules`.
 
-## Case Study: Register → Auto Event
+## Ringkasan API Endpoints
 
-Alur lengkap ketika user mendaftar akun baru:
+Dokumentasi lengkap spesifikasi endpoint beserta request/response tersedia di **[`prd-sekkha/api-contract.md`](prd-sekkha/api-contract.md)**.
 
-```
-┌────────────────────────────────────────────────────────────────┐
-│ FASE 1: Frontend (UI → API)                                    │
-│                                                                │
-│  User → RegisterPage.tsx → authService.ts                      │
-│            ↓                                                   │
-│  POST http://localhost:4000/api/auth/register                  │
-└────────────────────────────────────────────────────────────────┘
-            ↓
-┌────────────────────────────────────────────────────────────────┐
-│ FASE 2: Backend Auth Module                                    │
-│                                                                │
-│  router.ts → handler.ts → service.ts → repository.ts          │
-│                               ↓                               │
-│                    INSERT INTO users (...)                      │
-│                               ↓                               │
-│              eventbus.publish("user.registered", payload)       │
-└────────────────────────────────────────────────────────────────┘
-            ↓ EventBus (in-memory, async)
-┌────────────────────────────────────────────────────────────────┐
-│ FASE 3: Backend Events Module (Subscriber)                     │
-│                                                                │
-│  module.ts → subscribe("user.registered")                      │
-│                    ↓                                           │
-│  subscribers.ts → onUserRegistered()                           │
-│                    ↓                                           │
-│  INSERT INTO rsvps (event_id, user_id) → welcome event         │
-└────────────────────────────────────────────────────────────────┘
-            ↓
-┌────────────────────────────────────────────────────────────────┐
-│ Response ke Frontend                                           │
-│                                                                │
-│  { "accessToken": "...", "user": { ... } }                     │
-│  (Status 201 Created)                                          │
-└────────────────────────────────────────────────────────────────┘
-```
-
-### Key Points
-
-1. **Auth module** hanya berteriak: *"Ada user baru lahir!"* — tidak tahu siapa yang mendengarkan
-2. **Events module** mendaftarkan subscriber saat startup — tidak tahu siapa yang mengirim event
-3. **EventBus** menjembatani keduanya secara **loose-coupled**
-4. Subscriber berjalan **asynchronous** — tidak memblokir response ke frontend
-
-## API Endpoints
-
-### Auth
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/api/auth/register` | Register user baru |
-| POST | `/api/auth/login` | Login, return JWT |
-| GET | `/api/auth/verify` | Verify token validity |
-
-### Users (requires auth)
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/api/users/me` | Profil user |
-| GET | `/api/users/me/badges` | Badge yang dimiliki |
-| GET | `/api/users/me/attendances` | Riwayat kehadiran |
-| PATCH | `/api/users/me` | Update profil |
-| GET | `/api/users/me/streak` | Data streak |
-| GET | `/api/users/me/level` | Data level |
-
-### Events (requires auth)
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/api/events` | List semua event |
-| GET | `/api/events/:id` | Detail event |
-| POST | `/api/events` | Buat event (pengurus/admin) |
-| PUT | `/api/events/:id` | Update event (pengurus/admin) |
-| DELETE | `/api/events/:id` | Hapus event (pengurus/admin) |
-| POST | `/api/events/:id/rsvp` | RSVP event |
-| POST | `/api/events/:id/attendance` | Record attendance |
-| GET | `/api/events/:id/attendances` | List attendees |
-
-## Domain Events
-
-| Event | Publisher | Subscriber | Description |
-|-------|-----------|------------|-------------|
-| `user.registered` | Auth | Events | Auto-register user ke welcome event |
-| `attendance.recorded` | Events | (future) | Trigger badge/point calculation |
-| `badge.earned` | (future) | (future) | Notification ke user |
+| Modul | Base Path | Deskripsi Utama |
+|-------|-----------|-----------------|
+| **Auth** | `/api/auth` | Register OTP, Login, Refresh Token, Logout, Verify Session, Forgot Password OTP |
+| **Users** | `/api/users` | Profil mandiri (`/me`), Kartu Anggota QR (`/me/card`), Streak, Attendances, Point History, Change Password (OTP), Email Verification (OTP), Export & Delete Account |
+| **Home** | `/api/home` | Aggregated dashboard data (profil ringkas, streak, jadwal terdekat, aktivitas terbaru) |
+| **Events** | `/api/events` | CRUD event, transisi status (`PATCH /:id/status`), presensi QR/manual (`/:id/attendances`), dan penugasan *Badge Activity* |
+| **Leaderboard** | `/api/leaderboard` | Peringkat berdasarkan `points`, `streak`, atau `attendance` per *season* aktif |
+| **People** | `/api/people` | Direktori jemaat, *pre-provisioning* anggota baru, dan regenerasi password sementara |
+| **Pengurus** | `/api/pengurus` | Analitik kehadiran, retensi, *silent churn health*, dan *Seva Contributor Board* (`/insight`) |
+| **Schools** | `/api/schools` | Direktori sekolah aktif, statistik persebaran siswa (`/stats`), dan pengajuan sekolah baru |
+| **Configure** | `/api/configure` | Konfigurasi master data (`event-types`, `badge-activities`, `seasons`, `point-rules`, `threshold`) |
 
 ## Design System
 
-Mengikuti `DESIGN.md` — berbasis Miro design tokens:
-- Warna brand: Yellow (#ffd02f), Blue (#4262ff), Teal (#0fbcb0)
+Mengikuti `DESIGN.md`:
+- Warna brand: Yellow (`#ffd02f`), Blue (`#4262ff`), Teal (`#0fbcb0`)
 - Typography: Roobert PRO untuk heading, Inter untuk body
-- Komponen: rounded-full buttons, card-base styling, pastel feature cards
-- Target: remaja vihara (usia 13-18), visual gamifikasi yang fun dan engaging
+- Komponen: Clay & HIG minimalist styling, kartu anggota digital proporsional (ISO/IEC 7810 ID-1), dan responsive card grid
 
 ## Database Schema
 
-Entity utama:
-- **User** — auth + profil (role: umat/pengurus/admin)
-- **Event** — kebaktian, retreat, meditasi, sosial
-- **Attendance** — record kehadiran (QR/manual)
-- **Rsvp** — konfirmasi hadir/tidak
-- **Badge** — achievement yang bisa di-unlock
-- **Level** — progression system berbasis poin
-- **Post/Comment** — forum komunitas
-- **CurhatThread/Message** — channel privat umat → pengurus
+Entity utama di `sekkha-api/prisma/schema.prisma`:
+- **`User`** — Identitas & profil anggota (`userNumber` 10-digit `yyyymmddnn`, `username`, `email`, role: `member` / `activist` / `organizer` / `admin`)
+- **`Event`** & **`EventType`** — Kegiatan vihara beserta konfigurasi poin dan batas keterlambatan
+- **`Attendance`** — Catatan kehadiran jemaat (`qr` / `manual`), status draft/finalized, keterlambatan, dan referensi `BadgeActivity`
+- **`BadgeActivity`** — Master peran pelayanan kegiatan vihara (MC, Puja Leader, Musician, dll.) beserta bonus poin
+- **`PointTransaction`** & **`PointRule`** — Buku besar riwayat mutasi poin jemaat dan aturan perolehan poin
+- **`Season`** — Periode musim kompetisi papan peringkat dan target kehadiran komunitas
+- **`School`** — Master data institusi pendidikan/sekolah jemaat
 
 ## Menambah Modul Baru
 
 ### Frontend
-1. Buat folder `src/modules/<nama>/internal/` — taruh semua implementasi
-2. Buat `src/modules/<nama>/index.ts` — ekspos komponen + `ModuleDefinition`
+1. Buat folder `src/modules/<nama>/internal/` — taruh semua implementasi privat
+2. Buat `src/modules/<nama>/index.ts` — ekspos komponen publik + `ModuleDefinition`
 3. Import di `src/shell/registry.ts` → tambahkan ke `activeModules`
-4. Buat route file di `src/routes/` yang import dari modul
+4. Buat route file di `src/routes/` yang mengimpor komponen dari modul
 
 ### Backend
-1. Buat folder `src/modules/<nama>/internal/` — router, handler, service, repository
-2. Buat `src/modules/<nama>/module.ts` — implement `AppModule` interface
-3. Import di `src/index.ts` → tambahkan ke `modules` array
-4. (Opsional) Subscribe ke domain events di `module.ts`
-5. (Opsional) Publish domain events di service layer
+1. Buat folder `src/modules/<nama>/` dengan struktur `{routes,controllers,services,models,module,index}.ts` (dan `internal/` bila perlu)
+2. Implementasikan interface `AppModule` di `src/modules/<nama>/module.ts`
+3. Import di `src/app.ts` → tambahkan ke array `modules`
+4. (Opsional) Subscribe ke domain events pada `module.ts` dan publish event melalui `services.ts`

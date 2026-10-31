@@ -9,6 +9,15 @@ import { AppError } from "../../lib/AppError"
 import type { Prisma as PrismaTypes } from "@prisma/client"
 import { canViewEvent } from "./policy"
 import { eventbus, DomainEvents } from "../../core/eventbus"
+import { calculateWeeklyStreak, toWeekKey } from "../users/internal/utils"
+
+const VALID_EVENT_STATUSES = ["scheduled", "active", "closed", "cancel"] as const
+const WIB_OFFSET_MS = 7 * 60 * 60 * 1000
+const DAILY_POINT_CAP = 150
+
+function toWibDateKey(date: Date): string {
+  return new Date(date.getTime() + WIB_OFFSET_MS).toISOString().slice(0, 10)
+}
 
 type CreateEventInput = {
   title: string
@@ -59,9 +68,9 @@ export const eventServices = {
     }
 
     // 2. Query Filters
-    if (filters?.status) {
+    if (filters?.status && VALID_EVENT_STATUSES.includes(filters.status as any)) {
       andConditions.push({
-        status: filters.status as any,
+        status: filters.status as (typeof VALID_EVENT_STATUSES)[number],
       })
     }
 
@@ -381,6 +390,15 @@ export const eventServices = {
           }
         }
 
+        const effectiveEventDate = updatedEventDate ?? new Date(currentEvent.eventDate)
+        if (toWibDateKey(new Date(nowTime)) > toWibDateKey(effectiveEventDate)) {
+          throw new AppError(
+            "Event tidak dapat diaktifkan karena tanggal pelaksanaan sudah terlewat. Silakan jadwalkan ulang (reschedule) atau batalkan event.",
+            400,
+            "EVENT_DATE_PASSED"
+          )
+        }
+
         // Allow organizer/admin to start event early.
         // If event is started before scheduled date/time and no explicit date was passed,
         // update eventDate to now so attendance timing and calculations are accurate.
@@ -443,33 +461,184 @@ export const eventServices = {
           const pendingAttendees = attendees.filter((a) => !processedAttIds.has(a.id))
 
           if (pendingAttendees.length > 0) {
-            const pointTxData = pendingAttendees.map((att) => {
-              const totalAmount = att.pointsEarned + (att.badgeBonusPoints ?? 0)
-              return {
+            const attendeeUserIds = Array.from(new Set(pendingAttendees.map((a) => a.userId)))
+
+            // Fetch active PointRule definitions
+            const activeRules = await tx.pointRule.findMany({ where: { isActive: true } })
+            const ruleByCode = new Map(activeRules.map((r) => [r.code, r]))
+            const attendanceRule = ruleByCode.get("attendance_rutin")
+            const firstAttendanceRule = ruleByCode.get("first_attendance_bonus")
+            const streakMonthlyRule = ruleByCode.get("streak_monthly_bonus")
+
+            // Enforce 150-point daily cap (pointRules.md)
+            const nowDate = new Date()
+            const startOfToday = new Date(nowDate)
+            startOfToday.setHours(0, 0, 0, 0)
+            const endOfToday = new Date(nowDate)
+            endOfToday.setHours(23, 59, 59, 999)
+
+            const todayPointSums = await tx.pointTransaction.groupBy({
+              by: ["userId"],
+              where: {
+                userId: { in: attendeeUserIds },
+                createdAt: { gte: startOfToday, lte: endOfToday },
+                amount: { gt: 0 },
+              },
+              _sum: { amount: true },
+            })
+            const earnedTodayByUser = new Map<string, number>(
+              todayPointSums.map((row) => [row.userId, row._sum.amount ?? 0])
+            )
+
+            // Fetch user claim & attendance stats BEFORE incrementing for first_attendance_bonus check
+            const attendeeUsers = await tx.user.findMany({
+              where: { id: { in: attendeeUserIds } },
+              select: {
+                id: true,
+                isClaimed: true,
+                stats: { select: { totalAttendances: true } },
+              },
+            })
+            const userMetaById = new Map(attendeeUsers.map((u) => [u.id, u]))
+
+            // Fetch all finalized attendances for streak calculation
+            const finalizedAttendances = await tx.attendance.findMany({
+              where: {
+                userId: { in: attendeeUserIds },
+                isFinalized: true,
+              },
+              select: {
+                userId: true,
+                scannedAt: true,
+              },
+            })
+            const attendancesByUser = new Map<string, { scannedAt: Date }[]>()
+            for (const fa of finalizedAttendances) {
+              const list = attendancesByUser.get(fa.userId) ?? []
+              list.push({ scannedAt: fa.scannedAt })
+              attendancesByUser.set(fa.userId, list)
+            }
+
+            const pointTxData: PrismaTypes.PointTransactionCreateManyInput[] = []
+            const statsByUser = new Map<
+              string,
+              { points: number; count: number; scannedAt: Date; currentStreak: number }
+            >()
+
+            for (const att of pendingAttendees) {
+              const rawAmount = att.pointsEarned + (att.badgeBonusPoints ?? 0)
+              const alreadyEarnedToday = earnedTodayByUser.get(att.userId) ?? 0
+              const remainingDailyCap = Math.max(0, DAILY_POINT_CAP - alreadyEarnedToday)
+              const clampedAmount = Math.min(rawAmount, remainingDailyCap)
+              earnedTodayByUser.set(att.userId, alreadyEarnedToday + clampedAmount)
+
+              pointTxData.push({
                 userId: att.userId,
-                ruleId: null,
-                amount: totalAmount,
+                ruleId: attendanceRule?.id ?? null,
+                amount: clampedAmount,
                 type: "attendance" as const,
                 description: `Presensi Event: ${currentEvent.title}`,
                 referenceId: att.id,
-              }
-            })
+              })
 
-            await tx.pointTransaction.createMany({ data: pointTxData, skipDuplicates: true })
-
-            // Aggregate stats by user
-            const statsByUser = new Map<string, { points: number; count: number; scannedAt: Date }>()
-            for (const att of pendingAttendees) {
-              const totalAmount = att.pointsEarned + (att.badgeBonusPoints ?? 0)
               const current = statsByUser.get(att.userId)
               if (current) {
-                current.points += totalAmount
+                current.points += clampedAmount
                 current.count += 1
                 if (att.scannedAt > current.scannedAt) current.scannedAt = att.scannedAt
               } else {
-                statsByUser.set(att.userId, { points: totalAmount, count: 1, scannedAt: att.scannedAt })
+                const userAtts = attendancesByUser.get(att.userId) ?? [{ scannedAt: att.scannedAt }]
+                const { current_streak } = calculateWeeklyStreak(userAtts)
+                statsByUser.set(att.userId, {
+                  points: clampedAmount,
+                  count: 1,
+                  scannedAt: att.scannedAt,
+                  currentStreak: current_streak,
+                })
               }
             }
+
+            // Check first_attendance_bonus & streak_monthly_bonus per attendee
+            const bonusCandidateRefs: string[] = []
+            for (const [userId, stats] of statsByUser) {
+              bonusCandidateRefs.push(`first_attendance:${userId}`)
+              if (stats.currentStreak > 0 && stats.currentStreak % 4 === 0) {
+                bonusCandidateRefs.push(`streak_${stats.currentStreak}w:${userId}:${toWeekKey(stats.scannedAt)}`)
+              }
+            }
+
+            const existingBonusTxs =
+              bonusCandidateRefs.length > 0
+                ? await tx.pointTransaction.findMany({
+                    where: { referenceId: { in: bonusCandidateRefs } },
+                    select: { referenceId: true },
+                  })
+                : []
+            const existingBonusRefSet = new Set(existingBonusTxs.map((t) => t.referenceId))
+
+            for (const [userId, stats] of statsByUser) {
+              const userMeta = userMetaById.get(userId)
+
+              // 1) first_attendance_bonus
+              if (
+                firstAttendanceRule &&
+                firstAttendanceRule.points > 0 &&
+                userMeta?.isClaimed &&
+                (userMeta.stats?.totalAttendances ?? 0) === 0
+              ) {
+                const firstRef = `first_attendance:${userId}`
+                if (!existingBonusRefSet.has(firstRef)) {
+                  const alreadyEarned = earnedTodayByUser.get(userId) ?? 0
+                  const bonusAmount = Math.min(
+                    firstAttendanceRule.points,
+                    Math.max(0, DAILY_POINT_CAP - alreadyEarned)
+                  )
+                  if (bonusAmount > 0) {
+                    earnedTodayByUser.set(userId, alreadyEarned + bonusAmount)
+                    stats.points += bonusAmount
+                    pointTxData.push({
+                      userId,
+                      ruleId: firstAttendanceRule.id,
+                      amount: bonusAmount,
+                      type: "system" as const,
+                      description: `${firstAttendanceRule.label}: ${currentEvent.title}`,
+                      referenceId: firstRef,
+                    })
+                  }
+                }
+              }
+
+              // 2) streak_monthly_bonus (every 4 consecutive weeks)
+              if (
+                streakMonthlyRule &&
+                streakMonthlyRule.points > 0 &&
+                stats.currentStreak > 0 &&
+                stats.currentStreak % 4 === 0
+              ) {
+                const streakRef = `streak_${stats.currentStreak}w:${userId}:${toWeekKey(stats.scannedAt)}`
+                if (!existingBonusRefSet.has(streakRef)) {
+                  const alreadyEarned = earnedTodayByUser.get(userId) ?? 0
+                  const bonusAmount = Math.min(
+                    streakMonthlyRule.points,
+                    Math.max(0, DAILY_POINT_CAP - alreadyEarned)
+                  )
+                  if (bonusAmount > 0) {
+                    earnedTodayByUser.set(userId, alreadyEarned + bonusAmount)
+                    stats.points += bonusAmount
+                    pointTxData.push({
+                      userId,
+                      ruleId: streakMonthlyRule.id,
+                      amount: bonusAmount,
+                      type: "system" as const,
+                      description: `${streakMonthlyRule.label} (${stats.currentStreak} minggu)`,
+                      referenceId: streakRef,
+                    })
+                  }
+                }
+              }
+            }
+
+            await tx.pointTransaction.createMany({ data: pointTxData, skipDuplicates: true })
 
             for (const [userId, stats] of statsByUser) {
               await tx.userStats.upsert({
@@ -477,6 +646,7 @@ export const eventServices = {
                 update: {
                   points: { increment: stats.points },
                   totalAttendances: { increment: stats.count },
+                  currentStreak: stats.currentStreak,
                   consecutiveMissed: 0,
                   lastActivityAt: stats.scannedAt,
                 },
@@ -484,6 +654,7 @@ export const eventServices = {
                   userId,
                   points: stats.points,
                   totalAttendances: stats.count,
+                  currentStreak: stats.currentStreak,
                   consecutiveMissed: 0,
                   lastActivityAt: stats.scannedAt,
                 },
@@ -501,6 +672,10 @@ export const eventServices = {
     await invalidatePattern("events:*")
     await invalidate(CacheKeys.events())
     await invalidatePattern("user:*:home:*")
+    if (normalizedTarget === "closed") {
+      await invalidatePattern("user:*:profile")
+      await invalidatePattern("pengurus:insight:*")
+    }
 
     auditLogger.log({
       actorId,
@@ -643,12 +818,18 @@ export const eventServices = {
     userId: string,
     badgeActivityId?: string | null
   ) {
-    const existing = await eventModels.findExistingAttendance(eventId, userId)
+    const [event, existing] = await Promise.all([
+      eventModels.findEventBasic(eventId),
+      eventModels.findExistingAttendance(eventId, userId),
+    ])
+    if (!event) {
+      throw new AppError("Event tidak ditemukan.", 404, "EVENT_NOT_FOUND")
+    }
     if (!existing) {
       throw new AppError("Presensi peserta tidak ditemukan.", 404, "ATTENDANCE_NOT_FOUND")
     }
 
-    if (existing.isFinalized) {
+    if (existing.isFinalized || event.status === "closed") {
       throw new AppError(
         "Tidak dapat mengubah peran pelayanan pada event yang sudah ditutup.",
         400,
@@ -729,11 +910,17 @@ export const eventServices = {
   },
 
   async deleteAttendance(actorId: string, eventId: string, userId: string) {
-    const event = await eventModels.findEventBasic(eventId)
+    const [event, existing] = await Promise.all([
+      eventModels.findEventBasic(eventId),
+      eventModels.findExistingAttendance(eventId, userId),
+    ])
     if (!event) {
       throw new AppError("Event tidak ditemukan.", 404, "EVENT_NOT_FOUND")
     }
-    if (event.status === "closed") {
+    if (!existing) {
+      throw new AppError("Presensi tidak ditemukan.", 404, "ATTENDANCE_NOT_FOUND")
+    }
+    if (existing.isFinalized || event.status === "closed") {
       throw new AppError(
         "Presensi tidak dapat dibatalkan pada event yang sudah ditutup.",
         400,
@@ -764,6 +951,18 @@ export const eventServices = {
 
 
   async deleteEvent(actorId: string, actorRole: string, id: string) {
+    const current = await eventModels.findEventBasic(id)
+    if (!current) {
+      throw new AppError("Event tidak ditemukan.", 404, "EVENT_NOT_FOUND")
+    }
+    if (current.status === "closed") {
+      throw new AppError(
+        "Closed events cannot be deleted because points have already been distributed.",
+        400,
+        "EVENT_CLOSED_IMMUTABLE"
+      )
+    }
+
     try {
       await eventModels.deleteEvent(id)
     } catch (error) {

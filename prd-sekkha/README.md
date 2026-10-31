@@ -8,24 +8,23 @@ Kumpulan PRD yang menjadi **sumber kebenaran kebutuhan produk** sebelum implemen
 
 | Folder | Topik | Dokumen Kebutuhan (PRD) | Kontrak API Resmi (Master) | Status |
 |--------|-------|-------------------------|----------------------------|--------|
-| `general/auth/` | Sistem autentikasi (manual + OTP + JWT session), role matrix | `auth.md` | [`api-contract.md#modul-1-autentikasi-apiauth`](api-contract.md#modul-1-autentikasi-apiauth) | Approved (v1.4.1) |
-| `event/` | Event kebaktian + sistem presensi QR & SSE live stream | `event.md`, `abensiEvent.md` | [`api-contract.md#modul-4-acara--presensi-real-time-apievents`](api-contract.md#modul-4-acara--presensi-real-time-apievents) | Approved (v1.4.1) |
-| `dashboard/` | Halaman dashboard gamifikasi (streak, poin, event, dhamma) | `dashboard.md` | [`api-contract.md#modul-3-beranda--dashboard-apihome`](api-contract.md#modul-3-beranda--dashboard-apihome) | Approved (v1.4.1) |
-| `leaderboard/` | Season-based ranking + podium + snapshot kalkulasi | `leaderboard.md` | [`api-contract.md#modul-5-papan-peringkat--leaderboard-apileaderboard`](api-contract.md#modul-5-papan-peringkat--leaderboard-apileaderboard) | Approved (v1.4.1) |
-| `teams/` | Direktori anggota (People) + claim PIN akun legacy | `teams.md` | [`api-contract.md#modul-6-manajemen-umat--tim-apipeople`](api-contract.md#modul-6-manajemen-umat--tim-apipeople) | Approved (v1.4.1) |
-| `profile/` | Halaman profil user & gamifikasi personal | `profile.md` | [`api-contract.md#modul-2-pengguna--profil-pribadi-apiusers`](api-contract.md#modul-2-pengguna--profil-pribadi-apiusers) | Approved (v1.4.1) |
-| `users/` | API user: profil, badge, attendance, streak, level, privasi | `users.md` | [`api-contract.md#modul-2-pengguna--profil-pribadi-apiusers`](api-contract.md#modul-2-pengguna--profil-pribadi-apiusers) | Approved (v1.4.1) |
-| `schools/` | Master sekolah & statistik distribusi jemaat | `schools.md` | [`api-contract.md#modul-8-master-data-sekolah-apischools`](api-contract.md#modul-8-master-data-sekolah-apischools) | Approved (v1.4.1) |
-| `configure/` | Master data UI, aturan poin, season, threshold | `configure.md` | [`api-contract.md#modul-9-konfigurasi--gamifikasi-master-apiconfigure`](api-contract.md#modul-9-konfigurasi--gamifikasi-master-apiconfigure) | Approved (v1.4.1) |
-| `landing-page/` | Halaman publik pra-login (hero, features, CTA) | `landing-page.md` | — | Approved (v1.0.0) |
-| `pengurus/` | Community insights & Seva contributor leadership dashboard | `pengurus-analytics-and-pastoral.md` | [`api-contract.md#modul-7-analitik-pengurus--early-warning-alerts-apipengurus`](api-contract.md#modul-7-analitik-pengurus--early-warning-alerts-apipengurus) | Approved (v2.1.0) |
+| `general/auth/` | Sistem autentikasi (manual + OTP + JWT session), role matrix, & onboarding | [`general/auth/auth.md`](general/auth/auth.md), [`general/auth/onboarding.md`](general/auth/onboarding.md) | [`api-contract.md#modul-1-autentikasi-apiauth`](api-contract.md#modul-1-autentikasi-apiauth) | Approved (v2.1.0) |
+| `general/users/` | Profil user, Digital Member Card, keamanan akun (2FA OTP), & verifikasi email claim | [`general/users/users.md`](general/users/users.md), [`general/users/profile-and-settings.md`](general/users/profile-and-settings.md), [`general/users/email-verification-for-account-claim.md`](general/users/email-verification-for-account-claim.md) | [`api-contract.md#modul-2-pengguna--profil-pribadi-apiusers`](api-contract.md#modul-2-pengguna--profil-pribadi-apiusers) | Approved (v2.3.0) |
+| `home/` | Halaman beranda / dashboard gamifikasi (streak, poin, event terdekat, aktivitas) | [`home/home.md`](home/home.md) | [`api-contract.md#modul-3-beranda--dashboard-apihome`](api-contract.md#modul-3-beranda--dashboard-apihome) | Approved (v2.0.0) |
+| `event/` | Event kebaktian + sistem presensi QR & batch point finalization | [`event/event.md`](event/event.md), [`event/abensiEvent.md`](event/abensiEvent.md) | [`api-contract.md#modul-4-acara--presensi-apievents`](api-contract.md#modul-4-acara--presensi-apievents) | Approved (v2.1.0) |
+| `leaderboard/` | Season-based ranking + podium + snapshot kalkulasi | [`leaderboard/leaderboard.md`](leaderboard/leaderboard.md) | [`api-contract.md#modul-5-papan-peringkat--leaderboard-apileaderboard`](api-contract.md#modul-5-papan-peringkat--leaderboard-apileaderboard) | Approved (v2.0.0) |
+| `peoples/` | Direktori anggota (People) + pre-provisioning & kredensial sementara | [`peoples/people-management.md`](peoples/people-management.md) | [`api-contract.md#modul-6-manajemen-umat--tim-apipeople`](api-contract.md#modul-6-manajemen-umat--tim-apipeople) | Approved (v2.0.0) |
+| `pengurus/` | Community insights & Seva contributor leadership dashboard | [`pengurus/pengurus-analytics-and-pastoral.md`](pengurus/pengurus-analytics-and-pastoral.md) | [`api-contract.md#modul-7-analitik-pengurus--contributor-insights-apipengurus`](api-contract.md#modul-7-analitik-pengurus--contributor-insights-apipengurus) | Approved (v2.1.0) |
+| `configure/masterdata/` | Master sekolah & statistik distribusi jemaat (`configure/schools.md`) | [`configure/masterdata/schools.md`](configure/masterdata/schools.md) | [`api-contract.md#modul-8-master-data-sekolah-apischools`](api-contract.md#modul-8-master-data-sekolah-apischools) | Approved (v2.0.0) |
+| `configure/` | Master data UI, kategori event (`configure/eventType.md`), peran pelayanan (`configure/badgeActivity.md`), aturan poin (`configure/pointRules.md`), & season (`configure/seasons.md`) | [`configure/configure.md`](configure/configure.md), [`configure/masterdata/eventType.md`](configure/masterdata/eventType.md), [`configure/masterdata/badgeActivity.md`](configure/masterdata/badgeActivity.md), [`configure/pointRules.md`](configure/pointRules.md), [`configure/seasons.md`](configure/seasons.md) | [`api-contract.md#modul-9-konfigurasi--master-data-apiconfigure`](api-contract.md#modul-9-konfigurasi--master-data-apiconfigure) | Approved (v2.0.0) |
+| `landing-page/` | Halaman publik pra-login (hero, features, CTA) | [`landing-page/landing-page.md`](landing-page/landing-page.md) | — | Approved (v1.0.0) |
 
 ## Tujuan Folder Ini
 
 1. **Single source of truth** untuk Product Owner / stakeholders + engineer
 2. **Beku** sebelum implementasi dimulai — perubahan harus lewat review PRD dulu
 3. **Traceable** — setiap PR kode harus refer ke PRD/section tertentu (lihat skill `spec-driven-development`)
-4. **Bukan dokumentasi teknis** — cara kerja API / struktur database ada di `prd-sekkha/api-contract.md` dan `sekkha-frontend/`
+4. **Bukan dokumentasi teknis** — cara kerja API / struktur database ada di [`api-contract.md`](api-contract.md) dan `sekkha-frontend/`
 
 ## Format Standar Setiap PRD
 
@@ -64,14 +63,14 @@ PRD di repo ini mengikuti pola:
 ## Hubungan dengan File Lain
 
 ```
-prd-sekkha/auth/auth.md        → kebutuhan (WHAT)
+prd-sekkha/general/auth/auth.md → kebutuhan (WHAT)
         ↓
-prd-sekkha/api-contract.md     → master kontrak API (HOW - interface)
+prd-sekkha/api-contract.md      → master kontrak API (HOW - interface)
         ↓
-sekkha-api/src/modules/auth/   → implementasi (HOW - code)
+sekkha-api/src/modules/auth/    → implementasi (HOW - code)
 sekkha-frontend/src/modules/auth/
         ↓
-tasks/plan.md                  → task breakdown (WORK)
+tasks/plan.md                   → task breakdown (WORK)
 ```
 
 ## Konvensi Status
@@ -84,4 +83,4 @@ tasks/plan.md                  → task breakdown (WORK)
 | `Shipped` | Sudah live |
 | `Deprecated` | Tidak relevan lagi, tapi disimpan untuk audit |
 
-Lihat juga: skill `spec-driven-development` di `.agents/skills/`, root `README.md`, `prd-sekkha/api-contract.md`.
+Lihat juga: skill `spec-driven-development` di `.agents/skills/`, root `README.md`, [`prd-sekkha/api-contract.md`](api-contract.md).

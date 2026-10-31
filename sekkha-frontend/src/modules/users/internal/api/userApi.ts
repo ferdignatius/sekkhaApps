@@ -155,9 +155,22 @@ export const userApi = {
     return res?.data || res
   },
 
+  deleteMyAccount: async (payload: {
+    password: string
+    reason?: string
+  }): Promise<{ message?: string }> => {
+    const res = await api.post<any>("/users/me/delete-account", {
+      password: payload.password,
+      ...(payload.reason ? { reason: payload.reason } : {}),
+    })
+    return res?.data || res
+  },
+
   getVerifiedSchools: async (): Promise<VerifiedSchoolDto[]> => {
     try {
-      const res = await api.get<any>("/schools?limit=100&is_active=true")
+      const res = await api.get<any>(
+        "/configure/schools?page=1&page_size=100&is_active=true"
+      )
       if (Array.isArray(res)) return res
       if (res && Array.isArray(res.data)) return res.data
       if (res && Array.isArray(res.schools)) return res.schools
@@ -165,7 +178,7 @@ export const userApi = {
       return []
     } catch {
       try {
-        const fallback = await api.get<any>("/schools")
+        const fallback = await api.get<any>("/schools?limit=100&is_active=true")
         if (Array.isArray(fallback)) return fallback
         if (fallback && Array.isArray(fallback.data)) return fallback.data
         if (fallback && Array.isArray(fallback.schools)) return fallback.schools

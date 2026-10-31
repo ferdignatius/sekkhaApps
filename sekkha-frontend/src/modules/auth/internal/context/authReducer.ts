@@ -50,6 +50,7 @@ export type AuthAction =
         name: string | null
         role: UserRole
         email: string | null
+        onboardingCompleted: boolean | null
       }>
     }
   | { type: "AUTH_LOGOUT" }
@@ -92,6 +93,10 @@ export function authReducer(state: AuthState, action: AuthAction): AuthState {
           action.payload.email !== undefined
             ? action.payload.email
             : state.email,
+        onboardingCompleted:
+          action.payload.onboardingCompleted !== undefined
+            ? action.payload.onboardingCompleted
+            : state.onboardingCompleted,
       }
 
     case "AUTH_LOGOUT":

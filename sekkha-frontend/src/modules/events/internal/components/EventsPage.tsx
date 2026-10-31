@@ -365,11 +365,6 @@ export function EventsPage() {
       .catch((err) => {
         console.warn("Failed to fetch fresh event detail:", err)
       })
-
-    // Lazy load attendances ONLY if user is pengurus/admin
-    if (isPengurus) {
-      loadEventAttendances(ev.id)
-    }
   }
 
   // Auto-open event detail if URL contains ?eventId=... and support browser Back/Forward

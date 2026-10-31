@@ -2,7 +2,7 @@ import type { Request, Response, NextFunction } from "express"
 import jwt from "jsonwebtoken"
 import { prisma } from "../lib/prisma"
 import { isTokenRevoked } from "../modules/auth"
-import { apiSuccess } from "../lib/apiResponse"
+import { apiFailure } from "../lib/apiResponse"
 
 export interface AuthPayload {
   userId: string
@@ -17,22 +17,31 @@ declare global {
   }
 }
 
-export async function requireAuth(req: Request, res: Response, next: NextFunction) {
+function extractRequestToken(req: Request): string | null {
   const header = req.headers.authorization
-  const token = header?.startsWith("Bearer ")
-    ? header.slice(7)
-    : typeof req.query.token === "string" && req.query.token.trim()
-      ? req.query.token.trim()
-      : null
+  if (header?.startsWith("Bearer ")) {
+    return header.slice(7)
+  }
+  const cleanOriginalPath = (req.originalUrl || "").split("?")[0]
+  const isLiveAttendanceSse =
+    req.path.endsWith("/live-attendance") || cleanOriginalPath.endsWith("/live-attendance")
+  if (isLiveAttendanceSse && typeof req.query.token === "string" && req.query.token.trim()) {
+    return req.query.token.trim()
+  }
+  return null
+}
+
+export async function requireAuth(req: Request, res: Response, next: NextFunction) {
+  const token = extractRequestToken(req)
 
   if (!token) {
-    apiSuccess(res, 401, "Token not found", null)
+    apiFailure(res, 401, "Token not found", null)
     return
   }
   const secret = process.env.JWT_SECRET
   if (!secret) {
     console.error("❌ JWT_SECRET is not configured in environment variables")
-    apiSuccess(res, 500, "Server security configuration is incomplete", null)
+    apiFailure(res, 500, "Server security configuration is incomplete", null)
     return
   }
 
@@ -40,7 +49,7 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
     // 1. Check if token was revoked (logged out)
     const revoked = await isTokenRevoked(token)
     if (revoked) {
-      apiSuccess(res, 401, "Session has been terminated. Please log in again.", null)
+      apiFailure(res, 401, "Session has been terminated. Please log in again.", null)
       return
     }
 
@@ -66,7 +75,7 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
     })
 
     if (!user) {
-      apiSuccess(res, 401, "User not found or account deactivated", null)
+      apiFailure(res, 401, "User not found or account deactivated", null)
       return
     }
 
@@ -74,7 +83,7 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
     if (user.passwordChangedAt) {
       const dbTimeSeconds = Math.floor(user.passwordChangedAt.getTime() / 1000)
       if (!payload.passwordChangedAt || dbTimeSeconds > payload.passwordChangedAt) {
-        apiSuccess(res, 401, "Password was changed. Please log in again.", null)
+        apiFailure(res, 401, "Password was changed. Please log in again.", null)
         return
       }
     }
@@ -87,21 +96,21 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
 
     next()
   } catch {
-    apiSuccess(res, 401, "Token is invalid or has expired", null)
+    apiFailure(res, 401, "Token is invalid or has expired", null)
   }
 }
 
 export function requireRole(...roles: string[]) {
   return (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) {
-      apiSuccess(res, 401, "Unauthorized", null)
+      apiFailure(res, 401, "Unauthorized", null)
       return
     }
     if (req.user.role === "admin" || roles.includes(req.user.role)) {
       next()
       return
     }
-    apiSuccess(res, 403, "Access denied", null)
+    apiFailure(res, 403, "Access denied", null)
   }
 }
 
@@ -110,13 +119,8 @@ export function requireRole(...roles: string[]) {
  * If a valid Bearer token is provided, attaches req.user.
  * If no token or invalid token is provided, proceeds without req.user instead of failing with 401.
  */
-export async function optionalAuth(req: Request, res: Response, next: NextFunction) {
-  const header = req.headers.authorization
-  const token = header?.startsWith("Bearer ")
-    ? header.slice(7)
-    : typeof req.query.token === "string" && req.query.token.trim()
-      ? req.query.token.trim()
-      : null
+export async function optionalAuth(req: Request, _res: Response, next: NextFunction) {
+  const token = extractRequestToken(req)
 
   if (!token) {
     return next()

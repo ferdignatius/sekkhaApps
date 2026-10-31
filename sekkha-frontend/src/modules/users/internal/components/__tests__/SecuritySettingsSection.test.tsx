@@ -9,6 +9,7 @@ vi.mock("../../api/userApi", () => ({
     changePassword: vi.fn(),
     requestEmailVerification: vi.fn(),
     confirmEmailVerification: vi.fn(),
+    deleteMyAccount: vi.fn(),
   },
 }))
 
@@ -131,6 +132,40 @@ describe("SecuritySettingsSection - Change Password with OTP", () => {
       expect(onToast).toHaveBeenCalledWith(
         expect.stringContaining("Password updated successfully")
       )
+    })
+  })
+
+  it("opens delete account modal and calls deleteMyAccount with password", async () => {
+    vi.mocked(userApi.deleteMyAccount).mockResolvedValueOnce({
+      message: "Account deleted",
+    })
+
+    render(
+      <SecuritySettingsSection
+        currentEmail="user@example.com"
+        emailVerified={true}
+        onEmailUpdated={onEmailUpdated}
+        onLogout={onLogout}
+        onToast={onToast}
+      />
+    )
+
+    fireEvent.click(screen.getByText("Delete Account"))
+
+    expect(screen.getByText("Confirm Account Deletion")).toBeDefined()
+
+    fireEvent.change(
+      screen.getByPlaceholderText("Confirm your current password"),
+      { target: { value: "mySecretPass123" } }
+    )
+
+    fireEvent.click(screen.getByText("Permanently Delete"))
+
+    await waitFor(() => {
+      expect(userApi.deleteMyAccount).toHaveBeenCalledWith({
+        password: "mySecretPass123",
+      })
+      expect(onLogout).toHaveBeenCalled()
     })
   })
 })

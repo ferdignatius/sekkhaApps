@@ -47,7 +47,6 @@ configureRouter.patch("/schools/:id", schoolControllers.updateSchool)
 configureRouter.delete("/schools/:id", schoolControllers.deleteSchool)
 
 // Event Types
-configureRouter.get("/event-types", configureControllers.getEventTypes)
 configureRouter.post("/event-types", configureControllers.createEventType)
 configureRouter.put("/event-types/:id", configureControllers.updateEventType)
 configureRouter.patch("/event-types/:id", configureControllers.updateEventType)
@@ -73,7 +72,6 @@ configureRouter.put("/point-rules/:id", configureControllers.updatePointRule)
 configureRouter.patch("/point-rules/:id", configureControllers.updatePointRule)
 
 // Badge Activities (Master Data)
-configureRouter.get("/badge-activities", configureControllers.getBadgeActivities)
 configureRouter.get("/badge-activities/:id", configureControllers.getBadgeActivityById)
 configureRouter.post("/badge-activities", configureControllers.createBadgeActivity)
 configureRouter.put("/badge-activities/:id", configureControllers.updateBadgeActivity)

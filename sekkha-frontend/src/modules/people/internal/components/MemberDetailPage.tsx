@@ -63,7 +63,9 @@ export function MemberDetailPage({
   const { authState } = useAuth()
   const isOrganizerOrAdmin =
     authState.status === "authenticated" &&
-    (authState.role === "organizer" || authState.role === "admin")
+    (authState.role === "organizer" ||
+      (authState.role as string) === "pengurus" ||
+      authState.role === "admin")
   const isAdmin =
     authState.status === "authenticated" && authState.role === "admin"
 
@@ -102,10 +104,14 @@ export function MemberDetailPage({
 
   // Defense-in-depth: Redirect non-organizer/non-admin users to home
   useEffect(() => {
-    if (authState.status === "authenticated" && !isOrganizerOrAdmin) {
+    if (
+      authState.status === "authenticated" &&
+      authState.role !== null &&
+      !isOrganizerOrAdmin
+    ) {
       navigate({ to: "/home" })
     }
-  }, [authState.status, isOrganizerOrAdmin, navigate])
+  }, [authState.status, authState.role, isOrganizerOrAdmin, navigate])
 
   useEffect(() => {
     if (memberId && isOrganizerOrAdmin) {

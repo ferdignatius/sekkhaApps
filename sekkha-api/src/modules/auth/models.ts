@@ -2,6 +2,15 @@ import { prisma } from "../../lib/prisma"
 import { generateUniqueUserNumber } from "../../lib/userNumber"
 import { encrypt, decrypt, generateBlindIndex } from "../../lib/crypto"
 
+function safeDecrypt(val: string | null | undefined): string | null {
+  if (!val) return null
+  const decrypted = decrypt(val)
+  if (!decrypted || /^[0-9a-fA-F]+:[0-9a-fA-F]+:[0-9a-fA-F]+$/.test(decrypted)) {
+    return null
+  }
+  return decrypted
+}
+
 // ─── Models / Repository ─────────────────────────────────────────────────────
 // Pure database operations — no business logic here.
 
@@ -16,7 +25,7 @@ export const authModels = {
     if (!user) return null
     return {
       ...user,
-      email: decrypt(user.email) || user.email,
+      email: safeDecrypt(user.email),
       name: user.profile?.name ?? "",
     }
   },
@@ -29,17 +38,19 @@ export const authModels = {
     if (!user) return null
     return {
       ...user,
-      email: decrypt(user.email) || user.email,
+      email: safeDecrypt(user.email),
       name: user.profile?.name ?? "",
     }
   },
 
   async findUserByIdentifier(identifier: string) {
     const clean = identifier.trim().toLowerCase()
+    const isNumericId = /^\d{8,12}$/.test(clean)
     const bindex = generateBlindIndex(clean)
     const user = await prisma.user.findFirst({
       where: {
         OR: [
+          ...(isNumericId ? [{ userNumber: BigInt(clean) }] : []),
           ...(bindex ? [{ emailBindex: bindex, emailVerifiedAt: { not: null } }] : []),
           { username: clean },
         ],
@@ -49,7 +60,7 @@ export const authModels = {
     if (!user) return null
     return {
       ...user,
-      email: decrypt(user.email) || user.email,
+      email: safeDecrypt(user.email),
       name: user.profile?.name ?? "",
     }
   },
@@ -75,7 +86,7 @@ export const authModels = {
       id: user.id,
       userNumber: user.userNumber,
       username: user.username,
-      email: decrypt(user.email) || user.email,
+      email: safeDecrypt(user.email),
       name: user.profile?.name ?? "",
       role: user.role,
       passwordChangedAt: user.passwordChangedAt,
@@ -109,7 +120,7 @@ export const authModels = {
     password?: string
     username?: string
   }) {
-    const username = data.username || (await this.generateUniqueUsername(data.name))
+    let username = data.username || (await this.generateUniqueUsername(data.name))
     let attempts = 0
     while (attempts < 5) {
       attempts++
@@ -153,7 +164,18 @@ export const authModels = {
           name: user.profile?.name ?? data.name,
         }
       } catch (err: any) {
-        if (err.code === "P2002" && err.meta?.target?.includes("user_number") && attempts < 5) {
+        const target = Array.isArray(err?.meta?.target)
+          ? err.meta.target.join(",")
+          : String(err?.meta?.target || "")
+        if (
+          err?.code === "P2002" &&
+          (target.includes("user_number") || target.includes("userNumber") || target.includes("username")) &&
+          attempts < 5
+        ) {
+          if (!data.username) {
+            const candidate = await this.generateUniqueUsername(data.name)
+            username = candidate === username ? `${candidate}${attempts}` : candidate
+          }
           continue
         }
         throw err

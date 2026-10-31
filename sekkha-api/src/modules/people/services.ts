@@ -7,6 +7,27 @@ import { encrypt, decrypt, generateBlindIndex } from "../../lib/crypto"
 import { auditLogger } from "../../lib/auditLogger"
 import { prisma } from "../../lib/prisma"
 
+function safeDecrypt(val: string | null | undefined, fallback: string | null = null): string | null {
+  if (!val) return fallback
+  const decrypted = decrypt(val)
+  if (!decrypted || /^[0-9a-fA-F]+:[0-9a-fA-F]+:[0-9a-fA-F]+$/.test(decrypted)) {
+    return fallback
+  }
+  return decrypted
+}
+
+function parseSafeIsoDate(val: string | null | undefined): string | null {
+  if (!val) return null
+  const parsed = new Date(val)
+  if (Number.isNaN(parsed.getTime())) {
+    const err = new Error("Invalid birth date format") as any
+    err.statusCode = 400
+    err.status = 400
+    throw err
+  }
+  return parsed.toISOString()
+}
+
 export function generateTemporaryPassword(): string {
   const digits = randomInt(10000, 100000) // 5 random digits: 10000..99999
   return `sekkha${digits}puggala`
@@ -192,17 +213,17 @@ export const peopleServices = {
       user_number: member.userNumber ? Number(member.userNumber) : null,
       username: member.username,
       name: member.profile?.name || member.username || "Member",
-      email: canViewSensitive && member.email ? decrypt(member.email) || member.email : null,
-      phone: canViewSensitive && member.profile?.phone ? decrypt(member.profile.phone) || null : null,
+      email: canViewSensitive && member.email ? safeDecrypt(member.email, null) : null,
+      phone: canViewSensitive && member.profile?.phone ? safeDecrypt(member.profile.phone, null) : null,
       school: member.profile?.school?.name || null,
       school_id: member.profile?.schoolId || null,
       date_of_birth:
         canViewSensitive && member.profile?.birthDate
-          ? decrypt(member.profile.birthDate) || null
+          ? safeDecrypt(member.profile.birthDate, null)
           : null,
       birth_date:
         canViewSensitive && member.profile?.birthDate
-          ? decrypt(member.profile.birthDate) || null
+          ? safeDecrypt(member.profile.birthDate, null)
           : null,
       role: member.role,
       is_claimed: member.isClaimed ?? true,
@@ -231,6 +252,7 @@ export const peopleServices = {
   }, actor?: CurrentUser) {
     const role = data.role === "activist" ? "activist" : "member"
     const birthDateVal = data.date_of_birth || null
+    const validatedBirthDateIso = parseSafeIsoDate(birthDateVal)
 
     let resolvedSchoolId = data.school_id || null
     if (!resolvedSchoolId && data.school) {
@@ -272,7 +294,7 @@ export const peopleServices = {
                 name: data.name.trim(),
                 phone: data.phone ? encrypt(data.phone.trim()) : null,
                 schoolId: resolvedSchoolId,
-                birthDate: birthDateVal ? encrypt(new Date(birthDateVal).toISOString()) : null,
+                birthDate: validatedBirthDateIso ? encrypt(validatedBirthDateIso) : null,
               },
             },
             stats: {
@@ -287,7 +309,17 @@ export const peopleServices = {
         )
         break
       } catch (err: any) {
-        if (err.code === "P2002" && err.meta?.target?.includes("user_number") && attempts < 5) {
+        const target = Array.isArray(err?.meta?.target)
+          ? err.meta.target.join(",")
+          : String(err?.meta?.target || "")
+        if (
+          err?.code === "P2002" &&
+          (target.includes("user_number") || target.includes("userNumber") || target.includes("username")) &&
+          attempts < 5
+        ) {
+          if (!data.username) {
+            username = await generateUniqueUsername(data.name)
+          }
           continue
         }
         throw err
@@ -369,7 +401,8 @@ export const peopleServices = {
       }
     }
 
-    const birthDateVal = data.date_of_birth || data.birth_date
+    const birthDateVal = data.date_of_birth !== undefined ? data.date_of_birth : data.birth_date
+    const validatedBirthDateIso = birthDateVal ? parseSafeIsoDate(birthDateVal) : null
 
     const userData: any = {}
     if (data.username !== undefined) {
@@ -384,7 +417,7 @@ export const peopleServices = {
     if (data.phone !== undefined) profileData.phone = data.phone ? encrypt(data.phone.trim()) : null
     if (resolvedSchoolId !== undefined) profileData.schoolId = resolvedSchoolId
     if (birthDateVal !== undefined) {
-      profileData.birthDate = birthDateVal ? encrypt(new Date(birthDateVal).toISOString()) : null
+      profileData.birthDate = validatedBirthDateIso ? encrypt(validatedBirthDateIso) : null
     }
 
     const { updatedUser, updatedProfile } = await peopleModels.transaction(async (tx) => {
@@ -397,7 +430,7 @@ export const peopleServices = {
           name: data.name ? data.name.trim() : existing.profile?.name || existing.username || "Member",
           phone: data.phone ? encrypt(data.phone.trim()) : null,
           schoolId: resolvedSchoolId || null,
-          birthDate: birthDateVal ? encrypt(new Date(birthDateVal).toISOString()) : null,
+          birthDate: validatedBirthDateIso ? encrypt(validatedBirthDateIso) : null,
         },
         include: { school: true },
       })

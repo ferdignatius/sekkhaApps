@@ -4,14 +4,20 @@ import {
   redirect,
 } from "@tanstack/react-router"
 import { ConfigureSkeleton } from "@/components/common/PageSkeletons"
+import { safeStorage } from "@/lib/storage"
 
 export const Route = createFileRoute(
   "/_authenticated/configure/master/badge-activity/new"
 )({
   beforeLoad: ({ context }) => {
-    const role = (context as any).authState.role
-    if (role !== "admin") {
-      throw redirect({ to: "/configure/master/badge-activity" })
+    const authState = (context as any)?.authState
+    const role = authState?.role
+    const token = safeStorage.getItem("sekkha_access_token")
+    if (authState?.status === "loading" || (token && !role)) {
+      return
+    }
+    if (role !== "organizer" && role !== "pengurus" && role !== "admin") {
+      throw redirect({ to: "/home" })
     }
   },
   component: lazyRouteComponent(() =>

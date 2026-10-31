@@ -30,7 +30,13 @@ const MAX_REDIRECT_LENGTH = 2048
 export function isValidRedirectTo(value: string | undefined): value is string {
   if (!value) return false
   if (value.length > MAX_REDIRECT_LENGTH) return false
-  if (!value.startsWith("/")) return false
+  if (
+    !value.startsWith("/") ||
+    value.startsWith("//") ||
+    value.startsWith("/\\")
+  ) {
+    return false
+  }
   if (value.includes("http://") || value.includes("https://")) return false
   return true
 }
@@ -115,8 +121,30 @@ function AuthenticatedLayout() {
         to: "/login",
         search: { redirectTo: location.href },
       })
+      return
     }
-  }, [authState.status, navigate, location.href])
+
+    if (
+      location.pathname === "/configure" ||
+      location.pathname === "/configure/"
+    ) {
+      navigate({ to: "/configure/master/event-type" })
+      return
+    }
+
+    if (authState.status === "authenticated" && authState.role) {
+      const role = authState.role as string
+      const isOrganizerOrAdmin =
+        role === "organizer" || role === "pengurus" || role === "admin"
+      const isOrganizerRoute =
+        location.pathname.startsWith("/people") ||
+        location.pathname.startsWith("/insight") ||
+        location.pathname.startsWith("/configure")
+      if (isOrganizerRoute && !isOrganizerOrAdmin) {
+        navigate({ to: "/home" })
+      }
+    }
+  }, [authState.status, authState.role, navigate, location.href, location.pathname])
 
   if (authState.status === "loading") {
     return <AuthenticatedSkeleton />

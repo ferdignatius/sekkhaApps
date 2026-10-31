@@ -226,6 +226,7 @@ async function computeAndCacheLeaderboardInternal(periodTarget?: LeaderboardPeri
     }
 
     for (const metric of METRICS) {
+      const isAllTimeFallback = (activePeriod.key as string) === "all_time"
       const list: LeaderboardUserEntry[] = users
         .map((u) => {
           const safeName = u.profile?.name || "Anggota Sekkha"
@@ -235,18 +236,15 @@ async function computeAndCacheLeaderboardInternal(periodTarget?: LeaderboardPeri
               .slice(0, 2)
               .map((w) => (w && w[0] ? w[0].toUpperCase() : ""))
               .join("") || "AS"
-          const attendanceCount = Math.max(
-            attendanceByUser.get(u.id) ?? 0,
-            u.stats?.totalAttendances ?? 0
-          )
-          const pointsCount = Math.max(
-            pointsByUser.get(u.id) ?? 0,
-            u.stats?.points ?? 0
-          )
-          const streakCount = Math.max(
-            u.stats?.currentStreak ?? 0,
-            attendanceByUser.get(u.id) ?? 0
-          )
+          const attendanceCount =
+            isAllTimeFallback && attendanceByUser.size === 0
+              ? (u.stats?.totalAttendances ?? 0)
+              : (attendanceByUser.get(u.id) ?? 0)
+          const pointsCount =
+            isAllTimeFallback && pointsByUser.size === 0
+              ? (u.stats?.points ?? 0)
+              : (pointsByUser.get(u.id) ?? 0)
+          const streakCount = u.stats?.currentStreak ?? 0
 
           const val =
             metric === "points"
@@ -272,10 +270,10 @@ async function computeAndCacheLeaderboardInternal(periodTarget?: LeaderboardPeri
           rank: idx + 1,
         }))
 
-      const communityTotal = Math.max(
-        totalAttendances,
-        users.reduce((acc, u) => acc + (u.stats?.totalAttendances ?? 0), 0)
-      )
+      const communityTotal =
+        isAllTimeFallback && totalAttendances === 0
+          ? users.reduce((acc, u) => acc + (u.stats?.totalAttendances ?? 0), 0)
+          : totalAttendances
 
       const snapshot: LeaderboardSnapshot = {
         entries: list,
@@ -330,7 +328,7 @@ export async function getLeaderboardSnapshot(
         const raw = await redis.get(cacheKey)
         if (raw) {
           const parsed = JSON.parse(raw) as LeaderboardSnapshot
-          const isStale = parsed.entries?.some((e) => !e.role) || parsed.entries?.every((e) => e.value === 0)
+          const isStale = parsed.entries?.some((e) => !e.role)
           if (!isStale) {
             // Always ensure available_periods are updated to real-time status
             parsed.available_periods = periods
@@ -345,7 +343,7 @@ export async function getLeaderboardSnapshot(
 
     const cachedMem = memoryLeaderboardCache.get(cacheKey)
     if (cachedMem) {
-      const isStale = cachedMem.entries?.some((e) => !e.role) || cachedMem.entries?.every((e) => e.value === 0)
+      const isStale = cachedMem.entries?.some((e) => !e.role)
       if (!isStale) {
         cachedMem.available_periods = periods
         cachedMem.active_period = targetPeriod
@@ -397,5 +395,68 @@ export async function getLeaderboardSnapshot(
     available_periods: periods,
     active_period: targetPeriod,
     calculated_at: new Date().toISOString(),
+  }
+}
+
+export function normalizeLeaderboardRole(role: string): string {
+  const clean = role.trim().toLowerCase()
+  if (clean === "umat" || clean === "member") return "member"
+  if (clean === "aktivis" || clean === "activist") return "activist"
+  if (clean === "pengurus" || clean === "organizer") return "organizer"
+  if (clean === "admin") return "admin"
+  return clean
+}
+
+export function filterAndRankLeaderboardEntries(
+  entries: LeaderboardUserEntry[],
+  rolesParam?: string,
+  limit: number = 10,
+  userId?: string
+) {
+  const requestedRoles = new Set(
+    (rolesParam || "")
+      .split(",")
+      .map((r) => normalizeLeaderboardRole(r))
+      .filter(Boolean)
+  )
+
+  const scopedEntries = (entries || [])
+    .filter((entry) => {
+      if (requestedRoles.size === 0 || requestedRoles.has("all")) return true
+      const entryRole = normalizeLeaderboardRole(entry.role || "member")
+      if (requestedRoles.has(entryRole)) return true
+      if (requestedRoles.has("organizer") && entryRole === "admin") return true
+      return false
+    })
+    .map((entry, index) => ({
+      ...entry,
+      rank: index + 1,
+    }))
+
+  const visibleEntries = scopedEntries.slice(0, limit)
+  const myIdx = userId ? scopedEntries.findIndex((e) => e.user_id === userId) : -1
+  const myRank =
+    myIdx >= 0
+      ? {
+          rank: scopedEntries[myIdx].rank ?? myIdx + 1,
+          value: scopedEntries[myIdx].value ?? 0,
+          is_in_top: myIdx < 20,
+          name: scopedEntries[myIdx].name,
+          initials: scopedEntries[myIdx].initials,
+        }
+      : userId
+        ? {
+            rank: scopedEntries.length + 1,
+            value: 0,
+            is_in_top: false,
+            name: "You",
+            initials: "YO",
+          }
+        : null
+
+  return {
+    visibleEntries,
+    myRank,
+    scopedEntries,
   }
 }

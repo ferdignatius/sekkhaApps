@@ -133,11 +133,38 @@ export function SchoolPage() {
     })
   }, [schools, search, typeFilter])
 
-  const totalUsers = schools.reduce((n, s) => n + (s.userCount ?? 0), 0)
-
-  const seniorHighCount = schools.filter((s) => s.type === "SMA/SMK").length
-
-  const universityCount = schools.filter((s) => s.type === "Universitas").length
+  const {
+    totalLinkedUsers,
+    seniorHighCount,
+    universityCount,
+    activeCount,
+    inactiveCount,
+  } = useMemo(() => {
+    let linked = 0
+    let seniorHigh = 0
+    let university = 0
+    let active = 0
+    let inactive = 0
+    for (const s of schools) {
+      linked += s.userCount ?? 0
+      if (s.type === "SMA/SMK") seniorHigh++
+      if (s.type === "Universitas") university++
+      if (s.is_active === false) {
+        inactive++
+      } else {
+        active++
+      }
+    }
+    return {
+      totalLinkedUsers: linked,
+      seniorHighCount: seniorHigh,
+      universityCount: university,
+      activeCount: active,
+      inactiveCount: inactive,
+    }
+  }, [schools])
+  void activeCount
+  void inactiveCount
 
   return (
     <main className="min-h-screen bg-[#fffaf0] pb-24 text-left font-sans">
@@ -282,7 +309,7 @@ export function SchoolPage() {
                   Youth
                 </p>
                 <p className="mt-1 text-2xl font-black text-[#0a0a0a]">
-                  {totalUsers}
+                  {totalLinkedUsers}
                 </p>
               </Card>
             </div>

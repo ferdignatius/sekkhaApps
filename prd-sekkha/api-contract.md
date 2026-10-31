@@ -42,7 +42,7 @@ Sistem menggunakan 4 tingkatan peran (*role*) resmi:
    - **Access Token**: JWT berdurasi 15 menit dikirim via header `Authorization: Bearer <accessToken>`.
    - **Refresh Token**: Disimpan dalam `HttpOnly`, `SameSite=Lax`, `Secure` cookie bernama `sekkha_refresh_token` dengan rotasi token saat `/api/auth/refresh`.
 2. **Perlindungan Data Pribadi (UU PDP / GDPR)**:
-   - Field PII (Nomor Telepon, Tanggal Lahir, Gender) dienkripsi di level database (*at-rest*) dengan algoritma **AES-256-GCM**.
+   - Field PII (Nomor Telepon dan Tanggal Lahir) dienkripsi di level database (*at-rest*) dengan algoritma **AES-256-GCM**.
    - Pencarian email menggunakan **HMAC-SHA256 Blind Index** (`emailBindex`) sehingga pencarian $O(1)$ tetap aman tanpa mengekspos data mentah.
 3. **Batas Frekuensi Permintaan (*Rate Limiting*)**:
    - **Global**: 300 req/menit per IP.
@@ -143,7 +143,7 @@ Masuk dengan kredensial password.
     "password": "Password123!"
   }
   ```
-  *(Catatan: `identifier` menerima `username` atau email yang sudah terverifikasi).*
+  *(Catatan: `identifier` menerima `username`, `userNumber` 10-digit, atau `email` yang sudah terverifikasi).*
 - **Response (200 OK)**:
   ```json
   {
@@ -315,7 +315,6 @@ Mengambil detail profil akun yang sedang login.
       "class_grade": "11",
       "phone": "081234567890",
       "birth_date": "2008-05-14",
-      "gender": "male",
       "points": 350,
       "joined_at": "2026-10-23T00:00:00.000Z"
     }
@@ -329,14 +328,14 @@ Memperbarui profil mandiri pengguna.
   ```json
   {
     "name": "Budi Santoso",
+    "username": "budi.santoso",
     "school_id": "sch_12345",
     "class_grade": "11",
     "phone": "081234567890",
-    "birth_date": "2008-05-14",
-    "gender": "male"
+    "birth_date": "2008-05-14"
   }
   ```
-  *(Catatan: `email`, `username`, `user_number`, dan `role` tidak dapat diubah lewat endpoint ini. Email diubah lewat `POST /api/users/email-verification/request`.)*
+  *(Catatan: `email`, `user_number`, dan `role` tidak dapat diubah lewat endpoint ini. Email diubah lewat `POST /api/users/email-verification/request`.)*
 - **Response (200 OK)**: Envelope standar dengan `data` berbentuk sama seperti `GET /api/users/me`.
 
 ### 3. `PATCH /api/users/me/onboarding`
@@ -670,7 +669,7 @@ Memperbarui status siklus acara secara aman: `scheduled` → `active` → `close
     "status": "active"
   }
   ```
-  *(Validasi Mulai Acara: Waktu sekarang harus sudah mencapai jadwal acara: `event.event_date <= current date`).*
+  *(Validasi Mulai Acara: Event tidak boleh diaktifkan jika tanggal saat ini sudah melewati tanggal pelaksanaan event (`current date > event.event_date`); aktivasi diizinkan selama `current date <= event.event_date`).*
 - **Request Body (Reschedule Event dari `cancel` ke `scheduled`)**:
   ```json
   {
@@ -718,12 +717,12 @@ Memperbarui status siklus acara secara aman: `scheduled` → `active` → `close
     }
   }
   ```
-- **Error (400 Bad Request - Start Event Prematur)**:
+- **Error (400 Bad Request - Event Kadaluwarsa / Tanggal Terlewati)**:
   ```json
   {
     "status": "error",
     "code": 400,
-    "message": "Event cannot be started before its scheduled date and time"
+    "message": "Event cannot be activated because its scheduled date has already passed"
   }
   ```
 

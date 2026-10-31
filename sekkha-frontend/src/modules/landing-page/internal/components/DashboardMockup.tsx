@@ -28,15 +28,14 @@ export function DashboardMockup() {
   const [userPoints, setUserPoints] = useState(1240)
 
   const toggleMission = (id: number) => {
+    const target = missions.find((m) => m.id === id)
+    if (!target) return
+    const nextDone = !target.done
     setMissions((prev) =>
-      prev.map((m) => {
-        if (m.id === id) {
-          const nextDone = !m.done
-          setUserPoints((pts) => (nextDone ? pts + m.reward : pts - m.reward))
-          return { ...m, done: nextDone }
-        }
-        return m
-      })
+      prev.map((m) => (m.id === id ? { ...m, done: nextDone } : m))
+    )
+    setUserPoints((pts) =>
+      nextDone ? pts + target.reward : pts - target.reward
     )
   }
 

@@ -13,6 +13,7 @@ type EventHandler<T = unknown> = (payload: T) => void | Promise<void>
 
 class EventBus {
   private emitter = new EventEmitter()
+  private handlers = new Map<string, Map<EventHandler<any>, (...args: any[]) => void>>()
 
   private sanitizePayload(payload: any): any {
     if (!payload || typeof payload !== "object") return payload
@@ -44,19 +45,43 @@ class EventBus {
    */
   subscribe<T>(event: string, handler: EventHandler<T>): void {
     console.log(`👂 EventBus: subscribed to "${event}"`)
-    this.emitter.on(event, (payload: T) => {
-      // Wrap in try-catch so one failing subscriber doesn't crash others
-      Promise.resolve(handler(payload)).catch((err) => {
+    let eventMap = this.handlers.get(event)
+    if (!eventMap) {
+      eventMap = new Map()
+      this.handlers.set(event, eventMap)
+    }
+
+    const existingWrapper = eventMap.get(handler)
+    if (existingWrapper) {
+      this.emitter.off(event, existingWrapper)
+    }
+
+    const wrapper = (payload: T) => {
+      // Wrap in async IIFE so both synchronous throws and async rejections are caught safely
+      ;(async () => handler(payload))().catch((err) => {
         console.error(`❌ EventBus handler error for "${event}":`, err)
       })
-    })
+    }
+
+    eventMap.set(handler, wrapper)
+    this.emitter.on(event, wrapper)
   }
 
   /**
    * Remove a specific handler from an event.
    */
   unsubscribe<T>(event: string, handler: EventHandler<T>): void {
-    this.emitter.off(event, handler as (...args: unknown[]) => void)
+    const eventMap = this.handlers.get(event)
+    const wrapper = eventMap?.get(handler)
+    if (wrapper) {
+      this.emitter.off(event, wrapper)
+      eventMap!.delete(handler)
+      if (eventMap!.size === 0) {
+        this.handlers.delete(event)
+      }
+    } else {
+      this.emitter.off(event, handler as (...args: unknown[]) => void)
+    }
   }
 }
 

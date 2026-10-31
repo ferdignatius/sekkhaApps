@@ -40,7 +40,7 @@ Desain ini menjamin:
 | Tutup Sesi & Finalisasi Poin (`closed`) | v | v | x | x |
 | Batalkan Event (`cancel`) | v | v | x | x |
 | Lihat QR Code Sendiri (`/profile/qr`) | v | v | v | v |
-| Lihat & Ekspor rekap kehadiran | v | v | x | x |
+| Lihat rekap kehadiran | v | v | x | x |
 
 > **Catatan Ketat**: Role `activist` **TIDAK MEMILIKI AKSES** ke fitur absensi. Seluruh proses scan, koreksi draft, dan penutupan sesi dilakukan eksklusif oleh `organizer` atau `admin`.
 
@@ -85,7 +85,7 @@ Desain ini menjamin:
 > **Aturan**:
 > 1. Pengurus tidak bisa langsung menutup event tanpa mengaktifkan absensi terlebih dahulu (`active`). Tombol "Tutup Sesi & Kreditkan Poin" hanya tersedia saat status `active`.
 > 2. Event yang berstatus `cancel` dapat dijadwalkan ulang (**Reschedule**) kembali menjadi `scheduled` dengan memasukkan tanggal baru (`event_date >= current date`). Sesi absensi tidak dapat dibuka pada event berstatus `cancel`.
-> 3. Tombol **"Mulai Acara" (Start Event)** untuk mengubah status ke `active` hanya dapat dieksekusi jika waktu pelaksanaan kegiatan sudah tiba (**`event_date <= current date`**). Sesi presensi tidak dapat diaktifkan sebelum waktu jadwal kegiatan.
+> 3. Tombol **"Mulai Acara" (Start Event)** untuk mengubah status ke `active` **tidak dapat dieksekusi jika tanggal saat ini sudah melewati tanggal pelaksanaan yang ditetapkan pada event (`current date > event_date`)** — dalam kasus tersebut event wajib dijadwalkan ulang (*reschedule*) atau dibatalkan (*cancel*). Aktivasi event diizinkan selama tanggal saat ini berada pada atau sebelum tanggal pelaksanaan (`current date <= event_date`).
 
 ---
 
@@ -183,7 +183,7 @@ Sebagai gantinya, sistem menerapkan kombinasi **Frontend In-Flight Lock + Cooldo
 ```
 Organizer/Admin di halaman detail event (/events/:id)
           │
-          │ Klik Action Button "Start Event" (hanya jika event_date <= current date)
+          │ Klik Action Button "Start Event" (hanya jika current date <= event_date)
           ▼
 PATCH /api/events/:id/status { "status": "active" }
           │
@@ -300,7 +300,7 @@ Pada halaman `/events/:id` untuk organizer dan admin, tombol aksi berubah secara
 
 | Status Event | Action Button yang Ditampilkan |
 | --- | --- |
-| `scheduled` | **"Start Event"** (hanya jika `event_date <= current date`) dan **"Cancel Event"** |
+| `scheduled` | **"Start Event"** (hanya jika `current date <= event_date`) dan **"Cancel Event"** |
 | `active` | **"Buka Scanner Presensi"** (`/events/:id/scan`), **"Lihat Rekap Kehadiran"**, **"Close & Finalize Event"** (kreditkan poin), dan **"Cancel Event"** |
 | `closed` | **"Lihat Rekap Kehadiran"** (status final, read-only) |
 | `cancel` | **"Reschedule Event"** (membuka modal input tanggal baru `event_date >= current date` untuk kembali ke `scheduled`) |
@@ -396,12 +396,12 @@ Semua endpoint menggunakan format envelope numerik standar Sekkha Apps:
     }
   }
   ```
-- **Error 400 Bad Request (Start Prematur)**:
+- **Error 400 Bad Request (Start Event Kadaluwarsa / Tanggal Terlewati)**:
   ```json
   {
     "status": "error",
     "code": 400,
-    "message": "Event cannot be started before its scheduled date and time"
+    "message": "Event cannot be activated because its scheduled date has already passed"
   }
   ```
 - **Request Body (Reschedule Event dari `cancel` ke `scheduled`)**:
@@ -542,7 +542,7 @@ model Attendance {
   badgeActivityId    String?          @map("badge_activity_id")
   badgeBonusPoints   Int              @default(0) @map("badge_bonus_points")
   isFinalized        Boolean          @default(false) @map("is_finalized")
-  scannedAt          DateTime         @default(now) @map("scanned_at")
+  scannedAt          DateTime         @default(now()) @map("scanned_at")
 
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   event         Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
@@ -570,8 +570,8 @@ model Attendance {
 
 | ID | Skenario | Hasil yang Diharapkan |
 | --- | --- | --- |
-| **AC-ATT-01** | Organizer klik "Start Event" saat jadwal sudah tiba (`event_date <= current date`) | Status event berubah menjadi `active` via `PATCH /api/events/:id/status` (code `200`). Scanner presensi terbuka. |
-| **AC-ATT-02** | Organizer mencoba klik "Start Event" sebelum tanggal/jam event | Backend menolak dengan `400 Bad Request` dan pesan "Event cannot be started before its scheduled date and time". |
+| **AC-ATT-01** | Organizer klik "Start Event" pada atau sebelum tanggal jadwalnya (`current date <= event_date`) | Status event berubah menjadi `active` via `PATCH /api/events/:id/status` (code `200`). Scanner presensi terbuka. |
+| **AC-ATT-02** | Organizer mencoba klik "Start Event" ketika tanggal saat ini sudah melewati tanggal pelaksanaan event (`current date > event_date`) | Backend menolak dengan `400 Bad Request` dan pesan "Event cannot be activated because its scheduled date has already passed" (event harus di-reschedule atau di-cancel). |
 | **AC-ATT-03** | `activist` mencoba membuka `/events/:id/scan` atau POST absensi | Backend menolak dengan `403 Forbidden`. Akses scanner eksklusif untuk `organizer` dan `admin`. |
 | **AC-ATT-04** | Panitia memindai QR Code kartu anggota jemaat (`userNumber`) | Data masuk ke presensi draft (`is_finalized: false`), respon `201 Created` dengan code angka `201`, audio beep aktif, kamera auto-resume. |
 | **AC-ATT-05** | Panitia memindai jemaat yang sama dua kali atau multi-gate scan berbarengan | Backend merespon `409 Conflict` (code `409`) dengan pesan "Peserta sudah tercatat hadir" berkat constraint `@@unique([userId, eventId])`. Data tidak ganda. |
@@ -580,4 +580,3 @@ model Attendance {
 | **AC-ATT-08** | Organizer klik "Close & Finalize Event" | Status event berubah menjadi `closed` (code `200`), seluruh presensi ditandai `is_finalized = true`, poin dikreditkan serentak dalam 1 transaksi DB. |
 | **AC-ATT-09** | Organizer membuka Rekap Kehadiran (`/events/:id/attendances`) | Menampilkan `total_attended`, status finalisasi, dan daftar peserta dengan nomor anggota, sekolah, dan waktu scan (tanpa photo_url, tanpa RSVP, tanpa attendance rate). |
 | **AC-ATT-10** | Organizer melakukan "Reschedule Event" pada event `cancel` | Menentukan tanggal baru (`event_date >= current date`), status berubah kembali menjadi `scheduled` (code `200`). |
-

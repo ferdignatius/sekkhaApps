@@ -28,17 +28,17 @@ export const ConfirmEmailVerificationSchema = z.object({
 })
 
 export const RequestChangePasswordOtpSchema = z.object({
-  current_password: z.string().optional(),
+  current_password: z.string().max(128, "Password maximum 128 characters").optional(),
 })
 
 export const ChangePasswordSchema = z.object({
-  current_password: z.string().min(1, "Current password is required"),
-  new_password: z.string().min(8, "New password must be at least 8 characters"),
-  otp: z.string().trim().length(6, "Verification code must be 6 digits"),
+  current_password: z.string().min(1, "Current password is required").max(128, "Password maximum 128 characters"),
+  new_password: z.string().min(8, "New password must be at least 8 characters").max(128, "Password maximum 128 characters"),
+  otp: z.string().trim().length(6, "Verification code must be 6 digits").optional(),
 })
 
 export const DeleteAccountSchema = z.object({
-  password: z.string().min(1, "Konfirmasi kata sandi diperlukan"),
+  password: z.string().min(1, "Konfirmasi kata sandi diperlukan").max(128, "Password maksimal 128 karakter"),
   confirmation: z.string().optional(),
 })
 
@@ -209,7 +209,7 @@ export const userControllers = {
   async getAttendances(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const userId = req.user!.userId
-      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 10
+      const limit = parseInt(req.query.limit as string, 10) || 10
       const cursor = req.query.cursor ? String(req.query.cursor) : undefined
       const result = await userServices.getAttendances(userId, limit, cursor)
       successEnvelope(res, 200, "Request completed successfully", result)
@@ -231,7 +231,7 @@ export const userControllers = {
   async getPointTransactions(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const userId = req.user!.userId
-      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 50
+      const limit = parseInt(req.query.limit as string, 10) || 10
       const transactions = await userServices.getPointTransactions(userId, limit)
       res.json({
         status: "success",

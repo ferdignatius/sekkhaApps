@@ -88,6 +88,9 @@ export const schoolServices = {
     if (!existing) {
       throw new AppError("School not found", 404, "SCHOOL_NOT_FOUND")
     }
+    if (existing.status !== "pending") {
+      throw new AppError("School request has already been processed", 400, "SCHOOL_ALREADY_PROCESSED")
+    }
 
     const updated = await schoolModels.approveSchool(id, reviewerId)
     return {
@@ -104,6 +107,9 @@ export const schoolServices = {
     const existing = await schoolModels.findSchoolById(id)
     if (!existing) {
       throw new AppError("School not found", 404, "SCHOOL_NOT_FOUND")
+    }
+    if (existing.status !== "pending") {
+      throw new AppError("School request has already been processed", 400, "SCHOOL_ALREADY_PROCESSED")
     }
 
     const updated = await schoolModels.rejectSchool(id, reviewerId)

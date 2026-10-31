@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import {
   ZapIcon,
   PencilIcon,
@@ -135,9 +135,10 @@ export function PointsRulesPage() {
     }
   }
 
-  function getRuleByCode(code: string): PointRuleDto | undefined {
-    return rules.find((r) => r.code === code)
-  }
+  const rulesByCode = useMemo(
+    () => new Map<string, PointRuleDto>(rules.map((r) => [r.code, r])),
+    [rules]
+  )
 
   return (
     <main className="min-h-screen bg-[#fffaf0] pb-32 text-left font-sans md:pb-12">
@@ -228,7 +229,7 @@ export function PointsRulesPage() {
           <div className="space-y-6">
             {SYSTEM_RULE_SECTIONS.map((section) => {
               const sectionRules = section.ruleCodes
-                .map((code) => getRuleByCode(code))
+                .map((code) => rulesByCode.get(code))
                 .filter((r): r is PointRuleDto => Boolean(r))
 
               if (sectionRules.length === 0) return null

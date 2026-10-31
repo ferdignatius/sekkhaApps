@@ -1,14 +1,17 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
 import { api, clearApiCache } from "../api"
+import { safeStorage } from "../storage"
 
 describe("api client deduplication and caching", () => {
   beforeEach(() => {
     clearApiCache()
+    safeStorage.removeItem("sekkha_access_token")
     vi.restoreAllMocks()
   })
 
   afterEach(() => {
     clearApiCache()
+    safeStorage.removeItem("sekkha_access_token")
   })
 
   it("deduplicates concurrent in-flight GET requests to the same endpoint", async () => {
@@ -110,5 +113,65 @@ describe("api client deduplication and caching", () => {
     await api.get("/data", { noCache: true })
 
     expect(callCount).toBe(2)
+  })
+
+  it("isolates GET cache across different user tokens", async () => {
+    let callCount = 0
+    const fetchMock = vi.fn().mockImplementation(() => {
+      callCount++
+      return Promise.resolve(
+        new Response(JSON.stringify({ user: callCount }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        })
+      )
+    })
+    vi.stubGlobal("fetch", fetchMock)
+
+    safeStorage.setItem("sekkha_access_token", "token-user-a-12345678")
+    const resA = await api.get("/users/me")
+    expect(resA).toEqual({ user: 1 })
+
+    safeStorage.setItem("sekkha_access_token", "token-user-b-87654321")
+    const resB = await api.get("/users/me")
+    expect(resB).toEqual({ user: 2 })
+    expect(callCount).toBe(2)
+  })
+
+  it("unwraps data.data.accessToken on silent 401 refresh and retries", async () => {
+    safeStorage.setItem("sekkha_access_token", "expired-token")
+    let attempt = 0
+    const fetchMock = vi.fn().mockImplementation((url: string) => {
+      if (url.endsWith("/auth/refresh")) {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              status: "success",
+              code: 200,
+              message: "Session refreshed",
+              data: { accessToken: "fresh-access-token" },
+            }),
+            { status: 200, headers: { "Content-Type": "application/json" } }
+          )
+        )
+      }
+      attempt++
+      if (attempt === 1) {
+        return Promise.resolve(new Response("Unauthorized", { status: 401 }))
+      }
+      return Promise.resolve(
+        new Response(JSON.stringify({ ok: true }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        })
+      )
+    })
+    vi.stubGlobal("fetch", fetchMock)
+
+    const res = await api.get<{ ok: boolean }>("/users/me", { noCache: true })
+    expect(res).toEqual({ ok: true })
+    expect(safeStorage.getItem("sekkha_access_token")).toBe(
+      "fresh-access-token"
+    )
   })
 })

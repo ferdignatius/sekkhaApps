@@ -27,32 +27,6 @@ interface QrScannerCameraProps {
   externalCameraId?: string
 }
 
-// Synthesize a pleasant beep chime using Web Audio API
-function playScanChime() {
-  try {
-    const ctx = new (
-      window.AudioContext || (window as any).webkitAudioContext
-    )()
-    const osc = ctx.createOscillator()
-    const gain = ctx.createGain()
-
-    osc.type = "sine"
-    osc.frequency.setValueAtTime(880, ctx.currentTime) // A5
-    osc.frequency.exponentialRampToValueAtTime(1320, ctx.currentTime + 0.12) // E6
-
-    gain.gain.setValueAtTime(0.3, ctx.currentTime)
-    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15)
-
-    osc.connect(gain)
-    gain.connect(ctx.destination)
-
-    osc.start(ctx.currentTime)
-    osc.stop(ctx.currentTime + 0.15)
-  } catch {
-    // Ignore audio context errors if blocked by browser policy
-  }
-}
-
 export function QrScannerCamera({
   onScan,
   onError,
@@ -105,7 +79,6 @@ export function QrScannerCamera({
       }
       lastScanTimestamp.current = now
       setLastScannedText(decodedText)
-      playScanChime()
 
       // Reset last scanned visual after 1s
       setTimeout(() => setLastScannedText(null), 1000)

@@ -1,32 +1,12 @@
 import type { Request, Response, NextFunction } from "express"
 import { z } from "zod"
-import { getLeaderboardSnapshot, MetricType } from "./services"
-import { leaderboardModels } from "./models"
-import { decrypt } from "../../lib/crypto"
+import {
+  getLeaderboardSnapshot,
+  filterAndRankLeaderboardEntries,
+  MetricType,
+} from "./services"
 
 export const leaderboardControllers = {
-  async getDebug(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
-      const users = await leaderboardModels.findDebugUsers()
-      const snapshot = await getLeaderboardSnapshot("points", undefined, true)
-      res.json({
-        db_users_count: users.length,
-        db_users: users.map((u) => ({
-          id: u.id,
-          name: u.profile?.name ?? "",
-          email: decrypt(u.email) || u.email,
-          role: u.role,
-          points: u.stats?.points ?? 0,
-          isClaimed: u.isClaimed,
-          userNumber: u.userNumber,
-        })),
-        computed_snapshot_entries: snapshot.entries,
-      })
-    } catch (err) {
-      next(err)
-    }
-  },
-
   async getLeaderboard(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { metric = "points", period, refresh, roles, limit = 10 } = z
@@ -44,58 +24,12 @@ export const leaderboardControllers = {
       const forceRefresh = isPrivileged && (refresh === "true" || refresh === "1")
       const snapshot = await getLeaderboardSnapshot(metric as MetricType, period, forceRefresh)
 
-      const requestedRoles = new Set(
-        (roles || "")
-          .split(",")
-          .map((role) => role.trim().toLowerCase())
-          .map((role) =>
-            role === "umat"
-              ? "member"
-              : role === "aktivis"
-                ? "activist"
-                : role === "pengurus"
-                  ? "organizer"
-                  : role
-          )
-          .filter(Boolean)
+      const { visibleEntries, myRank } = filterAndRankLeaderboardEntries(
+        snapshot.entries || [],
+        roles,
+        limit,
+        userId
       )
-
-      const scopedEntries = (snapshot.entries || [])
-        .filter((entry) => {
-          if (requestedRoles.size === 0) return true
-          const normalizedRole =
-            entry.role === "admin" || entry.role === "organizer" || entry.role === "pengurus"
-              ? "organizer"
-              : entry.role === "activist" || entry.role === "aktivis"
-                ? "activist"
-                : "member"
-          return requestedRoles.has(normalizedRole)
-        })
-        .map((entry, index) => ({
-          ...entry,
-          rank: index + 1,
-        }))
-
-      const visibleEntries = scopedEntries.slice(0, limit)
-      const myIdx = userId ? scopedEntries.findIndex((e) => e.user_id === userId) : -1
-      const myRank =
-        myIdx >= 0
-          ? {
-              rank: scopedEntries[myIdx].rank ?? myIdx + 1,
-              value: scopedEntries[myIdx].value ?? 0,
-              is_in_top: myIdx < 20,
-              name: scopedEntries[myIdx].name,
-              initials: scopedEntries[myIdx].initials,
-            }
-          : userId
-            ? {
-                rank: scopedEntries.length + 1,
-                value: 0,
-                is_in_top: false,
-                name: "You",
-                initials: "YO",
-              }
-            : null
 
       res.json({
         entries: visibleEntries,

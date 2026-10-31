@@ -79,8 +79,10 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
 
   // Initial / on-status-change API sync: fetch fresh profile from server if not already present.
   // Runs when status transitions to "authenticated" (e.g., after login or onboarding).
+  // Skip if userId is still null (AuthContext initAuth is already fetching /users/me).
   useEffect(() => {
     if (authStateStatusRef.current !== "authenticated") return
+    if (!authState.userId) return
     if (authStateNameRef.current) return
     let cancelled = false
     api
@@ -100,7 +102,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
     return () => {
       cancelled = true
     }
-  }, [authState.status])
+  }, [authState.status, authState.userId])
 
   const userId = authState.status === "authenticated" ? authState.userId : null
   const role = authState.status === "authenticated" ? authState.role : null

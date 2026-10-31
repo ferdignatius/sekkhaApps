@@ -67,23 +67,23 @@ modules/
 
 ```
 modules/
-└── task/
-    ├── module.ts          # Kontrak publik: register() + subscribe()
-    └── internal/
-        ├── router.ts      # Express router definitions
-        ├── handler.ts     # Request handlers (thin, parse + delegate)
-        ├── service.ts     # Business logic + eventbus.publish()
-        ├── repository.ts  # Prisma database queries
-        └── validation.ts  # Zod schemas
+└── <nama-modul>/
+    ├── routes.ts          # Endpoint Express & pemasangan middleware (requireAuth, requireRole)
+    ├── controllers.ts     # HTTP request/response handlers (thin, parse + validasi Zod + delegate)
+    ├── services.ts        # Otak bisnis: business logic, query Prisma, cache & eventbus.publish()
+    ├── models.ts          # TypeScript interfaces, DTOs & Zod schemas
+    ├── module.ts          # Kontrak publik AppModule: register(app) + subscribe?()
+    ├── index.ts           # Barrel export publik untuk konsumsi luar
+    └── internal/          # (Opsional) Helper privat khusus modul ini (cron, sse, email, otpStore, dll.)
 ```
 
 ### Aturan Backend Module
 
-1. **module.ts = entry point.** Shell (index.ts) hanya import `module.ts`, bukan file internal.
-2. **Handler tipis.** Handler hanya parse request + panggil service + kirim response.
-3. **Service = brain.** Semua business logic, validasi bisnis, dan event publishing di sini.
-4. **Repository = database only.** Hanya Prisma queries, TANPA business logic.
-5. **EventBus untuk cross-module.** Kalau modul A perlu trigger aksi di modul B, publish event. JANGAN call service modul B langsung.
+1. **module.ts & index.ts = kontrak publik.** App (`src/app.ts` / `src/server.ts`) hanya mengimpor `module.ts` (atau fungsi publik lewat `index.ts`), bukan file di `internal/`.
+2. **Controller tipis (`controllers.ts`).** Controller hanya mengekstrak input HTTP (`req.body`, `req.params`, `req.query`), memvalidasi skema Zod, memanggil `services.ts`, dan mengirim response JSON. Jangan panggil query Prisma langsung di controller.
+3. **Service = brain (`services.ts`).** Semua business logic, validasi aturan bisnis, query database via Prisma, cache invalidation, dan event publishing (`eventbus.publish()`) berada di sini.
+4. **Internal = privat (`internal/`).** File pembantu spesifik modul (seperti `sse.ts`, `cron.ts`, `otpStore.ts`, `subscribers.ts`) diletakkan di `internal/` dan tidak boleh diimpor oleh modul lain.
+5. **EventBus untuk cross-module.** Kalau modul A perlu memicu efek samping di modul B, publish domain event via EventBus. JANGAN panggil service modul B secara langsung.
 
 ## Git: Niche Commits
 

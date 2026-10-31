@@ -178,6 +178,7 @@
     --color-sekkha-canvas: #fffaf0;
     --color-sekkha-surface: #faf5e8;
     --color-sekkha-ink: #0a0a0a;
+    --color-sekkha-body: #3a3a3a;
     --color-sekkha-slate: #6a6a6a;
     --color-sekkha-hairline: #e5e5e5;
     --color-sekkha-hairline-strong: #d4d4d4;
@@ -664,6 +665,21 @@
   .scrollbar-none::-webkit-scrollbar {
     display: none;               /* Chrome / Safari / WebKit */
   }
+
+  /* Sekkha Semantic Utility Aliases (DESIGN.md) */
+  .bg-sekkha-canvas { background-color: var(--color-sekkha-canvas); }
+  .bg-sekkha-surface { background-color: var(--color-sekkha-surface); }
+  .text-sekkha-ink { color: var(--color-sekkha-ink); }
+  .text-sekkha-slate { color: var(--color-sekkha-slate); }
+  .text-sekkha-body { color: var(--color-sekkha-body); }
+  .border-sekkha-hairline { border-color: var(--color-sekkha-hairline); }
+  .border-sekkha-hairline-soft { border-color: var(--color-sekkha-hairline-soft); }
+  .bg-sekkha-primary { background-color: var(--color-sekkha-primary); }
+  .bg-sekkha-brand-blue { background-color: var(--color-sekkha-brand-blue); }
+  .text-sekkha-brand-blue { color: var(--color-sekkha-brand-blue); }
+  .bg-sekkha-brand-yellow { background-color: var(--color-sekkha-brand-yellow); }
+  .bg-sekkha-teal-light { background-color: var(--color-sekkha-teal-light); }
+  .bg-sekkha-rose-light { background-color: var(--color-sekkha-rose-light); }
 }
 
 /* ─── Physical ID Card Print Engine ─── */

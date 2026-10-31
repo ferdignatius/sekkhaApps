@@ -6,7 +6,6 @@ export const pengurusModels = {
     return prisma.user.findMany({
       select: {
         id: true,
-        email: true,
         role: true,
         createdAt: true,
         profile: {
@@ -16,9 +15,22 @@ export const pengurusModels = {
           select: {
             points: true,
             consecutiveMissed: true,
+            currentStreak: true,
           },
         },
       },
+    })
+  },
+
+  findEventTypesForInsights() {
+    return prisma.eventType.findMany({
+      where: { isActive: true },
+      select: {
+        code: true,
+        label: true,
+        color: true,
+      },
+      orderBy: { label: "asc" },
     })
   },
 
@@ -28,7 +40,7 @@ export const pengurusModels = {
         status: { in: ["scheduled", "active", "closed"] },
       },
       include: {
-        type: { select: { code: true } },
+        type: { select: { code: true, label: true, color: true } },
         attendances: {
           select: {
             id: true,

@@ -208,7 +208,12 @@ export function createApp(): Application {
   app.use("/api/auth/login", authLimiter)
   app.use("/api/auth/register", authLimiter)
   app.use("/api/auth/refresh", authLimiter)
+  app.use("/api/auth/forgot-password", authLimiter)
   app.use("/api/users/change-password", authLimiter)
+  app.use("/api/users/me/delete-account", authLimiter)
+  app.use("/api/people/:id/reset-temporary-password", authLimiter)
+  app.use("/api/people/members/:id/reset-temporary-password", authLimiter)
+  app.use("/api/people/members/:id/reset-password", authLimiter)
 
   // 4b. Dedicated OTP Rate Limiter (5 requests per 15 minutes per IP to prevent brute-force attacks)
   const otpLimiter = rateLimit({

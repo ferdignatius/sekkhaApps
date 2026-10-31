@@ -59,9 +59,10 @@ async function requestTokenRefresh(): Promise<string | null> {
         return null
       }
       const data = await res.json()
-      if (data?.accessToken) {
-        safeStorage.setItem("sekkha_access_token", data.accessToken)
-        return data.accessToken as string
+      const accessToken = data?.data?.accessToken ?? data?.accessToken
+      if (accessToken) {
+        safeStorage.setItem("sekkha_access_token", accessToken)
+        return accessToken as string
       }
       return null
     } catch {
@@ -82,6 +83,12 @@ interface CacheEntry<T> {
 }
 const getCache = new Map<string, CacheEntry<any>>()
 
+function getCacheKey(path: string): string {
+  const token = getToken()
+  const tokenSlice = token ? token.slice(-16) : "anon"
+  return `${tokenSlice}:${path}`
+}
+
 /**
  * Invalidate in-memory GET cache. If pathPrefix is given, invalidates matching paths;
  * otherwise clears all cached GET responses.
@@ -89,10 +96,13 @@ const getCache = new Map<string, CacheEntry<any>>()
 export function clearApiCache(pathPrefix?: string): void {
   if (!pathPrefix) {
     getCache.clear()
+    inFlightGetRequests.clear()
     return
   }
   for (const key of getCache.keys()) {
-    if (key.startsWith(pathPrefix)) {
+    const colonIdx = key.indexOf(":")
+    const cachedPath = colonIdx >= 0 ? key.slice(colonIdx + 1) : key
+    if (key.startsWith(pathPrefix) || cachedPath.startsWith(pathPrefix)) {
       getCache.delete(key)
     }
   }
@@ -108,6 +118,7 @@ export async function apiFetch<T = unknown>(
 ): Promise<T> {
   const method = (options.method || "GET").toUpperCase()
   const isGet = method === "GET"
+  const cacheKey = getCacheKey(path)
 
   // On any mutating request (POST, PUT, PATCH, DELETE), clear GET cache so state remains fresh
   if (!isGet) {
@@ -117,15 +128,15 @@ export async function apiFetch<T = unknown>(
   // Check memory cache for GET requests
   const cacheTtlMs = options.ttlMs ?? 5_000
   if (isGet && !options.noCache && cacheTtlMs > 0) {
-    const cached = getCache.get(path)
+    const cached = getCache.get(cacheKey)
     if (cached && cached.expiresAt > Date.now()) {
       return cached.data as T
     }
   }
 
   // Check in-flight duplicate GET requests (deduplication)
-  if (isGet && !options.signal && inFlightGetRequests.has(path)) {
-    return inFlightGetRequests.get(path) as Promise<T>
+  if (isGet && !options.signal && inFlightGetRequests.has(cacheKey)) {
+    return inFlightGetRequests.get(cacheKey) as Promise<T>
   }
 
   const executeFetch = async (): Promise<T> => {
@@ -197,7 +208,7 @@ export async function apiFetch<T = unknown>(
 
     // Store in memory cache if eligible
     if (isGet && !options.noCache && cacheTtlMs > 0) {
-      getCache.set(path, {
+      getCache.set(getCacheKey(path), {
         data: result,
         expiresAt: Date.now() + cacheTtlMs,
       })
@@ -208,9 +219,9 @@ export async function apiFetch<T = unknown>(
 
   if (isGet && !options.signal) {
     const promise = executeFetch().finally(() => {
-      inFlightGetRequests.delete(path)
+      inFlightGetRequests.delete(cacheKey)
     })
-    inFlightGetRequests.set(path, promise)
+    inFlightGetRequests.set(cacheKey, promise)
     return promise
   }
 

@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useNavigate } from "@tanstack/react-router"
 import {
   CalendarIcon,
@@ -102,6 +102,25 @@ function formatDateDetails(iso: string) {
   return { dayName, monthShort, dayNumber, dateStr, timeStr }
 }
 
+function toWibDateKey(date: Date): string {
+  if (isNaN(date.getTime())) return ""
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Jakarta",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date)
+  const values = Object.fromEntries(parts.map((p) => [p.type, p.value]))
+  return `${values.year}-${values.month}-${values.day}`
+}
+
+function isEventDatePassed(eventIso: string): boolean {
+  const eventDayKey = toWibDateKey(new Date(eventIso))
+  const todayKey = toWibDateKey(new Date())
+  if (!eventDayKey || !todayKey) return false
+  return todayKey > eventDayKey
+}
+
 function getGoogleCalendarUrl(event: EventListItem): string {
   const title = encodeURIComponent(event.title)
   const details = encodeURIComponent(
@@ -165,8 +184,19 @@ export function EventDetailSheet({
       : undefined) ??
     (tag === "special" ? 100 : 50)
 
+  const isPastScheduledDate = isEventDatePassed(event.event_date)
+
+  useEffect(() => {
+    if (activeTab === "attendance") {
+      onRefreshAttendances?.()
+    }
+  }, [activeTab, event.id])
+
   // Start Event action trigger
   function handleActivateClick() {
+    if (isPastScheduledDate) {
+      return
+    }
     const eventTime = new Date(event.event_date).getTime()
     const nowTime = Date.now()
     if (nowTime < eventTime) {
@@ -177,7 +207,6 @@ export function EventDetailSheet({
   }
 
   function executeStatusChange(newStatus: EventStatus, newEventDate?: string) {
-    event.status = newStatus
     if (onStatusChange) {
       void onStatusChange(event.id, newStatus, newEventDate)
     }
@@ -338,13 +367,43 @@ export function EventDetailSheet({
                 <>
                   <button
                     type="button"
+                    disabled={isPastScheduledDate}
                     onClick={handleActivateClick}
-                    className="flex min-h-[44px] cursor-pointer items-center justify-center gap-2 rounded-full bg-[#0a0a0a] px-6 py-2.5 text-xs font-bold text-white shadow-xs transition-all hover:bg-[#1f1f1f] active:scale-[0.98] sm:text-sm"
-                    title="Start Event and open attendance check-in"
+                    className={`flex min-h-[44px] items-center justify-center gap-2 rounded-full px-6 py-2.5 text-xs font-bold shadow-xs transition-all sm:text-sm ${
+                      isPastScheduledDate
+                        ? "cursor-not-allowed border border-[#e5e5e5] bg-black/[0.04] text-[#6a6a6a]"
+                        : "cursor-pointer bg-[#0a0a0a] text-white hover:bg-[#1f1f1f] active:scale-[0.98]"
+                    }`}
+                    title={
+                      isPastScheduledDate
+                        ? "Cannot start event because the scheduled date has passed"
+                        : "Start Event and open attendance check-in"
+                    }
                   >
-                    <PlayIcon className="size-4 fill-[#e8b94a] text-[#e8b94a]" />
+                    <PlayIcon
+                      className={`size-4 ${
+                        isPastScheduledDate
+                          ? "fill-[#6a6a6a] text-[#6a6a6a]"
+                          : "fill-[#e8b94a] text-[#e8b94a]"
+                      }`}
+                    />
                     <span>Start Event</span>
                   </button>
+                  {isPastScheduledDate && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRescheduleDate("")
+                        setRescheduleError(null)
+                        setRescheduleModalOpen(true)
+                      }}
+                      className="flex min-h-[44px] cursor-pointer items-center justify-center gap-2 rounded-full bg-[#0a0a0a] px-5 py-2.5 text-xs font-bold text-white shadow-xs transition-all hover:bg-[#1f1f1f] active:scale-[0.98] sm:text-sm"
+                      title="Reschedule this event to a future date"
+                    >
+                      <CalendarIcon className="size-4 text-[#e8b94a]" />
+                      <span>Reschedule Event</span>
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => setPendingAction("cancel")}
@@ -495,6 +554,26 @@ export function EventDetailSheet({
               </div>
             )}
           </div>
+
+          {isPengurus &&
+            !isActive &&
+            !isClosed &&
+            !isCancelled &&
+            isPastScheduledDate && (
+              <div
+                role="alert"
+                className="flex items-start gap-2.5 rounded-[16px] border border-amber-300/80 bg-amber-50/90 px-4 py-3 text-xs text-amber-900 shadow-2xs"
+              >
+                <AlertTriangleIcon className="mt-0.5 size-4 shrink-0 text-amber-600" />
+                <span>
+                  <strong className="font-bold">
+                    Scheduled event date has passed ({dateStr}).
+                  </strong>{" "}
+                  Event activation is disabled for past dates. Please reschedule
+                  this event to a current or future date, or cancel it.
+                </span>
+              </div>
+            )}
         </div>
       </section>
 
@@ -543,7 +622,9 @@ export function EventDetailSheet({
                   : "bg-black/[0.08] text-[#0a0a0a]"
                 }`}
             >
-              {attendances.length}
+              {attendances.length > 0
+                ? attendances.length
+                : (event.total_attendees ?? 0)}
             </span>
           </button>
         </div>

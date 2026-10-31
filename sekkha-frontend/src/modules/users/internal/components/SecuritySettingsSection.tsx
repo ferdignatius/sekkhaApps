@@ -11,6 +11,8 @@ import {
   LogOutIcon,
   RefreshCwIcon,
   ArrowLeftIcon,
+  Trash2Icon,
+  AlertTriangleIcon,
 } from "lucide-react"
 import { Button } from "@/components/base"
 import { safeStorage } from "@/lib/storage"
@@ -73,6 +75,14 @@ export function SecuritySettingsSection({
 
   // Logout confirm modal state
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
+
+  // Delete account modal & form state
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [deletePassword, setDeletePassword] = useState("")
+  const [deleteReason, setDeleteReason] = useState("")
+  const [showDeletePass, setShowDeletePass] = useState(false)
+  const [deletingAccount, setDeletingAccount] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   // OTP inputs ref for email
   const otpInputRefs = useRef<(HTMLInputElement | null)[]>([])
@@ -306,6 +316,37 @@ export function SecuritySettingsSection({
       onToast(err.message || "Verification code is invalid or expired", "error")
     } finally {
       setVerifyingOtp(false)
+    }
+  }
+
+  async function handleDeleteAccount(e: React.FormEvent) {
+    e.preventDefault()
+    if (!deletePassword) {
+      setDeleteError("Current password is required to delete your account")
+      return
+    }
+
+    setDeletingAccount(true)
+    setDeleteError(null)
+    try {
+      await userApi.deleteMyAccount({
+        password: deletePassword,
+        ...(deleteReason.trim() ? { reason: deleteReason.trim() } : {}),
+      })
+      clearApiCache()
+      safeStorage.removeItem("sekkha_access_token")
+      onToast("Your account has been permanently deleted.")
+      setShowDeleteModal(false)
+      onLogout()
+      if (typeof window !== "undefined") {
+        window.location.href = "/login"
+      }
+    } catch (err: any) {
+      const msg = err?.message || "Failed to delete account. Please check your password."
+      setDeleteError(msg)
+      onToast(msg, "error")
+    } finally {
+      setDeletingAccount(false)
     }
   }
 
@@ -822,6 +863,157 @@ export function SecuritySettingsSection({
           </button>
         </div>
       </div>
+
+      {/* ── CARD 4: DANGER ZONE — DELETE ACCOUNT ── */}
+      <div className="space-y-4 rounded-[20px] border border-rose-200 bg-rose-50/40 p-5 shadow-xs sm:p-6">
+        <div className="flex items-center gap-2.5 border-b border-rose-200/80 pb-3.5">
+          <div className="flex size-9 items-center justify-center rounded-[10px] bg-rose-600 text-white shadow-xs">
+            <Trash2Icon className="size-4.5 text-white" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-rose-950 sm:text-base">
+              Danger Zone — Delete Account
+            </h3>
+            <p className="text-xs text-rose-800/80">
+              Permanently remove your Sekkha account and personal data
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+          <div>
+            <p className="text-xs font-bold text-rose-950">
+              Delete My Account
+            </p>
+            <p className="text-[11px] text-rose-800/80">
+              Once deleted, your profile, points, and streak history cannot be recovered.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              setDeletePassword("")
+              setDeleteReason("")
+              setDeleteError(null)
+              setShowDeleteModal(true)
+            }}
+            className="flex h-10 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-[12px] bg-rose-600 px-4 text-xs font-bold text-white shadow-xs transition-colors hover:bg-rose-700"
+          >
+            <Trash2Icon className="size-3.5" />
+            <span>Delete Account</span>
+          </button>
+        </div>
+      </div>
+
+      {/* ── MODAL: DELETE ACCOUNT CONFIRMATION ── */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex animate-in items-center justify-center bg-black/60 p-4 backdrop-blur-xs fade-in">
+          <form
+            onSubmit={handleDeleteAccount}
+            className="relative w-full max-w-md space-y-4 rounded-[20px] border border-rose-200 bg-[#fffaf0] p-5 text-left shadow-2xl sm:p-6"
+          >
+            <div className="flex items-start gap-3">
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-[12px] bg-rose-100 text-rose-600">
+                <AlertTriangleIcon className="size-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-[#0a0a0a]">
+                  Confirm Account Deletion
+                </h3>
+                <p className="mt-1 text-xs leading-relaxed text-[#6a6a6a]">
+                  This action is permanent and cannot be undone. Please enter your current password to confirm deleting your account.
+                </p>
+              </div>
+            </div>
+
+            {deleteError && (
+              <div className="flex items-center gap-2 rounded-[10px] border border-rose-200 bg-rose-50 p-2.5 text-xs font-medium text-rose-800">
+                <AlertCircleIcon className="size-4 shrink-0 text-rose-600" />
+                <span>{deleteError}</span>
+              </div>
+            )}
+
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="delete-account-password"
+                  className="text-xs font-bold text-[#0a0a0a]"
+                >
+                  Current Password
+                </label>
+                <div className="relative">
+                  <input
+                    id="delete-account-password"
+                    type={showDeletePass ? "text" : "password"}
+                    required
+                    value={deletePassword}
+                    onChange={(e) => {
+                      setDeletePassword(e.target.value)
+                      if (deleteError) setDeleteError(null)
+                    }}
+                    placeholder="Confirm your current password"
+                    className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] pr-10 pl-3.5 text-xs font-semibold text-[#0a0a0a] transition-colors outline-none focus:border-rose-600 focus:bg-[#fffaf0] sm:text-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowDeletePass(!showDeletePass)}
+                    className="absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer text-[#6a6a6a] hover:text-[#0a0a0a]"
+                  >
+                    {showDeletePass ? (
+                      <EyeOffIcon className="size-4" />
+                    ) : (
+                      <EyeIcon className="size-4" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="delete-account-reason"
+                  className="text-xs font-bold text-[#0a0a0a]"
+                >
+                  Reason for leaving (optional)
+                </label>
+                <input
+                  id="delete-account-reason"
+                  type="text"
+                  value={deleteReason}
+                  onChange={(e) => setDeleteReason(e.target.value)}
+                  placeholder="Optional feedback"
+                  className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] px-3.5 text-xs font-medium text-[#0a0a0a] transition-colors outline-none focus:border-[#0a0a0a] focus:bg-[#fffaf0] sm:text-sm"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-2.5 pt-2">
+              <button
+                type="button"
+                disabled={deletingAccount}
+                onClick={() => setShowDeleteModal(false)}
+                className="h-10 flex-1 cursor-pointer rounded-[10px] border border-[#e5e5e5] bg-[#fffaf0] text-xs font-semibold text-[#0a0a0a] hover:bg-[#faf5e8] disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={deletingAccount || !deletePassword}
+                className="flex h-10 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-[10px] bg-rose-600 text-xs font-bold text-white shadow-xs hover:bg-rose-700 disabled:opacity-50"
+              >
+                {deletingAccount ? (
+                  <>
+                    <Loader2Icon className="size-3.5 animate-spin" />
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  <span>Permanently Delete</span>
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       {/* ── MODAL: LOGOUT CONFIRMATION ── */}
       {showLogoutConfirm && (

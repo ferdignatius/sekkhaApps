@@ -1,5 +1,4 @@
-import { useContext } from "react"
-import { AuthContext } from "@/modules/auth/internal/context/AuthContext"
+import { useAuth } from "@/modules/auth"
 import { safeStorage } from "@/lib/storage"
 
 type AuthState = "loading" | "authenticated" | "unauthenticated"
@@ -13,16 +12,22 @@ interface UseAuthStateReturn {
  * Immediately checks token in localStorage to prevent lazy load skeleton flicker on buttons.
  */
 export function useAuthState(): UseAuthStateReturn {
-  const ctx = useContext(AuthContext)
+  let status: AuthState | null = null
+  try {
+    const { authState } = useAuth()
+    status = authState.status
+  } catch {
+    status = null
+  }
 
   // If there's no stored token in browser, it is immediately unauthenticated (0ms latency)
   if (!safeStorage.getItem("sekkha_access_token")) {
     return { authState: "unauthenticated" }
   }
 
-  if (!ctx) {
+  if (!status) {
     return { authState: "unauthenticated" }
   }
 
-  return { authState: ctx.authState.status }
+  return { authState: status }
 }

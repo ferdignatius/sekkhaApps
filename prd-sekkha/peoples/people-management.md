@@ -45,9 +45,7 @@ Menggunakan terminologi role Bahasa Inggris resmi: `member`, `activist`, `organi
    - **Role** *(Default: `member`, pilihan: `member` atau `activist`)*.
    - **School / Institution** *(Opsional, dropdown dari master data verified schools `SMA/SMK`, `SMP`, `Universitas`, `Umum`)*.
    - **Phone Number / WhatsApp** *(Opsional, format nomor telepon Indonesia e.g. `08...` atau `+62...`)*.
-   - **Gender** *(Opsional: `male` / `female`)*.
    - **Date of Birth** *(Opsional, YYYY-MM-DD)*.
-   - **Address / Notes** *(Opsional)*.
 3. Saat form disubmit (`POST /api/people`):
    - Sistem secara atomik meng-generate `userNumber` integer `yyyymmddnn` (contoh: `2026102401`).
    - Sistem men-generate `username` unik: **First name (lowercase, huruf saja) + 4 digit angka acak** (contoh: "Budi Santoso" -> `budi1492`). Jika first name kurang dari 3 karakter, gunakan nama lengkap tanpa spasi + 4 digit angka acak.
@@ -144,9 +142,7 @@ Mendaftarkan anggota baru dan men-generate temporary credentials.
     role: z.enum(["member", "activist"]).default("member"),
     school_id: z.string().cuid().optional().nullable(),
     phone: z.string().trim().max(20).optional().nullable(),
-    gender: z.enum(["male", "female"]).optional().nullable(),
     date_of_birth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format (YYYY-MM-DD)").optional().nullable(),
-    address: z.string().max(255).optional().nullable(),
   })
   ```
 * **Response Envelope (201 Created)**:
@@ -175,7 +171,7 @@ Melihat detail profil anggota, data almamater, status pastoral, dan riwayat pres
 #### 4. `PUT /api/people/:id`
 Memperbarui data profil jemaat oleh Organizer / Admin.
 * **Akses**: `requireAuth`, `requireRole("organizer", "admin")`.
-* **Editable Fields**: `name`, `role`, `school_id`, `phone`, `gender`, `date_of_birth`, `address`.
+* **Editable Fields**: `name`, `role`, `school_id`, `phone`, `date_of_birth`.
 
 #### 5. `POST /api/people/:id/reset-temporary-password`
 Men-generate ulang password sementara jika user belum diklaim (`isClaimed = false`).

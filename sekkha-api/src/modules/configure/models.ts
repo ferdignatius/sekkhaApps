@@ -60,10 +60,40 @@ export const configureModels = {
     })
   },
   createSeason(data: any) {
+    if (data.isActive) {
+      return prisma.$transaction(async (tx) => {
+        await tx.season.updateMany({
+          where: { isActive: true },
+          data: { isActive: false },
+        })
+        return tx.season.create({ data })
+      })
+    }
     return prisma.season.create({ data })
   },
   updateSeason(id: string, data: any) {
+    if (data.isActive) {
+      return prisma.$transaction(async (tx) => {
+        await tx.season.updateMany({
+          where: { id: { not: id }, isActive: true },
+          data: { isActive: false },
+        })
+        return tx.season.update({ where: { id }, data })
+      })
+    }
     return prisma.season.update({ where: { id }, data })
+  },
+  activateSeason(id: string) {
+    return prisma.$transaction(async (tx) => {
+      await tx.season.updateMany({
+        where: { id: { not: id }, isActive: true },
+        data: { isActive: false },
+      })
+      return tx.season.update({
+        where: { id },
+        data: { isActive: true },
+      })
+    })
   },
   deleteSeason(id: string) {
     return prisma.season.delete({ where: { id } })

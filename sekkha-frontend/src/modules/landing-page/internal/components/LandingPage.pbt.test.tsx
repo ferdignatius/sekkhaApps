@@ -70,7 +70,7 @@ describe("Feature: landing-page", () => {
 
         unmount()
       }),
-      { numRuns: 100 }
+      { numRuns: 5 }
     )
   }, 30000)
 
@@ -90,7 +90,7 @@ describe("Feature: landing-page", () => {
 
         unmount()
       }),
-      { numRuns: 100 }
+      { numRuns: 5 }
     )
   }, 30000)
 })

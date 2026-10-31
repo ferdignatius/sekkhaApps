@@ -456,7 +456,7 @@ export async function sendChangePasswordOtpEmail({ to, otp, name }: SendOtpParam
   } else if (process.env.NODE_ENV === "production") {
     console.warn(`⚠️ [Mail Warning] SMTP credentials not configured in production.`)
   } else {
-    console.log(`🔐 [Password Change OTP] Code for ${to}: ${otp}`)
+    console.log(`🔐 [Password Change OTP] Code for ${maskEmail(to)}: ${otp.replace(/./g, "*")}`)
   }
 
   return { success: true }

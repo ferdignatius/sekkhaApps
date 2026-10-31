@@ -68,15 +68,20 @@ export const userModels = {
     })
   },
 
-  updateUserEmail(userId: string, emailCipher: string, emailBindex: string) {
+  async updateUserEmail(userId: string, emailCipher: string, emailBindex: string) {
+    const existing = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { isClaimed: true, passwordChangedByUser: true },
+    })
+    const shouldClaim = Boolean(existing?.isClaimed || existing?.passwordChangedByUser)
     return prisma.user.update({
       where: { id: userId },
       data: {
         email: emailCipher,
         emailBindex,
         emailVerifiedAt: new Date(),
-        isClaimed: true,
-        claimedAt: new Date(),
+        isClaimed: shouldClaim,
+        ...(shouldClaim && !existing?.isClaimed ? { claimedAt: new Date() } : {}),
       },
     })
   },

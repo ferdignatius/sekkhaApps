@@ -20,6 +20,7 @@ import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authentic
 import { Route as AuthenticatedPengurusContributionRouteImport } from './routes/_authenticated/pengurus-contribution'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedRecencyAlertsRouteImport } from './routes/_authenticated/recency-alerts'
+import { Route as AuthenticatedConfigureIndexRouteImport } from './routes/_authenticated/configure/index'
 import { Route as AuthenticatedEventsIndexRouteImport } from './routes/_authenticated/events/index'
 import { Route as AuthenticatedEventsScanRouteImport } from './routes/_authenticated/events/scan'
 import { Route as AuthenticatedHomeIndexRouteImport } from './routes/_authenticated/home/index'
@@ -93,6 +94,12 @@ const AuthenticatedRecencyAlertsRoute =
   AuthenticatedRecencyAlertsRouteImport.update({
     id: '/recency-alerts',
     path: '/recency-alerts',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedConfigureIndexRoute =
+  AuthenticatedConfigureIndexRouteImport.update({
+    id: '/configure/',
+    path: '/configure/',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedEventsIndexRoute =
@@ -215,6 +222,7 @@ export interface FileRoutesByFullPath {
   '/recency-alerts': typeof AuthenticatedRecencyAlertsRoute
   '/events/scan': typeof AuthenticatedEventsScanRoute
   '/people/$memberId': typeof AuthenticatedPeopleMemberIdRoute
+  '/configure/': typeof AuthenticatedConfigureIndexRoute
   '/events/': typeof AuthenticatedEventsIndexRoute
   '/home/': typeof AuthenticatedHomeIndexRoute
   '/leaderboard/': typeof AuthenticatedLeaderboardIndexRoute
@@ -245,6 +253,7 @@ export interface FileRoutesByTo {
   '/recency-alerts': typeof AuthenticatedRecencyAlertsRoute
   '/events/scan': typeof AuthenticatedEventsScanRoute
   '/people/$memberId': typeof AuthenticatedPeopleMemberIdRoute
+  '/configure': typeof AuthenticatedConfigureIndexRoute
   '/events': typeof AuthenticatedEventsIndexRoute
   '/home': typeof AuthenticatedHomeIndexRoute
   '/leaderboard': typeof AuthenticatedLeaderboardIndexRoute
@@ -277,6 +286,7 @@ export interface FileRoutesById {
   '/_authenticated/recency-alerts': typeof AuthenticatedRecencyAlertsRoute
   '/_authenticated/events/scan': typeof AuthenticatedEventsScanRoute
   '/_authenticated/people/$memberId': typeof AuthenticatedPeopleMemberIdRoute
+  '/_authenticated/configure/': typeof AuthenticatedConfigureIndexRoute
   '/_authenticated/events/': typeof AuthenticatedEventsIndexRoute
   '/_authenticated/home/': typeof AuthenticatedHomeIndexRoute
   '/_authenticated/leaderboard/': typeof AuthenticatedLeaderboardIndexRoute
@@ -309,6 +319,7 @@ export interface FileRouteTypes {
     | '/recency-alerts'
     | '/events/scan'
     | '/people/$memberId'
+    | '/configure/'
     | '/events/'
     | '/home/'
     | '/leaderboard/'
@@ -339,6 +350,7 @@ export interface FileRouteTypes {
     | '/recency-alerts'
     | '/events/scan'
     | '/people/$memberId'
+    | '/configure'
     | '/events'
     | '/home'
     | '/leaderboard'
@@ -370,6 +382,7 @@ export interface FileRouteTypes {
     | '/_authenticated/recency-alerts'
     | '/_authenticated/events/scan'
     | '/_authenticated/people/$memberId'
+    | '/_authenticated/configure/'
     | '/_authenticated/events/'
     | '/_authenticated/home/'
     | '/_authenticated/leaderboard/'
@@ -474,6 +487,13 @@ declare module '@tanstack/react-router' {
       path: '/recency-alerts'
       fullPath: '/recency-alerts'
       preLoaderRoute: typeof AuthenticatedRecencyAlertsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/configure/': {
+      id: '/_authenticated/configure/'
+      path: '/configure'
+      fullPath: '/configure/'
+      preLoaderRoute: typeof AuthenticatedConfigureIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/events/': {
@@ -613,6 +633,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedRecencyAlertsRoute: typeof AuthenticatedRecencyAlertsRoute
   AuthenticatedEventsScanRoute: typeof AuthenticatedEventsScanRoute
   AuthenticatedPeopleMemberIdRoute: typeof AuthenticatedPeopleMemberIdRoute
+  AuthenticatedConfigureIndexRoute: typeof AuthenticatedConfigureIndexRoute
   AuthenticatedEventsIndexRoute: typeof AuthenticatedEventsIndexRoute
   AuthenticatedHomeIndexRoute: typeof AuthenticatedHomeIndexRoute
   AuthenticatedLeaderboardIndexRoute: typeof AuthenticatedLeaderboardIndexRoute
@@ -640,6 +661,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedRecencyAlertsRoute: AuthenticatedRecencyAlertsRoute,
   AuthenticatedEventsScanRoute: AuthenticatedEventsScanRoute,
   AuthenticatedPeopleMemberIdRoute: AuthenticatedPeopleMemberIdRoute,
+  AuthenticatedConfigureIndexRoute: AuthenticatedConfigureIndexRoute,
   AuthenticatedEventsIndexRoute: AuthenticatedEventsIndexRoute,
   AuthenticatedHomeIndexRoute: AuthenticatedHomeIndexRoute,
   AuthenticatedLeaderboardIndexRoute: AuthenticatedLeaderboardIndexRoute,

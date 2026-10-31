@@ -167,8 +167,11 @@ export const configureServices = {
 
   // ─── Seasons ───────────────────────────────────────────────────────────────
   async getSeasons() {
-    await resolveActiveSeason()
-    const seasons = await configureModels.findSeasons()
+    let seasons = await configureModels.findSeasons()
+    if (!seasons.some((s) => s.isActive)) {
+      await resolveActiveSeason().catch(() => {})
+      seasons = await configureModels.findSeasons()
+    }
     const now = new Date()
 
     return Promise.all(
@@ -234,11 +237,7 @@ export const configureServices = {
     }
     cleanCode = candidateCode
 
-    // Invariant: At most one active custom season at any given time
-    if (data.is_active) {
-      await configureModels.deactivateOtherSeasons()
-    }
-
+    // Invariant: At most one active custom season at any given time (handled transactionally in configureModels.createSeason)
     const season = await configureModels.createSeason({
       name: data.name.trim(),
       code: cleanCode,
@@ -292,11 +291,6 @@ export const configureServices = {
       throw new AppError("End date must be greater than start date.", 400, "INVALID_DATE_RANGE")
     }
 
-    // Invariant: At most one active season
-    if (data.is_active) {
-      await configureModels.deactivateOtherSeasons(id)
-    }
-
     const updatePayload: any = {}
     if (data.name !== undefined) updatePayload.name = data.name.trim()
     if (data.start_date !== undefined) updatePayload.startDate = startDate
@@ -327,6 +321,7 @@ export const configureServices = {
       updatePayload.code = candidateCode
     }
 
+    // Transactional deactivation + update when is_active is true
     const season = await configureModels.updateSeason(id, updatePayload)
     computeAndCacheLeaderboard().catch(() => {})
 
@@ -371,8 +366,7 @@ export const configureServices = {
       throw new AppError("Season not found", 404, "SEASON_NOT_FOUND")
     }
 
-    await configureModels.deactivateOtherSeasons(id)
-    const season = await configureModels.updateSeason(id, { isActive: true })
+    const season = await configureModels.activateSeason(id)
     await computeAndCacheLeaderboard()
     return { success: true, season }
   },

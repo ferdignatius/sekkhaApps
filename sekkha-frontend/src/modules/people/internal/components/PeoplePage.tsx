@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useNavigate } from "@tanstack/react-router"
 import {
   UsersIcon,
@@ -314,7 +314,9 @@ export function PeoplePage() {
   const { authState } = useAuth()
   const isOrganizerOrAdmin =
     authState.status === "authenticated" &&
-    (authState.role === "organizer" || authState.role === "admin")
+    (authState.role === "organizer" ||
+      (authState.role as string) === "pengurus" ||
+      authState.role === "admin")
   const isAdmin =
     authState.status === "authenticated" && authState.role === "admin"
 
@@ -370,10 +372,14 @@ export function PeoplePage() {
 
   // Defense-in-depth: Redirect non-organizer/non-admin users to home
   useEffect(() => {
-    if (authState.status === "authenticated" && !isOrganizerOrAdmin) {
+    if (
+      authState.status === "authenticated" &&
+      authState.role !== null &&
+      !isOrganizerOrAdmin
+    ) {
       navigate({ to: "/home" })
     }
-  }, [authState.status, isOrganizerOrAdmin, navigate])
+  }, [authState.status, authState.role, isOrganizerOrAdmin, navigate])
 
   // Load verified schools for dropdown
   useEffect(() => {
@@ -382,15 +388,31 @@ export function PeoplePage() {
     }
   }, [isOrganizerOrAdmin])
 
-  // Reset pagination when filter/search changes
-  useEffect(() => {
-    setCurrentPage(1)
-  }, [debouncedSearchQuery, roleFilter, claimStatusFilter])
+  const prevFiltersRef = useRef({
+    debouncedSearchQuery,
+    roleFilter,
+    claimStatusFilter,
+  })
 
-  // Fetch paginated & filtered data from API
+  // Fetch paginated & filtered data from API (resetting page to 1 without double-fetching)
   useEffect(() => {
-    loadData()
+    if (!isOrganizerOrAdmin) return
+    const filtersChanged =
+      prevFiltersRef.current.debouncedSearchQuery !== debouncedSearchQuery ||
+      prevFiltersRef.current.roleFilter !== roleFilter ||
+      prevFiltersRef.current.claimStatusFilter !== claimStatusFilter
+    prevFiltersRef.current = {
+      debouncedSearchQuery,
+      roleFilter,
+      claimStatusFilter,
+    }
+    if (filtersChanged && currentPage !== 1) {
+      setCurrentPage(1)
+      return
+    }
+    void loadData()
   }, [
+    isOrganizerOrAdmin,
     currentPage,
     pageSize,
     debouncedSearchQuery,
@@ -404,6 +426,7 @@ export function PeoplePage() {
   }
 
   async function loadData() {
+    if (!isOrganizerOrAdmin) return
     try {
       setLoading(true)
       const res = (await peopleApi.listMembers({

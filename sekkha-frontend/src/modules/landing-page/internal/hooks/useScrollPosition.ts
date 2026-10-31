@@ -1,8 +1,15 @@
 import { useEffect, useState } from "react"
 
+function getScrollThresholdBucket(y: number): 0 | 1 | 2 {
+  if (y <= 0) return 0
+  if (y <= 64) return 1
+  return 2
+}
+
 /**
- * Hook that tracks the current vertical scroll position of the window.
- * Returns `{ scrollY: number }` which is updated on every scroll event.
+ * Hook that tracks the vertical scroll position of the window across
+ * navbar thresholds (0px and 64px) to avoid re-rendering on every pixel.
+ * Returns `{ scrollY: number }`.
  * The event listener is cleaned up on unmount.
  *
  * Requirements: 2.6, 2.7
@@ -14,7 +21,12 @@ export function useScrollPosition(): { scrollY: number } {
     setScrollY(window.scrollY)
 
     const handleScroll = () => {
-      setScrollY(window.scrollY)
+      const nextY = window.scrollY
+      setScrollY((prevY) =>
+        getScrollThresholdBucket(nextY) !== getScrollThresholdBucket(prevY)
+          ? nextY
+          : prevY
+      )
     }
 
     window.addEventListener("scroll", handleScroll, { passive: true })

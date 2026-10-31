@@ -1,6 +1,6 @@
 // feature/events/components/AttendanceListSheet
 // Apple HIG Inset Grouped List for Attendance Records.
-// Features summary capsules, instant live search, CSV export,
+// Features summary capsules, instant live search,
 // badge activity assignment, late arrival indicators, and draft deletion.
 
 import { useState, useMemo, useEffect } from "react"
@@ -305,7 +305,7 @@ export function AttendanceListSheet({
         </div>
       </div>
 
-      {/* ── 2. Search & CSV Export Toolbar ── */}
+      {/* ── 2. Search Toolbar ── */}
       <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative flex-1">
           <SearchIcon className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[#6a6a6a]" />

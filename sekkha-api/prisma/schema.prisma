@@ -139,6 +139,8 @@ model School {
   reviewer    User?        @relation("SchoolReviewer", fields: [reviewedBy], references: [id], onDelete: SetNull)
 
   @@index([status])
+  @@index([status, isActive, name])
+  @@index([status, createdAt(sort: Desc)])
   @@map("schools")
 }
 
@@ -205,8 +207,10 @@ model Event {
   season      Season?      @relation(fields: [seasonId], references: [id], onDelete: SetNull)
   attendances Attendance[]
 
+  @@index([eventDate])
   @@index([status, eventDate])
   @@index([status, visibility])
+  @@index([status, visibility, eventDate])
   @@index([visibility, eventDate])
   @@index([seasonId, eventDate])
   @@index([eventTypeId])
@@ -254,6 +258,7 @@ model BadgeActivity {
 
   attendances Attendance[]
 
+  @@index([isActive])
   @@map("badge_activities")
 }
 
@@ -272,6 +277,7 @@ model PointRule {
 
   transactions PointTransaction[]
 
+  @@index([isActive, category])
   @@map("point_rules")
 }
 

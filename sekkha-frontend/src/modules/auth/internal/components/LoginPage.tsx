@@ -35,9 +35,13 @@ export function LoginPage() {
   // Redirect authenticated users away (req 2.8)
   useEffect(() => {
     if (authState.status === "authenticated") {
-      void navigate({ to: "/home" })
+      if (authState.onboardingCompleted === false) {
+        void navigate({ to: "/onboarding" })
+      } else {
+        void navigate({ to: "/home" })
+      }
     }
-  }, [authState.status, navigate])
+  }, [authState.status, authState.onboardingCompleted, navigate])
 
   if (authState.status === "authenticated") {
     return null

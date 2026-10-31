@@ -6,12 +6,36 @@ import { hashPassword, verifyPassword, DEFAULT_BCRYPT_COST } from "../../lib/pas
 import { generateUniqueUserNumber } from "../../lib/userNumber"
 import { prisma } from "../../lib/prisma"
 import { redis } from "../../lib/redis"
-import { revokeToken, generateToken } from "../auth"
+import { revokeToken, generateToken, revokeAllUserRefreshTokens } from "../auth"
 import { calculateWeeklyStreak } from "./internal/utils"
 import { emailVerificationStore } from "./internal/emailVerificationStore"
 import { passwordChangeOtpStore } from "./internal/passwordChangeOtpStore"
 import { sendEmailVerificationOtpEmail, sendChangePasswordOtpEmail } from "../auth/internal/email"
-import crypto from "crypto"
+import crypto, { createHash } from "crypto"
+
+function safeDecrypt(val: string | null | undefined, fallback: string | null = null): string | null {
+  if (!val) return fallback
+  const decrypted = decrypt(val)
+  if (!decrypted || /^[0-9a-fA-F]+:[0-9a-fA-F]+:[0-9a-fA-F]+$/.test(decrypted)) {
+    return fallback
+  }
+  return decrypted
+}
+
+function parseSafeIsoDate(val: string | null | undefined, throwOnInvalid: boolean = false): string | null {
+  if (!val) return null
+  const parsed = new Date(val)
+  if (Number.isNaN(parsed.getTime())) {
+    if (throwOnInvalid) {
+      const err = new Error("Format tanggal lahir tidak valid") as any
+      err.statusCode = 400
+      err.status = 400
+      throw err
+    }
+    return null
+  }
+  return parsed.toISOString()
+}
 
 function maskEmail(email: string): string {
   const atIndex = email.indexOf("@")
@@ -53,10 +77,11 @@ export const userServices = {
       await userModels.updateUser(user.id, { userNumber: uNum }).catch(() => {})
     }
 
-    const decryptedEmail = decrypt(user.email) || user.email || ""
-    const decryptedPhone = decrypt(user.profile?.phone) || null
-    const rawBirthDate = decrypt(user.profile?.birthDate) || null
-    const decryptedBirthDate = rawBirthDate ? new Date(rawBirthDate).toISOString().split("T")[0] : null
+    const decryptedEmail = safeDecrypt(user.email, "") || ""
+    const decryptedPhone = safeDecrypt(user.profile?.phone, null)
+    const rawBirthDate = safeDecrypt(user.profile?.birthDate, null)
+    const isoBirthDate = parseSafeIsoDate(rawBirthDate, false)
+    const decryptedBirthDate = isoBirthDate ? isoBirthDate.split("T")[0] : null
     return {
       id: user.id,
       user_number: Number(uNum),
@@ -131,13 +156,14 @@ export const userServices = {
     }
 
     const birthDateVal = body.birth_date !== undefined ? body.birth_date : body.date_of_birth
+    const validatedBirthDateIso = birthDateVal ? parseSafeIsoDate(birthDateVal, true) : null
 
     const profileUpdateData = {
       ...(body.name && { name: body.name.trim() }),
       ...(resolvedSchoolId !== undefined && { schoolId: resolvedSchoolId }),
       ...(body.phone !== undefined && { phone: body.phone ? encrypt(body.phone.trim()) : null }),
       ...(birthDateVal !== undefined && {
-        birthDate: birthDateVal ? encrypt(new Date(birthDateVal).toISOString()) : null,
+        birthDate: validatedBirthDateIso ? encrypt(validatedBirthDateIso) : null,
       }),
     }
 
@@ -146,7 +172,7 @@ export const userServices = {
       name: body.name ? body.name.trim() : (userData.username as string) || existing.username || "Member",
       schoolId: resolvedSchoolId || null,
       phone: body.phone ? encrypt(body.phone.trim()) : null,
-      birthDate: birthDateVal ? encrypt(new Date(birthDateVal).toISOString()) : null,
+      birthDate: validatedBirthDateIso ? encrypt(validatedBirthDateIso) : null,
     }
 
     const { user, profile } = await userModels.updateUserAndProfile(
@@ -161,8 +187,8 @@ export const userServices = {
     await invalidatePattern(`user:${userId}:home:*`)
 
     // Update Redis session cache if active
-    const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null
-    const decryptedEmail = decrypt(user.email) || user.email || ""
+    const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7).trim() : null
+    const decryptedEmail = safeDecrypt(user.email, "") || ""
     if (token) {
       const updatedSession = {
         id: user.id,
@@ -171,7 +197,8 @@ export const userServices = {
         name: profile.name,
         role: user.role,
       }
-      await redis.set(`auth:token:${token}`, JSON.stringify(updatedSession), "EX", 30 * 24 * 60 * 60).catch(() => {})
+      const tokenHash = createHash("sha256").update(token).digest("hex")
+      await redis.set(`auth:token:${tokenHash}`, JSON.stringify(updatedSession), "EX", 30 * 24 * 60 * 60).catch(() => {})
     }
 
     return this.getProfile(userId)
@@ -252,14 +279,14 @@ export const userServices = {
       throw err
     }
 
-    await userModels.updateUserEmail(userId, emailCipher, bindex)
+    const updatedUser = await userModels.updateUserEmail(userId, emailCipher, bindex)
     await invalidate(CacheKeys.userProfile(userId))
     await invalidatePattern(`user:${userId}:home:*`)
 
     return {
       email: newEmail,
       email_verified: true,
-      is_claimed: true,
+      is_claimed: updatedUser.isClaimed,
     }
   },
 
@@ -344,18 +371,21 @@ export const userServices = {
       if (!isValid && currentPass.trim() !== currentPass) {
         isValid = await verifyPassword(currentPass.trim(), userAccount.password)
       }
-      if (!isValid && process.env.NODE_ENV !== "production") {
-        if (
-          (currentPass === "admin" || currentPass === "password123") &&
-          (userAccount.username === "admin" || userAccount.role === "admin")
-        ) {
-          isValid = true
-        }
-      }
       if (!isValid) {
         const error = new Error("Current password does not match") as any
         error.statusCode = 400
         throw error
+      }
+    }
+
+    const rawEmail = user?.email || userAccount.email
+    const targetEmail = safeDecrypt(rawEmail, "") || ""
+    if (!targetEmail && !userAccount.passwordChangedByUser) {
+      return {
+        otp_required: false,
+        expires_in_seconds: 0,
+        resend_after_seconds: 0,
+        masked_email: null,
       }
     }
 
@@ -366,8 +396,6 @@ export const userServices = {
       throw err
     }
 
-    const rawEmail = user?.email || userAccount.email
-    const targetEmail = rawEmail ? decrypt(rawEmail) || rawEmail : ""
     if (!targetEmail) {
       const error = new Error("Your account does not have a registered email address to receive verification codes.") as any
       error.statusCode = 400
@@ -391,20 +419,7 @@ export const userServices = {
     }
   },
 
-  async changePassword(userId: string, currentPass: string, newPass: string, otpCode: string) {
-    if (!otpCode || otpCode.trim().length !== 6) {
-      const err = new Error("Verification code must be 6 digits") as any
-      err.statusCode = 400
-      throw err
-    }
-
-    const otpResult = await passwordChangeOtpStore.verifyAndConsume(userId, otpCode)
-    if (!otpResult.success) {
-      const err = new Error(otpResult.error || "Verification code is invalid or expired") as any
-      err.statusCode = otpResult.remainingAttempts === 0 ? 429 : 400
-      throw err
-    }
-
+  async changePassword(userId: string, currentPass: string, newPass: string, otpCode?: string) {
     const user = await userModels.findUserWithProfileAndStats(userId)
     const userAccount = await userModels.findUserById(userId)
     if (!userAccount || !userAccount.password) {
@@ -413,18 +428,28 @@ export const userServices = {
       throw error
     }
 
+    const rawEmail = user?.email || userAccount.email
+    const hasEmail = Boolean(safeDecrypt(rawEmail, ""))
+    const isInitialPreProvisionedPasswordChange = !hasEmail && !userAccount.passwordChangedByUser
+
+    if (!isInitialPreProvisionedPasswordChange) {
+      if (!otpCode || otpCode.trim().length !== 6) {
+        const err = new Error("Verification code must be 6 digits") as any
+        err.statusCode = 400
+        throw err
+      }
+
+      const otpResult = await passwordChangeOtpStore.verifyAndConsume(userId, otpCode)
+      if (!otpResult.success) {
+        const err = new Error(otpResult.error || "Verification code is invalid or expired") as any
+        err.statusCode = otpResult.remainingAttempts === 0 ? 429 : 400
+        throw err
+      }
+    }
+
     let isValid = await verifyPassword(currentPass, userAccount.password)
     if (!isValid && currentPass.trim() !== currentPass) {
       isValid = await verifyPassword(currentPass.trim(), userAccount.password)
-    }
-    // Development convenience fallback: allow 'admin' or 'password123' for seeded accounts
-    if (!isValid && process.env.NODE_ENV !== "production") {
-      if (
-        (currentPass === "admin" || currentPass === "password123") &&
-        (userAccount.username === "admin" || userAccount.role === "admin")
-      ) {
-        isValid = true
-      }
     }
 
     if (!isValid) {
@@ -439,13 +464,25 @@ export const userServices = {
       throw error
     }
 
+    if (newPass.length > 128) {
+      const error = new Error("New password maximum 128 characters") as any
+      error.statusCode = 400
+      throw error
+    }
+
     const hashedPassword = await hashPassword(newPass, DEFAULT_BCRYPT_COST)
     const passwordChangedAt = new Date()
+    const isClaimed = Boolean(
+      userAccount.isClaimed || userAccount.emailVerifiedAt || (userAccount as any).emailVerified
+    )
     await userModels.updateUser(userId, {
       password: hashedPassword,
       passwordChangedByUser: true,
       passwordChangedAt,
+      isClaimed,
+      ...(isClaimed && !userAccount.isClaimed ? { claimedAt: passwordChangedAt } : {}),
     })
+    await revokeAllUserRefreshTokens(userId)
 
     // Invalidate user caches
     await invalidate(CacheKeys.userProfile(userId))
@@ -463,7 +500,7 @@ export const userServices = {
     return {
       accessToken: freshAccessToken,
       password_changed_by_user: true,
-      is_claimed: userAccount.isClaimed,
+      is_claimed: isClaimed,
     }
   },
 
@@ -479,7 +516,7 @@ export const userServices = {
         id: user.id,
         user_number: user.userNumber ? Number(user.userNumber) : null,
         username: user.username,
-        email: decrypt(user.email) || user.email,
+        email: safeDecrypt(user.email, null),
         role: user.role,
         is_claimed: user.isClaimed,
         created_at: user.createdAt,
@@ -487,8 +524,8 @@ export const userServices = {
       },
       profile: {
         name: user.profile?.name ?? null,
-        phone: decrypt(user.profile?.phone) || null,
-        birth_date: decrypt(user.profile?.birthDate) || null,
+        phone: safeDecrypt(user.profile?.phone, null),
+        birth_date: safeDecrypt(user.profile?.birthDate, null),
         school: user.profile?.school?.name ?? null,
       },
       stats: {
@@ -529,11 +566,13 @@ export const userServices = {
       throw error
     }
 
-    const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null
+    const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7).trim() : null
     if (token) {
+      const tokenHash = createHash("sha256").update(token).digest("hex")
       await revokeToken(token).catch(() => {})
-      await redis.del(`auth:token:${token}`).catch(() => {})
+      await redis.del(`auth:token:${tokenHash}`).catch(() => {})
     }
+    await revokeAllUserRefreshTokens(userId)
 
     await invalidate(CacheKeys.userProfile(userId))
     await userModels.deleteUserById(userId)

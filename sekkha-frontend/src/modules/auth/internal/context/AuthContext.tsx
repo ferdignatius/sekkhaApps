@@ -24,7 +24,10 @@ import { safeStorage } from "@/lib/storage"
 export interface AuthContextValue {
   authState: AuthState
   /** Signs the user in with email + password. */
-  login: (identifier: string, password: string) => Promise<void>
+  login: (
+    identifier: string,
+    password: string
+  ) => Promise<{ onboardingCompleted?: boolean } | void>
   /** Creates a new account with email + password + optional name. */
   register: (email: string, password: string, name?: string) => Promise<void>
   /** Requests a 6-digit OTP code sent to user email for registration. */
@@ -48,6 +51,7 @@ export interface AuthContextValue {
       name: string | null
       role: UserRole
       email: string | null
+      onboardingCompleted: boolean | null
     }>
   ) => void
   /** Re-verifies session with backend to refresh latest user details. */
@@ -105,11 +109,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
         // Best effort: hydrate fresh profile from database
         api
-          .get<{ id?: string; name?: string; role?: string; email?: string }>(
-            "/users/me"
-          )
+          .get<{
+            id?: string
+            name?: string
+            role?: string
+            email?: string
+            onboarding_completed?: boolean
+            onboardingCompleted?: boolean
+          }>("/users/me")
           .then((u) => {
             if (!cancelled && u) {
+              const onboardingCompleted =
+                u.onboarding_completed ?? u.onboardingCompleted
               dispatch({
                 type: "AUTH_UPDATE_USER",
                 payload: {
@@ -117,6 +128,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
                   name: u.name ?? null,
                   role: (u.role as UserRole) || undefined,
                   email: u.email ?? null,
+                  ...(onboardingCompleted !== undefined && {
+                    onboardingCompleted,
+                  }),
                 },
               })
             }
@@ -141,36 +155,50 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // ── Auth actions — wired to authService ─────────────────────────────────────
 
-  const login = async (identifier: string, password: string): Promise<void> => {
-    await authService.login(identifier, password)
-  }
+  const login = useCallback(
+    async (
+      identifier: string,
+      password: string
+    ): Promise<{ onboardingCompleted?: boolean }> => {
+      return await authService.login(identifier, password)
+    },
+    [authService]
+  )
 
-  const register = async (email: string, password: string): Promise<void> => {
-    await authService.register(email, password)
-  }
+  const register = useCallback(
+    async (email: string, password: string, name?: string): Promise<void> => {
+      await authService.register(email, password, name)
+    },
+    [authService]
+  )
 
-  const logout = (): void => {
+  const logout = useCallback((): void => {
     authService.logout()
     if (typeof window !== "undefined" && window.location.pathname !== "/") {
       window.location.href = "/"
     }
-  }
+  }, [authService])
 
-  const requestRegisterOtp = async (
-    email: string,
-    password: string,
-    name?: string
-  ) => {
-    return await authService.requestRegisterOtp(email, password, name)
-  }
+  const requestRegisterOtp = useCallback(
+    async (email: string, password: string, name?: string) => {
+      return await authService.requestRegisterOtp(email, password, name)
+    },
+    [authService]
+  )
 
-  const verifyRegisterOtp = async (email: string, otp: string) => {
-    await authService.verifyRegisterOtp(email, otp)
-  }
+  const verifyRegisterOtp = useCallback(
+    async (email: string, otp: string) => {
+      await authService.verifyRegisterOtp(email, otp)
+    },
+    [authService]
+  )
 
-  const resendRegisterOtp = async (email: string) => {
-    return await authService.resendRegisterOtp(email)
-  }
+  const resendRegisterOtp = useCallback(
+    async (email: string) => {
+      return await authService.resendRegisterOtp(email)
+    },
+    [authService]
+  )
 
   const updateUser = useCallback(
     (
@@ -179,6 +207,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         name: string | null
         role: UserRole
         email: string | null
+        onboardingCompleted: boolean | null
       }>
     ) => {
       dispatch({ type: "AUTH_UPDATE_USER", payload: data })
@@ -186,7 +215,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     [dispatch]
   )
 
-  const refreshUser = async (): Promise<void> => {
+  const refreshUser = useCallback(async (): Promise<void> => {
     const token = safeStorage.getItem(STORAGE_KEY)
     if (!token) return
     try {
@@ -195,8 +224,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
         name?: string
         role?: UserRole
         email?: string
+        onboarding_completed?: boolean
+        onboardingCompleted?: boolean
       }>("/users/me")
       if (res) {
+        const onboardingCompleted =
+          res.onboarding_completed ?? res.onboardingCompleted
         dispatch({
           type: "AUTH_UPDATE_USER",
           payload: {
@@ -204,25 +237,41 @@ export function AuthProvider({ children }: AuthProviderProps) {
             name: res.name ?? null,
             role: (res.role as UserRole) || undefined,
             email: res.email ?? null,
+            ...(onboardingCompleted !== undefined && {
+              onboardingCompleted,
+            }),
           },
         })
       }
     } catch {
       // Non-blocking
     }
-  }
+  }, [dispatch])
 
-  const value: AuthContextValue = {
-    authState,
-    login,
-    register,
-    requestRegisterOtp,
-    verifyRegisterOtp,
-    resendRegisterOtp,
-    logout,
-    updateUser,
-    refreshUser,
-  }
+  const value: AuthContextValue = useMemo(
+    () => ({
+      authState,
+      login,
+      register,
+      requestRegisterOtp,
+      verifyRegisterOtp,
+      resendRegisterOtp,
+      logout,
+      updateUser,
+      refreshUser,
+    }),
+    [
+      authState,
+      login,
+      register,
+      requestRegisterOtp,
+      verifyRegisterOtp,
+      resendRegisterOtp,
+      logout,
+      updateUser,
+      refreshUser,
+    ]
+  )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

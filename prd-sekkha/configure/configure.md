@@ -3,35 +3,37 @@
 | Metadata | Detail |
 | --- | --- |
 | **Dokumen** | Product Requirement Document (PRD) |
-| **Fitur** | Configure — Master Data, Gamification Rules, Early Warning |
+| **Fitur** | Configure — Master Data & Gamification Rules |
 | **Aplikasi** | Sekkha Apps (Frontend & Backend) |
-| **Versi** | 1.0.0 |
+| **Versi** | 2.0.0 |
 | **Status** | Approved / Ready for Development |
 
 ---
 
 ## 1. Ringkasan Eksekutif & Tujuan
 
-Halaman **Configure** (`/configure/*`) adalah pusat **master data & aturan** sistem. Di sinilah admin/pengurus mengonfigurasi semua hal yang bersifat *foundational*: jenis event, badge, level, season, poin, threshold peringatan.
+Halaman **Configure** (`/configure/*`) adalah pusat **master data & aturan** sistem. Di sinilah `admin` dan `organizer` mengelola serta meninjau konfigurasi fondasi sistem: direktori sekolah, kategori kegiatan (*event types*), peran pelayanan (*badge activities*), periode musim (*seasons*), dan aturan poin (*point rules*).
 
-### 🎯 Tujuan Utama
+### Tujuan Utama
 1. **Sentralisasi aturan**: semua rule sistem ada di satu tempat, bukan hardcode.
-2. **Read-only untuk pengurus**: pengurus bisa lihat tapi tidak bisa edit (kecuali admin).
-3. **Full CRUD untuk admin**: satu-satunya role yang bisa tambah/edit/hapus master data.
-4. **Tersembunyi untuk umat & aktivis**: tidak ada di sidebar mereka.
+2. **Read-only untuk `organizer`**: `organizer` bisa melihat seluruh master data namun tidak bisa menambah/mengedit/menghapus.
+3. **Full CRUD untuk `admin`**: satu-satunya role yang bisa tambah/edit/hapus master data.
+4. **Tersembunyi untuk `member` & `activist`**: tidak ada di sidebar mereka dan dilindungi oleh role guard.
 
 ---
 
 ## 2. Target Pengguna & Role
 
+Menggunakan terminologi role Bahasa Inggris resmi: `member`, `activist`, `organizer`, `admin`.
+
 | Role | Akses |
 | --- | --- |
-| `umat` | ❌ Menu Configure **tidak ditampilkan** |
-| `aktivis` | ❌ Menu Configure **tidak ditampilkan** |
-| `pengurus` | ✅ Read-only (lihat tapi tidak edit) |
+| `member` | ❌ Menu Configure **tidak ditampilkan** (`403 Forbidden`) |
+| `activist` | ❌ Menu Configure **tidak ditampilkan** (`403 Forbidden`) |
+| `organizer` | ✅ Read-only (lihat daftar & detail, tanpa aksi tambah/edit/hapus) |
 | `admin` | ✅ Full CRUD |
 
-Lihat `shell/registry.ts` — `configureModule` memiliki `configureSections` yang dirender di sidebar pengurus/admin.
+Lihat `shell/registry.ts` — `configureModule` memiliki `configureSections` yang dirender di sidebar untuk `organizer` dan `admin`.
 
 ---
 
@@ -43,24 +45,16 @@ Berdasarkan `sekkha-frontend/src/modules/configure/internal/components/` dan `se
 
 | Halaman | Komponen | Isi |
 | --- | --- | --- |
-| `/configure/master/school` | `SchoolPage` | Direktori sekolah (lihat PRD `masterdata/schools.md`) |
-| `/configure/master/event-type` | `EventTypePage` | Jenis event (kebaktian, retreat, meditasi, sosial) |
-| `/configure/master/event-time` | `EventTimePage` | Preset waktu (Senin 18:00, Minggu 09:00, dll) |
+| `/configure/master/school` | `SchoolPage` | Direktori sekolah & persetujuan pengajuan sekolah (lihat PRD `configure/masterdata/schools.md`) |
+| `/configure/master/event-type` | `EventTypePage` | Kategori kegiatan vihara (kebaktian rutin, retreat, hari besar, sosial — lihat PRD `configure/masterdata/eventType.md`) |
+| `/configure/master/badge-activity` | `BadgeActivityListPage` | Peran pelayanan kegiatan vihara (MC, Puja Leader, Musician, dll. — lihat PRD `configure/masterdata/badgeActivity.md`) |
 
 ### 3.2. Rules
 
 | Halaman | Komponen | Isi |
 | --- | --- | --- |
-| `/configure/rules/season` | `SeasonPage` | Definisi season (nama, tanggal, aktif/tidak) |
-| `/configure/rules/points` | `PointsRulesPage` | Aturan poin per event_type + multiplier |
-
-### 3.3. Early Warning
-
-| Halaman | Komponen | Isi |
-| --- | --- | --- |
-| `/configure/early-warning/threshold` | `ThresholdPage` | Threshold peringatan anggota berisiko (minggu tidak hadir, dsb) |
-
-> Detail per sub-domain lihat PRD terkait di `prd-sekkha/masterdata/`.
+| `/configure/rules/season` | `SeasonPage` | Definisi periode musim papan peringkat (nama, tanggal, target absensi, aktif/tidak — lihat PRD `configure/seasons.md`) |
+| `/configure/rules/points` | `PointsRulesPage` | Aturan perolehan poin per kategori aktivitas (lihat PRD `configure/pointRules.md`) |
 
 ---
 
@@ -68,12 +62,12 @@ Berdasarkan `sekkha-frontend/src/modules/configure/internal/components/` dan `se
 
 | ID | Sebagai | Saya ingin | Supaya |
 | --- | --- | --- | --- |
-| US-01 | Admin | Membuat event type baru | Tambah kategori kegiatan |
-| US-02 | Admin | Edit poin untuk event "Retreat" | Sesuaikan reward untuk event berat |
-| US-03 | Admin | Membuat season baru | Mulai periode leaderboard baru |
-| US-04 | Admin | Edit threshold peringatan (3 minggu tidak hadir = risiko) | Atur sensitivitas early warning |
-| US-05 | Pengurus | Melihat semua master data | Tahu aturan sistem, bantu jawab pertanyaan anggota |
-| US-06 | Umat / Aktivis | (tidak punya akses) | Menu Configure tidak muncul di sidebar |
+| US-01 | `admin` | Membuat event type baru | Menambah kategori kegiatan vihara |
+| US-02 | `admin` | Mengatur peran *Badge Activity* & bonus poin | Memberikan apresiasi poin tambahan bagi pelayan kebaktian |
+| US-03 | `admin` | Membuat & mengaktifkan season baru | Memulai periode leaderboard baru |
+| US-04 | `admin` | Mengedit nilai aturan poin (`point-rules`) | Menyesuaikan reward poin kegiatan secara dinamis |
+| US-05 | `organizer` | Melihat semua master data & aturan poin | Mengetahui aturan sistem dan membantu menjawab pertanyaan anggota |
+| US-06 | `member` / `activist` | (Tidak memiliki akses) | Menu Configure tidak muncul di sidebar |
 
 ---
 
@@ -98,15 +92,15 @@ Setiap sub-halaman Master Data mengikuti pola arsitektur antarmuka Clay:
 Backend wajib enforce di setiap endpoint:
 
 ```ts
-router.post("/master/event-type", requireAuth, requireRole("admin"), createEventType)
-router.patch("/master/event-type/:id", requireAuth, requireRole("admin"), updateEventType)
-router.delete("/master/event-type/:id", requireAuth, requireRole("admin"), deleteEventType)
+router.post("/event-types", requireAuth, requireRole("admin"), createEventType)
+router.put("/event-types/:id", requireAuth, requireRole("admin"), updateEventType)
+router.delete("/event-types/:id", requireAuth, requireRole("admin"), deleteEventType)
 
-// Read boleh pengurus:
-router.get("/master/event-type", requireAuth, requireRole("pengurus", "admin"), listEventTypes)
+// Read boleh diakses oleh organizer & admin:
+router.get("/event-types", requireAuth, requireRole("organizer", "admin"), listEventTypes)
 ```
 
-Frontend hide tombol edit/delete untuk pengurus (defense in depth).
+Frontend menyembunyikan tombol tambah/edit/hapus untuk `organizer` (defense in depth).
 
 ### 5.3. Audit Trail
 
@@ -122,33 +116,34 @@ Berguna untuk rollback dan compliance. Lihat skill `observability-and-instrument
 ### 5.4. Validasi Lintas Entitas
 
 Contoh:
-- Tidak bisa delete `EventType` kalau masih ada `Event` yang reference.
-- Tidak bisa set `Season` baru `is_active=true` kalau sudah ada yang aktif (harus nonaktifkan dulu).
+- Tidak bisa delete `EventType` kalau masih ada `Event` yang mereferensikannya.
+- Mengaktifkan satu `Season` (`POST /api/configure/seasons/:id/activate`) otomatis menonaktifkan `Season` aktif lainnya dalam satu transaksi.
 
 ---
 
 ## 6. API Contract (Generic)
 
-Tiap entitas master data mengikuti pola REST:
+Tiap entitas master data mengikuti pola REST di bawah `/api/configure`:
 
 ```
-GET    /api/configure/<entity>          # list (auth + pengurus/admin)
-GET    /api/configure/<entity>/:id      # detail
+GET    /api/configure/<entity>          # list (auth + organizer/admin)
+GET    /api/configure/<entity>/:id      # detail (auth + organizer/admin)
 POST   /api/configure/<entity>          # create (admin only)
-PATCH  /api/configure/<entity>/:id      # update (admin only)
-DELETE /api/configure/<entity>/:id      # delete (admin only, soft/hard per entity)
+PUT    /api/configure/<entity>/:id      # update (admin only)
+DELETE /api/configure/<entity>/:id      # delete (admin only)
 ```
 
-Contoh payload (event-type):
+Contoh payload (`event-types`):
 
 ```json
-POST /api/configure/event-type
+POST /api/configure/event-types
 {
-  "name": "Retreat",
-  "description": "Retreat harian / mingguan",
-  "base_points": 50,
-  "color": "#4262ff",
-  "icon": "Sparkles"
+  "name": "Workshop & Pelatihan",
+  "description": "Kelas keterampilan dan kepemimpinan pemuda",
+  "default_point_reward": 75,
+  "default_max_late_minutes": 30,
+  "default_late_penalty_points": 15,
+  "is_active": true
 }
 ```
 
@@ -156,7 +151,8 @@ Response 201:
 ```json
 {
   "status": "success",
-  "data": { "id": "et_001", "name": "Retreat", /* ... */ }
+  "code": 201,
+  "data": { "id": "typ_001", "code": "workshop-pelatihan", "name": "Workshop & Pelatihan" }
 }
 ```
 
@@ -164,12 +160,12 @@ Response 201:
 
 ## 7. UI/UX & NFR
 
-1. **Layout konsisten**: tiap sub-halaman pakai shell yang sama (header + breadcrumb + table + action button).
-2. **Konfirmasi destruktif**: delete pakai AlertDialog dengan required typed confirmation (mis. ketik "DELETE" untuk confirm).
-3. **Empty state**: ilustrasi + CTA "Tambah [Entity] pertama".
-4. **Loading**: skeleton table row.
-5. **Aksesibilitas**: table semantic + sortable header (button dengan `aria-sort`).
-6. **Responsive**: di mobile, table jadi card list.
+1. **Layout konsisten**: tiap sub-halaman memakai shell yang sama (header + filter bar + responsive Clay card grid + action button).
+2. **Konfirmasi destruktif**: delete memakai dialog konfirmasi.
+3. **Empty state**: ilustrasi + CTA "Add First [Entity]".
+4. **Loading**: skeleton card grid.
+5. **Aksesibilitas**: elemen interaktif memiliki focus ring dan label ARIA yang jelas.
+6. **Responsive**: card grid beradaptasi dari 1 kolom (mobile) hingga 3 kolom (desktop).
 
 ---
 
@@ -177,15 +173,15 @@ Response 201:
 
 | ID | Skenario | Hasil yang Diharapkan |
 | --- | --- | --- |
-| **AC-01** | Admin buka `/configure/master/event-type` | Tabel list event type tampil + tombol "Tambah Event Type" |
-| **AC-02** | Admin klik "Tambah Event Type" | Modal form muncul dengan field name, description, base_points, color, icon |
-| **AC-03** | Admin submit form valid | Event type baru tersimpan, muncul di list, toast "Berhasil disimpan" |
-| **AC-04** | Admin submit form invalid (mis. base_points negatif) | Validasi inline muncul, submit dicegah |
-| **AC-05** | Admin klik delete pada event type | Dialog konfirmasi muncul, required ketik "DELETE" untuk confirm |
-| **AC-06** | Admin delete event type yang masih di-referensi oleh event | Backend return 400 dengan pesan, frontend tampil error toast |
-| **AC-07** | Pengurus buka `/configure/master/event-type` | Tabel tampil tapi tombol Add/Edit/Delete **tidak ada** |
-| **AC-08** | Umat login → lihat sidebar | Menu Configure **tidak muncul** |
-| **AC-09** | Aktivis login → lihat sidebar | Menu Configure **tidak muncul** |
+| **AC-01** | `admin` buka `/configure/master/event-type` | Daftar event type tampil + tombol "Add Event Category" |
+| **AC-02** | `admin` klik "Add Event Category" | Form muncul dengan field name, description, default_point_reward, color, dll. |
+| **AC-03** | `admin` submit form valid | Event type baru tersimpan, muncul di list, toast sukses tampil |
+| **AC-04** | `admin` submit form invalid (mis. poin negatif) | Validasi inline muncul, submit dicegah |
+| **AC-05** | `admin` klik delete pada entitas master data | Dialog konfirmasi muncul sebelum penghapusan |
+| **AC-06** | `admin` delete event type yang masih direferensikan oleh event | Backend mengembalikan error, frontend menampilkan error toast |
+| **AC-07** | `organizer` buka `/configure/master/event-type` | Daftar tampil dalam mode read-only tanpa tombol Add/Edit/Delete |
+| **AC-08** | `member` login → lihat sidebar | Menu Configure **tidak muncul** |
+| **AC-09** | `activist` login → lihat sidebar | Menu Configure **tidak muncul** |
 | **AC-10** | Setiap perubahan master data | Tercatat di `audit_logs` (lihat NFR §5.3) |
 | **AC-11** | User tidak login coba akses `/configure/*` | Redirect ke `/login` |
 
@@ -193,26 +189,19 @@ Response 201:
 
 ## 9. Out of Scope
 
-- Bulk import (CSV) untuk master data (bisa iterasi berikutnya).
+- Bulk import (CSV) untuk master data.
 - Versioning master data (rollback ke versi sebelumnya).
-- Per-admin permission customization (semua admin punya hak setara).
+- Per-admin permission customization (semua `admin` punya hak setara).
 
 ---
 
-## 10. Open Questions
-
-1. Apakah perlu approval workflow untuk perubahan master data (mis. pengurus request → admin approve)?
-2. Apakah perlu "draft mode" untuk perubahan yang di-schedule (mis. season baru aktif mulai tanggal X)?
-
----
-
-## 11. Referensi
+## 10. Referensi
 
 - `sekkha-frontend/src/modules/configure/` — implementasi frontend
-- `sekkha-api/src/modules/configure/internal/router.ts` — endpoint
-- `prd-sekkha/masterdata/badgePresensiEvent.md` — poin calculation
-- `prd-sekkha/masterdata/eventType.md` — event type schema
-- `prd-sekkha/masterdata/schools.md` — school directory (master data)
-- `prd-sekkha/leaderboard/leaderboard.md` — season usage
-- Skill `security-and-hardening` — role enforcement
-- Skill `observability-and-instrumentation` — audit log
+- `sekkha-api/src/modules/configure/routes.ts` — endpoint backend
+- `prd-sekkha/configure/masterdata/eventType.md` — spesifikasi kategori event
+- `prd-sekkha/configure/masterdata/badgeActivity.md` — spesifikasi badge activity pelayanan
+- `prd-sekkha/configure/masterdata/schools.md` — spesifikasi direktori sekolah
+- `prd-sekkha/configure/pointRules.md` — spesifikasi aturan poin
+- `prd-sekkha/configure/seasons.md` — spesifikasi season leaderboard
+- `prd-sekkha/api-contract.md` — Master API Contract

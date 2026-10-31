@@ -21,8 +21,8 @@ interface AuthSuccessResponse {
     email: string
     name: string
     role: string
+    onboarding_completed?: boolean
   }
-  onboarding_completed?: boolean
 }
 
 interface ApiEnvelope<T> {
@@ -100,7 +100,10 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
    *
    * Requirements: 4.2, 7.1, 7.3, 7.4
    */
-  async function login(identifier: string, password: string): Promise<void> {
+  async function login(
+    identifier: string,
+    password: string
+  ): Promise<{ onboardingCompleted?: boolean }> {
     let response: Response
 
     try {
@@ -126,6 +129,8 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
       const data = unwrap(
         (await response.json()) as ApiEnvelope<AuthSuccessResponse>
       )
+      const onboardingCompleted = data.user?.onboarding_completed
+      clearApiCache()
       safeStorage.setItem(STORAGE_KEY, data.accessToken)
       dispatch({
         type: "AUTH_SUCCESS",
@@ -138,12 +143,12 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
             "member",
           name: data.user?.name ?? null,
           email: data.user?.email ?? null,
-          ...(data.onboarding_completed !== undefined && {
-            onboardingCompleted: data.onboarding_completed,
+          ...(onboardingCompleted !== undefined && {
+            onboardingCompleted,
           }),
         },
       })
-      return
+      return { onboardingCompleted }
     }
 
     if (response.status === 401) {
@@ -241,6 +246,7 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
       const data = unwrap(
         (await response.json()) as ApiEnvelope<AuthSuccessResponse>
       )
+      clearApiCache()
       safeStorage.setItem(STORAGE_KEY, data.accessToken)
       dispatch({
         type: "AUTH_SUCCESS",
@@ -344,7 +350,10 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
     }
 
     if (response.ok) {
-      const data = (await response.json()) as AuthSuccessResponse
+      const data = unwrap(
+        (await response.json()) as ApiEnvelope<AuthSuccessResponse>
+      )
+      clearApiCache()
       safeStorage.setItem(STORAGE_KEY, data.accessToken)
       dispatch({
         type: "AUTH_SUCCESS",
@@ -434,6 +443,7 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
       try {
         fetch(`${API_BASE_URL}/auth/logout`, {
           method: "POST",
+          credentials: "include",
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",

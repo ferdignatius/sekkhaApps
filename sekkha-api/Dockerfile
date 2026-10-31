@@ -40,7 +40,6 @@ ENV PORT=4000
 # Copy package manifests directly with bun ownership
 COPY --chown=bun:bun package.json bun.lock* ./
 COPY --chown=bun:bun prisma ./prisma/
-COPY --chown=bun:bun src/lib ./src/lib
 
 # Install only production dependencies
 RUN --mount=type=cache,id=bun,target=/root/.bun/install/cache \

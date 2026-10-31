@@ -23,8 +23,8 @@ import {
 import { useAuth } from "@/modules/auth"
 import { api } from "@/lib/api"
 import QRCode from "react-qr-code"
-import { peopleApi } from "@/modules/people/internal/api/peopleApi"
-import type { MemberDto } from "@/modules/people/internal/api/peopleApi"
+import { peopleApi } from "@/modules/people"
+import type { MemberDto } from "@/modules/people"
 import type { EventListItem, AttendanceRecord, UserRole } from "../types"
 import { QrScannerCamera } from "./QrScannerCamera"
 import { ConfirmDialog } from "@/components/base/AlertDialog"
@@ -39,11 +39,29 @@ interface RecentScanItem {
   message: string
 }
 
+let sharedAudioCtx: AudioContext | null = null
+
+function getSharedAudioContext(): AudioContext | null {
+  if (typeof window === "undefined") return null
+  if (!sharedAudioCtx || sharedAudioCtx.state === "closed") {
+    const AudioCtx =
+      window.AudioContext ||
+      (window as unknown as { webkitAudioContext?: typeof AudioContext })
+        .webkitAudioContext
+    if (AudioCtx) {
+      sharedAudioCtx = new AudioCtx()
+    }
+  }
+  if (sharedAudioCtx && sharedAudioCtx.state === "suspended") {
+    void sharedAudioCtx.resume().catch(() => {})
+  }
+  return sharedAudioCtx
+}
+
 function playScanChime() {
   try {
-    const ctx = new (
-      window.AudioContext || (window as any).webkitAudioContext
-    )()
+    const ctx = getSharedAudioContext()
+    if (!ctx) return
     const osc = ctx.createOscillator()
     const gain = ctx.createGain()
     osc.type = "sine"
@@ -60,9 +78,8 @@ function playScanChime() {
 
 function playWarningBuzz() {
   try {
-    const ctx = new (
-      window.AudioContext || (window as any).webkitAudioContext
-    )()
+    const ctx = getSharedAudioContext()
+    if (!ctx) return
     const osc = ctx.createOscillator()
     const gain = ctx.createGain()
     osc.type = "sawtooth"

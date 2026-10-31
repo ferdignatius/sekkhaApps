@@ -77,7 +77,7 @@ Principles:
                 │ Next
                 ▼
        ┌─────────────────┐
-       │     Step 2:     │ ◄── OPTIONAL: Phone, Birth Date, Gender (Can Skip)
+       │     Step 2:     │ ◄── OPTIONAL: Phone, Birth Date (Can Skip)
        │ Additional Data │
        └────────┬────────┘
                 │ Next / Skip

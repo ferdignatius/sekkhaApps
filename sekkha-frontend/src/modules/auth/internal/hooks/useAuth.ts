@@ -17,7 +17,10 @@ import type { AuthState, UserRole } from "../context/authReducer"
  */
 export interface UseAuthReturn {
   authState: AuthState
-  login: (identifier: string, password: string) => Promise<void>
+  login: (
+    identifier: string,
+    password: string
+  ) => Promise<{ onboardingCompleted?: boolean } | void>
   register: (email: string, password: string) => Promise<void>
   requestRegisterOtp: (
     email: string,
@@ -35,6 +38,7 @@ export interface UseAuthReturn {
       name: string | null
       role: UserRole
       email: string | null
+      onboardingCompleted: boolean | null
     }>
   ) => void
   refreshUser: () => Promise<void>

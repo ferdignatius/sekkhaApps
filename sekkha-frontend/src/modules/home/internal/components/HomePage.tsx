@@ -1,6 +1,6 @@
 // ─── Imports ────────────────────────────────────────────────────────────────────
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useAuth } from "@/modules/auth"
 import QRCode from "react-qr-code"
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
@@ -65,6 +65,8 @@ type HomeSeason = {
   start_date: string
   end_date: string
   target_attendance: number
+  current_attendance?: number
+  total_attendances?: number
   days_left: number
 }
 
@@ -153,6 +155,15 @@ export function HomePage() {
 
   const nextEvent = events[0] ?? null
   const activeSeason = dashboard?.season ?? null
+  const totalAttendances =
+    activeSeason?.current_attendance ??
+    activeSeason?.total_attendances ??
+    activities.length
+  const targetAttendance = Math.max(1, activeSeason?.target_attendance ?? 12)
+  const seasonProgressPercent = Math.min(
+    100,
+    Math.round((totalAttendances / targetAttendance) * 100)
+  )
 
   // State for "See More" (Lainnya) modal and in-modal menu search
   const [showAllMenusModal, setShowAllMenusModal] = useState(false)
@@ -375,25 +386,29 @@ export function HomePage() {
       : []),
   ]
 
-  // Flattened & filtered for in-modal search
-  const normalizedQuery = menuSearchQuery.trim().toLowerCase()
-  const filteredModalSections = allMenuSections
-    .map((section) => ({
-      ...section,
-      items: section.items.filter(
-        (item) =>
-          !normalizedQuery ||
-          item.label.toLowerCase().includes(normalizedQuery) ||
-          item.description.toLowerCase().includes(normalizedQuery) ||
-          item.badge?.toLowerCase().includes(normalizedQuery) ||
-          item.keywords?.toLowerCase().includes(normalizedQuery)
-      ),
-    }))
-    .filter((section) => section.items.length > 0)
+  // Flattened & filtered for in-modal search (memoized & skipped when modal is closed)
+  const filteredModalSections = useMemo(() => {
+    if (!showAllMenusModal) return []
+    const normalizedQuery = menuSearchQuery.trim().toLowerCase()
+    return allMenuSections
+      .map((section) => ({
+        ...section,
+        items: section.items.filter(
+          (item) =>
+            !normalizedQuery ||
+            item.label.toLowerCase().includes(normalizedQuery) ||
+            item.description.toLowerCase().includes(normalizedQuery) ||
+            item.badge?.toLowerCase().includes(normalizedQuery) ||
+            item.keywords?.toLowerCase().includes(normalizedQuery)
+        ),
+      }))
+      .filter((section) => section.items.length > 0)
+  }, [showAllMenusModal, menuSearchQuery, canAccessPeople, isPengurus])
 
-  const totalFilteredItems = filteredModalSections.reduce(
-    (acc, sec) => acc + sec.items.length,
-    0
+  const totalFilteredItems = useMemo(
+    () =>
+      filteredModalSections.reduce((acc, sec) => acc + sec.items.length, 0),
+    [filteredModalSections]
   )
 
   const topBarActions = (
@@ -777,7 +792,7 @@ export function HomePage() {
                       <div className="mt-1">
                         <div className="flex items-center justify-between text-xs font-semibold text-[#0a0a0a]">
                           <span>
-                            Target: {activeSeason?.target_attendance ?? 500}{" "}
+                            Attendance: {totalAttendances} / {targetAttendance}{" "}
                             Check-ins
                           </span>
                           <span className="font-bold text-[#e8b94a]">
@@ -789,31 +804,13 @@ export function HomePage() {
                           aria-label="Season activity progress"
                           aria-valuemin={0}
                           aria-valuemax={100}
-                          aria-valuenow={Math.min(
-                            100,
-                            Math.round(
-                              (totalPoints /
-                                (activeSeason?.target_attendance ?? 500)) *
-                                100
-                            )
-                          )}
+                          aria-valuenow={seasonProgressPercent}
                           className="mt-2 h-2.5 w-full overflow-hidden rounded-full border border-[#e5e5e5] bg-[#f5f0e0]"
                         >
                           <div
                             className="h-full rounded-full bg-gradient-to-r from-[#e8b94a] to-[#ff4d8b] transition-all duration-500"
                             style={{
-                              width: `${Math.max(
-                                5,
-                                Math.min(
-                                  100,
-                                  Math.round(
-                                    (totalPoints /
-                                      (activeSeason?.target_attendance ??
-                                        500)) *
-                                      100
-                                  )
-                                )
-                              )}%`,
+                              width: `${Math.max(5, seasonProgressPercent)}%`,
                             }}
                           />
                         </div>

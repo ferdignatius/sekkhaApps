@@ -23,6 +23,7 @@ export function ForgotPasswordPage() {
   const [step, setStep] = useState<ForgotStep>("email")
   const [email, setEmail] = useState("")
   const [otpDigits, setOtpDigits] = useState<string[]>(["", "", "", "", "", ""])
+  const [resetToken, setResetToken] = useState<string | null>(null)
   const [newPassword, setNewPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
@@ -150,13 +151,16 @@ export function ForgotPasswordPage() {
     setIsLoading(true)
 
     try {
-      await api.post<{ success: boolean; message: string }>(
-        "/auth/forgot-password/verify-otp",
-        {
-          email: email.trim().toLowerCase(),
-          otp,
-        }
-      )
+      const res = await api.post<{
+        success?: boolean
+        message?: string
+        reset_token?: string
+        resetToken?: string
+      }>("/auth/forgot-password/verify-otp", {
+        email: email.trim().toLowerCase(),
+        otp,
+      })
+      setResetToken(res?.reset_token ?? res?.resetToken ?? null)
       setStep("new-password")
     } catch (err: any) {
       setError(err?.message || "Incorrect or expired verification code.")
@@ -210,6 +214,7 @@ export function ForgotPasswordPage() {
         {
           email: email.trim().toLowerCase(),
           otp: otpDigits.join(""),
+          reset_token: resetToken ?? undefined,
           newPassword,
         }
       )
@@ -401,6 +406,7 @@ export function ForgotPasswordPage() {
                   type="button"
                   onClick={() => {
                     setStep("email")
+                    setResetToken(null)
                     setError(null)
                   }}
                   className="inline-flex cursor-pointer items-center gap-1.5 text-xs font-semibold text-[#6a6a6a] transition-colors hover:text-[#0a0a0a]"

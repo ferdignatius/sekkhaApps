@@ -22,7 +22,7 @@ Modul **Users** adalah pusat data personal anggota: profil, identitas login, reg
 Tujuan utama:
 1. **Single Source of User Identity**: Mengelola data personal, kredensial login, dan nomor anggota terstandardisasi.
 2. **Konsistensi Penomoran Anggota**: `userNumber` selalu otomatis di-generate oleh sistem, unik, dan tidak dapat diubah oleh siapapun.
-3. **Keamanan & Privasi (UU PDP / GDPR)**: Perlindungan data pribadi (enkripsi at-rest Tier 2 pada kolom PII seperti telepon, tanggal lahir, dan gender) serta pembatasan field publik vs internal.
+3. **Keamanan & Privasi (UU PDP / GDPR)**: Perlindungan data pribadi (enkripsi at-rest Tier 2 pada kolom PII seperti telepon dan tanggal lahir) serta pembatasan field publik vs internal.
 4. **Verifikasi Perubahan Email**: User dapat mengganti alamat email mandiri kapan saja, dengan keharusan verifikasi kode 6 digit sebelum email baru dapat digunakan untuk login atau pemulihan akun.
 
 ---
@@ -57,12 +57,12 @@ Role resmi sistem menggunakan standar Bahasa Inggris:
   * Efisien, murni numerik, dan hemat ruang penyimpanan.
   * Bersifat *immutable* (tidak dapat diedit atau diperbarui setelah diterbitkan).
   * Divalidasi dengan database *unique constraint* dan penanganan retry transaksi jika terjadi benturan nomor urut (*race condition*).
-  * Berfungsi murni sebagai nomor identitas anggota (kartu anggota/presensi) dan **TIDAK dapat digunakan sebagai kredensial login**.
+  * Berfungsi sebagai nomor identitas anggota (kartu anggota/presensi) dan **dapat digunakan sebagai identifier login** (10-digit Member ID) selain `username` dan `email` terverifikasi.
 
-### 3.2. Nama Pengguna Otomatis (`username`)
+### 3.2. Nama Pengguna (`username`)
 
-* Dibuat otomatis oleh sistem dari nama yang dinormalisasi (lowercase, alfanumerik) + angka random (contoh: `budi48291`).
-* Unik dan berfungsi sebagai identifier login alternatif selain email.
+* Dibuat otomatis oleh sistem saat registrasi/pre-provisioning dari nama yang dinormalisasi (lowercase, alfanumerik) + angka random (contoh: `budi48291`).
+* Unik, berfungsi sebagai identifier login alternatif selain email dan `userNumber`, serta **dapat diperbarui secara mandiri oleh pengguna** melalui pengaturan profil (`/profile`, format `[a-z0-9._]`, 3–30 karakter, divalidasi keunikannya oleh server).
 
 ### 3.3. Email & Status Verifikasi (`email`, `email_verified`, `pending_email`)
 
@@ -70,25 +70,24 @@ Role resmi sistem menggunakan standar Bahasa Inggris:
 * **Akun Registrasi Mandiri**: `email` langsung berstatus terverifikasi (`email_verified: true`) karena berhasil melalui alur OTP awal.
 * **Pergantian Email**: Email baru masuk ke `pending_email` dan tidak menggantikan `email` lama sebelum kode verifikasi valid dimasukkan.
 
-### 3.4. Login Identifier (Username & Email)
+### 3.4. Login Identifier (`username`, `userNumber`, & `email`)
 
-Endpoint `POST /api/auth/login` menerima salah satu dari 2 kredensial sebagai field `identifier`:
+Endpoint `POST /api/auth/login` menerima salah satu dari 3 kredensial sebagai field `identifier`:
 1. `username`
-2. `email` (hanya email yang sudah berstatus terverifikasi)
-
-*(Catatan: `userNumber` adalah nomor keanggotaan/kartu jemaat, bukan kredensial login).*
+2. `userNumber` (10-digit Member ID, misal `2026102301`)
+3. `email` (hanya email yang sudah berstatus terverifikasi)
 
 ---
 
 ## 4. Alur Claim Akun Pra-Registrasi (Account Claim)
 
-Saat Organizer membuat jemaat manual via `POST /api/people/members`, sistem menerbitkan:
+Saat Organizer membuat jemaat manual via `POST /api/people/members` (atau `POST /api/people`), sistem menerbitkan:
 - `userNumber` otomatis format integer numerik `yyyymmddnn` (contoh: `2026102301`).
 - `username` otomatis (misal: `siti73104`).
 - Password dummy sementara (`sekkha` + 5 angka random + `puggala`, misal: `sekkha73104puggala`), disimpan ter-hash.
 
 **Proses Claim Mandiri**:
-1. Jemaat login pertama kali menggunakan `username` dengan password dummy.
+1. Jemaat login pertama kali menggunakan `username` atau `userNumber` (10 digit) dengan password dummy.
 2. Respons login mengembalikan flag `requires_password_change: true` dan token onboarding terbatas.
 3. Jemaat wajib mengganti password via `POST /api/users/change-password`.
 4. Jemaat memasukkan email via `POST /api/users/email-verification/request`.
@@ -127,7 +126,7 @@ User yang telah memiliki akun dapat memperbarui alamat email mereka kapan saja m
 * **Data Publik (Tampil pada profil jemaat lain)**:
   `id`, `name`, `role`, `school`, `class_grade`, `joined_at`.
 * **Data Privat (Hanya terlihat oleh pemilik akun)**:
-  `email`, `email_verified`, `pending_email`, `phone`, `birth_date`, `gender`, `username`, `user_number`.
+  `email`, `email_verified`, `pending_email`, `phone`, `birth_date`, `username`, `user_number`.
 * **Data Internal Pengurus (`organizer` / `admin` only)**:
   `points`, `streak`, `consecutive_missed`, `total_attendances`.
 * **Field Dihapus (Out of Scope)**:
@@ -172,26 +171,25 @@ Mengambil data lengkap profil pengguna yang sedang login.
       "class_grade": "11",
       "phone": "081234567890",
       "birth_date": "2008-05-14",
-      "gender": "male",
       "points": 350,
       "joined_at": "2026-10-23T00:00:00.000Z"
     }
   }
   ```
 
-### 7.2. `PATCH /api/users/me`
-Memperbarui informasi profil mandiri pengguna.
+### 7.2. `PATCH /api/users/me` (dan `PUT /api/users/me/profile`)
+Memperbarui informasi profil mandiri pengguna (termasuk `username` yang dapat diedit di pengaturan profil).
 - **Akses**: Terautentikasi (`requireAuth`).
-- **Field yang Dilarang di Update via Endpoint Ini**: `email` (gunakan alur verifikasi), `user_number`, `username`, `role`, `points`. Jika dikirim, API mengembalikan error `400 Bad Request`.
+- **Field yang Dilarang di Update via Endpoint Ini**: `email` (gunakan alur verifikasi), `user_number`, `role`, `points`. Jika dikirim, API mengembalikan error `400 Bad Request`.
 - **Request Body (Semua Opsional)**:
   ```json
   {
     "name": "Budi Santoso",
+    "username": "budi.santoso",
     "school_id": "sch_12345",
     "class_grade": "11",
     "phone": "081234567890",
-    "birth_date": "2008-05-14",
-    "gender": "male"
+    "birth_date": "2008-05-14"
   }
   ```
 - **Response 200 OK**: Envelope standar dengan payload data profil terbaru (format identik `GET /api/users/me`).
@@ -257,28 +255,33 @@ Mengonfirmasi 6 digit kode OTP verifikasi email.
   }
   ```
 
-### 7.6. `POST /api/users/change-password`
-Mengganti password akun sendiri. Digunakan pada menu pengaturan akun serta langkah wajib pertama saat claim account pra-registrasi.
+### 7.6. `POST /api/users/change-password/request-otp` & `POST /api/users/change-password`
+Mengganti password akun sendiri (lihat detail 2FA OTP di `prd-sekkha/general/users/profile-and-settings.md` dan alur claim di `prd-sekkha/general/users/email-verification-for-account-claim.md`).
 - **Akses**: Terautentikasi (`requireAuth`, termasuk token onboarding).
-- **Request Body**:
-  ```json
-  {
-    "currentPassword": "OldPassword123!",
-    "newPassword": "NewStrongPassword456!"
-  }
-  ```
-- **Response 200 OK**:
-  ```json
-  {
-    "status": "success",
-    "code": 200,
-    "message": "Password berhasil diubah. Seluruh sesi lain telah dikeluarkan.",
-    "data": {
-      "password_changed_by_user": true,
-      "is_claimed": false
+- **Langkah 1 (`POST /api/users/change-password/request-otp`)**: Memverifikasi password lama (`current_password` / `currentPassword`) dan mengirim kode OTP 6 digit ke email terverifikasi (untuk akun yang sudah memiliki email terverifikasi).
+- **Langkah 2 (`POST /api/users/change-password`)**:
+  - **Request Body**:
+    ```json
+    {
+      "current_password": "OldPassword123!",
+      "new_password": "NewStrongPassword456!",
+      "otp": "123456"
     }
-  }
-  ```
+    ```
+    *(Catatan: Mendukung alias camelCase `currentPassword` / `newPassword`; untuk akun pre-provisioned yang belum memiliki email terverifikasi pada langkah pertama claim account, penggantian password dummy dilakukan sebelum langkah verifikasi email).*
+  - **Response 200 OK**:
+    ```json
+    {
+      "status": "success",
+      "code": 200,
+      "message": "Password berhasil diubah. Seluruh sesi lain telah dikeluarkan.",
+      "data": {
+        "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+        "password_changed_by_user": true,
+        "is_claimed": true
+      }
+    }
+    ```
 
 ### 7.7. `GET /api/users/me/attendances`
 Mengambil riwayat kehadiran acara yang pernah dihadiri jemaat.
@@ -387,7 +390,7 @@ Mengambil data kartu anggota digital jemaat beserta representasi QR Code statis 
 | **AC-USR-02** | Calon jemaat mendaftar mandiri via alur register OTP | Sistem otomatis men-generate `userNumber` integer format numerik `yyyymmddnn` yang persis sama. |
 | **AC-USR-03** | Dua akun dibuat pada tanggal yang sama | Nomor urut `num` bertambah berurutan (`...0001`, `...0002`) tanpa benturan duplikasi. |
 | **AC-USR-04** | User memanggil `GET /api/users/me` | Respons tidak memuat field `avatar_url`, `school_level`, `attendance_count_30d`, `badges_count`, `level`, maupun badge. |
-| **AC-USR-05** | User mencoba mengirim `email`, `user_number`, `username`, atau `role` ke `PATCH /api/users/me` | Request ditolak dengan error 400 Bad Request / 403 Forbidden. |
+| **AC-USR-05** | User mencoba mengirim `email`, `user_number`, atau `role` ke `PATCH /api/users/me` | Request ditolak dengan error 400 Bad Request / 403 Forbidden (`username` diperbolehkan untuk diubah selama unik dan valid). |
 | **AC-USR-06** | User meminta ganti email ke `POST /api/users/email-verification/request` | Kode OTP dikirim ke email baru, email baru dicatat sebagai `pendingEmail`, email lama tetap aktif. |
 | **AC-USR-07** | User memasukkan kode verifikasi email yang benar ke `POST /api/users/email-verification/confirm` | Email aktif berubah ke email baru, `pendingEmail` di-reset `null`, `emailVerifiedAt` terisi waktu sekarang. |
 | **AC-USR-08** | Percobaan input kode verifikasi salah hingga 5 kali | Challenge terkunci/batal, percobaan ke-6 ditolak dengan kode error `429 Too Many Requests` / `400 Challenge Expired`. |

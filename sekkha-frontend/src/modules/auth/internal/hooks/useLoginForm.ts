@@ -7,6 +7,7 @@ import { useNavigate, useSearch } from "@tanstack/react-router"
 import { validateLoginForm } from "../utils/validator"
 import { useAuth } from "./useAuth"
 import { AuthError } from "../context/authReducer"
+import { api } from "@/lib/api"
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
@@ -43,10 +44,16 @@ export interface UseLoginFormReturn {
  * - Must not contain "http://" or "https://" (no external URLs)
  * - Must not exceed MAX_REDIRECT_LENGTH characters
  */
-function isValidRedirectTo(value: string | undefined): value is string {
+export function isValidRedirectTo(value: string | undefined): value is string {
   if (!value) return false
   if (value.length > MAX_REDIRECT_LENGTH) return false
-  if (!value.startsWith("/")) return false
+  if (
+    !value.startsWith("/") ||
+    value.startsWith("//") ||
+    value.startsWith("/\\")
+  ) {
+    return false
+  }
   if (value.includes("http://") || value.includes("https://")) return false
   return true
 }
@@ -54,7 +61,7 @@ function isValidRedirectTo(value: string | undefined): value is string {
 // ─── Hook ──────────────────────────────────────────────────────────────────────
 
 export function useLoginForm(): UseLoginFormReturn {
-  const { login } = useAuth()
+  const { login, authState, updateUser } = useAuth()
   const navigate = useNavigate()
 
   // Read the redirectTo query param from the /login route (req 5.2, 5.4, 6.3)
@@ -119,7 +126,34 @@ export function useLoginForm(): UseLoginFormReturn {
     setApiErrorDismissed(false)
 
     try {
-      await login(fields.identifier, fields.password)
+      const loginRes = (await login(fields.identifier, fields.password)) as
+        | { onboardingCompleted?: boolean }
+        | undefined
+      let onboardingCompleted =
+        loginRes && typeof loginRes === "object"
+          ? loginRes.onboardingCompleted
+          : authState?.onboardingCompleted ?? undefined
+
+      if (onboardingCompleted === undefined) {
+        try {
+          const me = await api.get<{
+            onboarding_completed?: boolean
+            onboardingCompleted?: boolean
+          }>("/users/me")
+          onboardingCompleted =
+            me?.onboarding_completed ?? me?.onboardingCompleted
+          if (onboardingCompleted !== undefined) {
+            updateUser?.({ onboardingCompleted })
+          }
+        } catch {
+          // Non-blocking fallback
+        }
+      }
+
+      if (onboardingCompleted === false) {
+        void navigate({ to: "/onboarding" })
+        return
+      }
 
       // Determine redirect target after successful login (req 5.4, 5.5, 6.2, 6.3, 6.5)
       const redirectTo = search.redirectTo

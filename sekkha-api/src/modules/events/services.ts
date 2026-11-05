@@ -129,7 +129,6 @@ export const eventServices = {
             default_point_reward: e.type.defaultPointReward,
           }
         : null,
-      qr_code: isPrivileged && e.qrCode ? { code: e.qrCode, expires_at: null } : null,
     }))
   },
 
@@ -169,7 +168,6 @@ export const eventServices = {
           }
         : null,
       season_id: event.seasonId,
-      qr_code: isPrivileged && event.qrCode ? { code: event.qrCode, expires_at: null } : null,
       created_at: event.createdAt.toISOString(),
       updated_at: event.updatedAt.toISOString(),
     }
@@ -216,7 +214,6 @@ export const eventServices = {
     const pointReward = body.point_reward ?? eventType.defaultPointReward ?? 50
     const maxLateMinutes = body.max_late_minutes ?? 30
     const latePenaltyPoints = body.late_penalty_points ?? 15
-    const qrCode = crypto.randomBytes(32).toString("base64url")
 
     const event = await prisma.event.create({
       data: {
@@ -231,7 +228,6 @@ export const eventServices = {
         pointReward,
         maxLateMinutes,
         latePenaltyPoints,
-        qrCode,
       },
       include: { type: true },
     })
@@ -268,7 +264,6 @@ export const eventServices = {
             color: event.type.color,
           }
         : null,
-      qr_code: { code: qrCode, expires_at: null },
     }
   },
 
@@ -647,7 +642,6 @@ export const eventServices = {
                   points: { increment: stats.points },
                   totalAttendances: { increment: stats.count },
                   currentStreak: stats.currentStreak,
-                  consecutiveMissed: 0,
                   lastActivityAt: stats.scannedAt,
                 },
                 create: {
@@ -655,7 +649,6 @@ export const eventServices = {
                   points: stats.points,
                   totalAttendances: stats.count,
                   currentStreak: stats.currentStreak,
-                  consecutiveMissed: 0,
                   lastActivityAt: stats.scannedAt,
                 },
               })

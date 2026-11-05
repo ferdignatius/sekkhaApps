@@ -42,7 +42,6 @@ export const eventModels = {
         maxLateMinutes: true,
         latePenaltyPoints: true,
         status: true,
-        qrCode: true,
         type: { select: { code: true, label: true, defaultPointReward: true } },
       },
     })

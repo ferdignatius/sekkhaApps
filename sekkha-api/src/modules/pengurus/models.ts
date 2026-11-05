@@ -14,7 +14,6 @@ export const pengurusModels = {
         stats: {
           select: {
             points: true,
-            consecutiveMissed: true,
             currentStreak: true,
           },
         },

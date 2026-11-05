@@ -102,7 +102,6 @@ model UserProfile {
 model UserStats {
   userId            String    @id @map("user_id")
   points            Int       @default(0)
-  consecutiveMissed Int       @default(0) @map("consecutive_missed")
   lastActivityAt    DateTime? @map("last_activity_at")
   totalAttendances  Int       @default(0) @map("total_attendances")
   currentStreak     Int       @default(0) @map("current_streak")
@@ -111,7 +110,6 @@ model UserStats {
   user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([points(sort: Desc)])
-  @@index([consecutiveMissed])
   @@map("user_stats")
 }
 
@@ -195,7 +193,6 @@ model Event {
   seasonId          String?         @map("season_id")
   status            EventStatus     @default(scheduled)
   visibility        EventVisibility @default(all)
-  qrCode            String?         @map("qr_code")
   pointReward       Int             @default(50) @map("point_reward")
   maxLateMinutes    Int?            @default(30) @map("max_late_minutes")
   latePenaltyPoints Int?            @default(15) @map("late_penalty_points")

@@ -1,8 +1,7 @@
 import crypto from "crypto"
 import { redis } from "../../../lib/redis"
-import { prisma } from "../../../lib/prisma"
 
-// Development-only fallback. Production must use shared Redis or DB storage.
+// Development-only fallback. Production must use shared Redis storage.
 // Key: tokenHash, Value: { userId: string, createdAt: number, expiresAt: number }
 export interface RefreshTokenRecord {
   userId: string
@@ -76,21 +75,6 @@ export async function saveRefreshToken(
   } catch {
     if (requireSharedStore()) throw new Error("Refresh token store unavailable")
   }
-
-  // 3. Best-effort DB persistence if RefreshToken table exists
-  try {
-    if ((prisma as any).refreshToken) {
-      await (prisma as any).refreshToken.create({
-        data: {
-          userId,
-          tokenHash,
-          expiresAt: new Date(expiresAt),
-        },
-      })
-    }
-  } catch {
-    // Ignore if table doesn't exist yet
-  }
 }
 
 /**
@@ -138,36 +122,6 @@ export async function verifyAndRotateRefreshTokenRecord(
     }
   }
 
-  // 3. Check DB fallback if available
-  if (!record) {
-    try {
-      if ((prisma as any).refreshToken) {
-        const dbRecord = await (prisma as any).refreshToken.findUnique({
-          where: { tokenHash },
-        })
-        if (dbRecord && new Date(dbRecord.expiresAt).getTime() > Date.now()) {
-          record = {
-            userId: dbRecord.userId,
-            createdAt: dbRecord.createdAt ? new Date(dbRecord.createdAt).getTime() : 0,
-            expiresAt: new Date(dbRecord.expiresAt).getTime(),
-          }
-          await (prisma as any).refreshToken.delete({ where: { tokenHash } }).catch(() => {})
-        }
-      }
-    } catch {
-      // Fallback
-    }
-  } else {
-    // Clean up DB record asynchronously
-    try {
-      if ((prisma as any).refreshToken) {
-        await (prisma as any).refreshToken.delete({ where: { tokenHash } }).catch(() => {})
-      }
-    } catch {
-      // Ignore
-    }
-  }
-
   if (!record && requireSharedStore()) return null
   return record
 }
@@ -184,7 +138,7 @@ export async function verifyAndRotateRefreshToken(
 }
 
 /**
- * Revokes all in-memory and DB refresh tokens belonging to a user (e.g. on password change/reset).
+ * Revokes all in-memory and Redis refresh tokens belonging to a user (e.g. on password change/reset).
  */
 export async function revokeAllUserRefreshTokens(userId: string): Promise<void> {
   if (!userId) return
@@ -208,14 +162,6 @@ export async function revokeAllUserRefreshTokens(userId: string): Promise<void> 
   } catch {
     // Ignore
   }
-
-  try {
-    if ((prisma as any).refreshToken) {
-      await (prisma as any).refreshToken.deleteMany({ where: { userId } }).catch(() => {})
-    }
-  } catch {
-    // Ignore
-  }
 }
 
 /**
@@ -230,14 +176,6 @@ export async function revokeRefreshToken(refreshToken: string): Promise<void> {
   try {
     if (redis.status === "ready" || redis.status === "connect") {
       await redis.del(`auth:refresh:${tokenHash}`)
-    }
-  } catch {
-    // Ignore
-  }
-
-  try {
-    if ((prisma as any).refreshToken) {
-      await (prisma as any).refreshToken.delete({ where: { tokenHash } }).catch(() => {})
     }
   } catch {
     // Ignore

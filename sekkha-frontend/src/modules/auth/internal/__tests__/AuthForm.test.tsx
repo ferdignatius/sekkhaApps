@@ -435,9 +435,10 @@ describe("AuthForm — unit tests (task 7.2)", () => {
     )
 
     const inputs = container.querySelectorAll("input")
-    expect(inputs).toHaveLength(4)
+    expect(inputs).toHaveLength(5)
 
     // Verify the expected fields by id
+    expect(container.querySelector("#name")).not.toBeNull()
     expect(container.querySelector("#email")).not.toBeNull()
     expect(container.querySelector("#password")).not.toBeNull()
     expect(container.querySelector("#confirmPassword")).not.toBeNull()
@@ -495,10 +496,10 @@ describe("AuthForm — unit tests (task 7.2)", () => {
 
       const handleSubmit = async () => {
         const newErrors: typeof errors = {}
-        if (!fields.email) newErrors.email = "Email wajib diisi"
-        if (!fields.password) newErrors.password = "Password wajib diisi"
+        if (!fields.email) newErrors.email = "Email is required"
+        if (!fields.password) newErrors.password = "Password is required"
         if (!fields.confirmPassword)
-          newErrors.confirmPassword = "Konfirmasi password tidak cocok"
+          newErrors.confirmPassword = "Passwords do not match"
 
         if (Object.keys(newErrors).length > 0) {
           setErrors(newErrors)
@@ -536,9 +537,9 @@ describe("AuthForm — unit tests (task 7.2)", () => {
     await new Promise((resolve) => setTimeout(resolve, 0))
 
     // All inline errors must be visible
-    expect(screen.getByText("Email wajib diisi")).not.toBeNull()
-    expect(screen.getByText("Password wajib diisi")).not.toBeNull()
-    expect(screen.getByText("Konfirmasi password tidak cocok")).not.toBeNull()
+    expect(screen.getByText("Email is required")).not.toBeNull()
+    expect(screen.getByText("Password is required")).not.toBeNull()
+    expect(screen.getByText("Passwords do not match")).not.toBeNull()
 
     // The underlying API call must NOT have been triggered
     expect(apiSpy).not.toHaveBeenCalled()

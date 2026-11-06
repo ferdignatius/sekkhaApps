@@ -132,6 +132,26 @@ function AuthenticatedLayout() {
       return
     }
 
+    // Onboarding guard: redirect incomplete user to /onboarding (PRD AC-08)
+    if (
+      authState.status === "authenticated" &&
+      authState.onboardingCompleted === false &&
+      !location.pathname.startsWith("/onboarding")
+    ) {
+      navigate({ to: "/onboarding" })
+      return
+    }
+
+    // Redirect already-completed user away from /onboarding
+    if (
+      authState.status === "authenticated" &&
+      authState.onboardingCompleted === true &&
+      location.pathname.startsWith("/onboarding")
+    ) {
+      navigate({ to: "/home" })
+      return
+    }
+
     if (authState.status === "authenticated" && authState.role) {
       const role = authState.role as string
       const isOrganizerOrAdmin =
@@ -144,7 +164,7 @@ function AuthenticatedLayout() {
         navigate({ to: "/home" })
       }
     }
-  }, [authState.status, authState.role, navigate, location.href, location.pathname])
+  }, [authState.status, authState.onboardingCompleted, authState.role, navigate, location.href, location.pathname])
 
   if (authState.status === "loading") {
     return <AuthenticatedSkeleton />

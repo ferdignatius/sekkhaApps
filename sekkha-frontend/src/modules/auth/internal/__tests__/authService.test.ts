@@ -206,21 +206,28 @@ describe("authService.register — 409", () => {
 // ─── verifyToken — 200 ───────────────────────────────────────────────────────
 
 describe("authService.verifyToken — 200", () => {
-  it("resolves without throwing", async () => {
+  it("resolves without throwing and returns user payload", async () => {
     // Requirements: 4.3, 4.4
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue(makeFetchResponse(200, {}))
+      vi.fn().mockResolvedValue(
+        makeFetchResponse(200, { data: { id: "user-1", name: "User" } })
+      )
     )
 
-    await expect(service.verifyToken("valid-token")).resolves.toBeUndefined()
+    await expect(service.verifyToken("valid-token")).resolves.toEqual({
+      id: "user-1",
+      name: "User",
+    })
   })
 
   it("does not dispatch any action on successful verify", async () => {
     // Requirements: 4.3
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue(makeFetchResponse(200, {}))
+      vi.fn().mockResolvedValue(
+        makeFetchResponse(200, { data: { id: "user-1", name: "User" } })
+      )
     )
 
     await service.verifyToken("valid-token")

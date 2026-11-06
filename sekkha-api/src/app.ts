@@ -8,6 +8,7 @@ import { RedisStore } from "rate-limit-redis"
 import { errorHandler } from "./middleware/errorHandler"
 import { requestLogger } from "./middleware/requestLogger"
 import { redis } from "./lib/redis"
+import { apiFailure } from "./lib/apiResponse"
 import type { AppModule } from "./core/types"
 
 // Support native JSON.stringify serialization for BigInt (userNumber)
@@ -178,6 +179,9 @@ export function createApp(): Application {
   )
 
   const skipPreflight = (req: express.Request) => req.method === "OPTIONS"
+  const rateLimitHandler = (message: string) => (_req: express.Request, res: express.Response) => {
+    apiFailure(res, 429, message, null)
+  }
 
   // 4. Global Rate Limiter (300 requests per minute per IP)
   const globalLimiter = rateLimit({
@@ -189,7 +193,7 @@ export function createApp(): Application {
     passOnStoreError: true,
     skip: skipPreflight,
     validate: { singleCount: false },
-    message: { error: "Too many requests from this IP. Please try again later." },
+    handler: rateLimitHandler("Too many requests from this IP. Please try again later."),
   })
   app.use(globalLimiter)
 
@@ -203,7 +207,7 @@ export function createApp(): Application {
     passOnStoreError: true,
     skip: skipPreflight,
     validate: { singleCount: false },
-    message: { error: "Terlalu banyak percobaan autentikasi. Silakan tunggu 15 menit." },
+    handler: rateLimitHandler("Terlalu banyak percobaan autentikasi. Silakan tunggu 15 menit."),
   })
   app.use("/api/auth/login", authLimiter)
   app.use("/api/auth/register", authLimiter)
@@ -225,7 +229,7 @@ export function createApp(): Application {
     passOnStoreError: true,
     skip: skipPreflight,
     validate: { singleCount: false },
-    message: { error: "Terlalu banyak permintaan OTP dari IP ini. Silakan tunggu 15 menit." },
+    handler: rateLimitHandler("Terlalu banyak permintaan OTP dari IP ini. Silakan tunggu 15 menit."),
   })
   app.use("/api/auth/register-request", otpLimiter)
   app.use("/api/auth/register-verify-otp", otpLimiter)
@@ -245,7 +249,7 @@ export function createApp(): Application {
     passOnStoreError: true,
     skip: skipPreflight,
     validate: { singleCount: false },
-    message: { error: "Terlalu banyak permintaan statistik sekolah. Silakan tunggu sebentar." },
+    handler: rateLimitHandler("Terlalu banyak permintaan statistik sekolah. Silakan tunggu sebentar."),
   })
   app.use("/api/schools/stats", schoolStatsLimiter)
 

@@ -101,17 +101,29 @@ export const authModels = {
         .replace(/[^a-z0-9]/g, "")
         .slice(0, 15) || "member"
 
-    let username = clean
-    let counter = 1
+    const existingUsers = await prisma.user.findMany({
+      where: {
+        username: {
+          startsWith: clean,
+        },
+      },
+      select: { username: true },
+    })
 
-    while (true) {
-      const existing = await prisma.user.findUnique({ where: { username } })
-      if (!existing) {
-        return username
-      }
-      counter++
-      username = `${clean}${counter}`
+    if (existingUsers.length === 0) {
+      return clean
     }
+
+    const taken = new Set(existingUsers.map((u) => u.username?.toLowerCase()))
+    if (!taken.has(clean)) {
+      return clean
+    }
+
+    let counter = 1
+    while (taken.has(`${clean}${counter}`)) {
+      counter++
+    }
+    return `${clean}${counter}`
   },
 
   async createUser(data: {

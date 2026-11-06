@@ -81,7 +81,7 @@ export function ForgotPasswordPage() {
       setStep("otp")
       setResendCountdown(60)
     } catch (err: any) {
-      setError(err?.message || "Email is not registered in Sekkha.")
+      setError(err?.message || "Failed to process password recovery request. Please try again.")
     } finally {
       setIsLoading(false)
     }

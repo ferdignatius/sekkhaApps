@@ -331,3 +331,56 @@ Mengambil buku besar catatan mutasi poin pengguna yang login.
   * Focus ring aksesibel (`focus-visible:ring-2 focus-visible:ring-[#0a0a0a]`), touch target minimal 44x44px sesuai pedoman HIG accessibility.
 * **OTP Input Component**: Menggunakan 6 kotak input terpisah dengan transisi fokus otomatis, paste clipboard support, dan hitung mundur timer 60 detik untuk tombol *"Resend OTP"*.
 * **Semua Label Bahasa Inggris**: *"Digital Member ID"*, *"Personal Information"*, *"Edit Profile"*, *"Save Changes"*, *"Cancel"*, *"Account Security"*, *"Change Password"*, *"Verify New Email"*, *"Enter 6-Digit OTP"*, *"Points Ledger"*.
+
+---
+
+## 7. User Stories
+
+| ID | Sebagai | Saya ingin | Supaya |
+| --- | --- | --- | --- |
+| **US-PROF-01** | Jemaat terdaftar | Melihat Kartu Anggota Digital berdesain HIG dengan QR Code statis permanen | Saya dapat menunjukkan identitas anggota dan melakukan presensi kebaktian dengan mudah |
+| **US-PROF-02** | Jemaat terdaftar | Mengunduh kartu digital dalam format PNG resolusi tinggi dan memperbesar tampilan QR Code | Saya tetap bisa melakukan presensi meski tidak membawa smartphone fisik atau saat offline |
+| **US-PROF-03** | Jemaat terdaftar | Mengedit nama, username, nomor telepon, tanggal lahir, dan almamater sekolah secara inline tanpa modal popup | Data personal saya selalu akurat dengan pengalaman UI yang mulus tanpa disrupsi konteks |
+| **US-PROF-04** | Jemaat terdaftar | Melihat riwayat mutasi Karma Points saya secara transparan dan detail | Saya mengetahui rincian perolehan poin dari kehadiran, tugas pelayanan, dan bonus mingguan |
+| **US-PROF-05** | Jemaat terdaftar | Mengganti kata sandi dengan perlindungan 2-Faktor OTP email | Akun saya tetap terlindungi dari penyalahgunaan pihak tidak bertanggung jawab |
+| **US-PROF-06** | Jemaat yang mengganti kata sandi | Mendapatkan token sesi baru langsung di respons tanpa logout paksa | Sesi saya di perangkat yang sedang dipakai tetap berjalan lancar tanpa mengalami 401 error |
+| **US-PROF-07** | Jemaat terdaftar | Memperbarui alamat email dengan verifikasi kode OTP 6 digit di email baru | Akun saya terhindar dari pembajakan email (*account takeover*) dan email baru sah terverifikasi |
+
+---
+
+## 8. Matrix Kriteria Penerimaan (Acceptance Criteria)
+
+| ID | Skenario Pengujian | Hasil yang Diharapkan |
+| --- | --- | --- |
+| **AC-PROF-01** | User membuka tab Member Card & Points | Menampilkan Hero Stats (Karma Points & Streak) serta kartu anggota digital bergradasi sesuai warna role (`member`, `activist`, `organizer`, `admin`) dengan QR Code berbasis `userNumber`. |
+| **AC-PROF-02** | User mengklik "Enlarge QR" | Modal dialog kontras tinggi fullscreen muncul menampilkan QR Code dan nomor anggota dengan kecerahan optimal. |
+| **AC-PROF-03** | User mengklik "Download Card" | Kartu anggota di-render dan diunduh sebagai gambar PNG beresolusi tinggi ke perangkat user. |
+| **AC-PROF-04** | User membuka tab Personal Profile dalam mode baca | Data diri tampil rapi dalam View Mode tanpa form input yang aktif. |
+| **AC-PROF-05** | User mengklik "Edit Profile" lalu "Cancel" | Form inline berubah ke Edit Mode. Saat cancel diklik, form kembali ke View Mode tanpa menyimpan perubahan. |
+| **AC-PROF-06** | User menyimpan perubahan profil valid | Memanggil `PUT /api/users/me/profile` (atau `PATCH /api/users/me`), menampilkan toast notifikasi sukses, dan kembali ke View Mode dengan data terbaru. |
+| **AC-PROF-07** | User meminta OTP ganti password dengan password lama salah | Ditolak HTTP 400 Bad Request ("Kata sandi lama tidak cocok"). Kode OTP tidak dikirim ke email. |
+| **AC-PROF-08** | User meminta OTP ganti password dengan password lama benar | HTTP 200. Kode OTP 6 digit dikirim ke email terdaftar. Tampilan otomatis beralih ke form input 6-digit OTP dengan timer 60 detik. |
+| **AC-PROF-09** | User memasukkan OTP ganti password yang benar | HTTP 200. Password diperbarui, sesi lain di-revoke, `accessToken` baru dikembalikan di response dan langsung disimpan di `localStorage` tanpa 401 redirect. |
+| **AC-PROF-10** | User mengganti email ke email baru | Kode OTP dikirim ke email baru. Setelah diverifikasi dengan kode yang valid, kolom `email` (dienkripsi AES-256-GCM) dan `emailBindex` di-update. |
+
+---
+
+## 9. Test Cases (Matriks Pengujian Terinci)
+
+| Test Case ID | Kategori | Skenario / Deskripsi | Kondisi Awal (Preconditions) | Langkah Pengujian | Hasil yang Diharapkan | Tipe |
+| --- | --- | --- | --- | --- | --- | --- |
+| **TC-PROF-01** | Digital Card | Render Digital Member ID Card sesuai tema role | User login dengan role `activist` | 1. Buka tab `/profile` Tab 1.<br>2. Periksa palet warna kartu dan role chip. | Kartu dirender dengan tema Emerald Seva (`from-[#064E3B] to-[#022C22]`), teks putih, role chip activist. QR code putih bersih kontras tinggi. | Positive |
+| **TC-PROF-02** | Digital Card QR | Pemindaian QR code statis permanen | User kartu anggota ditampilkan | 1. Scan QR code menggunakan barcode reader / kamera panitia. | Nilai terbaca adalah string persis `userNumber` (misal `"2026102401"`). Tidak ada kedaluwarsa atau rolling token. | Positive |
+| **TC-PROF-03** | Digital Card Action | Download kartu anggota sebagai gambar PNG | Di halaman Tab 1 | 1. Klik tombol "Download Card". | Canvas HTML5 men-generate blob PNG kartu dan memicu download browser dengan nama file `sekkha-card-<userNumber>.png`. | Positive |
+| **TC-PROF-04** | Inline Edit | Transisi mulus View Mode ke Edit Mode dan Cancel | Di Tab 2 Personal Profile | 1. Klik "Edit Profile".<br>2. Ubah field Full Name.<br>3. Klik "Cancel". | Form kembali ke View Mode seketika. Nama kembali ke nilai awal sebelum diedit. Tidak ada request API terkirim. | Positive |
+| **TC-PROF-05** | Inline Edit | Update profil dengan data valid | Di Tab 2 Edit Mode | 1. Ubah `name: "Upasaka Budi"`.<br>2. Ubah `username: "upasaka.budi"`.<br>3. Pilih sekolah dari dropdown `GET /api/schools`.<br>4. Klik "Save Changes". | HTTP 200 envelope. Data tersimpan di DB, toast sukses muncul, form kembali ke View Mode dengan data terbaru. | Positive |
+| **TC-PROF-06** | Inline Edit | Update username dengan format tidak valid | Di Tab 2 Edit Mode | 1. Masukkan `username: "bu di@!"` (mengandung spasi dan simbol terlarang).<br>2. Klik "Save Changes". | Validasi client Zod memblokir submit ("Username can only contain lowercase letters, numbers, dots, and underscores"). | Negative |
+| **TC-PROF-07** | Inline Edit | Update username yang sudah dipakai pengguna lain | Username `budi.santoso` sudah ada di akun lain | 1. Masukkan `username: "budi.santoso"`.<br>2. Klik "Save Changes". | HTTP 409 Conflict envelope ("Username already in use"). Pesan error muncul di field username. | Negative |
+| **TC-PROF-08** | Points Ledger | Menampilkan riwayat transaksi poin transparan | User memiliki riwayat mutasi poin | 1. Buka Tab 1 bagian Points History. | Riwayat perolehan poin dari `GET /api/users/me/points-history` tampil urut waktu: nama kegiatan, jenis transaksi, delta poin (+/-), dan running balance. | Positive |
+| **TC-PROF-09** | Change Password | Request OTP ganti password dengan password lama salah | Akun user aktif | 1. Buka Tab 3 Security.<br>2. Masukkan password lama yang salah.<br>3. Masukkan password baru (10 karakter).<br>4. Klik "Lanjutkan & Minta Kode OTP". | HTTP 400 Bad Request ("Kata sandi lama yang Anda masukkan tidak cocok"). Kode OTP TIDAK dikirim ke email. Form tidak berpindah ke step 2. | Negative / Security |
+| **TC-PROF-10** | Change Password | Request OTP ganti password dengan password baru < 8 karakter | Password lama benar | 1. Masukkan password baru `rahasia` (7 karakter).<br>2. Klik request OTP. | Validasi form memblokir submit ("Password must be at least 8 characters"). | Negative |
+| **TC-PROF-11** | Change Password | Request OTP ganti password valid (Step 1) | Password lama benar, baru valid | 1. Masukkan password lama dan baru valid.<br>2. Klik "Lanjutkan & Minta Kode OTP". | HTTP 200 envelope. Server generate 6-digit OTP kriptografis, simpan di cache (TTL 600s), kirim email ke user. UI berpindah ke Step 2 dengan countdown 60 detik. | Positive |
+| **TC-PROF-12** | Change Password | Verifikasi OTP ganti password benar (Step 2 & Auto-Refresh) | OTP 6 digit diterima di email | 1. Masukkan 6 digit OTP valid.<br>2. Klik konfirmasi perubahan kata sandi. | HTTP 200. Password di-hash bcrypt, `passwordChangedAt` di-update, token sesi lama dicabut, `accessToken` baru dikirim di body. Client auto-update `localStorage` tanpa ter-logout. | Positive / Security |
+| **TC-PROF-13** | Change Password | Verifikasi OTP ganti password dengan kode salah >= 5 kali | Challenge aktif di Step 2 | 1. Masukkan kode OTP salah berturut-turut hingga 5 kali. | Pada kesalahan ke-5, challenge OTP otomatis dibatalkan/dihapus dari cache. Percobaan ke-6 ditolak HTTP 400/429. User harus mengulang dari Step 1. | Security |
+| **TC-PROF-14** | Email Change | Request ganti email ke alamat yang sudah terdaftar (Blind Index) | Email target sudah dipakai user lain | 1. Buka form ganti email.<br>2. Masukkan email yang sudah dipakai.<br>3. Klik kirim OTP. | Server mencari `emailBindex` ($O(1)$) dan merespons HTTP 409 Conflict. OTP tidak dikirim. | Negative / Security |
+| **TC-PROF-15** | Email Change | Verifikasi ganti email sukses | Email baru belum pernah terdaftar | 1. Request OTP ke email baru.<br>2. Masukkan kode OTP 6 digit valid dari kotak masuk email baru. | HTTP 200. Email di database dienkripsi AES-256-GCM, `emailBindex` dihitung ulang, `emailVerifiedAt` terisi waktu sekarang. Sesi audit log mencatat perubahan. | Positive / Security |

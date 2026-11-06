@@ -8,7 +8,7 @@ import { getCategoryColor } from "../masterdata"
 
 interface EventCardProps {
   event: EventListItem
-  onClick: () => void
+  onClick?: () => void
 }
 
 function formatDate(iso: string) {

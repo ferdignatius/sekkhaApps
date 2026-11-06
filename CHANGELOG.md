@@ -5,14 +5,31 @@ All notable changes to Sekkha Apps. Semver (`MAJOR.MINOR.PATCH`); newest on top.
 ## [Unreleased]
 
 ### Added
+- Unit test suite for events access control and visibility matrix (`sekkha-api/src/modules/events/__tests__/policy.test.ts`).
+- English UI consistency rule in `AGENTS.md` requiring all user-facing strings across `sekkha-frontend` to be in English.
 - Comprehensive bilingual (Bahasa Indonesia & English) Privacy Policy compliant with Indonesian Law No. 27 of 2022 on Personal Data Protection (UU PDP) and tailored for Vihara Tri Maha Dharma Buddhist youth community (`privacyContent.ts`).
 - Dedicated public `/privacy` page route with quick table of contents, print layout, and bilingual language switch.
 - Unit tests for `PrivacyPolicyDocument` and `PrivacyPolicyPage`.
 
 ### Changed
+- Event Attendance and Lifecycle PRD Alignment:
+  - Removed deprecated real-time SSE stream (`/api/events/:id/live-attendance`) per PRD draft attendance architecture.
+  - Aligned activist visibility condition in `services.ts` and `canViewEvent` in `policy.ts` with PRD visibility specifications.
+  - Standardized past event activation error message to English (`"Event cannot be activated because its scheduled date has already passed"`).
+  - Parallelized batch stats upsert in attendance finalization via `Promise.all` for performance.
+  - Replaced Indonesian delete confirmation dialog copy in `EventsPage.tsx` with English.
 - Upgraded `PrivacyPolicyModal` in registration flow to support bilingual toggling between full Indonesian PDP-compliant legal terms and English summary with scroll-to-bottom agreement verification.
 
 ### Fixed
+- Hardened authentication flow and modular boundaries across API and Frontend:
+  - **Sign-Up Validation**: Added mandatory `name` field validation on both frontend forms and backend OTP registration schema (`RequestRegisterOtpSchema`).
+  - **Onboarding Route Guard**: Added redirect checks in `_authenticated.tsx` preventing users with `onboardingCompleted: false` from accessing app pages before completing onboarding.
+  - **Forgot Password Enumeration Leak**: Fixed error response handling in `ForgotPasswordPage.tsx` to return a uniform generic safe message, preventing email enumeration.
+  - **Rate Limiter Envelopes**: Standardized rate limiter error responses in `src/app.ts` to follow the standard `apiFailure` envelope (`{ status: "fail", code: 429, ... }`).
+  - **Logout Stale Token Resiliency**: Removed blocking `requireAuth` on `POST /api/auth/logout`, allowing clients with expired access tokens to cleanly invalidate refresh tokens and clear cookies.
+  - **Clean Architecture Boundaries**: Extracted cross-module email notifications to shared infrastructure (`src/lib/email.ts`), removed private internal imports from `users/services.ts`, deleted redundant `auth/internal/utils.ts`, and eliminated dead `prisma.refreshToken` calls in `refreshTokenStore.ts`.
+  - **Startup Performance Optimization**: Updated frontend `authService.verifyToken` to populate `AuthContext` directly from `/api/auth/verify` response payload, eliminating redundant `GET /api/users/me` round-trips.
+  - **Username Collision Optimization**: Optimized `generateUniqueUsername` from $O(N)$ sequential database round-trips to a single indexed `startsWith` query with in-memory set lookups.
 - Resolved CORS preflight blockage for Vercel origins (e.g., `https://sekkha-puggala.vercel.app`):
   - Moved CORS middleware to the top before rate limiters and route handlers in `sekkha-api/src/app.ts`.
   - Implemented regex wildcard resolution supporting patterns like `https://*.vercel.app` in `isOriginAllowed`.
@@ -127,7 +144,7 @@ All notable changes to Sekkha Apps. Semver (`MAJOR.MINOR.PATCH`); newest on top.
 
 ### Added
 - Full-stack modular core: auth, users, events, leaderboard, configure, teams, notifications, pengurus, schools modules.
-- Public landing page for Vihara Tri Maha Dharma (hero, features, stats, events, leaderboard, CTA, footer).
+- Public landing page for Vihara Tri Maha Dharma Buddhist youth community (hero, features, stats, events, leaderboard, CTA, footer).
 - Insight & analytics dashboard page for pengurus/admin.
 - Testing infrastructure: vitest + jsdom unit tests and fast-check property-based tests.
 - Configurable JWT expiry (`JWT_EXPIRES_IN`).

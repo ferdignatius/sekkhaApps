@@ -2,7 +2,6 @@ import { eventModels } from "./models"
 import { prisma } from "../../lib/prisma"
 import { invalidatePattern, invalidate, CacheKeys } from "../../lib/cache"
 import { auditLogger } from "../../lib/auditLogger"
-import { broadcastAttendanceScan } from "./internal/sse"
 import crypto from "crypto"
 import { Prisma } from "@prisma/client"
 import { AppError } from "../../lib/AppError"
@@ -63,7 +62,7 @@ export const eventServices = {
     } else if (userRole === "activist") {
       andConditions.push({
         status: { in: ["scheduled", "active", "closed"] },
-        visibility: { in: ["all", "member", "activist"] },
+        visibility: { in: ["all", "activist"] },
       })
     }
 
@@ -388,7 +387,7 @@ export const eventServices = {
         const effectiveEventDate = updatedEventDate ?? new Date(currentEvent.eventDate)
         if (toWibDateKey(new Date(nowTime)) > toWibDateKey(effectiveEventDate)) {
           throw new AppError(
-            "Event tidak dapat diaktifkan karena tanggal pelaksanaan sudah terlewat. Silakan jadwalkan ulang (reschedule) atau batalkan event.",
+            "Event cannot be activated because its scheduled date has already passed",
             400,
             "EVENT_DATE_PASSED"
           )
@@ -635,24 +634,26 @@ export const eventServices = {
 
             await tx.pointTransaction.createMany({ data: pointTxData, skipDuplicates: true })
 
-            for (const [userId, stats] of statsByUser) {
-              await tx.userStats.upsert({
-                where: { userId },
-                update: {
-                  points: { increment: stats.points },
-                  totalAttendances: { increment: stats.count },
-                  currentStreak: stats.currentStreak,
-                  lastActivityAt: stats.scannedAt,
-                },
-                create: {
-                  userId,
-                  points: stats.points,
-                  totalAttendances: stats.count,
-                  currentStreak: stats.currentStreak,
-                  lastActivityAt: stats.scannedAt,
-                },
-              })
-            }
+            await Promise.all(
+              Array.from(statsByUser.entries()).map(([userId, stats]) =>
+                tx.userStats.upsert({
+                  where: { userId },
+                  update: {
+                    points: { increment: stats.points },
+                    totalAttendances: { increment: stats.count },
+                    currentStreak: stats.currentStreak,
+                    lastActivityAt: stats.scannedAt,
+                  },
+                  create: {
+                    userId,
+                    points: stats.points,
+                    totalAttendances: stats.count,
+                    currentStreak: stats.currentStreak,
+                    lastActivityAt: stats.scannedAt,
+                  },
+                })
+              )
+            )
 
             pointsDistributed = true
           }
@@ -771,17 +772,6 @@ export const eventServices = {
       targetId: attendance.id,
       status: "SUCCESS",
       details: { eventId, userId: user.id, method, isLate },
-    })
-
-    broadcastAttendanceScan({
-      eventId,
-      attendanceId: attendance.id,
-      userId: user.id,
-      name: attendeeName,
-      userNumber: String(user.userNumber ?? ""),
-      pointsEarned,
-      method,
-      scannedAt: attendance.scannedAt.toISOString(),
     })
 
     eventbus.publish(DomainEvents.ATTENDANCE_RECORDED, {

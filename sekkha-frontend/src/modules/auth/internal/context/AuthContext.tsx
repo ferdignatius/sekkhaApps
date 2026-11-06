@@ -90,52 +90,27 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Token exists → verify with backend
       try {
         // authService.verifyToken handles the 3000ms timeout internally
-        await authService.verifyToken(token)
+        const verifiedUser = await authService.verifyToken(token)
 
         if (cancelled) return
 
-        // FE-14 Remediation: Do not perform unverified client-side atob JWT decoding.
-        // Trust only verified response from backend. Set authenticated session, then hydrate.
+        const onboardingCompleted =
+          verifiedUser?.onboarding_completed ?? verifiedUser?.onboardingCompleted
+
+        // Set authenticated session directly from verified backend response
         dispatch({
           type: "AUTH_SUCCESS",
           payload: {
             accessToken: token,
-            userId: null,
-            role: null,
-            name: null,
-            email: null,
+            userId: verifiedUser?.id ?? verifiedUser?.userId ?? null,
+            role: (verifiedUser?.role as UserRole) || null,
+            name: verifiedUser?.name ?? null,
+            email: verifiedUser?.email ?? null,
+            ...(onboardingCompleted !== undefined && {
+              onboardingCompleted: Boolean(onboardingCompleted),
+            }),
           },
         })
-
-        // Best effort: hydrate fresh profile from database
-        api
-          .get<{
-            id?: string
-            name?: string
-            role?: string
-            email?: string
-            onboarding_completed?: boolean
-            onboardingCompleted?: boolean
-          }>("/users/me")
-          .then((u) => {
-            if (!cancelled && u) {
-              const onboardingCompleted =
-                u.onboarding_completed ?? u.onboardingCompleted
-              dispatch({
-                type: "AUTH_UPDATE_USER",
-                payload: {
-                  userId: u.id ?? null,
-                  name: u.name ?? null,
-                  role: (u.role as UserRole) || undefined,
-                  email: u.email ?? null,
-                  ...(onboardingCompleted !== undefined && {
-                    onboardingCompleted,
-                  }),
-                },
-              })
-            }
-          })
-          .catch(() => {})
       } catch {
         if (cancelled) return
 

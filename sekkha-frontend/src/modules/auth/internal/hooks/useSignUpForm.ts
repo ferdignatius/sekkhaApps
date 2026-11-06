@@ -10,13 +10,14 @@ import { AuthError } from "../context/authReducer"
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
-type SignUpField = "email" | "password" | "confirmPassword" | "agreeToPrivacy"
+type SignUpField = "name" | "email" | "password" | "confirmPassword" | "agreeToPrivacy"
 
 type FieldErrors = Partial<Record<SignUpField, string>>
 
 export interface UseSignUpFormReturn {
   step: "form" | "otp"
   fields: {
+    name: string
     email: string
     password: string
     confirmPassword: string
@@ -45,11 +46,13 @@ export function useSignUpForm(): UseSignUpFormReturn {
 
   const [step, setStep] = useState<"form" | "otp">("form")
   const [fields, setFields] = useState<{
+    name: string
     email: string
     password: string
     confirmPassword: string
     agreeToPrivacy?: boolean
   }>({
+    name: "",
     email: "",
     password: "",
     confirmPassword: "",
@@ -120,7 +123,7 @@ export function useSignUpForm(): UseSignUpFormReturn {
     setApiErrorDismissed(false)
 
     try {
-      await requestRegisterOtp(fields.email, fields.password)
+      await requestRegisterOtp(fields.email, fields.password, fields.name)
       setStep("otp")
       setOtpError(null)
     } catch (error) {

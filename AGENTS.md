@@ -247,6 +247,7 @@ Per-folder rules live in READMEs next to the code (`sekkha-*/src/**/README.md`) 
    - **Clean Code**: Struktur rapi, penamaan deskriptif, fungsi modular berfokus satu tanggung jawab (SRP), minim redundansi, mudah diuji dan dirawat.
    - **Big O Optimization**: Optimalkan algoritma dan query database dari segi waktu dan memori (utamakan $O(1)$ lookup via hash map/set/index, hindari $O(n^2)$ pada collections).
    - **Maximum Security (OWASP Top 10)**: Validasi dan sanitasi ketat di semua trust boundaries (Zod/Prisma), cegah injection, pastikan auth guard & RBAC di setiap route, enkripsi PII, lindungi session dan tokens.
+6. **UI Language (English)**: Seluruh user interface (UI) aplikasi (`sekkha-frontend`) wajib menggunakan bahasa Inggris (English), mencakup labels, navigation items, buttons, placeholders, dialogs, toasts, error messages, dan copy user-facing lainnya. Dokumentasi repo/PRD boleh berbahasa Indonesia, tetapi interface end-user harus konsisten berbahasa Inggris.
 
 ## Release & Versioning
 

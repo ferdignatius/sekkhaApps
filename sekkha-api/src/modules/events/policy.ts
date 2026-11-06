@@ -17,8 +17,8 @@ export function canViewEvent(
   if (canManageEvent(role)) return true
   // Cancelled events are invisible to regular members and activists
   if (status === "cancel") return false
-  // Organizer visibility is hidden from non-managers
-  if (visibility === "organizer") return false
-  // Activist visibility is hidden from regular members
-  return !(visibility === "activist" && role === "member")
+  if (visibility === "all") return true
+  if (visibility === "member") return role === "member"
+  if (visibility === "activist") return role === "activist"
+  return false
 }

@@ -66,11 +66,3 @@ eventsRouter.delete(
 
 // DELETE /api/events/:id — Delete event (Organizer & Admin only)
 eventsRouter.delete("/:id", requireAuth, requireRole("organizer", "admin"), eventControllers.deleteEvent)
-
-// GET /api/events/:id/live-attendance — Real-time SSE stream for event check-in
-eventsRouter.get(
-  "/:id/live-attendance",
-  requireAuth,
-  requireRole("organizer", "admin"),
-  eventControllers.liveAttendanceStream
-)

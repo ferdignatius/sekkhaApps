@@ -750,14 +750,14 @@ export function EventsPage() {
         <ConfirmDialog
           open={Boolean(deleteEventTarget)}
           onOpenChange={(open) => !open && setDeleteEventTarget(null)}
-          title="Hapus Acara Ini?"
+          title="Delete This Event?"
           description={
             deleteEventTarget
-              ? `Apakah Anda yakin ingin menghapus "${deleteEventTarget.title}"? Seluruh data presensi dan riwayat acara ini akan dihapus secara permanen.`
+              ? `Are you sure you want to delete "${deleteEventTarget.title}"? All attendance data and history for this event will be permanently removed.`
               : ""
           }
-          confirmLabel={deletingEvent ? "Menghapus..." : "Ya, Hapus Acara"}
-          cancelLabel="Batal"
+          confirmLabel={deletingEvent ? "Deleting..." : "Yes, Delete Event"}
+          cancelLabel="Cancel"
           variant="destructive"
           isLoading={deletingEvent}
           onConfirm={async () => {

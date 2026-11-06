@@ -29,7 +29,7 @@ export const ForgotPasswordSchema = z.object({
 export const RequestRegisterOtpSchema = z.object({
   email: z.string().trim().toLowerCase().email("Format email tidak valid").max(255),
   password: z.string().min(8, "Password minimal 8 karakter").max(128, "Password maksimal 128 karakter"),
-  name: z.string().trim().min(1).max(100).optional(),
+  name: z.string().trim().min(2, "Nama minimal 2 karakter").max(100, "Nama maksimal 100 karakter"),
   username: z
     .string()
     .trim()

@@ -1,7 +1,6 @@
 import type { Request, Response, NextFunction } from "express"
 import { z } from "zod"
 import { eventServices } from "./services"
-import { registerSseClient } from "./internal/sse"
 import { canRecordAttendance } from "./policy"
 
 export const CreateEventSchema = z.object({
@@ -342,30 +341,5 @@ export const eventControllers = {
       }
       next(err)
     }
-  },
-
-  liveAttendanceStream(req: Request, res: Response): void {
-    const id = req.params.id as string
-
-    res.setHeader("Content-Type", "text/event-stream")
-    res.setHeader("Cache-Control", "no-cache, no-transform")
-    res.setHeader("Connection", "keep-alive")
-    res.flushHeaders?.()
-
-    const unregister = registerSseClient(id, res)
-    res.write(`data: ${JSON.stringify({ type: "connected", eventId: id })}\n\n`)
-
-    const heartbeat = setInterval(() => {
-      try {
-        res.write(": keepalive\n\n")
-      } catch {
-        clearInterval(heartbeat)
-      }
-    }, 15000)
-
-    req.on("close", () => {
-      clearInterval(heartbeat)
-      unregister()
-    })
   },
 }

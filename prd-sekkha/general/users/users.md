@@ -382,7 +382,24 @@ Mengambil data kartu anggota digital jemaat beserta representasi QR Code statis 
 
 ---
 
-## 8. Matrix Kriteria Penerimaan (Acceptance Criteria)
+---
+
+## 8. User Stories
+
+| ID | Sebagai | Saya ingin | Supaya |
+| --- | --- | --- | --- |
+| **US-USR-01** | Jemaat baru / Pengurus | Memperoleh `userNumber` 10-digit format numerik `yyyymmddnn` secara otomatis dari sistem | Setiap anggota memiliki nomor induk unik permanen tanpa repot menginput manual |
+| **US-USR-02** | Pengguna terdaftar | Menggunakan salah satu dari `userNumber`, `username`, atau `email` terverifikasi untuk masuk aplikasi | Saya memiliki fleksibilitas login saat lupa salah satu pengenal akun saya |
+| **US-USR-03** | Pengguna terdaftar | Melihat profil lengkap, almamater sekolah, status keanggotaan, dan metrik gamifikasi diri sendiri | Saya mengetahui data pribadi yang tersimpan dan progres keaktifan saya di vihara |
+| **US-USR-04** | Pengguna terdaftar | Memperbarui nama lengkap, username, nomor telepon, dan data almamater secara mandiri | Data profil saya selalu terbarui tanpa harus menghubungi pengurus vihara |
+| **US-USR-05** | Pengguna terdaftar | Memperbarui alamat email dengan perlindungan OTP verifikasi 6-digit | Keamanan akun saya terjamin dari pengambilalihan akun sepihak |
+| **US-USR-06** | Pengguna terdaftar | Melihat riwayat kehadiran kebaktian beserta metode presensi dan perolehan poin per acara | Saya dapat mengevaluasi konsistensi kehadiran ibadah saya secara transparan |
+| **US-USR-07** | Pengguna terdaftar | Memantau capaian *weekly streak* kehadiran rutin saya | Saya termotivasi untuk hadir kebaktian pemuda vihara secara konsisten setiap minggu |
+| **US-USR-08** | Pengguna terdaftar | Mengunduh salinan seluruh data pribadi saya dalam format JSON (UU PDP) | Saya memiliki hak akses penuh terhadap transparansi data pribadi saya |
+
+---
+
+## 9. Matrix Kriteria Penerimaan (Acceptance Criteria)
 
 | ID | Skenario Pengujian | Hasil yang Diharapkan |
 | --- | --- | --- |
@@ -396,3 +413,26 @@ Mengambil data kartu anggota digital jemaat beserta representasi QR Code statis 
 | **AC-USR-08** | Percobaan input kode verifikasi salah hingga 5 kali | Challenge terkunci/batal, percobaan ke-6 ditolak dengan kode error `429 Too Many Requests` / `400 Challenge Expired`. |
 | **AC-USR-09** | User mengakses `/api/users/me/badges` atau `/api/users/me/level` | Mengembalikan respons `404 Not Found` (endpoint ditiadakan). |
 | **AC-USR-10** | User membuka kartu anggota di `/profile/qr` | Menampilkan kartu anggota dengan QR statis berisi `userNumber`, nama, dan sekolah yang dapat di-scan panitia offline. |
+
+---
+
+## 10. Test Cases (Matriks Pengujian Terinci)
+
+| Test Case ID | Kategori | Skenario / Deskripsi | Kondisi Awal (Preconditions) | Langkah Pengujian | Hasil yang Diharapkan | Tipe |
+| --- | --- | --- | --- | --- | --- | --- |
+| **TC-USR-01** | UserNumber Gen | Auto-generate `userNumber` pada registrasi mandiri | Tanggal sistem `2026-10-23`, belum ada pendaftaran | Register akun mandiri via OTP. | User tersimpan dengan `userNumber = 2026102301` (10 digit numerik integer murni). | Positive |
+| **TC-USR-02** | UserNumber Gen | Auto-generate urutan berikutnya pada hari yang sama | Akun `2026102301` sudah ada di sistem | Buat akun kedua pada tanggal `2026-10-23`. | Akun kedua otomatis menerima `userNumber = 2026102302`. Tidak ada tabrakan nomor urut. | Positive |
+| **TC-USR-03** | UserNumber Immutability | Mencegah modifikasi `userNumber` via update profil | Akun user aktif | Submit `PATCH /api/users/me` dengan payload `{ "user_number": 9999999999 }`. | HTTP 400 Bad Request envelope. Nilai `userNumber` tetap tidak berubah di database. | Security |
+| **TC-USR-04** | Login Identifier | Login menggunakan 10-digit `userNumber` | Akun aktif dengan userNumber `2026102301` | Submit `POST /api/auth/login` dengan `identifier: "2026102301"` dan password benar. | HTTP 200 envelope. Login berhasil dan token sesi diterbitkan. | Positive |
+| **TC-USR-05** | Get Profile | Ambil data profil pribadi user (`GET /api/users/me`) | User login terautentikasi | Panggil `GET /api/users/me`. | HTTP 200 envelope. Data memuat `user_number`, `username`, `name`, `email`, data profil terdekripsi, `stats`, dan almamater sekolah. Tidak ada field terlarang (`avatar_url`, `badges`). | Positive |
+| **TC-USR-06** | Update Profile | Update nama dan nomor telepon valid | User login terautentikasi | Submit `PATCH /api/users/me` dengan `name: "Ananda Budi"`, `phone: "081234567890"`. | HTTP 200 envelope. Data nama diperbarui, nomor telepon dienkripsi AES-256-GCM di DB. | Positive |
+| **TC-USR-07** | Privilege Guard | User mencoba mengubah `role` atau `points` via update profil | User role `member` | Submit `PATCH /api/users/me` dengan payload `{ "role": "admin", "points": 10000 }`. | HTTP 400 Bad Request / parameter diabaikan. `role` tetap `member` dan `points` tidak bertambah. | Security |
+| **TC-USR-08** | Email Request | Permintaan ganti email mencatat `pendingEmail` | Email lama `lama@example.com` aktif | Submit `POST /api/users/email-verification/request` dengan `email: "baru@example.com"`. | HTTP 200 generic success. `lama@example.com` tetap aktif untuk login. `baru@example.com` tercatat di `pendingEmail`. Kode OTP 6 digit terkirim. | Positive |
+| **TC-USR-09** | Email Confirm | Konfirmasi ganti email dengan OTP valid | Request ganti email aktif | Submit `POST /api/users/email-verification/confirm` dengan kode OTP valid. | HTTP 200 envelope. `email` resmi berubah menjadi `baru@example.com`, `emailBindex` dihitung ulang, `pendingEmail` di-reset ke `null`, `emailVerifiedAt` terisi. | Positive |
+| **TC-USR-10** | Email Brute Force | Salah memasukkan OTP ganti email 5 kali | Request OTP aktif | Submit kode OTP salah sebanyak 5 kali berturut-turut. | Percobaan ke-5 gagal. Challenge OTP hangus/dihapus. Percobaan ke-6 ditolak HTTP 400/429. Email lama tetap tidak berubah. | Security |
+| **TC-USR-11** | Attendances History | Mengambil daftar riwayat kehadiran jemaat | User memiliki riwayat absensi event | Panggil `GET /api/users/me/attendances?limit=10`. | HTTP 200 envelope. Menampilkan array entri presensi (`event_title`, `event_date`, `method`, `points_earned`, `scanned_at`) dengan pagination cursor. | Positive |
+| **TC-USR-12** | Weekly Streak | Mengambil data streak mingguan jemaat | User rajin hadir 4 minggu berturut-turut | Panggil `GET /api/users/me/streak`. | HTTP 200 envelope. `current_streak = 4`, `longest_streak` terhitung benar, `last_attended` mengembalikan timestamp presensi terakhir. | Positive |
+| **TC-USR-13** | Point Transactions | Mengambil buku besar riwayat mutasi poin | User memiliki riwayat transaksi poin | Panggil `GET /api/users/me/point-transactions`. | HTTP 200 envelope. Menampilkan log riwayat mutasi poin berurutan dengan jenis transaksi (`attendance`, `service_duty`, `bonus`) dan running balance. | Positive |
+| **TC-USR-14** | Data Export | Ekspor data lengkap privasi pengguna (UU PDP) | User login terautentikasi | Panggil `GET /api/users/me/export`. | HTTP 200 envelope dengan payload arsip JSON berisi seluruh data profil terdekripsi, riwayat kehadiran, dan mutasi poin milik pengguna yang bersangkutan. | Positive / Compliance |
+| **TC-USR-15** | Digital Card QR | Pengambilan payload QR Code kartu anggota | User login terautentikasi | Panggil `GET /api/users/me/card`. | HTTP 200 envelope. `qr_payload` mengembalikan string persis `userNumber` tanpa tanggal kedaluwarsa. | Positive |
+| **TC-USR-16** | Deprecated Endpoints | Mengakses endpoint badge atau level yang sudah dihapus | Sistem versi terkini | Panggil `GET /api/users/me/badges` atau `GET /api/users/me/level`. | HTTP 404 Not Found envelope. Sistem bersih dari legacy gamification abstractions. | Negative / Deprecation |

@@ -98,7 +98,6 @@ export const pengurusServices = {
         name: u.profile?.name || "Anggota",
         role: u.role,
         points: u.stats?.points ?? 0,
-        consecutiveMissed: u.stats?.consecutiveMissed ?? 0,
         currentStreak: u.stats?.currentStreak ?? 0,
         createdAt: u.createdAt,
       }))

@@ -10,7 +10,7 @@ import { revokeToken, generateToken, revokeAllUserRefreshTokens } from "../auth"
 import { calculateWeeklyStreak } from "./internal/utils"
 import { emailVerificationStore } from "./internal/emailVerificationStore"
 import { passwordChangeOtpStore } from "./internal/passwordChangeOtpStore"
-import { sendEmailVerificationOtpEmail, sendChangePasswordOtpEmail } from "../auth/internal/email"
+import { sendEmailVerificationOtpEmail, sendChangePasswordOtpEmail } from "../../lib/email"
 import crypto, { createHash } from "crypto"
 
 function safeDecrypt(val: string | null | undefined, fallback: string | null = null): string | null {

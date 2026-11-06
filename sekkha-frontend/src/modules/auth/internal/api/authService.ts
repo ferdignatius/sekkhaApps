@@ -14,6 +14,18 @@ export const STORAGE_KEY = "sekkha_access_token" as const
 
 // ─── Backend Response Types ────────────────────────────────────────────────────
 
+export interface VerifyUserResponse {
+  id?: string
+  userId?: string
+  user_number?: string | number | bigint | null
+  email?: string | null
+  username?: string | null
+  name?: string | null
+  role?: string | null
+  onboarding_completed?: boolean
+  onboardingCompleted?: boolean
+}
+
 interface AuthSuccessResponse {
   accessToken: string
   user: {
@@ -387,12 +399,12 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
   // ── verifyToken ────────────────────────────────────────────────────────────
   /**
    * GET /auth/verify with a 3 000 ms timeout.
-   * On 200: returns void (caller updates state to authenticated).
+   * On 200: returns verified user payload (caller updates state to authenticated).
    * On 401 / 403: throws AuthError("INVALID_CREDENTIALS") so caller can clean up.
    *
    * Requirements: 4.3, 4.4, 4.5, 4.7
    */
-  async function verifyToken(token: string): Promise<void> {
+  async function verifyToken(token: string): Promise<VerifyUserResponse | null> {
     let response: Response
 
     try {
@@ -414,8 +426,13 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
     }
 
     if (response.ok) {
-      // Verification succeeded — caller is responsible for dispatching AUTH_SUCCESS
-      return
+      try {
+        const body = (await response.json()) as any
+        const data = body && typeof body === "object" && "data" in body ? body.data : body
+        return data ?? null
+      } catch {
+        return null
+      }
     }
 
     if (response.status === 401 || response.status === 403) {

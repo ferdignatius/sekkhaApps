@@ -15,6 +15,7 @@ interface AuthFormProps {
   apiError: string | null
   onInputChange?: () => void
   fields: {
+    name?: string
     email?: string
     identifier?: string
     password: string
@@ -22,6 +23,7 @@ interface AuthFormProps {
     agreeToPrivacy?: boolean
   }
   errors: {
+    name?: string
     email?: string
     identifier?: string
     password?: string
@@ -94,6 +96,21 @@ export function AuthForm({
 
         {/* Fields */}
         <div className="space-y-3.5">
+          {/* Full Name field — Sign Up only */}
+          {isSignUp && (
+            <AuthFormField
+              id="name"
+              name="name"
+              label="Full Name"
+              type="text"
+              placeholder="Your full name"
+              value={fields.name ?? ""}
+              onChange={(val) => handleChange("name", val)}
+              onBlur={() => onFieldBlur("name")}
+              error={errors.name}
+            />
+          )}
+
           {/* Email / Username field */}
           <AuthFormField
             id="email"
@@ -124,7 +141,7 @@ export function AuthForm({
             id="password"
             label="Password"
             type="password"
-            placeholder="Minimum 6 characters"
+            placeholder="Minimum 8 characters"
             value={fields.password}
             onChange={(val) => handleChange("password", val)}
             onBlur={() => onFieldBlur("password")}

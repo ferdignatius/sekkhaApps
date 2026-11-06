@@ -124,7 +124,20 @@ Failure example:
 }
 ```
 
-## 8. Acceptance criteria
+## 8. User Stories
+
+| ID | As a | I want to | So that |
+| --- | --- | --- | --- |
+| US-AUTH-01 | Unregistered Guest | Sign up using my name, email, and password with email OTP verification | I can create an authentic Sekkha member account securely |
+| US-AUTH-02 | Registered Member | Sign in directly using my identifier (email/username/userNumber) and password without OTP | I can access my account quickly and without friction |
+| US-AUTH-03 | Registered User | Reset my forgotten password via email OTP verification | I can regain access to my account safely if I lose my credentials |
+| US-AUTH-04 | Authenticated User | Maintain a seamless session via automatic refresh token rotation | I stay logged in securely without frequent credential re-entry |
+| US-AUTH-05 | Authenticated User | Log out securely across devices or from my current device | My session is terminated and cannot be reused by unauthorized parties |
+| US-AUTH-06 | Newly Registered User | Be automatically routed to onboarding before accessing Home | I can complete my initial profile setup before exploring the app |
+
+---
+
+## 9. Acceptance Criteria
 
 | ID | Scenario | Expected result |
 | --- | --- | --- |
@@ -139,3 +152,25 @@ Failure example:
 | AC-09 | Completed user signs in | Redirect to `/home` or safe internal `redirectTo`. |
 | AC-10 | Any endpoint returns response | Envelope contains `status`, `code`, `message`, and `data`. |
 | AC-11 | API emits role | Role is one of `member`, `activist`, `organizer`, `admin`. |
+
+---
+
+## 10. Test Cases
+
+| Test Case ID | Category | Scenario / Description | Preconditions | Test Steps | Expected Result | Type |
+| --- | --- | --- | --- | --- | --- | --- |
+| **TC-AUTH-01** | Sign-up | Successful registration with valid data and OTP | Email is not registered | 1. Submit `POST /api/auth/register-request` with valid `name`, `email`, `password`.<br>2. Receive 6-digit OTP via email.<br>3. Submit `POST /api/auth/register-verify-otp` with valid OTP. | HTTP 201/200, account created with `role: "member"`, `isClaimed: true`, `onboardingCompleted: false`. Session tokens returned, user redirected to `/onboarding`. | Positive |
+| **TC-AUTH-02** | Sign-up | Registration with already registered email | Email already exists in DB | Submit `POST /api/auth/register-request` with existing email. | HTTP 409 Conflict envelope ("Email already registered"). No OTP sent. | Negative |
+| **TC-AUTH-03** | Sign-up | Submit invalid password (< 8 chars) or mismatched confirmation | On `/sign-up` page | 1. Enter password with 7 characters.<br>2. Frontend blocks submit.<br>3. If bypassed to API, send password `< 8 chars`. | HTTP 400 Bad Request envelope with field validation errors. | Negative |
+| **TC-AUTH-04** | Sign-up OTP | Submit invalid or expired OTP code | Registration initiated, OTP sent | 1. Submit wrong 6-digit OTP code.<br>2. Submit after 10 minutes expiry. | HTTP 400 Bad Request ("Invalid OTP" or "OTP expired"). After 5 failed attempts, challenge is invalidated (HTTP 429/400). | Negative / Security |
+| **TC-AUTH-05** | Sign-in | Successful login with email, username, or 10-digit userNumber | User account is active and verified | Submit `POST /api/auth/login` with:<br>Case A: `email` + password<br>Case B: `username` + password<br>Case C: `userNumber` + password | HTTP 200 with standard envelope. `accessToken` in body, `refreshToken` in HttpOnly cookie. No OTP requested or sent. If `onboarding_completed: false` redirect to `/onboarding`, else `/home`. | Positive |
+| **TC-AUTH-06** | Sign-in | Sign-in with wrong password | User exists in DB | Submit `POST /api/auth/login` with correct identifier and incorrect password. | HTTP 401 Unauthorized ("Invalid credentials"). No OTP sent. Password failure counter tracks rate limit. | Negative |
+| **TC-AUTH-07** | Sign-in | Sign-in with non-existent user identifier (Timing attack prevention) | Identifier does not exist in DB | Submit `POST /api/auth/login` with non-existent identifier and random password. | HTTP 401 Unauthorized ("Invalid credentials"). Server runs dummy bcrypt comparison to equalize response time, preventing user enumeration. | Security |
+| **TC-AUTH-08** | Sign-in Rate Limit | Exceed login rate limit (30 requests per 15 min per IP) | Active client session | Send 31 consecutive login requests within 15 minutes. | 31st request returns HTTP 429 Too Many Requests envelope with retry-after header. | Security |
+| **TC-AUTH-09** | Forgot Password | Request password reset with registered email | User exists with verified email | Submit `POST /api/auth/forgot-password/request` with valid email. | HTTP 200 generic success envelope. 6-digit OTP sent to user email (expires in 10 minutes). | Positive |
+| **TC-AUTH-10** | Forgot Password | Request reset with unregistered email (Anti-Enumeration) | Email does not exist in DB | Submit `POST /api/auth/forgot-password/request` with unknown email. | HTTP 200 identical generic success envelope. No OTP sent, no internal error leaked, response does not disclose email non-existence. | Security |
+| **TC-AUTH-11** | Forgot Password | Verify reset OTP and reset password | Reset OTP received | 1. Submit `POST /api/auth/forgot-password/verify-otp` with valid OTP.<br>2. Receive short-lived reset token.<br>3. Submit `POST /api/auth/forgot-password/reset` with token & new password. | HTTP 200 envelope. Password updated (bcrypt hashed). All prior refresh tokens and active sessions invalidated. User must sign in with new password. | Positive / Security |
+| **TC-AUTH-12** | Session & Refresh | Silent token refresh and rotation | Valid refresh token in HttpOnly cookie | Call `POST /api/auth/refresh`. | HTTP 200 envelope with new `accessToken`. New `refreshToken` rotated in HttpOnly cookie. Old refresh token immediately invalidated. | Positive |
+| **TC-AUTH-13** | Logout | User logs out from application | Authenticated session active | Call `POST /api/auth/logout`. | HTTP 200 envelope. Server deletes refresh token session from DB/cache. Client clears `sekkha_access_token` and browser clears HttpOnly refresh cookie. | Positive |
+| **TC-AUTH-14** | Route Guarding | Unauthenticated user accesses protected route (`/home`, `/profile`) | No token / expired token | User navigates directly to `http://localhost:3000/home`. | Frontend auth guard intercepts request and redirects to `/login` with valid internal `redirectTo` query parameter. External redirect URLs rejected. | Security |
+| **TC-AUTH-15** | Resend OTP | Resend sign-up OTP with cooldown check | Sign-up OTP request sent | 1. Submit `POST /api/auth/resend-otp` within 60 seconds (cooldown).<br>2. Submit `POST /api/auth/resend-otp` after 60 seconds. | Step 1 returns HTTP 429 Too Many Requests. Step 2 returns HTTP 200 envelope and invalidates earlier OTP with a fresh 6-digit code. | Edge / Security |

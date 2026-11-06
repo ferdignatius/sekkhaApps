@@ -21,6 +21,7 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 // ─── validateSignUpForm ────────────────────────────────────────────────────────
 
 export interface SignUpFormInput {
+  name?: string
   email: string
   password: string
   confirmPassword: string
@@ -40,6 +41,7 @@ export interface SignUpFormInput {
  * - agreeToPrivacy must be true when provided
  */
 export function validateSignUpForm({
+  name,
   email,
   password,
   confirmPassword,
@@ -47,20 +49,30 @@ export function validateSignUpForm({
 }: SignUpFormInput): ValidationResult {
   const errors: FieldError[] = []
 
+  // Name validation (PRD Section 4.1 & 6: required, at least 2 characters)
+  if (name !== undefined) {
+    const trimmedName = name.trim()
+    if (!trimmedName) {
+      errors.push({ field: "name", message: "Full name is required" })
+    } else if (trimmedName.length < 2) {
+      errors.push({ field: "name", message: "Name must be at least 2 characters" })
+    }
+  }
+
   // Email validation
   if (!email) {
-    errors.push({ field: "email", message: "Email wajib diisi" })
+    errors.push({ field: "email", message: "Email is required" })
   } else if (!EMAIL_REGEX.test(email)) {
-    errors.push({ field: "email", message: "Format email tidak valid" })
+    errors.push({ field: "email", message: "Invalid email format" })
   }
 
   // Password validation
   if (!password) {
-    errors.push({ field: "password", message: "Password wajib diisi" })
+    errors.push({ field: "password", message: "Password is required" })
   } else if (password.length < 8) {
     errors.push({
       field: "password",
-      message: "Password minimal 8 karakter",
+      message: "Password must be at least 8 characters",
     })
   }
 
@@ -68,7 +80,7 @@ export function validateSignUpForm({
   if (confirmPassword !== password) {
     errors.push({
       field: "confirmPassword",
-      message: "Konfirmasi password tidak cocok",
+      message: "Passwords do not match",
     })
   }
 
@@ -76,7 +88,7 @@ export function validateSignUpForm({
   if (agreeToPrivacy === false) {
     errors.push({
       field: "agreeToPrivacy",
-      message: "Anda wajib menyetujui Kebijakan Privasi untuk mendaftar",
+      message: "You must agree to the Privacy Policy to register",
     })
   }
 
@@ -112,17 +124,17 @@ export function validateLoginForm({
   if (!trimmed) {
     errors.push({
       field: "identifier",
-      message: "Email atau Username wajib diisi",
+      message: "Email or username is required",
     })
   } else if (trimmed.includes("@") && !EMAIL_REGEX.test(trimmed)) {
-    errors.push({ field: "identifier", message: "Format email tidak valid" })
+    errors.push({ field: "identifier", message: "Invalid email format" })
   } else if (!trimmed.includes("@") && trimmed.length < 3) {
-    errors.push({ field: "identifier", message: "Username minimal 3 karakter" })
+    errors.push({ field: "identifier", message: "Username must be at least 3 characters" })
   }
 
   // Password validation
   if (!password) {
-    errors.push({ field: "password", message: "Password wajib diisi" })
+    errors.push({ field: "password", message: "Password is required" })
   }
 
   return {

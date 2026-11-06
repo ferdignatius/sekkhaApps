@@ -1,4 +1,5 @@
 import type { Request, Response, NextFunction } from "express"
+import jwt from "jsonwebtoken"
 import {
   RegisterSchema,
   LoginSchema,
@@ -187,8 +188,16 @@ export async function handleLogout(req: Request, res: Response, next: NextFuncti
     const token = header?.startsWith("Bearer ") ? header.slice(7) : undefined
     const refreshToken = req.cookies?.sekkha_refresh_token
 
+    let userId = req.user?.userId
+    if (!userId && token) {
+      try {
+        const decoded = jwt.decode(token) as { userId?: string } | null
+        if (decoded?.userId) userId = decoded.userId
+      } catch {}
+    }
+
     if (token || refreshToken) {
-      await service.logoutUser(token, req.user?.userId, refreshToken)
+      await service.logoutUser(token, userId, refreshToken)
     }
     clearRefreshCookie(res)
     apiSuccess(res, 200, "Logout successful", null)

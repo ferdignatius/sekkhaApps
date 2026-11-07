@@ -165,13 +165,47 @@ Base URL: `/api/configure`
 
 ---
 
-## 8. Kriteria Penerimaan (Acceptance Criteria)
+## 8. User Stories
 
-- [ ] **AC-01**: Master rules disediakan melalui `seed.ts` dan tidak menyediakan tombol Add New / Delete di UI maupun endpoint create/delete publik.
-- [ ] **AC-02**: Admin dapat mengatur (tune) besaran poin per rule dengan validasi batas rentang 0 s/d 100 poin.
-- [ ] **AC-03**: Admin dapat menonaktifkan atau mengaktifkan rule sewaktu-waktu (`isActive`).
-- [ ] **AC-04**: Sesi kebaktian standar bernilai 50 poin sebagai baseline universal jika event tidak menentukan poin khusus.
-- [ ] **AC-05**: Konsistensi kehadiran memberikan reward untuk streak bulanan (`+50 Pts` per 4 minggu berturut-turut).
-- [ ] **AC-06**: Penyambutan jemaat baru (`+50 Pts`) hanya berlaku bagi anggota yang akunnya telah diklaim (`isClaimed: true`).
-- [ ] **AC-07**: Scanning QR presensi lebih dari satu kali pada event yang sama tidak menghasilkan penambahan poin ganda (*Anti-Double Scan*).
-- [ ] **AC-08**: Setiap penambahan poin tercatat transparan di tabel `point_transactions` dengan timestamp dan referensi kegiatan.
+| ID | As a | I want to | So that |
+| --- | --- | --- | --- |
+| US-RULE-01 | Admin | View all predefined system Point Rules (`attendance_rutin`, `streak_monthly_bonus`, `first_attendance_bonus`) | I can understand current gamification policies and baseline rewards |
+| US-RULE-02 | Admin | Tune rule point values within the strict anti-inflation range [0, 100] | I can adjust incentive balance without devaluing points |
+| US-RULE-03 | Admin | Toggle rule activation status (`isActive`) | I can suspend or resume specific automatic point bonuses |
+| US-RULE-04 | Member | Earn points under the 150 points/day strict cap regardless of how many events occur in one day | The community economy remains fair and prevents point hoarding |
+| US-RULE-05 | Member | View my personal point transaction ledger with complete references | I have 100% transparency into how my points were earned and credited |
+| US-RULE-06 | Organizer | Inspect point rules in read-only mode without ability to modify values | I can explain point policies to youth members while preserving system integrity |
+
+---
+
+## 9. Acceptance Criteria
+
+| ID | Scenario | Expected result |
+| --- | --- | --- |
+| AC-RULE-01 | Admin opens `/configure/rules/points` | Predefined system rules display with current points, code, and active switch. Add/Delete actions are absent. |
+| AC-RULE-02 | Admin updates rule points to value within [0, 100] | Point value updates in DB, returns HTTP 200, and immediately applies to subsequent transactions. |
+| AC-RULE-03 | Admin updates rule points to value > 100 or < 0 | Form blocks submission with inline error; API responds with HTTP 400 Bad Request. |
+| AC-RULE-04 | Admin toggles rule active state | Rule `isActive` flag updates; inactive rules do not award points upon event closure. |
+| AC-RULE-05 | User earns points across multiple events in a single day | Daily total is capped at 150 points; any excess amount is truncated or rejected. |
+| AC-RULE-06 | User scans QR code multiple times for the same event | Database unique constraint `[userId, eventId, type]` prevents duplicate credit (*Anti-Double Scan*). |
+| AC-RULE-07 | First attendance bonus evaluated | Bonus (+50 Pts) awarded only if user account is claimed (`isClaimed: true`) and it is their 1st attendance. |
+| AC-RULE-08 | Monthly streak bonus evaluated | Bonus (+50 Pts) awarded automatically every 4 consecutive weekly attendances. |
+| AC-RULE-09 | Non-admin user attempts to PATCH `/api/configure/point-rules/:id` | Server returns HTTP 403 Forbidden. |
+
+---
+
+## 10. Test Cases
+
+| Test Case ID | Category | Scenario / Description | Preconditions | Test Steps | Expected Result | Type |
+| --- | --- | --- | --- | --- | --- | --- |
+| **TC-RULE-01** | Rule Listing | Retrieve all predefined system point rules | Logged in as `organizer` or `admin` | Send `GET /api/configure/point-rules`. | HTTP 200 envelope returning `attendance_rutin`, `streak_monthly_bonus`, and `first_attendance_bonus`. | Positive |
+| **TC-RULE-02** | Rule Tuning | Successfully tune point rule value within [0, 100] | Logged in as `admin` | Send `PATCH /api/configure/point-rules/:id` with `{ "points": 60, "label": "Regular Service Baseline" }`. | HTTP 200 envelope; `points` updated to 60; subsequent event closures credit 60 points. | Positive |
+| **TC-RULE-03** | Boundary Validation | Submit point value > 100 (Anti-Inflation Guardrail) | Logged in as `admin` | Send `PATCH /api/configure/point-rules/:id` with `{ "points": 105 }`. | HTTP 400 Bad Request envelope with Zod validation error (`Points must be <= 100`). | Negative / Boundary |
+| **TC-RULE-04** | Boundary Validation | Submit negative point value (< 0) | Logged in as `admin` | Send `PATCH /api/configure/point-rules/:id` with `{ "points": -10 }`. | HTTP 400 Bad Request envelope (`Points must be >= 0`). | Negative / Boundary |
+| **TC-RULE-05** | Rule Toggling | Deactivate point rule via `isActive` toggle | Logged in as `admin` | Send `PATCH /api/configure/point-rules/:id` with `{ "isActive": false }`. | HTTP 200 envelope; `isActive` set to `false`; engine skips this rule on future triggers. | Positive |
+| **TC-RULE-06** | Daily Point Cap | Enforce 150 points/day limit per user | User has already earned 120 points on current day | Finalize event attendance awarding 50 base points. | System credits only 30 points to hit 150 ceiling, or rejects excess according to cap policy. Total earned today <= 150. | Security / Rule Engine |
+| **TC-RULE-07** | Anti-Double Scan | Prevent duplicate attendance point transactions | User already has finalized attendance for event X | Attempt to create second attendance point transaction for same `userId` and `eventId`. | Database blocks via `@@unique([userId, referenceId, type])`; returns error or ignores duplicate. User balance increases once. | Security / Integrity |
+| **TC-RULE-08** | Welcome Bonus | Claimed vs Unclaimed user first attendance bonus | Event closed with 2 first-time attendees: User A (`isClaimed: true`), User B (`isClaimed: false`) | Finalize attendance via event closure. | User A receives base + 50 welcome bonus; User B receives only base attendance points. | Positive / Functional |
+| **TC-RULE-09** | Fixed Policy Guard | Prevent creating arbitrary new point rules (Anti-Dead-Data) | Logged in as `admin` | Attempt `POST /api/configure/point-rules` with arbitrary rule data. | HTTP 404 Not Found or HTTP 405 Method Not Allowed (endpoint does not exist). | Security / Architectural |
+| **TC-RULE-10** | Fixed Policy Guard | Prevent deleting fixed system point rules | Logged in as `admin` | Attempt `DELETE /api/configure/point-rules/:id`. | HTTP 404 Not Found or HTTP 405 Method Not Allowed (deletion endpoint disabled). | Security / Architectural |
+| **TC-RULE-11** | RBAC Protection | Organizer attempts to tune point rules | Logged in as `organizer` | Send `PATCH /api/configure/point-rules/:id` with `{ "points": 50 }`. | HTTP 403 Forbidden envelope (`Access denied`). Points remain unchanged. | Security / RBAC |

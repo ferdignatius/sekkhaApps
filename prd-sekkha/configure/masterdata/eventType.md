@@ -273,14 +273,43 @@ Base route: `/api/configure/event-types`
 
 ---
 
-## 9. Acceptance Criteria
+## 9. User Stories
 
-| ID | Skenario | Hasil yang Diharapkan |
+| ID | As a | I want to | So that |
+| --- | --- | --- | --- |
+| US-ET-01 | Admin | Create an Event Type with automatic kebab-case code, label, hex color, default point reward, and late penalty parameters | I can define standard event categories for our community schedule |
+| US-ET-02 | Admin | Update an Event Type's display label (auto-syncing code), color swatch, and default reward values | Event categories stay current with evolving temple activity standards |
+| US-ET-03 | Admin | Toggle an Event Type's active status (`isActive`) or delete unreferenced types | Inactive types are hidden from new event scheduling without corrupting past records |
+| US-ET-04 | Admin | Be blocked from hard-deleting Event Types that are referenced by existing events | Relational integrity and past event attendance history remain intact |
+| US-ET-05 | Organizer | Select from active Event Types when creating or filtering events | Default reward points and late tolerances auto-populate into event forms |
+| US-ET-06 | Member / Activist | Be blocked from accessing Event Type administrative configuration endpoints | Event type parameters and reward structures cannot be altered by regular participants |
+
+---
+
+## 10. Acceptance Criteria
+
+| ID | Scenario | Expected result |
 | --- | --- | --- |
-| **AC-01** | Admin membuat Event Type baru dengan `code` unik dan format hex valid | Data berhasil tersimpan ke tabel `event_types` dengan kode status HTTP `201 Created`. |
-| **AC-02** | Pengguna mengirimkan `code` duplikat atau format tidak kebab-case | API menolak dengan HTTP `400` dan pesan validasi yang jelas. |
-| **AC-03** | Admin mengubah nilai `default_point_reward` pada Event Type | Event Type terupdate; event baru otomatis menggunakan poin baru, event lama tidak terpengaruh. |
-| **AC-04** | Admin menonaktifkan Event Type (`is_active = false`) | Event Type tidak lagi muncul di pilihan dropdown form pembuatan event baru; event lama tetap valid. |
-| **AC-05** | Admin mencoba menghapus Event Type yang sudah memiliki relasi event | Operasi ditolak atau diblokir untuk menjaga integritas data relasional. |
-| **AC-06** | Organizer membaca daftar Event Type | API mengembalikan list data Event Type untuk dipilih pada form event. |
-| **AC-07** | Akun dengan role `member` atau `activist` mencoba mengakses endpoint konfigurasi | API mengembalikan HTTP `403 Forbidden`. |
+| AC-ET-01 | Admin creates Event Type with valid label and 6-digit hex color | Record created with auto kebab-case code; HTTP 201 Created returned. |
+| AC-ET-02 | User sends duplicate code or non-kebab format | API rejects with HTTP 400 Bad Request / 409 Conflict with validation message. |
+| AC-ET-03 | Admin updates `defaultPointReward` on Event Type | Master record updates; newly created events inherit new default; past events remain unchanged. |
+| AC-ET-04 | Admin toggles `isActive = false` | Event Type excluded from new event creation dropdowns; historical events retain relation. |
+| AC-ET-05 | Admin attempts to hard delete Event Type referenced by existing events | Server rejects with HTTP 409 Conflict ("Cannot delete event type associated with events"); deletion blocked. |
+| AC-ET-06 | Organizer reads Event Types list | API returns list of event types for selection in event planning workflows. |
+| AC-ET-07 | Role `member` or `activist` accesses master data endpoint | API returns HTTP 403 Forbidden envelope. |
+
+---
+
+## 11. Test Cases
+
+| Test Case ID | Category | Scenario / Description | Preconditions | Test Steps | Expected Result | Type |
+| --- | --- | --- | --- | --- | --- | --- |
+| **TC-ET-01** | Create Event Type | Create event type with valid parameters | Authenticated as `admin` | Send `POST /api/configure/event-types` with `{ "label": "Youth Fellowship", "color": "#10B981", "defaultPointReward": 70 }`. | HTTP 201 envelope; `code` generated as `"youth-fellowship"`; record saved in DB. | Positive |
+| **TC-ET-02** | Validation | Submit invalid hex color format | Authenticated as `admin` | Send `POST /api/configure/event-types` with `{ "label": "Fellowship", "color": "blue123" }`. | HTTP 400 Bad Request envelope with regex validation error (`color must match ^#[0-9A-Fa-f]{6}$`). | Negative / Format |
+| **TC-ET-03** | Validation | Submit duplicate label / code | Event Type with code `"regular-puja"` exists | Send `POST /api/configure/event-types` with `{ "label": "Regular Puja" }`. | HTTP 400 Bad Request or HTTP 409 Conflict envelope indicating duplicate entity. | Negative / Integrity |
+| **TC-ET-04** | Update & Sync | Update label and sync code | Event Type exists | Send `PUT /api/configure/event-types/:id` with `{ "label": "Sunday Youth Service", "color": "#3B82F6" }`. | HTTP 200 envelope; `label` and `code` updated; linked events preserve relation via CUID ID. | Positive |
+| **TC-ET-05** | Safe Deletion | Attempt hard deleting in-use event type | Event Type has linked records in `events` table | Send `DELETE /api/configure/event-types/:id`. | HTTP 409 Conflict envelope ("Cannot delete event type because it is associated with X event(s). Please deactivate it instead."). | Negative / Integrity |
+| **TC-ET-06** | Safe Deletion | Delete unreferenced event type | Event Type has 0 linked events | Send `DELETE /api/configure/event-types/:id`. | HTTP 200 envelope; record deleted from DB. | Positive |
+| **TC-ET-07** | Soft Deactivation | Deactivate event type (`isActive: false`) | Active event type exists | Send `PATCH /api/configure/event-types/:id` with `{ "isActive": false }`. | HTTP 200 envelope; `isActive` set to `false`. Query `?is_active=true` excludes this type from event creation dropdown. | Positive |
+| **TC-ET-08** | RBAC Guard | Organizer attempts to create or delete event type | Authenticated as `organizer` | Send `POST /api/configure/event-types` or `DELETE /api/configure/event-types/:id`. | HTTP 403 Forbidden envelope. No mutations applied. | Security / RBAC |
+| **TC-ET-09** | RBAC Guard | Member or activist attempts to access event type configure routes | Authenticated as `member` or `activist` | Send `GET /api/configure/event-types`. | HTTP 403 Forbidden envelope (`Access denied`). | Security / RBAC |

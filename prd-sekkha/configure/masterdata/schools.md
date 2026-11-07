@@ -266,15 +266,47 @@ Base URL: `/api/configure` (atau endpoint modular `/api/schools`)
 
 ---
 
-## 9. Acceptance Criteria
+## 9. User Stories
 
-| ID | Skenario | Hasil yang Diharapkan |
+| ID | As a | I want to | So that |
+| --- | --- | --- | --- |
+| US-SCH-01 | Member | Search active schools via autocomplete or submit a request for an unlisted school during onboarding | I can complete my youth profile accurately without being blocked |
+| US-SCH-02 | Member | Select my class grade (Grades 10–12) when selecting a school of type `SMA/SMK` | My academic demographic details are recorded for peer grouping |
+| US-SCH-03 | Organizer / Admin | View the pending school request queue and approve or reject submissions | Crowdsourced institutions are verified before being exposed to all members |
+| US-SCH-04 | Admin | Directly create, edit, or toggle school active status in the master directory | The institution directory remains clean, standardized, and up-to-date |
+| US-SCH-05 | Admin | Be prevented from deleting schools that have linked member profiles | Existing youth profiles retain their academic institutional references without orphaned keys |
+| US-SCH-06 | Member / Activist | Be restricted from administrative school review and master data modification endpoints | The institutional directory cannot be modified by regular members |
+
+---
+
+## 10. Acceptance Criteria
+
+| ID | Scenario | Expected result |
 | --- | --- | --- |
-| **AC-01** | Umat mencari sekolah saat onboarding | Hanya sekolah berstatus `active` dan `is_active = true` yang muncul di dropdown. |
-| **AC-02** | Umat memilih sekolah tipe `SMA/SMK` | Dropdown tingkatan kelas menampilkan pilihan: `Grade 10`, `Grade 11`, dan `Grade 12`. |
-| **AC-03** | Umat memilih sekolah tipe `Universitas` atau `Umum` | Input tingkatan kelas otomatis disembunyikan/dibersihkan dari form. |
-| **AC-04** | Umat mengajukan sekolah baru dengan tipe `SMA/SMK` | Data tersimpan di database dengan `status = "pending"` dan `requested_by = userId`. Umat dapat langsung menyelesaikan onboarding. |
-| **AC-05** | Umat mengajukan sekolah yang namanya sudah terdaftar | API menolak dengan status HTTP `409 Conflict` atau pesan bahwa sekolah sudah ada. |
-| **AC-06** | Pengurus menyetujui pengajuan sekolah (`approve`) | Status sekolah berubah menjadi `active`, `reviewed_by` tercatat, dan sekolah langsung muncul di autocomplete publik. |
-| **AC-07** | Admin mencoba menghapus sekolah yang sudah memiliki anggota | Operasi ditolak dengan HTTP `409 Conflict`; Admin diarahkan menonaktifkan (`is_active = false`). |
-| **AC-08** | Role `member` mencoba mengakses antrean review sekolah | Server menolak dengan HTTP `403 Forbidden`. |
+| AC-SCH-01 | Member searches schools in onboarding combobox | Dropdown returns only institutions with `status = "active"` and `is_active = true`. |
+| AC-SCH-02 | Member selects `SMA/SMK` school type | Grade selector displays Grade 10, Grade 11, and Grade 12 options. |
+| AC-SCH-03 | Member selects `Universitas` or `Umum` school type | Grade level selector is hidden and cleared from submission payload. |
+| AC-SCH-04 | Member submits unlisted school request | Record saved in `schools` table with `status = "pending"` and `requestedBy = userId`; user proceeds without blockage. |
+| AC-SCH-05 | Member submits duplicate school name (case-insensitive) | API returns HTTP 409 Conflict indicating school is already registered. |
+| AC-SCH-06 | Organizer or admin approves pending school request | School `status` updates to `"active"`, `reviewedBy` recorded, school becomes available in public combobox. |
+| AC-SCH-07 | Organizer or admin rejects pending school request | School `status` updates to `"cancel"`, `is_active` set to `false`, excluded from public combobox. |
+| AC-SCH-08 | Admin attempts hard delete on school linked to user profiles | API returns HTTP 409 Conflict ("Cannot delete school linked to user profiles"); admin guided to soft deactivate. |
+| AC-SCH-09 | Non-privileged user (`member` or `activist`) accesses pending review queue | Server returns HTTP 403 Forbidden envelope. |
+
+---
+
+## 11. Test Cases
+
+| Test Case ID | Category | Scenario / Description | Preconditions | Test Steps | Expected Result | Type |
+| --- | --- | --- | --- | --- | --- | --- |
+| **TC-SCH-01** | Combobox Search | Search active verified schools by name substring | Schools with status `active` and `pending` exist | Call `GET /api/configure/schools?search=Bina`. | HTTP 200 envelope; only returns matching schools with `status = "active"` and `is_active = true`. | Positive |
+| **TC-SCH-02** | School Request | Member submits new school request during onboarding | Authenticated as `member` | Send `POST /api/configure/school-requests` with `{ "name": "SMA Kristen 1", "type": "SMA/SMK" }`. | HTTP 201 envelope; school created with `status: "pending"`, `requestedBy` populated with caller ID. User can finish onboarding. | Positive |
+| **TC-SCH-03** | Duplicate Name | Submit school request with existing name (case-insensitive) | School "SMA Kristen 1" already exists | Send `POST /api/configure/school-requests` with `{ "name": "sma kristen 1", "type": "SMA/SMK" }`. | HTTP 409 Conflict envelope ("School already registered"). Duplicate record prevented. | Negative / Integrity |
+| **TC-SCH-04** | Review Queue | Organizer retrieves pending school requests | Authenticated as `organizer` or `admin` | Send `GET /api/configure/schools/pending`. | HTTP 200 envelope returning pending school requests with requester details. | Positive |
+| **TC-SCH-05** | Approval Flow | Organizer approves pending school request | Pending school exists | Send `POST /api/configure/schools/:id/approve`. | HTTP 200 envelope; school `status` updated to `"active"`, `reviewedBy` recorded. Immediately searchable in onboarding. | Positive |
+| **TC-SCH-06** | Rejection Flow | Organizer rejects pending school request | Pending school exists | Send `POST /api/configure/schools/:id/reject`. | HTTP 200 envelope; school `status` updated to `"cancel"`, `isActive` updated to `false`. | Positive |
+| **TC-SCH-07** | Safe Deletion | Attempt hard delete on school linked to user profiles | School has linked records in `user_profiles` | Send `DELETE /api/configure/schools/:id`. | HTTP 409 Conflict envelope ("Cannot delete school because it is linked to user profiles. Please deactivate it instead."). | Negative / Integrity |
+| **TC-SCH-08** | Safe Deletion | Delete unreferenced school | School has 0 linked user profiles | Send `DELETE /api/configure/schools/:id`. | HTTP 200 envelope; school deleted from DB. | Positive |
+| **TC-SCH-09** | Soft Deactivation | Deactivate school via `isActive` toggle | School exists in DB | Send `PATCH /api/configure/schools/:id` with `{ "isActive": false }`. | HTTP 200 envelope; `isActive` set to `false`. Hidden from onboarding dropdown while existing user profiles remain intact. | Positive |
+| **TC-SCH-10** | RBAC Review Queue | Member attempts to view pending review queue | Authenticated as `member` | Send `GET /api/configure/schools/pending`. | HTTP 403 Forbidden envelope (`Access denied`). | Security / RBAC |
+| **TC-SCH-11** | RBAC Direct CRUD | Organizer attempts direct school creation / update | Authenticated as `organizer` | Send `POST /api/configure/schools` or `PATCH /api/configure/schools/:id`. | HTTP 403 Forbidden envelope (Direct master mutation restricted to `admin`). | Security / RBAC |

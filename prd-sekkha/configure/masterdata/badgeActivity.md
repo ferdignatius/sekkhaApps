@@ -124,12 +124,42 @@ Base URL: `/api/configure/badge-activities`
 
 ---
 
-## 7. Acceptance Criteria
+## 7. User Stories
 
-| ID | Skenario | Hasil yang Diharapkan |
+| ID | As a | I want to | So that |
+| --- | --- | --- | --- |
+| US-BA-01 | Admin | Create a new Badge Activity with auto-generated code, label, description, and bonus points | The community can formalize new service duty roles (e.g. Usher or Sound Engineer) |
+| US-BA-02 | Admin | Update an existing Badge Activity's label, bonus points, or toggle active status | Master service duties stay aligned with community operational needs |
+| US-BA-03 | Admin | Be prevented from deleting Badge Activities that are linked to attendance records | Past liturgy service history and earned bonus points remain immutable |
+| US-BA-04 | Organizer | Select from active Badge Activities when recording event attendances | Serving members receive their role title and bonus karma points (+30 Pts) upon event closure |
+| US-BA-05 | Member | View my earned service roles and bonus points in my attendance history | My seva contributions to the vihara are recognized and appreciated |
+| US-BA-06 | Member / Activist | Be blocked from accessing master Badge Activity administrative endpoints | Liturgy service configuration cannot be tampered with by unauthorized roles |
+
+---
+
+## 8. Acceptance Criteria
+
+| ID | Scenario | Expected result |
 | --- | --- | --- |
-| **AC-BA-01** | Admin membuat Badge Activity baru dengan label "Audio Operator" | Sistem otomatis mengisi code `"audio-operator"` secara read-only dan menyimpannya dengan bonus points default 30. |
-| **AC-BA-02** | Organizer membuka dropdown Badge Activity di halaman presensi event | Hanya Badge Activity dengan `is_active = true` yang muncul dalam daftar pilihan. |
-| **AC-BA-03** | Admin mencoba menghapus Badge Activity yang sudah pernah dipakai jemaat | Server menolak dengan HTTP `409 Conflict` dan pesan "Badge activity cannot be deleted because it is already linked to attendance records. Deactivate it instead." |
-| **AC-BA-04** | Role `member` atau `activist` mencoba mengakses endpoint master data | Server menolak dengan HTTP `403 Forbidden`. |
-| **AC-BA-05** | Admin memperbarui label peran dari "Audio Operator" menjadi "Sound Engineer" | Field `code` di form secara live menampilkan preview `"sound-engineer"` (read-only), dan saat disimpan backend mengupdate `code` ke `"sound-engineer"` tanpa merusak riwayat presensi jemaat. |
+| AC-BA-01 | Admin creates new Badge Activity with label "Audio Operator" | Code auto-generated as `"audio-operator"` in lowercase kebab-case; entity saved with bonus points (default 30); HTTP 201 returned. |
+| AC-BA-02 | Organizer selects Badge Activity in event attendance form | Dropdown lists only records where `is_active = true`; deactivated roles are excluded. |
+| AC-BA-03 | Admin deletes Badge Activity linked to attendance records | Server returns HTTP 409 Conflict with explanation; deletion blocked; admin guided to toggle `is_active = false`. |
+| AC-BA-04 | Admin deletes unreferenced Badge Activity | Entity deleted from database successfully; returns HTTP 200/204 envelope. |
+| AC-BA-05 | Admin updates label from "Audio Operator" to "Sound Engineer" | Live preview syncs code to `"sound-engineer"`; save updates DB record without breaking foreign key relations in `attendances`. |
+| AC-BA-06 | User with role `member` or `activist` accesses master data endpoint | Request is rejected with HTTP 403 Forbidden envelope. |
+
+---
+
+## 9. Test Cases
+
+| Test Case ID | Category | Scenario / Description | Preconditions | Test Steps | Expected Result | Type |
+| --- | --- | --- | --- | --- | --- | --- |
+| **TC-BA-01** | Create Badge | Create new badge activity with valid label and points | Authenticated as `admin` | Send `POST /api/configure/badge-activities` with `{ "label": "Multimedia Operator", "bonusPoints": 35 }`. | HTTP 201 envelope; `code` automatically set to `"multimedia-operator"`; saved with `isActive: true`. | Positive |
+| **TC-BA-02** | Validation | Submit duplicate label / code | Badge with code `"mc"` already exists | Send `POST /api/configure/badge-activities` with `{ "label": "MC" }`. | HTTP 400 Bad Request or HTTP 409 Conflict envelope indicating duplicate code/name. | Negative / Integrity |
+| **TC-BA-03** | Validation | Submit bonus points outside allowed range [0, 100] | Authenticated as `admin` | Send `POST /api/configure/badge-activities` with `{ "label": "Test Role", "bonusPoints": 150 }`. | HTTP 400 Bad Request envelope with Zod validation error (`bonusPoints must be <= 100`). | Negative / Boundary |
+| **TC-BA-04** | Update & Sync | Update badge activity label and bonus points | Badge exists in DB | Send `PUT /api/configure/badge-activities/:id` with `{ "label": "Lead Musician", "bonusPoints": 40 }`. | HTTP 200 envelope; label and code updated to `"lead-musician"`; `attendances` foreign keys preserved via CUID ID. | Positive |
+| **TC-BA-05** | Safe Deletion | Attempt deleting in-use badge activity | Badge activity is linked to >= 1 record in `attendances` | Send `DELETE /api/configure/badge-activities/:id`. | HTTP 409 Conflict envelope ("Badge activity cannot be deleted because it is already linked to attendance records. Deactivate it instead."). | Negative / Integrity |
+| **TC-BA-06** | Safe Deletion | Delete unreferenced badge activity | Badge activity has 0 linked attendance records | Send `DELETE /api/configure/badge-activities/:id`. | HTTP 200 envelope; record removed from DB. | Positive |
+| **TC-BA-07** | Soft Deactivation | Deactivate badge activity (`isActive: false`) | Active badge exists | Send `PATCH /api/configure/badge-activities/:id` with `{ "isActive": false }`. | HTTP 200 envelope; badge marked inactive. Dropped from event attendance selection query `?is_active=true`. | Positive |
+| **TC-BA-08** | RBAC Guard | Organizer attempts to create or delete badge activity | Authenticated as `organizer` | Send `POST /api/configure/badge-activities` or `DELETE /api/configure/badge-activities/:id`. | HTTP 403 Forbidden envelope. No mutations applied. | Security / RBAC |
+| **TC-BA-09** | RBAC Guard | Member or activist attempts to access badge activity list | Authenticated as `member` or `activist` | Send `GET /api/configure/badge-activities`. | HTTP 403 Forbidden envelope (`Access denied`). | Security / RBAC |

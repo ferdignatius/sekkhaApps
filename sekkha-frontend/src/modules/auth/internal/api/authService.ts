@@ -81,7 +81,7 @@ export async function fetchWithTimeout(
     if (error instanceof Error && error.name === "AbortError") {
       throw new AuthError(
         "NETWORK_TIMEOUT",
-        "Koneksi bermasalah. Periksa koneksi internet Anda dan coba lagi."
+        "Connection issue. Please check your internet connection and try again."
       )
     }
     throw error
@@ -133,7 +133,7 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
       if (error instanceof AuthError) throw error
       throw new AuthError(
         "UNKNOWN_ERROR",
-        "Terjadi kesalahan. Silakan coba beberapa saat lagi."
+        "An unexpected error occurred. Please try again in a moment."
       )
     }
 
@@ -166,14 +166,14 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
     if (response.status === 401) {
       throw new AuthError(
         "INVALID_CREDENTIALS",
-        "Email atau password salah. Silakan coba lagi."
+        "Incorrect email/username or password. Please try again."
       )
     }
 
     // 500 or any other unexpected status
     throw new AuthError(
       "UNKNOWN_ERROR",
-      "Terjadi kesalahan. Silakan coba beberapa saat lagi."
+      "An unexpected error occurred. Please try again in a moment."
     )
   }
 
@@ -206,7 +206,7 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
       if (error instanceof AuthError) throw error
       throw new AuthError(
         "UNKNOWN_ERROR",
-        "Terjadi kesalahan koneksi. Silakan coba beberapa saat lagi."
+        "Connection error. Please try again in a moment."
       )
     }
 
@@ -218,14 +218,16 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
     if (response.status === 409) {
       throw new AuthError(
         "EMAIL_ALREADY_EXISTS",
-        "Email sudah digunakan. Silakan gunakan email lain atau masuk ke akun Anda."
+        "Email is already registered. Please sign in or use a different email."
       )
     }
 
     const errData = await response.json().catch(() => null)
     throw new AuthError(
       "UNKNOWN_ERROR",
-      errData?.error || "Gagal mengirim kode OTP. Silakan periksa data Anda."
+      errData?.error ||
+        errData?.message ||
+        "Failed to send verification code. Please check your details."
     )
   }
 
@@ -250,7 +252,7 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
       if (error instanceof AuthError) throw error
       throw new AuthError(
         "UNKNOWN_ERROR",
-        "Koneksi bermasalah. Periksa koneksi internet Anda dan coba lagi."
+        "Connection issue. Please check your internet connection and try again."
       )
     }
 
@@ -280,7 +282,8 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
     throw new AuthError(
       "INVALID_CREDENTIALS",
       errData?.error ||
-        "Kode OTP salah atau telah kedaluwarsa. Silakan periksa kembali."
+        errData?.message ||
+        "Incorrect or expired verification code. Please check again."
     )
   }
 
@@ -307,7 +310,7 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
       if (error instanceof AuthError) throw error
       throw new AuthError(
         "UNKNOWN_ERROR",
-        "Koneksi bermasalah. Silakan coba beberapa saat lagi."
+        "Connection issue. Please try again in a moment."
       )
     }
 
@@ -319,7 +322,9 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
     const errData = await response.json().catch(() => null)
     throw new AuthError(
       "UNKNOWN_ERROR",
-      errData?.error || "Gagal mengirim ulang kode OTP."
+      errData?.error ||
+        errData?.message ||
+        "Failed to resend verification code."
     )
   }
 
@@ -357,7 +362,7 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
       if (error instanceof AuthError) throw error
       throw new AuthError(
         "UNKNOWN_ERROR",
-        "Terjadi kesalahan. Silakan coba beberapa saat lagi."
+        "An unexpected error occurred. Please try again in a moment."
       )
     }
 
@@ -386,13 +391,13 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
     if (response.status === 409) {
       throw new AuthError(
         "EMAIL_ALREADY_EXISTS",
-        "Email sudah digunakan. Silakan gunakan email lain atau masuk ke akun Anda."
+        "Email is already registered. Please sign in or use a different email."
       )
     }
 
     throw new AuthError(
       "UNKNOWN_ERROR",
-      "Terjadi kesalahan. Silakan coba beberapa saat lagi."
+      "An unexpected error occurred. Please try again in a moment."
     )
   }
 
@@ -421,7 +426,7 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
       if (error instanceof AuthError) throw error
       throw new AuthError(
         "UNKNOWN_ERROR",
-        "Terjadi kesalahan. Silakan coba beberapa saat lagi."
+        "An unexpected error occurred. Please try again in a moment."
       )
     }
 
@@ -438,13 +443,13 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
     if (response.status === 401 || response.status === 403) {
       throw new AuthError(
         "INVALID_CREDENTIALS",
-        "Sesi tidak valid. Silakan login kembali."
+        "Invalid session. Please sign in again."
       )
     }
 
     throw new AuthError(
       "UNKNOWN_ERROR",
-      "Terjadi kesalahan. Silakan coba beberapa saat lagi."
+      "An unexpected error occurred. Please try again in a moment."
     )
   }
 

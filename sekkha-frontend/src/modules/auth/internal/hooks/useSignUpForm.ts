@@ -131,8 +131,15 @@ export function useSignUpForm(): UseSignUpFormReturn {
         switch (error.code) {
           case "EMAIL_ALREADY_EXISTS":
             setApiError(
-              "Email already in use. Please use a different email or sign in to your account."
+              error.message ||
+                "Email is already registered. Please sign in or use a different email."
             )
+            setErrors((prev) => ({
+              ...prev,
+              email:
+                error.message ||
+                "Email is already registered. Please sign in or use a different email.",
+            }))
             break
           case "NETWORK_TIMEOUT":
             setApiError(

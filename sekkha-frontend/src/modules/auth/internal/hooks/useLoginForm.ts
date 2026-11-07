@@ -179,7 +179,7 @@ export function useLoginForm(): UseLoginFormReturn {
             setApiError("An error occurred. Please try again in a moment.")
         }
       } else {
-        setApiError("Terjadi kesalahan. Silakan coba beberapa saat lagi.")
+        setApiError("An unexpected error occurred. Please try again in a moment.")
       }
     } finally {
       setIsLoading(false)

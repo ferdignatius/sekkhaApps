@@ -23,48 +23,48 @@ export const LoginSchema = z.object({
 })
 
 export const ForgotPasswordSchema = z.object({
-  identifier: z.string().trim().min(1, "Email atau username wajib diisi").max(255),
+  identifier: z.string().trim().min(1, "Email or username is required").max(255),
 })
 
 export const RequestRegisterOtpSchema = z.object({
-  email: z.string().trim().toLowerCase().email("Format email tidak valid").max(255),
-  password: z.string().min(8, "Password minimal 8 karakter").max(128, "Password maksimal 128 karakter"),
-  name: z.string().trim().min(2, "Nama minimal 2 karakter").max(100, "Nama maksimal 100 karakter"),
+  email: z.string().trim().toLowerCase().email("Invalid email format").max(255),
+  password: z.string().min(8, "Password must be at least 8 characters").max(128, "Password maximum 128 characters"),
+  name: z.string().trim().min(2, "Name must be at least 2 characters").max(100, "Name maximum 100 characters"),
   username: z
     .string()
     .trim()
     .toLowerCase()
-    .min(3, "Username minimal 3 karakter")
-    .max(30, "Username maksimal 30 karakter")
-    .regex(/^[a-zA-Z0-9_.]+$/, "Username hanya boleh berisi huruf, angka, titik, atau garis bawah")
+    .min(3, "Username must be at least 3 characters")
+    .max(30, "Username maximum 30 characters")
+    .regex(/^[a-zA-Z0-9_.]+$/, "Username may only contain letters, numbers, dots, or underscores")
     .optional(),
 })
 
 export const VerifyRegisterOtpSchema = z.object({
-  email: z.string().trim().toLowerCase().email("Format email tidak valid").max(255),
-  otp: z.string().trim().regex(/^\d{6}$/, "Kode OTP harus 6 digit"),
+  email: z.string().trim().toLowerCase().email("Invalid email format").max(255),
+  otp: z.string().trim().regex(/^\d{6}$/, "OTP must be 6 digits"),
 })
 
 export const ResendOtpSchema = z.object({
-  email: z.string().trim().toLowerCase().email("Format email tidak valid").max(255),
+  email: z.string().trim().toLowerCase().email("Invalid email format").max(255),
 })
 
 export const ForgotPasswordRequestSchema = z.object({
-  email: z.string().trim().toLowerCase().email("Format email tidak valid").max(255),
+  email: z.string().trim().toLowerCase().email("Invalid email format").max(255),
 })
 
 export const ForgotPasswordVerifyOtpSchema = z.object({
-  email: z.string().trim().toLowerCase().email("Format email tidak valid").max(255),
-  otp: z.string().trim().length(6, "Kode OTP harus 6 digit"),
+  email: z.string().trim().toLowerCase().email("Invalid email format").max(255),
+  otp: z.string().trim().length(6, "OTP must be 6 digits"),
 })
 
 export const ResetPasswordSchema = z.object({
-  email: z.string().trim().toLowerCase().email("Format email tidak valid").max(255),
+  email: z.string().trim().toLowerCase().email("Invalid email format").max(255),
   reset_token: z.string().trim().min(10).max(200).optional(),
-  otp: z.string().trim().length(6, "Kode OTP harus 6 digit").optional(),
-  newPassword: z.string().min(8, "Password baru minimal 8 karakter").max(128, "Password baru maksimal 128 karakter"),
+  otp: z.string().trim().length(6, "OTP must be 6 digits").optional(),
+  newPassword: z.string().min(8, "New password must be at least 8 characters").max(128, "New password maximum 128 characters"),
 }).refine((data) => Boolean(data.reset_token || data.otp), {
-  message: "Kode OTP atau token pemulihan wajib disertakan",
+  message: "Reset token or OTP is required",
   path: ["reset_token"],
 })
 

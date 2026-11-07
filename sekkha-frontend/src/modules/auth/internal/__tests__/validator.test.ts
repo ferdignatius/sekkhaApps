@@ -13,7 +13,7 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 // Validates: Requirements 1.11, 1.12, 1.13, 3.1, 3.2, 3.3, 3.4, 3.5
 
 describe("validateSignUpForm — Property 1: Validator Mengembalikan Error yang Akurat untuk Semua Kombinasi Input", () => {
-  it("isValid === true hanya jika email valid, password >= 8 char, dan confirmPassword === password", () => {
+  it("returns isValid === true only if email is valid, password >= 8 char, and confirmPassword === password", () => {
     fc.assert(
       fc.property(
         fc.record({
@@ -42,7 +42,7 @@ describe("validateSignUpForm — Property 1: Validator Mengembalikan Error yang 
     )
   })
 
-  it("jika email tidak valid → result.errors mengandung error dengan field === 'email'", () => {
+  it("if email is invalid -> result.errors contains error with field === 'email'", () => {
     fc.assert(
       fc.property(
         fc.record({
@@ -69,7 +69,7 @@ describe("validateSignUpForm — Property 1: Validator Mengembalikan Error yang 
     )
   })
 
-  it("jika password tidak valid (kosong atau < 8 char) → result.errors mengandung error dengan field === 'password'", () => {
+  it("if password is invalid (empty or < 8 char) -> result.errors contains error with field === 'password'", () => {
     fc.assert(
       fc.property(
         fc.record({
@@ -98,7 +98,7 @@ describe("validateSignUpForm — Property 1: Validator Mengembalikan Error yang 
     )
   })
 
-  it("jika confirmPassword !== password → result.errors mengandung error dengan field === 'confirmPassword'", () => {
+  it("if confirmPassword !== password -> result.errors contains error with field === 'confirmPassword'", () => {
     fc.assert(
       fc.property(
         fc.record({
@@ -131,7 +131,7 @@ describe("validateSignUpForm — Property 1: Validator Mengembalikan Error yang 
 // Validates: Requirements 3.7, 3.8
 
 describe("validateSignUpForm — Property 2: Validator Menghapus Error Tepat Saat Field Menjadi Valid", () => {
-  it("jika hanya confirmPassword tidak valid, error hanya muncul untuk field confirmPassword; email dan password tidak memiliki error", () => {
+  it("if only confirmPassword is invalid, error only appears for confirmPassword; email and password have no errors", () => {
     fc.assert(
       fc.property(
         fc.record({
@@ -169,7 +169,7 @@ describe("validateSignUpForm — Property 2: Validator Menghapus Error Tepat Saa
     )
   })
 
-  it("memperbaiki confirmPassword menjadi sama dengan password → error confirmPassword hilang, isValid menjadi true", () => {
+  it("fixing confirmPassword to match password -> confirmPassword error clears, isValid becomes true", () => {
     fc.assert(
       fc.property(
         fc.record({

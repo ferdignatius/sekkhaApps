@@ -5,6 +5,7 @@ All notable changes to Sekkha Apps. Semver (`MAJOR.MINOR.PATCH`); newest on top.
 ## [Unreleased]
 
 ### Added
+- Isolated unit test suite covering PRD test cases TC-AUTH-01 through TC-AUTH-13 in `sekkha-api/src/modules/auth/__tests__/auth.test.ts`.
 - Unit test suite for events access control and visibility matrix (`sekkha-api/src/modules/events/__tests__/policy.test.ts`).
 - English UI consistency rule in `AGENTS.md` requiring all user-facing strings across `sekkha-frontend` to be in English.
 - Comprehensive bilingual (Bahasa Indonesia & English) Privacy Policy compliant with Indonesian Law No. 27 of 2022 on Personal Data Protection (UU PDP) and tailored for Vihara Tri Maha Dharma Buddhist youth community (`privacyContent.ts`).
@@ -12,6 +13,7 @@ All notable changes to Sekkha Apps. Semver (`MAJOR.MINOR.PATCH`); newest on top.
 - Unit tests for `PrivacyPolicyDocument` and `PrivacyPolicyPage`.
 
 ### Changed
+- Standardized registration conflict response to HTTP 409 (`"Email already registered"`) per PRD TC-AUTH-02; updated frontend auth service, form hooks, and UI error states accordingly.
 - Event Attendance and Lifecycle PRD Alignment:
   - Removed deprecated real-time SSE stream (`/api/events/:id/live-attendance`) per PRD draft attendance architecture.
   - Aligned activist visibility condition in `services.ts` and `canViewEvent` in `policy.ts` with PRD visibility specifications.
@@ -21,6 +23,9 @@ All notable changes to Sekkha Apps. Semver (`MAJOR.MINOR.PATCH`); newest on top.
 - Upgraded `PrivacyPolicyModal` in registration flow to support bilingual toggling between full Indonesian PDP-compliant legal terms and English summary with scroll-to-bottom agreement verification.
 
 ### Fixed
+- Authentication PRD alignment and mockability:
+  - Enabled dynamic dispatch on `authModels` named exports in `sekkha-api/src/modules/auth/models.ts` for unit test isolation.
+  - Enhanced API `errorHandler.ts` to respect custom `status` properties on thrown errors.
 - Hardened authentication flow and modular boundaries across API and Frontend:
   - **Sign-Up Validation**: Added mandatory `name` field validation on both frontend forms and backend OTP registration schema (`RequestRegisterOtpSchema`).
   - **Onboarding Route Guard**: Added redirect checks in `_authenticated.tsx` preventing users with `onboardingCompleted: false` from accessing app pages before completing onboarding.

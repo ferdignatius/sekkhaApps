@@ -134,12 +134,12 @@ export const eventServices = {
   async getEventDetail(id: string, userRole: string, isPrivileged: boolean) {
     const event = await eventModels.findEventById(id)
     if (!event) {
-      throw new AppError("Event tidak ditemukan", 404, "EVENT_NOT_FOUND")
+      throw new AppError("Event not found", 404, "EVENT_NOT_FOUND")
     }
 
     if (!canViewEvent(userRole, event.status, event.visibility)) {
       // Return 404 Not Found to prevent information disclosure per PRD Section 5
-      throw new AppError("Event tidak ditemukan", 404, "EVENT_NOT_FOUND")
+      throw new AppError("Event not found", 404, "EVENT_NOT_FOUND")
     }
 
     return {
@@ -175,7 +175,7 @@ export const eventServices = {
   async createEvent(actorId: string, actorRole: string, body: CreateEventInput) {
     const eventDate = new Date(body.event_date)
     if (isNaN(eventDate.getTime())) {
-      throw new AppError("Format tanggal event tidak valid", 400, "INVALID_DATE")
+      throw new AppError("Invalid event date format", 400, "INVALID_DATE")
     }
 
     // PRD Section 6.3 & 8.3 & AC-EVT-12: Event date cannot be in the past
@@ -201,7 +201,7 @@ export const eventServices = {
     }
 
     if (!eventTypeId || !eventType) {
-      throw new AppError("Jenis event (event_type_id) wajib dipilih", 400, "EVENT_TYPE_REQUIRED")
+      throw new AppError("Event type (event_type_id) is required", 400, "EVENT_TYPE_REQUIRED")
     }
 
     let seasonId = body.season_id
@@ -269,18 +269,18 @@ export const eventServices = {
   async updateEvent(actorId: string, actorRole: string, id: string, body: UpdateEventInput) {
     const current = await eventModels.findEventById(id)
     if (!current) {
-      throw new AppError("Event tidak ditemukan", 404, "EVENT_NOT_FOUND")
+      throw new AppError("Event not found", 404, "EVENT_NOT_FOUND")
     }
 
     if (current.status === "closed") {
-      throw new AppError("Event yang sudah ditutup tidak dapat diubah.", 400, "CANNOT_EDIT_CLOSED_EVENT")
+      throw new AppError("Closed events cannot be edited.", 400, "CANNOT_EDIT_CLOSED_EVENT")
     }
 
     let eventDate: Date | undefined
     if (body.event_date) {
       eventDate = new Date(body.event_date)
       if (isNaN(eventDate.getTime())) {
-        throw new AppError("Format tanggal event tidak valid", 400, "INVALID_DATE")
+        throw new AppError("Invalid event date format", 400, "INVALID_DATE")
       }
       if (eventDate.getTime() < Date.now() - 60000) {
         throw new AppError("Event date cannot be in the past", 400, "EVENT_DATE_PAST")
@@ -357,7 +357,7 @@ export const eventServices = {
       })
 
       if (!currentEvent) {
-        throw new AppError("Event tidak ditemukan", 404, "EVENT_NOT_FOUND")
+        throw new AppError("Event not found", 404, "EVENT_NOT_FOUND")
       }
 
       const currentStatus = currentEvent.status
@@ -707,12 +707,12 @@ export const eventServices = {
   ) {
     const event = await eventModels.findEventBasic(eventId)
     if (!event) {
-      throw new AppError("Event tidak ditemukan.", 404, "EVENT_NOT_FOUND")
+      throw new AppError("Event not found.", 404, "EVENT_NOT_FOUND")
     }
 
     if (event.status !== "active") {
       throw new AppError(
-        `Presensi tidak dapat dilakukan karena status event saat ini "${event.status}". Presensi hanya dibuka saat event berstatus "active".`,
+        `Attendance cannot be recorded because current event status is "${event.status}". Attendance is only open when event is "active".`,
         400,
         "EVENT_NOT_ACTIVE"
       )
@@ -721,7 +721,7 @@ export const eventServices = {
     const user = await eventModels.findUserForAttendance(targetIdentifier)
     if (!user) {
       throw new AppError(
-        `User dengan nomor anggota/ID "${targetIdentifier}" tidak ditemukan.`,
+        `User with identifier "${targetIdentifier}" not found.`,
         404,
         "USER_NOT_FOUND"
       )
@@ -730,7 +730,7 @@ export const eventServices = {
     // Check existing attendance (Zero duplicate guarantee)
     const existing = await eventModels.findExistingAttendance(eventId, user.id)
     if (existing) {
-      throw new AppError("Peserta sudah tercatat hadir", 409, "ALREADY_ATTENDED")
+      throw new AppError("Participant has already attended", 409, "ALREADY_ATTENDED")
     }
 
     // Evaluate Late Penalty
@@ -756,14 +756,14 @@ export const eventServices = {
       })
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-        throw new AppError("Peserta sudah tercatat hadir", 409, "ALREADY_ATTENDED")
+        throw new AppError("Participant has already attended", 409, "ALREADY_ATTENDED")
       }
       throw error
     }
 
     await invalidatePattern("user:*:home:*")
 
-    const attendeeName = user.profile?.name ?? "Anggota Sekkha"
+    const attendeeName = user.profile?.name ?? "Sekkha Member"
 
     auditLogger.log({
       actorId,
@@ -806,15 +806,15 @@ export const eventServices = {
       eventModels.findExistingAttendance(eventId, userId),
     ])
     if (!event) {
-      throw new AppError("Event tidak ditemukan.", 404, "EVENT_NOT_FOUND")
+      throw new AppError("Event not found.", 404, "EVENT_NOT_FOUND")
     }
     if (!existing) {
-      throw new AppError("Presensi peserta tidak ditemukan.", 404, "ATTENDANCE_NOT_FOUND")
+      throw new AppError("Attendance record not found.", 404, "ATTENDANCE_NOT_FOUND")
     }
 
     if (existing.isFinalized || event.status === "closed") {
       throw new AppError(
-        "Tidak dapat mengubah peran pelayanan pada event yang sudah ditutup.",
+        "Cannot modify badge activity on a closed event.",
         400,
         "ATTENDANCE_ALREADY_FINALIZED"
       )
@@ -825,7 +825,7 @@ export const eventServices = {
     if (badgeActivityId) {
       badgeActivity = await eventModels.findBadgeActivityById(badgeActivityId)
       if (!badgeActivity) {
-        throw new AppError("Badge Activity tidak ditemukan.", 404, "BADGE_ACTIVITY_NOT_FOUND")
+        throw new AppError("Badge activity not found.", 404, "BADGE_ACTIVITY_NOT_FOUND")
       }
       badgeBonusPoints = badgeActivity.bonusPoints
     }
@@ -858,7 +858,7 @@ export const eventServices = {
     const safeLimit = Math.min(200, Math.max(1, limit))
     const event = await eventModels.findEventBasic(eventId)
     if (!event) {
-      throw new AppError("Event tidak ditemukan.", 404, "EVENT_NOT_FOUND")
+      throw new AppError("Event not found.", 404, "EVENT_NOT_FOUND")
     }
 
     const totalCount = await eventModels.countEventAttendances(eventId)
@@ -875,7 +875,7 @@ export const eventServices = {
       attendances: attendances.map((a) => ({
         attendance_id: a.id,
         user_id: a.userId,
-        name: a.user.profile?.name ?? "Anggota Sekkha",
+        name: a.user.profile?.name ?? "Sekkha Member",
         user_number: a.user.userNumber ? String(a.user.userNumber) : "",
         role: a.user.role,
         school: a.user.profile?.school?.name ?? "Umum",
@@ -898,14 +898,14 @@ export const eventServices = {
       eventModels.findExistingAttendance(eventId, userId),
     ])
     if (!event) {
-      throw new AppError("Event tidak ditemukan.", 404, "EVENT_NOT_FOUND")
+      throw new AppError("Event not found.", 404, "EVENT_NOT_FOUND")
     }
     if (!existing) {
-      throw new AppError("Presensi tidak ditemukan.", 404, "ATTENDANCE_NOT_FOUND")
+      throw new AppError("Attendance record not found.", 404, "ATTENDANCE_NOT_FOUND")
     }
     if (existing.isFinalized || event.status === "closed") {
       throw new AppError(
-        "Presensi tidak dapat dibatalkan pada event yang sudah ditutup.",
+        "Attendance cannot be removed on a closed event.",
         400,
         "CANNOT_DELETE_FINALIZED_ATTENDANCE"
       )
@@ -915,7 +915,7 @@ export const eventServices = {
       await eventModels.deleteAttendance(eventId, userId)
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
-        throw new AppError("Presensi tidak ditemukan.", 404, "ATTENDANCE_NOT_FOUND")
+        throw new AppError("Attendance record not found.", 404, "ATTENDANCE_NOT_FOUND")
       }
       throw error
     }
@@ -929,14 +929,14 @@ export const eventServices = {
       details: { eventId },
     })
 
-    return { success: true, user_id: userId }
+    return { user_id: userId }
   },
 
 
   async deleteEvent(actorId: string, actorRole: string, id: string) {
     const current = await eventModels.findEventBasic(id)
     if (!current) {
-      throw new AppError("Event tidak ditemukan.", 404, "EVENT_NOT_FOUND")
+      throw new AppError("Event not found.", 404, "EVENT_NOT_FOUND")
     }
     if (current.status === "closed") {
       throw new AppError(
@@ -950,7 +950,7 @@ export const eventServices = {
       await eventModels.deleteEvent(id)
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
-        throw new AppError("Event tidak ditemukan.", 404, "EVENT_NOT_FOUND")
+        throw new AppError("Event not found.", 404, "EVENT_NOT_FOUND")
       }
       throw error
     }

@@ -26,6 +26,10 @@ export function initLeaderboardCron(): void {
 
   console.log("🕒 Leaderboard cron scheduled: Setiap Minggu malam jam 03:00 WIB (Asia/Jakarta)")
 
+  if (process.env.NODE_ENV === "test") {
+    return
+  }
+
   // Pre-warm snapshot on server startup if not yet computed
   computeAndCacheLeaderboard().catch((err) => {
     console.warn("⚠️ Initial leaderboard pre-warm warning:", err.message)

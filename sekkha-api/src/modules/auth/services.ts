@@ -5,6 +5,7 @@ import { eventbus, DomainEvents } from "../../core/eventbus"
 import type { UserRegisteredPayload } from "../../core/eventbus"
 import { redis } from "../../lib/redis"
 import { auditLogger } from "../../lib/auditLogger"
+import { AppError } from "../../lib/AppError"
 import * as repo from "./models"
 import type {
   RegisterInput,
@@ -115,18 +116,14 @@ export async function requestRegisterOtp(input: RequestRegisterOtpInput) {
   // 1. Check if email already registered (TC-AUTH-02: Throw 409 Conflict per PRD)
   const emailExists = await repo.findUserByEmail(normalizedEmail)
   if (emailExists) {
-    const err = new Error("Email already registered") as Error & { status: number }
-    err.status = 409
-    throw err
+    throw new AppError("Email already registered", 409, "EMAIL_ALREADY_REGISTERED")
   }
 
   // 2. Check if username already taken (if provided)
   if (input.username) {
     const usernameExists = await repo.findUserByUsername(input.username)
     if (usernameExists) {
-      const err = new Error("Username already taken") as Error & { status: number }
-      err.status = 409
-      throw err
+      throw new AppError("Username already taken", 409, "USERNAME_ALREADY_TAKEN")
     }
   }
 
@@ -168,32 +165,26 @@ export async function verifyRegisterOtp(input: VerifyRegisterOtpInput): Promise<
   const payload = consumed || await getRegistrationOtp(normalizedEmail)
 
   if (!payload) {
-    const err = new Error("Invalid or expired OTP") as Error & { status: number }
-    err.status = 400
-    throw err
+    throw new AppError("Invalid or expired OTP", 400, "INVALID_OR_EXPIRED_OTP")
   }
 
   if (!consumed && !timingSafeEqualOtpHash(payload.otpHashed, input.otp)) {
     const attempts = await incrementRegistrationOtpAttempts(normalizedEmail)
     if (attempts >= 5) {
-      const err = new Error(
-        "Too many failed OTP attempts. Challenge invalidated."
-      ) as Error & { status: number }
-      err.status = 400
-      throw err
+      throw new AppError(
+        "Too many failed OTP attempts. Challenge invalidated.",
+        400,
+        "OTP_MAX_ATTEMPTS_EXCEEDED"
+      )
     }
-    const err = new Error("Invalid or expired OTP") as Error & { status: number }
-    err.status = 400
-    throw err
+    throw new AppError("Invalid or expired OTP", 400, "INVALID_OR_EXPIRED_OTP")
   }
 
   // Double check if account was registered concurrently
   const emailExists = await repo.findUserByEmail(normalizedEmail)
   if (emailExists) {
     await deleteRegistrationOtp(normalizedEmail)
-    const err = new Error("Email already registered") as Error & { status: number }
-    err.status = 409
-    throw err
+    throw new AppError("Email already registered", 409, "EMAIL_ALREADY_REGISTERED")
   }
 
   // Create user in database
@@ -263,11 +254,11 @@ export async function resendRegisterOtp(input: ResendOtpInput) {
 
   const payload = await getRegistrationOtp(normalizedEmail)
   if (!payload) {
-    const err = new Error(
-      "Registration session not found or expired. Please sign up again."
-    ) as Error & { status: number }
-    err.status = 400
-    throw err
+    throw new AppError(
+      "Registration session not found or expired. Please sign up again.",
+      400,
+      "REGISTRATION_SESSION_EXPIRED"
+    )
   }
 
   const newOtp = randomInt(100000, 1000000).toString()
@@ -299,17 +290,13 @@ export async function resendRegisterOtp(input: ResendOtpInput) {
 export async function registerUser(input: RegisterInput): Promise<AuthResult> {
   const emailExists = await repo.findUserByEmail(input.email)
   if (emailExists) {
-    const err = new Error("Email already registered") as Error & { status: number }
-    err.status = 409
-    throw err
+    throw new AppError("Email already registered", 409, "EMAIL_ALREADY_REGISTERED")
   }
 
   if (input.username) {
     const usernameExists = await repo.findUserByUsername(input.username)
     if (usernameExists) {
-      const err = new Error("Username already taken") as Error & { status: number }
-      err.status = 409
-      throw err
+      throw new AppError("Username already taken", 409, "USERNAME_ALREADY_TAKEN")
     }
   }
 
@@ -372,9 +359,7 @@ export async function loginUser(input: LoginInput): Promise<AuthResult> {
       status: "FAILURE",
       details: { identifier },
     })
-    const err = new Error("Invalid credentials") as Error & { status: number }
-    err.status = 401
-    throw err
+    throw new AppError("Invalid credentials", 401, "INVALID_CREDENTIALS")
   }
 
   const valid = await verifyPassword(input.password, user.password)
@@ -385,9 +370,7 @@ export async function loginUser(input: LoginInput): Promise<AuthResult> {
       status: "FAILURE",
       details: { identifier },
     })
-    const err = new Error("Invalid credentials") as Error & { status: number }
-    err.status = 401
-    throw err
+    throw new AppError("Invalid credentials", 401, "INVALID_CREDENTIALS")
   }
 
   // Transparent background upgrade for legacy 12-round bcrypt hashes
@@ -439,9 +422,7 @@ export async function verifyToken(token: string) {
   // 1. Check if token was revoked (logged out)
   const revoked = await isTokenRevoked(token)
   if (revoked) {
-    const err = new Error("Session has expired or been revoked") as Error & { status: number }
-    err.status = 401
-    throw err
+    throw new AppError("Session has expired or been revoked", 401, "SESSION_REVOKED")
   }
 
   // 2. JWT verification with pinned algorithm & claims
@@ -458,18 +439,14 @@ export async function verifyToken(token: string) {
 
   const user = await repo.findUserById(payload.userId)
   if (!user) {
-    const err = new Error("User not found") as Error & { status: number }
-    err.status = 401
-    throw err
+    throw new AppError("User not found", 401, "USER_NOT_FOUND")
   }
 
   // 3. Invalidate if password was changed after token issuance
   if (user.passwordChangedAt) {
     const dbTimeSeconds = Math.floor(user.passwordChangedAt.getTime() / 1000)
     if (!payload.passwordChangedAt || dbTimeSeconds > payload.passwordChangedAt) {
-      const err = new Error("Password has been updated. Please sign in again.") as Error & { status: number }
-      err.status = 401
-      throw err
+      throw new AppError("Password has been updated. Please sign in again.", 401, "PASSWORD_UPDATED")
     }
   }
 
@@ -492,22 +469,16 @@ export async function verifyToken(token: string) {
 export async function refreshSession(refreshToken: string): Promise<AuthResult> {
   const record = await verifyAndRotateRefreshTokenRecord(refreshToken)
   if (!record) {
-    const err = new Error("Invalid or expired refresh token") as Error & { status: number }
-    err.status = 401
-    throw err
+    throw new AppError("Invalid or expired refresh token", 401, "INVALID_REFRESH_TOKEN")
   }
 
   const user = await repo.findUserById(record.userId)
   if (!user) {
-    const err = new Error("User not found") as Error & { status: number }
-    err.status = 401
-    throw err
+    throw new AppError("User not found", 401, "USER_NOT_FOUND")
   }
 
   if (user.passwordChangedAt && record.createdAt < user.passwordChangedAt.getTime()) {
-    const err = new Error("Password has been updated. Please sign in again.") as Error & { status: number }
-    err.status = 401
-    throw err
+    throw new AppError("Password has been updated. Please sign in again.", 401, "PASSWORD_UPDATED")
   }
 
   const newAccessToken = generateToken(user.id, user.role, user.name, user.passwordChangedAt)
@@ -599,23 +570,19 @@ export async function forgotPasswordVerifyOtp(input: ForgotPasswordVerifyOtpInpu
   const payload = consumed || (await getForgotPasswordOtp(normalizedEmail))
 
   if (!payload) {
-    const err = new Error("Invalid or expired OTP") as Error & { status: number }
-    err.status = 400
-    throw err
+    throw new AppError("Invalid or expired OTP", 400, "INVALID_OR_EXPIRED_OTP")
   }
 
   if (!consumed && !timingSafeEqualOtpHash(payload.otpHashed, input.otp)) {
     const attempts = await incrementForgotPasswordOtpAttempts(normalizedEmail)
     if (attempts >= 5) {
-      const err = new Error(
-        "Too many failed OTP attempts. Challenge invalidated."
-      ) as Error & { status: number }
-      err.status = 400
-      throw err
+      throw new AppError(
+        "Too many failed OTP attempts. Challenge invalidated.",
+        400,
+        "OTP_MAX_ATTEMPTS_EXCEEDED"
+      )
     }
-    const err = new Error("Invalid or expired OTP") as Error & { status: number }
-    err.status = 400
-    throw err
+    throw new AppError("Invalid or expired OTP", 400, "INVALID_OR_EXPIRED_OTP")
   }
 
   // Consume OTP and generate one-time cryptographically random reset token
@@ -640,25 +607,19 @@ export async function resetPassword(input: ResetPasswordInput) {
   if (input.reset_token) {
     targetUserId = await verifyAndConsumePasswordResetToken(normalizedEmail, input.reset_token)
     if (!targetUserId) {
-      const err = new Error("Invalid or expired reset token") as Error & { status: number }
-      err.status = 400
-      throw err
+      throw new AppError("Invalid or expired reset token", 400, "INVALID_RESET_TOKEN")
     }
   } else if (input.otp) {
     // Backwards-compatible fallback
     const consumed = await consumeForgotPasswordOtp(normalizedEmail, input.otp)
     const payload = consumed || (await getForgotPasswordOtp(normalizedEmail))
     if (!payload || (!consumed && !timingSafeEqualOtpHash(payload.otpHashed, input.otp))) {
-      const err = new Error("Invalid or expired OTP") as Error & { status: number }
-      err.status = 400
-      throw err
+      throw new AppError("Invalid or expired OTP", 400, "INVALID_OR_EXPIRED_OTP")
     }
     targetUserId = payload.userId
     await deleteForgotPasswordOtp(normalizedEmail)
   } else {
-    const err = new Error("Reset token or OTP is required") as Error & { status: number }
-    err.status = 400
-    throw err
+    throw new AppError("Reset token or OTP is required", 400, "RESET_TOKEN_REQUIRED")
   }
 
   const hashedPassword = await hashPassword(input.newPassword, DEFAULT_BCRYPT_COST)

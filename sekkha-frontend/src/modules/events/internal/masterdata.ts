@@ -132,7 +132,7 @@ export const DEFAULT_CATEGORIES: EventCategoryItem[] = [
     colorHex: "#4262FF",
     autofillTitle: "Regular Puja",
     autofillLocation: "Main Dhammasala Vihara Sekkha",
-    autofillDesc: "Kebaktian rutin mingguan pemuda vihara",
+    autofillDesc: "Weekly youth puja and fellowship session",
     target_roles: ["admin", "organizer", "activist", "member"],
   },
   {
@@ -147,7 +147,7 @@ export const DEFAULT_CATEGORIES: EventCategoryItem[] = [
     colorHex: "#0D9488",
     autofillTitle: "Chanting",
     autofillLocation: "Meditation Hall",
-    autofillDesc: "Sesi pelafalan paritta dan sutra kebajikan",
+    autofillDesc: "Chanting and paritta recitation session",
     target_roles: ["admin", "organizer", "activist", "member"],
   },
   {
@@ -162,7 +162,7 @@ export const DEFAULT_CATEGORIES: EventCategoryItem[] = [
     colorHex: "#EC4899",
     autofillTitle: "Volunteer",
     autofillLocation: "Vihara Sekkha",
-    autofillDesc: "Kegiatan bakti sosial dan aksi kerelawanan pemuda",
+    autofillDesc: "Youth volunteer activity and social seva program",
     target_roles: ["admin", "organizer", "activist", "member"],
   },
 ]

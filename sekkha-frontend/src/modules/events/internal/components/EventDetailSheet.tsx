@@ -474,28 +474,11 @@ export function EventDetailSheet({
                 </div>
               )}
 
-              {!isPengurus && isActive && (
-                <button
-                  type="button"
-                  onClick={() =>
-                    navigate({
-                      to: "/events/scan",
-                      search: { eventId: event.id },
-                    })
-                  }
-                  className="flex min-h-[44px] w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-[#0a0a0a] px-6 py-2.5 text-xs font-bold text-white shadow-xs transition-all hover:bg-[#1f1f1f] active:scale-[0.98] sm:w-auto sm:text-sm"
-                >
-                  <CameraIcon className="size-4 text-[#e8b94a]" />
-                  <span>Show My Check-in QR</span>
-                </button>
-              )}
-
-              {!isPengurus && !isActive && (
+              {!isPengurus && (
                 <div className="flex min-h-[44px] items-center gap-2 text-xs font-semibold text-[#6a6a6a]">
                   <ShieldCheckIcon className="size-4 text-[#e8b94a]" />
                   <span>
-                    Your check-in QR will be available when the organizer
-                    activates the event
+                    Your personal attendance QR is available on your Member Profile
                   </span>
                 </div>
               )}
@@ -577,58 +560,63 @@ export function EventDetailSheet({
         </div>
       </section>
 
-      {/* ── 2. Apple HIG Segmented Control Tabs ── */}
-      <div className="flex w-full justify-center sm:w-auto sm:justify-start">
-        <div
-          role="tablist"
-          aria-label="Event detail sections"
-          className="grid w-full grid-cols-2 rounded-full border border-[#e5e5e5] bg-[#faf5e8] p-1 shadow-2xs sm:inline-flex sm:w-auto"
-        >
-          <button
-            id="event-overview-tab"
-            type="button"
-            role="tab"
-            aria-selected={activeTab === "overview"}
-            aria-controls="event-overview-panel"
-            tabIndex={activeTab === "overview" ? 0 : -1}
-            onClick={() => setActiveTab("overview")}
-            className={`flex min-h-[44px] items-center justify-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition-all focus-visible:ring-2 focus-visible:ring-[#0a0a0a] focus-visible:ring-offset-2 focus-visible:outline-none sm:min-w-32 sm:px-5 sm:text-sm ${activeTab === "overview"
-                ? "bg-[#0a0a0a] text-white shadow-xs"
-                : "text-[#6a6a6a] hover:text-[#0a0a0a]"
-              }`}
+      {/* ── 2. Apple HIG Segmented Control Tabs (Attendance tab restricted to organizer & admin per PRD AC-EVT-01) ── */}
+      {isPengurus && (
+        <div className="flex w-full justify-center sm:w-auto sm:justify-start">
+          <div
+            role="tablist"
+            aria-label="Event detail sections"
+            className="grid w-full grid-cols-2 rounded-full border border-[#e5e5e5] bg-[#faf5e8] p-1 shadow-2xs sm:inline-flex sm:w-auto"
           >
-            <InfoIcon className="size-4" />
-            <span>Overview</span>
-          </button>
-
-          <button
-            id="event-attendance-tab"
-            type="button"
-            role="tab"
-            aria-selected={activeTab === "attendance"}
-            aria-controls="event-attendance-panel"
-            tabIndex={activeTab === "attendance" ? 0 : -1}
-            onClick={() => setActiveTab("attendance")}
-            className={`flex min-h-[44px] items-center justify-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition-all focus-visible:ring-2 focus-visible:ring-[#0a0a0a] focus-visible:ring-offset-2 focus-visible:outline-none sm:min-w-32 sm:px-5 sm:text-sm ${activeTab === "attendance"
-                ? "bg-[#0a0a0a] text-white shadow-xs"
-                : "text-[#6a6a6a] hover:text-[#0a0a0a]"
+            <button
+              id="event-overview-tab"
+              type="button"
+              role="tab"
+              aria-selected={activeTab === "overview"}
+              aria-controls="event-overview-panel"
+              tabIndex={activeTab === "overview" ? 0 : -1}
+              onClick={() => setActiveTab("overview")}
+              className={`flex min-h-[44px] items-center justify-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition-all focus-visible:ring-2 focus-visible:ring-[#0a0a0a] focus-visible:ring-offset-2 focus-visible:outline-none sm:min-w-32 sm:px-5 sm:text-sm ${
+                activeTab === "overview"
+                  ? "bg-[#0a0a0a] text-white shadow-xs"
+                  : "text-[#6a6a6a] hover:text-[#0a0a0a]"
               }`}
-          >
-            <UsersIcon className="size-4" />
-            <span>Attendance</span>
-            <span
-              className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${activeTab === "attendance"
-                  ? "bg-white/20 text-white"
-                  : "bg-black/[0.08] text-[#0a0a0a]"
-                }`}
             >
-              {attendances.length > 0
-                ? attendances.length
-                : (event.total_attendees ?? 0)}
-            </span>
-          </button>
+              <InfoIcon className="size-4" />
+              <span>Overview</span>
+            </button>
+
+            <button
+              id="event-attendance-tab"
+              type="button"
+              role="tab"
+              aria-selected={activeTab === "attendance"}
+              aria-controls="event-attendance-panel"
+              tabIndex={activeTab === "attendance" ? 0 : -1}
+              onClick={() => setActiveTab("attendance")}
+              className={`flex min-h-[44px] items-center justify-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition-all focus-visible:ring-2 focus-visible:ring-[#0a0a0a] focus-visible:ring-offset-2 focus-visible:outline-none sm:min-w-32 sm:px-5 sm:text-sm ${
+                activeTab === "attendance"
+                  ? "bg-[#0a0a0a] text-white shadow-xs"
+                  : "text-[#6a6a6a] hover:text-[#0a0a0a]"
+              }`}
+            >
+              <UsersIcon className="size-4" />
+              <span>Attendance</span>
+              <span
+                className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${
+                  activeTab === "attendance"
+                    ? "bg-white/20 text-white"
+                    : "bg-black/[0.08] text-[#0a0a0a]"
+                }`}
+              >
+                {attendances.length > 0
+                  ? attendances.length
+                  : (event.total_attendees ?? 0)}
+              </span>
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* ── 3. Tab Contents ── */}
       {activeTab === "overview" && (
@@ -655,7 +643,7 @@ export function EventDetailSheet({
                     {dayName}, {dateStr}
                   </p>
                   <p className="mt-0.5 text-xs font-medium text-[#6a6a6a]">
-                    Pukul {timeStr} WIB
+                    {timeStr} WIB
                   </p>
                 </div>
               </div>

@@ -13,6 +13,8 @@ All notable changes to Sekkha Apps. Semver (`MAJOR.MINOR.PATCH`); newest on top.
 - Unit tests for `PrivacyPolicyDocument` and `PrivacyPolicyPage`.
 
 ### Changed
+- Aligned frontend events attendance access with PRD AC-EVT-01: restricted `/events/scan` UI and attendance tab strictly to `organizer` and `admin`, displaying member attendance profile card guidance for `member` and `activist`.
+- Refactored English UI copy across master data category descriptions and event detail timestamps in `sekkha-frontend/src/modules/events`.
 - Standardized registration conflict response to HTTP 409 (`"Email already registered"`) per PRD TC-AUTH-02; updated frontend auth service, form hooks, and UI error states accordingly.
 - Event Attendance and Lifecycle PRD Alignment:
   - Removed deprecated real-time SSE stream (`/api/events/:id/live-attendance`) per PRD draft attendance architecture.

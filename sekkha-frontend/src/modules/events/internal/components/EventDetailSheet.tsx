@@ -823,10 +823,10 @@ export function EventDetailSheet({
           {isPengurus && (
             <div>
               {isActive && (
-                <div className="flex flex-col items-start justify-between gap-4 rounded-[24px] border border-[#1a3a3a]/20 bg-[#faf5e8] p-4 shadow-xs sm:flex-row sm:items-center sm:p-6">
+                <div className="flex flex-col items-start justify-between gap-4 rounded-[24px] border border-[#e5e5e5] bg-[#fffaf0] p-4 shadow-xs sm:flex-row sm:items-center sm:p-6">
                   <div className="space-y-1 text-left">
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-[#1a3a3a] px-2.5 py-0.5 text-xs font-bold text-[#e8b94a]">
-                      <span className="size-2 animate-ping rounded-full bg-[#e8b94a]" />
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-[#0a0a0a] px-2.5 py-0.5 text-xs font-bold text-white shadow-2xs">
+                      <span className="size-2 animate-ping rounded-full bg-emerald-400" />
                       Live Attendance Scanning Active
                     </span>
                     <h3 className="text-base font-bold text-[#0a0a0a] sm:text-lg">
@@ -883,7 +883,7 @@ export function EventDetailSheet({
           <div className="rounded-[24px] border border-[#e5e5e5] bg-[#faf5e8] p-3.5 shadow-xs sm:p-6">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-[#e5e5e5] pb-3">
               <div className="flex items-center gap-2">
-                <ClipboardListIcon className="size-4.5 text-[#1a3a3a]" />
+                <ClipboardListIcon className="size-4.5 text-[#0a0a0a]" />
                 <h3 className="text-sm font-bold text-[#0a0a0a] sm:text-base">
                   Recorded Attendees ({attendances.length})
                 </h3>

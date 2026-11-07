@@ -1,6 +1,7 @@
 import { Router } from "express"
 import { requireAuth, requireRole } from "../../middleware/auth"
 import { configureControllers } from "./controllers"
+import { AppError } from "../../lib/AppError"
 
 import { schoolControllers } from "../schools/controllers"
 
@@ -33,7 +34,7 @@ configureRouter.post("/school-requests/:id/reject", schoolControllers.rejectScho
 configureRouter.use((req, res, next) => {
   if (req.method !== "GET" && req.method !== "HEAD" && req.method !== "OPTIONS") {
     if (req.user?.role !== "admin") {
-      res.status(403).json({ error: "Only admin can modify configuration settings" })
+      next(new AppError("Only admin can modify configuration settings", 403, "FORBIDDEN"))
       return
     }
   }

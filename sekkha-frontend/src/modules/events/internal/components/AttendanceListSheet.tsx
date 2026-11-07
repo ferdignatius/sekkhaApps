@@ -1,7 +1,6 @@
 // feature/events/components/AttendanceListSheet
 // Apple HIG Inset Grouped List for Attendance Records.
-// Features summary capsules, instant live search,
-// badge activity assignment, late arrival indicators, and draft deletion.
+// Standardized strictly with Sekkha Design System (DESIGN.md & AGENTS.md).
 
 import { useState, useMemo, useEffect } from "react"
 import {
@@ -198,7 +197,7 @@ export function AttendanceListSheet({
 
   return (
     <div className="space-y-4 text-left font-sans">
-      {/* ── 1. Top Glanceable Summary Cards ── */}
+      {/* ── 1. Top Glanceable Summary Cards (Harmonized Clay Tokens) ── */}
       <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
         {/* Total Attendees (Filter: All) */}
         <button
@@ -235,12 +234,12 @@ export function AttendanceListSheet({
           onClick={() => setFilterMethod(filterMethod === "qr" ? "all" : "qr")}
           className={`flex min-h-[64px] cursor-pointer items-center gap-3 rounded-[18px] p-3 text-left transition-all ${
             filterMethod === "qr"
-              ? "border-2 border-[#1a3a3a] bg-white shadow-xs ring-2 ring-[#1a3a3a]/15"
-              : "border border-[#e5e5e5] bg-[#fffaf0] hover:border-[#1a3a3a]/40 hover:bg-[#faf5e8]"
+              ? "border-2 border-[#0a0a0a] bg-white shadow-xs ring-2 ring-[#0a0a0a]/10"
+              : "border border-[#e5e5e5] bg-[#fffaf0] hover:border-[#0a0a0a]/30 hover:bg-[#faf5e8]"
           }`}
           title="Filter only QR Code check-ins"
         >
-          <div className="flex size-9 shrink-0 items-center justify-center rounded-[12px] bg-[#1a3a3a] text-white shadow-xs">
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-[12px] bg-[#0a0a0a] text-white shadow-xs">
             <QrCodeIcon className="size-4" />
           </div>
           <div className="min-w-0 flex-1">
@@ -249,7 +248,7 @@ export function AttendanceListSheet({
                 QR Scan
               </p>
               {filterMethod === "qr" && (
-                <span className="size-1.5 rounded-full bg-[#1a3a3a]" />
+                <span className="size-1.5 rounded-full bg-[#0a0a0a]" />
               )}
             </div>
             <p className="text-sm font-bold text-[#0a0a0a] sm:text-base">
@@ -271,7 +270,7 @@ export function AttendanceListSheet({
           }`}
           title="Filter only manual check-ins"
         >
-          <div className="flex size-9 shrink-0 items-center justify-center rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] text-[#0a0a0a] shadow-xs">
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-[12px] bg-[#0a0a0a] text-white shadow-xs">
             <ClipboardListIcon className="size-4" />
           </div>
           <div className="min-w-0 flex-1">
@@ -290,8 +289,8 @@ export function AttendanceListSheet({
         </button>
 
         {/* Total Points / Late indicator */}
-        <div className="flex min-h-[64px] items-center gap-3 rounded-[18px] border border-[#e8b94a]/40 bg-[#faf5e8] p-3 shadow-2xs">
-          <div className="flex size-9 shrink-0 items-center justify-center rounded-[12px] bg-[#0a0a0a] text-[#e8b94a] shadow-xs">
+        <div className="flex min-h-[64px] items-center gap-3 rounded-[18px] border border-[#e5e5e5] bg-[#fffaf0] p-3 shadow-2xs">
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-[12px] bg-[#0a0a0a] text-white shadow-xs">
             <SparklesIcon className="size-4" />
           </div>
           <div className="min-w-0">
@@ -359,7 +358,7 @@ export function AttendanceListSheet({
           )}
         </div>
       ) : (
-        <div className="divide-y divide-[#f0f0f0] overflow-hidden rounded-[20px] border border-[#e5e5e5] bg-[#fffaf0] shadow-xs">
+        <div className="divide-y divide-[#e5e5e5] overflow-hidden rounded-[20px] border border-[#e5e5e5] bg-[#fffaf0] shadow-xs">
           {paginatedRecords.map((rec, idx) => {
             const basePoints = rec.points_earned ?? rec.base_points ?? 50
             const bonusPoints = rec.badge_bonus_points ?? 0
@@ -368,7 +367,7 @@ export function AttendanceListSheet({
             return (
               <div
                 key={`${rec.user_id}-${idx}`}
-                className="flex flex-col gap-2.5 p-3.5 transition-colors hover:bg-[#faf5e8]/50 sm:p-4"
+                className="flex flex-col gap-2.5 p-3.5 transition-colors hover:bg-[#faf5e8]/60 sm:p-4"
               >
                 {/* Upper Row: Avatar, Identity, Method & Points */}
                 <div className="flex items-start justify-between gap-3">
@@ -383,14 +382,14 @@ export function AttendanceListSheet({
                           {rec.name}
                         </p>
                         {rec.role && (
-                          <span className="py-0.2 rounded-full bg-black/[0.05] px-2 text-[10px] font-semibold text-[#6a6a6a] uppercase">
+                          <span className="rounded-full border border-[#e5e5e5] bg-[#faf5e8] px-2 py-0.5 text-[10px] font-semibold text-[#0a0a0a] uppercase">
                             {rec.role}
                           </span>
                         )}
                       </div>
                       <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-[#6a6a6a]">
                         {rec.user_number && (
-                          <span className="font-mono font-medium text-[#1a3a3a]">
+                          <span className="font-mono font-medium text-[#0a0a0a]">
                             {rec.user_number}
                           </span>
                         )}
@@ -406,41 +405,38 @@ export function AttendanceListSheet({
                     </div>
                   </div>
 
-                  {/* Right: Method Pill + Total Points */}
+                  {/* Right: Method Pill + Total Points (Standardized Tokens) */}
                   <div className="flex shrink-0 items-center gap-2">
-                    <span
-                      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
-                        rec.method === "qr"
-                          ? "border border-[#1a3a3a]/20 bg-[#1a3a3a]/10 text-[#1a3a3a]"
-                          : "border border-[#e5e5e5] bg-[#faf5e8] text-[#6a6a6a]"
-                      }`}
-                    >
+                    <span className="inline-flex items-center gap-1 rounded-full border border-[#e5e5e5] bg-[#faf5e8] px-2.5 py-0.5 text-[11px] font-medium text-[#0a0a0a]">
                       {rec.method === "qr" ? (
                         <>
-                          <QrCodeIcon className="size-3 text-[#1a3a3a]" />
+                          <QrCodeIcon className="size-3 text-[#0a0a0a]" />
                           <span className="hidden sm:inline">QR Scan</span>
                           <span className="sm:hidden">QR</span>
                         </>
                       ) : (
-                        "Manual"
+                        <>
+                          <ClipboardListIcon className="size-3 text-[#0a0a0a]" />
+                          <span>Manual</span>
+                        </>
                       )}
                     </span>
 
-                    <span className="inline-flex items-center gap-1 rounded-[8px] border border-[#e8b94a]/40 bg-[#e8b94a]/15 px-2.5 py-0.5 text-xs font-bold text-[#0a0a0a] shadow-2xs">
-                      <SparklesIcon className="size-3 text-[#e8b94a]" />
+                    <span className="inline-flex items-center gap-1 rounded-full border border-[#e5e5e5] bg-[#faf5e8] px-2.5 py-0.5 text-xs font-bold text-[#0a0a0a] shadow-2xs">
+                      <SparklesIcon className="size-3 text-[#0a0a0a]" />
                       <span>+{totalPoints} Pts</span>
                     </span>
                   </div>
                 </div>
 
                 {/* Lower Row: Late Status, Service Role Badge Activity, Actions */}
-                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[#f4f0e6] pt-2">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[#e5e5e5] pt-2">
                   <div className="flex flex-wrap items-center gap-2">
                     {/* Late Arrival Badge */}
                     {rec.is_late ? (
                       <Badge
                         variant="destructive"
-                        glass
+                        size="sm"
                         className="gap-1 text-[11px] font-medium"
                       >
                         <ClockIcon className="size-3" />
@@ -450,20 +446,21 @@ export function AttendanceListSheet({
                       </Badge>
                     ) : (
                       <Badge
-                        variant="emerald"
-                        glass
-                        className="gap-1 text-[11px] font-medium"
+                        variant="secondary"
+                        size="sm"
+                        className="gap-1 text-[11px] font-medium text-[#0a0a0a]"
                       >
+                        <CheckIcon className="size-3 text-[#0a0a0a]" />
                         <span>On Time</span>
                       </Badge>
                     )}
 
                     {/* Service Role Badge Activity */}
                     {rec.badge_activity ? (
-                      <span className="inline-flex items-center gap-1.5 rounded-full border border-[#e8b94a]/60 bg-[#fff8e7] px-2.5 py-0.5 text-[11px] font-semibold text-[#855e00] shadow-2xs">
-                        <AwardIcon className="size-3" />
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-[#e5e5e5] bg-[#faf5e8] px-2.5 py-0.5 text-[11px] font-semibold text-[#0a0a0a] shadow-2xs">
+                        <AwardIcon className="size-3 text-[#0a0a0a]" />
                         <span>{rec.badge_activity}</span>
-                        <span className="font-bold">
+                        <span className="font-bold text-[#0a0a0a]">
                           (+{rec.badge_bonus_points ?? 30} Pts)
                         </span>
                         {isEditable && (
@@ -472,7 +469,7 @@ export function AttendanceListSheet({
                             onClick={() =>
                               handleAssignBadgeActivity(rec.user_id, null)
                             }
-                            className="ml-1 text-[#855e00] hover:text-[#0a0a0a]"
+                            className="ml-1 text-[#6a6a6a] hover:text-[#0a0a0a]"
                             title="Remove role"
                           >
                             <XIcon className="size-3" />
@@ -484,9 +481,9 @@ export function AttendanceListSheet({
                         <button
                           type="button"
                           onClick={() => setBadgePickerTarget(rec)}
-                          className="inline-flex min-h-[30px] cursor-pointer items-center gap-1 rounded-full border border-[#e5e5e5] bg-[#fffaf0] px-2.5 py-0.5 text-[11px] font-medium text-[#6a6a6a] shadow-2xs hover:border-[#0a0a0a] hover:text-[#0a0a0a]"
+                          className="inline-flex min-h-[30px] cursor-pointer items-center gap-1 rounded-full border border-[#e5e5e5] bg-[#faf5e8] px-2.5 py-0.5 text-[11px] font-medium text-[#6a6a6a] shadow-2xs hover:border-[#0a0a0a] hover:bg-white hover:text-[#0a0a0a]"
                         >
-                          <AwardIcon className="size-3 text-[#e8b94a]" />
+                          <AwardIcon className="size-3 text-[#0a0a0a]" />
                           <span>+ Assign Service Role</span>
                         </button>
                       )
@@ -500,7 +497,7 @@ export function AttendanceListSheet({
                         <button
                           type="button"
                           onClick={() => setDeleteTarget(rec)}
-                          className="inline-flex min-h-[32px] cursor-pointer items-center justify-center rounded-full border border-[#e5e5e5] bg-[#fffaf0] px-2.5 py-1 text-xs text-[#6a6a6a] shadow-2xs transition-all hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700 active:scale-95"
+                          className="inline-flex min-h-[32px] cursor-pointer items-center justify-center rounded-full border border-[#e5e5e5] bg-[#faf5e8] px-2.5 py-1 text-xs text-[#6a6a6a] shadow-2xs transition-all hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700 active:scale-95"
                           title="Remove draft check-in"
                         >
                           <Trash2Icon className="size-3.5" />
@@ -580,8 +577,8 @@ export function AttendanceListSheet({
           <div className="w-full max-w-md animate-in space-y-4 rounded-[24px] border border-[#e5e5e5] bg-[#fffaf0] p-5 shadow-2xl zoom-in-95">
             <div className="flex items-start justify-between">
               <div>
-                <span className="inline-flex items-center gap-1.5 text-xs font-bold text-[#1a3a3a]">
-                  <AwardIcon className="size-3.5 text-[#e8b94a]" />
+                <span className="inline-flex items-center gap-1.5 text-xs font-bold text-[#0a0a0a]">
+                  <AwardIcon className="size-3.5 text-[#0a0a0a]" />
                   Service Role Assignment
                 </span>
                 <h3 className="mt-1 text-base font-bold text-[#0a0a0a]">
@@ -614,8 +611,8 @@ export function AttendanceListSheet({
                   }
                   className={`flex min-h-[44px] w-full cursor-pointer items-center justify-between rounded-[14px] border p-3 text-xs font-semibold transition-all ${
                     !badgePickerTarget.badge_activity_id
-                      ? "border-[#0a0a0a] bg-white text-[#0a0a0a] ring-1 ring-black"
-                      : "border-[#e5e5e5] bg-[#faf5e8] text-[#6a6a6a] hover:bg-white"
+                      ? "border-2 border-[#0a0a0a] bg-white text-[#0a0a0a] shadow-xs"
+                      : "border border-[#e5e5e5] bg-[#faf5e8] text-[#0a0a0a] hover:bg-white"
                   }`}
                 >
                   <span>No Service Role (Standard Attendee)</span>
@@ -639,17 +636,17 @@ export function AttendanceListSheet({
                       }
                       className={`flex min-h-[44px] w-full cursor-pointer items-center justify-between rounded-[14px] border p-3 text-xs transition-all ${
                         isSelected
-                          ? "border-[#0a0a0a] bg-white font-bold text-[#0a0a0a] ring-1 ring-black"
-                          : "border-[#e5e5e5] bg-[#faf5e8] text-[#6a6a6a] hover:bg-white"
+                          ? "border-2 border-[#0a0a0a] bg-white font-bold text-[#0a0a0a] shadow-xs"
+                          : "border border-[#e5e5e5] bg-[#faf5e8] text-[#0a0a0a] hover:bg-white"
                       }`}
                     >
                       <div className="flex items-center gap-2">
-                        <AwardIcon className="size-4 text-[#e8b94a]" />
+                        <AwardIcon className="size-4 text-[#0a0a0a]" />
                         <span className="font-bold text-[#0a0a0a]">
                           {act.label}
                         </span>
                       </div>
-                      <span className="rounded-full border border-[#e8b94a]/50 bg-[#e8b94a]/20 px-2 py-0.5 text-[11px] font-bold text-[#0a0a0a]">
+                      <span className="rounded-full border border-[#e5e5e5] bg-white px-2 py-0.5 text-[11px] font-bold text-[#0a0a0a]">
                         +{act.bonusPoints} Pts
                       </span>
                     </button>

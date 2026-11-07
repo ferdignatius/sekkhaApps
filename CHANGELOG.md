@@ -5,6 +5,8 @@ All notable changes to Sekkha Apps. Semver (`MAJOR.MINOR.PATCH`); newest on top.
 ## [Unreleased]
 
 ### Added
+- Comprehensive unit test suite for configure backend schemas, validation constraints, and business guardrails (`sekkha-api/src/modules/configure/__tests__/configure.test.ts`).
+- Unit test suite for configure frontend navigation module definition English UI compliance (`sekkha-frontend/src/modules/configure/internal/__tests__/ConfigureEnglishUI.test.tsx`).
 - Isolated unit test suite covering PRD test cases TC-AUTH-01 through TC-AUTH-13 in `sekkha-api/src/modules/auth/__tests__/auth.test.ts`.
 - Unit test suite for events access control and visibility matrix (`sekkha-api/src/modules/events/__tests__/policy.test.ts`).
 - English UI consistency rule in `AGENTS.md` requiring all user-facing strings across `sekkha-frontend` to be in English.
@@ -13,6 +15,7 @@ All notable changes to Sekkha Apps. Semver (`MAJOR.MINOR.PATCH`); newest on top.
 - Unit tests for `PrivacyPolicyDocument` and `PrivacyPolicyPage`.
 
 ### Changed
+- Standardized `AttendanceListSheet` and `EventDetailSheet` UI color tokens to strictly follow `DESIGN.md` (warm cream surfaces `#fffaf0`/`#faf5e8`, `#e5e5e5` borders, `#0a0a0a` ink, replacing ad-hoc tinting).
 - Aligned frontend events attendance access with PRD AC-EVT-01: restricted `/events/scan` UI and attendance tab strictly to `organizer` and `admin`, displaying member attendance profile card guidance for `member` and `activist`.
 - Refactored English UI copy across master data category descriptions and event detail timestamps in `sekkha-frontend/src/modules/events`.
 - Standardized registration conflict response to HTTP 409 (`"Email already registered"`) per PRD TC-AUTH-02; updated frontend auth service, form hooks, and UI error states accordingly.
@@ -25,6 +28,8 @@ All notable changes to Sekkha Apps. Semver (`MAJOR.MINOR.PATCH`); newest on top.
 - Upgraded `PrivacyPolicyModal` in registration flow to support bilingual toggling between full Indonesian PDP-compliant legal terms and English summary with scroll-to-bottom agreement verification.
 
 ### Fixed
+- Standardized school request creation response message in `sekkha-api/src/modules/schools/controllers.ts` to English (`"School request submitted successfully and pending approval"`).
+- Standardized configure mutation authorization check in `sekkha-api/src/modules/configure/routes.ts` to route errors through `AppError(..., 403, "FORBIDDEN")`.
 - Authentication PRD alignment and mockability:
   - Enabled dynamic dispatch on `authModels` named exports in `sekkha-api/src/modules/auth/models.ts` for unit test isolation.
   - Enhanced API `errorHandler.ts` to respect custom `status` properties on thrown errors.

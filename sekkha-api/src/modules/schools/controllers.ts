@@ -132,7 +132,7 @@ export const schoolControllers = {
       res.status(201).json({
         status: "success",
         code: 201,
-        message: "Pengajuan sekolah berhasil dikirim dan menunggu persetujuan",
+        message: "School request submitted successfully and pending approval",
         data: result,
       })
     } catch (err) {

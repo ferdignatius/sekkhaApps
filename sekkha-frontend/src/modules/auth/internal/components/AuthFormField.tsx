@@ -48,7 +48,7 @@ export function AuthFormField({
       tabIndex={-1}
       onClick={() => setShowPassword(!showPassword)}
       className="flex cursor-pointer items-center justify-center rounded-lg p-1 text-sekkha-slate transition-colors hover:text-sekkha-ink focus:outline-none"
-      title={showPassword ? "Sembunyikan password" : "Tampilkan password"}
+      title={showPassword ? "Hide password" : "Show password"}
     >
       {showPassword ? (
         <EyeOffIcon className="size-4" />
@@ -68,7 +68,7 @@ export function AuthFormField({
       placeholder={
         placeholder ||
         (type === "email"
-          ? "nama@email.com"
+          ? "name@email.com"
           : type === "password"
             ? "••••••••"
             : "")

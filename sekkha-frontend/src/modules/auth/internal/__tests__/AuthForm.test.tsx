@@ -529,7 +529,7 @@ describe("AuthForm — unit tests (task 7.2)", () => {
 
     // Submit with all fields empty — find the form by its aria-label
     const formEl = screen.getByRole("form", {
-      name: /(sign up form|formulir pendaftaran)/i,
+      name: /sign up form/i,
     })
     fireEvent.submit(formEl)
 
@@ -590,7 +590,7 @@ describe("AuthForm — unit tests (task 7.2)", () => {
       <AuthForm
         {...defaultFormProps}
         mode="login"
-        apiError="Terjadi kesalahan."
+        apiError="An unexpected error occurred."
         onInputChange={onInputChangeSpy}
       />
     )
@@ -615,7 +615,7 @@ describe("AuthForm — unit tests (task 7.2)", () => {
       <AuthForm
         {...defaultFormProps}
         mode="login"
-        apiError="Terjadi kesalahan."
+        apiError="An unexpected error occurred."
         onInputChange={onInputChangeSpy}
       />
     )

@@ -194,7 +194,7 @@ export const authModels = {
       }
     }
 
-    throw new Error("Gagal membuat akun karena kepadatan pendaftaran, silakan coba lagi.")
+    throw new Error("Failed to create account due to registration concurrency, please try again.")
   },
 
   async updateUserPassword(userId: string, passwordHash: string) {
@@ -209,11 +209,11 @@ export const authModels = {
   },
 }
 
-// Named exports for direct backward compatibility
-export const findUserByEmail = authModels.findUserByEmail.bind(authModels)
-export const findUserByUsername = authModels.findUserByUsername.bind(authModels)
-export const findUserByIdentifier = authModels.findUserByIdentifier.bind(authModels)
-export const findUserById = authModels.findUserById.bind(authModels)
-export const generateUniqueUsername = authModels.generateUniqueUsername.bind(authModels)
-export const createUser = authModels.createUser.bind(authModels)
-export const updateUserPassword = authModels.updateUserPassword.bind(authModels)
+// Named exports delegating dynamically to authModels
+export const findUserByEmail = (...args: Parameters<typeof authModels.findUserByEmail>) => authModels.findUserByEmail(...args)
+export const findUserByUsername = (...args: Parameters<typeof authModels.findUserByUsername>) => authModels.findUserByUsername(...args)
+export const findUserByIdentifier = (...args: Parameters<typeof authModels.findUserByIdentifier>) => authModels.findUserByIdentifier(...args)
+export const findUserById = (...args: Parameters<typeof authModels.findUserById>) => authModels.findUserById(...args)
+export const generateUniqueUsername = (...args: Parameters<typeof authModels.generateUniqueUsername>) => authModels.generateUniqueUsername(...args)
+export const createUser = (...args: Parameters<typeof authModels.createUser>) => authModels.createUser(...args)
+export const updateUserPassword = (...args: Parameters<typeof authModels.updateUserPassword>) => authModels.updateUserPassword(...args)

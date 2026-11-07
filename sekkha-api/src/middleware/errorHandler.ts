@@ -32,7 +32,7 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
 
   const status = resolvedStatus
   // In staging/production, 500 errors always return safe generic error message
-  const message = status < 500 || isDev ? (err.message ?? "Terjadi kesalahan internal pada server") : "Terjadi kesalahan internal pada server"
+  const message = status < 500 || isDev ? (err.message ?? "Internal server error") : "Internal server error"
 
   res.status(status).json({
     status: "fail",

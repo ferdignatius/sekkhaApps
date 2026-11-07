@@ -112,25 +112,21 @@ export function generateToken(
 export async function requestRegisterOtp(input: RequestRegisterOtpInput) {
   const normalizedEmail = input.email.toLowerCase().trim()
 
-  // 1. Check if email already registered (Anti-Enumeration: return generic message)
+  // 1. Check if email already registered (TC-AUTH-02: Throw 409 Conflict per PRD)
   const emailExists = await repo.findUserByEmail(normalizedEmail)
   if (emailExists) {
-    return {
-      success: true,
-      message: `Jika data pendaftaran valid, kode verifikasi OTP telah dikirimkan ke ${normalizedEmail}`,
-      email: normalizedEmail,
-    }
+    const err = new Error("Email already registered") as Error & { status: number }
+    err.status = 409
+    throw err
   }
 
   // 2. Check if username already taken (if provided)
   if (input.username) {
     const usernameExists = await repo.findUserByUsername(input.username)
     if (usernameExists) {
-      return {
-        success: true,
-        message: `Jika data pendaftaran valid, kode verifikasi OTP telah dikirimkan ke ${normalizedEmail}`,
-        email: normalizedEmail,
-      }
+      const err = new Error("Username already taken") as Error & { status: number }
+      err.status = 409
+      throw err
     }
   }
 
@@ -139,7 +135,7 @@ export async function requestRegisterOtp(input: RequestRegisterOtpInput) {
   const passwordHash = await hashPassword(input.password, DEFAULT_BCRYPT_COST)
   const name = input.name || normalizedEmail.split("@")[0]
 
-  // 4. Save to OTP cache store (TTL 5 minutes)
+  // 4. Save to OTP cache store (TTL 10 minutes)
   await saveRegistrationOtp(normalizedEmail, {
     otp,
     email: normalizedEmail,
@@ -158,7 +154,7 @@ export async function requestRegisterOtp(input: RequestRegisterOtpInput) {
 
   return {
     success: true,
-    message: `Jika data pendaftaran valid, kode verifikasi OTP telah dikirimkan ke ${normalizedEmail}`,
+    message: "Registration OTP sent",
     email: normalizedEmail,
   }
 }
@@ -172,7 +168,7 @@ export async function verifyRegisterOtp(input: VerifyRegisterOtpInput): Promise<
   const payload = consumed || await getRegistrationOtp(normalizedEmail)
 
   if (!payload) {
-    const err = new Error("Kode OTP telah kedaluwarsa atau belum diminta. Silakan daftar kembali.") as Error & { status: number }
+    const err = new Error("Invalid or expired OTP") as Error & { status: number }
     err.status = 400
     throw err
   }
@@ -181,15 +177,12 @@ export async function verifyRegisterOtp(input: VerifyRegisterOtpInput): Promise<
     const attempts = await incrementRegistrationOtpAttempts(normalizedEmail)
     if (attempts >= 5) {
       const err = new Error(
-        "Kode OTP salah sebanyak 5 kali. Kode OTP telah dibatalkan demi keamanan akun Anda. Silakan daftar kembali."
+        "Too many failed OTP attempts. Challenge invalidated."
       ) as Error & { status: number }
       err.status = 400
       throw err
     }
-    const remaining = 5 - attempts
-    const err = new Error(
-      `Kode OTP tidak cocok. Sisa percobaan: ${remaining} kali. Periksa kembali email Anda.`
-    ) as Error & { status: number }
+    const err = new Error("Invalid or expired OTP") as Error & { status: number }
     err.status = 400
     throw err
   }
@@ -198,7 +191,7 @@ export async function verifyRegisterOtp(input: VerifyRegisterOtpInput): Promise<
   const emailExists = await repo.findUserByEmail(normalizedEmail)
   if (emailExists) {
     await deleteRegistrationOtp(normalizedEmail)
-    const err = new Error("Email sudah terdaftar. Silakan masuk ke akun Anda.") as Error & { status: number }
+    const err = new Error("Email already registered") as Error & { status: number }
     err.status = 409
     throw err
   }
@@ -264,14 +257,14 @@ export async function resendRegisterOtp(input: ResendOtpInput) {
   if (emailExists) {
     return {
       success: true,
-      message: `Jika email belum terdaftar, kode OTP telah dikirim ulang ke ${normalizedEmail}`,
+      message: "If the email is eligible, a new OTP code has been sent",
     }
   }
 
   const payload = await getRegistrationOtp(normalizedEmail)
   if (!payload) {
     const err = new Error(
-      "Sesi pendaftaran tidak ditemukan atau telah kedaluwarsa. Silakan lakukan pendaftaran dari awal."
+      "Registration session not found or expired. Please sign up again."
     ) as Error & { status: number }
     err.status = 400
     throw err
@@ -296,7 +289,7 @@ export async function resendRegisterOtp(input: ResendOtpInput) {
 
   return {
     success: true,
-    message: `Jika email belum terdaftar, kode OTP telah dikirim ulang ke ${normalizedEmail}`,
+    message: "If the email is eligible, a new OTP code has been sent",
   }
 }
 
@@ -306,7 +299,7 @@ export async function resendRegisterOtp(input: ResendOtpInput) {
 export async function registerUser(input: RegisterInput): Promise<AuthResult> {
   const emailExists = await repo.findUserByEmail(input.email)
   if (emailExists) {
-    const err = new Error("Email sudah terdaftar") as Error & { status: number }
+    const err = new Error("Email already registered") as Error & { status: number }
     err.status = 409
     throw err
   }
@@ -314,7 +307,7 @@ export async function registerUser(input: RegisterInput): Promise<AuthResult> {
   if (input.username) {
     const usernameExists = await repo.findUserByUsername(input.username)
     if (usernameExists) {
-      const err = new Error("Username sudah digunakan") as Error & { status: number }
+      const err = new Error("Username already taken") as Error & { status: number }
       err.status = 409
       throw err
     }
@@ -379,7 +372,7 @@ export async function loginUser(input: LoginInput): Promise<AuthResult> {
       status: "FAILURE",
       details: { identifier },
     })
-    const err = new Error("Email/Username atau password salah") as Error & { status: number }
+    const err = new Error("Invalid credentials") as Error & { status: number }
     err.status = 401
     throw err
   }
@@ -392,7 +385,7 @@ export async function loginUser(input: LoginInput): Promise<AuthResult> {
       status: "FAILURE",
       details: { identifier },
     })
-    const err = new Error("Email/Username atau password salah") as Error & { status: number }
+    const err = new Error("Invalid credentials") as Error & { status: number }
     err.status = 401
     throw err
   }
@@ -446,7 +439,7 @@ export async function verifyToken(token: string) {
   // 1. Check if token was revoked (logged out)
   const revoked = await isTokenRevoked(token)
   if (revoked) {
-    const err = new Error("Sesi telah berakhir atau dibatalkan") as Error & { status: number }
+    const err = new Error("Session has expired or been revoked") as Error & { status: number }
     err.status = 401
     throw err
   }
@@ -465,7 +458,7 @@ export async function verifyToken(token: string) {
 
   const user = await repo.findUserById(payload.userId)
   if (!user) {
-    const err = new Error("User tidak ditemukan") as Error & { status: number }
+    const err = new Error("User not found") as Error & { status: number }
     err.status = 401
     throw err
   }
@@ -474,7 +467,7 @@ export async function verifyToken(token: string) {
   if (user.passwordChangedAt) {
     const dbTimeSeconds = Math.floor(user.passwordChangedAt.getTime() / 1000)
     if (!payload.passwordChangedAt || dbTimeSeconds > payload.passwordChangedAt) {
-      const err = new Error("Kata sandi telah diperbarui. Silakan masuk kembali.") as Error & { status: number }
+      const err = new Error("Password has been updated. Please sign in again.") as Error & { status: number }
       err.status = 401
       throw err
     }
@@ -499,20 +492,20 @@ export async function verifyToken(token: string) {
 export async function refreshSession(refreshToken: string): Promise<AuthResult> {
   const record = await verifyAndRotateRefreshTokenRecord(refreshToken)
   if (!record) {
-    const err = new Error("Sesi telah kedaluwarsa atau token tidak valid. Silakan login kembali.") as Error & { status: number }
+    const err = new Error("Invalid or expired refresh token") as Error & { status: number }
     err.status = 401
     throw err
   }
 
   const user = await repo.findUserById(record.userId)
   if (!user) {
-    const err = new Error("Akun pengguna tidak ditemukan") as Error & { status: number }
+    const err = new Error("User not found") as Error & { status: number }
     err.status = 401
     throw err
   }
 
   if (user.passwordChangedAt && record.createdAt < user.passwordChangedAt.getTime()) {
-    const err = new Error("Kata sandi telah diperbarui. Silakan masuk kembali.") as Error & { status: number }
+    const err = new Error("Password has been updated. Please sign in again.") as Error & { status: number }
     err.status = 401
     throw err
   }
@@ -568,7 +561,7 @@ export async function forgotPasswordRequest(input: ForgotPasswordRequestInput) {
     // Anti-Enumeration: Return generic success without revealing that email does not exist
     return {
       success: true,
-      message: `Jika email terdaftar di sistem kami, kode pemulihan kata sandi telah dikirim ke ${normalizedEmail}`,
+      message: "If the email is registered, a password recovery code has been sent",
       email: normalizedEmail,
     }
   }
@@ -591,7 +584,7 @@ export async function forgotPasswordRequest(input: ForgotPasswordRequestInput) {
 
   return {
     success: true,
-    message: `Jika email terdaftar di sistem kami, kode pemulihan kata sandi telah dikirim ke ${normalizedEmail}`,
+    message: "If the email is registered, a password recovery code has been sent",
     email: normalizedEmail,
   }
 }
@@ -606,7 +599,7 @@ export async function forgotPasswordVerifyOtp(input: ForgotPasswordVerifyOtpInpu
   const payload = consumed || (await getForgotPasswordOtp(normalizedEmail))
 
   if (!payload) {
-    const err = new Error("Kode OTP telah kedaluwarsa atau belum diminta. Silakan ajukan ulang.") as Error & { status: number }
+    const err = new Error("Invalid or expired OTP") as Error & { status: number }
     err.status = 400
     throw err
   }
@@ -615,15 +608,12 @@ export async function forgotPasswordVerifyOtp(input: ForgotPasswordVerifyOtpInpu
     const attempts = await incrementForgotPasswordOtpAttempts(normalizedEmail)
     if (attempts >= 5) {
       const err = new Error(
-        "Kode OTP salah sebanyak 5 kali. Kode OTP telah dibatalkan demi keamanan akun Anda. Silakan ajukan pemulihan kata sandi ulang."
+        "Too many failed OTP attempts. Challenge invalidated."
       ) as Error & { status: number }
       err.status = 400
       throw err
     }
-    const remaining = 5 - attempts
-    const err = new Error(
-      `Kode OTP tidak cocok. Sisa percobaan: ${remaining} kali. Periksa kembali email Anda.`
-    ) as Error & { status: number }
+    const err = new Error("Invalid or expired OTP") as Error & { status: number }
     err.status = 400
     throw err
   }
@@ -635,7 +625,7 @@ export async function forgotPasswordVerifyOtp(input: ForgotPasswordVerifyOtpInpu
 
   return {
     success: true,
-    message: "Kode OTP valid. Silakan atur kata sandi baru Anda.",
+    message: "OTP verified. You may now set a new password.",
     reset_token: resetToken,
   }
 }
@@ -650,7 +640,7 @@ export async function resetPassword(input: ResetPasswordInput) {
   if (input.reset_token) {
     targetUserId = await verifyAndConsumePasswordResetToken(normalizedEmail, input.reset_token)
     if (!targetUserId) {
-      const err = new Error("Token pemulihan kata sandi tidak valid atau telah kedaluwarsa. Silakan ajukan ulang.") as Error & { status: number }
+      const err = new Error("Invalid or expired reset token") as Error & { status: number }
       err.status = 400
       throw err
     }
@@ -659,14 +649,14 @@ export async function resetPassword(input: ResetPasswordInput) {
     const consumed = await consumeForgotPasswordOtp(normalizedEmail, input.otp)
     const payload = consumed || (await getForgotPasswordOtp(normalizedEmail))
     if (!payload || (!consumed && !timingSafeEqualOtpHash(payload.otpHashed, input.otp))) {
-      const err = new Error("Kode OTP salah atau sesi telah kedaluwarsa.") as Error & { status: number }
+      const err = new Error("Invalid or expired OTP") as Error & { status: number }
       err.status = 400
       throw err
     }
     targetUserId = payload.userId
     await deleteForgotPasswordOtp(normalizedEmail)
   } else {
-    const err = new Error("Token pemulihan atau kode OTP wajib disertakan.") as Error & { status: number }
+    const err = new Error("Reset token or OTP is required") as Error & { status: number }
     err.status = 400
     throw err
   }
@@ -683,7 +673,7 @@ export async function resetPassword(input: ResetPasswordInput) {
 
   return {
     success: true,
-    message: "Kata sandi Anda berhasil diperbarui. Silakan masuk dengan kata sandi baru Anda.",
+    message: "Password reset successfully",
   }
 }
 
@@ -695,6 +685,6 @@ export async function forgotPassword(input: ForgotPasswordInput) {
   await repo.findUserByIdentifier(input.identifier)
   return {
     success: true,
-    message: "Permintaan pemulihan kata sandi telah diproses. Silakan cek email Anda.",
+    message: "Password recovery request processed. Please check your email.",
   }
 }

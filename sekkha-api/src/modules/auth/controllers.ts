@@ -125,7 +125,7 @@ export async function handleForgotPasswordRequest(req: Request, res: Response, n
   try {
     const body = ForgotPasswordRequestSchema.parse(req.body)
     const result = await service.forgotPasswordRequest(body)
-    apiSuccess(res, 200, "Password reset OTP sent", null)
+    apiSuccess(res, 200, "Password reset OTP sent", result)
   } catch (err) {
     next(err)
   }
@@ -147,7 +147,7 @@ export async function handleResetPassword(req: Request, res: Response, next: Nex
   try {
     const body = ResetPasswordSchema.parse(req.body)
     const result = await service.resetPassword(body)
-    apiSuccess(res, 200, "Password reset successfully", null)
+    apiSuccess(res, 200, "Password reset successfully", result)
   } catch (err) {
     next(err)
   }
@@ -158,7 +158,7 @@ export async function handleForgotPassword(req: Request, res: Response, next: Ne
   try {
     const body = ForgotPasswordSchema.parse(req.body)
     const result = await service.forgotPassword(body)
-    apiSuccess(res, 200, "Password recovery request processed", null)
+    apiSuccess(res, 200, "Password recovery request processed", result)
   } catch (err) {
     next(err)
   }

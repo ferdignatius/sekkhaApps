@@ -203,6 +203,70 @@ describe("authService.register — 409", () => {
   })
 })
 
+// ─── requestRegisterOtp ──────────────────────────────────────────────────────
+
+describe("authService.requestRegisterOtp", () => {
+  it("resolves successfully when response is ok", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        makeFetchResponse(200, {
+          success: true,
+          message: "OTP sent successfully",
+        })
+      )
+    )
+
+    const res = await service.requestRegisterOtp(
+      "new@example.com",
+      "password123",
+      "New User"
+    )
+
+    expect(res).toEqual({
+      success: true,
+      message: "OTP sent successfully",
+    })
+  })
+
+  it("throws AuthError with code EMAIL_ALREADY_EXISTS and English message on 409", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(makeFetchResponse(409, {}))
+    )
+
+    await expect(
+      service.requestRegisterOtp("taken@example.com", "password123")
+    ).rejects.toSatisfy(
+      (err: unknown) =>
+        err instanceof AuthError &&
+        err.code === "EMAIL_ALREADY_EXISTS" &&
+        err.message ===
+          "Email is already registered. Please sign in or use a different email."
+    )
+  })
+
+  it("throws AuthError with code UNKNOWN_ERROR on other status errors", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        makeFetchResponse(500, {
+          error: "Internal server error",
+        })
+      )
+    )
+
+    await expect(
+      service.requestRegisterOtp("new@example.com", "password123")
+    ).rejects.toSatisfy(
+      (err: unknown) =>
+        err instanceof AuthError &&
+        err.code === "UNKNOWN_ERROR" &&
+        err.message === "Internal server error"
+    )
+  })
+})
+
 // ─── verifyToken — 200 ───────────────────────────────────────────────────────
 
 describe("authService.verifyToken — 200", () => {

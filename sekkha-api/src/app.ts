@@ -207,7 +207,7 @@ export function createApp(): Application {
     passOnStoreError: true,
     skip: skipPreflight,
     validate: { singleCount: false },
-    handler: rateLimitHandler("Terlalu banyak percobaan autentikasi. Silakan tunggu 15 menit."),
+    handler: rateLimitHandler("Too many authentication attempts. Please try again after 15 minutes."),
   })
   app.use("/api/auth/login", authLimiter)
   app.use("/api/auth/register", authLimiter)
@@ -229,7 +229,7 @@ export function createApp(): Application {
     passOnStoreError: true,
     skip: skipPreflight,
     validate: { singleCount: false },
-    handler: rateLimitHandler("Terlalu banyak permintaan OTP dari IP ini. Silakan tunggu 15 menit."),
+    handler: rateLimitHandler("Too many OTP requests from this IP. Please try again after 15 minutes."),
   })
   app.use("/api/auth/register-request", otpLimiter)
   app.use("/api/auth/register-verify-otp", otpLimiter)
@@ -249,7 +249,7 @@ export function createApp(): Application {
     passOnStoreError: true,
     skip: skipPreflight,
     validate: { singleCount: false },
-    handler: rateLimitHandler("Terlalu banyak permintaan statistik sekolah. Silakan tunggu sebentar."),
+    handler: rateLimitHandler("Too many requests for school statistics. Please try again in a moment."),
   })
   app.use("/api/schools/stats", schoolStatsLimiter)
 

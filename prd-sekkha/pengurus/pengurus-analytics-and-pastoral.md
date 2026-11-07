@@ -174,3 +174,51 @@ Sistem peringatan dini berbasis algoritma statistik cerdas untuk mendeteksi penu
 1. Pengurus menyaring jemaat bertanda `At Risk` atau `High Risk`.
 2. Pengurus membuka **Pastoral Detail Sheet** (timeline 15 event terakhir, nomor WhatsApp, almamater sekolah).
 3. Pencatatan **Outreach Log** (*Pastoral Notes*): Status penanganan (`Pending`, `Contacted`, `In Care`, `Resolved`) dan catatan follow-up.
+
+---
+
+## 7. User Stories
+
+| ID | As a | I want to | So that |
+| --- | --- | --- | --- |
+| US-PENG-01 | Organizer | View real-time Community Vitality KPI summary cards (active members, delta percentage, avg attendance, retention rate, total seva sessions) | I can assess the overall macro health and engagement trends of the youth community |
+| US-PENG-02 | Organizer | Filter community analytics by time unit (monthly/yearly), event category, and school institution | I can analyze targeted demographic and activity segment performance |
+| US-PENG-03 | Organizer | Compare attendance trends with prior time periods (MoM / YoY comparison) | I can measure community growth or contraction over consecutive cycles |
+| US-PENG-04 | Organizer | View the Seva & Contributor Board with top volunteers and role distribution | I can acknowledge high-contributing volunteers and balance service duties across members |
+| US-PENG-05 | Organizer | Filter youth members by consecutive missed attendance count (>= 2 events for warning, >= 4 events for high-risk pastoral care) | I can proactively reach out to drifting youth members before silent churn occurs |
+| US-PENG-06 | Organizer | Download analytics summaries and pastoral care lists as CSV or PDF exports | I can present operational reports to vihara elders and maintain offline records |
+| US-PENG-07 | Member / Activist | Be restricted from accessing `/insight` and `/api/pengurus/*` endpoints | Sensitive aggregated operational community metrics remain confidential to leadership |
+
+---
+
+## 8. Acceptance Criteria
+
+| ID | Scenario | Expected result |
+| --- | --- | --- |
+| AC-PENG-01 | Organizer opens `/insight` dashboard | Real-time KPI summary cards display active members, attendance averages, retention rate, and duty session totals within standard response envelope. |
+| AC-PENG-02 | Organizer switches time unit or applies event/school filter | Trend charts and category distribution re-render dynamically matching selected filter criteria. |
+| AC-PENG-03 | Organizer enables comparison mode | Attendance trend graph displays current period series alongside previous period comparison series. |
+| AC-PENG-04 | Organizer switches to Seva & Contributor Board tab | Displays top 3 volunteer podium, total duties, badge points earned, and role breakdown (MC, Puja Leader, Musician). |
+| AC-PENG-05 | Organizer filters members by consecutive missed count (>= 2 or >= 4) | System returns filtered pastoral member list displaying last attendance date, missed event count, contact number, and school. |
+| AC-PENG-06 | Organizer clicks export button (CSV / PDF) | System generates downloadable report file containing aggregated metrics and pastoral member data with proper MIME type headers. |
+| AC-PENG-07 | Non-privileged user (`member` or `activist`) navigates to `/insight` or calls `/api/pengurus/*` | Server returns HTTP `403 Forbidden` envelope; client redirects to unauthorized or dashboard view. |
+| AC-PENG-08 | Unauthenticated guest accesses pengurus routes | Server returns HTTP `401 Unauthorized`; client redirects to `/login`. |
+
+---
+
+## 9. Test Cases
+
+| Test Case ID | Category | Scenario / Description | Preconditions | Test Steps | Expected Result | Type |
+| --- | --- | --- | --- | --- | --- | --- |
+| **TC-PENG-01** | KPI Dashboard | Retrieve community vitality summary metrics | User logged in as `organizer` or `admin` | Send `GET /api/pengurus/insight?timeUnit=month&primaryYear=2026&primaryMonth=10`. | HTTP 200 envelope with `summary` payload (`active_members`, `active_members_change_pct`, `avg_attendance_per_event`, `retention_rate_pct`, `total_seva_sessions`). | Positive |
+| **TC-PENG-02** | Time & Filter | Filter analytics by category and school demographics | User logged in as `organizer` | Send `GET /api/pengurus/insight` with `eventCategoryFilter=regular-puja` and `segmentFilter=member`. | HTTP 200 with filtered attendance trend and category distribution matching selected filters. | Positive |
+| **TC-PENG-03** | Trend Comparison | Compare current period with prior period (MoM / YoY) | Historical attendance data exists across periods | Send `GET /api/pengurus/insight` with `isComparisonEnabled=true`. | HTTP 200; `attendance_trend` items contain both current `attendance` and `previous_attendance` values. | Positive |
+| **TC-PENG-04** | Seva Leadership | View Seva & Contributor Board podium and role distribution | Event attendances with badge activities recorded | Inspect `data.seva_contributors` in `/api/pengurus/insight` response or click Tab 2 in UI. | Top volunteers listed with `total_duties` and `points_earned`; duty breakdown totals match assigned badge activities. | Positive |
+| **TC-PENG-05** | Pastoral Care | Filter pastoral members with warning tier (consecutive missed >= 2) | Members with varying missed attendance records exist | Query pastoral care member list with filter `consecutive_missed_min=2`. | HTTP 200 returning members who missed 2 or 3 consecutive events marked with warning tier status. | Positive / Functional |
+| **TC-PENG-06** | Pastoral Care | Filter high-risk pastoral members (consecutive missed >= 4) | Members who missed 4 or more consecutive events exist | Query pastoral care member list with filter `consecutive_missed_min=4`. | HTTP 200 returning members with `consecutiveMissed >= 4` flagged for critical outreach / visit. | Positive / Functional |
+| **TC-PENG-07** | Report Export | Download analytics and pastoral care list as CSV | Authenticated as `organizer` or `admin` | Trigger export action with format `csv` (`GET /api/pengurus/export?format=csv`). | HTTP 200 with `Content-Type: text/csv` and valid `Content-Disposition: attachment; filename="pengurus-insights-*.csv"`. Valid CSV format. | Positive |
+| **TC-PENG-08** | Report Export | Download analytics summary report as PDF | Authenticated as `organizer` or `admin` | Trigger export action with format `pdf` (`GET /api/pengurus/export?format=pdf`). | HTTP 200 with `Content-Type: application/pdf` containing formatted analytics summary tables. | Positive |
+| **TC-PENG-09** | RBAC Guard | Unauthorized access by `member` or `activist` | Logged in as `member` or `activist` | 1. Navigate to `/insight`.<br>2. Call `GET /api/pengurus/insight`. | Frontend displays 403 or redirects away; API returns HTTP 403 Forbidden envelope (`Access denied: insufficient permissions`). | Security / RBAC |
+| **TC-PENG-10** | Auth Guard | Unauthenticated guest access | No valid session token | Call `GET /api/pengurus/insight` without Authorization header. | HTTP 401 Unauthorized envelope. No community data leaked. | Security |
+| **TC-PENG-11** | Empty Data | Query insights for period with zero events / attendances | Period with no scheduled or closed events | Query `GET /api/pengurus/insight` for empty future month. | HTTP 200 envelope with zeroed counters (`0`), empty trend arrays `[]`, and graceful UI empty state without crash. | Edge Case |
+| **TC-PENG-12** | Extreme Outlier | Handling high duty load volunteers (Burnout indicator) | A volunteer assigned to > 10 duties in single period | Query insights Seva board. | Contributor board correctly computes volunteer duties without integer overflow, highlighting burnout status. | Edge Case |

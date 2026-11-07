@@ -153,11 +153,45 @@ Base Route: `/api/configure/seasons`
 
 ---
 
-## 7. Kriteria Penerimaan (Acceptance Criteria)
+## 7. User Stories
 
-- [ ] **AC-01**: Poin musiman setiap pengguna dihitung murni dari transaksi dalam rentang tanggal season dan otomatis mulai dari 0 saat season berganti.
-- [ ] **AC-02**: Leaderboard secara default memiliki tab `Semester` dan `Annual`.
-- [ ] **AC-03**: Ketika ada custom season yang aktif, tab custom tersebut muncul di **posisi paling kiri**, diikuti oleh `Semester` dan `Annual`.
-- [ ] **AC-04**: Sistem membatasi hanya **maksimal satu (1) custom season** yang berstatus aktif dalam waktu yang sama.
-- [ ] **AC-05**: Field `bonus_points` tidak lagi digunakan dalam mekanisme kompetisi season.
-- [ ] **AC-06**: Target kehadiran berfungsi sebagai sasaran gotong royong komunitas dengan rencana UI perayaan setelah target tercapai.
+| ID | As a | I want to | So that |
+| --- | --- | --- | --- |
+| US-SEAS-01 | Admin | Create custom seasons with start/end dates, unique code, and community target attendance | I can run time-bounded gamification periods (e.g. Vassa or Youth Camp) |
+| US-SEAS-02 | Admin | Activate a custom season with automatic transactional deactivation of other custom seasons | Only one custom season is active at any time without data race conditions |
+| US-SEAS-03 | Admin | Edit season parameters (name, dates, collective target attendance) or delete unreferenced seasons | Master season configuration stays accurate and maintainable |
+| US-SEAS-04 | Member | Compete on seasonal leaderboards starting from zero points at the beginning of each cycle | Every youth member has an equal opportunity to rank regardless of join date |
+| US-SEAS-05 | Member | View active custom season tab positioned on the far left of the Leaderboard alongside Semester and Annual tabs | I can immediately focus on the active featured community event |
+| US-SEAS-06 | Organizer | Inspect configured seasons and collective attendance progress bars in read-only mode | I can track community attendance targets and guide youth members |
+
+---
+
+## 8. Acceptance Criteria
+
+| ID | Scenario | Expected result |
+| --- | --- | --- |
+| AC-SEAS-01 | Admin creates new custom season | Season is created with `isActive: false` (or true if chosen), code validated/generated, HTTP 201 returned. |
+| AC-SEAS-02 | Admin activates custom season | Mutex enforced via `$transaction`: all other custom seasons become `is_active = false`, target season becomes `is_active = true`. |
+| AC-SEAS-03 | Custom season is active on Leaderboard | Tab navigation displays `[ Custom ] [ Semester ] [ Annual ]` with custom season at the leftmost position. |
+| AC-SEAS-04 | No custom season is active on Leaderboard | Tab navigation defaults cleanly to `[ Semester ] [ Annual ]`. |
+| AC-SEAS-05 | Leaderboard computes seasonal rankings | Points aggregated strictly within season date boundaries (`startDate` to `endDate`); users start at 0 each season. |
+| AC-SEAS-06 | Admin deletes season with linked events | Server returns HTTP 409 Conflict error ("Cannot delete season associated with events"); deletion rejected. |
+| AC-SEAS-07 | Admin deletes season without linked events | Season is successfully removed from database; returns HTTP 200/204 envelope. |
+| AC-SEAS-08 | Non-admin user attempts mutation endpoints | Server returns HTTP 403 Forbidden envelope. |
+
+---
+
+## 9. Test Cases
+
+| Test Case ID | Category | Scenario / Description | Preconditions | Test Steps | Expected Result | Type |
+| --- | --- | --- | --- | --- | --- | --- |
+| **TC-SEAS-01** | Season Creation | Successfully create custom season | Authenticated as `admin` | Send `POST /api/configure/seasons` with `{ "name": "Vassa 2026", "code": "vassa-2026", "startDate": "2026-07-01", "endDate": "2026-10-01", "targetAttendance": 600 }`. | HTTP 201 envelope; season created in DB; code unique. | Positive |
+| **TC-SEAS-02** | Season Mutex | Activate season via activation endpoint (Mutex enforcement) | Custom Season A is currently `isActive: true` | Send `PATCH /api/configure/seasons/:idB/activate`. | Single Prisma transaction executes: Season A `isActive` updated to `false`, Season B `isActive` updated to `true`. Returns HTTP 200. Only 1 custom season active. | Positive / Concurrency |
+| **TC-SEAS-03** | Date Validation | Create season with invalid date range (`endDate <= startDate`) | Authenticated as `admin` | Send `POST /api/configure/seasons` with `startDate: "2026-10-01"` and `endDate: "2026-07-01"`. | HTTP 400 Bad Request envelope with validation error ("End date must be after start date"). | Negative / Boundary |
+| **TC-SEAS-04** | Duplicate Code | Create season with duplicate `code` | Season with code `vassa-2026` exists | Send `POST /api/configure/seasons` with code `vassa-2026`. | HTTP 400 Bad Request or HTTP 409 Conflict envelope. | Negative / Integrity |
+| **TC-SEAS-05** | Safe Deletion | Attempt deleting season linked to existing events | Season has foreign key records in `events` table | Send `DELETE /api/configure/seasons/:id`. | HTTP 409 Conflict ("Cannot delete season because it is associated with X event(s). Please deactivate it instead."). Season remains. | Negative / Integrity |
+| **TC-SEAS-06** | Safe Deletion | Delete unreferenced custom season | Season has 0 linked events | Send `DELETE /api/configure/seasons/:id`. | HTTP 200 envelope; season record removed from database. | Positive |
+| **TC-SEAS-07** | Leaderboard Tabs | Verify dynamic tab priority order when custom season active | Custom season "Vassa 2026" is active | Fetch active seasons or inspect `/leaderboard` tab structure. | UI renders tabs: 1st `[ Vassa 2026 ]`, 2nd `[ Semester ]`, 3rd `[ Annual ]`. | Positive / UI |
+| **TC-SEAS-08** | Leaderboard Tabs | Verify tab layout when no custom season active | No custom season has `isActive: true` | Inspect `/leaderboard` tab structure. | UI renders default tabs: `[ Semester ] [ Annual ]`. | Positive / UI |
+| **TC-SEAS-09** | Point Isolation | Seasonal score isolated strictly within date range | Member has 500 lifetime points, 100 earned in season X | Query leaderboard for season X. | Member displays score of 100 for season X, not lifetime 500. Lifetime profile total unaffected. | Positive / Logic |
+| **TC-SEAS-10** | RBAC Guard | Organizer attempts to create or delete season | Authenticated as `organizer` | Send `POST /api/configure/seasons` or `DELETE /api/configure/seasons/:id`. | HTTP 403 Forbidden envelope. No mutations applied. | Security / RBAC |

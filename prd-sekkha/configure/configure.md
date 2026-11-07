@@ -60,14 +60,15 @@ Berdasarkan `sekkha-frontend/src/modules/configure/internal/components/` dan `se
 
 ## 4. User Stories
 
-| ID | Sebagai | Saya ingin | Supaya |
+| ID | As a | I want to | So that |
 | --- | --- | --- | --- |
-| US-01 | `admin` | Membuat event type baru | Menambah kategori kegiatan vihara |
-| US-02 | `admin` | Mengatur peran *Badge Activity* & bonus poin | Memberikan apresiasi poin tambahan bagi pelayan kebaktian |
-| US-03 | `admin` | Membuat & mengaktifkan season baru | Memulai periode leaderboard baru |
-| US-04 | `admin` | Mengedit nilai aturan poin (`point-rules`) | Menyesuaikan reward poin kegiatan secara dinamis |
-| US-05 | `organizer` | Melihat semua master data & aturan poin | Mengetahui aturan sistem dan membantu menjawab pertanyaan anggota |
-| US-06 | `member` / `activist` | (Tidak memiliki akses) | Menu Configure tidak muncul di sidebar |
+| US-CONF-01 | Admin | Create, update, and manage Event Types with default points, late penalties, and colors | I can standardize activity categories across the youth community schedule |
+| US-CONF-02 | Admin | Configure Badge Activities with bonus points for seva service roles | Volunteers serving in liturgy roles (MC, Puja Leader, Musician) receive fair gamification rewards |
+| US-CONF-03 | Admin | Create and activate seasons with collective community attendance targets | The community has structured competition cycles and reset milestones |
+| US-CONF-04 | Admin | Tune predefined Point Rules within allowable bounds (0–100 points) and toggle active status | I can balance the points economy without code deployments or point inflation |
+| US-CONF-05 | Admin | Manage school master data directory and approve or reject community school requests | Youth members can associate their profiles with verified educational institutions |
+| US-CONF-06 | Organizer | Browse master data and system rules in read-only mode | I understand the community gamification policies without risking accidental configuration mutation |
+| US-CONF-07 | Member / Activist | Be restricted from accessing `/configure/*` routes and administrative APIs | Master data configurations and gamification rules remain tamper-proof |
 
 ---
 
@@ -171,23 +172,39 @@ Response 201:
 
 ## 8. Acceptance Criteria
 
-| ID | Skenario | Hasil yang Diharapkan |
+| ID | Scenario | Expected result |
 | --- | --- | --- |
-| **AC-01** | `admin` buka `/configure/master/event-type` | Daftar event type tampil + tombol "Add Event Category" |
-| **AC-02** | `admin` klik "Add Event Category" | Form muncul dengan field name, description, default_point_reward, color, dll. |
-| **AC-03** | `admin` submit form valid | Event type baru tersimpan, muncul di list, toast sukses tampil |
-| **AC-04** | `admin` submit form invalid (mis. poin negatif) | Validasi inline muncul, submit dicegah |
-| **AC-05** | `admin` klik delete pada entitas master data | Dialog konfirmasi muncul sebelum penghapusan |
-| **AC-06** | `admin` delete event type yang masih direferensikan oleh event | Backend mengembalikan error, frontend menampilkan error toast |
-| **AC-07** | `organizer` buka `/configure/master/event-type` | Daftar tampil dalam mode read-only tanpa tombol Add/Edit/Delete |
-| **AC-08** | `member` login → lihat sidebar | Menu Configure **tidak muncul** |
-| **AC-09** | `activist` login → lihat sidebar | Menu Configure **tidak muncul** |
-| **AC-10** | Setiap perubahan master data | Tercatat di `audit_logs` (lihat NFR §5.3) |
-| **AC-11** | User tidak login coba akses `/configure/*` | Redirect ke `/login` |
+| AC-CONF-01 | Admin opens `/configure/master/event-type` | Event types list renders with "Add Event Category" button; read-only for organizer. |
+| AC-CONF-02 | Admin creates master data with valid payload | Entity is saved to DB, unique code generated/validated, audit log recorded, HTTP 201 returned. |
+| AC-CONF-03 | Admin submits invalid payload (negative point reward or duplicate unique code) | API returns HTTP 400 Bad Request; inline field validation errors displayed. |
+| AC-CONF-04 | Admin toggles entity active status (`is_active = false`) | Soft deactivation succeeds; entity excluded from active dropdown selectors without breaking existing relations. |
+| AC-CONF-05 | Admin attempts to hard delete entity referenced by existing events/attendances/profiles | API returns HTTP 409 Conflict error; deletion blocked to preserve relational integrity. |
+| AC-CONF-06 | Admin activates a new custom season | In a database transaction, all other custom seasons are deactivated (`isActive = false`) ensuring at most 1 active season. |
+| AC-CONF-07 | Organizer accesses configure sub-pages | Directory and rules display in read-only mode; Add/Edit/Delete actions hidden and blocked by server. |
+| AC-CONF-08 | Member or activist accesses configure routes | Sidebar omits Configure; direct URL or API call receives HTTP 403 Forbidden. |
+| AC-CONF-09 | Unauthenticated user opens `/configure/*` | Client redirects to `/login`; API responds with HTTP 401 Unauthorized. |
 
 ---
 
-## 9. Out of Scope
+## 9. Test Cases
+
+| Test Case ID | Category | Scenario / Description | Preconditions | Test Steps | Expected Result | Type |
+| --- | --- | --- | --- | --- | --- | --- |
+| **TC-CONF-01** | Navigation & RBAC | Admin accesses Configure navigation and sub-modules | Authenticated as `admin` | 1. Navigate to `/configure/master/school`.<br>2. Navigate to `/configure/rules/season`. | Both pages render full controls with creation, editing, and activation buttons visible. | Positive |
+| **TC-CONF-02** | RBAC Read-Only | Organizer accesses Configure module | Authenticated as `organizer` | Navigate to `/configure/master/event-type` and `/configure/rules/points`. | Pages render in read-only mode; action buttons (Add, Edit, Delete, Toggle) hidden; direct API mutations return HTTP 403. | Security / RBAC |
+| **TC-CONF-03** | RBAC Guard | Unauthorized member/activist access | Authenticated as `member` or `activist` | Navigate directly to `/configure/master/event-type` or send `GET /api/configure/event-types`. | Frontend redirects to `/home` or displays 403; API returns HTTP 403 Forbidden envelope. | Security / RBAC |
+| **TC-CONF-04** | Master Data Deletion | Attempt hard delete on in-use master entity | Entity has linked foreign key records in `events` or `attendances` | Send `DELETE /api/configure/event-types/:id` on referenced entity. | HTTP 409 Conflict ("Cannot delete because entity is in use. Please deactivate it instead."). No data deleted. | Negative / Integrity |
+| **TC-CONF-05** | Master Data Deletion | Hard delete unreferenced master entity | Entity has 0 linked records | Send `DELETE /api/configure/event-types/:id` on unreferenced entity. | HTTP 200/204 envelope; entity removed from DB; audit log recorded. | Positive |
+| **TC-CONF-06** | Status Toggle | Soft delete / toggle active status (`is_active`) | Existing active entity | Send `PATCH /api/configure/event-types/:id` with `{ "is_active": false }`. | HTTP 200 envelope; `is_active` updated to `false`; entity hidden from creation dropdowns but preserved in historical reports. | Positive |
+| **TC-CONF-07** | Unique Validation | Create master entity with duplicate unique name or code | Entity with same name/code exists | Send `POST /api/configure/event-types` with duplicate name/code. | HTTP 400 Bad Request or HTTP 409 Conflict envelope indicating duplicate identifier. | Negative |
+| **TC-CONF-08** | Season Mutex | Activate custom season while another season is active | Season A is currently `is_active: true` | Send `POST /api/configure/seasons/:idB/activate`. | Season A updated to `is_active: false` and Season B updated to `is_active: true` in single Prisma `$transaction`. | Positive / Integrity |
+| **TC-CONF-09** | Point Rules Tuning | Tune system point rule within allowed bounds (0–100) | Valid rule exists | Send `PATCH /api/configure/point-rules/:id` with `{ "points": 60 }`. | HTTP 200 envelope; rule points updated to 60. | Positive |
+| **TC-CONF-10** | Point Rules Boundary | Attempt tuning point rule outside 0–100 bounds | Valid rule exists | Send `PATCH /api/configure/point-rules/:id` with `{ "points": 150 }`. | HTTP 400 Bad Request envelope with Zod validation error ("Points must be between 0 and 100"). | Negative / Security |
+| **TC-CONF-11** | Unauthenticated | Guest calls configure endpoints | No session token | Send `GET /api/configure/schools`. | HTTP 401 Unauthorized envelope. | Security |
+
+---
+
+## 10. Out of Scope
 
 - Bulk import (CSV) untuk master data.
 - Versioning master data (rollback ke versi sebelumnya).
@@ -195,7 +212,7 @@ Response 201:
 
 ---
 
-## 10. Referensi
+## 11. Referensi
 
 - `sekkha-frontend/src/modules/configure/` — implementasi frontend
 - `sekkha-api/src/modules/configure/routes.ts` — endpoint backend

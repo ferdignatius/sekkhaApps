@@ -217,3 +217,52 @@ Men-generate ulang password sementara jika user belum diklaim (`isClaimed = fals
    - Temporary password hanya dikembalikan satu kali saat pembuatan atau reset.
 3. **Audit Trail**:
    - Setiap registrasi jemaat dan reset temporary password dicatat ke `audit_logs` (`PEOPLE_CREATED`, `TEMPORARY_PASSWORD_RESET`).
+
+---
+
+## 7. User Stories
+
+| ID | As a | I want to | So that |
+| --- | --- | --- | --- |
+| US-PEOP-01 | Organizer / Admin | Pre-provision new temple members with essential info (name, school, phone, birth date) and receive temporary credentials | Unregistered youth can receive official member IDs and participate in event attendance immediately |
+| US-PEOP-02 | Organizer / Admin | View a paginated directory of community members with debounce search by name, username, or member ID | I can quickly find members without experiencing UI lag or loading unneeded records |
+| US-PEOP-03 | Organizer / Admin | Filter directory members by claimed status (`all`, `claimed`, `unclaimed`), assigned role (`member`, `activist`, etc.), and school institution | I can audit community engagement, onboarding progress, and target pastoral outreach |
+| US-PEOP-04 | Organizer / Admin | View detailed member profiles with authorized on-the-fly PII decryption (phone, birth date, class grade) | I can review contact and pastoral data without storing or displaying unencrypted PII in public endpoints |
+| US-PEOP-05 | Organizer / Admin | Reset temporary passwords exclusively for unclaimed accounts (`isClaimed = false`) with one-click copyable WhatsApp templates | I can assist members who lost credentials before first login while preventing unauthorized overrides on active accounts |
+| US-PEOP-06 | Admin | Update member profiles and change assigned roles with strict RBAC guardrails (only Admin can upgrade/downgrade roles; Organizers can edit standard profile fields) | Role elevation stays strictly governed and accidental privilege escalations are prevented |
+| US-PEOP-07 | Activist | View read-only directory and basic member profile information without access to editing or credential generation | I can assist temple logistics and verify attendee identity without administrative write privileges |
+
+---
+
+## 8. Acceptance Criteria
+
+| ID | Scenario | Expected result |
+| --- | --- | --- |
+| AC-PEOP-01 | Pre-provision member creation | System atomically generates unique 10-digit `userNumber` (`yyyymmddnn`), human-readable `username`, bcrypt-hashed `temporary_password` (`sekkha#####puggala`), sets `isClaimed = false`, and returns credentials modal with WhatsApp invite message. |
+| AC-PEOP-02 | Directory pagination & search | `GET /api/people` accepts `page`, `limit` (max 100), `search`, `role`, and `status`. Numeric search executes exact B-Tree lookup on `userNumber`; text search matches name/username via trigram index scan. |
+| AC-PEOP-03 | Claimed vs unclaimed filtering | Setting `status=claimed` filters for `isClaimed = true`; `status=unclaimed` filters for `isClaimed = false`. Summary stat cards display accurate counts. |
+| AC-PEOP-04 | Secure PII decryption on detail view | `GET /api/people/:id` decrypts AES-256-GCM ciphertext on the fly for authorized roles (`activist`, `organizer`, `admin`). Plaintext returned to client; decryption errors gracefully return fallback indicator without leaking ciphertext. |
+| AC-PEOP-05 | Temporary password reset guardrail | `POST /api/people/:id/reset-temporary-password` succeeds with HTTP 200 and audit log when `isClaimed === false`. If `isClaimed === true`, server returns HTTP 400 (`ACCOUNT_ALREADY_CLAIMED`) and UI disables reset button. |
+| AC-PEOP-06 | Role upgrade/downgrade RBAC guardrail | Changing `role` via `PUT /api/people/:id` is permitted only for `admin`. If non-admin (`organizer` or `activist`) attempts to pass `role`, request is rejected with HTTP 403 Forbidden. Admin cannot delete or downgrade their own active account. |
+| AC-PEOP-07 | Activist read-only view | `activist` role can access `GET /api/people` and `GET /api/people/:id`, but encounters HTTP 403 on `POST /api/people`, `PUT /api/people/:id`, `DELETE /api/people/:id`, and reset credentials endpoints. |
+
+---
+
+## 9. Test Cases
+
+| Test Case ID | Category | Scenario / Description | Preconditions | Test Steps | Expected Result | Type |
+| --- | --- | --- | --- | --- | --- | --- |
+| **TC-PEOP-01** | Pre-provisioning | Create new member with valid payload by Organizer | Authenticated as `organizer` or `admin` | Submit `POST /api/people` with `name: "Budi Santoso"`, `role: "member"`, valid `school_id`, `phone: "08123456789"`. | HTTP 201 Created. Returns `user_number` (10 digits), `username` (`budi####`), `temporary_password` (`sekkha#####puggala`), `is_claimed: false`, and `whatsapp_invite_message`. Audit log `PEOPLE_CREATED` recorded. | Positive |
+| **TC-PEOP-02** | Validation | Create member with empty name or invalid role | Authenticated as `organizer` | Submit `POST /api/people` with `name: ""` and `role: "admin"`. | HTTP 400 Bad Request envelope with Zod validation errors. No user created. | Negative |
+| **TC-PEOP-03** | Pagination & Search | Search people by 10-digit userNumber vs text search | Directory populated with >= 25 members | 1. Query `GET /api/people?search=2026102401`.<br>2. Query `GET /api/people?search=Budi&page=1&limit=10`. | Step 1 executes $O(\log N)$ B-Tree lookup matching exact userNumber in $< 1\text{ ms}$. Step 2 returns paginated results matching `Budi` with pagination metadata (`page: 1`, `limit: 10`, `total`, `total_pages`). | Positive / Performance |
+| **TC-PEOP-04** | Status Filter | Filter by claimed vs unclaimed members | Mixed claimed and unclaimed users exist | 1. Send `GET /api/people?status=claimed`.<br>2. Send `GET /api/people?status=unclaimed`. | Step 1 returns only users where `is_claimed === true`. Step 2 returns only users where `is_claimed === false`. | Positive / Functional |
+| **TC-PEOP-05** | Role Filter | Filter directory by role | Users with `member`, `activist`, `organizer` exist | Send `GET /api/people?role=activist`. | Returns list filtered exclusively to users with `role: "activist"`. | Positive / Functional |
+| **TC-PEOP-06** | Detail & PII Decryption | Authorized access to member detail view with encrypted PII | Target user has encrypted phone and birthDate in `UserProfile` | Send `GET /api/people/:id` as `organizer`. | HTTP 200 with standard envelope. PII fields decrypted on the fly to plaintext phone and ISO date. No raw AES ciphertext leaked. | Security / Positive |
+| **TC-PEOP-07** | Reset Temp Password | Reset temporary password on unclaimed user account | User exists with `isClaimed: false` | Organizer submits `POST /api/people/:id/reset-temporary-password`. | HTTP 200. New `temporary_password` and invite message returned once. DB bcrypt hash updated. Audit log `TEMPORARY_PASSWORD_RESET` logged. | Positive / Security |
+| **TC-PEOP-08** | Reset Temp Password Guardrail | Attempt to reset temporary password on already claimed user account | Target user has `isClaimed: true` | Organizer submits `POST /api/people/:id/reset-temporary-password`. | HTTP 400 Bad Request (`ACCOUNT_ALREADY_CLAIMED`). Temporary password is NOT overwritten. UI displays disabled button with explanatory tooltip. | Negative / Security |
+| **TC-PEOP-09** | Role Upgrade Guardrail | Non-admin organizer attempts to upgrade user role to activist/organizer | Authenticated as `organizer` | Submit `PUT /api/people/:id` with body `{ "role": "activist" }`. | HTTP 403 Forbidden envelope ("Only admin can change member role."). Role remains unchanged in database. | Security / RBAC |
+| **TC-PEOP-10** | Admin Role Change | Admin updates user role from member to activist | Authenticated as `admin` | Admin submits `PUT /api/people/:id` with `{ "role": "activist" }`. | HTTP 200 envelope. Role updated in DB. Profile cache invalidated. | Positive / RBAC |
+| **TC-PEOP-11** | Self-Deletion Guardrail | Admin attempts to delete their own account | Authenticated as `admin` | Admin submits `DELETE /api/people/:own_user_id`. | HTTP 400 Bad Request ("You cannot delete your own account."). Deletion blocked. | Negative / Safety |
+| **TC-PEOP-12** | Activist Permissions | Activist attempts administrative write actions on people directory | Authenticated as `activist` | 1. Submit `GET /api/people` (Read).<br>2. Submit `POST /api/people` (Create).<br>3. Submit `PUT /api/people/:id` (Update). | Step 1 succeeds with HTTP 200. Steps 2 & 3 return HTTP 403 Forbidden. Activists have strictly read-only access. | Security / RBAC |
+| **TC-PEOP-13** | Member Access Denial | Regular member attempts to access people directory endpoint | Authenticated as `member` | Member submits `GET /api/people`. | HTTP 403 Forbidden envelope. Members are blocked from viewing community directory. | Security |
+| **TC-PEOP-14** | One-Time Credentials Display | Temporary password omitted from subsequent detail fetches | User created via pre-provisioning | Query `GET /api/people/:id` or subsequent list `GET /api/people`. | Response contains user profile, but never exposes `temporary_password` field after initial creation/reset response. | Security |

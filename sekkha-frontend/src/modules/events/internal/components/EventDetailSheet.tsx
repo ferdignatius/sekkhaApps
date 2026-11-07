@@ -21,7 +21,16 @@ import {
   InfoIcon,
   ShieldCheckIcon,
   AwardIcon,
+  ChevronRightIcon,
+  MoreHorizontalIcon,
 } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { AttendanceListSheet } from "./AttendanceListSheet"
 import { Badge } from "@/components/base/Badge"
 import { ConfirmDialog } from "@/components/base/AlertDialog"
@@ -298,48 +307,118 @@ export function EventDetailSheet({
                   glass
                   className="gap-1.5 rounded-full font-semibold text-[#6a6a6a]"
                 >
-                  <ClockIcon className="size-3 text-[#e8b94a]" />
+                  <ClockIcon className="size-3 text-[#6a6a6a]" />
                   Scheduled
                 </Badge>
               )}
             </div>
 
-            {/* Quick Share Button */}
-            <button
-              type="button"
-              onClick={handleShare}
-              className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full border border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] shadow-xs transition-all hover:bg-[#faf5e8] focus-visible:ring-2 focus-visible:ring-[#0a0a0a] focus-visible:ring-offset-2 focus-visible:outline-none active:scale-95"
-              title="Share event"
-              aria-label="Share event"
-            >
-              {copiedLink ? (
-                <CheckIcon className="size-4 text-emerald-600" />
-              ) : (
-                <Share2Icon className="size-4" />
+            {/* Top-Right Action Group: Share + More Options */}
+            <div className="flex items-center gap-1.5 shrink-0">
+              <button
+                type="button"
+                onClick={handleShare}
+                className="flex size-9 cursor-pointer items-center justify-center rounded-full border border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] shadow-xs transition-all hover:bg-[#faf5e8] focus-visible:ring-2 focus-visible:ring-[#0a0a0a] focus-visible:ring-offset-2 focus-visible:outline-none active:scale-95"
+                title="Share event"
+                aria-label="Share event"
+              >
+                {copiedLink ? (
+                  <CheckIcon className="size-4 text-emerald-600" />
+                ) : (
+                  <Share2Icon className="size-4" />
+                )}
+              </button>
+
+              {isPengurus && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      className="flex size-9 cursor-pointer items-center justify-center rounded-full border border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] shadow-xs transition-all hover:bg-[#faf5e8] focus-visible:ring-2 focus-visible:ring-[#0a0a0a] focus-visible:ring-offset-2 focus-visible:outline-none active:scale-95"
+                      title="More actions"
+                      aria-label="More actions"
+                    >
+                      <MoreHorizontalIcon className="size-4" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    align="end"
+                    className="w-48 rounded-2xl border border-[#e5e5e5] bg-[#fffaf0] p-1.5 shadow-lg"
+                  >
+                    {canEdit && (
+                      <DropdownMenuItem
+                        onClick={() => onEdit?.(event)}
+                        className="flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-[#0a0a0a] hover:bg-[#faf5e8]"
+                      >
+                        <PencilIcon className="size-3.5" />
+                        <span>Edit Event</span>
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuItem
+                      onClick={() => onDuplicate?.(event)}
+                      className="flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-[#0a0a0a] hover:bg-[#faf5e8]"
+                    >
+                      <CopyIcon className="size-3.5" />
+                      <span>Duplicate Event</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <a
+                        href={getGoogleCalendarUrl(event)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-[#0a0a0a] hover:bg-[#faf5e8]"
+                      >
+                        <CalendarIcon className="size-3.5" />
+                        <span>Add to Calendar</span>
+                      </a>
+                    </DropdownMenuItem>
+                    {(isActive || (!isClosed && !isCancelled)) && (
+                      <>
+                        <DropdownMenuSeparator className="my-1 border-t border-[#e5e5e5]" />
+                        <DropdownMenuItem
+                          onClick={() => setPendingAction("cancel")}
+                          className="flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-50"
+                        >
+                          <AlertTriangleIcon className="size-3.5 text-rose-600" />
+                          <span>Cancel Event</span>
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                    {onDelete && !isClosed && (
+                      <DropdownMenuItem
+                        onClick={() => onDelete?.(event)}
+                        className="flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-50"
+                      >
+                        <Trash2Icon className="size-3.5 text-rose-600" />
+                        <span>Delete Event</span>
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               )}
-            </button>
+            </div>
           </div>
 
           {/* Main Title with Calendar Date Squircle */}
           <div className="flex items-start gap-3.5 sm:items-center sm:gap-6">
             {/* Apple HIG Calendar Date Squircle */}
-            <div className="flex size-16 shrink-0 flex-col items-center justify-between overflow-hidden rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0] shadow-xs ring-1 ring-black/[0.04] sm:size-24 sm:rounded-[22px]">
-              <div className="w-full bg-[#0a0a0a] py-0.5 text-center text-[9px] font-bold tracking-wider text-white uppercase sm:py-1 sm:text-[11px]">
+            <div className="flex size-16 shrink-0 flex-col items-center justify-between overflow-hidden rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0] shadow-xs ring-1 ring-black/[0.04] sm:size-20 sm:rounded-[20px]">
+              <div className="w-full bg-[#0a0a0a] py-0.5 text-center text-[9px] font-bold tracking-wider text-white uppercase sm:py-1 sm:text-[10px]">
                 {monthShort}
               </div>
-              <div className="my-auto text-xl leading-none font-black tracking-tight text-[#0a0a0a] sm:text-3xl">
+              <div className="my-auto text-xl leading-none font-black tracking-tight text-[#0a0a0a] sm:text-2xl">
                 {dayNumber}
               </div>
-              <div className="w-full pb-1 text-center text-[9px] font-semibold text-[#6a6a6a] uppercase sm:pb-1.5 sm:text-[11px]">
+              <div className="w-full pb-1 text-center text-[9px] font-semibold text-[#6a6a6a] uppercase sm:pb-1 sm:text-[10px]">
                 {dayName.slice(0, 3)}
               </div>
             </div>
 
             {/* Title & Metadata */}
-            <div className="min-w-0 flex-1 space-y-1.5 sm:space-y-2">
+            <div className="min-w-0 flex-1 space-y-1 sm:space-y-1.5">
               <h1
                 id="event-hero-heading"
-                className="text-lg leading-snug font-bold tracking-tight text-[#0a0a0a] sm:text-2xl lg:text-3xl"
+                className="text-lg leading-snug font-bold tracking-tight text-[#0a0a0a] sm:text-2xl"
               >
                 {event.title}
               </h1>
@@ -359,37 +438,13 @@ export function EventDetailSheet({
             </div>
           </div>
 
-          {/* Pengurus Lifecycle Action & Secondary Toolbar */}
-          <div className="flex flex-col gap-3 border-t border-[#e5e5e5] pt-4 sm:flex-row sm:items-center sm:justify-between">
-            {/* Left: Primary Action / Status Trigger */}
-            <div className="flex flex-wrap items-center gap-2">
-              {isPengurus && !isActive && !isClosed && !isCancelled && (
-                <>
-                  <button
-                    type="button"
-                    disabled={isPastScheduledDate}
-                    onClick={handleActivateClick}
-                    className={`flex min-h-[44px] items-center justify-center gap-2 rounded-full px-6 py-2.5 text-xs font-bold shadow-xs transition-all sm:text-sm ${
-                      isPastScheduledDate
-                        ? "cursor-not-allowed border border-[#e5e5e5] bg-black/[0.04] text-[#6a6a6a]"
-                        : "cursor-pointer bg-[#0a0a0a] text-white hover:bg-[#1f1f1f] active:scale-[0.98]"
-                    }`}
-                    title={
-                      isPastScheduledDate
-                        ? "Cannot start event because the scheduled date has passed"
-                        : "Start Event and open attendance check-in"
-                    }
-                  >
-                    <PlayIcon
-                      className={`size-4 ${
-                        isPastScheduledDate
-                          ? "fill-[#6a6a6a] text-[#6a6a6a]"
-                          : "fill-[#e8b94a] text-[#e8b94a]"
-                      }`}
-                    />
-                    <span>Start Event</span>
-                  </button>
-                  {isPastScheduledDate && (
+          {/* Primary Action Row */}
+          {isPengurus && (
+            <div className="border-t border-[#e5e5e5] pt-3.5">
+              {/* Scheduled State */}
+              {!isActive && !isClosed && !isCancelled && (
+                <div className="flex w-full items-center gap-2">
+                  {isPastScheduledDate ? (
                     <button
                       type="button"
                       onClick={() => {
@@ -397,26 +452,29 @@ export function EventDetailSheet({
                         setRescheduleError(null)
                         setRescheduleModalOpen(true)
                       }}
-                      className="flex min-h-[44px] cursor-pointer items-center justify-center gap-2 rounded-full bg-[#0a0a0a] px-5 py-2.5 text-xs font-bold text-white shadow-xs transition-all hover:bg-[#1f1f1f] active:scale-[0.98] sm:text-sm"
+                      className="flex min-h-[44px] w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-[#0a0a0a] px-5 py-2.5 text-xs font-bold text-white shadow-xs transition-all hover:bg-[#1f1f1f] active:scale-[0.98] sm:text-sm"
                       title="Reschedule this event to a future date"
                     >
-                      <CalendarIcon className="size-4 text-[#e8b94a]" />
+                      <CalendarIcon className="size-4 text-white" />
                       <span>Reschedule Event</span>
                     </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleActivateClick}
+                      className="flex min-h-[44px] w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-[#0a0a0a] px-6 py-2.5 text-xs font-bold text-white shadow-xs transition-all hover:bg-[#1f1f1f] active:scale-[0.98] sm:text-sm"
+                      title="Start Event and open attendance check-in"
+                    >
+                      <PlayIcon className="size-4 fill-white text-white" />
+                      <span>Start Event</span>
+                    </button>
                   )}
-                  <button
-                    type="button"
-                    onClick={() => setPendingAction("cancel")}
-                    className="flex min-h-[44px] cursor-pointer items-center justify-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-4 py-2.5 text-xs font-bold text-rose-700 shadow-xs transition-all hover:bg-rose-100 active:scale-[0.98]"
-                    title="Cancel Event"
-                  >
-                    <span>Cancel Event</span>
-                  </button>
-                </>
+                </div>
               )}
 
-              {isPengurus && isActive && (
-                <>
+              {/* Active State: Balanced 2-column grid */}
+              {isActive && (
+                <div className="grid grid-cols-2 gap-2.5">
                   <button
                     type="button"
                     onClick={() =>
@@ -425,33 +483,27 @@ export function EventDetailSheet({
                         search: { eventId: event.id },
                       })
                     }
-                    className="flex min-h-[44px] cursor-pointer items-center justify-center gap-2 rounded-full bg-[#0a0a0a] px-5 py-2.5 text-xs font-bold text-white shadow-xs transition-all hover:bg-[#1f1f1f] active:scale-[0.98] sm:text-sm"
+                    className="flex min-h-[44px] cursor-pointer items-center justify-center gap-2 rounded-full bg-[#0a0a0a] px-4 py-2.5 text-xs font-bold text-white shadow-xs transition-all hover:bg-[#1f1f1f] active:scale-[0.98] sm:text-sm"
                     title="Open live QR scanner"
                   >
-                    <CameraIcon className="size-4 text-[#e8b94a]" />
-                    <span>Open Live Scanner</span>
+                    <CameraIcon className="size-4 text-white" />
+                    <span>Live Scanner</span>
                   </button>
+
                   <button
                     type="button"
                     onClick={() => setPendingAction("close")}
-                    className="flex min-h-[44px] cursor-pointer items-center justify-center gap-2 rounded-full bg-[#1a3a3a] px-5 py-2.5 text-xs font-bold text-white shadow-xs transition-all hover:bg-[#142e2e] active:scale-[0.98] sm:text-sm"
+                    className="flex min-h-[44px] cursor-pointer items-center justify-center gap-2 rounded-full border border-[#0a0a0a] bg-white px-4 py-2.5 text-xs font-bold text-[#0a0a0a] shadow-xs transition-all hover:bg-[#faf5e8] active:scale-[0.98] sm:text-sm"
                     title="Close & complete this event"
                   >
-                    <LockIcon className="size-4 text-[#e8b94a]" />
-                    <span>Close &amp; Finalize Event</span>
+                    <LockIcon className="size-4 text-[#0a0a0a]" />
+                    <span>Finalize Event</span>
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => setPendingAction("cancel")}
-                    className="flex min-h-[44px] cursor-pointer items-center justify-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-4 py-2.5 text-xs font-bold text-rose-700 shadow-xs transition-all hover:bg-rose-100 active:scale-[0.98]"
-                    title="Cancel Event"
-                  >
-                    <span>Cancel</span>
-                  </button>
-                </>
+                </div>
               )}
 
-              {isPengurus && isCancelled && (
+              {/* Cancelled State */}
+              {isCancelled && (
                 <button
                   type="button"
                   onClick={() => {
@@ -459,84 +511,42 @@ export function EventDetailSheet({
                     setRescheduleError(null)
                     setRescheduleModalOpen(true)
                   }}
-                  className="flex min-h-[44px] cursor-pointer items-center justify-center gap-2 rounded-full bg-[#0a0a0a] px-6 py-2.5 text-xs font-bold text-white shadow-xs transition-all hover:bg-[#1f1f1f] active:scale-[0.98] sm:text-sm"
+                  className="flex min-h-[44px] w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-[#0a0a0a] px-6 py-2.5 text-xs font-bold text-white shadow-xs transition-all hover:bg-[#1f1f1f] active:scale-[0.98] sm:text-sm"
                   title="Reschedule this event"
                 >
-                  <CalendarIcon className="size-4 text-[#e8b94a]" />
+                  <CalendarIcon className="size-4 text-white" />
                   <span>Reschedule Event</span>
                 </button>
               )}
 
-              {isPengurus && isClosed && (
-                <div className="flex min-h-[44px] items-center gap-2 rounded-full border border-[#e5e5e5] bg-[#fffaf0] px-4 py-2 text-xs font-semibold text-[#6a6a6a]">
-                  <CheckCircle2Icon className="size-4 text-[#1a3a3a]" />
+              {/* Closed State */}
+              {isClosed && (
+                <div className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-full border border-[#e5e5e5] bg-[#fffaf0] px-4 py-2 text-xs font-semibold text-[#6a6a6a]">
+                  <CheckCircle2Icon className="size-4 text-[#0a0a0a]" />
                   <span>Event Concluded (Finalized)</span>
                 </div>
               )}
-
-              {!isPengurus && (
-                <div className="flex min-h-[44px] items-center gap-2 text-xs font-semibold text-[#6a6a6a]">
-                  <ShieldCheckIcon className="size-4 text-[#e8b94a]" />
-                  <span>
-                    Your personal attendance QR is available on your Member Profile
-                  </span>
-                </div>
-              )}
             </div>
+          )}
 
-            {/* Right: Management Toolbar (Pengurus) / Action Links */}
-            {isPengurus ? (
-              <div className="grid w-full grid-cols-3 gap-2 sm:flex sm:w-auto sm:items-center">
-                <button
-                  type="button"
-                  disabled={!canEdit}
-                  onClick={() => canEdit && onEdit?.(event)}
-                  className={`flex min-h-[44px] items-center justify-center gap-1 rounded-full border px-2.5 py-1.5 text-xs font-semibold shadow-xs transition-all sm:min-h-[44px] sm:gap-1.5 sm:px-3.5 ${canEdit
-                      ? "cursor-pointer border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] hover:bg-[#faf5e8] active:scale-95"
-                      : "cursor-not-allowed border-[#e5e5e5]/50 bg-black/[0.02] text-[#6a6a6a]"
-                    }`}
-                  title={
-                    canEdit ? "Edit Event Details" : "Locked (Cannot edit)"
-                  }
-                >
-                  <PencilIcon className="size-3.5" />
-                  <span>Edit</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => onDuplicate?.(event)}
-                  className="flex min-h-[44px] cursor-pointer items-center justify-center gap-1 rounded-full border border-[#e5e5e5] bg-[#fffaf0] px-2.5 py-1.5 text-xs font-semibold text-[#0a0a0a] shadow-xs transition-all hover:bg-[#faf5e8] active:scale-95 sm:min-h-[44px] sm:gap-1.5 sm:px-3.5"
-                  title="Duplicate Event"
-                >
-                  <CopyIcon className="size-3.5 text-[#e8b94a]" />
-                  <span>Duplicate</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => onDelete?.(event)}
-                  className="flex min-h-[44px] cursor-pointer items-center justify-center gap-1 rounded-full border border-[#e5e5e5] bg-[#fffaf0] px-2.5 py-1.5 text-xs font-semibold text-[#6a6a6a] shadow-xs transition-all hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700 active:scale-95 sm:min-h-[44px] sm:gap-1.5 sm:px-3.5"
-                  title="Delete Event"
-                >
-                  <Trash2Icon className="size-3.5" />
-                  <span>Delete</span>
-                </button>
+          {/* Non-Pengurus Action Row */}
+          {!isPengurus && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-2.5 border-t border-[#e5e5e5] pt-3.5">
+              <a
+                href={getGoogleCalendarUrl(event)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex min-h-[40px] w-full sm:w-auto cursor-pointer items-center justify-center gap-1.5 rounded-full border border-[#e5e5e5] bg-[#fffaf0] px-4 py-1.5 text-xs font-semibold text-[#0a0a0a] shadow-xs transition-all hover:bg-[#faf5e8] active:scale-95"
+              >
+                <CalendarIcon className="size-3.5 text-[#0a0a0a]" />
+                <span>Add to Google Calendar</span>
+              </a>
+              <div className="flex items-center gap-2 text-xs font-medium text-[#6a6a6a]">
+                <ShieldCheckIcon className="size-3.5 text-[#0a0a0a]" />
+                <span>Show your Member QR on Profile for check-in</span>
               </div>
-            ) : (
-              <div className="flex w-full items-center sm:w-auto">
-                <a
-                  href={getGoogleCalendarUrl(event)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex min-h-[44px] w-full cursor-pointer items-center justify-center gap-1.5 rounded-full border border-[#e5e5e5] bg-[#fffaf0] px-4 py-1.5 text-xs font-semibold text-[#0a0a0a] shadow-xs transition-all hover:bg-[#faf5e8] active:scale-95 sm:min-h-[44px] sm:w-auto"
-                >
-                  <CalendarIcon className="size-3.5 text-[#e8b94a]" />
-                  <span>Add to Google Calendar</span>
-                </a>
-              </div>
-            )}
-          </div>
+            </div>
+          )}
 
           {isPengurus &&
             !isActive &&
@@ -576,11 +586,10 @@ export function EventDetailSheet({
               aria-controls="event-overview-panel"
               tabIndex={activeTab === "overview" ? 0 : -1}
               onClick={() => setActiveTab("overview")}
-              className={`flex min-h-[44px] items-center justify-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition-all focus-visible:ring-2 focus-visible:ring-[#0a0a0a] focus-visible:ring-offset-2 focus-visible:outline-none sm:min-w-32 sm:px-5 sm:text-sm ${
-                activeTab === "overview"
+              className={`flex min-h-[44px] items-center justify-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition-all focus-visible:ring-2 focus-visible:ring-[#0a0a0a] focus-visible:ring-offset-2 focus-visible:outline-none sm:min-w-32 sm:px-5 sm:text-sm ${activeTab === "overview"
                   ? "bg-[#0a0a0a] text-white shadow-xs"
                   : "text-[#6a6a6a] hover:text-[#0a0a0a]"
-              }`}
+                }`}
             >
               <InfoIcon className="size-4" />
               <span>Overview</span>
@@ -594,20 +603,18 @@ export function EventDetailSheet({
               aria-controls="event-attendance-panel"
               tabIndex={activeTab === "attendance" ? 0 : -1}
               onClick={() => setActiveTab("attendance")}
-              className={`flex min-h-[44px] items-center justify-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition-all focus-visible:ring-2 focus-visible:ring-[#0a0a0a] focus-visible:ring-offset-2 focus-visible:outline-none sm:min-w-32 sm:px-5 sm:text-sm ${
-                activeTab === "attendance"
+              className={`flex min-h-[44px] items-center justify-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition-all focus-visible:ring-2 focus-visible:ring-[#0a0a0a] focus-visible:ring-offset-2 focus-visible:outline-none sm:min-w-32 sm:px-5 sm:text-sm ${activeTab === "attendance"
                   ? "bg-[#0a0a0a] text-white shadow-xs"
                   : "text-[#6a6a6a] hover:text-[#0a0a0a]"
-              }`}
+                }`}
             >
               <UsersIcon className="size-4" />
               <span>Attendance</span>
               <span
-                className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${
-                  activeTab === "attendance"
+                className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${activeTab === "attendance"
                     ? "bg-white/20 text-white"
                     : "bg-black/[0.08] text-[#0a0a0a]"
-                }`}
+                  }`}
               >
                 {attendances.length > 0
                   ? attendances.length
@@ -627,17 +634,17 @@ export function EventDetailSheet({
           tabIndex={0}
           className="space-y-5 outline-none sm:space-y-6"
         >
-          {/* Key Details Bento Grid: Responsive 1 col on mobile, 2 col on tablet, 3 col on desktop */}
-          <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
+          {/* Key Details Bento Grid: 3 balanced cards across tablet & desktop */}
+          <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-3">
             {/* Schedule Bento Card */}
             <div className="flex flex-col justify-between rounded-[22px] border border-[#e5e5e5] bg-[#faf5e8] p-4 shadow-xs">
               <div className="flex items-start gap-3">
-                <span className="flex size-10 shrink-0 items-center justify-center rounded-[14px] bg-[#0a0a0a] text-[#e8b94a] shadow-xs">
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-[14px] bg-[#0a0a0a] text-white shadow-xs">
                   <CalendarIcon className="size-5" />
                 </span>
                 <div className="min-w-0">
                   <p className="text-[10px] font-bold tracking-wider text-[#6a6a6a] uppercase sm:text-[11px]">
-                    Date & Time
+                    Date &amp; Time
                   </p>
                   <p className="mt-0.5 text-xs font-bold text-[#0a0a0a] sm:text-sm">
                     {dayName}, {dateStr}
@@ -653,7 +660,7 @@ export function EventDetailSheet({
                   href={getGoogleCalendarUrl(event)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center justify-between text-xs font-semibold text-[#1a3a3a] transition-colors hover:text-[#0a0a0a] hover:underline"
+                  className="flex items-center justify-between text-xs font-semibold text-[#0a0a0a] transition-colors hover:underline"
                 >
                   <span>Export to Google Calendar</span>
                   <ExternalLinkIcon className="size-3.5 text-[#6a6a6a]" />
@@ -664,12 +671,12 @@ export function EventDetailSheet({
             {/* Location Bento Card */}
             <div className="flex flex-col justify-between rounded-[22px] border border-[#e5e5e5] bg-[#faf5e8] p-4 shadow-xs">
               <div className="flex items-start gap-3">
-                <span className="flex size-10 shrink-0 items-center justify-center rounded-[14px] bg-[#0a0a0a] text-[#e8b94a] shadow-xs">
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-[14px] bg-[#0a0a0a] text-white shadow-xs">
                   <MapPinIcon className="size-5" />
                 </span>
                 <div className="min-w-0">
                   <p className="text-[10px] font-bold tracking-wider text-[#6a6a6a] uppercase sm:text-[11px]">
-                    Venue & Location
+                    Venue &amp; Location
                   </p>
                   <p className="mt-0.5 truncate text-xs font-bold text-[#0a0a0a] sm:text-sm">
                     {event.location}
@@ -685,7 +692,7 @@ export function EventDetailSheet({
                   href={getGoogleMapsUrl(event.location)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center justify-between text-xs font-semibold text-[#1a3a3a] transition-colors hover:text-[#0a0a0a] hover:underline"
+                  className="flex items-center justify-between text-xs font-semibold text-[#0a0a0a] transition-colors hover:underline"
                 >
                   <span>Open in Google Maps</span>
                   <ExternalLinkIcon className="size-3.5 text-[#6a6a6a]" />
@@ -693,10 +700,10 @@ export function EventDetailSheet({
               </div>
             </div>
 
-            {/* Merit Points Card (Spans full on tablet, 1 col on desktop) */}
-            <div className="flex flex-col justify-between rounded-[22px] border border-[#e5e5e5] bg-[#faf5e8] p-4 shadow-xs sm:col-span-2 lg:col-span-1">
+            {/* Merit Points Card */}
+            <div className="flex flex-col justify-between rounded-[22px] border border-[#e5e5e5] bg-[#faf5e8] p-4 shadow-xs">
               <div className="flex items-start gap-3">
-                <span className="flex size-10 shrink-0 items-center justify-center rounded-[14px] bg-[#0a0a0a] text-[#e8b94a] shadow-xs">
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-[14px] bg-[#0a0a0a] text-white shadow-xs">
                   <AwardIcon className="size-5" />
                 </span>
                 <div className="min-w-0">
@@ -714,22 +721,35 @@ export function EventDetailSheet({
 
               <div className="mt-4 border-t border-[#e5e5e5] pt-3">
                 <span className="flex items-center gap-1 text-xs font-semibold text-[#6a6a6a]">
-                  <SparklesIcon className="size-3.5 text-[#e8b94a]" />
+                  <SparklesIcon className="size-3.5 text-[#0a0a0a]" />
                   <span>Counts toward streak tier</span>
                 </span>
               </div>
             </div>
           </div>
 
-          {/* 2-Column Responsive Layout for max-w-7xl: About (Col 7) + Guidelines (Col 5) */}
-          <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
-            {/* Left Column: Event Description */}
-            <div className="space-y-4 lg:col-span-7">
+          {/* 2-Column Responsive Proportional Layout: Content (Col 7) + Rules & Snapshot (Col 5) */}
+          <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-12">
+            {/* Left Column: Event Description + Guidelines */}
+            <div className="space-y-5 lg:col-span-7">
+              {/* About this Event */}
               <div className="space-y-3 rounded-[24px] border border-[#e5e5e5] bg-[#faf5e8] p-4 shadow-xs sm:p-6">
-                <h3 className="flex items-center gap-2 text-sm font-bold text-[#0a0a0a] sm:text-base">
-                  <SparklesIcon className="size-4 text-[#e8b94a]" />
-                  <span>About this Event</span>
-                </h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="flex items-center gap-2 text-sm font-bold text-[#0a0a0a] sm:text-base">
+                    <SparklesIcon className="size-4 text-[#0a0a0a]" />
+                    <span>About this Event</span>
+                  </h3>
+                  <span
+                    className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold"
+                    style={colorInfo.bgStyle}
+                  >
+                    <span
+                      className="size-1.5 rounded-full"
+                      style={colorInfo.dotStyle}
+                    />
+                    {colorInfo.name}
+                  </span>
+                </div>
                 {event.description ? (
                   <p className="text-xs leading-relaxed whitespace-pre-line text-[#3a3a3a] sm:text-sm">
                     {event.description}
@@ -741,19 +761,17 @@ export function EventDetailSheet({
                   </p>
                 )}
               </div>
-            </div>
 
-            {/* Right Column: Guidelines & Etiquette */}
-            <div className="space-y-4 lg:col-span-5">
+              {/* Attendee Guidelines & Etiquette */}
               <div className="space-y-4 rounded-[24px] border border-[#e5e5e5] bg-[#faf5e8] p-4 shadow-xs sm:p-6">
                 <h3 className="flex items-center gap-2 text-sm font-bold text-[#0a0a0a] sm:text-base">
-                  <ClipboardListIcon className="size-4 text-[#1a3a3a]" />
-                  <span>Attendee Guidelines & Etiquette</span>
+                  <ClipboardListIcon className="size-4 text-[#0a0a0a]" />
+                  <span>Attendee Guidelines &amp; Etiquette</span>
                 </h3>
 
                 <div className="space-y-2.5">
                   <div className="flex items-start gap-3 rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0] p-3 shadow-2xs">
-                    <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-[#0a0a0a] text-xs font-bold text-[#e8b94a]">
+                    <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-[#0a0a0a] text-xs font-bold text-white">
                       1
                     </span>
                     <div className="min-w-0">
@@ -761,14 +779,13 @@ export function EventDetailSheet({
                         Dress Code
                       </p>
                       <p className="mt-0.5 text-xs text-[#6a6a6a]">
-                        Dress politely & respectfully (white or neat casual
-                        attire).
+                        Dress politely &amp; respectfully (white or neat casual attire).
                       </p>
                     </div>
                   </div>
 
                   <div className="flex items-start gap-3 rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0] p-3 shadow-2xs">
-                    <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-[#0a0a0a] text-xs font-bold text-[#e8b94a]">
+                    <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-[#0a0a0a] text-xs font-bold text-white">
                       2
                     </span>
                     <div className="min-w-0">
@@ -776,14 +793,13 @@ export function EventDetailSheet({
                         On-Time Presence
                       </p>
                       <p className="mt-0.5 text-xs text-[#6a6a6a]">
-                        Arrive 10 minutes early for peaceful meditation
-                        preparation.
+                        Arrive 10 minutes early for peaceful meditation preparation.
                       </p>
                     </div>
                   </div>
 
                   <div className="flex items-start gap-3 rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0] p-3 shadow-2xs">
-                    <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-[#0a0a0a] text-xs font-bold text-[#e8b94a]">
+                    <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-[#0a0a0a] text-xs font-bold text-white">
                       3
                     </span>
                     <div className="min-w-0">
@@ -791,8 +807,7 @@ export function EventDetailSheet({
                         QR Check-In
                       </p>
                       <p className="mt-0.5 text-xs text-[#6a6a6a]">
-                        Present your personal Member QR code to the reception
-                        team.
+                        Present your personal Member QR code to the reception team.
                       </p>
                     </div>
                   </div>
@@ -804,6 +819,114 @@ export function EventDetailSheet({
                     seva team.
                   </span>
                 </div>
+              </div>
+            </div>
+
+            {/* Right Column: Event Policies & Community Snapshot */}
+            <div className="space-y-5 lg:col-span-5">
+              {/* Event Rules & Attendance Policies */}
+              <div className="space-y-4 rounded-[24px] border border-[#e5e5e5] bg-[#faf5e8] p-4 shadow-xs sm:p-6">
+                <h3 className="flex items-center gap-2 text-sm font-bold text-[#0a0a0a] sm:text-base">
+                  <ShieldCheckIcon className="size-4 text-[#0a0a0a]" />
+                  <span>Event Rules &amp; Attendance Policy</span>
+                </h3>
+
+                <div className="divide-y divide-[#e5e5e5] rounded-[18px] border border-[#e5e5e5] bg-[#fffaf0] text-xs shadow-2xs">
+                  {/* Category */}
+                  <div className="flex items-center justify-between p-3">
+                    <span className="font-medium text-[#6a6a6a]">Category</span>
+                    <span className="font-bold text-[#0a0a0a]">{colorInfo.name}</span>
+                  </div>
+
+                  {/* Target Audience */}
+                  <div className="flex items-center justify-between p-3">
+                    <span className="font-medium text-[#6a6a6a]">Target Audience</span>
+                    <span className="font-bold text-[#0a0a0a] capitalize">
+                      {event.visibility === "all"
+                        ? "All Members"
+                        : event.visibility === "activist"
+                          ? "Activists & Organizers"
+                          : event.visibility === "organizer"
+                            ? "Organizers Only"
+                            : "Community Members"}
+                    </span>
+                  </div>
+
+                  {/* Late Arrival Policy */}
+                  <div className="flex items-center justify-between p-3">
+                    <span className="font-medium text-[#6a6a6a]">Late Arrival Grace</span>
+                    <span className="font-bold text-[#0a0a0a]">
+                      {event.max_late_minutes ?? 15} Minutes
+                    </span>
+                  </div>
+
+                  {/* Late Penalty */}
+                  <div className="flex items-center justify-between p-3">
+                    <span className="font-medium text-[#6a6a6a]">Late Penalty</span>
+                    <span className="font-bold text-rose-700">
+                      -{event.late_penalty_points ?? 15} Pts
+                    </span>
+                  </div>
+
+                  {/* Check-In Mode */}
+                  <div className="flex items-center justify-between p-3">
+                    <span className="font-medium text-[#6a6a6a]">Check-In Method</span>
+                    <span className="font-bold text-[#0a0a0a]">
+                      Encrypted Member QR
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Attendance Community Snapshot */}
+              <div className="space-y-3 rounded-[24px] border border-[#e5e5e5] bg-[#faf5e8] p-4 shadow-xs sm:p-6">
+                <div className="flex items-center justify-between">
+                  <h3 className="flex items-center gap-2 text-sm font-bold text-[#0a0a0a] sm:text-base">
+                    <UsersIcon className="size-4 text-[#0a0a0a]" />
+                    <span>Attendance Snapshot</span>
+                  </h3>
+                  <Badge
+                    variant={isActive ? "emerald" : isClosed ? "slate" : "default"}
+                    glass
+                    size="sm"
+                    className="text-[11px] font-semibold"
+                  >
+                    {isActive ? "Active Now" : isClosed ? "Concluded" : "Scheduled"}
+                  </Badge>
+                </div>
+
+                <div className="rounded-[18px] border border-[#e5e5e5] bg-[#fffaf0] p-4 text-center shadow-2xs">
+                  <p className="text-[11px] font-bold tracking-wider text-[#6a6a6a] uppercase">
+                    Recorded Attendees
+                  </p>
+                  <p className="mt-1 text-2xl font-black text-[#0a0a0a] sm:text-3xl">
+                    {attendances.length > 0
+                      ? attendances.length
+                      : (event.total_attendees ?? 0)}
+                  </p>
+                  <p className="mt-1 text-xs text-[#6a6a6a]">
+                    {isActive
+                      ? "Members actively checked in today"
+                      : isClosed
+                        ? "Total finalized member check-ins"
+                        : "Ready to accept check-ins once started"}
+                  </p>
+                </div>
+
+                {isPengurus ? (
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("attendance")}
+                    className="flex min-h-[42px] w-full cursor-pointer items-center justify-center gap-1.5 rounded-full border border-[#0a0a0a] bg-white px-4 py-2 text-xs font-bold text-[#0a0a0a] shadow-xs transition-all hover:bg-[#faf5e8] active:scale-95"
+                  >
+                    <span>Manage Attendance List</span>
+                    <ChevronRightIcon className="size-4 text-[#0a0a0a]" />
+                  </button>
+                ) : (
+                  <p className="text-center text-xs text-[#6a6a6a]">
+                    Check-in is managed by event organizers.
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -819,23 +942,19 @@ export function EventDetailSheet({
           tabIndex={0}
           className="space-y-6 outline-none"
         >
-          {/* Active Session Scanner Callout (Pengurus & Aktivis) */}
+          {/* Active Session Status Bar (Pengurus & Aktivis) */}
           {isPengurus && (
             <div>
               {isActive && (
-                <div className="flex flex-col items-start justify-between gap-4 rounded-[24px] border border-[#e5e5e5] bg-[#fffaf0] p-4 shadow-xs sm:flex-row sm:items-center sm:p-6">
-                  <div className="space-y-1 text-left">
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-[#0a0a0a] px-2.5 py-0.5 text-xs font-bold text-white shadow-2xs">
-                      <span className="size-2 animate-ping rounded-full bg-emerald-400" />
-                      Live Attendance Scanning Active
+                <div className="flex items-center justify-between gap-3 rounded-[20px] border border-emerald-200 bg-emerald-50/80 px-4 py-2.5 text-xs text-emerald-900 shadow-2xs">
+                  <div className="flex min-w-0 items-center gap-2.5">
+                    <span className="relative flex size-2.5 shrink-0">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                      <span className="relative inline-flex size-2.5 rounded-full bg-emerald-600" />
                     </span>
-                    <h3 className="text-base font-bold text-[#0a0a0a] sm:text-lg">
-                      Ready to Scan Member QR Codes
-                    </h3>
-                    <p className="text-xs text-[#6a6a6a]">
-                      Point device camera to members&apos; personal attendance
-                      QR codes.
-                    </p>
+                    <span className="truncate font-semibold text-emerald-900">
+                      Live Check-In Active
+                    </span>
                   </div>
 
                   <button
@@ -846,29 +965,29 @@ export function EventDetailSheet({
                         search: { eventId: event.id },
                       })
                     }
-                    className="flex min-h-[46px] w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-[#0a0a0a] px-6 py-2.5 text-xs font-bold text-white shadow-xs transition-all hover:bg-[#1f1f1f] active:scale-95 sm:w-auto sm:text-sm"
+                    className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full bg-[#0a0a0a] px-3.5 py-1.5 text-xs font-bold text-white shadow-2xs transition-all hover:bg-[#1f1f1f] active:scale-95"
                   >
-                    <CameraIcon className="size-4 text-[#e8b94a]" />
-                    <span>Open Live QR Scanner</span>
+                    <CameraIcon className="size-3.5 text-white" />
+                    <span>Launch Scanner</span>
                   </button>
                 </div>
               )}
 
               {!isActive && !isClosed && (
-                <div className="flex items-center gap-3 rounded-[20px] border border-[#e5e5e5] bg-[#fffaf0] p-4 text-xs text-[#6a6a6a] shadow-2xs">
-                  <AlertTriangleIcon className="size-4 shrink-0 text-[#e8b94a]" />
+                <div className="flex items-center gap-3 rounded-[20px] border border-[#e5e5e5] bg-[#fffaf0] p-3.5 text-xs text-[#6a6a6a] shadow-2xs">
+                  <AlertTriangleIcon className="size-4 shrink-0 text-amber-600" />
                   <span>
                     Event check-in is currently idle. Click{" "}
                     <strong className="font-semibold text-[#0a0a0a]">
-                      &quot;Activate Event Check-In&quot;
+                      &quot;Start Event&quot;
                     </strong>{" "}
-                    in the header to begin scanning attendees.
+                    above to begin scanning attendees.
                   </span>
                 </div>
               )}
 
               {isClosed && (
-                <div className="flex items-center gap-3 rounded-[20px] border border-[#e5e5e5] bg-[#faf5e8] p-4 text-xs text-[#6a6a6a] shadow-2xs">
+                <div className="flex items-center gap-3 rounded-[20px] border border-[#e5e5e5] bg-[#faf5e8] p-3.5 text-xs text-[#6a6a6a] shadow-2xs">
                   <LockIcon className="size-4 shrink-0 text-[#6a6a6a]" />
                   <span>
                     Event has concluded. Attendance list is locked for
@@ -1047,7 +1166,7 @@ export function EventDetailSheet({
                   setRescheduleDate(e.target.value)
                   setRescheduleError(null)
                 }}
-                className="w-full rounded-[14px] border border-[#e5e5e5] bg-white px-3.5 py-2.5 text-xs text-[#0a0a0a] outline-none focus:border-[#1a3a3a] focus:ring-2 focus:ring-[#1a3a3a]/15"
+                className="w-full rounded-[14px] border border-[#e5e5e5] bg-white px-3.5 py-2.5 text-xs text-[#0a0a0a] outline-none focus:border-[#0a0a0a] focus:ring-2 focus:ring-[#0a0a0a]/10"
               />
               {rescheduleError && (
                 <p className="text-[11px] font-medium text-red-600">
@@ -1082,7 +1201,7 @@ export function EventDetailSheet({
                   executeStatusChange("scheduled", rescheduleDate)
                   setRescheduleModalOpen(false)
                 }}
-                className="cursor-pointer rounded-full bg-[#1a3a3a] px-5 py-2 text-xs font-bold text-[#e8b94a] shadow-xs transition-colors hover:bg-[#254f4f]"
+                className="cursor-pointer rounded-full bg-[#0a0a0a] px-5 py-2 text-xs font-bold text-white shadow-xs transition-colors hover:bg-[#1f1f1f]"
               >
                 Confirm Reschedule
               </button>

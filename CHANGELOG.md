@@ -15,6 +15,7 @@ All notable changes to Sekkha Apps. Semver (`MAJOR.MINOR.PATCH`); newest on top.
 - Unit tests for `PrivacyPolicyDocument` and `PrivacyPolicyPage`.
 
 ### Changed
+- Proportioned Event Overview and resolved action button stacking: balanced key metrics into 3 equal bento cards (`sm:grid-cols-3`), harmonized 2-column content grid with event rules table and attendance snapshot, and wrapped management actions (`Edit`, `Duplicate`, `Delete`) into responsive segmented capsule to prevent overlapping on mobile and tablet.
 - Standardized `AttendanceListSheet` and `EventDetailSheet` UI color tokens to strictly follow `DESIGN.md` (warm cream surfaces `#fffaf0`/`#faf5e8`, `#e5e5e5` borders, `#0a0a0a` ink, replacing ad-hoc tinting).
 - Aligned frontend events attendance access with PRD AC-EVT-01: restricted `/events/scan` UI and attendance tab strictly to `organizer` and `admin`, displaying member attendance profile card guidance for `member` and `activist`.
 - Refactored English UI copy across master data category descriptions and event detail timestamps in `sekkha-frontend/src/modules/events`.
@@ -28,6 +29,7 @@ All notable changes to Sekkha Apps. Semver (`MAJOR.MINOR.PATCH`); newest on top.
 - Upgraded `PrivacyPolicyModal` in registration flow to support bilingual toggling between full Indonesian PDP-compliant legal terms and English summary with scroll-to-bottom agreement verification.
 
 ### Fixed
+- Replaced residual pure white (`bg-white`) backgrounds and focus/hover states in `AttendanceListSheet` and `EventDetailSheet` with designated Clay warm surfaces (`#fffaf0`, `#faf5e8`, `#ebe6d6`) per `DESIGN.md`.
 - Standardized school request creation response message in `sekkha-api/src/modules/schools/controllers.ts` to English (`"School request submitted successfully and pending approval"`).
 - Standardized configure mutation authorization check in `sekkha-api/src/modules/configure/routes.ts` to route errors through `AppError(..., 403, "FORBIDDEN")`.
 - Authentication PRD alignment and mockability:

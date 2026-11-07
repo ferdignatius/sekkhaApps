@@ -152,8 +152,8 @@ export function BadgeActivityListPage() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <div className="flex items-center gap-2">
-              <span className="flex size-9 items-center justify-center rounded-[10px] bg-[#fbbf24]/20 text-[#d97706]">
-                <AwardIcon className="size-5" />
+              <span className="flex size-9 items-center justify-center rounded-[10px] bg-clay-ochre/20 text-[#0a0a0a]">
+                <AwardIcon className="size-5 text-clay-ochre" />
               </span>
               <h1 className="text-xl font-black tracking-tight text-[#0a0a0a] sm:text-2xl">
                 Badge Activity
@@ -180,9 +180,9 @@ export function BadgeActivityListPage() {
 
         {/* Global Action Error Banner */}
         {actionError && (
-          <div className="flex items-center justify-between rounded-[12px] border border-[#ef4444]/30 bg-[#fef2f2] p-3 text-xs text-[#b91c1c]">
+          <div className="flex items-center justify-between rounded-[12px] border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">
             <div className="flex items-center gap-2">
-              <AlertTriangleIcon className="size-4 text-[#ef4444]" />
+              <AlertTriangleIcon className="size-4 text-destructive" />
               <span>{actionError}</span>
             </div>
             <button
@@ -196,7 +196,7 @@ export function BadgeActivityListPage() {
 
         {/* Metric Cards Banner */}
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
-          <Card className="rounded-[16px] border border-[#e5e5e5] bg-white p-4 shadow-sm">
+          <Card className="rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] p-4 shadow-2xs">
             <p className="text-[11px] font-bold tracking-wider text-[#6a6a6a] uppercase">
               Total Roles
             </p>
@@ -204,15 +204,15 @@ export function BadgeActivityListPage() {
               {stats.total}
             </p>
           </Card>
-          <Card className="rounded-[16px] border border-[#e5e5e5] bg-white p-4 shadow-sm">
-            <p className="text-[11px] font-bold tracking-wider text-[#16a34a] uppercase">
+          <Card className="rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] p-4 shadow-2xs">
+            <p className="text-[11px] font-bold tracking-wider text-clay-success uppercase">
               Active
             </p>
-            <p className="mt-1 text-2xl font-black text-[#16a34a] sm:text-3xl">
+            <p className="mt-1 text-2xl font-black text-clay-success sm:text-3xl">
               {stats.active}
             </p>
           </Card>
-          <Card className="rounded-[16px] border border-[#e5e5e5] bg-white p-4 shadow-sm">
+          <Card className="rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] p-4 shadow-2xs">
             <p className="text-[11px] font-bold tracking-wider text-[#6a6a6a] uppercase">
               Inactive
             </p>
@@ -220,11 +220,11 @@ export function BadgeActivityListPage() {
               {stats.inactive}
             </p>
           </Card>
-          <Card className="rounded-[16px] border border-[#e5e5e5] bg-white p-4 shadow-sm">
-            <p className="text-[11px] font-bold tracking-wider text-[#d97706] uppercase">
+          <Card className="rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] p-4 shadow-2xs">
+            <p className="text-[11px] font-bold tracking-wider text-clay-ochre uppercase">
               Avg Reward
             </p>
-            <p className="mt-1 flex items-baseline gap-1 text-2xl font-black text-[#d97706] sm:text-3xl">
+            <p className="mt-1 flex items-baseline gap-1 text-2xl font-black text-[#0a0a0a] sm:text-3xl">
               +{stats.avgPoints}
               <span className="text-xs font-bold text-[#6a6a6a]">Pts</span>
             </p>
@@ -232,7 +232,7 @@ export function BadgeActivityListPage() {
         </div>
 
         {/* Filters and Search Bar */}
-        <div className="flex flex-col gap-3 rounded-[16px] border border-[#e5e5e5] bg-white p-3 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-4">
+        <div className="flex flex-col gap-3 rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] p-3 shadow-2xs sm:flex-row sm:items-center sm:justify-between sm:p-4">
           <div className="relative flex-1">
             <SearchIcon className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-[#6a6a6a]" />
             <Input
@@ -240,7 +240,7 @@ export function BadgeActivityListPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by role name, code, or description..."
-              className="h-10 w-full rounded-[10px] border border-[#e5e5e5] bg-[#fffaf0]/60 pr-3 pl-9 text-xs font-medium text-[#0a0a0a] placeholder:text-[#999999] focus:border-[#0a0a0a] focus:bg-white focus:outline-none"
+              className="h-10 w-full rounded-[10px] border border-[#e5e5e5] bg-[#fffaf0] pr-3 pl-9 text-xs font-medium text-[#0a0a0a] placeholder:text-[#8a8a8a] focus:border-[#0a0a0a] focus:bg-[#fffaf0] focus:outline-none"
             />
           </div>
 
@@ -250,7 +250,7 @@ export function BadgeActivityListPage() {
               className={`rounded-[8px] px-3 py-1.5 text-xs font-bold transition ${
                 statusFilter === "all"
                   ? "bg-[#0a0a0a] text-white"
-                  : "bg-transparent text-[#6a6a6a] hover:bg-[#f5f5f5]"
+                  : "border border-[#e5e5e5] bg-[#fffaf0] text-[#6a6a6a] hover:bg-[#ebe6d6] hover:text-[#0a0a0a]"
               }`}
             >
               All
@@ -259,8 +259,8 @@ export function BadgeActivityListPage() {
               onClick={() => setStatusFilter("active")}
               className={`rounded-[8px] px-3 py-1.5 text-xs font-bold transition ${
                 statusFilter === "active"
-                  ? "bg-[#16a34a] text-white"
-                  : "bg-transparent text-[#6a6a6a] hover:bg-[#f5f5f5]"
+                  ? "bg-clay-success text-white"
+                  : "border border-[#e5e5e5] bg-[#fffaf0] text-[#6a6a6a] hover:bg-[#ebe6d6] hover:text-[#0a0a0a]"
               }`}
             >
               Active
@@ -269,8 +269,8 @@ export function BadgeActivityListPage() {
               onClick={() => setStatusFilter("inactive")}
               className={`rounded-[8px] px-3 py-1.5 text-xs font-bold transition ${
                 statusFilter === "inactive"
-                  ? "bg-[#6a6a6a] text-white"
-                  : "bg-transparent text-[#6a6a6a] hover:bg-[#f5f5f5]"
+                  ? "bg-[#0a0a0a] text-white"
+                  : "border border-[#e5e5e5] bg-[#fffaf0] text-[#6a6a6a] hover:bg-[#ebe6d6] hover:text-[#0a0a0a]"
               }`}
             >
               Inactive
@@ -284,13 +284,13 @@ export function BadgeActivityListPage() {
             {[1, 2, 3].map((n) => (
               <div
                 key={n}
-                className="h-44 animate-pulse rounded-[16px] border border-[#e5e5e5] bg-white p-5"
+                className="h-44 animate-pulse rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] p-5"
               />
             ))}
           </div>
         ) : filteredItems.length === 0 ? (
-          <div className="rounded-[16px] border border-dashed border-[#e5e5e5] bg-white p-12 text-center">
-            <AwardIcon className="mx-auto size-12 text-[#d4d4d4]" />
+          <div className="rounded-[16px] border border-dashed border-[#e5e5e5] bg-[#faf5e8] p-12 text-center">
+            <AwardIcon className="mx-auto size-12 text-[#8a8a8a]" />
             <h3 className="mt-3 text-sm font-bold text-[#0a0a0a]">
               No Badge Activities Found
             </h3>
@@ -305,20 +305,20 @@ export function BadgeActivityListPage() {
             {filteredItems.map((item) => (
               <Card
                 key={item.id}
-                className="group relative flex flex-col justify-between overflow-hidden rounded-[16px] border border-[#e5e5e5] bg-white p-5 shadow-sm transition hover:shadow-md"
+                className="group relative flex flex-col justify-between overflow-hidden rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] p-5 shadow-2xs transition hover:border-[#0a0a0a]/30 hover:shadow-xs"
               >
                 <div>
                   <div className="flex items-start justify-between gap-3">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
-                        <span className="flex size-7 items-center justify-center rounded-[8px] bg-[#fbbf24]/20 text-[#d97706]">
-                          <AwardIcon className="size-4" />
+                        <span className="flex size-7 items-center justify-center rounded-[8px] bg-clay-ochre/20 text-[#0a0a0a]">
+                          <AwardIcon className="size-4 text-clay-ochre" />
                         </span>
-                        <h3 className="text-sm font-black text-[#0a0a0a] transition group-hover:text-[#d97706]">
+                        <h3 className="text-sm font-black text-[#0a0a0a] transition group-hover:text-clay-ochre">
                           {item.label}
                         </h3>
                       </div>
-                      <p className="font-mono text-[11px] text-[#8c8c8c]">
+                      <p className="font-mono text-[11px] text-[#6a6a6a]">
                         {item.code}
                       </p>
                     </div>
@@ -326,8 +326,8 @@ export function BadgeActivityListPage() {
                     <span
                       className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${
                         item.is_active
-                          ? "bg-[#dcfce7] text-[#16a34a]"
-                          : "bg-[#f5f5f5] text-[#8c8c8c]"
+                          ? "border border-clay-success/30 bg-clay-success/15 text-clay-success"
+                          : "border border-[#e5e5e5] bg-[#ebe6d6] text-[#6a6a6a]"
                       }`}
                     >
                       {item.is_active ? (
@@ -344,15 +344,15 @@ export function BadgeActivityListPage() {
                     </span>
                   </div>
 
-                  <p className="mt-3 line-clamp-2 text-xs text-[#525252]">
+                  <p className="mt-3 line-clamp-2 text-xs text-[#3a3a3a]">
                     {item.description || "No operational description provided."}
                   </p>
                 </div>
 
-                <div className="mt-5 border-t border-[#f5f5f5] pt-3.5">
+                <div className="mt-5 border-t border-[#f0ece1] pt-3.5">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5 rounded-[8px] bg-[#fffaf0] px-2.5 py-1 text-xs font-bold text-[#b45309]">
-                      <CoinsIcon className="size-3.5 text-[#d97706]" />
+                    <div className="flex items-center gap-1.5 rounded-[8px] border border-[#e5e5e5] bg-[#fffaf0] px-2.5 py-1 text-xs font-bold text-[#0a0a0a]">
+                      <CoinsIcon className="size-3.5 text-clay-ochre" />
                       <span>+{item.bonus_points} Pts</span>
                     </div>
 
@@ -366,7 +366,7 @@ export function BadgeActivityListPage() {
                             params: { badgeActivityId: item.id },
                           })
                         }
-                        className="h-8 gap-1 rounded-[8px] border-[#e5e5e5] px-2.5 text-xs font-bold text-[#0a0a0a] hover:bg-[#fafafa]"
+                        className="h-8 gap-1 rounded-[8px] border border-[#e5e5e5] bg-[#fffaf0] px-2.5 text-xs font-bold text-[#0a0a0a] hover:bg-[#ebe6d6]"
                       >
                         <PencilIcon className="size-3" />
                         <span>{isAdmin ? "Edit" : "Details"}</span>
@@ -377,7 +377,7 @@ export function BadgeActivityListPage() {
                           variant="ghost"
                           size="sm"
                           onClick={() => setItemToDelete(item)}
-                          className="h-8 rounded-[8px] px-2 text-[#ef4444] hover:bg-[#fef2f2]"
+                          className="h-8 rounded-[8px] px-2 text-destructive hover:bg-destructive/10"
                           aria-label="Delete badge activity"
                         >
                           <Trash2Icon className="size-3.5" />
@@ -397,10 +397,10 @@ export function BadgeActivityListPage() {
         open={Boolean(itemToDelete)}
         onOpenChange={(open) => !open && setItemToDelete(null)}
       >
-        <DialogContent className="max-w-md rounded-[16px] bg-white p-6">
+        <DialogContent className="max-w-md rounded-[20px] border border-[#e5e5e5] bg-[#fffaf0] p-6 shadow-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base font-black text-[#0a0a0a]">
-              <AlertTriangleIcon className="size-5 text-[#ef4444]" />
+              <AlertTriangleIcon className="size-5 text-destructive" />
               <span>Delete Badge Activity</span>
             </DialogTitle>
             <DialogDescription className="mt-2 text-xs text-[#6a6a6a]">
@@ -415,14 +415,14 @@ export function BadgeActivityListPage() {
               variant="outline"
               disabled={deleting}
               onClick={() => setItemToDelete(null)}
-              className="rounded-[10px] border-[#e5e5e5] text-xs font-bold text-[#0a0a0a]"
+              className="rounded-[10px] border border-[#e5e5e5] bg-[#faf5e8] text-xs font-bold text-[#0a0a0a] hover:bg-[#ebe6d6]"
             >
               Cancel
             </Button>
             <Button
               disabled={deleting}
               onClick={() => void handleDeleteConfirm()}
-              className="rounded-[10px] bg-[#ef4444] text-xs font-bold text-white hover:bg-[#dc2626]"
+              className="rounded-[10px] bg-destructive text-xs font-bold text-white hover:bg-destructive/90"
             >
               {deleting ? "Deleting..." : "Delete Permanently"}
             </Button>
@@ -435,10 +435,10 @@ export function BadgeActivityListPage() {
         open={Boolean(conflictItem)}
         onOpenChange={(open) => !open && setConflictItem(null)}
       >
-        <DialogContent className="max-w-md rounded-[16px] bg-white p-6">
+        <DialogContent className="max-w-md rounded-[20px] border border-[#e5e5e5] bg-[#fffaf0] p-6 shadow-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-base font-black text-[#d97706]">
-              <AlertTriangleIcon className="size-5 text-[#d97706]" />
+            <DialogTitle className="flex items-center gap-2 text-base font-black text-clay-ochre">
+              <AlertTriangleIcon className="size-5 text-clay-ochre" />
               <span>Cannot Delete In-Use Badge Activity</span>
             </DialogTitle>
             <DialogDescription className="mt-2 text-xs leading-relaxed text-[#6a6a6a]">
@@ -446,9 +446,9 @@ export function BadgeActivityListPage() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="mt-4 rounded-[12px] bg-[#fffaf0] p-3.5 text-xs text-[#92400e]">
-            <p className="font-bold">Recommended Pastoral Care Action:</p>
-            <p className="mt-0.5">
+          <div className="mt-4 rounded-[12px] border border-clay-warning/30 bg-clay-warning/10 p-3.5 text-xs text-[#0a0a0a]">
+            <p className="font-bold text-clay-warning">Recommended Pastoral Care Action:</p>
+            <p className="mt-0.5 text-[#3a3a3a]">
               Instead of deleting, deactivate this role so it will no longer
               appear in future event attendance dropdowns while keeping past
               audit records safe.
@@ -459,7 +459,7 @@ export function BadgeActivityListPage() {
             <Button
               variant="outline"
               onClick={() => setConflictItem(null)}
-              className="rounded-[10px] border-[#e5e5e5] text-xs font-bold text-[#0a0a0a]"
+              className="rounded-[10px] border border-[#e5e5e5] bg-[#faf5e8] text-xs font-bold text-[#0a0a0a] hover:bg-[#ebe6d6]"
             >
               Close
             </Button>

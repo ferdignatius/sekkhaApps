@@ -71,9 +71,9 @@ export function SchoolFormPage() {
 
         {/* Error Banner */}
         {errorMsg && (
-          <div className="flex items-center justify-between gap-3 rounded-[14px] border border-[#ef4444]/30 bg-[#ef4444]/10 p-4 text-xs font-medium text-[#b91c1c] shadow-2xs">
+          <div className="flex items-center justify-between gap-3 rounded-[14px] border border-destructive/30 bg-destructive/10 p-4 text-xs font-medium text-destructive shadow-2xs">
             <div className="flex items-center gap-2">
-              <AlertCircleIcon className="size-4 shrink-0 text-[#ef4444]" />
+              <AlertCircleIcon className="size-4 shrink-0 text-destructive" />
               <span>{errorMsg}</span>
             </div>
             <button
@@ -87,10 +87,10 @@ export function SchoolFormPage() {
         )}
 
         {/* Main Form Card */}
-        <Card className="rounded-[24px] border border-[#e5e5e5] bg-white p-6 shadow-2xs sm:p-8">
+        <Card className="rounded-[24px] border border-[#e5e5e5] bg-[#faf5e8] p-6 shadow-2xs sm:p-8">
           <div className="mb-6 flex items-start gap-3 border-b border-[#f0ece1] pb-5">
             <div className="flex size-12 items-center justify-center rounded-[16px] bg-[#0a0a0a] text-white shadow-2xs">
-              <GraduationCapIcon className="size-6 text-[#e8b94a]" />
+              <GraduationCapIcon className="size-6 text-clay-ochre" />
             </div>
             <div>
               <h1 className="text-xl font-bold tracking-tight text-[#0a0a0a]">
@@ -127,14 +127,14 @@ export function SchoolFormPage() {
                 onClick={() =>
                   void navigate({ to: "/configure/master/school" })
                 }
-                className="rounded-[12px] text-xs font-semibold"
+                className="rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] text-xs font-semibold text-[#0a0a0a] hover:bg-[#ebe6d6]"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 disabled={saving}
-                className="rounded-[12px] bg-[#0a0a0a] px-6 text-xs font-bold text-white shadow-xs hover:bg-[#222]"
+                className="rounded-[12px] bg-[#0a0a0a] px-6 text-xs font-bold text-white shadow-xs hover:bg-[#262626]"
               >
                 {saving ? "Creating Institution..." : "Create Institution"}
               </Button>

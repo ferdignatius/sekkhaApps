@@ -181,7 +181,7 @@ export function SchoolPage() {
         <div className="flex flex-col justify-between gap-4 border-b border-[#e5e5e5] pb-5 sm:flex-row sm:items-center">
           <div className="flex items-center gap-3">
             <div className="flex size-11 items-center justify-center rounded-[14px] bg-[#0a0a0a] text-white shadow-2xs">
-              <GraduationCapIcon className="size-6 text-[#e8b94a]" />
+              <GraduationCapIcon className="size-6 text-clay-ochre" />
             </div>
             <div>
               <h1 className="text-xl font-bold tracking-tight text-[#0a0a0a]">
@@ -196,7 +196,7 @@ export function SchoolPage() {
           {isAdmin && (
             <Button
               asChild
-              className="h-10 gap-2 rounded-[12px] bg-[#0a0a0a] px-4 text-xs font-bold text-white shadow-xs hover:bg-[#222]"
+              className="h-10 gap-2 rounded-[12px] bg-[#0a0a0a] px-4 text-xs font-bold text-white shadow-xs hover:bg-[#262626]"
             >
               <Link to="/configure/master/school/new">
                 <PlusIcon className="size-4" />
@@ -211,15 +211,15 @@ export function SchoolPage() {
           <div
             className={`flex items-center justify-between gap-3 rounded-[14px] border p-4 text-xs font-medium shadow-2xs ${
               feedback.type === "success"
-                ? "border-[#22c55e]/30 bg-[#22c55e]/10 text-[#15803d]"
-                : "border-[#ef4444]/30 bg-[#ef4444]/10 text-[#b91c1c]"
+                ? "border-clay-success/30 bg-clay-success/15 text-clay-success"
+                : "border-destructive/30 bg-destructive/10 text-destructive"
             }`}
           >
             <div className="flex items-center gap-2">
               {feedback.type === "success" ? (
-                <CheckCircle2Icon className="size-4 shrink-0 text-[#22c55e]" />
+                <CheckCircle2Icon className="size-4 shrink-0 text-clay-success" />
               ) : (
-                <AlertCircleIcon className="size-4 shrink-0 text-[#ef4444]" />
+                <AlertCircleIcon className="size-4 shrink-0 text-destructive" />
               )}
               <span>{feedback.message}</span>
             </div>
@@ -242,7 +242,7 @@ export function SchoolPage() {
               className={`flex items-center gap-2 rounded-[10px] px-3.5 py-2 text-xs font-bold transition-all ${
                 activeTab === "directory"
                   ? "bg-[#0a0a0a] text-white shadow-xs"
-                  : "bg-white text-[#6a6a6a] hover:bg-[#faf5e8] hover:text-[#0a0a0a]"
+                  : "border border-[#e5e5e5] bg-[#faf5e8] text-[#6a6a6a] hover:bg-[#ebe6d6] hover:text-[#0a0a0a]"
               }`}
             >
               <Building2Icon className="size-3.5" />
@@ -264,13 +264,13 @@ export function SchoolPage() {
               className={`flex items-center gap-2 rounded-[10px] px-3.5 py-2 text-xs font-bold transition-all ${
                 activeTab === "requests"
                   ? "bg-[#0a0a0a] text-white shadow-xs"
-                  : "bg-white text-[#6a6a6a] hover:bg-[#faf5e8] hover:text-[#0a0a0a]"
+                  : "border border-[#e5e5e5] bg-[#faf5e8] text-[#6a6a6a] hover:bg-[#ebe6d6] hover:text-[#0a0a0a]"
               }`}
             >
               <ClockIcon className="size-3.5" />
               <span>Pending Requests</span>
               {pendingRequests.length > 0 && (
-                <span className="py-0.2 rounded-full bg-[#f59e0b] px-1.5 text-[10px] font-black text-white">
+                <span className="py-0.2 rounded-full bg-clay-warning px-1.5 text-[10px] font-black text-white">
                   {pendingRequests.length}
                 </span>
               )}
@@ -283,13 +283,13 @@ export function SchoolPage() {
           <div className="space-y-6">
             {/* Stats Grid */}
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-              <Card className="rounded-[16px] border border-[#e5e5e5] bg-white p-4 shadow-2xs">
+              <Card className="rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] p-4 shadow-2xs">
                 <p className="text-xs text-[#6a6a6a]">Total Institutions</p>
                 <p className="mt-1 text-2xl font-black text-[#0a0a0a]">
                   {schools.length}
                 </p>
               </Card>
-              <Card className="rounded-[16px] border border-[#e5e5e5] bg-white p-4 shadow-2xs">
+              <Card className="rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] p-4 shadow-2xs">
                 <p className="text-xs text-[#6a6a6a]">
                   Senior & Vocational (SMA/SMK)
                 </p>
@@ -297,15 +297,15 @@ export function SchoolPage() {
                   {seniorHighCount}
                 </p>
               </Card>
-              <Card className="rounded-[16px] border border-[#e5e5e5] bg-white p-4 shadow-2xs">
+              <Card className="rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] p-4 shadow-2xs">
                 <p className="text-xs text-[#6a6a6a]">Higher Education</p>
                 <p className="mt-1 text-2xl font-black text-[#0a0a0a]">
                   {universityCount}
                 </p>
               </Card>
-              <Card className="rounded-[16px] border border-[#e5e5e5] bg-white p-4 shadow-2xs">
+              <Card className="rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] p-4 shadow-2xs">
                 <p className="flex items-center gap-1 text-xs text-[#6a6a6a]">
-                  <UsersIcon className="size-3 text-[#e8b94a]" /> Connected
+                  <UsersIcon className="size-3 text-clay-ochre" /> Connected
                   Youth
                 </p>
                 <p className="mt-1 text-2xl font-black text-[#0a0a0a]">
@@ -318,7 +318,7 @@ export function SchoolPage() {
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="w-full sm:max-w-xs">
                 <Input
-                  className="bg-white"
+                  className="border border-[#e5e5e5] bg-[#fffaf0]"
                   placeholder="Search institution name..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
@@ -346,12 +346,12 @@ export function SchoolPage() {
                 {Array.from({ length: 6 }).map((_, i) => (
                   <div
                     key={i}
-                    className="h-36 animate-pulse rounded-[20px] border border-[#e5e5e5] bg-white p-5 shadow-2xs"
+                    className="h-36 animate-pulse rounded-[20px] border border-[#e5e5e5] bg-[#faf5e8] p-5 shadow-2xs"
                   />
                 ))}
               </div>
             ) : filtered.length === 0 ? (
-              <div className="rounded-[20px] border border-[#e5e5e5] bg-white py-16 text-center shadow-2xs">
+              <div className="rounded-[20px] border border-[#e5e5e5] bg-[#faf5e8] py-16 text-center shadow-2xs">
                 <GraduationCapIcon className="mx-auto size-10 text-[#6a6a6a]/40" />
                 <p className="mt-3 text-sm font-semibold text-[#0a0a0a]">
                   No institutions found
@@ -365,7 +365,7 @@ export function SchoolPage() {
                 {filtered.map((s) => (
                   <Card
                     key={s.id}
-                    className="group relative flex flex-col justify-between overflow-hidden rounded-[20px] border border-[#e5e5e5] bg-white p-5 shadow-2xs transition-all hover:border-[#0a0a0a]/30 hover:shadow-xs"
+                    className="group relative flex flex-col justify-between overflow-hidden rounded-[20px] border border-[#e5e5e5] bg-[#faf5e8] p-5 shadow-2xs transition-all hover:border-[#0a0a0a]/30 hover:shadow-xs"
                   >
                     <div className="space-y-3">
                       <div className="flex items-start justify-between gap-2">
@@ -375,7 +375,7 @@ export function SchoolPage() {
                         <Badge
                           variant="secondary"
                           size="sm"
-                          className="shrink-0 font-semibold"
+                          className="shrink-0 border border-[#e5e5e5] bg-[#fffaf0] font-semibold text-[#0a0a0a]"
                         >
                           {s.type || "Umum"}
                         </Badge>
@@ -383,7 +383,7 @@ export function SchoolPage() {
 
                       <div className="flex items-center gap-2 text-xs text-[#6a6a6a]">
                         <span className="flex items-center gap-1 font-semibold text-[#0a0a0a]">
-                          <UsersIcon className="size-3.5 text-[#e8b94a]" />
+                          <UsersIcon className="size-3.5 text-clay-ochre" />
                           {s.userCount ?? 0} Members
                         </span>
                       </div>
@@ -394,7 +394,7 @@ export function SchoolPage() {
                         className={`text-[11px] font-semibold ${
                           s.is_active === false
                             ? "text-[#8a8a8a]"
-                            : "text-[#15803d]"
+                            : "text-clay-success"
                         }`}
                       >
                         {s.is_active === false ? "Inactive" : "Active"}
@@ -402,7 +402,7 @@ export function SchoolPage() {
                       <Link
                         to="/configure/master/school/$schoolId"
                         params={{ schoolId: s.id }}
-                        className="flex items-center gap-1 rounded-[10px] border border-[#e5e5e5] bg-[#fffaf0] px-3 py-1.5 text-xs font-bold text-[#0a0a0a] transition-colors hover:border-[#0a0a0a] hover:bg-white"
+                        className="flex items-center gap-1 rounded-[10px] border border-[#e5e5e5] bg-[#fffaf0] px-3 py-1.5 text-xs font-bold text-[#0a0a0a] transition-colors hover:border-[#0a0a0a] hover:bg-[#ebe6d6]"
                       >
                         View Details
                       </Link>
@@ -417,7 +417,7 @@ export function SchoolPage() {
         {/* TAB 2: PENDING REQUESTS */}
         {activeTab === "requests" && canReview && (
           <div className="space-y-4">
-            <div className="rounded-[16px] border border-[#e5e5e5] bg-white p-4 shadow-2xs">
+            <div className="rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] p-4 shadow-2xs">
               <p className="text-xs text-[#6a6a6a]">
                 New institution requests submitted by youth during onboarding.
                 Approving will immediately add them to the verified directory
@@ -430,13 +430,13 @@ export function SchoolPage() {
                 {Array.from({ length: 3 }).map((_, i) => (
                   <div
                     key={i}
-                    className="h-40 animate-pulse rounded-[20px] border border-[#e5e5e5] bg-white p-5 shadow-2xs"
+                    className="h-40 animate-pulse rounded-[20px] border border-[#e5e5e5] bg-[#faf5e8] p-5 shadow-2xs"
                   />
                 ))}
               </div>
             ) : pendingRequests.length === 0 ? (
-              <div className="rounded-[20px] border border-[#e5e5e5] bg-white py-16 text-center shadow-2xs">
-                <CheckCircle2Icon className="mx-auto size-10 text-[#22c55e]/50" />
+              <div className="rounded-[20px] border border-[#e5e5e5] bg-[#faf5e8] py-16 text-center shadow-2xs">
+                <CheckCircle2Icon className="mx-auto size-10 text-clay-success/50" />
                 <p className="mt-3 text-sm font-semibold text-[#0a0a0a]">
                   No pending requests
                 </p>
@@ -454,7 +454,7 @@ export function SchoolPage() {
                   return (
                     <Card
                       key={r.id}
-                      className="flex flex-col justify-between overflow-hidden rounded-[20px] border border-[#f59e0b]/40 bg-white p-5 shadow-2xs"
+                      className="flex flex-col justify-between overflow-hidden rounded-[20px] border border-clay-warning/40 bg-[#faf5e8] p-5 shadow-2xs"
                     >
                       <div className="space-y-3">
                         <div className="flex items-start justify-between gap-2">
@@ -464,7 +464,7 @@ export function SchoolPage() {
                           <Badge
                             variant="secondary"
                             size="sm"
-                            className="bg-[#fef3c7] text-[#92400e]"
+                            className="border border-clay-warning/40 bg-clay-warning/15 font-bold text-clay-warning"
                           >
                             {reqType}
                           </Badge>
@@ -501,7 +501,7 @@ export function SchoolPage() {
                           size="sm"
                           disabled={isBusy}
                           onClick={() => void handleApprove(r.id, reqName)}
-                          className="flex-1 gap-1.5 rounded-[10px] bg-[#15803d] text-xs font-bold text-white hover:bg-[#166534]"
+                          className="flex-1 gap-1.5 rounded-[10px] bg-clay-success text-xs font-bold text-white hover:bg-clay-success/90"
                         >
                           <CheckIcon className="size-3.5" />
                           {isBusy ? "Processing..." : "Approve"}
@@ -511,7 +511,7 @@ export function SchoolPage() {
                           variant="outline"
                           disabled={isBusy}
                           onClick={() => void handleReject(r.id, reqName)}
-                          className="gap-1.5 rounded-[10px] border-[#ef4444]/40 text-xs font-bold text-[#b91c1c] hover:bg-[#ef4444]/10"
+                          className="gap-1.5 rounded-[10px] border border-destructive/30 text-xs font-bold text-destructive hover:bg-destructive/10"
                         >
                           <XIcon className="size-3.5" />
                           Reject

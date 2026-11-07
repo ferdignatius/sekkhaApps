@@ -5,15 +5,19 @@ import { canRecordAttendance } from "./policy"
 
 export const CreateEventSchema = z.object({
   title: z
-    .string({ required_error: "Nama Acara wajib diisi" })
+    .string({ required_error: "Event title is required" })
     .trim()
-    .min(3, "Nama Acara minimal 3 karakter")
-    .max(200, "Judul maksimal 200 karakter"),
-  description: z.string().trim().max(2000, "Deskripsi maksimal 2000 karakter").optional(),
-  location: z.string({ required_error: "Lokasi wajib diisi" }).trim().min(1, "Lokasi wajib diisi").max(200),
+    .min(3, "Event title must be at least 3 characters")
+    .max(200, "Event title must not exceed 200 characters"),
+  description: z.string().trim().max(2000, "Description must not exceed 2000 characters").optional(),
+  location: z.string({ required_error: "Event location is required" }).trim().min(1, "Event location is required").max(200),
   event_date: z
-    .string({ required_error: "Tanggal pelaksanaan wajib diisi" })
-    .refine((val) => !isNaN(Date.parse(val)), "Format tanggal event tidak valid"),
+    .string({ required_error: "Event date is required" })
+    .refine((val) => !isNaN(Date.parse(val)), "Invalid event date format")
+    .refine(
+      (val) => new Date(val).getTime() >= Date.now() - 60000,
+      "Event date cannot be in the past"
+    ),
   event_type: z.string().optional(),
   event_type_id: z.string().optional(),
   season_id: z.string().optional(),
@@ -25,7 +29,9 @@ export const CreateEventSchema = z.object({
 })
 
 // Status cannot be updated via regular update form per PRD Section 4
-export const UpdateEventSchema = CreateEventSchema.partial()
+export const UpdateEventSchema = CreateEventSchema.partial().extend({
+  status: z.never({ message: "Event status cannot be changed via update form" }).optional(),
+})
 
 export const UpdateStatusSchema = z.object({
   status: z.enum(["active", "closed", "cancel", "scheduled"]),
@@ -87,10 +93,11 @@ export const eventControllers = {
         data: result,
       })
     } catch (err: any) {
-      if (err.statusCode) {
-        res.status(err.statusCode).json({
+      const status = err.status || err.statusCode
+      if (status) {
+        res.status(status).json({
           status: "error",
-          code: err.statusCode,
+          code: status,
           message: err.message,
         })
         return
@@ -110,7 +117,10 @@ export const eventControllers = {
         status: "success",
         code: 201,
         message: "Event created successfully",
-        data: result,
+        data: {
+          id: result.id,
+          status: result.status,
+        },
       })
     } catch (err) {
       next(err)
@@ -146,12 +156,28 @@ export const eventControllers = {
       const result = await eventServices.updateEventStatus(actorId, actorRole, id, status, event_date)
 
       let message = "Event status updated successfully"
+      let data: any = {
+        id: result.id,
+        status: result.status,
+      }
+
       if (result.status === "active") {
         message = "Event started successfully and attendance session is now active"
       } else if (result.status === "closed") {
         message = "Event closed successfully and attendance points distributed"
+        data = {
+          id: result.id,
+          status: result.status,
+          total_attendees: result.total_attendees,
+          points_distributed: result.points_distributed,
+        }
       } else if (result.status === "scheduled") {
         message = "Event rescheduled successfully"
+        data = {
+          id: result.id,
+          status: result.status,
+          event_date: result.event_date,
+        }
       } else if (result.status === "cancel") {
         message = "Event cancelled successfully"
       }
@@ -160,13 +186,14 @@ export const eventControllers = {
         status: "success",
         code: 200,
         message,
-        data: result,
+        data,
       })
     } catch (err: any) {
-      if (err.statusCode) {
-        res.status(err.statusCode).json({
+      const status = err.status || err.statusCode
+      if (status) {
+        res.status(status).json({
           status: "error",
-          code: err.statusCode,
+          code: status,
           message: err.message,
         })
         return
@@ -185,7 +212,7 @@ export const eventControllers = {
         res.status(403).json({
           status: "error",
           code: 403,
-          message: "Hanya Pengurus dan Admin yang berhak mencatat presensi.",
+          message: "Only organizers and admins are allowed to record attendance.",
         })
         return
       }
@@ -197,7 +224,7 @@ export const eventControllers = {
         res.status(400).json({
           status: "error",
           code: 400,
-          message: "Nomor anggota atau identifier jemaat wajib diisi.",
+          message: "Member number or user identifier is required.",
         })
         return
       }
@@ -212,10 +239,11 @@ export const eventControllers = {
         data: result,
       })
     } catch (err: any) {
-      if (err.statusCode) {
-        res.status(err.statusCode).json({
+      const status = err.status || err.statusCode
+      if (status) {
+        res.status(status).json({
           status: "error",
-          code: err.statusCode,
+          code: status,
           message: err.message,
         })
         return
@@ -236,14 +264,15 @@ export const eventControllers = {
       res.json({
         status: "success",
         code: 200,
-        message: "Peran pelayanan berhasil diperbarui",
+        message: "Badge activity assigned successfully",
         data: result,
       })
     } catch (err: any) {
-      if (err.statusCode) {
-        res.status(err.statusCode).json({
+      const status = err.status || err.statusCode
+      if (status) {
+        res.status(status).json({
           status: "error",
-          code: err.statusCode,
+          code: status,
           message: err.message,
         })
         return
@@ -262,7 +291,7 @@ export const eventControllers = {
         res.status(403).json({
           status: "error",
           code: 403,
-          message: "Hanya Pengurus dan Admin yang berhak melihat rekap presensi.",
+          message: "Only organizers and admins are allowed to view attendance records.",
         })
         return
       }
@@ -274,14 +303,15 @@ export const eventControllers = {
       res.json({
         status: "success",
         code: 200,
-        message: "Daftar kehadiran berhasil diambil",
+        message: "Attendance records retrieved successfully",
         data: result,
       })
     } catch (err: any) {
-      if (err.statusCode) {
-        res.status(err.statusCode).json({
+      const status = err.status || err.statusCode
+      if (status) {
+        res.status(status).json({
           status: "error",
-          code: err.statusCode,
+          code: status,
           message: err.message,
         })
         return
@@ -289,7 +319,6 @@ export const eventControllers = {
       next(err)
     }
   },
-
 
   async deleteAttendance(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -301,14 +330,15 @@ export const eventControllers = {
       res.json({
         status: "success",
         code: 200,
-        message: "Presensi peserta berhasil dibatalkan",
+        message: "Attendance successfully removed",
         data: result,
       })
     } catch (err: any) {
-      if (err.statusCode) {
-        res.status(err.statusCode).json({
+      const status = err.status || err.statusCode
+      if (status) {
+        res.status(status).json({
           status: "error",
-          code: err.statusCode,
+          code: status,
           message: err.message,
         })
         return
@@ -322,19 +352,19 @@ export const eventControllers = {
       const id = req.params.id as string
       const actorId = req.user!.userId
       const actorRole = req.user!.role
-      const result = await eventServices.deleteEvent(actorId, actorRole, id)
+      await eventServices.deleteEvent(actorId, actorRole, id)
 
       res.json({
         status: "success",
         code: 200,
         message: "Event deleted successfully",
-        data: result,
       })
     } catch (err: any) {
-      if (err.statusCode) {
-        res.status(err.statusCode).json({
+      const status = err.status || err.statusCode
+      if (status) {
+        res.status(status).json({
           status: "error",
-          code: err.statusCode,
+          code: status,
           message: err.message,
         })
         return

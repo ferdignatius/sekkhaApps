@@ -22,7 +22,6 @@ import {
 } from "lucide-react"
 import { useAuth } from "@/modules/auth"
 import { api } from "@/lib/api"
-import QRCode from "react-qr-code"
 import { peopleApi } from "@/modules/people"
 import type { MemberDto } from "@/modules/people"
 import type { EventListItem, AttendanceRecord, UserRole } from "../types"
@@ -228,35 +227,6 @@ export function AttendanceScanPage() {
       cancelled = true
     }
   }, [eventId])
-
-  // Member profile state for non-organizers
-  const [memberProfile, setMemberProfile] = useState<{
-    name?: string
-    userNumber?: string | null
-    role?: string
-  } | null>(null)
-
-  useEffect(() => {
-    if (!isPengurus) {
-      api
-        .get<any>("/users/me")
-        .then((res) => {
-          if (res) {
-            setMemberProfile({
-              name:
-                res.profile?.name ||
-                res.name ||
-                authState.name ||
-                "Sekkha Member",
-              userNumber:
-                res.userNumber || res.user_number || res.id || authState.userId,
-              role: res.role || authState.role || "member",
-            })
-          }
-        })
-        .catch(() => {})
-    }
-  }, [isPengurus, authState])
 
   // Load people list for manual attendance lookup
   useEffect(() => {
@@ -803,41 +773,20 @@ export function AttendanceScanPage() {
             </div>
           )
         ) : (
-          /* Member View: Personal Member QR Code Card (PRD Section 4) */
+          /* Non-organizer / non-admin blocked access per PRD AC-EVT-01 */
           <div className="mx-auto w-full max-w-sm animate-in space-y-4 p-4 duration-150 zoom-in-95 fade-in">
-            <div className="space-y-4 rounded-3xl border border-white/20 bg-[#102828]/95 p-6 text-center shadow-2xl backdrop-blur-xl">
-              <div className="space-y-1">
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/40 bg-amber-500/20 px-3 py-1 text-[11px] font-bold text-amber-300">
-                  <CheckCircle2Icon className="size-3.5" />
-                  <span>Member Attendance Card</span>
+            <div className="space-y-4 rounded-3xl border border-rose-500/30 bg-[#102828]/95 p-6 text-center shadow-2xl backdrop-blur-xl">
+              <div className="flex justify-center">
+                <span className="flex size-12 items-center justify-center rounded-2xl bg-rose-500/20 text-rose-400">
+                  <LockIcon className="size-6" />
                 </span>
-                <h4 className="mt-2 text-base font-extrabold text-white">
-                  {event?.title || "Sekkha Community Event"}
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-base font-extrabold text-white">
+                  Access Restricted
                 </h4>
                 <p className="text-xs text-zinc-400">
-                  Present this QR code to the event organizers at the
-                  registration desk.
-                </p>
-              </div>
-
-              <div className="mx-auto w-fit rounded-2xl bg-white p-4 shadow-inner">
-                <QRCode
-                  value={
-                    memberProfile?.userNumber ||
-                    authState.userId ||
-                    "SEKKHA-MEMBER"
-                  }
-                  size={190}
-                  level="H"
-                />
-              </div>
-
-              <div className="space-y-0.5 pt-1">
-                <p className="text-sm font-bold text-white">
-                  {memberProfile?.name || authState.name || "Sekkha Member"}
-                </p>
-                <p className="font-mono text-xs font-semibold tracking-wider text-amber-400">
-                  {memberProfile?.userNumber || "Registered ID"}
+                  Attendance scanning is strictly restricted to event organizers and administrators. Your personal QR card can be viewed in your Profile.
                 </p>
               </div>
 

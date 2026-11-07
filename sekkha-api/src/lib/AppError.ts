@@ -7,4 +7,8 @@ export class AppError extends Error {
     super(message)
     this.name = "AppError"
   }
+
+  get statusCode(): number {
+    return this.status
+  }
 }

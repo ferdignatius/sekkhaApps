@@ -1277,6 +1277,16 @@ export function EventsPage() {
                   )}
                 </div>
 
+                {/* Global Search Scope Transparency Pill */}
+                {searchQuery.trim() && (
+                  <div className="mb-3 flex items-center gap-2 rounded-xl border border-amber-300/40 bg-amber-500/10 px-3 py-1.5 text-xs text-[#0a0a0a] shadow-2xs">
+                    <span className="size-1.5 shrink-0 rounded-full bg-amber-600" />
+                    <span className="font-medium text-[#4a3a10]">
+                      Searching all upcoming events across all dates &amp; months
+                    </span>
+                  </div>
+                )}
+
                 {loadingEvents ? (
                   <div className="space-y-3 py-2">
                     {Array.from({ length: 4 }).map((_, idx) => (

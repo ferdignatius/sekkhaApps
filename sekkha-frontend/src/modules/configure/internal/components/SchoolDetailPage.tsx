@@ -171,7 +171,7 @@ export function SchoolDetailPage() {
       <main className="min-h-screen bg-[#fffaf0] p-6 text-left font-sans">
         <div className="mx-auto max-w-7xl animate-pulse space-y-4">
           <div className="h-8 w-48 rounded-[12px] bg-[#e5e5e5]" />
-          <div className="h-64 rounded-[20px] bg-white p-6 shadow-2xs" />
+          <div className="h-64 rounded-[20px] border border-[#e5e5e5] bg-[#faf5e8] p-6 shadow-2xs" />
         </div>
       </main>
     )
@@ -180,7 +180,7 @@ export function SchoolDetailPage() {
   if (!school) {
     return (
       <main className="min-h-screen bg-[#fffaf0] p-6 text-left font-sans">
-        <Card className="mx-auto max-w-md rounded-[20px] border border-[#e5e5e5] bg-white p-8 text-center shadow-2xs">
+        <Card className="mx-auto max-w-md rounded-[20px] border border-[#e5e5e5] bg-[#faf5e8] p-8 text-center shadow-2xs">
           <GraduationCapIcon className="mx-auto size-12 text-[#6a6a6a]/40" />
           <h2 className="mt-4 text-base font-bold text-[#0a0a0a]">
             Institution Not Found
@@ -191,7 +191,7 @@ export function SchoolDetailPage() {
           <Button
             variant="outline"
             onClick={() => void navigate({ to: "/configure/master/school" })}
-            className="mt-6 rounded-[12px]"
+            className="mt-6 rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] hover:bg-[#ebe6d6]"
           >
             Back to Directory
           </Button>
@@ -224,8 +224,8 @@ export function SchoolDetailPage() {
             variant={isActive ? "secondary" : "outline"}
             className={
               isActive
-                ? "bg-[#22c55e]/15 font-semibold text-[#15803d]"
-                : "text-[#8a8a8a]"
+                ? "border border-clay-success/30 bg-clay-success/15 font-semibold text-clay-success"
+                : "border border-[#e5e5e5] bg-[#ebe6d6] text-[#6a6a6a]"
             }
           >
             {isActive ? "Active Institution" : "Inactive / Archived"}
@@ -237,15 +237,15 @@ export function SchoolDetailPage() {
           <div
             className={`flex items-center justify-between gap-3 rounded-[14px] border p-4 text-xs font-medium shadow-2xs ${
               feedback.type === "success"
-                ? "border-[#22c55e]/30 bg-[#22c55e]/10 text-[#15803d]"
-                : "border-[#ef4444]/30 bg-[#ef4444]/10 text-[#b91c1c]"
+                ? "border-clay-success/30 bg-clay-success/15 text-clay-success"
+                : "border-destructive/30 bg-destructive/10 text-destructive"
             }`}
           >
             <div className="flex items-center gap-2">
               {feedback.type === "success" ? (
-                <CheckCircle2Icon className="size-4 shrink-0 text-[#22c55e]" />
+                <CheckCircle2Icon className="size-4 shrink-0 text-clay-success" />
               ) : (
-                <AlertCircleIcon className="size-4 shrink-0 text-[#ef4444]" />
+                <AlertCircleIcon className="size-4 shrink-0 text-destructive" />
               )}
               <span>{feedback.message}</span>
             </div>
@@ -260,11 +260,11 @@ export function SchoolDetailPage() {
         )}
 
         {/* Main Details Card */}
-        <Card className="rounded-[24px] border border-[#e5e5e5] bg-white p-6 shadow-2xs sm:p-8">
+        <Card className="rounded-[24px] border border-[#e5e5e5] bg-[#faf5e8] p-6 shadow-2xs sm:p-8">
           <div className="mb-6 flex items-start justify-between border-b border-[#f0ece1] pb-5">
             <div className="flex items-center gap-3">
               <div className="flex size-12 items-center justify-center rounded-[16px] bg-[#0a0a0a] text-white shadow-2xs">
-                <GraduationCapIcon className="size-6 text-[#e8b94a]" />
+                <GraduationCapIcon className="size-6 text-clay-ochre" />
               </div>
               <div>
                 <h1 className="text-xl font-bold tracking-tight text-[#0a0a0a]">
@@ -279,9 +279,9 @@ export function SchoolDetailPage() {
           </div>
 
           {/* Social Proof Meta Pill */}
-          <div className="mb-6 rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0] p-4">
+          <div className="mb-6 rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0] p-4 shadow-2xs">
             <div className="flex items-center gap-2.5">
-              <UsersIcon className="size-5 text-[#e8b94a]" />
+              <UsersIcon className="size-5 text-clay-ochre" />
               <div>
                 <p className="text-xs text-[#6a6a6a]">Connected Congregation</p>
                 <p className="text-base font-bold text-[#0a0a0a]">
@@ -338,9 +338,9 @@ export function SchoolDetailPage() {
               <div className="flex items-center justify-between border-t border-[#f0ece1] pt-5">
                 <Button
                   type="button"
-                  variant="destructive"
+                  variant="outline"
                   onClick={() => setShowDeleteModal(true)}
-                  className="gap-2 rounded-[12px] text-xs font-semibold"
+                  className="gap-2 rounded-[12px] border border-destructive/30 text-xs font-semibold text-destructive hover:bg-destructive/10"
                 >
                   <Trash2Icon className="size-4" />
                   Delete Institution
@@ -349,7 +349,7 @@ export function SchoolDetailPage() {
                 <Button
                   type="submit"
                   disabled={saving}
-                  className="rounded-[12px] bg-[#0a0a0a] px-6 text-xs font-bold text-white shadow-xs hover:bg-[#222]"
+                  className="rounded-[12px] bg-[#0a0a0a] px-6 text-xs font-bold text-white shadow-xs hover:bg-[#262626]"
                 >
                   {saving ? "Saving Changes..." : "Save Changes"}
                 </Button>
@@ -361,9 +361,9 @@ export function SchoolDetailPage() {
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
-        <DialogContent className="rounded-[20px] bg-white p-6">
+        <DialogContent className="rounded-[20px] border border-[#e5e5e5] bg-[#fffaf0] p-6 shadow-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-base font-bold text-[#ef4444]">
+            <DialogTitle className="flex items-center gap-2 text-base font-bold text-destructive">
               <AlertTriangleIcon className="size-5" />
               Delete Institution?
             </DialogTitle>
@@ -378,7 +378,7 @@ export function SchoolDetailPage() {
             <Button
               variant="outline"
               onClick={() => setShowDeleteModal(false)}
-              className="rounded-[10px] text-xs font-semibold"
+              className="rounded-[10px] border border-[#e5e5e5] bg-[#faf5e8] text-xs font-semibold text-[#0a0a0a] hover:bg-[#ebe6d6]"
             >
               Cancel
             </Button>
@@ -386,7 +386,7 @@ export function SchoolDetailPage() {
               variant="destructive"
               disabled={deleting}
               onClick={() => void handleDelete()}
-              className="rounded-[10px] text-xs font-bold"
+              className="rounded-[10px] bg-destructive text-xs font-bold text-white hover:bg-destructive/90"
             >
               {deleting ? "Deleting..." : "Confirm Delete"}
             </Button>
@@ -399,16 +399,16 @@ export function SchoolDetailPage() {
         open={Boolean(conflictMessage)}
         onOpenChange={(open) => !open && setConflictMessage(null)}
       >
-        <DialogContent className="rounded-[20px] bg-white p-6">
+        <DialogContent className="rounded-[20px] border border-[#e5e5e5] bg-[#fffaf0] p-6 shadow-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-base font-bold text-[#f59e0b]">
+            <DialogTitle className="flex items-center gap-2 text-base font-bold text-clay-warning">
               <AlertTriangleIcon className="size-5" />
               Institution Currently Linked
             </DialogTitle>
             <DialogDescription className="space-y-3 pt-2 text-xs text-[#6a6a6a]">
               <p>{conflictMessage}</p>
-              <div className="rounded-[12px] border border-[#f59e0b]/30 bg-[#fef3c7]/40 p-3 text-[#92400e]">
-                <strong>Recommended action:</strong> Deactivate this institution
+              <div className="rounded-[12px] border border-clay-warning/30 bg-clay-warning/10 p-3 text-[#0a0a0a]">
+                <strong className="text-clay-warning">Recommended action:</strong> Deactivate this institution
                 instead. Deactivated institutions will no longer appear in new
                 member registration, while existing members' historical records
                 remain intact.
@@ -419,14 +419,14 @@ export function SchoolDetailPage() {
             <Button
               variant="outline"
               onClick={() => setConflictMessage(null)}
-              className="rounded-[10px] text-xs font-semibold"
+              className="rounded-[10px] border border-[#e5e5e5] bg-[#faf5e8] text-xs font-semibold text-[#0a0a0a] hover:bg-[#ebe6d6]"
             >
               Dismiss
             </Button>
             <Button
               onClick={() => void handleDeactivateInstead()}
               disabled={saving}
-              className="rounded-[10px] bg-[#0a0a0a] text-xs font-bold text-white hover:bg-[#222]"
+              className="rounded-[10px] bg-[#0a0a0a] text-xs font-bold text-white hover:bg-[#262626]"
             >
               Deactivate Instead
             </Button>

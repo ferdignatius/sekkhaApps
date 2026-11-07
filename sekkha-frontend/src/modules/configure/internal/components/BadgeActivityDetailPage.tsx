@@ -173,7 +173,7 @@ export function BadgeActivityDetailPage() {
       <main className="min-h-screen bg-[#fffaf0] p-6 font-sans">
         <div className="mx-auto max-w-7xl space-y-4">
           <div className="h-4 w-32 animate-pulse rounded bg-[#e5e5e5]" />
-          <div className="h-48 animate-pulse rounded-[16px] bg-white" />
+          <div className="h-48 animate-pulse rounded-[16px] bg-[#faf5e8]" />
         </div>
       </main>
     )
@@ -182,8 +182,8 @@ export function BadgeActivityDetailPage() {
   if (!item && errorMessage) {
     return (
       <main className="min-h-screen bg-[#fffaf0] p-6 text-center font-sans">
-        <div className="mx-auto max-w-md rounded-[16px] border border-[#e5e5e5] bg-white p-8">
-          <AlertTriangleIcon className="mx-auto size-12 text-[#ef4444]" />
+        <div className="mx-auto max-w-md rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] p-8 shadow-2xs">
+          <AlertTriangleIcon className="mx-auto size-12 text-destructive" />
           <h2 className="mt-4 text-base font-bold text-[#0a0a0a]">
             Badge Activity Not Found
           </h2>
@@ -192,7 +192,7 @@ export function BadgeActivityDetailPage() {
             onClick={() =>
               void navigate({ to: "/configure/master/badge-activity" })
             }
-            className="mt-6 rounded-[12px] bg-[#0a0a0a] text-xs font-bold text-white"
+            className="mt-6 rounded-[12px] bg-[#0a0a0a] text-xs font-bold text-white hover:bg-[#262626]"
           >
             Back to List
           </Button>
@@ -223,14 +223,14 @@ export function BadgeActivityDetailPage() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <div className="flex items-center gap-2">
-              <span className="flex size-9 items-center justify-center rounded-[10px] bg-[#fbbf24]/20 text-[#d97706]">
-                <AwardIcon className="size-5" />
+              <span className="flex size-9 items-center justify-center rounded-[10px] bg-clay-ochre/20 text-[#0a0a0a]">
+                <AwardIcon className="size-5 text-clay-ochre" />
               </span>
               <h1 className="text-xl font-black text-[#0a0a0a] sm:text-2xl">
                 {item?.label}
               </h1>
             </div>
-            <p className="mt-1 font-mono text-xs text-[#8c8c8c]">
+            <p className="mt-1 font-mono text-xs text-[#6a6a6a]">
               System Code: {item?.code}
             </p>
           </div>
@@ -240,7 +240,7 @@ export function BadgeActivityDetailPage() {
               type="button"
               variant="outline"
               onClick={() => setShowDeleteModal(true)}
-              className="self-start rounded-[10px] border-[#ef4444]/30 text-xs font-bold text-[#ef4444] hover:bg-[#fef2f2] sm:self-auto"
+              className="self-start rounded-[10px] border border-destructive/30 text-xs font-bold text-destructive hover:bg-destructive/10 sm:self-auto"
             >
               <Trash2Icon className="mr-1.5 size-3.5" />
               <span>Delete Role</span>
@@ -250,9 +250,9 @@ export function BadgeActivityDetailPage() {
 
         {/* Success Alert */}
         {successNotice && (
-          <div className="flex items-center justify-between rounded-[12px] border border-[#16a34a]/30 bg-[#f0fdf4] p-3 text-xs text-[#15803d]">
+          <div className="flex items-center justify-between rounded-[12px] border border-clay-success/30 bg-clay-success/15 p-3 text-xs text-clay-success">
             <div className="flex items-center gap-2">
-              <CheckCircle2Icon className="size-4 text-[#16a34a]" />
+              <CheckCircle2Icon className="size-4 text-clay-success" />
               <span>Badge activity updated successfully.</span>
             </div>
             <button
@@ -266,14 +266,14 @@ export function BadgeActivityDetailPage() {
 
         {/* Error Alert */}
         {errorMessage && (
-          <div className="flex items-center gap-2 rounded-[12px] border border-[#ef4444]/30 bg-[#fef2f2] p-3 text-xs text-[#b91c1c]">
-            <AlertTriangleIcon className="size-4 text-[#ef4444]" />
+          <div className="flex items-center gap-2 rounded-[12px] border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">
+            <AlertTriangleIcon className="size-4 text-destructive" />
             <span>{errorMessage}</span>
           </div>
         )}
 
         {/* Main Edit Form */}
-        <Card className="rounded-[16px] border border-[#e5e5e5] bg-white p-6 shadow-sm">
+        <Card className="rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] p-6 shadow-2xs">
           <form onSubmit={(e) => void handleUpdate(e)} className="space-y-5">
             {/* Role Name */}
             <div>
@@ -281,7 +281,7 @@ export function BadgeActivityDetailPage() {
                 htmlFor="label"
                 className="block text-xs font-bold tracking-wider text-[#0a0a0a] uppercase"
               >
-                Role Name / Label <span className="text-[#ef4444]">*</span>
+                Role Name / Label <span className="text-destructive">*</span>
               </label>
               <Input
                 id="label"
@@ -290,7 +290,7 @@ export function BadgeActivityDetailPage() {
                 required
                 value={label}
                 onChange={(e) => setLabel(e.target.value)}
-                className="mt-1.5 h-10 w-full rounded-[10px] border border-[#e5e5e5] bg-[#fffaf0]/60 px-3 text-xs font-semibold text-[#0a0a0a] focus:border-[#0a0a0a] focus:bg-white focus:outline-none disabled:bg-[#f5f5f5]"
+                className="mt-1.5 h-10 w-full rounded-[10px] border border-[#e5e5e5] bg-[#fffaf0] px-3 text-xs font-semibold text-[#0a0a0a] placeholder:text-[#8a8a8a] focus:border-[#0a0a0a] focus:bg-[#fffaf0] focus:outline-none disabled:bg-[#ebe6d6]"
               />
             </div>
 
@@ -304,10 +304,10 @@ export function BadgeActivityDetailPage() {
                   <LockIcon className="size-3" /> Read-Only (Auto-synced)
                 </span>
               </div>
-              <div className="mt-1.5 flex h-10 w-full items-center rounded-[10px] border border-[#e5e5e5] bg-[#f5f5f5] px-3 font-mono text-xs font-bold text-[#525252]">
+              <div className="mt-1.5 flex h-10 w-full items-center rounded-[10px] border border-[#e5e5e5] bg-[#ebe6d6] px-3 font-mono text-xs font-bold text-[#3a3a3a]">
                 {autoGeneratedCode}
               </div>
-              <p className="mt-1 text-[11px] text-[#737373]">
+              <p className="mt-1 text-[11px] text-[#6a6a6a]">
                 System code automatically synchronizes with the role label in
                 kebab-case format.
               </p>
@@ -319,7 +319,7 @@ export function BadgeActivityDetailPage() {
                 htmlFor="bonusPoints"
                 className="block text-xs font-bold tracking-wider text-[#0a0a0a] uppercase"
               >
-                Bonus Points Reward <span className="text-[#ef4444]">*</span>
+                Bonus Points Reward <span className="text-destructive">*</span>
               </label>
               <div className="relative mt-1.5">
                 <Input
@@ -331,7 +331,7 @@ export function BadgeActivityDetailPage() {
                   required
                   value={bonusPoints}
                   onChange={(e) => setBonusPoints(Number(e.target.value))}
-                  className="h-10 w-full rounded-[10px] border border-[#e5e5e5] bg-[#fffaf0]/60 pr-12 pl-3 text-xs font-bold text-[#0a0a0a] focus:border-[#0a0a0a] focus:bg-white focus:outline-none disabled:bg-[#f5f5f5]"
+                  className="h-10 w-full rounded-[10px] border border-[#e5e5e5] bg-[#fffaf0] pr-12 pl-3 text-xs font-bold text-[#0a0a0a] placeholder:text-[#8a8a8a] focus:border-[#0a0a0a] focus:bg-[#fffaf0] focus:outline-none disabled:bg-[#ebe6d6]"
                 />
                 <span className="absolute top-1/2 right-3 -translate-y-1/2 text-xs font-bold text-[#6a6a6a]">
                   Pts
@@ -354,12 +354,12 @@ export function BadgeActivityDetailPage() {
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Describe role responsibilities and scope..."
-                className="mt-1.5 w-full rounded-[10px] border border-[#e5e5e5] bg-[#fffaf0]/60 p-3 text-xs text-[#0a0a0a] placeholder:text-[#999999] focus:border-[#0a0a0a] focus:bg-white focus:outline-none disabled:bg-[#f5f5f5]"
+                className="mt-1.5 w-full rounded-[10px] border border-[#e5e5e5] bg-[#fffaf0] p-3 text-xs text-[#0a0a0a] placeholder:text-[#8a8a8a] focus:border-[#0a0a0a] focus:bg-[#fffaf0] focus:outline-none disabled:bg-[#ebe6d6]"
               />
             </div>
 
             {/* Active Status Switch */}
-            <div className="flex items-center justify-between rounded-[12px] border border-[#f0f0f0] bg-[#fafafa] p-3.5">
+            <div className="flex items-center justify-between rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] p-3.5">
               <div>
                 <p className="text-xs font-bold text-[#0a0a0a]">
                   Active Status
@@ -373,7 +373,7 @@ export function BadgeActivityDetailPage() {
                 disabled={!isAdmin || saving}
                 checked={isActive}
                 onChange={(e) => setIsActive(e.target.checked)}
-                className="size-4 accent-[#16a34a] disabled:opacity-50"
+                className="size-4 accent-[#0a0a0a] disabled:opacity-50"
               />
             </div>
 
@@ -387,7 +387,7 @@ export function BadgeActivityDetailPage() {
                   onClick={() =>
                     void navigate({ to: "/configure/master/badge-activity" })
                   }
-                  className="rounded-[10px] border-[#e5e5e5] text-xs font-bold text-[#0a0a0a]"
+                  className="rounded-[10px] border border-[#e5e5e5] bg-[#fffaf0] text-xs font-bold text-[#0a0a0a] hover:bg-[#ebe6d6]"
                 >
                   Cancel
                 </Button>
@@ -409,10 +409,10 @@ export function BadgeActivityDetailPage() {
         open={showDeleteModal}
         onOpenChange={(open) => !open && setShowDeleteModal(false)}
       >
-        <DialogContent className="max-w-md rounded-[16px] bg-white p-6">
+        <DialogContent className="max-w-md rounded-[20px] border border-[#e5e5e5] bg-[#fffaf0] p-6 shadow-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base font-black text-[#0a0a0a]">
-              <AlertTriangleIcon className="size-5 text-[#ef4444]" />
+              <AlertTriangleIcon className="size-5 text-destructive" />
               <span>Delete Badge Activity</span>
             </DialogTitle>
             <DialogDescription className="mt-2 text-xs text-[#6a6a6a]">
@@ -427,14 +427,14 @@ export function BadgeActivityDetailPage() {
               variant="outline"
               disabled={deleting}
               onClick={() => setShowDeleteModal(false)}
-              className="rounded-[10px] border-[#e5e5e5] text-xs font-bold text-[#0a0a0a]"
+              className="rounded-[10px] border border-[#e5e5e5] bg-[#faf5e8] text-xs font-bold text-[#0a0a0a] hover:bg-[#ebe6d6]"
             >
               Cancel
             </Button>
             <Button
               disabled={deleting}
               onClick={() => void handleDelete()}
-              className="rounded-[10px] bg-[#ef4444] text-xs font-bold text-white hover:bg-[#dc2626]"
+              className="rounded-[10px] bg-destructive text-xs font-bold text-white hover:bg-destructive/90"
             >
               {deleting ? "Deleting..." : "Delete Permanently"}
             </Button>
@@ -447,10 +447,10 @@ export function BadgeActivityDetailPage() {
         open={Boolean(conflictMessage)}
         onOpenChange={(open) => !open && setConflictMessage(null)}
       >
-        <DialogContent className="max-w-md rounded-[16px] bg-white p-6">
+        <DialogContent className="max-w-md rounded-[20px] border border-[#e5e5e5] bg-[#fffaf0] p-6 shadow-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-base font-black text-[#d97706]">
-              <AlertTriangleIcon className="size-5 text-[#d97706]" />
+            <DialogTitle className="flex items-center gap-2 text-base font-black text-clay-ochre">
+              <AlertTriangleIcon className="size-5 text-clay-ochre" />
               <span>Cannot Delete In-Use Badge Activity</span>
             </DialogTitle>
             <DialogDescription className="mt-2 text-xs leading-relaxed text-[#6a6a6a]">
@@ -458,9 +458,9 @@ export function BadgeActivityDetailPage() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="mt-4 rounded-[12px] bg-[#fffaf0] p-3.5 text-xs text-[#92400e]">
-            <p className="font-bold">Recommended Pastoral Care Action:</p>
-            <p className="mt-0.5">
+          <div className="mt-4 rounded-[12px] border border-clay-warning/30 bg-clay-warning/10 p-3.5 text-xs text-[#0a0a0a]">
+            <p className="font-bold text-clay-warning">Recommended Pastoral Care Action:</p>
+            <p className="mt-0.5 text-[#3a3a3a]">
               Instead of deleting, deactivate this role so it will no longer
               appear in future event attendance dropdowns while keeping past
               audit records safe.
@@ -471,7 +471,7 @@ export function BadgeActivityDetailPage() {
             <Button
               variant="outline"
               onClick={() => setConflictMessage(null)}
-              className="rounded-[10px] border-[#e5e5e5] text-xs font-bold text-[#0a0a0a]"
+              className="rounded-[10px] border border-[#e5e5e5] bg-[#faf5e8] text-xs font-bold text-[#0a0a0a] hover:bg-[#ebe6d6]"
             >
               Close
             </Button>

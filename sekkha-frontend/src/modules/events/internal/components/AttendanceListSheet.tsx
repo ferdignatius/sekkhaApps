@@ -205,7 +205,7 @@ export function AttendanceListSheet({
           onClick={() => setFilterMethod("all")}
           className={`flex min-h-[64px] cursor-pointer items-center gap-3 rounded-[18px] p-3 text-left transition-all ${
             filterMethod === "all"
-              ? "border-2 border-[#0a0a0a] bg-white shadow-xs ring-2 ring-[#0a0a0a]/10"
+              ? "border-2 border-[#0a0a0a] bg-[#faf5e8] shadow-xs"
               : "border border-[#e5e5e5] bg-[#fffaf0] hover:border-[#0a0a0a]/30 hover:bg-[#faf5e8]"
           }`}
           title="Show all attendees"
@@ -234,7 +234,7 @@ export function AttendanceListSheet({
           onClick={() => setFilterMethod(filterMethod === "qr" ? "all" : "qr")}
           className={`flex min-h-[64px] cursor-pointer items-center gap-3 rounded-[18px] p-3 text-left transition-all ${
             filterMethod === "qr"
-              ? "border-2 border-[#0a0a0a] bg-white shadow-xs ring-2 ring-[#0a0a0a]/10"
+              ? "border-2 border-[#0a0a0a] bg-[#faf5e8] shadow-xs"
               : "border border-[#e5e5e5] bg-[#fffaf0] hover:border-[#0a0a0a]/30 hover:bg-[#faf5e8]"
           }`}
           title="Filter only QR Code check-ins"
@@ -265,7 +265,7 @@ export function AttendanceListSheet({
           }
           className={`flex min-h-[64px] cursor-pointer items-center gap-3 rounded-[18px] p-3 text-left transition-all ${
             filterMethod === "manual"
-              ? "border-2 border-[#0a0a0a] bg-white shadow-xs ring-2 ring-[#0a0a0a]/10"
+              ? "border-2 border-[#0a0a0a] bg-[#faf5e8] shadow-xs"
               : "border border-[#e5e5e5] bg-[#fffaf0] hover:border-[#0a0a0a]/30 hover:bg-[#faf5e8]"
           }`}
           title="Filter only manual check-ins"
@@ -313,7 +313,7 @@ export function AttendanceListSheet({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by member name, ID, or school..."
-            className="min-h-[42px] w-full rounded-full border border-[#e5e5e5] bg-[#fffaf0] pr-10 pl-10 text-xs text-[#0a0a0a] shadow-2xs placeholder:text-[#767676] focus:border-[#0a0a0a] focus:bg-white focus:outline-none sm:text-sm"
+            className="min-h-[42px] w-full rounded-full border border-[#e5e5e5] bg-[#fffaf0] pr-10 pl-10 text-xs text-[#0a0a0a] shadow-2xs placeholder:text-[#767676] focus:border-[#0a0a0a] focus:bg-[#faf5e8] focus:outline-none sm:text-sm"
           />
           {searchQuery && (
             <button
@@ -351,7 +351,7 @@ export function AttendanceListSheet({
                 setSearchQuery("")
                 setFilterMethod("all")
               }}
-              className="mt-4 inline-flex min-h-[36px] cursor-pointer items-center gap-1.5 rounded-full border border-[#e5e5e5] bg-[#faf5e8] px-4 py-1.5 text-xs font-semibold text-[#0a0a0a] shadow-xs hover:bg-white"
+              className="mt-4 inline-flex min-h-[36px] cursor-pointer items-center gap-1.5 rounded-full border border-[#e5e5e5] bg-[#faf5e8] px-4 py-1.5 text-xs font-semibold text-[#0a0a0a] shadow-xs hover:bg-[#ebe6d6]"
             >
               Reset Search Filter
             </button>
@@ -481,7 +481,7 @@ export function AttendanceListSheet({
                         <button
                           type="button"
                           onClick={() => setBadgePickerTarget(rec)}
-                          className="inline-flex min-h-[30px] cursor-pointer items-center gap-1 rounded-full border border-[#e5e5e5] bg-[#faf5e8] px-2.5 py-0.5 text-[11px] font-medium text-[#6a6a6a] shadow-2xs hover:border-[#0a0a0a] hover:bg-white hover:text-[#0a0a0a]"
+                          className="inline-flex min-h-[30px] cursor-pointer items-center gap-1 rounded-full border border-[#e5e5e5] bg-[#faf5e8] px-2.5 py-0.5 text-[11px] font-medium text-[#6a6a6a] shadow-2xs hover:border-[#0a0a0a] hover:bg-[#ebe6d6] hover:text-[#0a0a0a]"
                         >
                           <AwardIcon className="size-3 text-[#0a0a0a]" />
                           <span>+ Assign Service Role</span>
@@ -543,7 +543,7 @@ export function AttendanceListSheet({
               className={`flex min-h-[34px] items-center gap-1 rounded-full border px-3 py-1 font-semibold transition-all ${
                 safePage <= 1
                   ? "cursor-not-allowed border-transparent text-[#6a6a6a]"
-                  : "cursor-pointer border-[#e5e5e5] bg-white text-[#0a0a0a] shadow-2xs hover:bg-[#faf5e8]"
+                  : "cursor-pointer border-[#e5e5e5] bg-[#faf5e8] text-[#0a0a0a] shadow-2xs hover:bg-[#ebe6d6]"
               }`}
             >
               <ChevronLeftIcon className="size-3.5" />
@@ -561,7 +561,7 @@ export function AttendanceListSheet({
               className={`flex min-h-[34px] items-center gap-1 rounded-full border px-3 py-1 font-semibold transition-all ${
                 safePage >= totalPages
                   ? "cursor-not-allowed border-transparent text-[#6a6a6a]"
-                  : "cursor-pointer border-[#e5e5e5] bg-white text-[#0a0a0a] shadow-2xs hover:bg-[#faf5e8]"
+                  : "cursor-pointer border-[#e5e5e5] bg-[#faf5e8] text-[#0a0a0a] shadow-2xs hover:bg-[#ebe6d6]"
               }`}
             >
               <span>Next</span>
@@ -611,8 +611,8 @@ export function AttendanceListSheet({
                   }
                   className={`flex min-h-[44px] w-full cursor-pointer items-center justify-between rounded-[14px] border p-3 text-xs font-semibold transition-all ${
                     !badgePickerTarget.badge_activity_id
-                      ? "border-2 border-[#0a0a0a] bg-white text-[#0a0a0a] shadow-xs"
-                      : "border border-[#e5e5e5] bg-[#faf5e8] text-[#0a0a0a] hover:bg-white"
+                      ? "border-2 border-[#0a0a0a] bg-[#faf5e8] text-[#0a0a0a] shadow-xs"
+                      : "border border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] hover:bg-[#faf5e8]"
                   }`}
                 >
                   <span>No Service Role (Standard Attendee)</span>
@@ -636,8 +636,8 @@ export function AttendanceListSheet({
                       }
                       className={`flex min-h-[44px] w-full cursor-pointer items-center justify-between rounded-[14px] border p-3 text-xs transition-all ${
                         isSelected
-                          ? "border-2 border-[#0a0a0a] bg-white font-bold text-[#0a0a0a] shadow-xs"
-                          : "border border-[#e5e5e5] bg-[#faf5e8] text-[#0a0a0a] hover:bg-white"
+                          ? "border-2 border-[#0a0a0a] bg-[#faf5e8] font-bold text-[#0a0a0a] shadow-xs"
+                          : "border border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] hover:bg-[#faf5e8]"
                       }`}
                     >
                       <div className="flex items-center gap-2">
@@ -646,7 +646,7 @@ export function AttendanceListSheet({
                           {act.label}
                         </span>
                       </div>
-                      <span className="rounded-full border border-[#e5e5e5] bg-white px-2 py-0.5 text-[11px] font-bold text-[#0a0a0a]">
+                      <span className="rounded-full border border-[#e5e5e5] bg-[#faf5e8] px-2 py-0.5 text-[11px] font-bold text-[#0a0a0a]">
                         +{act.bonusPoints} Pts
                       </span>
                     </button>

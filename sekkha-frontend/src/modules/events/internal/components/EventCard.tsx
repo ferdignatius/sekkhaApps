@@ -23,15 +23,23 @@ function formatDate(iso: string) {
   }
 }
 
+function toWibDateKey(date: Date): string {
+  if (isNaN(date.getTime())) return ""
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Jakarta",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date)
+  const values = Object.fromEntries(parts.map((p) => [p.type, p.value]))
+  return `${values.year}-${values.month}-${values.day}`
+}
+
 function isTodayEvent(iso: string): boolean {
   if (!iso) return false
-  const evDate = new Date(iso)
-  const today = new Date()
-  return (
-    evDate.getFullYear() === today.getFullYear() &&
-    evDate.getMonth() === today.getMonth() &&
-    evDate.getDate() === today.getDate()
-  )
+  const evKey = toWibDateKey(new Date(iso))
+  const todayKey = toWibDateKey(new Date())
+  return Boolean(evKey && todayKey && evKey === todayKey)
 }
 
 export function EventCard({ event, onClick }: EventCardProps) {
@@ -39,6 +47,12 @@ export function EventCard({ event, onClick }: EventCardProps) {
   const colorInfo = getCategoryColor(event)
   const isLive = isTodayEvent(event.event_date)
   const status = event.status ?? "scheduled"
+  const pointsReward =
+    event.point_reward ??
+    (typeof event.event_type === "object"
+      ? event.event_type?.default_point_reward
+      : undefined) ??
+    50
 
   return (
     <div className="py-2 text-left font-sans first:pt-0 last:pb-0">
@@ -47,7 +61,7 @@ export function EventCard({ event, onClick }: EventCardProps) {
         onClick={onClick}
         className="group relative w-full cursor-pointer overflow-hidden rounded-[20px] border border-[#e6decb]/80 bg-[#fffaf0]/90 p-3.5 text-left shadow-2xs ring-1 ring-black/[0.03] backdrop-blur-md transition-all hover:border-[#d9cfb8] hover:bg-[#faf5e8] hover:shadow-xs active:scale-[0.985] sm:p-4"
       >
-        <div className="flex items-center gap-3.5">
+        <div className="flex items-center gap-3 sm:gap-3.5">
           {/* Dynamic Color Accent Bar */}
           <div
             className="h-11 w-1.5 shrink-0 rounded-full shadow-2xs transition-all"
@@ -56,7 +70,7 @@ export function EventCard({ event, onClick }: EventCardProps) {
 
           {/* Main Info */}
           <div className="min-w-0 flex-1">
-            {/* Top row: Category + Status Badges */}
+            {/* Top row: Category + Points + Status Badges */}
             <div className="flex flex-wrap items-center gap-1.5">
               <Badge
                 variant="outline"
@@ -68,6 +82,16 @@ export function EventCard({ event, onClick }: EventCardProps) {
                   style={colorInfo.dotStyle}
                 />
                 {colorInfo.name}
+              </Badge>
+
+              {/* Karma Points Reward Badge */}
+              <Badge
+                variant="outline"
+                glass
+                className="border-black/[0.08] text-[10px] font-bold text-[#0a0a0a] sm:text-[11px]"
+                title="Karma points rewarded for attendance"
+              >
+                +{pointsReward} Pts
               </Badge>
 
               {/* Status: Active / Live */}
@@ -138,9 +162,9 @@ export function EventCard({ event, onClick }: EventCardProps) {
             </div>
           </div>
 
-          {/* Action — right */}
-          <div className="flex shrink-0 items-center gap-1.5 rounded-full border border-[#ded6c2] bg-[#faf5e8] px-3 py-1.5 text-xs font-semibold text-[#1a3a3a] shadow-2xs transition-all group-hover:border-[#0a0a0a] group-hover:bg-[#0a0a0a] group-hover:text-white sm:min-h-[36px]">
-            <span className="hidden font-bold group-hover:text-white sm:inline">
+          {/* Action — right (Slim on mobile, full pill on desktop) */}
+          <div className="flex size-8 shrink-0 items-center justify-center rounded-full border border-[#ded6c2] bg-[#faf5e8] text-xs font-semibold text-[#1a3a3a] shadow-2xs transition-all group-hover:border-[#0a0a0a] group-hover:bg-[#0a0a0a] group-hover:text-white sm:h-9 sm:w-auto sm:px-3">
+            <span className="hidden font-bold group-hover:text-white sm:inline sm:mr-1">
               Details
             </span>
             <ChevronRightIcon

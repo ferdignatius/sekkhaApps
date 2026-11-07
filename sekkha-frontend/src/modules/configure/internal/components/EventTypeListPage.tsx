@@ -199,9 +199,9 @@ export function EventTypePage() {
 
         {/* Global Error Banner */}
         {actionError && (
-          <div className="flex items-center justify-between rounded-[12px] border border-[#ef4444]/20 bg-[#ef4444]/10 p-3 text-xs text-[#ef4444]">
+          <div className="flex items-center justify-between rounded-[12px] border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">
             <div className="flex items-center gap-2">
-              <AlertTriangleIcon className="size-4 shrink-0" />
+              <AlertTriangleIcon className="size-4 shrink-0 text-destructive" />
               <span>{actionError}</span>
             </div>
             <button
@@ -215,27 +215,27 @@ export function EventTypePage() {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Card className="rounded-[16px] border border-[#e5e5e5] bg-white p-4 shadow-2xs">
+          <Card className="rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] p-4 shadow-2xs">
             <p className="text-xs text-[#6a6a6a]">Total Event Types</p>
             <p className="mt-1 text-2xl font-black text-[#0a0a0a]">
               {stats.total}
             </p>
           </Card>
-          <Card className="rounded-[16px] border border-[#e5e5e5] bg-white p-4 shadow-2xs">
+          <Card className="rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] p-4 shadow-2xs">
             <p className="text-xs text-[#6a6a6a]">Active Types</p>
-            <p className="mt-1 text-2xl font-black text-[#0d9488]">
+            <p className="mt-1 text-2xl font-black text-clay-success">
               {stats.active}
             </p>
           </Card>
-          <Card className="rounded-[16px] border border-[#e5e5e5] bg-white p-4 shadow-2xs">
+          <Card className="rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] p-4 shadow-2xs">
             <p className="text-xs text-[#6a6a6a]">Inactive Types</p>
             <p className="mt-1 text-2xl font-black text-[#6a6a6a]">
               {stats.inactive}
             </p>
           </Card>
-          <Card className="rounded-[16px] border border-[#e5e5e5] bg-white p-4 shadow-2xs">
+          <Card className="rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] p-4 shadow-2xs">
             <p className="flex items-center gap-1 text-xs text-[#6a6a6a]">
-              <CoinsIcon className="size-3 text-[#e8b94a]" /> Average Points
+              <CoinsIcon className="size-3 text-clay-ochre" /> Average Points
             </p>
             <p className="mt-1 text-2xl font-black text-[#0a0a0a]">
               {stats.avgPoints}{" "}
@@ -248,11 +248,11 @@ export function EventTypePage() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="w-full sm:max-w-xs">
             <Input
-              className="bg-white"
+              className="border border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] placeholder:text-[#8a8a8a] focus:bg-[#fffaf0]"
               placeholder="Search by code, label, description..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              startIcon={<SearchIcon className="size-4" />}
+              startIcon={<SearchIcon className="size-4 text-[#6a6a6a]" />}
             />
           </div>
           <div className="flex items-center gap-1.5 self-start sm:self-auto">
@@ -271,7 +271,7 @@ export function EventTypePage() {
                   className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-all ${
                     active
                       ? "bg-[#0a0a0a] text-white shadow-2xs"
-                      : "border border-[#e5e5e5] bg-white text-[#6a6a6a] hover:bg-[#faf5e8]"
+                      : "border border-[#e5e5e5] bg-[#faf5e8] text-[#6a6a6a] hover:bg-[#ebe6d6] hover:text-[#0a0a0a]"
                   }`}
                 >
                   {labels[key]}
@@ -287,12 +287,12 @@ export function EventTypePage() {
             {Array.from({ length: 3 }).map((_, i) => (
               <div
                 key={i}
-                className="h-44 animate-pulse rounded-[20px] border border-[#e5e5e5] bg-white p-5 shadow-2xs"
+                className="h-44 animate-pulse rounded-[20px] border border-[#e5e5e5] bg-[#faf5e8] p-5 shadow-2xs"
               />
             ))}
           </div>
         ) : filteredTypes.length === 0 ? (
-          <div className="rounded-[20px] border border-[#e5e5e5] bg-white py-16 text-center shadow-2xs">
+          <div className="rounded-[20px] border border-[#e5e5e5] bg-[#faf5e8] py-16 text-center shadow-2xs">
             <TagIcon className="mx-auto size-10 text-[#6a6a6a]/40" />
             <p className="mt-3 text-sm font-semibold text-[#0a0a0a]">
               No event types found
@@ -306,7 +306,7 @@ export function EventTypePage() {
             {filteredTypes.map((type) => (
               <Card
                 key={type.id}
-                className="group relative flex flex-col justify-between overflow-hidden rounded-[20px] border border-[#e5e5e5] bg-white p-5 shadow-2xs transition-all hover:border-[#0a0a0a]/30 hover:shadow-xs"
+                className="group relative flex flex-col justify-between overflow-hidden rounded-[20px] border border-[#e5e5e5] bg-[#faf5e8] p-5 shadow-2xs transition-all hover:border-[#0a0a0a]/30 hover:shadow-xs"
               >
                 {/* Visual Top Accent Strip */}
                 <div
@@ -327,12 +327,12 @@ export function EventTypePage() {
                       </h3>
                     </div>
                     {type.is_active ? (
-                      <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#0d9488]/10 px-2.5 py-0.5 text-[11px] font-bold text-[#0d9488]">
+                      <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-clay-success/30 bg-clay-success/15 px-2.5 py-0.5 text-[11px] font-bold text-clay-success">
                         <CheckCircle2Icon className="size-3" />
                         Active
                       </span>
                     ) : (
-                      <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#6a6a6a]/10 px-2.5 py-0.5 text-[11px] font-bold text-[#6a6a6a]">
+                      <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[#e5e5e5] bg-[#ebe6d6] px-2.5 py-0.5 text-[11px] font-bold text-[#6a6a6a]">
                         <XCircleIcon className="size-3" />
                         Inactive
                       </span>
@@ -341,20 +341,20 @@ export function EventTypePage() {
 
                   {/* Badges: Code & Point Reward */}
                   <div className="flex flex-wrap items-center gap-2">
-                    <code className="rounded-[6px] border border-[#e5e5e5] bg-[#faf5e8] px-2 py-0.5 font-mono text-[11px] font-bold text-[#0a0a0a]">
+                    <code className="rounded-[6px] border border-[#e5e5e5] bg-[#fffaf0] px-2 py-0.5 font-mono text-[11px] font-bold text-[#0a0a0a]">
                       {type.code}
                     </code>
-                    <span className="inline-flex items-center gap-1 rounded-full bg-[#faf5e8] px-2.5 py-0.5 text-[11px] font-bold text-[#8a7a5a]">
-                      <CoinsIcon className="size-3 text-[#e8b94a]" />
+                    <span className="inline-flex items-center gap-1 rounded-full border border-[#e5e5e5] bg-[#fffaf0] px-2.5 py-0.5 text-[11px] font-bold text-[#0a0a0a]">
+                      <CoinsIcon className="size-3 text-clay-ochre" />
                       {type.default_point_reward} Pts
                     </span>
-                    <span className="font-mono text-[10px] text-[#8a8a8a] uppercase">
+                    <span className="font-mono text-[10px] text-[#6a6a6a] uppercase">
                       {type.color}
                     </span>
                   </div>
 
                   {/* Description */}
-                  <p className="line-clamp-2 text-xs leading-relaxed text-[#6a6a6a]">
+                  <p className="line-clamp-2 text-xs leading-relaxed text-[#3a3a3a]">
                     {type.description || "No additional description."}
                   </p>
                 </div>
@@ -382,7 +382,7 @@ export function EventTypePage() {
                           params: { categoryId: type.id },
                         })
                       }
-                      className="flex items-center gap-1 rounded-[10px] border border-[#e5e5e5] bg-[#fffaf0] px-3 py-1.5 text-xs font-bold text-[#0a0a0a] transition-colors hover:border-[#0a0a0a] hover:bg-white"
+                      className="flex items-center gap-1 rounded-[10px] border border-[#e5e5e5] bg-[#fffaf0] px-3 py-1.5 text-xs font-bold text-[#0a0a0a] transition-colors hover:border-[#0a0a0a] hover:bg-[#ebe6d6]"
                     >
                       <PencilIcon className="size-3.5" />
                       Edit
@@ -391,7 +391,7 @@ export function EventTypePage() {
                       <button
                         type="button"
                         onClick={() => setItemToDelete(type)}
-                        className="rounded-[10px] border border-[#e5e5e5] bg-white p-1.5 text-[#ef4444] transition-colors hover:border-[#ef4444] hover:bg-[#ef4444]/10"
+                        className="rounded-[10px] border border-destructive/30 bg-[#fffaf0] p-1.5 text-destructive transition-colors hover:bg-destructive/10"
                         title="Delete"
                       >
                         <Trash2Icon className="size-3.5" />
@@ -410,9 +410,9 @@ export function EventTypePage() {
         open={Boolean(itemToDelete)}
         onOpenChange={(open) => !open && setItemToDelete(null)}
       >
-        <DialogContent className="max-w-md rounded-[20px] bg-white p-6">
+        <DialogContent className="max-w-md rounded-[20px] border border-[#e5e5e5] bg-[#fffaf0] p-6 shadow-md">
           <DialogHeader>
-            <div className="mb-2 flex size-10 items-center justify-center rounded-full bg-[#ef4444]/10 text-[#ef4444]">
+            <div className="mb-2 flex size-10 items-center justify-center rounded-full bg-destructive/10 text-destructive">
               <AlertTriangleIcon className="size-5" />
             </div>
             <DialogTitle className="text-base font-bold text-[#0a0a0a]">
@@ -430,7 +430,7 @@ export function EventTypePage() {
               type="button"
               variant="outline"
               onClick={() => setItemToDelete(null)}
-              className="rounded-[12px] text-xs font-bold"
+              className="rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] text-xs font-bold text-[#0a0a0a] hover:bg-[#ebe6d6]"
             >
               Cancel
             </Button>
@@ -438,7 +438,7 @@ export function EventTypePage() {
               type="button"
               disabled={deleting}
               onClick={() => void handleDeleteConfirm()}
-              className="rounded-[12px] bg-[#ef4444] text-xs font-bold text-white hover:bg-[#dc2626]"
+              className="rounded-[12px] bg-destructive text-xs font-bold text-white hover:bg-destructive/90"
             >
               {deleting ? "Deleting..." : "Yes, Delete"}
             </Button>
@@ -451,20 +451,20 @@ export function EventTypePage() {
         open={Boolean(conflictItem)}
         onOpenChange={(open) => !open && setConflictItem(null)}
       >
-        <DialogContent className="max-w-md rounded-[20px] bg-white p-6">
+        <DialogContent className="max-w-md rounded-[20px] border border-[#e5e5e5] bg-[#fffaf0] p-6 shadow-md">
           <DialogHeader>
-            <div className="mb-2 flex size-10 items-center justify-center rounded-full bg-[#f59e0b]/10 text-[#f59e0b]">
+            <div className="mb-2 flex size-10 items-center justify-center rounded-full bg-clay-warning/10 text-clay-warning">
               <AlertTriangleIcon className="size-5" />
             </div>
             <DialogTitle className="text-base font-bold text-[#0a0a0a]">
               Event Type Currently in Use
             </DialogTitle>
-            <DialogDescription className="text-xs text-[#4a4a4a]">
+            <DialogDescription className="text-xs text-[#3a3a3a]">
               {conflictItem?.message}
             </DialogDescription>
           </DialogHeader>
-          <div className="mt-2 rounded-[12px] bg-[#faf5e8] p-3 text-xs text-[#8a7a5a]">
-            💡 <strong>Recommendation:</strong> Deactivate this event type
+          <div className="mt-2 rounded-[12px] border border-clay-warning/30 bg-clay-warning/10 p-3 text-xs text-[#0a0a0a]">
+            💡 <strong className="text-clay-warning">Recommendation:</strong> Deactivate this event type
             instead. Existing events will remain intact, and this type will no
             longer appear when creating new events.
           </div>
@@ -473,14 +473,14 @@ export function EventTypePage() {
               type="button"
               variant="outline"
               onClick={() => setConflictItem(null)}
-              className="rounded-[12px] text-xs font-bold"
+              className="rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] text-xs font-bold text-[#0a0a0a] hover:bg-[#ebe6d6]"
             >
               Close
             </Button>
             <Button
               type="button"
               onClick={() => void handleDeactivateInstead()}
-              className="rounded-[12px] bg-[#0a0a0a] text-xs font-bold text-white hover:bg-[#222]"
+              className="rounded-[12px] bg-[#0a0a0a] text-xs font-bold text-white hover:bg-[#262626]"
             >
               Deactivate Instead
             </Button>

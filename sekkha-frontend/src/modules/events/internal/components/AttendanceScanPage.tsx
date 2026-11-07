@@ -19,6 +19,7 @@ import {
   XIcon,
   LockIcon,
   Trash2Icon,
+  ZapIcon,
 } from "lucide-react"
 import { useAuth } from "@/modules/auth"
 import { api } from "@/lib/api"
@@ -93,6 +94,18 @@ function playWarningBuzz() {
   } catch {}
 }
 
+function triggerHaptic(type: "success" | "error") {
+  if (typeof window !== "undefined" && "vibrate" in navigator) {
+    try {
+      if (type === "success") {
+        navigator.vibrate?.([40, 60, 40])
+      } else {
+        navigator.vibrate?.([80, 50, 80])
+      }
+    } catch {}
+  }
+}
+
 export function AttendanceScanPage() {
   const navigate = useNavigate()
   const searchParams: { eventId?: string } = useSearch({ strict: false })
@@ -115,6 +128,46 @@ export function AttendanceScanPage() {
   )
   const [activeCameraId, setActiveCameraId] = useState<string>("")
   const [isHistoryDrawerOpen, setIsHistoryDrawerOpen] = useState(false)
+  const [isTorchOn, setIsTorchOn] = useState(false)
+  const [hasTorchSupport, setHasTorchSupport] = useState(false)
+
+  // Detect torch capability on active video stream track
+  const checkTorchCapability = useCallback(() => {
+    try {
+      const videoElem = document.querySelector("video") as HTMLVideoElement | null
+      const stream = videoElem?.srcObject as MediaStream | null
+      const track = stream?.getVideoTracks()[0]
+      if (track) {
+        const caps = track.getCapabilities?.() as any
+        if (caps && "torch" in caps) {
+          setHasTorchSupport(true)
+          return
+        }
+      }
+    } catch {}
+    setHasTorchSupport(false)
+  }, [])
+
+  useEffect(() => {
+    const timer = setTimeout(checkTorchCapability, 1200)
+    return () => clearTimeout(timer)
+  }, [activeCameraId, checkTorchCapability])
+
+  async function handleToggleTorch() {
+    try {
+      const videoElem = document.querySelector("video") as HTMLVideoElement | null
+      const stream = videoElem?.srcObject as MediaStream | null
+      const track = stream?.getVideoTracks()[0]
+      if (!track) return
+      const nextTorch = !isTorchOn
+      await (track.applyConstraints as any)({
+        advanced: [{ torch: nextTorch }],
+      })
+      setIsTorchOn(nextTorch)
+    } catch (err) {
+      console.warn("Flashlight toggle not supported on this track:", err)
+    }
+  }
 
   // People list for manual attendance
   const [peopleList, setPeopleList] = useState<MemberDto[]>([])
@@ -319,6 +372,7 @@ export function AttendanceScanPage() {
       })
 
       playScanChime()
+      triggerHaptic("success")
       const returnedUserId = res.user_id || res.id
       const returnedName = res.name || parsedUserNumber
       const returnedUserNumber = res.user_number || parsedUserNumber
@@ -357,6 +411,7 @@ export function AttendanceScanPage() {
       }
     } catch (err: any) {
       playWarningBuzz()
+      triggerHaptic("error")
       const status = err?.status || err?.statusCode || 500
       const errMsg = err?.message || ""
       if (
@@ -411,6 +466,7 @@ export function AttendanceScanPage() {
       })
 
       playScanChime()
+      triggerHaptic("success")
       const returnedUserId = res.user_id || res.id
       const returnedName = res.name || memberName || targetNumberOrId
       const returnedUserNumber = res.user_number || targetNumberOrId
@@ -442,6 +498,7 @@ export function AttendanceScanPage() {
       setManualUserNumber("")
     } catch (err: any) {
       playWarningBuzz()
+      triggerHaptic("error")
       const status = err?.status || err?.statusCode || 500
       const errMsg = err?.message || ""
       if (
@@ -562,6 +619,24 @@ export function AttendanceScanPage() {
 
         {isPengurus ? (
           <div className="flex items-center gap-2">
+            {hasTorchSupport && pengurusMode === "camera" && (
+              <button
+                type="button"
+                onClick={handleToggleTorch}
+                className={`flex size-10 cursor-pointer items-center justify-center rounded-full border transition-all active:scale-95 ${
+                  isTorchOn
+                    ? "border-amber-300 bg-amber-400 text-black shadow-lg shadow-amber-400/30"
+                    : "border-white/20 bg-white/10 text-white hover:bg-white/20"
+                }`}
+                title={isTorchOn ? "Turn off flashlight" : "Turn on flashlight"}
+              >
+                <ZapIcon
+                  className={`size-4 ${
+                    isTorchOn ? "fill-black text-black" : "text-amber-300"
+                  }`}
+                />
+              </button>
+            )}
             {cameras.length > 1 && (
               <button
                 type="button"
@@ -698,10 +773,15 @@ export function AttendanceScanPage() {
                   <div className="flex gap-2">
                     <input
                       type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={10}
                       value={manualUserNumber}
-                      onChange={(e) => setManualUserNumber(e.target.value)}
-                      placeholder="e.g. 202610230001"
-                      className="flex-1 rounded-xl border border-white/20 bg-[#1a3a3a] px-3 py-2 text-xs text-white outline-none placeholder:text-white/40 focus:border-amber-400"
+                      onChange={(e) =>
+                        setManualUserNumber(e.target.value.replace(/\D/g, ""))
+                      }
+                      placeholder="e.g. 2026110801"
+                      className="flex-1 rounded-xl border border-white/20 bg-[#1a3a3a] px-3 py-2 font-mono text-xs tracking-wider text-white outline-none placeholder:text-white/40 focus:border-amber-400"
                     />
                     <button
                       type="submit"

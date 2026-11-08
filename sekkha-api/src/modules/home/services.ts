@@ -33,20 +33,35 @@ export const homeServices = {
           .map(({ week }) => ({ scannedAt: week }))
       )
 
-      const season = activeSeason
+      const activeCustom = activeSeason && activeSeason.endDate >= now ? activeSeason : null
+      const year = now.getFullYear()
+      const sem = now.getMonth() < 6 ? 1 : 2
+      const semEnd = new Date(year, sem === 1 ? 5 : 11, sem === 1 ? 30 : 31, 23, 59, 59, 999)
+      const semStart = new Date(year, sem === 1 ? 0 : 6, 1, 0, 0, 0, 0)
+      const semDaysLeft = Math.max(0, Math.ceil((semEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
+
+      const season = activeCustom
         ? {
-            id: activeSeason.id,
-            name: activeSeason.name,
-            code: activeSeason.code,
-            start_date: activeSeason.startDate.toISOString(),
-            end_date: activeSeason.endDate.toISOString(),
-            target_attendance: activeSeason.targetAttendance,
+            id: activeCustom.id,
+            name: activeCustom.name,
+            code: activeCustom.code,
+            start_date: activeCustom.startDate.toISOString(),
+            end_date: activeCustom.endDate.toISOString(),
+            target_attendance: activeCustom.targetAttendance,
             days_left: Math.max(
               0,
-              Math.ceil((activeSeason.endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+              Math.ceil((activeCustom.endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
             ),
           }
-        : null
+        : {
+            id: `sem-${year}-${sem}`,
+            name: `Semester ${sem} · ${year}`,
+            code: `S${year}-SEM${sem}`,
+            start_date: semStart.toISOString(),
+            end_date: semEnd.toISOString(),
+            target_attendance: 500,
+            days_left: semDaysLeft,
+          }
 
       return {
         profile: {

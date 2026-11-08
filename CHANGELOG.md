@@ -4,7 +4,10 @@ All notable changes to Sekkha Apps. Semver (`MAJOR.MINOR.PATCH`); newest on top.
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-08
+
 ### Added
+- Extracted shared high-contrast `MemberQrModal` component in `components/common/` with unit test suite (`MemberQrModal.test.tsx`), unifying digital check-in QR passes across `home` and `users` (`DigitalMemberCard`).
 - Comprehensive unit test suite for configure backend schemas, validation constraints, and business guardrails (`sekkha-api/src/modules/configure/__tests__/configure.test.ts`).
 - Unit test suite for configure frontend navigation module definition English UI compliance (`sekkha-frontend/src/modules/configure/internal/__tests__/ConfigureEnglishUI.test.tsx`).
 - Isolated unit test suite covering PRD test cases TC-AUTH-01 through TC-AUTH-13 in `sekkha-api/src/modules/auth/__tests__/auth.test.ts`.
@@ -15,6 +18,10 @@ All notable changes to Sekkha Apps. Semver (`MAJOR.MINOR.PATCH`); newest on top.
 - Unit tests for `PrivacyPolicyDocument` and `PrivacyPolicyPage`.
 
 ### Changed
+- Responsive layout and Clay design token refinements in `HomePage.tsx` and `DhammaWidget.tsx` (standardizing primary ink to `#0a0a0a`, adaptive Quick Access grid, responsive mobile touch targets).
+- Leaderboard season resolution: gracefully deactivates expired custom seasons and automatically falls back to current active semester (`Semester 2 · 2026`) and annual periods, preventing 0-point displays for post-season events.
+- Added real-time leaderboard cache invalidation (`leaderboard:*`) whenever an event is closed and points are finalized in `sekkha-api/src/modules/events`.
+- Added active date bounds check (`endDate >= now`) when assigning active season to new events.
 - Proportioned Event Overview and resolved action button stacking: balanced key metrics into 3 equal bento cards (`sm:grid-cols-3`), harmonized 2-column content grid with event rules table and attendance snapshot, and wrapped management actions (`Edit`, `Duplicate`, `Delete`) into responsive segmented capsule to prevent overlapping on mobile and tablet.
 - Standardized `AttendanceListSheet` and `EventDetailSheet` UI color tokens to strictly follow `DESIGN.md` (warm cream surfaces `#fffaf0`/`#faf5e8`, `#e5e5e5` borders, `#0a0a0a` ink, replacing ad-hoc tinting).
 - Aligned frontend events attendance access with PRD AC-EVT-01: restricted `/events/scan` UI and attendance tab strictly to `organizer` and `admin`, displaying member attendance profile card guidance for `member` and `activist`.

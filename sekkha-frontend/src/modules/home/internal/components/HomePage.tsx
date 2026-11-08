@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useMemo } from "react"
 import { useAuth } from "@/modules/auth"
-import QRCode from "react-qr-code"
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
+import { MemberQrModal } from "@/components/common/MemberQrModal"
 import {
   FlameIcon,
   CalendarIcon,
@@ -34,6 +34,13 @@ function formatEventDate(iso: string): string {
     day: "numeric",
     month: "long",
   })
+}
+
+function formatAttendanceMethod(method: string): string {
+  const normalized = method.toLowerCase()
+  if (normalized.includes("qr")) return "QR Check-in"
+  if (normalized.includes("manual")) return "Manual Check-in"
+  return method
 }
 
 function getTimeGreeting(): string {
@@ -209,7 +216,7 @@ export function HomePage() {
             id: "insight",
             label: "Community Insights",
             icon: BarChart3Icon,
-            bg: "bg-[#1a3a3a]",
+            bg: "bg-[#0a0a0a]",
             iconColor: "text-white",
             href: "/insight",
           },
@@ -286,7 +293,7 @@ export function HomePage() {
           description:
             "Manage personal information, attendance history, and preferences",
           icon: UserIcon,
-          bg: "bg-[#1a3a3a]",
+          bg: "bg-[#0a0a0a]",
           iconColor: "text-white",
           href: "/profile",
           badge: "Account",
@@ -348,7 +355,7 @@ export function HomePage() {
                 description:
                   "Define attendance merit multipliers and points scoring logic",
                 icon: SparklesIcon,
-                bg: "bg-[#1a3a3a]",
+                bg: "bg-[#0a0a0a]",
                 iconColor: "text-white",
                 href: "/configure/rules/points",
                 badge: "Rules",
@@ -466,7 +473,7 @@ export function HomePage() {
             <div className="relative overflow-hidden rounded-[28px] border border-[#e5e5e5] bg-[#faf5e8]/85 p-4 shadow-xs backdrop-blur-md sm:p-5 lg:p-6">
               {/* Subtle Ambient Radial Glows */}
               <div className="pointer-events-none absolute -top-12 -right-12 size-44 rounded-full bg-[#ffb084]/20 blur-3xl" />
-              <div className="pointer-events-none absolute -bottom-12 -left-12 size-44 rounded-full bg-[#1a3a3a]/10 blur-3xl" />
+              <div className="pointer-events-none absolute -bottom-12 -left-12 size-44 rounded-full bg-[#0a0a0a]/5 blur-3xl" />
 
               <div className="relative z-10 flex flex-col gap-4">
                 {/* Top Row: Profile Info (Left) + Quick QR Action (Right) */}
@@ -508,18 +515,18 @@ export function HomePage() {
                     </div>
                   </div>
 
-                  {/* Quick QR Action */}
+                  {/* Quick QR Action (Adaptive icon-only on compact mobile, text on sm+) */}
                   <Button
                     type="button"
                     variant="primary"
                     size="sm"
                     onClick={() => setShowQrModal(true)}
-                    className="gap-2 rounded-full px-4 py-2 font-semibold shadow-xs active:scale-[0.98] active:opacity-85"
+                    className="flex min-h-[44px] shrink-0 items-center justify-center gap-2 rounded-full px-3 py-2 font-semibold shadow-xs active:scale-[0.98] active:opacity-85 sm:px-4"
                     title="Attendance QR Code"
                     aria-label="Attendance QR Code"
                   >
                     <QrCodeIcon className="size-4 shrink-0 text-white sm:size-4.5" />
-                    <span className="text-xs font-semibold whitespace-nowrap sm:text-sm">
+                    <span className="hidden text-xs font-semibold whitespace-nowrap sm:inline sm:text-sm">
                       QR Code
                     </span>
                   </Button>
@@ -575,10 +582,8 @@ export function HomePage() {
                   primaryQuickAccessItems.length <= 4
                     ? "grid grid-cols-4 gap-x-2 gap-y-4 sm:gap-6"
                     : primaryQuickAccessItems.length === 5
-                      ? "grid grid-cols-5 gap-x-2 gap-y-4 sm:gap-6"
-                      : primaryQuickAccessItems.length === 6
-                        ? "grid grid-cols-3 gap-x-2 gap-y-4 sm:grid-cols-6 sm:gap-6"
-                        : "grid grid-cols-4 gap-x-2 gap-y-4 sm:grid-cols-7 sm:gap-6"
+                      ? "grid grid-cols-4 gap-x-2 gap-y-4 sm:grid-cols-5 sm:gap-6"
+                      : "grid grid-cols-3 gap-x-2 gap-y-4 sm:grid-cols-6 sm:gap-6"
                 }
               >
                 {primaryQuickAccessItems.map((item) => {
@@ -701,19 +706,21 @@ export function HomePage() {
                           </h4>
                           <div className="mt-1.5 flex flex-wrap items-center gap-3 text-xs text-[#6a6a6a]">
                             <span className="flex items-center gap-1">
-                              <CalendarIcon className="size-3.5 text-[#1a3a3a]" />
+                              <CalendarIcon className="size-3.5 text-[#0a0a0a]" />
                               {formatEventDate(nextEvent.event_date)}
                             </span>
-                            <span className="flex items-center gap-1">
-                              <MapPinIcon className="size-3.5 text-rose-600" />
-                              {nextEvent.location}
-                            </span>
+                            {nextEvent.location && (
+                              <span className="flex items-center gap-1">
+                                <MapPinIcon className="size-3.5 text-rose-600" />
+                                {nextEvent.location}
+                              </span>
+                            )}
                           </div>
                         </div>
 
                         {/* View Event Button Indicator */}
-                        <div className="flex shrink-0 items-center gap-1 self-start sm:self-center">
-                          <span className="text-xs font-semibold text-[#1a3a3a] transition-all group-hover:underline">
+                        <div className="flex shrink-0 items-center gap-1 self-end sm:self-center">
+                          <span className="text-xs font-semibold text-[#0a0a0a] transition-all group-hover:underline">
                             View Event
                           </span>
                           <span className="flex size-7 items-center justify-center rounded-full border border-[#e5e5e5] bg-[#faf5e8] text-[#0a0a0a] transition-all group-hover:translate-x-0.5 group-hover:border-[#0a0a0a]/20">
@@ -819,7 +826,7 @@ export function HomePage() {
 
                     <Link
                       to="/leaderboard"
-                      className="group mt-3 flex items-center justify-between border-t border-[#e5e5e5]/80 pt-2.5 text-xs font-semibold text-[#1a3a3a] transition-all hover:text-black"
+                      className="group mt-3 flex items-center justify-between border-t border-[#e5e5e5]/80 pt-2.5 text-xs font-semibold text-[#0a0a0a] transition-all hover:text-black"
                     >
                       <span>Check Your Rank on Leaderboard</span>
                       <ChevronRightIcon className="size-4 text-[#0a0a0a] transition-transform group-hover:translate-x-0.5" />
@@ -856,7 +863,7 @@ export function HomePage() {
                         </p>
                         <p className="text-xs text-[#6a6a6a]">
                           {formatEventDate(activity.scanned_at)} ·{" "}
-                          {activity.method}
+                          {formatAttendanceMethod(activity.method)}
                         </p>
                       </div>
                       <Badge variant="emerald" size="sm">
@@ -986,63 +993,13 @@ export function HomePage() {
         </div>
       </ResponsiveFormModal>
 
-      {/* ── User Unique QR Code Modal ── */}
-      {showQrModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-md"
-          role="presentation"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) setShowQrModal(false)
-          }}
-        >
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="attendance-qr-title"
-            className="w-full max-w-sm animate-in rounded-[28px] border border-[#e5e5e5] bg-[#faf5e8] p-6 text-center shadow-2xl zoom-in-95 fade-in"
-          >
-            <div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-[16px] bg-[#1a3a3a] text-white shadow-xs">
-              <QrCodeIcon className="size-6" />
-            </div>
-            <h3
-              id="attendance-qr-title"
-              className="text-base font-bold tracking-tight text-[#0a0a0a]"
-            >
-              Your Attendance QR
-            </h3>
-            <p className="mt-1 text-xs leading-relaxed text-[#6a6a6a]">
-              Show this QR Code to the Event Organizer at Vihara Tri Maha
-              Dharma.
-            </p>
-
-            {/* Dynamic QR Code Graphic */}
-            <div className="mx-auto my-4 flex size-48 items-center justify-center rounded-[20px] border-2 border-[#1a3a3a]/15 bg-white p-3 shadow-xs">
-              <div className="w-full text-center">
-                <div className="flex items-center justify-center bg-white p-1">
-                  <QRCode
-                    value={memberId || "UNKNOWN"}
-                    size={130}
-                    style={{ height: "auto", maxWidth: "100%", width: "100%" }}
-                    viewBox="0 0 256 256"
-                  />
-                </div>
-                <span className="mt-2 block font-mono text-xs font-bold text-[#0a0a0a]">
-                  {memberId}
-                </span>
-              </div>
-            </div>
-
-            <Button
-              type="button"
-              variant="primary"
-              onClick={() => setShowQrModal(false)}
-              className="min-h-[44px] w-full rounded-full text-sm font-semibold active:scale-[0.98]"
-            >
-              Close
-            </Button>
-          </div>
-        </div>
-      )}
+      {/* ── User Unique QR Code Modal (Unified HIG Pass) ── */}
+      <MemberQrModal
+        open={showQrModal}
+        onClose={() => setShowQrModal(false)}
+        userNumber={memberId}
+        name={displayName}
+      />
     </main>
   )
 }

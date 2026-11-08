@@ -78,8 +78,10 @@ export async function resolveLeaderboardPeriods(now = new Date()): Promise<{
 
   // Check for an active custom season in database
   const activeCustom = await leaderboardModels.findActiveSeason()
+  const isCustomOngoing = activeCustom ? activeCustom.endDate >= now : false
   const isCustomReal =
     activeCustom &&
+    isCustomOngoing &&
     !activeCustom.code?.startsWith(`S${year}-SEM`) &&
     !activeCustom.code?.startsWith(`S${year}-ANNUAL`)
 
@@ -103,6 +105,9 @@ export async function resolveLeaderboardPeriods(now = new Date()): Promise<{
       is_custom: true,
       description: activeCustom.description,
     })
+  } else if (activeCustom && !isCustomOngoing && activeCustom.isActive) {
+    // If the active custom season has expired (endDate < now), gracefully deactivate it
+    void leaderboardModels.deactivateAllSeasons().catch(() => {})
   }
 
   periods.push({
@@ -139,8 +144,11 @@ export async function resolveLeaderboardPeriods(now = new Date()): Promise<{
 export async function resolveActiveSeason(now = new Date()) {
   const activeSeason = await leaderboardModels.findActiveSeason()
   if (activeSeason) {
-    await leaderboardModels.deactivateOtherSeasons(activeSeason.id)
-    return activeSeason
+    if (activeSeason.endDate >= now) {
+      await leaderboardModels.deactivateOtherSeasons(activeSeason.id)
+      return activeSeason
+    }
+    await leaderboardModels.deactivateAllSeasons()
   }
 
   const scheduledSeason = await leaderboardModels.findScheduledSeason(now)

@@ -206,7 +206,9 @@ export const eventServices = {
 
     let seasonId = body.season_id
     if (!seasonId) {
-      const activeSeason = await prisma.season.findFirst({ where: { isActive: true } })
+      const activeSeason = await prisma.season.findFirst({
+        where: { isActive: true, endDate: { gte: new Date() } },
+      })
       seasonId = activeSeason?.id
     }
 
@@ -669,6 +671,7 @@ export const eventServices = {
     if (normalizedTarget === "closed") {
       await invalidatePattern("user:*:profile")
       await invalidatePattern("pengurus:insight:*")
+      await invalidatePattern("leaderboard:*")
     }
 
     auditLogger.log({

@@ -8,10 +8,10 @@ import {
   ShieldCheckIcon,
   SparklesIcon,
   FlameIcon,
-  XIcon,
   GraduationCapIcon,
 } from "lucide-react"
 import { Button } from "@/components/base"
+import { MemberQrModal } from "@/components/common/MemberQrModal"
 import type { UserRole } from "../api/userApi"
 
 interface DigitalMemberCardProps {
@@ -323,61 +323,12 @@ export function DigitalMemberCard({
       </div>
 
       {/* ── MODAL: ENLARGE QR FOR EVENT DOOR SCAN ── */}
-      {showEnlargeQr && (
-        <div className="fixed inset-0 z-50 flex animate-in items-center justify-center bg-black/70 p-4 backdrop-blur-xs fade-in">
-          <div className="relative w-full max-w-sm space-y-4 rounded-[24px] border border-[#e5e5e5] bg-[#fffaf0] p-6 text-center shadow-2xl">
-            <div className="flex items-center justify-between border-b border-[#e5e5e5] pb-3">
-              <div className="text-left">
-                <h3 className="text-base font-bold text-[#0a0a0a]">
-                  Check-in QR Code
-                </h3>
-                <p className="text-xs text-[#6a6a6a]">
-                  Show this code to organizers at the entrance
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowEnlargeQr(false)}
-                className="cursor-pointer rounded-full p-1.5 text-[#6a6a6a] hover:bg-[#faf5e8]"
-              >
-                <XIcon className="size-5" />
-              </button>
-            </div>
-
-            <div className="flex flex-col items-center justify-center py-4">
-              <div className="rounded-[18px] border-2 border-[#0a0a0a] bg-white p-4 shadow-lg">
-                {memberIdStr ? (
-                  <QRCode
-                    value={memberIdStr}
-                    size={200}
-                    style={{
-                      height: "auto",
-                      maxWidth: "100%",
-                      width: "200px",
-                    }}
-                    viewBox="0 0 256 256"
-                  />
-                ) : (
-                  <p className="text-xs text-[#6a6a6a]">QR Code unavailable</p>
-                )}
-              </div>
-              <p className="mt-3 font-mono text-base font-black tracking-widest text-[#0a0a0a]">
-                {memberIdStr}
-              </p>
-              <p className="text-xs font-medium text-[#6a6a6a]">{name}</p>
-            </div>
-
-            <Button
-              variant="filled"
-              type="button"
-              onClick={() => setShowEnlargeQr(false)}
-              className="w-full rounded-[12px]"
-            >
-              Done
-            </Button>
-          </div>
-        </div>
-      )}
+      <MemberQrModal
+        open={showEnlargeQr}
+        onClose={() => setShowEnlargeQr(false)}
+        userNumber={memberIdStr}
+        name={name}
+      />
     </div>
   )
 }

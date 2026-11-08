@@ -180,7 +180,7 @@ export function DhammaWidget() {
         </div>
 
         {/* Chapter Title Badge */}
-        <div className="mb-2 flex items-center gap-1.5 px-0.5 text-xs font-semibold text-[#1a3a3a]">
+        <div className="mb-2 flex items-center gap-1.5 px-0.5 text-xs font-semibold text-[#0a0a0a]">
           <BookOpenIcon className="size-3.5 shrink-0 text-[#e8b94a]" />
           <span className="truncate">{currentQuote.chapterTitle}</span>
         </div>
@@ -214,12 +214,12 @@ export function DhammaWidget() {
 
       {/* Action Footer */}
       <div className="mt-3.5 flex items-center justify-between text-xs">
-        <span className="xs:inline hidden text-[11px] font-medium text-[#6a6a6a]">
+        <span className="hidden text-[11px] font-medium text-[#6a6a6a] sm:inline">
           <SparklesIcon className="mr-1 inline size-3.5 text-[#e8b94a]" />
           Share this wisdom
         </span>
 
-        <div className="xs:w-auto flex w-full items-center justify-end gap-2">
+        <div className="flex w-full items-center justify-end gap-2 sm:w-auto">
           {/* Refresh / Shuffle Button with Warm Surface */}
           <Button
             type="button"
@@ -241,7 +241,7 @@ export function DhammaWidget() {
             variant={copied ? "filled" : "primary"}
             size="sm"
             onClick={handleShare}
-            className={`min-h-[44px] gap-2 rounded-full px-4 text-xs font-bold shadow-xs active:scale-95 ${copied ? "bg-emerald-600 text-white hover:bg-emerald-700" : "bg-[#1a3a3a] text-white hover:bg-[#254f4f]"}`}
+            className={`min-h-[44px] gap-2 rounded-full px-4 text-xs font-bold shadow-xs active:scale-95 ${copied ? "bg-emerald-600 text-white hover:bg-emerald-700" : "bg-[#0a0a0a] text-white hover:bg-[#1f1f1f]"}`}
             title="Copy and share reflection"
           >
             {copied ? (

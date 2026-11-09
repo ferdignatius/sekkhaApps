@@ -145,7 +145,7 @@ export function OnboardingPage() {
         if (u.school) {
           try {
             const res: any = await api.get(
-              `/configure/schools?limit=200&search=${encodeURIComponent(u.school)}`
+              `/configure/schools?limit=200&include_pending=true&search=${encodeURIComponent(u.school)}`
             )
             const list: SchoolOption[] = Array.isArray(res)
               ? res
@@ -313,13 +313,25 @@ export function OnboardingPage() {
     try {
       setRequestSubmitting(true)
       setRequestError(null)
-      await api.post("/configure/school-requests", {
+      const res: any = await api.post("/configure/school-requests", {
         name: trimmed,
         type: requestType,
       })
+      const created = res?.data || res
       setIsRequestModalOpen(false)
+
+      if (created && created.name) {
+        handleSchoolChange(created.name, {
+          id: created.id,
+          name: created.name,
+          type: created.type || requestType,
+          status: created.status || "pending",
+          userCount: created.userCount || 1,
+        })
+      }
+
       setSuccessToast(
-        `Registration request for "${trimmed}" has been submitted and is pending administrator verification.`
+        `Registration request for "${trimmed}" has been submitted and selected for your profile.`
       )
       setTimeout(() => setSuccessToast(null), 6000)
     } catch (err: any) {

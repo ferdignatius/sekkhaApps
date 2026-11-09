@@ -58,7 +58,7 @@ export const peopleModels = {
             phone: true,
             schoolId: true,
             birthDate: true,
-            school: { select: { id: true, name: true } },
+            school: { select: { id: true, name: true, status: true } },
           },
         },
         stats: {

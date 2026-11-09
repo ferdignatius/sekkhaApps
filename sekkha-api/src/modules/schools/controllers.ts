@@ -31,8 +31,12 @@ export const schoolControllers = {
       if (isActiveParam === "true") isActive = true
       else if (isActiveParam === "false") isActive = false
 
+      const includePending =
+        req.query.include_pending === "true" ||
+        req.query.includePending === "true"
+
       const limit = Number(req.query.limit) || Number(req.query.page_size) || 100
-      const result = await schoolServices.getSchools({ search, type, isActive, limit })
+      const result = await schoolServices.getSchools({ search, type, isActive, includePending, limit })
       res.json({
         status: "success",
         code: 200,

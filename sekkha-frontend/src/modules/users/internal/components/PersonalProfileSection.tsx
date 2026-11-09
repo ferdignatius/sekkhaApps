@@ -231,9 +231,16 @@ export function PersonalProfileSection({
                   School / University
                 </span>
               </div>
-              <p className="text-sm font-semibold text-[#0a0a0a]">
-                {profile.school || "Not set"}
-              </p>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold text-[#0a0a0a]">
+                  {profile.school || "Not set"}
+                </span>
+                {profile.school_status === "pending" && (
+                  <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold text-amber-700">
+                    Pending Approval
+                  </span>
+                )}
+              </div>
             </div>
 
             {/* Date of Birth */}
@@ -343,6 +350,7 @@ export function PersonalProfileSection({
                 {verifiedSchools.map((sch) => (
                   <option key={sch.id} value={sch.id}>
                     {sch.name} {sch.type ? `(${sch.type})` : ""}
+                    {sch.status === "pending" ? " [Pending Approval]" : ""}
                   </option>
                 ))}
               </select>

@@ -45,9 +45,9 @@ COPY --chown=bun:bun prisma ./prisma/
 RUN --mount=type=cache,id=bun,target=/root/.bun/install/cache \
     bun install --production --frozen-lockfile || bun install --production
 
-# Copy generated Prisma client and CLI from builder directly with bun ownership
+# Copy generated Prisma client, engines, and CLI from builder directly with bun ownership
 COPY --chown=bun:bun --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --chown=bun:bun --from=builder /app/node_modules/@prisma/client ./node_modules/@prisma/client
+COPY --chown=bun:bun --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 COPY --chown=bun:bun --from=builder /app/node_modules/prisma ./node_modules/prisma
 COPY --chown=bun:bun --from=builder /app/node_modules/.bin ./node_modules/.bin
 

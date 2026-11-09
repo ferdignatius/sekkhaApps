@@ -16,6 +16,7 @@ export interface SchoolOption {
   id: string
   name: string
   type: string
+  status?: "active" | "pending" | "cancel"
   userCount?: number
 }
 
@@ -56,7 +57,7 @@ export function SchoolCombobox({
       setLoading(true)
       api
         .get<any>(
-          `/configure/schools?page=1&page_size=20&search=${encodeURIComponent(search)}`
+          `/configure/schools?page=1&page_size=20&include_pending=true&search=${encodeURIComponent(search)}`
         )
         .then((res) => {
           if (isMounted) {
@@ -193,9 +194,16 @@ export function SchoolCombobox({
                 {value}
               </span>
               {selectedSchool && (
-                <span className="shrink-0 rounded-full border border-[#e5e5e5] bg-[#f5f0e0] px-2 py-0.5 text-[10px] font-bold text-[#6a6a6a]">
-                  {selectedSchool.type}
-                </span>
+                <div className="flex shrink-0 items-center gap-1.5">
+                  <span className="rounded-full border border-[#e5e5e5] bg-[#f5f0e0] px-2 py-0.5 text-[10px] font-bold text-[#6a6a6a]">
+                    {selectedSchool.type}
+                  </span>
+                  {selectedSchool.status === "pending" && (
+                    <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold text-amber-700">
+                      Pending Approval
+                    </span>
+                  )}
+                </div>
               )}
             </div>
           ) : (
@@ -326,6 +334,11 @@ export function SchoolCombobox({
                         <span className="py-0.2 rounded-[4px] bg-[#ebe6d6] px-1.5 text-[9px] font-bold text-[#0a0a0a]">
                           {item.type}
                         </span>
+                        {item.status === "pending" && (
+                          <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.2 text-[9px] font-bold text-amber-700">
+                            Pending Approval
+                          </span>
+                        )}
                       </div>
                     </div>
 
@@ -348,9 +361,9 @@ export function SchoolCombobox({
 
           {/* Footer Note */}
           <div className="flex items-center justify-between border-t border-[#e5e5e5] bg-[#faf5e8] px-3 py-2 text-[11px] text-[#6a6a6a]">
-            <span>Verified Master Data</span>
+            <span>Verified & Pending Schools</span>
             <span className="font-semibold text-[#0a0a0a]">
-              {schools.length} Registered Schools
+              {schools.length} Available
             </span>
           </div>
         </div>

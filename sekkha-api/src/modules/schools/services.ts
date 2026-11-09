@@ -13,13 +13,34 @@ export function normalizeSchoolType(type?: string): "SMP" | "SMA/SMK" | "Univers
 }
 
 export const schoolServices = {
-  async getSchools(params?: { search?: string; type?: string; isActive?: boolean; limit?: number }) {
+  async getSchools(params?: {
+    search?: string
+    type?: string
+    isActive?: boolean
+    includePending?: boolean
+    status?: string
+    limit?: number
+  }) {
+    // Non-blocking backfill for historical data where requester wasn't linked
+    void schoolModels.backfillApprovedSchoolRequesters()
+
     const search = params?.search?.trim() || ""
     const validLimit = Math.min(Number(params?.limit) || 100, 200)
 
-    const whereClause: any = {
-      status: "active",
-      ...(params?.isActive !== undefined ? { isActive: params.isActive } : { isActive: true }),
+    const whereClause: any = {}
+
+    if (params?.includePending) {
+      whereClause.status = { in: ["active", "pending"] }
+      if (params?.isActive !== undefined) {
+        whereClause.isActive = params.isActive
+      }
+    } else {
+      whereClause.status = params?.status || "active"
+      if (params?.isActive !== undefined) {
+        whereClause.isActive = params.isActive
+      } else if (whereClause.status === "active") {
+        whereClause.isActive = true
+      }
     }
 
     if (params?.type && params.type !== "all") {
@@ -77,6 +98,7 @@ export const schoolServices = {
       type: r.type || "Umum",
       status: r.status,
       is_active: r.isActive,
+      userCount: r._count?.profiles ?? 0,
       requester_name: r.requester?.profile?.name || r.requester?.username || "Member",
       created_at: r.createdAt.toISOString(),
       updated_at: r.updatedAt.toISOString(),
@@ -92,7 +114,7 @@ export const schoolServices = {
       throw new AppError("School request has already been processed", 400, "SCHOOL_ALREADY_PROCESSED")
     }
 
-    const updated = await schoolModels.approveSchool(id, reviewerId)
+    const updated = await schoolModels.approveSchool(id, reviewerId, existing.requestedBy)
     return {
       id: updated.id,
       name: updated.name,
@@ -183,8 +205,21 @@ export const schoolServices = {
     const trimmedName = data.name.trim()
     const existing = await schoolModels.findSchoolByName(trimmedName)
     if (existing) {
+      if (existing.status === "pending" || existing.status === "active") {
+        // School already registered or pending review; immediately link user profile!
+        await schoolModels.linkUserProfileToSchool(userId, existing.id)
+        return {
+          id: existing.id,
+          name: existing.name,
+          type: existing.type || "Umum",
+          status: existing.status,
+          is_active: existing.isActive,
+          userCount: (existing as any)._count?.profiles ?? 1,
+          alreadyExisted: true,
+        }
+      }
       throw new AppError(
-        `School "${trimmedName}" is already registered or currently pending review.`,
+        `School "${trimmedName}" is already registered.`,
         409,
         "SCHOOL_ALREADY_EXISTS"
       )
@@ -196,12 +231,16 @@ export const schoolServices = {
       requestedBy: userId,
     })
 
+    // Automatically link requester's profile to the pending school
+    await schoolModels.linkUserProfileToSchool(userId, school.id)
+
     return {
       id: school.id,
       name: school.name,
       type: school.type || "Umum",
       status: school.status,
       is_active: school.isActive,
+      userCount: 1,
     }
   },
 

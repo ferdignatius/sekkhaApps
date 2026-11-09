@@ -106,10 +106,42 @@ export const schoolModels = {
     })
   },
 
+  linkUserProfileToSchool(userId: string, schoolId: string) {
+    return prisma.userProfile.updateMany({
+      where: { userId },
+      data: { schoolId },
+    })
+  },
+
+  async backfillApprovedSchoolRequesters() {
+    try {
+      const orphanSchools = await prisma.school.findMany({
+        where: {
+          status: "active",
+          requestedBy: { not: null },
+        },
+        select: { id: true, requestedBy: true },
+      })
+      for (const s of orphanSchools) {
+        if (s.requestedBy) {
+          await prisma.userProfile.updateMany({
+            where: { userId: s.requestedBy, schoolId: null },
+            data: { schoolId: s.id },
+          })
+        }
+      }
+    } catch {
+      // Non-blocking backfill
+    }
+  },
+
   findPendingRequests() {
     return prisma.school.findMany({
       where: { status: "pending" },
       include: {
+        _count: {
+          select: { profiles: true },
+        },
         requester: {
           select: {
             id: true,
@@ -123,31 +155,52 @@ export const schoolModels = {
     })
   },
 
-  approveSchool(id: string, reviewerId: string) {
-    return prisma.school.update({
-      where: { id },
-      data: {
-        status: "active",
-        isActive: true,
-        reviewedBy: reviewerId,
-      },
-      include: {
-        _count: { select: { profiles: true } },
-      },
+  async approveSchool(id: string, reviewerId: string, requestedBy?: string | null) {
+    return prisma.$transaction(async (tx) => {
+      if (requestedBy) {
+        await tx.userProfile.updateMany({
+          where: {
+            userId: requestedBy,
+            schoolId: null,
+          },
+          data: {
+            schoolId: id,
+          },
+        })
+      }
+
+      return tx.school.update({
+        where: { id },
+        data: {
+          status: "active",
+          isActive: true,
+          reviewedBy: reviewerId,
+        },
+        include: {
+          _count: { select: { profiles: true } },
+        },
+      })
     })
   },
 
-  rejectSchool(id: string, reviewerId: string) {
-    return prisma.school.update({
-      where: { id },
-      data: {
-        status: "cancel",
-        isActive: false,
-        reviewedBy: reviewerId,
-      },
-      include: {
-        _count: { select: { profiles: true } },
-      },
+  async rejectSchool(id: string, reviewerId: string) {
+    return prisma.$transaction(async (tx) => {
+      await tx.userProfile.updateMany({
+        where: { schoolId: id },
+        data: { schoolId: null },
+      })
+
+      return tx.school.update({
+        where: { id },
+        data: {
+          status: "cancel",
+          isActive: false,
+          reviewedBy: reviewerId,
+        },
+        include: {
+          _count: { select: { profiles: true } },
+        },
+      })
     })
   },
 }

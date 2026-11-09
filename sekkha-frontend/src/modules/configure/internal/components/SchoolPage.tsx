@@ -478,6 +478,11 @@ export function SchoolPage() {
                               <strong className="text-[#0a0a0a]">
                                 {r.requester_name || "Community Member"}
                               </strong>
+                              {r.userCount !== undefined && r.userCount > 0 && (
+                                <span className="ml-1 text-[11px] text-[#8a8a8a]">
+                                  ({r.userCount} {r.userCount === 1 ? "user" : "users"} waiting)
+                                </span>
+                              )}
                             </span>
                           </p>
                           <p className="text-[11px] text-[#8a8a8a]">

@@ -217,6 +217,7 @@ export const peopleServices = {
       phone: canViewSensitive && member.profile?.phone ? safeDecrypt(member.profile.phone, null) : null,
       school: member.profile?.school?.name || null,
       school_id: member.profile?.schoolId || null,
+      school_status: member.profile?.school?.status || null,
       date_of_birth:
         canViewSensitive && member.profile?.birthDate
           ? safeDecrypt(member.profile.birthDate, null)
@@ -366,6 +367,7 @@ export const peopleServices = {
       copy_template: whatsappInvite,
       school: (newMember.profile as any)?.school?.name || null,
       school_id: (newMember.profile as any)?.schoolId || null,
+      school_status: (newMember.profile as any)?.school?.status || null,
       created_at: new Date(newMember.createdAt).toISOString(),
     }
   },
@@ -445,6 +447,7 @@ export const peopleServices = {
       username: updatedUser.username,
       school: (updatedProfile as any).school?.name || null,
       school_id: (updatedProfile as any).schoolId || null,
+      school_status: (updatedProfile as any).school?.status || null,
       role: updatedUser.role,
       user_number: updatedUser.userNumber ? Number(updatedUser.userNumber) : null,
       is_claimed: updatedUser.isClaimed,

@@ -94,6 +94,7 @@ export const userServices = {
       onboarding_completed: user.onboardingCompleted,
       school_id: user.profile?.schoolId || null,
       school: user.profile?.school?.name || null,
+      school_status: user.profile?.school?.status || null,
       phone: decryptedPhone,
       date_of_birth: decryptedBirthDate,
       birth_date: decryptedBirthDate,
@@ -118,8 +119,8 @@ export const userServices = {
     if (body.school_id !== undefined) {
       if (body.school_id) {
         const school = await prisma.school.findUnique({ where: { id: body.school_id } })
-        if (!school || school.status !== "active" || !school.isActive) {
-          const error = new Error("Selected school is not approved or inactive.") as any
+        if (!school || (school.status !== "active" && school.status !== "pending") || (school.status === "active" && !school.isActive)) {
+          const error = new Error("Selected school is invalid or inactive.") as any
           error.statusCode = 400
           throw error
         }
@@ -130,7 +131,11 @@ export const userServices = {
     } else if (body.school) {
       const trimmedSchool = body.school.trim()
       const existingSchool = await userModels.findSchoolByName(trimmedSchool)
-      if (existingSchool && existingSchool.status === "active" && existingSchool.isActive) {
+      if (
+        existingSchool &&
+        (existingSchool.status === "active" || existingSchool.status === "pending") &&
+        (existingSchool.status === "pending" || existingSchool.isActive)
+      ) {
         resolvedSchoolId = existingSchool.id
       } else {
         resolvedSchoolId = null
@@ -527,6 +532,8 @@ export const userServices = {
         phone: safeDecrypt(user.profile?.phone, null),
         birth_date: safeDecrypt(user.profile?.birthDate, null),
         school: user.profile?.school?.name ?? null,
+        school_id: user.profile?.schoolId ?? null,
+        school_status: user.profile?.school?.status ?? null,
       },
       stats: {
         points: user.stats?.points ?? 0,

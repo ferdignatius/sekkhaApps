@@ -18,6 +18,7 @@ export interface UserProfileDto {
   role: UserRole
   school_id?: string | null
   school?: string | null
+  school_status?: string | null
   phone?: string | null
   date_of_birth?: string | null
   stats?: UserStatsDto
@@ -66,6 +67,7 @@ export interface VerifiedSchoolDto {
   id: string
   name: string
   type?: string
+  status?: string
 }
 
 export const userApi = {
@@ -169,7 +171,7 @@ export const userApi = {
   getVerifiedSchools: async (): Promise<VerifiedSchoolDto[]> => {
     try {
       const res = await api.get<any>(
-        "/configure/schools?page=1&page_size=100&is_active=true"
+        "/configure/schools?page=1&page_size=100&include_pending=true"
       )
       if (Array.isArray(res)) return res
       if (res && Array.isArray(res.data)) return res.data
@@ -178,7 +180,9 @@ export const userApi = {
       return []
     } catch {
       try {
-        const fallback = await api.get<any>("/schools?limit=100&is_active=true")
+        const fallback = await api.get<any>(
+          "/schools?limit=100&include_pending=true"
+        )
         if (Array.isArray(fallback)) return fallback
         if (fallback && Array.isArray(fallback.data)) return fallback.data
         if (fallback && Array.isArray(fallback.schools)) return fallback.schools

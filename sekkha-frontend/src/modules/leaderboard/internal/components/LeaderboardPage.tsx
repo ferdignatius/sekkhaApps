@@ -138,6 +138,24 @@ const PODIUM_CONFIG: Record<
 
 // ─── Helper Functions ─────────────────────────────────────────────────────────
 
+export function formatDisplayHandle(
+  username?: string | null,
+  fallbackName?: string | null
+): string {
+  if (username && username.trim().length > 0) {
+    const clean = username.trim()
+    return clean.startsWith("@") ? clean : `@${clean}`
+  }
+  if (fallbackName && fallbackName.trim().length > 0) {
+    const clean = fallbackName.trim()
+    if (clean.toLowerCase() === "you") return "You"
+    return clean.startsWith("@")
+      ? clean
+      : `@${clean.toLowerCase().replace(/\s+/g, "_")}`
+  }
+  return "Member"
+}
+
 function getCompetitionHint(
   entry: LeaderboardEntry,
   allEntries: LeaderboardEntry[],
@@ -155,8 +173,12 @@ function getCompetitionHint(
     return null
   const diff = above.value - entry.value
   if (diff <= 0) return null
-  const aboveName = above.name ? above.name.split(" ")[0] : "the rank above"
-  return `${diff.toLocaleString("en-US")} more ${metricUnit} to overtake ${aboveName}!`
+  const aboveUser = above.username
+    ? `@${above.username}`
+    : above.name
+      ? formatDisplayHandle(null, above.name)
+      : "the rank above"
+  return `${diff.toLocaleString("en-US")} more ${metricUnit} to overtake ${aboveUser}!`
 }
 
 // ─── Sub-Components ───────────────────────────────────────────────────────────
@@ -174,6 +196,7 @@ function PodiumEntry({
   const isFirst = position === 1
   const isMe = entry.user_id === myId
   const cfg = PODIUM_CONFIG[position]
+  const displayName = formatDisplayHandle(entry.username, entry.name)
   const avatarSize = isFirst
     ? "size-11 sm:size-18 text-xs sm:text-base font-black"
     : "size-9 sm:size-13 text-[10px] sm:text-sm font-bold"
@@ -181,7 +204,7 @@ function PodiumEntry({
   return (
     <div
       role="listitem"
-      aria-label={`${position}. ${entry.name}, score ${entry.value.toLocaleString("en-US")}`}
+      aria-label={`${position}. ${displayName}, score ${entry.value.toLocaleString("en-US")}`}
       className={`relative flex min-w-0 flex-1 flex-col items-center gap-1 transition-all duration-200 sm:gap-1.5 ${
         isMe ? "z-20 scale-102" : ""
       }`}
@@ -220,10 +243,10 @@ function PodiumEntry({
       <div className="mt-0.5 w-full min-w-0 px-0.5 text-center sm:mt-1">
         <div className="flex items-center justify-center gap-1">
           <p
-            title={entry.name}
+            title={displayName}
             className="truncate text-[11px] font-bold text-[#0a0a0a] sm:text-sm"
           >
-            {entry.name}
+            {displayName}
           </p>
           {isMe && (
             <span className="py-0.2 shrink-0 rounded-[4px] bg-[#0a0a0a] px-1 text-[8px] font-extrabold text-white uppercase">
@@ -279,6 +302,7 @@ function LeaderboardRow({
   allEntries: LeaderboardEntry[]
 }) {
   const hint = isMe ? getCompetitionHint(entry, allEntries, metricUnit) : null
+  const displayName = formatDisplayHandle(entry.username, entry.name)
 
   return (
     <li
@@ -304,7 +328,7 @@ function LeaderboardRow({
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-1.5">
           <p className="truncate text-xs font-bold text-[#0a0a0a] sm:text-sm">
-            {entry.name}
+            {displayName}
           </p>
           {isMe && (
             <span className="py-0.2 shrink-0 rounded-[4px] bg-[#0a0a0a] px-1.5 text-[9px] font-extrabold text-white uppercase">
@@ -595,7 +619,11 @@ export function LeaderboardPage() {
         : myRankData && typeof myRankData.value === "number"
           ? {
               user_id: myId,
-              name: myRankData.name || authState.name || "You",
+              username: myRankData.username || authState.username || undefined,
+              name: formatDisplayHandle(
+                myRankData.username || authState.username,
+                myRankData.name || authState.name || "You"
+              ),
               initials: myRankData.initials || "YOU",
               value: myRankData.value ?? 0,
               rank: typeof myRankData.rank === "number" ? myRankData.rank : 101,
@@ -849,7 +877,10 @@ export function LeaderboardPage() {
               </div>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-bold text-[#0a0a0a]">
-                  {myRankData?.name || authState.name || "Sekkha Member"}
+                  {formatDisplayHandle(
+                    myRankData?.username || authState.username,
+                    myRankData?.name || authState.name || "Sekkha Member"
+                  )}
                 </p>
                 <p className="text-xs text-[#6a6a6a]">
                   Your position in {roleGroupLabel}
@@ -1153,7 +1184,10 @@ export function LeaderboardPage() {
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">
                   <span className="truncate text-xs font-bold text-white sm:text-sm">
-                    {myRankData?.name || authState.name || "You"}
+                    {formatDisplayHandle(
+                      myRankData?.username || authState.username,
+                      myRankData?.name || authState.name || "You"
+                    )}
                   </span>
                   <span className="py-0.2 shrink-0 rounded-[4px] bg-[#e8b94a] px-1 text-[8px] font-extrabold text-[#0a0a0a] uppercase">
                     You

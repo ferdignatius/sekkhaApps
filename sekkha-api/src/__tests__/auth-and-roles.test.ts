@@ -177,10 +177,10 @@ describe("EventBus, UserNumber Overflow & Leaderboard Role Filtering", () => {
 
   it("filters and ranks leaderboard entries across English and Indonesian role aliases", () => {
     const sampleEntries = [
-      { user_id: "u1", name: "Admin One", initials: "AO", rank: 1, value: 300, attendances_count: 5, role: "admin" },
-      { user_id: "u2", name: "Pengurus Two", initials: "PT", rank: 2, value: 200, attendances_count: 4, role: "organizer" },
-      { user_id: "u3", name: "Aktivis Three", initials: "AT", rank: 3, value: 150, attendances_count: 3, role: "activist" },
-      { user_id: "u4", name: "Umat Four", initials: "UF", rank: 4, value: 100, attendances_count: 2, role: "member" },
+      { user_id: "u1", username: "admin_one", name: "Admin One", initials: "AO", rank: 1, value: 300, attendances_count: 5, role: "admin" },
+      { user_id: "u2", username: "pengurus_two", name: "Pengurus Two", initials: "PT", rank: 2, value: 200, attendances_count: 4, role: "organizer" },
+      { user_id: "u3", username: "aktivis_three", name: "Aktivis Three", initials: "AT", rank: 3, value: 150, attendances_count: 3, role: "activist" },
+      { user_id: "u4", username: "umat_four", name: "Umat Four", initials: "UF", rank: 4, value: 100, attendances_count: 2, role: "member" },
     ]
 
     const umatOnly = filterAndRankLeaderboardEntries(sampleEntries, "umat", 10, "u4")

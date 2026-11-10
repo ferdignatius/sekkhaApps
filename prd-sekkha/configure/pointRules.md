@@ -35,15 +35,18 @@ Poin tidak boleh diberikan dalam nominal ratusan ribu atau jutaan. Standar nilai
 
 | Kategori Kegiatan | Nilai Poin | Dikelola Di | Catatan Operasional di Vihara |
 |---|:---:|:---:|---|
-| **1. Kehadiran Kebaktian Standar** | **`50 Poin`** | `PointRule: attendance_rutin` / `EventType` | Baseline kehadiran mingguan jemaat. Nilai spesifik per jenis kegiatan dapat disesuaikan di **Master Data Event Types**. |
+| **1. Kehadiran Kebaktian / Acara** | **`Sesuai Event`** | **Master Data Event Types** | Dikelola 100% terpusat di Event Categories (`defaultPointReward`), dapat di-override per sesi event. |
 | **2. Petugas Pelayanan (*Service Duty Bonus*)** | **`+30 Poin`** | Master Data `BadgeActivity` | Bonus untuk MC, Pemimpin Puja/Chanting, Musician, Operator, dll. dikelola terpusat di **Badge Activities**. |
-| **3. Konsistensi Bulanan (Streak Appreciation)** | **`+50 Poin`** | `PointRule: streak_monthly_bonus` | Evaluasi otomatis via Gamification Streak Engine setiap 4 minggu kehadiran berturut-turut. |
+| **3. Konsistensi 4 Minggu (4-Week Attendance Streak Appreciation)** | **`+50 Poin`** | `PointRule: streak_monthly_bonus` | Evaluasi dinamis via Gamification Streak Engine setiap kali jemaat mencapai kelipatan 4 minggu berturut-turut (rolling 4-week window), berlandaskan tanggal event (`eventDate` anchor). |
 | **4. Penyambutan Akun Terklaim (*Claimed Welcome*)** | **`+50 Poin`** | `PointRule: first_attendance_bonus` | Bonus satu kali saat kehadiran perdana yang terverifikasi khusus bagi jemaat yang telah mengklaim akunnya (`isClaimed: true`). |
 
-### 2.2 Batas Maksimal Perolehan Harian (*Daily Point Cap*)
-- **Maksimal 150 Poin per Hari per Pengguna**:
-  Bahkan jika dalam satu hari ada beberapa sesi acara sekaligus di vihara, total perolehan poin seorang anggota dibatasi maksimal 150 poin per hari.
-- **Tujuan**: Mencegah lonjakan poin ekstrem dalam satu hari yang membuat jarak antar anggota menjadi tidak adil.
+### 2.2 Batas Maksimal Perolehan Harian (*Daily Point Cap*) & Pengecualian Milestone
+- **Maksimal 150 Poin per Hari per Pengguna (Khusus Poin Aktivitas Harian)**:
+  Bahkan jika dalam satu hari ada beberapa sesi acara sekaligus di vihara, akumulasi poin aktivitas harian jemaat (presensi event dan tugas pelayanan kebaktian / `badge_activities`) dibatasi maksimal 150 poin per hari.
+- **Tujuan**: Mencegah eksploitasi scan ganda dan lonjakan poin ekstrem dalam satu hari yang membuat kesenjangan antar jemaat menjadi tidak wajar.
+- **Pengecualian Milestone Sistem (*System Milestone Immunity*)**:
+  Poin apresiasi pencapaian sistem jangka panjang yaitu **`streak_monthly_bonus`** (konsistensi 4 minggu berturut-turut) dan **`first_attendance_bonus`** (bonus selamat datang satu kali) **dikecualikan dari batasan Daily Point Cap harian**.
+  - *Justifikasi*: Poin milestone bukanlah spam harian melainkan hasil akumulasi komitmen mingguan selama berminggu-minggu. Poin ini telah dilindungi secara deterministik oleh `referenceId` unik di database (`streak_{N}w:{userId}:{weekKey}`), sehingga tidak dapat diduplikasi dan tidak akan hangus meskipun jemaat menghadiri acara bernilai poin tinggi di hari yang sama.
 
 ### 2.3 Pencegahan Presensi Ganda (*Anti-Double Scan*)
 - Database menerapkan *unique constraint*: `@@unique([userId, eventId])` pada tabel `attendances` dan `point_transactions`.
@@ -64,9 +67,9 @@ Poin tidak boleh diberikan dalam nominal ratusan ribu atau jutaan. Standar nilai
 
 ### 3.1 Mengapa Point Rules Tidak Memiliki Fitur "Add New" & "Delete"?
 Setiap aturan poin di Sekkha terhubung erat dengan **logika trigger eksekusi khusus (*business logic trigger*)** di backend:
-1. `attendance_rutin` ➔ Dipicu saat scanning QR absensi dan penutupan event kebaktian (`events/services.ts`).
-2. `streak_monthly_bonus` ➔ Dipicu secara otomatis oleh background engine evaluasi streak per 4 minggu.
-3. `first_attendance_bonus` ➔ Dipicu satu kali seumur hidup khusus untuk pengguna yang sudah menyelesaikan klaim akun (`isClaimed: true`).
+1. `streak_monthly_bonus` ➔ Dipicu secara otomatis oleh background engine evaluasi streak per 4 minggu.
+2. `first_attendance_bonus` ➔ Dipicu satu kali seumur hidup khusus untuk pengguna yang sudah menyelesaikan klaim akun (`isClaimed: true`).
+*(Catatan: Poin presensi event dikelola langsung secara dinamis per kategori di Event Types tanpa melalui hardcoded point rule).*
 
 > [!IMPORTANT]
 > **Prinsip Arsitektur (Anti-Dead-Data)**: Menambahkan entitas aturan poin baru dari antarmuka UI tanpa kode pemroses (*engine handler*) hanya akan menghasilkan data mati (*dead data*) yang tidak pernah dieksekusi oleh sistem. Oleh karena itu, master data Point Rules bersifat **Fixed / Predefined via Database Seed (`seed.ts`)**.
@@ -75,6 +78,19 @@ Setiap aturan poin di Sekkha terhubung erat dengan **logika trigger eksekusi khu
 - Ingin membuat kegiatan ibadah / workshop / baksos baru yang berpoin? ➔ Buat di **[Master Data: Event Types](/configure/master/event-types)** dengan nilai `defaultPointReward`.
 - Ingin membuat tugas kepengurusan / relawan baru yang berpoin? ➔ Buat di **[Master Data: Badge Activities](/configure/master/badge-activities)** dengan nilai `bonusPoints`.
 - Ingin menyetel bobot poin atau mematikan aturan sistem? ➔ Lakukan di **Point Rules (Policy Tuning)**.
+
+### 3.3 Ketahanan & Spesifikasi Gamification Streak Engine (`streak_monthly_bonus`)
+Agar evaluasi streak adil, akurat, dan tahan terhadap kendala operasional vihara, Gamification Streak Engine memberlakukan 3 prinsip arsitektur:
+1. **Event Date Anchor (Anti-Hangus akibat Keterlambatan Admin)**:
+   Kalkulasi streak mingguan jemaat (`calculateWeeklyStreak`) dievaluasi relatif terhadap tanggal pelaksanaan acara yang sedang difinalisasi (`currentEvent.eventDate`), bukan waktu eksekusi server saat ini (`new Date()`). Dengan demikian, keterlambatan pengurus dalam menutup acara (misal baru sempat ditutup 1–2 minggu setelah acara selesai) tidak akan pernah mereset atau menghanguskan streak jemaat.
+2. **Catch-Up Milestone (Anti-Bonus Terlewat saat Batch Close)**:
+   Evaluasi kelipatan milestone menggunakan perbandingan interval:
+   $$\lfloor \text{newStreak} / 4 \rfloor > \lfloor \text{prevStreak} / 4 \rfloor$$
+   Jika penutupan beberapa acara secara serentak membuat streak jemaat melompat (misal dari 3 langsung ke 5), sistem tetap mendeteksi bahwa milestone minggu ke-4 telah tercapai dan secara otomatis mengkreditkan bonus 50 poin yang menjadi hak jemaat.
+3. **Rolling 4-Week Window (Non-Calendar-Bound)**:
+   Streak dihitung berbasis kelipatan 4 minggu kehadiran berturut-turut (minggu 4, 8, 12, dst.), bukan berdasarkan tanggal 1 s/d akhir bulan kalender. Jemaat yang hadir 2 minggu di akhir bulan A dan 2 minggu di awal bulan B tetap berhak mendapatkan bonus saat mencapai minggu ke-4.
+4. **Auto-Close Event Kadaluarsa (Fallback Background Safety)**:
+   Jika pengurus lupa mengklik *"Close & Finalize Event"* lebih dari 48 jam setelah acara berakhir, background cron job secara otomatis memicu finalisasi event untuk mengkreditkan poin dan memperbarui streak jemaat.
 
 ---
 
@@ -86,11 +102,11 @@ Tabel konfigurasi master data aturan poin:
 ```prisma
 model PointRule {
   id          String   @id @default(cuid())
-  code        String   @unique // e.g. "attendance_rutin", "streak_monthly_bonus", "first_attendance_bonus"
-  label       String   // e.g. "Weekly Regular Puja"
+  code        String   @unique // e.g. "streak_monthly_bonus", "first_attendance_bonus"
+  label       String   // e.g. "Monthly Attendance Consistency"
   points      Int      @default(50) // Dibatasi min 0, max 100
   description String?
-  category    String   @default("attendance") // "attendance" | "streak" | "general"
+  category    String   @default("streak") // "streak" | "general"
   isActive    Boolean  @default(true) @map("is_active")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
@@ -142,8 +158,8 @@ model PointTransaction {
 ## 6. UI Requirements (`/configure/rules/points`)
 
 - **Tampilan Terkelompok per Kategori Sistem**:
-  - Section 1: *Global Attendance Rules* (`attendance_rutin` - Baseline kehadiran)
-  - Section 2: *Streak & Member Engagement Rules* (`streak_monthly_bonus` & `first_attendance_bonus`)
+  - Section 1: *Core Gamification & Engagement Rules* (`streak_monthly_bonus` & `first_attendance_bonus`)
+  *(Catatan: Poin presensi event dikelola terpusat di menu Event Types).*
 - **Kartu Nilai Poin & Parameter Tuning**:
   - Menampilkan nama aturan, kode teknis semantik, besaran poin saat ini (e.g. `+50 Pts`), badge kategori, dan toggle status aktif.
   - Tombol **Edit Policy** untuk Admin guna membuka modal tuning dengan validasi rentang nilai angka `0` s/d `100`.
@@ -169,12 +185,13 @@ Base URL: `/api/configure`
 
 | ID | As a | I want to | So that |
 | --- | --- | --- | --- |
-| US-RULE-01 | Admin | View all predefined system Point Rules (`attendance_rutin`, `streak_monthly_bonus`, `first_attendance_bonus`) | I can understand current gamification policies and baseline rewards |
+| US-RULE-01 | Admin | View all predefined system Point Rules (`streak_monthly_bonus`, `first_attendance_bonus`) | I can understand current gamification policies and baseline rewards |
 | US-RULE-02 | Admin | Tune rule point values within the strict anti-inflation range [0, 100] | I can adjust incentive balance without devaluing points |
 | US-RULE-03 | Admin | Toggle rule activation status (`isActive`) | I can suspend or resume specific automatic point bonuses |
 | US-RULE-04 | Member | Earn points under the 150 points/day strict cap regardless of how many events occur in one day | The community economy remains fair and prevents point hoarding |
 | US-RULE-05 | Member | View my personal point transaction ledger with complete references | I have 100% transparency into how my points were earned and credited |
 | US-RULE-06 | Organizer | Inspect point rules in read-only mode without ability to modify values | I can explain point policies to youth members while preserving system integrity |
+| US-RULE-07 | Member | Earn my 4-week streak bonus reliably based on event dates regardless of daily point caps or delayed event closures | My long-term attendance commitment is appreciated fairly and never lost due to administrative delays |
 
 ---
 
@@ -188,9 +205,10 @@ Base URL: `/api/configure`
 | AC-RULE-04 | Admin toggles rule active state | Rule `isActive` flag updates; inactive rules do not award points upon event closure. |
 | AC-RULE-05 | User earns points across multiple events in a single day | Daily total is capped at 150 points; any excess amount is truncated or rejected. |
 | AC-RULE-06 | User scans QR code multiple times for the same event | Database unique constraint `[userId, eventId, type]` prevents duplicate credit (*Anti-Double Scan*). |
-| AC-RULE-07 | First attendance bonus evaluated | Bonus (+50 Pts) awarded only if user account is claimed (`isClaimed: true`) and it is their 1st attendance. |
-| AC-RULE-08 | Monthly streak bonus evaluated | Bonus (+50 Pts) awarded automatically every 4 consecutive weekly attendances. |
+| AC-RULE-07 | First attendance bonus evaluated | Bonus (+50 Pts) awarded only if user account is claimed (`isClaimed: true`) and it is their 1st attendance. Immune to daily cap. |
+| AC-RULE-08 | 4-Week streak bonus evaluated | Bonus (+50 Pts) awarded automatically whenever user reaches or passes multiples of 4 consecutive weekly attendances (rolling 4-week window). Evaluated against eventDate and immune to daily point cap. |
 | AC-RULE-09 | Non-admin user attempts to PATCH `/api/configure/point-rules/:id` | Server returns HTTP 403 Forbidden. |
+| AC-RULE-10 | Catch-up milestone evaluation | If batch event closures cause streak to jump past a milestone (e.g. from 3 to 5), the milestone reward (+50 Pts for 4 weeks) is still successfully credited without being skipped. |
 
 ---
 
@@ -198,7 +216,7 @@ Base URL: `/api/configure`
 
 | Test Case ID | Category | Scenario / Description | Preconditions | Test Steps | Expected Result | Type |
 | --- | --- | --- | --- | --- | --- | --- |
-| **TC-RULE-01** | Rule Listing | Retrieve all predefined system point rules | Logged in as `organizer` or `admin` | Send `GET /api/configure/point-rules`. | HTTP 200 envelope returning `attendance_rutin`, `streak_monthly_bonus`, and `first_attendance_bonus`. | Positive |
+| **TC-RULE-01** | Rule Listing | Retrieve all predefined system point rules | Logged in as `organizer` or `admin` | Send `GET /api/configure/point-rules`. | HTTP 200 envelope returning `streak_monthly_bonus` and `first_attendance_bonus`. | Positive |
 | **TC-RULE-02** | Rule Tuning | Successfully tune point rule value within [0, 100] | Logged in as `admin` | Send `PATCH /api/configure/point-rules/:id` with `{ "points": 60, "label": "Regular Service Baseline" }`. | HTTP 200 envelope; `points` updated to 60; subsequent event closures credit 60 points. | Positive |
 | **TC-RULE-03** | Boundary Validation | Submit point value > 100 (Anti-Inflation Guardrail) | Logged in as `admin` | Send `PATCH /api/configure/point-rules/:id` with `{ "points": 105 }`. | HTTP 400 Bad Request envelope with Zod validation error (`Points must be <= 100`). | Negative / Boundary |
 | **TC-RULE-04** | Boundary Validation | Submit negative point value (< 0) | Logged in as `admin` | Send `PATCH /api/configure/point-rules/:id` with `{ "points": -10 }`. | HTTP 400 Bad Request envelope (`Points must be >= 0`). | Negative / Boundary |
@@ -209,3 +227,5 @@ Base URL: `/api/configure`
 | **TC-RULE-09** | Fixed Policy Guard | Prevent creating arbitrary new point rules (Anti-Dead-Data) | Logged in as `admin` | Attempt `POST /api/configure/point-rules` with arbitrary rule data. | HTTP 404 Not Found or HTTP 405 Method Not Allowed (endpoint does not exist). | Security / Architectural |
 | **TC-RULE-10** | Fixed Policy Guard | Prevent deleting fixed system point rules | Logged in as `admin` | Attempt `DELETE /api/configure/point-rules/:id`. | HTTP 404 Not Found or HTTP 405 Method Not Allowed (deletion endpoint disabled). | Security / Architectural |
 | **TC-RULE-11** | RBAC Protection | Organizer attempts to tune point rules | Logged in as `organizer` | Send `PATCH /api/configure/point-rules/:id` with `{ "points": 50 }`. | HTTP 403 Forbidden envelope (`Access denied`). Points remain unchanged. | Security / RBAC |
+| **TC-RULE-12** | Streak Anchor Resilience | Event closed with administrative delay (> 7 days) computes streak based on eventDate | User attended weeks 41-44; event closed in week 46 | Organizer closes week 44 event. | Streak calculates relative to week 44; returns 4 weeks streak and awards 4-week streak bonus (+50 Pts). Streak does not drop to 0. | Positive / Algorithm |
+| **TC-RULE-13** | Milestone Daily Cap Immunity | 4-week streak bonus awarded when user has already reached 150 daily cap | User already earned 150 points today from high-value events | Finalize attendance achieving 4-week streak milestone. | Base attendance points capped at 0 remaining; system milestone bonus (+50 Pts) successfully credited in full with unique referenceId. Total points increase by 50. | Positive / Rule Engine |

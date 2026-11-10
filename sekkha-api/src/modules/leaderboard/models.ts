@@ -47,6 +47,7 @@ export const leaderboardModels = {
     return prisma.user.findMany({
       select: {
         id: true,
+        username: true,
         role: true,
         profile: {
           select: {

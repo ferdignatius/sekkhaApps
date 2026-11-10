@@ -287,7 +287,7 @@ Poin dihitung dan dikreditkan **satu kali saat status event diubah menjadi `clos
 | **Poin Kehadiran** | `event.point_reward` | Ditambahkan ke saldo `user_stats.points` saat status event menjadi `closed` |
 | **Potongan Terlambat** | `event.late_penalty_points` | Mengurangi perolehan poin kehadiran jika scan melewati `max_late_minutes` |
 | **Bonus Badge Activity** | `badge_bonus_points` | Poin tambahan jika jemaat bertugas pelayanan (MC, Puja Leader, Musician) |
-| **Streak Mingguan** | `user_stats.current_streak` | Dihitung otomatis per minggu kalender saat finalisasi event |
+| **Streak Mingguan & Milestone** | `user_stats.current_streak` | Dihitung otomatis per minggu kalender berbasis tanggal event (`eventDate` anchor). Setiap kelipatan 4 minggu berturut-turut memberikan bonus milestone `streak_monthly_bonus` (+50 Pts) yang kebal dari daily cap. |
 | **Mutasi Transaksi** | `PointTransaction` | Tercatat resmi dengan referensi `eventId` dan label kegiatan |
 
 > **Catatan Sistem**: Fitur badge reward dan level akun telah **dieliminasi total** dari Sekkha Apps.

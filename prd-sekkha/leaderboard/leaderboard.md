@@ -36,7 +36,7 @@ Leaderboard dapat diakses oleh seluruh jemaat dan pengurus yang telah login: `me
 | `organizer` | v | Sama dengan jemaat + tombol sinkronisasi ulang cache leaderboard. |
 | `admin` | v | Sama dengan organizer. |
 
-> **Perlindungan Privasi**: Informasi kontak sensitif jemaat (nomor telepon, alamat, email) **tidak pernah dimunculkan** di papan peringkat publik. Hanya menampilkan: Nama, Nomor Anggota (`userNumber`), Almamater Sekolah, dan Poin Musim.
+> **Perlindungan Privasi**: Informasi kontak sensitif jemaat (nomor telepon, alamat, email) serta **nama panjang jemaat tidak dimunculkan** di papan peringkat publik. Demi privasi dan budaya gamifikasi komunitas, leaderboard secara eksklusif menggunakan **Username** (contoh: `@siddhartha`, `@ananda`), Nomor Anggota (`userNumber`), Almamater Sekolah, dan Poin Musim.
 
 ---
 
@@ -54,21 +54,21 @@ Halaman `/leaderboard` memiliki tata letak responsif:
 
 ### 3.2. Podium Visual Top 3
 * Tiga kartu Clay terangkat (*Clay Elevation*) di bagian atas:
-  * **Juara 1 (Gold)**: Kartu tengah berukuran paling tinggi dengan aksen emas (`#e8b94a`), avatar inisial besar, mahkota juara, nama jemaat, sekolah, dan total poin musim.
-  * **Juara 2 (Silver)**: Kartu sebelah kiri dengan aksen perak halus.
-  * **Juara 3 (Bronze)**: Kartu sebelah kanan dengan aksen perunggu hangat.
+  * **Juara 1 (Gold)**: Kartu tengah berukuran paling tinggi dengan aksen emas (`#e8b94a`), avatar inisial besar, mahkota juara, **username jemaat** (misal: `@siddhartha_tan`), sekolah, dan total poin musim. (Tidak menampilkan nama panjang).
+  * **Juara 2 (Silver)**: Kartu sebelah kiri dengan aksen perak halus dan username jemaat (`@ananda_surya`).
+  * **Juara 3 (Bronze)**: Kartu sebelah kanan dengan aksen perunggu hangat dan username jemaat (`@sariputta_h`).
 
 ### 3.3. Daftar Peringkat Anggota (Ranks 4-100)
 * Menampilkan daftar baris kartu jemaat berurutan:
   * Nomor Peringkat (#4, #5, #6...).
   * Avatar inisial dengan badge role (`member` / `activist`).
-  * Nama lengkap dan almamater sekolah.
+  * **Username jemaat** (misal: `@moggallana_deni`, bukan nama panjang) dan almamater sekolah.
   * Badge total poin yang dicapai di musim tersebut.
 
 ### 3.4. Kartu Posisi Diri Sendiri (Floating Sticky Bottom Bar)
 * Bar mengambang di bagian bawah layar yang menunjukkan posisi jemaat yang sedang login:
-  * *"Your Ranking: #14 • Budi Santoso • 380 Pts"*
-  * Sisa poin untuk mencapai peringkat di atasnya (*"20 Pts to reach #13"*).
+  * *"Your Ranking: #14 • @budi_santoso • 380 Pts"*
+  * Sisa poin untuk mencapai peringkat di atasnya (*"20 Pts to reach @peringkat_atas"*).
 
 ---
 
@@ -100,6 +100,7 @@ Mengambil data peringkat leaderboard untuk periode tertentu.
         "rank": 8,
         "user_id": "cuid_my_user",
         "user_number": 2026102401,
+        "username": "budi_santoso",
         "name": "Budi Santoso",
         "points": 420
       },
@@ -108,6 +109,7 @@ Mengambil data peringkat leaderboard untuk periode tertentu.
           "rank": 1,
           "user_id": "cuid_1",
           "user_number": 2026010101,
+          "username": "siddhartha_tan",
           "name": "Siddhartha Tan",
           "school": "SMA Tri Ratna",
           "points": 750
@@ -116,6 +118,7 @@ Mengambil data peringkat leaderboard untuk periode tertentu.
           "rank": 2,
           "user_id": "cuid_2",
           "user_number": 2026010202,
+          "username": "ananda_surya",
           "name": "Ananda Surya",
           "school": "Universitas Indonesia",
           "points": 680
@@ -124,6 +127,7 @@ Mengambil data peringkat leaderboard untuk periode tertentu.
           "rank": 3,
           "user_id": "cuid_3",
           "user_number": 2026010303,
+          "username": "sariputta_h",
           "name": "Sariputta Hendra",
           "school": "SMK Buddhis",
           "points": 610
@@ -134,6 +138,7 @@ Mengambil data peringkat leaderboard untuk periode tertentu.
           "rank": 4,
           "user_id": "cuid_4",
           "user_number": 2026020101,
+          "username": "moggallana_deni",
           "name": "Moggallana Deni",
           "school": "SMA Negeri 1",
           "points": 540
@@ -181,10 +186,10 @@ Mengambil data peringkat leaderboard untuk periode tertentu.
 | ID | Scenario | Expected result |
 | --- | --- | --- |
 | AC-LEAD-01 | View seasonal vs lifetime tabs | UI offers dynamic tabs: Custom season (if active), Semester, Annual, and Lifetime. Changing tabs recalibrates metrics starting from 0 for seasons without affecting lifetime history. |
-| AC-LEAD-02 | Top 3 podium display | Rank #1 (Gold), Rank #2 (Silver), Rank #3 (Bronze) render elevated cards with distinct styling, full names, school, and points. |
-| AC-LEAD-03 | Floating self-rank card | Authenticated user sees fixed bottom card showing personal rank, current points, and distance in points to the next rank. |
+| AC-LEAD-02 | Top 3 podium display | Rank #1 (Gold), Rank #2 (Silver), Rank #3 (Bronze) render elevated cards with distinct styling, usernames (@username), school, and points without exposing full names. |
+| AC-LEAD-03 | Floating self-rank card | Authenticated user sees fixed bottom card showing personal rank, username, current points, and distance in points to the next rank. |
 | AC-LEAD-04 | Tie-breaker resolution | If two or more users have identical points, tie-breaking evaluates: 1) higher current streak, 2) higher attendance count in period, 3) earlier latest point transaction. If still tied, sort by ascending userNumber. |
-| AC-LEAD-05 | Privacy & PII protection | Public leaderboard endpoint never returns phone number, email, class grade, or date of birth. If user enables anonymity toggle, public display masks name to "Member #userNumber" or custom alias while keeping score. |
+| AC-LEAD-05 | Privacy & PII protection | Public leaderboard endpoint never returns phone number, email, class grade, or date of birth. Leaderboard strictly uses usernames (@username) instead of full real names to protect privacy. If user enables anonymity toggle, public display masks name to "Member #userNumber" or custom alias while keeping score. |
 | AC-LEAD-06 | Collective season progress | Header displays active season attendance progress bar `total_attendances / target_attendance` with percentage and days remaining. |
 | AC-LEAD-07 | Cache invalidation on event close | When an event status transitions to `closed`, active leaderboard Redis/memory cache is invalidated and fresh ranks compute on next request. |
 
@@ -196,10 +201,10 @@ Mengambil data peringkat leaderboard untuk periode tertentu.
 | --- | --- | --- | --- | --- | --- | --- |
 | **TC-LEAD-01** | Navigation & Tabs | Switch between dynamic season tabs (Custom Season, Semester, Annual, Lifetime) | Active custom season (e.g. Vassa 2026) exists in DB alongside default semester/annual periods | 1. Open `/leaderboard`.<br>2. Verify tab order: `[Vassa 2026]` `[Semester]` `[Annual]` `[Lifetime]`.<br>3. Click each tab and observe data request. | `GET /api/leaderboard?period=<tab>` succeeds with HTTP 200. Tab 1 computes points inside custom date range. Lifetime reflects all-time aggregated points. | Positive |
 | **TC-LEAD-02** | Reset Zero | Seasonal reset verification upon new season start | Transition into new season where user has 0 attendances in range | 1. Query leaderboard for new active season.<br>2. Check user rank and points. | User displays 0 seasonal points on seasonal tab while all-time lifetime points in `UserStats` remain intact. | Positive / Functional |
-| **TC-LEAD-03** | Visual Podium | Render Top 3 podium with gold, silver, bronze cards | Leaderboard returns >= 3 ranked users | 1. Open `/leaderboard`.<br>2. Inspect DOM for Top 3 Clay cards. | Rank 1 displays gold crown accent and highest elevation. Rank 2 displays silver card on left. Rank 3 displays bronze card on right. Ranks 4+ render in standard list below. | UI / Positive |
-| **TC-LEAD-04** | Floating Rank Card | Display logged-in user position in sticky bottom bar | User is logged in as `member` with rank #14 (380 Pts) and #13 has 400 Pts | 1. Scroll down past row 20 on `/leaderboard`.<br>2. Observe bottom sticky bar. | Sticky bar remains visible, displaying: *"Your Ranking: #14 • 380 Pts"* and *"20 Pts to reach #13"*. | UI / Functional |
+| **TC-LEAD-03** | Visual Podium | Render Top 3 podium with gold, silver, bronze cards | Leaderboard returns >= 3 ranked users | 1. Open `/leaderboard`.<br>2. Inspect DOM for Top 3 Clay cards. | Rank 1 displays gold crown accent, username (@username), and highest elevation. Rank 2 displays silver card on left with @username. Rank 3 displays bronze card on right with @username. Real long names are never shown. Ranks 4+ render in standard list below with @username. | UI / Positive |
+| **TC-LEAD-04** | Floating Rank Card | Display logged-in user position in sticky bottom bar | User is logged in as `member` with rank #14 (380 Pts) and #13 has 400 Pts | 1. Scroll down past row 20 on `/leaderboard`.<br>2. Observe bottom sticky bar. | Sticky bar remains visible, displaying: *"Your Ranking: #14 • @username • 380 Pts"* and *"20 Pts to reach @peringkat_atas"*. | UI / Functional |
 | **TC-LEAD-05** | Tie-Breaker | Deterministic ranking when multiple users share identical point totals | User A and User B both have 500 points in active season. User A has streak 4, User B has streak 2 | 1. Trigger leaderboard calculation for period.<br>2. Compare ranks of User A and User B. | User A is ranked ahead of User B based on secondary metric (streak). If streaks match, evaluate total attendances. If still tied, sort by earlier timestamp/userNumber. No indeterminate random shifts. | Positive / Algorithm |
-| **TC-LEAD-06** | Privacy Protection | PII exclusion and anonymity toggle validation | User has sensitive PII (encrypted phone, email, birth date) in `UserProfile` | 1. Call `GET /api/leaderboard`.<br>2. Inspect JSON response fields for all entries.<br>3. Inspect user with privacy/anonymity enabled. | Response never leaks phone, email, or raw ciphertext. Anonymized users display masked name `Member #...` or alias; public score remains verifiable. | Security / Privacy |
+| **TC-LEAD-06** | Privacy Protection | PII exclusion and username privacy validation | User has sensitive PII (encrypted phone, email, birth date, full name) in `UserProfile` | 1. Call `GET /api/leaderboard`.<br>2. Inspect JSON response fields for all entries.<br>3. Inspect UI rendering. | Response includes username. UI strictly renders @username rather than full real name. Endpoint never leaks phone, email, or raw ciphertext. Anonymized users display masked name `Member #...` or alias; public score remains verifiable. | Security / Privacy |
 | **TC-LEAD-07** | Season Target | Display collective season attendance progress bar | Season has `targetAttendance: 500`, community attended 380 times | 1. Open `/leaderboard`.<br>2. Inspect season header progress bar. | Displays `"380 / 500 Attendances (76%)"` and remaining days countdown. If target reached (>= 100%), visual milestone unlocked banner is presented. | Positive / Functional |
 | **TC-LEAD-08** | Cache Performance | Sub-50ms response from Redis/memory cache on repeated hits | Leaderboard computed and cached | 1. Send first request `GET /api/leaderboard`.<br>2. Send 10 concurrent requests within TTL (60s). | First request caches snapshot. Subsequent requests resolve directly from Redis/memory in $< 50\text{ ms}$ without running full table aggregations. | Performance |
 | **TC-LEAD-09** | Cache Invalidation | Auto invalidation when event is finalized and closed | Active event with attendances is marked `closed` | 1. Organizer closes event (`POST /api/events/:id/close`).<br>2. EventBus emits `EVENT_CLOSED`.<br>3. Query `GET /api/leaderboard`. | Cache key `leaderboard:*` is purged. Query re-aggregates fresh points earned from closed event. | Integration / Positive |

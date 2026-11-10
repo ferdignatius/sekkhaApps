@@ -14,6 +14,7 @@ export interface AuthState {
   userId: string | null
   role: UserRole | null
   name: string | null
+  username?: string | null
   email: string | null
   onboardingCompleted: boolean | null
 }
@@ -24,6 +25,7 @@ export const initialAuthState: AuthState = {
   userId: null,
   role: null,
   name: null,
+  username: null,
   email: null,
   onboardingCompleted: null,
 }
@@ -39,6 +41,7 @@ export type AuthAction =
         userId: string | null
         role: UserRole | null
         name?: string | null
+        username?: string | null
         email?: string | null
         onboardingCompleted?: boolean
       }
@@ -48,6 +51,7 @@ export type AuthAction =
       payload: Partial<{
         userId: string | null
         name: string | null
+        username?: string | null
         role: UserRole
         email: string | null
         onboardingCompleted: boolean | null
@@ -73,6 +77,7 @@ export function authReducer(state: AuthState, action: AuthAction): AuthState {
         userId: action.payload.userId,
         role: action.payload.role,
         name: action.payload.name ?? state.name,
+        username: action.payload.username ?? state.username,
         email: action.payload.email ?? state.email,
         onboardingCompleted:
           action.payload.onboardingCompleted ?? state.onboardingCompleted,
@@ -87,6 +92,10 @@ export function authReducer(state: AuthState, action: AuthAction): AuthState {
             : state.userId,
         name:
           action.payload.name !== undefined ? action.payload.name : state.name,
+        username:
+          action.payload.username !== undefined
+            ? action.payload.username
+            : state.username,
         role:
           action.payload.role !== undefined ? action.payload.role : state.role,
         email:
@@ -106,6 +115,7 @@ export function authReducer(state: AuthState, action: AuthAction): AuthState {
         userId: null,
         role: null,
         name: null,
+        username: null,
         email: null,
         onboardingCompleted: null,
       }
@@ -117,6 +127,7 @@ export function authReducer(state: AuthState, action: AuthAction): AuthState {
         userId: null,
         role: null,
         name: null,
+        username: null,
         email: null,
         onboardingCompleted: null,
       }

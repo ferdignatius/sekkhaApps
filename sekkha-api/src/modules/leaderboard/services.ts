@@ -4,6 +4,7 @@ import { CacheKeys } from "../../lib/cache"
 
 export interface LeaderboardUserEntry {
   user_id: string
+  username: string
   name: string
   initials: string
   rank: number
@@ -237,13 +238,18 @@ async function computeAndCacheLeaderboardInternal(periodTarget?: LeaderboardPeri
       const isAllTimeFallback = (activePeriod.key as string) === "all_time"
       const list: LeaderboardUserEntry[] = users
         .map((u) => {
-          const safeName = u.profile?.name || "Anggota Sekkha"
-          const initials =
-            safeName
-              .split(" ")
-              .slice(0, 2)
-              .map((w) => (w && w[0] ? w[0].toUpperCase() : ""))
-              .join("") || "AS"
+          const safeUsername =
+            u.username ||
+            u.profile?.name?.split(" ")[0]?.toLowerCase() ||
+            "member"
+          const safeName = u.profile?.name || safeUsername
+          const initials = u.username
+            ? u.username.replace(/^@/, "").slice(0, 2).toUpperCase()
+            : safeName
+                .split(" ")
+                .slice(0, 2)
+                .map((w) => (w && w[0] ? w[0].toUpperCase() : ""))
+                .join("") || "AS"
           const attendanceCount =
             isAllTimeFallback && attendanceByUser.size === 0
               ? (u.stats?.totalAttendances ?? 0)
@@ -263,6 +269,7 @@ async function computeAndCacheLeaderboardInternal(periodTarget?: LeaderboardPeri
 
           return {
             user_id: u.id,
+            username: safeUsername,
             name: safeName,
             initials,
             rank: 0,
@@ -336,7 +343,7 @@ export async function getLeaderboardSnapshot(
         const raw = await redis.get(cacheKey)
         if (raw) {
           const parsed = JSON.parse(raw) as LeaderboardSnapshot
-          const isStale = parsed.entries?.some((e) => !e.role)
+          const isStale = parsed.entries?.some((e) => !e.role || !e.username)
           if (!isStale) {
             // Always ensure available_periods are updated to real-time status
             parsed.available_periods = periods
@@ -351,7 +358,7 @@ export async function getLeaderboardSnapshot(
 
     const cachedMem = memoryLeaderboardCache.get(cacheKey)
     if (cachedMem) {
-      const isStale = cachedMem.entries?.some((e) => !e.role)
+      const isStale = cachedMem.entries?.some((e) => !e.role || !e.username)
       if (!isStale) {
         cachedMem.available_periods = periods
         cachedMem.active_period = targetPeriod
@@ -449,6 +456,7 @@ export function filterAndRankLeaderboardEntries(
           rank: scopedEntries[myIdx].rank ?? myIdx + 1,
           value: scopedEntries[myIdx].value ?? 0,
           is_in_top: myIdx < 20,
+          username: scopedEntries[myIdx].username,
           name: scopedEntries[myIdx].name,
           initials: scopedEntries[myIdx].initials,
         }
@@ -457,6 +465,7 @@ export function filterAndRankLeaderboardEntries(
             rank: scopedEntries.length + 1,
             value: 0,
             is_in_top: false,
+            username: "you",
             name: "You",
             initials: "YO",
           }

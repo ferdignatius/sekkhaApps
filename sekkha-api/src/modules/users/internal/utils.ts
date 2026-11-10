@@ -8,7 +8,10 @@ export function toWeekKey(date: Date): string {
   return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, "0")}`
 }
 
-export function calculateWeeklyStreak(attendances: { scannedAt: Date | string }[]) {
+export function calculateWeeklyStreak(
+  attendances: { scannedAt: Date | string }[],
+  referenceDate: Date = new Date()
+) {
   if (attendances.length === 0) {
     return { current_streak: 0, longest_streak: 0 }
   }
@@ -18,11 +21,10 @@ export function calculateWeeklyStreak(attendances: { scannedAt: Date | string }[
     attendedWeeks.add(toWeekKey(new Date(a.scannedAt)))
   }
 
-  // 1. Calculate current consecutive weekly streak
-  const now = new Date()
+  // 1. Calculate current consecutive weekly streak relative to referenceDate
   let currentStreak = 0
 
-  let checkDate = new Date(now)
+  let checkDate = new Date(referenceDate)
   let currentWeekKey = toWeekKey(checkDate)
 
   if (!attendedWeeks.has(currentWeekKey)) {

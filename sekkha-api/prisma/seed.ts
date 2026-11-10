@@ -150,22 +150,18 @@ async function main() {
     },
   })
 
-  // ── 4. Master Data: Point Rules ─────────────────────────────────────────────
+  // ── 4. Master Data: Point Rules (Core Automated Gamification Engine) ───────
   console.log("📜 Seeding Master Point Rules...")
+  // Clean up legacy attendance_rutin rule so event points remain 100% centralized under Event Types
+  await prisma.pointRule.deleteMany({ where: { code: "attendance_rutin" } }).catch(() => {})
+
   const pointRulesData = [
     {
-      code: "attendance_rutin",
-      label: "Weekly Regular Puja",
-      points: 50,
-      category: "attendance",
-      description: "Baseline points for attending standard weekly service, including communal Paritta and Chanting rituals.",
-    },
-    {
       code: "streak_monthly_bonus",
-      label: "Monthly Attendance Consistency",
+      label: "4-Week Attendance Streak",
       points: 50,
       category: "streak",
-      description: "Appreciation bonus for maintaining active attendance for 4 consecutive weeks in a month.",
+      description: "Appreciation bonus for maintaining active attendance for 4 consecutive weeks.",
     },
     {
       code: "first_attendance_bonus",

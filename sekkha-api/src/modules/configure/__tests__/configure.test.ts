@@ -190,7 +190,7 @@ describe("Configure Services & Business Policies", () => {
 
   it("enforces Point Rule point value bounds in updatePointRule", async () => {
     try {
-      await configureServices.updatePointRule("attendance_rutin", { points: 120 })
+      await configureServices.updatePointRule("streak_monthly_bonus", { points: 120 })
       expect(true).toBe(false)
     } catch (err: any) {
       expect(err.statusCode || err.status).toBe(400)

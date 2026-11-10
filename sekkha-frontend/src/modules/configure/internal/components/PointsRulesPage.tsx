@@ -29,21 +29,12 @@ interface RuleSectionConfig {
 
 const SYSTEM_RULE_SECTIONS: RuleSectionConfig[] = [
   {
-    id: "attendance_section",
-    title: "1. Global Attendance Rules",
-    subtitle:
-      "Baseline points awarded to members when scanning attendance at standard weekly services.",
-    icon: <CalendarDaysIcon className="size-5 text-[#0a0a0a]" />,
-    badge: "Attendance",
-    ruleCodes: ["attendance_rutin"],
-  },
-  {
     id: "engagement_section",
-    title: "2. Streak & Member Engagement Rules",
+    title: "1. Core Gamification & Engagement Rules",
     subtitle:
-      "Appreciation points for 4-week attendance consistency and verified claimed members' first attendance.",
+      "Automated engine incentives for 4-week attendance consistency and verified claimed members' first attendance.",
     icon: <FlameIcon className="size-5 text-[#e8b94a]" />,
-    badge: "Engagement",
+    badge: "Engine Rules",
     ruleCodes: ["streak_monthly_bonus", "first_attendance_bonus"],
   },
 ]
@@ -327,13 +318,13 @@ export function PointsRulesPage() {
                 <SparklesIcon className="mt-0.5 size-5 shrink-0 text-[#e8b94a]" />
                 <div className="space-y-1.5">
                   <h3 className="text-xs font-bold text-[#0a0a0a] sm:text-sm">
-                    Looking to reward new activities or youth assignments?
+                    Looking to configure attendance points or service duties?
                   </h3>
                   <p className="text-xs leading-relaxed text-[#6a6a6a]">
-                    Point Rules above govern automatic core platform policies
-                    (like baseline attendance, 4-week consistency streak, and
-                    verified claimed members). To introduce custom point rewards
-                    for your temple:
+                    Point Rules above exclusively govern automated background
+                    gamification (4-week consistency streak and verified claimed
+                    members' welcome bonus). To set or adjust attendance points
+                    and volunteer duties for your temple:
                   </p>
                   <div className="flex flex-wrap gap-2 pt-1 text-xs">
                     <Link
@@ -341,7 +332,7 @@ export function PointsRulesPage() {
                       className="inline-flex items-center gap-1 rounded-[10px] border border-[#e5e5e5] bg-[#fffaf0] px-3 py-1.5 font-bold text-[#0a0a0a] shadow-xs hover:bg-[#f0ebd8]"
                     >
                       <CalendarDaysIcon className="size-3.5 text-[#0a0a0a]" />
-                      <span>Configure Event Types</span>
+                      <span>Configure Event Types (Attendance Points)</span>
                     </Link>
                     <Link
                       to="/configure/master/badge-activity"

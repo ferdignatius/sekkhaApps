@@ -12,6 +12,7 @@ export interface Season {
 export interface LeaderboardEntry {
   rank: number
   user_id: string
+  username?: string
   name: string
   initials: string
   photo_url?: string | null
@@ -32,6 +33,9 @@ export interface MyRank {
   value: number
   label: string
   is_in_top: boolean
+  username?: string
+  name?: string
+  initials?: string
 }
 
 export interface LeaderboardFilter {

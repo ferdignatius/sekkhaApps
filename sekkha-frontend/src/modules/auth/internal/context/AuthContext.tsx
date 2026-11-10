@@ -49,6 +49,7 @@ export interface AuthContextValue {
     user: Partial<{
       userId: string | null
       name: string | null
+      username: string | null
       role: UserRole
       email: string | null
       onboardingCompleted: boolean | null
@@ -106,6 +107,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
             role: (verifiedUser?.role as UserRole) || null,
             name: verifiedUser?.name ?? null,
             email: verifiedUser?.email ?? null,
+            ...(verifiedUser?.username !== undefined && {
+              username: verifiedUser.username,
+            }),
             ...(onboardingCompleted !== undefined && {
               onboardingCompleted: Boolean(onboardingCompleted),
             }),
@@ -197,6 +201,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const res = await api.get<{
         id?: string
         name?: string
+        username?: string
         role?: UserRole
         email?: string
         onboarding_completed?: boolean
@@ -210,6 +215,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           payload: {
             userId: res.id ?? null,
             name: res.name ?? null,
+            username: res.username ?? null,
             role: (res.role as UserRole) || undefined,
             email: res.email ?? null,
             ...(onboardingCompleted !== undefined && {

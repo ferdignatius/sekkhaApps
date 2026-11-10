@@ -851,6 +851,7 @@ Mengambil data papan peringkat komunitas berdasarkan metrik tertentu.
       {
         "rank": 1,
         "user_id": "usr_abc123",
+        "username": "budi_santoso",
         "name": "Budi Santoso",
         "initials": "BS",
         "user_number": 2026102301,
@@ -859,6 +860,7 @@ Mengambil data papan peringkat komunitas berdasarkan metrik tertentu.
       {
         "rank": 2,
         "user_id": "usr_def456",
+        "username": "dewi_lestari",
         "name": "Dewi Lestari",
         "initials": "DL",
         "user_number": 2026102302,
@@ -869,6 +871,7 @@ Mengambil data papan peringkat komunitas berdasarkan metrik tertentu.
       "rank": 1,
       "value": 450,
       "is_in_top": true,
+      "username": "budi_santoso",
       "name": "Budi Santoso",
       "initials": "BS"
     },
@@ -1425,7 +1428,7 @@ Mengaktifkan season bersangkutan dan otomatis menonaktifkan season aktif lainnya
 
 ### 9.5. Aturan Poin Master (`/api/configure/point-rules`)
 
-Mengatur alokasi poin reward dinamis untuk setiap kategori aktivitas.
+Mengatur alokasi poin reward dinamis untuk aturan gamifikasi otomatis sistem (streak konsistensi 4 minggu berturut-turut dan bonus sambutan akun terklaim). Poin presensi event dikelola langsung di Event Types (`/api/configure/event-types`).
 
 #### `GET /api/configure/point-rules`
 - **Response (200 OK)**:
@@ -1433,38 +1436,20 @@ Mengatur alokasi poin reward dinamis untuk setiap kategori aktivitas.
   [
     {
       "id": "rul_01",
-      "code": "attendance_rutin",
-      "label": "Poin Presensi Kegiatan Rutin",
+      "code": "streak_monthly_bonus",
+      "label": "4-Week Attendance Streak",
       "points": 50,
-      "category": "attendance",
-      "description": "Poin standar yang didapatkan umat saat melakukan presensi pada kebaktian rutin mingguan.",
+      "category": "streak",
+      "description": "Appreciation bonus for maintaining active attendance for 4 consecutive weeks.",
       "is_active": true
     },
     {
       "id": "rul_02",
-      "code": "attendance_special",
-      "label": "Poin Presensi Kegiatan Khusus",
-      "points": 100,
-      "category": "attendance",
-      "description": "Poin untuk kehadiran pada acara spesial seperti perayaan hari besar atau retreat.",
-      "is_active": true
-    },
-    {
-      "id": "rul_03",
-      "code": "streak_weekly_bonus",
-      "label": "Bonus Konsistensi (Streak Mingguan)",
-      "points": 30,
-      "category": "streak",
-      "description": "Bonus poin tambahan yang diberikan saat umat mempertahankan kehadiran berturut-turut tanpa terputus.",
-      "is_active": true
-    },
-    {
-      "id": "rul_04",
       "code": "first_attendance_bonus",
-      "label": "Bonus Presensi Pertama Kali",
-      "points": 25,
+      "label": "First Visit Welcome (Claimed Members)",
+      "points": 50,
       "category": "general",
-      "description": "Poin sambutan perdana bagi umat baru yang baru pertama kali mencatatkan presensi di vihara.",
+      "description": "One-time welcome reward granted upon first verified attendance exclusively for claimed member accounts (isClaimed: true).",
       "is_active": true
     }
   ]

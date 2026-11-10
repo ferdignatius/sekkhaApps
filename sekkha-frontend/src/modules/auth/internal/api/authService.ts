@@ -31,6 +31,7 @@ interface AuthSuccessResponse {
   user: {
     id: string
     email: string
+    username?: string
     name: string
     role: string
     onboarding_completed?: boolean
@@ -155,6 +156,9 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
             "member",
           name: data.user?.name ?? null,
           email: data.user?.email ?? null,
+          ...(data.user?.username !== undefined && {
+            username: data.user.username,
+          }),
           ...(onboardingCompleted !== undefined && {
             onboardingCompleted,
           }),
@@ -273,6 +277,9 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
             "member",
           name: data.user?.name ?? null,
           email: data.user?.email ?? null,
+          ...(data.user?.username !== undefined && {
+            username: data.user.username,
+          }),
         },
       })
       return
@@ -383,6 +390,9 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
             "member",
           name: data.user?.name ?? null,
           email: data.user?.email ?? null,
+          ...(data.user?.username !== undefined && {
+            username: data.user.username,
+          }),
         },
       })
       return

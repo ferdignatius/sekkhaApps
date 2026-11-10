@@ -459,10 +459,9 @@ export const eventServices = {
           if (pendingAttendees.length > 0) {
             const attendeeUserIds = Array.from(new Set(pendingAttendees.map((a) => a.userId)))
 
-            // Fetch active PointRule definitions
+            // Fetch active PointRule definitions (first_attendance_bonus & streak_monthly_bonus)
             const activeRules = await tx.pointRule.findMany({ where: { isActive: true } })
             const ruleByCode = new Map(activeRules.map((r) => [r.code, r]))
-            const attendanceRule = ruleByCode.get("attendance_rutin")
             const firstAttendanceRule = ruleByCode.get("first_attendance_bonus")
             const streakMonthlyRule = ruleByCode.get("streak_monthly_bonus")
 
@@ -492,7 +491,7 @@ export const eventServices = {
               select: {
                 id: true,
                 isClaimed: true,
-                stats: { select: { totalAttendances: true } },
+                stats: { select: { totalAttendances: true, currentStreak: true } },
               },
             })
             const userMetaById = new Map(attendeeUsers.map((u) => [u.id, u]))
@@ -530,7 +529,7 @@ export const eventServices = {
 
               pointTxData.push({
                 userId: att.userId,
-                ruleId: attendanceRule?.id ?? null,
+                ruleId: null, // Event attendance points are driven directly by Event & EventType
                 amount: clampedAmount,
                 type: "attendance" as const,
                 description: `Presensi Event: ${currentEvent.title}`,
@@ -544,7 +543,7 @@ export const eventServices = {
                 if (att.scannedAt > current.scannedAt) current.scannedAt = att.scannedAt
               } else {
                 const userAtts = attendancesByUser.get(att.userId) ?? [{ scannedAt: att.scannedAt }]
-                const { current_streak } = calculateWeeklyStreak(userAtts)
+                const { current_streak } = calculateWeeklyStreak(userAtts, currentEvent.eventDate)
                 statsByUser.set(att.userId, {
                   points: clampedAmount,
                   count: 1,
@@ -558,8 +557,23 @@ export const eventServices = {
             const bonusCandidateRefs: string[] = []
             for (const [userId, stats] of statsByUser) {
               bonusCandidateRefs.push(`first_attendance:${userId}`)
-              if (stats.currentStreak > 0 && stats.currentStreak % 4 === 0) {
-                bonusCandidateRefs.push(`streak_${stats.currentStreak}w:${userId}:${toWeekKey(stats.scannedAt)}`)
+              const userMeta = userMetaById.get(userId)
+              const previousStreak = userMeta?.stats?.currentStreak ?? 0
+              const newStreak = stats.currentStreak
+              const prevMilestone = Math.floor(previousStreak / 4)
+              const newMilestone = Math.floor(newStreak / 4)
+
+              if (newMilestone > prevMilestone) {
+                for (let m = prevMilestone + 1; m <= newMilestone; m++) {
+                  const milestoneStreak = m * 4
+                  bonusCandidateRefs.push(
+                    `streak_${milestoneStreak}w:${userId}:${toWeekKey(currentEvent.eventDate)}`
+                  )
+                }
+              } else if (newStreak > 0 && newStreak % 4 === 0) {
+                bonusCandidateRefs.push(
+                  `streak_${newStreak}w:${userId}:${toWeekKey(currentEvent.eventDate)}`
+                )
               }
             }
 
@@ -575,7 +589,7 @@ export const eventServices = {
             for (const [userId, stats] of statsByUser) {
               const userMeta = userMetaById.get(userId)
 
-              // 1) first_attendance_bonus
+              // 1) first_attendance_bonus (System milestone, immune to daily point cap per PRD 2.2)
               if (
                 firstAttendanceRule &&
                 firstAttendanceRule.points > 0 &&
@@ -584,51 +598,50 @@ export const eventServices = {
               ) {
                 const firstRef = `first_attendance:${userId}`
                 if (!existingBonusRefSet.has(firstRef)) {
-                  const alreadyEarned = earnedTodayByUser.get(userId) ?? 0
-                  const bonusAmount = Math.min(
-                    firstAttendanceRule.points,
-                    Math.max(0, DAILY_POINT_CAP - alreadyEarned)
-                  )
-                  if (bonusAmount > 0) {
-                    earnedTodayByUser.set(userId, alreadyEarned + bonusAmount)
-                    stats.points += bonusAmount
-                    pointTxData.push({
-                      userId,
-                      ruleId: firstAttendanceRule.id,
-                      amount: bonusAmount,
-                      type: "system" as const,
-                      description: `${firstAttendanceRule.label}: ${currentEvent.title}`,
-                      referenceId: firstRef,
-                    })
-                  }
+                  const bonusAmount = firstAttendanceRule.points
+                  stats.points += bonusAmount
+                  pointTxData.push({
+                    userId,
+                    ruleId: firstAttendanceRule.id,
+                    amount: bonusAmount,
+                    type: "system" as const,
+                    description: `${firstAttendanceRule.label}: ${currentEvent.title}`,
+                    referenceId: firstRef,
+                  })
+                  existingBonusRefSet.add(firstRef)
                 }
               }
 
-              // 2) streak_monthly_bonus (every 4 consecutive weeks)
-              if (
-                streakMonthlyRule &&
-                streakMonthlyRule.points > 0 &&
-                stats.currentStreak > 0 &&
-                stats.currentStreak % 4 === 0
-              ) {
-                const streakRef = `streak_${stats.currentStreak}w:${userId}:${toWeekKey(stats.scannedAt)}`
-                if (!existingBonusRefSet.has(streakRef)) {
-                  const alreadyEarned = earnedTodayByUser.get(userId) ?? 0
-                  const bonusAmount = Math.min(
-                    streakMonthlyRule.points,
-                    Math.max(0, DAILY_POINT_CAP - alreadyEarned)
-                  )
-                  if (bonusAmount > 0) {
-                    earnedTodayByUser.set(userId, alreadyEarned + bonusAmount)
+              // 2) streak_monthly_bonus (4-week continuous streak milestone, immune to daily point cap per PRD 2.2)
+              if (streakMonthlyRule && streakMonthlyRule.points > 0) {
+                const previousStreak = userMeta?.stats?.currentStreak ?? 0
+                const newStreak = stats.currentStreak
+                const prevMilestone = Math.floor(previousStreak / 4)
+                const newMilestone = Math.floor(newStreak / 4)
+
+                const milestonesToAward: number[] = []
+                if (newMilestone > prevMilestone) {
+                  for (let m = prevMilestone + 1; m <= newMilestone; m++) {
+                    milestonesToAward.push(m * 4)
+                  }
+                } else if (newStreak > 0 && newStreak % 4 === 0) {
+                  milestonesToAward.push(newStreak)
+                }
+
+                for (const milestoneStreak of milestonesToAward) {
+                  const streakRef = `streak_${milestoneStreak}w:${userId}:${toWeekKey(currentEvent.eventDate)}`
+                  if (!existingBonusRefSet.has(streakRef)) {
+                    const bonusAmount = streakMonthlyRule.points
                     stats.points += bonusAmount
                     pointTxData.push({
                       userId,
                       ruleId: streakMonthlyRule.id,
                       amount: bonusAmount,
                       type: "system" as const,
-                      description: `${streakMonthlyRule.label} (${stats.currentStreak} minggu)`,
+                      description: `${streakMonthlyRule.label} (${milestoneStreak} minggu)`,
                       referenceId: streakRef,
                     })
+                    existingBonusRefSet.add(streakRef)
                   }
                 }
               }

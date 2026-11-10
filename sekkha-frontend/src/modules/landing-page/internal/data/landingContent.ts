@@ -108,11 +108,11 @@ export const landingContent: LandingContent = {
     subheading:
       "Most active youth members this month based on attendance, contributions, and community involvement.",
     entries: [
-      { rank: 1, name: "Sari Dewi", points: 980, badge: "🥇" },
-      { rank: 2, name: "Budi Santoso", points: 870, badge: "🥈" },
-      { rank: 3, name: "Mei Ling", points: 820, badge: "🥉" },
-      { rank: 4, name: "Andi Wijaya", points: 760, badge: "⭐" },
-      { rank: 5, name: "Ratna Sari", points: 710, badge: "⭐" },
+      { rank: 1, name: "@sari_dewi", points: 980, badge: "🥇" },
+      { rank: 2, name: "@budi_santoso", points: 870, badge: "🥈" },
+      { rank: 3, name: "@mei_ling", points: 820, badge: "🥉" },
+      { rank: 4, name: "@andi_wijaya", points: 760, badge: "⭐" },
+      { rank: 5, name: "@ratna_sari", points: 710, badge: "⭐" },
     ],
   },
 

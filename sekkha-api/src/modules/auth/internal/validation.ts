@@ -1,10 +1,11 @@
 import { z } from "zod"
+import { gmailEmailSchema } from "../../../lib/emailValidation"
 
 // ─── Validation Schemas ──────────────────────────────────────────────────────
 // F-15 Remediation: Meaningful max length bounds on all fields
 
 export const RegisterSchema = z.object({
-  email: z.string().trim().toLowerCase().email("Invalid email format").max(255, "Email maximum 255 characters"),
+  email: gmailEmailSchema,
   password: z.string().min(8, "Password must be at least 8 characters").max(128, "Password maximum 128 characters"),
   name: z.string().trim().min(1, "Name is required").max(100, "Name maximum 100 characters"),
   username: z
@@ -27,7 +28,7 @@ export const ForgotPasswordSchema = z.object({
 })
 
 export const RequestRegisterOtpSchema = z.object({
-  email: z.string().trim().toLowerCase().email("Invalid email format").max(255),
+  email: gmailEmailSchema,
   password: z.string().min(8, "Password must be at least 8 characters").max(128, "Password maximum 128 characters"),
   name: z.string().trim().min(2, "Name must be at least 2 characters").max(100, "Name maximum 100 characters"),
   username: z
@@ -41,25 +42,25 @@ export const RequestRegisterOtpSchema = z.object({
 })
 
 export const VerifyRegisterOtpSchema = z.object({
-  email: z.string().trim().toLowerCase().email("Invalid email format").max(255),
+  email: gmailEmailSchema,
   otp: z.string().trim().regex(/^\d{6}$/, "OTP must be 6 digits"),
 })
 
 export const ResendOtpSchema = z.object({
-  email: z.string().trim().toLowerCase().email("Invalid email format").max(255),
+  email: gmailEmailSchema,
 })
 
 export const ForgotPasswordRequestSchema = z.object({
-  email: z.string().trim().toLowerCase().email("Invalid email format").max(255),
+  email: gmailEmailSchema,
 })
 
 export const ForgotPasswordVerifyOtpSchema = z.object({
-  email: z.string().trim().toLowerCase().email("Invalid email format").max(255),
+  email: gmailEmailSchema,
   otp: z.string().trim().length(6, "OTP must be 6 digits"),
 })
 
 export const ResetPasswordSchema = z.object({
-  email: z.string().trim().toLowerCase().email("Invalid email format").max(255),
+  email: gmailEmailSchema,
   reset_token: z.string().trim().min(10).max(200).optional(),
   otp: z.string().trim().length(6, "OTP must be 6 digits").optional(),
   newPassword: z.string().min(8, "New password must be at least 8 characters").max(128, "New password maximum 128 characters"),

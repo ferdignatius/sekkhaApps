@@ -575,7 +575,10 @@ export function AttendanceScanPage() {
     return peopleList
       .filter((p) => {
         const nameMatch = p.name.toLowerCase().includes(q)
-        const numMatch = p.user_number?.toLowerCase().includes(q)
+        const numMatch =
+          p.user_number !== null &&
+          p.user_number !== undefined &&
+          String(p.user_number).toLowerCase().includes(q)
         return nameMatch || numMatch
       })
       .slice(0, 10)
@@ -834,7 +837,7 @@ export function AttendanceScanPage() {
                               type="button"
                               onClick={() => {
                                 void recordManualAttendance(
-                                  p.user_number || p.id,
+                                  p.user_number ? String(p.user_number) : p.id,
                                   p.name
                                 )
                                 setSearchQuery("")

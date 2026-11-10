@@ -1,184 +1,229 @@
 import { useState, useEffect } from "react"
 import {
   UserIcon,
-  PencilIcon,
-  CheckIcon,
   PhoneIcon,
   GraduationCapIcon,
   CalendarIcon,
+  PencilIcon,
+  CheckIcon,
+  XIcon,
   Loader2Icon,
+  AtSignIcon,
+  MailIcon,
+  ShieldCheckIcon,
+  AlertCircleIcon,
 } from "lucide-react"
-import { Button } from "@/components/base"
+import {
+  Alert,
+  Badge,
+  Button,
+  Card,
+  Input,
+  Select,
+} from "@/components/base"
 import { userApi } from "../api/userApi"
-import type {
-  UserProfileDto,
-  UpdateProfilePayload,
-  VerifiedSchoolDto,
-} from "../api/userApi"
+import type { UserProfileDto, VerifiedSchoolDto } from "../api/userApi"
 
 interface PersonalProfileSectionProps {
   profile: UserProfileDto
   onProfileUpdated: (updated: UserProfileDto) => void
   onToast: (message: string, type?: "success" | "error") => void
+  onGoToSecurity?: () => void
+}
+
+const NO_SCHOOL_VALUE = "__none__"
+const OTHER_SCHOOL_VALUE = "__other__"
+
+function formatDateForInput(dateStr?: string | null): string {
+  if (!dateStr) return ""
+  return String(dateStr).slice(0, 10)
+}
+
+function formatDisplayDate(dateStr?: string | null): string {
+  if (!dateStr) return "Not set"
+  try {
+    return new Date(dateStr).toLocaleDateString("en-US", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    })
+  } catch {
+    return dateStr
+  }
 }
 
 export function PersonalProfileSection({
   profile,
   onProfileUpdated,
   onToast,
+  onGoToSecurity,
 }: PersonalProfileSectionProps) {
   const [isEditing, setIsEditing] = useState(false)
-  const [submitting, setSubmitting] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const [username, setUsername] = useState(profile.username || "")
+  const [name, setName] = useState(profile.name || "")
+  const [phone, setPhone] = useState(profile.phone || "")
+  const [selectedSchoolId, setSelectedSchoolId] = useState(
+    profile.school_id || (profile.school ? OTHER_SCHOOL_VALUE : NO_SCHOOL_VALUE)
+  )
+  const [customSchool, setCustomSchool] = useState(
+    !profile.school_id && profile.school ? profile.school : ""
+  )
+  const [dateOfBirth, setDateOfBirth] = useState(
+    formatDateForInput(profile.date_of_birth)
+  )
+
   const [verifiedSchools, setVerifiedSchools] = useState<VerifiedSchoolDto[]>(
     []
   )
+  const [schoolsLoaded, setSchoolsLoaded] = useState(false)
+  const [schoolsLoading, setSchoolsLoading] = useState(false)
 
-  // Form state
-  const [formData, setFormData] = useState<UpdateProfilePayload>({
-    name: "",
-    username: "",
-    phone: "",
-    school_id: "",
-    school: "",
-    date_of_birth: "",
-  })
-
-  // Load verified schools for dropdown
+  // Reset draft values whenever server profile updates while not editing
   useEffect(() => {
+    if (isEditing) return
+    setUsername(profile.username || "")
+    setName(profile.name || "")
+    setPhone(profile.phone || "")
+    setSelectedSchoolId(
+      profile.school_id ||
+        (profile.school ? OTHER_SCHOOL_VALUE : NO_SCHOOL_VALUE)
+    )
+    setCustomSchool(!profile.school_id && profile.school ? profile.school : "")
+    setDateOfBirth(formatDateForInput(profile.date_of_birth))
+  }, [profile, isEditing])
+
+  // Lazy-load school options only when the user actually enters Edit mode
+  useEffect(() => {
+    if (!isEditing || schoolsLoaded) return
+    let active = true
+    setSchoolsLoading(true)
+
     userApi
       .getVerifiedSchools()
-      .then(setVerifiedSchools)
-      .catch(() => {})
-  }, [])
-
-  // Sync profile data to form state
-  useEffect(() => {
-    if (profile) {
-      const rawDob = profile.date_of_birth || ""
-      const formattedDob = rawDob ? rawDob.split("T")[0] : ""
-
-      setFormData({
-        name: profile.name || "",
-        username: profile.username || "",
-        phone: profile.phone || "",
-        school_id: profile.school_id || "",
-        school: profile.school || "",
-        date_of_birth: formattedDob,
+      .then((schools) => {
+        if (!active) return
+        setVerifiedSchools(schools)
+        setSchoolsLoaded(true)
       })
+      .catch(() => {})
+      .finally(() => {
+        if (active) setSchoolsLoading(false)
+      })
+
+    return () => {
+      active = false
     }
-  }, [profile])
+  }, [isEditing, schoolsLoaded])
 
-  function handleStartEditing() {
-    setIsEditing(true)
-  }
-
-  function handleCancelEditing() {
-    // Reset to existing profile
-    const rawDob = profile.date_of_birth || ""
-    const formattedDob = rawDob ? rawDob.split("T")[0] : ""
-
-    setFormData({
-      name: profile.name || "",
-      username: profile.username || "",
-      phone: profile.phone || "",
-      school_id: profile.school_id || "",
-      school: profile.school || "",
-      date_of_birth: formattedDob,
-    })
+  function handleCancel() {
+    setError(null)
     setIsEditing(false)
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!formData.name?.trim()) {
-      onToast("Full name is required", "error")
+    setError(null)
+
+    const cleanUsername = username.trim().toLowerCase()
+    const cleanName = name.trim()
+
+    if (cleanUsername.length < 3) {
+      setError("Username must be at least 3 characters.")
       return
     }
-    if (!formData.username?.trim()) {
-      onToast("Username is required", "error")
-      return
-    }
-    const cleanUsername = formData.username.trim().toLowerCase()
-    if (cleanUsername.length < 3 || cleanUsername.length > 30) {
-      onToast("Username must be between 3 and 30 characters", "error")
-      return
-    }
-    if (!/^[a-z0-9._]+$/.test(cleanUsername)) {
-      onToast(
-        "Username may only contain lowercase letters, numbers, dots, and underscores",
-        "error"
+    if (!/^[a-z0-9._-]+$/i.test(cleanUsername)) {
+      setError(
+        "Username may only contain letters, numbers, dots, underscores, or hyphens."
       )
       return
     }
+    if (cleanName.length < 2) {
+      setError("Full name must be at least 2 characters.")
+      return
+    }
+    if (selectedSchoolId === OTHER_SCHOOL_VALUE && !customSchool.trim()) {
+      setError("Please enter your school name or pick one from the list.")
+      return
+    }
 
-    setSubmitting(true)
+    setSaving(true)
     try {
-      const payload: UpdateProfilePayload = {
-        name: formData.name.trim(),
+      let schoolIdPayload: string | null = null
+      let schoolNamePayload: string | null = null
+
+      if (selectedSchoolId === OTHER_SCHOOL_VALUE) {
+        schoolIdPayload = null
+        schoolNamePayload = customSchool.trim() || null
+      } else if (selectedSchoolId !== NO_SCHOOL_VALUE) {
+        schoolIdPayload = selectedSchoolId
+        const matched = verifiedSchools.find((s) => s.id === selectedSchoolId)
+        schoolNamePayload = matched?.name ?? profile.school ?? null
+      }
+
+      const updated = await userApi.updateProfile({
         username: cleanUsername,
-        phone: formData.phone?.trim() || null,
-        school_id: formData.school_id || null,
-        school: formData.school?.trim() || null,
-        date_of_birth: formData.date_of_birth || null,
-      }
+        name: cleanName,
+        phone: phone.trim() || null,
+        school_id: schoolIdPayload,
+        school: schoolNamePayload,
+        date_of_birth: dateOfBirth || null,
+      })
 
-      const updated = await userApi.updateProfile(payload)
       onProfileUpdated(updated)
-
-      // Notify global listeners (e.g. sidebar avatar & greeting)
-      if (updated.name) {
-        window.dispatchEvent(
-          new CustomEvent("sekkha:profile_updated", {
-            detail: { name: updated.name },
-          })
-        )
-      }
-
-      onToast("Profile updated successfully!")
+      onToast("Personal profile updated successfully", "success")
       setIsEditing(false)
     } catch (err: any) {
-      onToast(err.message || "Failed to update profile", "error")
+      console.error("Failed to update profile:", err)
+      const msg =
+        err?.message || "Failed to update profile information. Please try again."
+      setError(msg)
+      onToast(msg, "error")
     } finally {
-      setSubmitting(false)
+      setSaving(false)
     }
   }
 
-  // Format date of birth for view mode
-  const rawDob = profile.date_of_birth
-  const formattedDisplayDob = rawDob
-    ? new Date(rawDob).toLocaleDateString("en-US", {
-        month: "long",
-        day: "numeric",
-        year: "numeric",
-      })
-    : "Not set"
+  const schoolOptions = [
+    { value: NO_SCHOOL_VALUE, label: "Not linked to a school" },
+    ...verifiedSchools.map((s) => ({
+      value: s.id,
+      label: s.status === "pending" ? `${s.name} (Pending review)` : s.name,
+    })),
+    ...(profile.school_id &&
+    !verifiedSchools.some((s) => s.id === profile.school_id)
+      ? [
+          {
+            value: profile.school_id,
+            label: profile.school || "Current School",
+          },
+        ]
+      : []),
+    { value: OTHER_SCHOOL_VALUE, label: "Other / Enter school manually..." },
+  ]
 
   return (
-    <div className="space-y-5 rounded-[20px] border border-[#e5e5e5] bg-[#fffaf0] p-5 shadow-xs sm:p-6">
-      {/* ── TOP SECTION HEADER ── */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#e5e5e5] pb-4">
-        <div className="flex items-center gap-2.5">
-          <div className="flex size-9 items-center justify-center rounded-[10px] bg-[#0a0a0a] text-white shadow-xs">
-            <UserIcon className="size-4.5 text-[#e8b94a]" />
-          </div>
-          <div>
-            <h3 className="text-sm font-bold text-[#0a0a0a] sm:text-base">
-              {isEditing ? "Edit Personal Profile" : "Personal Information"}
-            </h3>
-            <p className="text-xs text-[#6a6a6a]">
-              {isEditing
-                ? "Modify your personal details below. Changes will be saved directly."
-                : "Your community identity and contact records"}
-            </p>
-          </div>
+    <Card className="space-y-5 border-hairline bg-canvas p-5 shadow-none sm:p-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-hairline pb-4">
+        <div>
+          <h3 className="text-base font-bold text-ink">Personal Information</h3>
+          <p className="text-xs text-text-muted">
+            Manage your member identity, contact details, and school affiliation.
+          </p>
         </div>
 
         {!isEditing && (
           <Button
-            variant="filled"
             type="button"
-            onClick={handleStartEditing}
-            className="gap-1.5 rounded-[12px] px-4 text-xs font-bold sm:text-sm"
+            variant="secondary"
+            size="sm"
+            onClick={() => {
+              setError(null)
+              setIsEditing(true)
+            }}
+            className="h-11 gap-1.5 rounded-[12px] px-4 text-xs font-bold"
           >
             <PencilIcon className="size-3.5" />
             <span>Edit Profile</span>
@@ -186,211 +231,193 @@ export function PersonalProfileSection({
         )}
       </div>
 
-      {/* ── STATE 1: VIEW MODE (IN-PLACE CARD DISPLAY) ── */}
       {!isEditing ? (
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {/* Full Name */}
-            <div className="space-y-1 rounded-[14px] border border-[#e5e5e5] bg-[#faf5e8] p-3.5">
-              <span className="block text-[10px] font-bold tracking-wider text-[#6a6a6a] uppercase">
-                Full Name
-              </span>
-              <p className="text-sm font-bold text-[#0a0a0a]">
-                {profile.name || "—"}
-              </p>
+        <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+          <div className="rounded-[16px] border border-hairline bg-surface-soft/55 p-3.5">
+            <div className="flex items-center gap-1.5 text-[11px] font-bold tracking-wider text-text-muted uppercase">
+              <UserIcon className="size-3.5" />
+              <span>Full Name</span>
             </div>
+            <p className="mt-1.5 text-sm font-bold text-ink">
+              {profile.name || "Not set"}
+            </p>
+          </div>
 
-            {/* Username */}
-            <div className="space-y-1 rounded-[14px] border border-[#e5e5e5] bg-[#faf5e8] p-3.5">
-              <span className="block text-[10px] font-bold tracking-wider text-[#6a6a6a] uppercase">
-                Username
-              </span>
-              <p className="font-mono text-sm font-bold text-[#0a0a0a]">
-                {profile.username ? `@${profile.username}` : "—"}
-              </p>
+          <div className="rounded-[16px] border border-hairline bg-surface-soft/55 p-3.5">
+            <div className="flex items-center gap-1.5 text-[11px] font-bold tracking-wider text-text-muted uppercase">
+              <AtSignIcon className="size-3.5" />
+              <span>Username</span>
             </div>
+            <p className="mt-1.5 font-mono text-sm font-bold text-ink">
+              @{profile.username}
+            </p>
+          </div>
 
-            {/* WhatsApp / Phone */}
-            <div className="space-y-1 rounded-[14px] border border-[#e5e5e5] bg-[#faf5e8] p-3.5">
-              <div className="flex items-center gap-1.5">
-                <PhoneIcon className="size-3 text-[#6a6a6a]" />
-                <span className="text-[10px] font-bold tracking-wider text-[#6a6a6a] uppercase">
-                  WhatsApp / Phone
-                </span>
+          <div className="rounded-[16px] border border-hairline bg-surface-soft/55 p-3.5 sm:col-span-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5 text-[11px] font-bold tracking-wider text-text-muted uppercase">
+                <MailIcon className="size-3.5" />
+                <span>Email Address</span>
               </div>
-              <p className="text-sm font-semibold text-[#0a0a0a]">
-                {profile.phone || "Not set"}
-              </p>
+              {profile.email_verified ? (
+                <Badge variant="mint" className="gap-1 text-[10px]">
+                  <ShieldCheckIcon className="size-3" />
+                  <span>Verified</span>
+                </Badge>
+              ) : (
+                <Badge variant="ochre" className="gap-1 text-[10px]">
+                  <AlertCircleIcon className="size-3" />
+                  <span>Unverified</span>
+                </Badge>
+              )}
             </div>
+            <p className="mt-1.5 truncate text-sm font-bold text-ink">
+              {profile.email || "Not set"}
+            </p>
+            <p className="mt-1 text-xs text-text-muted">
+              Read-only here. Update your verified email in{" "}
+              {onGoToSecurity ? (
+                <button
+                  type="button"
+                  onClick={onGoToSecurity}
+                  className="cursor-pointer font-bold text-ink underline underline-offset-2 hover:opacity-80"
+                >
+                  Security &amp; Settings
+                </button>
+              ) : (
+                <span className="font-bold text-ink">Security &amp; Settings</span>
+              )}
+              .
+            </p>
+          </div>
 
-            {/* School / University */}
-            <div className="space-y-1 rounded-[14px] border border-[#e5e5e5] bg-[#faf5e8] p-3.5">
-              <div className="flex items-center gap-1.5">
-                <GraduationCapIcon className="size-3 text-[#6a6a6a]" />
-                <span className="text-[10px] font-bold tracking-wider text-[#6a6a6a] uppercase">
-                  School / University
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold text-[#0a0a0a]">
-                  {profile.school || "Not set"}
-                </span>
-                {profile.school_status === "pending" && (
-                  <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold text-amber-700">
-                    Pending Approval
-                  </span>
-                )}
-              </div>
+          <div className="rounded-[16px] border border-hairline bg-surface-soft/55 p-3.5">
+            <div className="flex items-center gap-1.5 text-[11px] font-bold tracking-wider text-text-muted uppercase">
+              <PhoneIcon className="size-3.5" />
+              <span>Phone Number</span>
             </div>
+            <p className="mt-1.5 text-sm font-bold text-ink tabular-nums">
+              {profile.phone || "Not set"}
+            </p>
+          </div>
 
-            {/* Date of Birth */}
-            <div className="space-y-1 rounded-[14px] border border-[#e5e5e5] bg-[#faf5e8] p-3.5">
-              <div className="flex items-center gap-1.5">
-                <CalendarIcon className="size-3 text-[#6a6a6a]" />
-                <span className="text-[10px] font-bold tracking-wider text-[#6a6a6a] uppercase">
-                  Date of Birth
-                </span>
-              </div>
-              <p className="text-sm font-semibold text-[#0a0a0a]">
-                {formattedDisplayDob}
-              </p>
+          <div className="rounded-[16px] border border-hairline bg-surface-soft/55 p-3.5">
+            <div className="flex items-center gap-1.5 text-[11px] font-bold tracking-wider text-text-muted uppercase">
+              <CalendarIcon className="size-3.5" />
+              <span>Date of Birth</span>
             </div>
+            <p className="mt-1.5 text-sm font-bold text-ink">
+              {formatDisplayDate(profile.date_of_birth)}
+            </p>
+          </div>
+
+          <div className="rounded-[16px] border border-hairline bg-surface-soft/55 p-3.5 sm:col-span-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5 text-[11px] font-bold tracking-wider text-text-muted uppercase">
+                <GraduationCapIcon className="size-3.5" />
+                <span>School / University</span>
+              </div>
+              {profile.school_status === "pending" && (
+                <Badge variant="ochre" className="text-[10px]">
+                  Pending review
+                </Badge>
+              )}
+            </div>
+            <p className="mt-1.5 text-sm font-bold text-ink">
+              {profile.school || "Not set"}
+            </p>
           </div>
         </div>
       ) : (
-        /* ── STATE 2: EDIT MODE (INLINE IN-PAGE FORM — NO POPUP MODAL) ── */
-        <form
-          onSubmit={handleSubmit}
-          className="animate-in space-y-4 duration-200 fade-in"
-        >
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {error && (
+            <Alert variant="destructive" className="text-xs">
+              {error}
+            </Alert>
+          )}
+
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {/* Full Name */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-[#0a0a0a]">
-                Full Name <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                required
-                value={formData.name || ""}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, name: e.target.value }))
+            <Input
+              label="Full Name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Your full name"
+              startIcon={<UserIcon className="size-4" />}
+              required
+            />
+
+            <Input
+              label="Username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="username"
+              startIcon={<AtSignIcon className="size-4" />}
+              required
+            />
+
+            <Input
+              label="Phone Number"
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="08xxxxxxxxxx"
+              startIcon={<PhoneIcon className="size-4" />}
+            />
+
+            <Input
+              label="Date of Birth"
+              type="date"
+              value={dateOfBirth}
+              onChange={(e) => setDateOfBirth(e.target.value)}
+              startIcon={<CalendarIcon className="size-4" />}
+            />
+
+            <div className="sm:col-span-2">
+              <Select
+                label={
+                  schoolsLoading
+                    ? "School / University (Loading...)"
+                    : "School / University"
                 }
-                placeholder="Enter your full name"
-                className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] px-3.5 text-xs font-semibold text-[#0a0a0a] transition-colors outline-none focus:border-[#0a0a0a] focus:bg-[#fffaf0] sm:text-sm"
+                value={selectedSchoolId}
+                onValueChange={(val) => setSelectedSchoolId(val)}
+                options={schoolOptions}
+                disabled={schoolsLoading}
               />
             </div>
 
-            {/* Username */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-[#0a0a0a]">
-                Username <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <span className="absolute top-1/2 left-3.5 -translate-y-1/2 font-mono text-xs font-bold text-[#6a6a6a]">
-                  @
-                </span>
-                <input
-                  type="text"
-                  required
-                  minLength={3}
-                  maxLength={30}
-                  value={formData.username || ""}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      username: e.target.value
-                        .toLowerCase()
-                        .replace(/[^a-z0-9._]/g, ""),
-                    }))
-                  }
-                  placeholder="username"
-                  className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] pr-3.5 pl-8 font-mono text-xs font-semibold text-[#0a0a0a] transition-colors outline-none focus:border-[#0a0a0a] focus:bg-[#fffaf0] sm:text-sm"
+            {selectedSchoolId === OTHER_SCHOOL_VALUE && (
+              <div className="sm:col-span-2">
+                <Input
+                  label="Custom School / Institution Name"
+                  value={customSchool}
+                  onChange={(e) => setCustomSchool(e.target.value)}
+                  placeholder="Enter full school or university name"
+                  startIcon={<GraduationCapIcon className="size-4" />}
                 />
               </div>
-            </div>
-
-            {/* Phone Number */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-[#0a0a0a]">
-                WhatsApp / Phone Number
-              </label>
-              <input
-                type="tel"
-                value={formData.phone || ""}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, phone: e.target.value }))
-                }
-                placeholder="e.g. 08123456789"
-                className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] px-3.5 text-xs font-semibold text-[#0a0a0a] transition-colors outline-none focus:border-[#0a0a0a] focus:bg-[#fffaf0] sm:text-sm"
-              />
-            </div>
-
-            {/* School Dropdown */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-[#0a0a0a]">
-                School / University
-              </label>
-              <select
-                value={formData.school_id || ""}
-                onChange={(e) => {
-                  const selectedId = e.target.value
-                  const selectedSchool = verifiedSchools.find(
-                    (s) => s.id === selectedId
-                  )
-                  setFormData((prev) => ({
-                    ...prev,
-                    school_id: selectedId,
-                    school: selectedSchool ? selectedSchool.name : "",
-                  }))
-                }}
-                className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] px-3.5 text-xs font-semibold text-[#0a0a0a] transition-colors outline-none focus:border-[#0a0a0a] focus:bg-[#fffaf0] sm:text-sm"
-              >
-                <option value="">-- Select verified school --</option>
-                {verifiedSchools.map((sch) => (
-                  <option key={sch.id} value={sch.id}>
-                    {sch.name} {sch.type ? `(${sch.type})` : ""}
-                    {sch.status === "pending" ? " [Pending Approval]" : ""}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Date of Birth */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-[#0a0a0a]">
-                Date of Birth
-              </label>
-              <input
-                type="date"
-                value={formData.date_of_birth || ""}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    date_of_birth: e.target.value,
-                  }))
-                }
-                className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] px-3.5 text-xs font-semibold text-[#0a0a0a] transition-colors outline-none focus:border-[#0a0a0a] focus:bg-[#fffaf0] sm:text-sm"
-              />
-            </div>
+            )}
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex items-center justify-end gap-2.5 border-t border-[#e5e5e5] pt-4">
-            <button
+          <div className="flex flex-col-reverse gap-2.5 border-t border-hairline pt-4 sm:flex-row sm:justify-end">
+            <Button
               type="button"
-              disabled={submitting}
-              onClick={handleCancelEditing}
-              className="h-11 cursor-pointer rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-5 text-xs font-bold text-[#0a0a0a] transition-colors hover:bg-[#faf5e8] disabled:opacity-50 sm:text-sm"
+              variant="secondary"
+              disabled={saving}
+              onClick={handleCancel}
+              className="h-11 gap-1.5 rounded-[12px] px-4 text-xs font-bold"
             >
-              Cancel
-            </button>
-            <button
+              <XIcon className="size-4" />
+              <span>Cancel</span>
+            </Button>
+
+            <Button
               type="submit"
-              disabled={submitting}
-              className="flex h-11 cursor-pointer items-center justify-center gap-1.5 rounded-[12px] bg-[#0a0a0a] px-6 text-xs font-bold text-white shadow-xs transition-all hover:bg-[#1f1f1f] disabled:opacity-50 sm:text-sm"
+              variant="filled"
+              disabled={saving}
+              className="h-11 gap-1.5 rounded-[12px] px-5 text-xs font-bold"
             >
-              {submitting ? (
+              {saving ? (
                 <>
                   <Loader2Icon className="size-4 animate-spin" />
                   <span>Saving...</span>
@@ -401,10 +428,10 @@ export function PersonalProfileSection({
                   <span>Save Changes</span>
                 </>
               )}
-            </button>
+            </Button>
           </div>
         </form>
       )}
-    </div>
+    </Card>
   )
 }

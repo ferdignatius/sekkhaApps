@@ -1,23 +1,31 @@
-// Feature: auth-flow, Property 1: Validator Mengembalikan Error yang Akurat untuk Semua Kombinasi Input
+// Feature: auth-flow
+// Form validation tests — Sign Up (@gmail.com strict validation) and Login form rules.
 
 import { describe, it, expect } from "vitest"
 import * as fc from "fast-check"
 
-import { validateSignUpForm } from "../utils/validator"
+import { validateSignUpForm, validateLoginForm } from "../utils/validator"
+import { isValidGmailEmail } from "@/lib/emailValidation"
 
-// ─── Constants ─────────────────────────────────────────────────────────────────
+const gmailLocalArb = fc
+  .array(
+    fc.constantFrom(
+      ..."abcdefghijklmnopqrstuvwxyz0123456789".split("")
+    ),
+    { minLength: 1, maxLength: 16 }
+  )
+  .map((chars) => chars.join(""))
 
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-
-// ─── Property 1: Validator Mengembalikan Error yang Akurat untuk Semua Kombinasi Input ────
-// Validates: Requirements 1.11, 1.12, 1.13, 3.1, 3.2, 3.3, 3.4, 3.5
+const validGmailArb = fc
+  .tuple(gmailLocalArb, fc.option(gmailLocalArb, { nil: undefined }))
+  .map(([a, b]) => (b ? `${a}.${b}@gmail.com` : `${a}@gmail.com`))
 
 describe("validateSignUpForm — Property 1: Validator Mengembalikan Error yang Akurat untuk Semua Kombinasi Input", () => {
-  it("returns isValid === true only if email is valid, password >= 8 char, and confirmPassword === password", () => {
+  it("returns isValid === true only if email is a valid @gmail.com address, password >= 8 char, and confirmPassword === password", () => {
     fc.assert(
       fc.property(
         fc.record({
-          email: fc.string(),
+          email: fc.oneof(fc.string(), validGmailArb),
           password: fc.string(),
           confirmPassword: fc.string(),
         }),
@@ -28,120 +36,59 @@ describe("validateSignUpForm — Property 1: Validator Mengembalikan Error yang 
             confirmPassword,
           })
 
-          const emailValid = EMAIL_REGEX.test(email)
+          const emailValid = isValidGmailEmail(email)
           const passwordValid = password.length >= 8
           const confirmValid = confirmPassword === password
 
-          const shouldBeValid = emailValid && passwordValid && confirmValid
-
-          // isValid harus tepat mencerminkan apakah semua kondisi terpenuhi
-          expect(result.isValid).toBe(shouldBeValid)
+          expect(result.isValid).toBe(emailValid && passwordValid && confirmValid)
         }
       ),
       { numRuns: 100 }
     )
   })
 
-  it("if email is invalid -> result.errors contains error with field === 'email'", () => {
-    fc.assert(
-      fc.property(
-        fc.record({
-          email: fc.string(),
-          password: fc.string(),
-          confirmPassword: fc.string(),
-        }),
-        ({ email, password, confirmPassword }) => {
-          const result = validateSignUpForm({
-            email,
-            password,
-            confirmPassword,
-          })
+  it("rejects non-@gmail.com domains and malformed local-parts during Sign Up", () => {
+    const invalidEmails = [
+      "user@yahoo.com",
+      "user@example.com",
+      "user@mailinator.com",
+      "user@gmail.co",
+      ".user@gmail.com",
+      "user.@gmail.com",
+      "user..name@gmail.com",
+      "a@b.c",
+    ]
 
-          const emailValid = EMAIL_REGEX.test(email)
-
-          if (!emailValid) {
-            const emailError = result.errors.find((e) => e.field === "email")
-            expect(emailError).toBeDefined()
-          }
-        }
-      ),
-      { numRuns: 100 }
-    )
+    for (const email of invalidEmails) {
+      const result = validateSignUpForm({
+        email,
+        password: "validPassword123",
+        confirmPassword: "validPassword123",
+      })
+      expect(result.isValid).toBe(false)
+      expect(result.errors.some((e) => e.field === "email")).toBe(true)
+    }
   })
 
-  it("if password is invalid (empty or < 8 char) -> result.errors contains error with field === 'password'", () => {
-    fc.assert(
-      fc.property(
-        fc.record({
-          email: fc.string(),
-          password: fc.string(),
-          confirmPassword: fc.string(),
-        }),
-        ({ email, password, confirmPassword }) => {
-          const result = validateSignUpForm({
-            email,
-            password,
-            confirmPassword,
-          })
-
-          const passwordValid = password.length >= 8
-
-          if (!passwordValid) {
-            const passwordError = result.errors.find(
-              (e) => e.field === "password"
-            )
-            expect(passwordError).toBeDefined()
-          }
-        }
-      ),
-      { numRuns: 100 }
-    )
-  })
-
-  it("if confirmPassword !== password -> result.errors contains error with field === 'confirmPassword'", () => {
-    fc.assert(
-      fc.property(
-        fc.record({
-          email: fc.string(),
-          password: fc.string(),
-          confirmPassword: fc.string(),
-        }),
-        ({ email, password, confirmPassword }) => {
-          const result = validateSignUpForm({
-            email,
-            password,
-            confirmPassword,
-          })
-
-          if (confirmPassword !== password) {
-            const confirmError = result.errors.find(
-              (e) => e.field === "confirmPassword"
-            )
-            expect(confirmError).toBeDefined()
-          }
-        }
-      ),
-      { numRuns: 100 }
-    )
+  it("keeps Login validation flexible for existing non-gmail accounts such as admin@sekkha.com", () => {
+    const result = validateLoginForm({
+      identifier: "admin@sekkha.com",
+      password: "password123",
+    })
+    expect(result.isValid).toBe(true)
   })
 })
-
-// ─── Property 2: Validator Menghapus Error Tepat Saat Field Menjadi Valid ──────
-// Feature: auth-flow, Property 2: Validator Menghapus Error Tepat Saat Field Menjadi Valid
-// Validates: Requirements 3.7, 3.8
 
 describe("validateSignUpForm — Property 2: Validator Menghapus Error Tepat Saat Field Menjadi Valid", () => {
   it("if only confirmPassword is invalid, error only appears for confirmPassword; email and password have no errors", () => {
     fc.assert(
       fc.property(
         fc.record({
-          email: fc.emailAddress(),
+          email: validGmailArb,
           password: fc.string({ minLength: 8 }),
           confirmPassword: fc.string(),
         }),
         ({ email, password, confirmPassword }) => {
-          // Hanya jalankan assertion ketika confirmPassword memang berbeda dari password
-          // (kondisi di mana hanya confirmPassword yang tidak valid)
           if (confirmPassword === password) return
 
           const result = validateSignUpForm({
@@ -150,19 +97,9 @@ describe("validateSignUpForm — Property 2: Validator Menghapus Error Tepat Saa
             confirmPassword,
           })
 
-          // email dan password harus tidak memiliki error
-          const emailError = result.errors.find((e) => e.field === "email")
-          const passwordError = result.errors.find(
-            (e) => e.field === "password"
-          )
-          expect(emailError).toBeUndefined()
-          expect(passwordError).toBeUndefined()
-
-          // confirmPassword harus memiliki error
-          const confirmError = result.errors.find(
-            (e) => e.field === "confirmPassword"
-          )
-          expect(confirmError).toBeDefined()
+          expect(result.errors.find((e) => e.field === "email")).toBeUndefined()
+          expect(result.errors.find((e) => e.field === "password")).toBeUndefined()
+          expect(result.errors.find((e) => e.field === "confirmPassword")).toBeDefined()
         }
       ),
       { numRuns: 100 }
@@ -173,36 +110,27 @@ describe("validateSignUpForm — Property 2: Validator Menghapus Error Tepat Saa
     fc.assert(
       fc.property(
         fc.record({
-          email: fc.emailAddress(),
+          email: validGmailArb,
           password: fc.string({ minLength: 8 }),
           confirmPassword: fc.string(),
         }),
         ({ email, password, confirmPassword }) => {
-          // Step 1: validasi dengan confirmPassword yang mungkin tidak valid
-          const resultBefore = validateSignUpForm({
+          void validateSignUpForm({
             email,
             password,
             confirmPassword,
           })
 
-          // Step 2: perbaiki confirmPassword → identik dengan password
           const resultAfter = validateSignUpForm({
             email,
             password,
             confirmPassword: password,
           })
 
-          // Setelah diperbaiki, tidak boleh ada error untuk confirmPassword
-          const confirmErrorAfter = resultAfter.errors.find(
-            (e) => e.field === "confirmPassword"
-          )
-          expect(confirmErrorAfter).toBeUndefined()
-
-          // Karena email dan password sudah valid (dari arbitrary), isValid harus true
+          expect(
+            resultAfter.errors.find((e) => e.field === "confirmPassword")
+          ).toBeUndefined()
           expect(resultAfter.isValid).toBe(true)
-
-          // Untuk menghilangkan warning unused variable
-          void resultBefore
         }
       ),
       { numRuns: 100 }

@@ -16,6 +16,7 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/base/Button"
 import { api } from "@/lib/api"
+import { validateGmailField } from "@/lib/emailValidation"
 
 type ForgotStep = "email" | "otp" | "new-password" | "success"
 
@@ -59,12 +60,9 @@ export function ForgotPasswordPage() {
   async function handleEmailSubmit(e: React.FormEvent) {
     e.preventDefault()
     const cleanEmail = email.trim().toLowerCase()
-    if (!cleanEmail) {
-      setError("Email is required")
-      return
-    }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
-      setError("Invalid email format")
+    const emailError = validateGmailField(cleanEmail)
+    if (emailError) {
+      setError(emailError)
       return
     }
 
@@ -306,7 +304,7 @@ export function ForgotPasswordPage() {
                   <input
                     id="email"
                     type="email"
-                    placeholder="name@email.com"
+                    placeholder="name@gmail.com"
                     value={email}
                     onChange={(e) => {
                       setEmail(e.target.value)
@@ -316,6 +314,9 @@ export function ForgotPasswordPage() {
                     className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] pr-3.5 pl-10 text-xs font-medium text-[#0a0a0a] transition-all outline-none placeholder:text-[#767676] focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a]"
                   />
                 </div>
+                <p className="text-[11px] text-[#6a6a6a]">
+                  Only registered @gmail.com accounts are supported.
+                </p>
               </div>
 
               <Button

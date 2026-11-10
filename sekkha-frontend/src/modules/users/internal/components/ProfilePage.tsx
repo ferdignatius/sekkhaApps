@@ -1,336 +1,378 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import {
   IdCardIcon,
   UserIcon,
-  ShieldCheckIcon,
-  CopyIcon,
-  CheckIcon,
-  GraduationCapIcon,
-  MailIcon,
-  PhoneIcon,
+  LockIcon,
   FlameIcon,
+  ShieldCheckIcon,
+  SparklesIcon,
+  LogOutIcon,
+  AlertCircleIcon,
+  CheckCircle2Icon,
 } from "lucide-react"
-import { useAuth } from "@/modules/auth"
+import { DigitalMemberCard } from "@/components/common/DigitalMemberCard"
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Tabs, TabsList, TabsTrigger } from "@/components/base"
-
+import { getInitials } from "@/lib/initials"
+import {
+  formatRoleLabel,
+  getRoleAvatarClass,
+  getRoleBadgeVariant,
+  normalizeRoleKey,
+} from "@/lib/roles"
+import {
+  Badge,
+  Button,
+  Card,
+  ConfirmDialog,
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+} from "@/components/base"
+import { useAuth } from "@/modules/auth"
 import { userApi } from "../api/userApi"
 import type { UserProfileDto } from "../api/userApi"
-import { DigitalMemberCard } from "./DigitalMemberCard"
 import { PointsLedger } from "./PointsLedger"
 import { PersonalProfileSection } from "./PersonalProfileSection"
 import { SecuritySettingsSection } from "./SecuritySettingsSection"
+
+type ProfileTab = "card" | "profile" | "security"
 
 export function ProfilePage() {
   const { authState, logout } = useAuth()
   const [profile, setProfile] = useState<UserProfileDto | null>(null)
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<"card" | "profile" | "security">(
-    "card"
-  )
-  const [copiedId, setCopiedId] = useState(false)
-
-  // Global Toast state
+  const [error, setError] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState<ProfileTab>("card")
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
+  const [signingOut, setSigningOut] = useState(false)
   const [toast, setToast] = useState<{
     text: string
     type: "success" | "error"
   } | null>(null)
 
-  function showToast(text: string, type: "success" | "error" = "success") {
-    setToast({ text, type })
-    setTimeout(() => setToast(null), 3000)
-  }
+  const showToast = useCallback(
+    (text: string, type: "success" | "error" = "success") => {
+      setToast({ text, type })
+      setTimeout(() => setToast(null), 3500)
+    },
+    []
+  )
 
-  useEffect(() => {
-    loadProfile()
-  }, [])
-
-  async function loadProfile() {
+  const loadProfile = useCallback(async () => {
     setLoading(true)
+    setError(null)
     try {
       const data = await userApi.getProfile()
       setProfile(data)
     } catch (err: any) {
       console.error("Failed to load profile:", err)
-      showToast(err.message || "Failed to load profile information", "error")
+      setError(
+        err?.message || "Please check your internet connection and try again."
+      )
     } finally {
       setLoading(false)
     }
+  }, [])
+
+  useEffect(() => {
+    void loadProfile()
+  }, [loadProfile])
+
+  async function handleConfirmLogout() {
+    setSigningOut(true)
+    try {
+      await logout()
+    } finally {
+      setSigningOut(false)
+      setShowLogoutConfirm(false)
+    }
   }
 
-  function handleCopyNumber(num?: string | number | null) {
-    if (!num) return
-    navigator.clipboard
-      .writeText(String(num))
-      .then(() => {
-        setCopiedId(true)
-        showToast("Member ID copied to clipboard!")
-        setTimeout(() => setCopiedId(false), 2000)
-      })
-      .catch(() => showToast("Failed to copy Member ID", "error"))
-  }
-
-  // Fallback values
-  const role = profile?.role || authState.role || "member"
+  const role = normalizeRoleKey(profile?.role || authState.role)
+  const roleLabel = formatRoleLabel(role)
+  const isShieldRole = role === "admin" || role === "organizer"
   const displayName = profile?.name || authState.name || "Community Member"
+  const username = profile?.username || authState.username || ""
   const school = profile?.school || ""
-  const memberId = profile?.user_number ? String(profile.user_number) : ""
   const totalPoints = profile?.stats?.total_points ?? 0
   const currentStreak = profile?.stats?.current_streak ?? 0
 
-  const userInitials =
-    displayName
-      .split(" ")
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((w) => w[0]?.toUpperCase() ?? "")
-      .join("") || "MB"
-
-  const roleBadgeStyle: Record<string, string> = {
-    admin: "bg-[#0a0a0a] text-[#e8b94a] border-[#e8b94a]/40 font-bold",
-    organizer: "bg-[#1e293b] text-[#93c5fd] border-[#3b82f6]/40 font-bold",
-    activist: "bg-[#064e3b] text-[#a7f3d0] border-[#10b981]/40 font-bold",
-    member: "bg-[#f5f0e0] text-[#0a0a0a] border-[#e5e5e5] font-semibold",
-  }
-
-  const roleDisplayNames: Record<string, string> = {
-    member: "Member",
-    activist: "Activist",
-    organizer: "Organizer",
-    admin: "Admin",
-  }
-
   return (
-    <main className="min-h-screen bg-[#fffaf0] pb-28 text-left font-sans md:pb-12">
-      {/* Breadcrumb Navigation — Consistent Top Bar */}
+    <main className="min-h-screen bg-surface-soft font-sans text-ink">
       <PageBreadcrumb items={[{ label: "Profile" }]} showBack={false} />
 
-      <div className="px-3.5 py-4 sm:px-6 sm:py-6 md:px-8 lg:px-12">
-        <div className="mx-auto max-w-7xl space-y-6">
-          {/* ── TOAST NOTIFICATION ── */}
-          {toast && (
-            <div
-              className={`fixed right-4 bottom-4 z-50 flex animate-in items-center gap-2 rounded-[14px] border px-4 py-3 text-xs font-bold shadow-xl duration-200 fade-in sm:text-sm ${
-                toast.type === "error"
-                  ? "border-rose-200 bg-rose-50 text-rose-800"
-                  : "border-emerald-200 bg-emerald-50 text-emerald-800"
-              }`}
-            >
-              <span>{toast.text}</span>
-            </div>
-          )}
-
-          {/* ── LOADING SKELETON ── */}
-          {loading && !profile ? (
-            <div className="space-y-4">
-              <Skeleton className="h-32 w-full rounded-[24px]" />
-              <Skeleton className="h-64 w-full rounded-[24px]" />
-            </div>
+      {toast && (
+        <div
+          role="status"
+          className={`fixed top-16 right-4 left-4 z-50 mx-auto flex max-w-sm items-center gap-2 rounded-[14px] border px-4 py-3 text-xs font-bold shadow-lg sm:right-6 sm:left-auto ${
+            toast.type === "error"
+              ? "border-rose-200 bg-rose-50 text-rose-800"
+              : "border-emerald-200 bg-emerald-50 text-emerald-800"
+          }`}
+        >
+          {toast.type === "error" ? (
+            <AlertCircleIcon className="size-4 shrink-0" />
           ) : (
-            <>
-              {/* ── PROFILE HERO / IDENTITY HEADER ── */}
-              <div className="rounded-[24px] border border-[#e5e5e5] bg-[#fffaf0] p-5 shadow-xs sm:p-6">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex items-center gap-4">
-                    {/* Avatar Initials */}
-                    <div className="flex size-16 shrink-0 items-center justify-center rounded-[18px] bg-[#0a0a0a] text-lg font-bold tracking-wider text-[#e8b94a] shadow-xs sm:size-20 sm:text-xl">
-                      {userInitials}
-                    </div>
+            <CheckCircle2Icon className="size-4 shrink-0" />
+          )}
+          <span>{toast.text}</span>
+        </div>
+      )}
 
-                    {/* Member Names & Tags */}
-                    <div className="min-w-0 space-y-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h1 className="truncate text-lg font-bold tracking-tight text-[#0a0a0a] sm:text-2xl">
-                          {displayName}
-                        </h1>
-                        <span
-                          className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs ${
-                            roleBadgeStyle[role.toLowerCase()] ||
-                            roleBadgeStyle.member
-                          }`}
-                        >
-                          <ShieldCheckIcon className="size-3" />
-                          <span>
-                            {roleDisplayNames[role.toLowerCase()] || role}
-                          </span>
-                        </span>
-                      </div>
+      <div className="mx-auto max-w-7xl px-3.5 py-4 pb-36 sm:px-6 sm:py-6 md:px-8 md:pb-12 lg:px-12">
+        {loading ? (
+          <div
+            data-testid="profile-loading-skeleton"
+            aria-busy="true"
+            aria-label="Loading profile"
+            className="grid grid-cols-1 gap-6 lg:grid-cols-12"
+          >
+            <div className="space-y-6 lg:col-span-5 xl:col-span-4">
+              <div className="space-y-5 rounded-[24px] border border-hairline bg-canvas p-6">
+                <div className="flex items-center gap-4">
+                  <div className="size-16 animate-pulse rounded-[18px] bg-surface-soft" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-5 w-32 animate-pulse rounded bg-surface-soft" />
+                    <div className="h-3.5 w-20 animate-pulse rounded bg-surface-soft" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3 border-t border-hairline pt-4">
+                  <div className="h-16 animate-pulse rounded-[14px] bg-surface-soft" />
+                  <div className="h-16 animate-pulse rounded-[14px] bg-surface-soft" />
+                </div>
+              </div>
+              <div className="hidden h-28 animate-pulse rounded-[20px] border border-hairline bg-canvas lg:block" />
+            </div>
 
-                      <div className="flex flex-wrap items-center gap-2 text-xs">
-                        {memberId && (
-                          <div className="flex items-center gap-1 rounded-[8px] border border-[#e5e5e5] bg-[#faf5e8] px-2.5 py-0.5 font-mono font-bold text-[#0a0a0a]">
-                            <span>ID: {memberId}</span>
-                            <button
-                              type="button"
-                              onClick={() => handleCopyNumber(memberId)}
-                              className="ml-0.5 cursor-pointer p-0.5 text-[#6a6a6a] hover:text-[#0a0a0a]"
-                              title="Copy Member ID"
-                            >
-                              {copiedId ? (
-                                <CheckIcon className="size-3 text-emerald-600" />
-                              ) : (
-                                <CopyIcon className="size-3" />
-                              )}
-                            </button>
-                          </div>
-                        )}
-
-                        {profile?.username && (
-                          <span className="font-mono text-xs font-semibold text-[#6a6a6a]">
-                            @{profile.username}
-                          </span>
-                        )}
-
-                        {school && (
-                          <span className="flex items-center gap-1 text-xs text-[#6a6a6a]">
-                            <GraduationCapIcon className="size-3 text-[#6a6a6a]" />
-                            <span className="max-w-[180px] truncate sm:max-w-xs">
-                              {school}
-                            </span>
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="flex flex-wrap items-center gap-3 pt-0.5 text-xs text-[#6a6a6a]">
-                        <span className="flex items-center gap-1">
-                          <MailIcon className="size-3" />
-                          <span>
-                            {profile?.email || authState.email || "No email"}
-                          </span>
-                        </span>
-                        {profile?.phone && (
-                          <span className="flex items-center gap-1">
-                            <PhoneIcon className="size-3" />
-                            <span>{profile.phone}</span>
-                          </span>
-                        )}
-                      </div>
-                    </div>
+            <div className="space-y-4 lg:col-span-7 xl:col-span-8">
+              <div className="h-12 w-full animate-pulse rounded-[16px] bg-canvas" />
+              <div className="h-56 w-full animate-pulse rounded-[24px] bg-canvas" />
+              <div className="h-44 w-full animate-pulse rounded-[20px] bg-canvas" />
+            </div>
+          </div>
+        ) : error || !profile ? (
+          <Card className="mx-auto max-w-md border-rose-200 bg-canvas p-6 text-center shadow-none sm:p-8">
+            <div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-full bg-rose-100 text-rose-600">
+              <AlertCircleIcon className="size-6" />
+            </div>
+            <h1 className="text-base font-bold text-ink">
+              Unable to load profile
+            </h1>
+            <p className="mt-1.5 text-xs leading-relaxed text-text-muted">
+              {error || "Your profile data could not be retrieved right now."}
+            </p>
+            <div className="mt-5">
+              <Button
+                type="button"
+                variant="filled"
+                onClick={() => void loadProfile()}
+                className="h-11 rounded-[12px] px-6 text-xs font-bold"
+              >
+                Try Again
+              </Button>
+            </div>
+          </Card>
+        ) : (
+          <div
+            data-testid="profile-layout-grid"
+            className="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:grid-rows-[auto_1fr] lg:items-start"
+          >
+            {/* ── 1. HERO IDENTITY CARD (Mobile: Top | Desktop: Left Rail Row 1) ── */}
+            <aside className="lg:col-span-5 lg:col-start-1 lg:row-start-1 xl:col-span-4">
+              <Card
+                data-testid="profile-hero-card"
+                className="space-y-5 border-hairline bg-canvas p-5 shadow-none sm:p-6"
+              >
+                <div className="flex items-center gap-4">
+                  <div
+                    className={`flex size-16 shrink-0 items-center justify-center rounded-[18px] border text-xl font-bold tracking-tight shadow-xs ${getRoleAvatarClass(role)}`}
+                  >
+                    {getInitials(displayName, "M")}
                   </div>
 
-                  {/* Stats Pill Counters: Points & Streak */}
-                  <div className="flex flex-wrap items-center gap-2.5 self-start sm:self-center">
-                    {/* Points Counter */}
-                    <div className="flex items-center gap-2 rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] px-3.5 py-2.5 text-right shadow-2xs">
-                      <div className="text-left">
-                        <span className="block text-[9px] font-bold tracking-wider text-[#6a6a6a] uppercase">
-                          Karma Points
-                        </span>
-                        <span className="font-mono text-base font-black text-[#0a0a0a] sm:text-lg">
-                          {totalPoints.toLocaleString("en-US")} Pts
-                        </span>
-                      </div>
-                    </div>
+                  <div className="min-w-0 flex-1 space-y-1.5">
+                    <h1 className="truncate text-lg font-bold tracking-tight text-ink sm:text-xl">
+                      {displayName}
+                    </h1>
 
-                    {/* Streak Counter */}
-                    <div className="flex items-center gap-2.5 rounded-[16px] border border-[#f5d799] bg-[#fff3db] px-3.5 py-2.5 text-left shadow-2xs">
-                      <div className="flex size-8 shrink-0 items-center justify-center rounded-[10px] bg-[#f59e0b] text-white shadow-2xs">
-                        <FlameIcon className="size-4.5 fill-current text-white animate-pulse" />
-                      </div>
-                      <div>
-                        <span className="block text-[9px] font-bold tracking-wider text-[#92400e] uppercase">
-                          Weekly Streak
-                        </span>
-                        <span className="font-mono text-base font-black text-[#78350f] sm:text-lg">
-                          {currentStreak} {currentStreak === 1 ? "Week" : "Weeks"}
-                        </span>
-                      </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge
+                        variant={getRoleBadgeVariant(role)}
+                        size="sm"
+                        icon={
+                          isShieldRole ? (
+                            <ShieldCheckIcon className="size-3" />
+                          ) : (
+                            <SparklesIcon className="size-3" />
+                          )
+                        }
+                        className="font-bold"
+                      >
+                        {roleLabel}
+                      </Badge>
+
+                      {username && (
+                        <p className="truncate font-mono text-xs font-semibold text-text-muted">
+                          @{username}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
-              </div>
 
-              {/* ── 3 UNIFIED PROFILE TABS ── */}
-              <div className="space-y-6">
-                <Tabs
-                  value={activeTab}
-                  onValueChange={(val) => setActiveTab(val as any)}
-                  className="w-full"
+                <div className="grid grid-cols-2 gap-3 border-t border-hairline pt-4">
+                  <div className="flex flex-col justify-between rounded-[16px] border border-hairline bg-surface-soft px-3.5 py-3">
+                    <p className="text-[10px] font-bold tracking-wider whitespace-nowrap text-text-muted uppercase">
+                      Karma Points
+                    </p>
+                    <p className="mt-1.5 font-mono text-base font-extrabold whitespace-nowrap text-ink tabular-nums sm:text-lg">
+                      {totalPoints} Pts
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col justify-between rounded-[16px] border border-amber-200/80 bg-amber-50/70 px-3.5 py-3">
+                    <p className="text-[10px] font-bold tracking-wider whitespace-nowrap text-amber-800 uppercase">
+                      Weekly Streak
+                    </p>
+                    <div className="mt-1.5 flex items-center gap-1.5">
+                      <FlameIcon className="size-4 shrink-0 text-amber-600" />
+                      <span className="text-base font-extrabold whitespace-nowrap text-amber-950 tabular-nums sm:text-lg">
+                        {currentStreak}{" "}
+                        {currentStreak === 1 ? "Week" : "Weeks"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            </aside>
+
+            {/* ── 2. SEGMENTED TABS & ACTIVE VIEW (Mobile: Middle | Desktop: Right Column Span) ── */}
+            <div className="lg:col-span-7 lg:col-start-6 lg:row-span-2 lg:row-start-1 xl:col-span-8 xl:col-start-5">
+              <Tabs
+                variant="pill"
+                value={activeTab}
+                onValueChange={(val) => setActiveTab(val as ProfileTab)}
+                className="w-full"
+              >
+                <TabsList className="grid w-full grid-cols-3 rounded-[16px] border border-hairline bg-canvas p-1.5 shadow-none">
+                  <TabsTrigger
+                    value="card"
+                    className="min-h-[44px] w-full rounded-[12px] px-2 text-xs font-bold sm:px-3 sm:text-sm"
+                  >
+                    <IdCardIcon className="size-4 shrink-0" />
+                    <span className="sm:hidden">Pass</span>
+                    <span className="hidden sm:inline">Member Pass</span>
+                  </TabsTrigger>
+
+                  <TabsTrigger
+                    value="profile"
+                    className="min-h-[44px] w-full rounded-[12px] px-2 text-xs font-bold sm:px-3 sm:text-sm"
+                  >
+                    <UserIcon className="size-4 shrink-0" />
+                    <span className="sm:hidden">Profile</span>
+                    <span className="hidden sm:inline">Personal Profile</span>
+                  </TabsTrigger>
+
+                  <TabsTrigger
+                    value="security"
+                    className="min-h-[44px] w-full rounded-[12px] px-2 text-xs font-bold sm:px-3 sm:text-sm"
+                  >
+                    <LockIcon className="size-4 shrink-0" />
+                    <span className="sm:hidden">Security</span>
+                    <span className="hidden sm:inline">
+                      Security &amp; Settings
+                    </span>
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="card" className="mt-4 space-y-6">
+                  <DigitalMemberCard
+                    name={displayName}
+                    userNumber={profile.user_number}
+                    role={role}
+                    school={school}
+                    joinedAt={profile.joined_at}
+                    username={profile.username}
+                    points={totalPoints}
+                    currentStreak={currentStreak}
+                  />
+
+                  <PointsLedger totalPoints={totalPoints} />
+                </TabsContent>
+
+                <TabsContent value="profile" className="mt-4">
+                  <PersonalProfileSection
+                    profile={profile}
+                    onProfileUpdated={(updated) => {
+                      setProfile((prev) => ({ ...prev, ...updated }))
+                    }}
+                    onToast={showToast}
+                    onGoToSecurity={() => setActiveTab("security")}
+                  />
+                </TabsContent>
+
+                <TabsContent value="security" className="mt-4">
+                  <SecuritySettingsSection
+                    currentEmail={profile.email || authState.email}
+                    emailVerified={profile.email_verified ?? true}
+                    onEmailUpdated={(newEmail) => {
+                      setProfile((prev) =>
+                        prev
+                          ? { ...prev, email: newEmail, email_verified: true }
+                          : prev
+                      )
+                    }}
+                    onLogout={logout}
+                    onToast={showToast}
+                  />
+                </TabsContent>
+              </Tabs>
+            </div>
+
+            {/* ── 3. ACCESSIBLE SIGN OUT CARD (Mobile: Very Bottom | Desktop: Left Rail Row 2 directly under Hero) ── */}
+            <section
+              data-testid="profile-signout-section"
+              className="rounded-[20px] border border-hairline bg-canvas p-5 lg:col-span-5 lg:col-start-1 lg:row-start-2 xl:col-span-4"
+            >
+              <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center lg:flex-col lg:items-stretch">
+                <div>
+                  <h2 className="text-sm font-bold text-ink">
+                    Session &amp; Sign Out
+                  </h2>
+                  <p className="mt-0.5 text-xs leading-relaxed text-text-muted">
+                    Sign out of your active session on this device. You can sign
+                    back in any time.
+                  </p>
+                </div>
+
+                <Button
+                  type="button"
+                  variant="outlined"
+                  onClick={() => setShowLogoutConfirm(true)}
+                  className="h-11 shrink-0 gap-2 rounded-[12px] border-rose-200 bg-rose-50/70 px-5 text-xs font-bold text-rose-700 hover:border-rose-300 hover:bg-rose-100 hover:text-rose-800 lg:w-full lg:justify-center"
                 >
-                  <TabsList className="grid w-full grid-cols-3 rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0] p-1.5 shadow-xs">
-                    <TabsTrigger
-                      value="card"
-                      className="flex items-center justify-center gap-1.5 rounded-[12px] py-2.5 text-xs font-bold transition-all data-[state=active]:bg-[#0a0a0a] data-[state=active]:text-white sm:text-sm"
-                    >
-                      <IdCardIcon className="size-4" />
-                      <span>Member Card & Points</span>
-                    </TabsTrigger>
-
-                    <TabsTrigger
-                      value="profile"
-                      className="flex items-center justify-center gap-1.5 rounded-[12px] py-2.5 text-xs font-bold transition-all data-[state=active]:bg-[#0a0a0a] data-[state=active]:text-white sm:text-sm"
-                    >
-                      <UserIcon className="size-4" />
-                      <span>Personal Profile</span>
-                    </TabsTrigger>
-
-                    <TabsTrigger
-                      value="security"
-                      className="flex items-center justify-center gap-1.5 rounded-[12px] py-2.5 text-xs font-bold transition-all data-[state=active]:bg-[#0a0a0a] data-[state=active]:text-white sm:text-sm"
-                    >
-                      <ShieldCheckIcon className="size-4" />
-                      <span>Security & Settings</span>
-                    </TabsTrigger>
-                  </TabsList>
-                </Tabs>
-
-                {/* ── TAB 1: DIGITAL MEMBER CARD & POINTS HISTORY ── */}
-                {activeTab === "card" && (
-                  <div className="animate-in space-y-6 duration-200 fade-in">
-                    {/* Minimalist HIG Digital Member Card */}
-                    <DigitalMemberCard
-                      name={displayName}
-                      userNumber={profile?.user_number}
-                      role={role}
-                      school={school}
-                      joinedAt={profile?.joined_at}
-                      username={profile?.username}
-                      points={totalPoints}
-                      currentStreak={currentStreak}
-                    />
-
-                    {/* Points Ledger List */}
-                    <PointsLedger totalPoints={totalPoints} />
-                  </div>
-                )}
-
-                {/* ── TAB 2: PERSONAL PROFILE (IN-PAGE INLINE FORM — NO POPUP MODAL) ── */}
-                {activeTab === "profile" && profile && (
-                  <div className="animate-in duration-200 fade-in">
-                    <PersonalProfileSection
-                      profile={profile}
-                      onProfileUpdated={(updated) => {
-                        setProfile((prev) => ({ ...prev, ...updated }))
-                      }}
-                      onToast={showToast}
-                    />
-                  </div>
-                )}
-
-                {/* ── TAB 3: SECURITY & SETTINGS ── */}
-                {activeTab === "security" && (
-                  <div className="animate-in duration-200 fade-in">
-                    <SecuritySettingsSection
-                      currentEmail={profile?.email || authState.email}
-                      emailVerified={profile?.email_verified ?? true}
-                      onEmailUpdated={(newEmail) => {
-                        setProfile((prev) =>
-                          prev
-                            ? { ...prev, email: newEmail, email_verified: true }
-                            : prev
-                        )
-                      }}
-                      onLogout={logout}
-                      onToast={showToast}
-                    />
-                  </div>
-                )}
+                  <LogOutIcon className="size-4" />
+                  <span>Sign Out</span>
+                </Button>
               </div>
-            </>
-          )}
-        </div>
+            </section>
+          </div>
+        )}
       </div>
+
+      <ConfirmDialog
+        open={showLogoutConfirm}
+        onOpenChange={setShowLogoutConfirm}
+        title="Confirm Sign Out"
+        description="Are you sure you want to end your current session? You will need your username or member ID to sign back in."
+        confirmLabel="Sign Out"
+        cancelLabel="Stay Signed In"
+        variant="destructive"
+        icon={<LogOutIcon className="size-6" />}
+        onConfirm={handleConfirmLogout}
+        isLoading={signingOut}
+      />
     </main>
   )
 }

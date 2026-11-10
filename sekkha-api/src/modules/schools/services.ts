@@ -1,6 +1,6 @@
 import { schoolModels } from "./models"
 import { cached } from "../../lib/cache"
-import { decrypt } from "../../lib/crypto"
+
 import { AppError } from "../../lib/AppError"
 
 export function normalizeSchoolType(type?: string): "SMP" | "SMA/SMK" | "Universitas" | "Umum" {

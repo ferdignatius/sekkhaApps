@@ -11,7 +11,6 @@ import {
   CopyIcon,
   CheckIcon,
   ShieldCheckIcon,
-  ChevronRightIcon,
   Share2Icon,
 } from "lucide-react"
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
@@ -26,6 +25,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination"
+import { Badge } from "@/components/base/Badge"
 import { Button } from "@/components/base/Button"
 import {
   Select,
@@ -35,6 +35,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/base/Select"
+import {
+  formatMemberInitials,
+  formatRoleLabel,
+  getRoleAvatarClass,
+  getRoleBadgeVariant,
+} from "../utils/memberFormatters"
 import { peopleApi } from "../api/peopleApi"
 import type {
   MemberDto,
@@ -44,25 +50,6 @@ import type {
   PaginatedMembersResponse,
   VerifiedSchoolDto,
 } from "../api/peopleApi"
-
-function formatRoleLabel(role?: string | null): string {
-  if (!role) return "Member"
-  const r = role.toLowerCase()
-  switch (r) {
-    case "admin":
-      return "Admin"
-    case "organizer":
-    case "pengurus":
-      return "Organizer"
-    case "activist":
-    case "aktivis":
-      return "Activist"
-    case "member":
-    case "umat":
-    default:
-      return "Member"
-  }
-}
 
 function CommunityRoleChart({
   stats,
@@ -126,7 +113,7 @@ function CommunityRoleChart({
   ]
 
   return (
-    <div className="rounded-[20px] border border-[#e6decb]/80 bg-[#fffaf0]/90 p-4 shadow-2xs backdrop-blur-md sm:p-5">
+    <div className="rounded-xl border border-hairline bg-canvas p-4 shadow-2xs sm:p-5">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         {/* Left: Donut Chart & Title / Description */}
         <div className="flex items-center gap-4 sm:gap-5">
@@ -254,7 +241,7 @@ function CommunityRoleChart({
         </div>
 
         {/* Right: Interactive Role Metric Cards */}
-        <div className="grid grid-cols-3 gap-2 sm:gap-3 lg:w-[480px]">
+        <div className="grid grid-cols-1 gap-2 min-[380px]:grid-cols-3 sm:gap-3 lg:w-[480px]">
           {roles.map((roleItem) => {
             const isSelected = activeFilter === roleItem.id
             return (
@@ -339,7 +326,7 @@ export function PeoplePage() {
   const [roleFilter, setRoleFilter] = useState<string>("all")
   const [claimStatusFilter, setClaimStatusFilter] = useState<string>("all")
   const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize, setPageSize] = useState(15)
+  const [pageSize, setPageSize] = useState(12)
 
   // Master data
   const [verifiedSchools, setVerifiedSchools] = useState<VerifiedSchoolDto[]>(
@@ -381,12 +368,12 @@ export function PeoplePage() {
     }
   }, [authState.status, authState.role, isOrganizerOrAdmin, navigate])
 
-  // Load verified schools for dropdown
+  // Lazy-load verified schools only when Add Member modal is opened
   useEffect(() => {
-    if (isOrganizerOrAdmin) {
+    if (isOrganizerOrAdmin && showCreateModal && verifiedSchools.length === 0) {
       peopleApi.getVerifiedSchools().then(setVerifiedSchools)
     }
-  }, [isOrganizerOrAdmin])
+  }, [isOrganizerOrAdmin, showCreateModal, verifiedSchools.length])
 
   const prevFiltersRef = useRef({
     debouncedSearchQuery,
@@ -495,10 +482,18 @@ export function PeoplePage() {
     }
   }
 
+  const isSelfMember = (targetId?: string) =>
+    Boolean(authState.userId && targetId && authState.userId === targetId)
+
   // Handle Update Member Role
   async function handleUpdateMember(e: React.FormEvent) {
     e.preventDefault()
-    if (!editingMember) return
+    if (!editingMember || !isAdmin || isSelfMember(editingMember.id)) {
+      if (editingMember && isSelfMember(editingMember.id)) {
+        showToast("You cannot change your own role or account data.", "error")
+      }
+      return
+    }
 
     try {
       setSubmitting(true)
@@ -517,7 +512,12 @@ export function PeoplePage() {
 
   // Handle Delete Member
   async function handleDeleteMember() {
-    if (!deletingMember) return
+    if (!deletingMember || !isAdmin || isSelfMember(deletingMember.id)) {
+      if (deletingMember && isSelfMember(deletingMember.id)) {
+        showToast("You cannot delete your own account.", "error")
+      }
+      return
+    }
 
     try {
       setSubmitting(true)
@@ -562,16 +562,8 @@ export function PeoplePage() {
   const startIndex = totalItems === 0 ? 0 : (currentPage - 1) * pageSize
   const endIndex = Math.min(startIndex + pageSize, totalItems)
 
-  const roleBadgeStyle: Record<string, string> = {
-    admin: "bg-[#ff4d8b]/15 text-[#ff4d8b] border-[#ff4d8b]/30 font-semibold",
-    organizer: "bg-[#1a3a3a] text-white border-[#1a3a3a] font-semibold",
-    activist:
-      "bg-[#b8a4ed]/30 text-[#0a0a0a] border-[#b8a4ed]/50 font-semibold",
-    member: "bg-[#f5f0e0] text-[#0a0a0a] border-[#e5e5e5] font-semibold",
-  }
-
   return (
-    <main className="min-h-screen bg-[#fffaf0] text-left font-sans antialiased">
+    <main className="min-h-screen bg-canvas text-left font-sans antialiased">
       <PageBreadcrumb items={[{ label: "People" }]} />
 
       {/* Toast Alert */}
@@ -602,68 +594,71 @@ export function PeoplePage() {
           />
 
           {/* ── Search Bar, Status Filter & Actions ── */}
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             {/* Search Input */}
             <div className="relative flex-1">
-              <SearchIcon className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[#6a6a6a]" />
+              <SearchIcon className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-text-muted" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search name, @username, Member ID..."
-                className="h-10 w-full rounded-[12px] border border-[#e6decb]/80 bg-[#fffaf0]/90 pr-9 pl-10 text-xs text-[#0a0a0a] shadow-2xs backdrop-blur-sm transition-all outline-none placeholder:text-[#6a6a6a] focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] sm:h-11 sm:text-sm"
+                className="h-11 w-full rounded-md border border-hairline bg-canvas pr-9 pl-10 text-sm text-ink shadow-2xs transition-all outline-none placeholder:text-text-muted focus:border-ink focus:ring-1 focus:ring-ink"
               />
               {searchQuery && (
                 <button
                   type="button"
                   onClick={() => setSearchQuery("")}
-                  className="absolute top-1/2 right-3 flex h-5 w-5 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-[#e5e5e5] text-[#6a6a6a] transition-colors hover:bg-[#0a0a0a] hover:text-white"
+                  aria-label="Clear search"
+                  className="absolute top-1/2 right-3 flex size-6 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-hairline text-text-muted transition-colors hover:bg-ink hover:text-white"
                   title="Clear search"
                 >
-                  <XIcon className="size-3" />
+                  <XIcon className="size-3.5" />
                 </button>
               )}
             </div>
 
-            {/* Filter Pills for Claim Status */}
-            <div className="flex items-center gap-1.5 overflow-x-auto rounded-[12px] border border-[#e6decb]/80 bg-[#fffaf0]/90 p-1 shadow-2xs">
-              {(["all", "claimed", "unclaimed"] as const).map((st) => (
-                <button
-                  key={st}
-                  type="button"
-                  onClick={() => setClaimStatusFilter(st)}
-                  className={`cursor-pointer rounded-[8px] px-3 py-1.5 text-xs font-bold capitalize transition-all ${
-                    claimStatusFilter === st
-                      ? "bg-[#0a0a0a] text-white shadow-xs"
-                      : "text-[#6a6a6a] hover:text-[#0a0a0a]"
-                  }`}
-                >
-                  {st === "all" ? "All Accounts" : st}
-                </button>
-              ))}
-            </div>
+            <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between lg:justify-end">
+              {/* Filter Pills for Claim Status */}
+              <div className="grid w-full grid-cols-3 gap-1 rounded-md border border-hairline bg-canvas/90 p-1 shadow-2xs sm:inline-flex sm:w-auto">
+                {(["all", "claimed", "unclaimed"] as const).map((st) => (
+                  <button
+                    key={st}
+                    type="button"
+                    onClick={() => setClaimStatusFilter(st)}
+                    className={`min-h-[38px] cursor-pointer rounded-sm px-3 py-1.5 text-center text-xs font-bold whitespace-nowrap capitalize transition-all ${
+                      claimStatusFilter === st
+                        ? "bg-ink text-white shadow-xs"
+                        : "text-text-muted hover:text-ink"
+                    }`}
+                  >
+                    {st === "all" ? "All Accounts" : st}
+                  </button>
+                ))}
+              </div>
 
-            {/* Add Member Button (Organizer/Admin) */}
-            {isOrganizerOrAdmin && (
-              <Button
-                variant="filled"
-                onClick={() => setShowCreateModal(true)}
-                className="h-10 shrink-0 gap-1.5 rounded-[12px] px-3.5 sm:h-11 sm:px-4"
-              >
-                <PlusIcon className="size-3.5 sm:size-4" />
-                <span>Add Member</span>
-              </Button>
-            )}
+              {/* Add Member Button (Organizer/Admin) */}
+              {isOrganizerOrAdmin && (
+                <Button
+                  variant="filled"
+                  onClick={() => setShowCreateModal(true)}
+                  className="w-full shrink-0 gap-1.5 rounded-md px-4 sm:w-auto"
+                >
+                  <PlusIcon className="size-4" />
+                  <span>Add Member</span>
+                </Button>
+              )}
+            </div>
           </div>
 
           {/* Main Directory */}
           <div className="w-full space-y-3 sm:space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-2">
               <div>
-                <h2 className="text-sm font-bold text-[#0a0a0a]">
+                <h2 className="text-sm font-bold text-ink">
                   Members Directory
                 </h2>
-                <p className="text-xs text-[#6a6a6a]">
+                <p className="text-xs text-text-muted">
                   Showing {totalItems === 0 ? 0 : startIndex + 1}–{endIndex} of{" "}
                   {totalItems} members
                   {(roleFilter !== "all" || claimStatusFilter !== "all") &&
@@ -678,7 +673,7 @@ export function PeoplePage() {
                     setRoleFilter("all")
                     setClaimStatusFilter("all")
                   }}
-                  className="cursor-pointer text-xs font-bold text-[#0a0a0a] hover:underline"
+                  className="min-h-[36px] shrink-0 cursor-pointer text-xs font-bold text-ink hover:underline"
                 >
                   Clear filters
                 </button>
@@ -686,45 +681,43 @@ export function PeoplePage() {
             </div>
 
             {loading ? (
-              /* Uniform Card Skeleton Grid */
+              /* Lightweight 2-col Mobile / 3-4 col Desktop Skeleton Grid */
               <div className="grid grid-cols-2 gap-2.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
                 {Array.from({ length: 8 }).map((_, idx) => (
                   <div
                     key={idx}
-                    className="flex h-[130px] animate-pulse flex-col justify-between rounded-[16px] border border-[#e6decb]/80 bg-[#faf5e8]/90 p-3.5 shadow-2xs backdrop-blur-sm sm:h-[150px] sm:p-4"
+                    className="flex h-[112px] animate-pulse flex-col justify-between rounded-lg border border-hairline bg-surface-soft p-3 shadow-2xs sm:h-[132px] sm:p-4"
                   >
-                    <div className="space-y-3">
-                      <div className="flex items-start justify-between">
-                        <div className="size-10 rounded-[12px] bg-[#e6decb]/60 sm:size-11" />
-                        <div className="h-5 w-16 rounded-full bg-[#e6decb]/60" />
-                      </div>
-                      <div className="h-4 w-3/4 rounded bg-[#e6decb]/60" />
-                      <div className="h-3 w-1/2 rounded bg-[#e6decb]/40" />
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="size-9 rounded-md bg-hairline/70 sm:size-10" />
+                      <div className="h-5 w-14 rounded-full bg-hairline/70" />
                     </div>
-                    <div className="h-3 w-1/3 rounded bg-[#e6decb]/40" />
+                    <div className="space-y-1.5">
+                      <div className="h-3.5 w-3/4 rounded bg-hairline/70" />
+                      <div className="h-3 w-1/2 rounded bg-hairline/50" />
+                    </div>
                   </div>
                 ))}
               </div>
             ) : members.length === 0 ? (
-              <div className="flex min-h-[260px] flex-col items-center justify-center rounded-[20px] border border-dashed border-[#e6decb]/80 bg-[#fffaf0]/90 p-8 text-center backdrop-blur-sm">
-                <UsersIcon className="mb-2 size-10 text-[#6a6a6a]/40" />
-                <p className="text-sm font-bold text-[#0a0a0a]">
+              <div className="flex min-h-[240px] flex-col items-center justify-center rounded-xl border border-dashed border-hairline bg-canvas p-8 text-center">
+                <UsersIcon className="mb-2 size-10 text-text-muted/40" />
+                <p className="text-sm font-bold text-ink">
                   No members found
                 </p>
-                <p className="mt-1 max-w-xs text-xs text-[#6a6a6a]">
+                <p className="mt-1 max-w-xs text-xs text-text-muted">
                   Try adjusting your search query or filter settings.
                 </p>
               </div>
             ) : (
-              /* Clay Card Grid across mobile & desktop */
-              <div className="grid grid-cols-2 gap-2.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
+              /* Crisp 2-col mobile grid, scaling to 3 cols (md) and 4 cols (lg) */
+              <div
+                data-testid="people-directory-grid"
+                className="grid grid-cols-2 gap-2.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4"
+              >
                 {members.map((m) => {
-                  const initials =
-                    m.name
-                      .split(" ")
-                      .slice(0, 2)
-                      .map((w) => (w[0] ? w[0].toUpperCase() : ""))
-                      .join("") || "MB"
+                  const initials = formatMemberInitials(m.name)
+                  const isSelf = isSelfMember(m.id)
 
                   return (
                     <div
@@ -735,77 +728,78 @@ export function PeoplePage() {
                           params: { memberId: m.id },
                         })
                       }
-                      className="group flex cursor-pointer flex-col justify-between rounded-[16px] border border-[#e6decb]/80 bg-[#fffaf0]/90 p-3.5 shadow-2xs backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:border-[#0a0a0a]/30 hover:bg-[#faf5e8] hover:shadow-xs active:scale-[0.98] sm:p-4"
+                      className="group flex cursor-pointer flex-col justify-between gap-2.5 rounded-lg border border-hairline bg-canvas p-3 shadow-2xs transition-colors hover:border-ink/30 hover:bg-surface-soft active:scale-[0.99] sm:p-4"
                     >
-                      <div>
-                        {/* Top row: Avatar & Role badge */}
-                        <div className="mb-2.5 flex items-start justify-between gap-1">
-                          <div className="flex size-10 shrink-0 items-center justify-center rounded-[12px] bg-[#e8b94a] text-xs font-bold text-[#0a0a0a] shadow-2xs transition-transform group-hover:scale-105 sm:size-11 sm:text-sm">
-                            {initials}
-                          </div>
-                          <span
-                            className={`inline-block rounded-full border px-2 py-0.5 text-[10px] font-bold ${
-                              roleBadgeStyle[m.role] || roleBadgeStyle.member
-                            }`}
-                          >
-                            {formatRoleLabel(m.role)}
-                          </span>
+                      {/* Top: Avatar & Single Role Badge */}
+                      <div className="flex items-center justify-between gap-1.5">
+                        <div
+                          className={`flex size-9 shrink-0 items-center justify-center rounded-md border text-xs font-bold uppercase sm:size-10 sm:text-sm ${getRoleAvatarClass(m.role)}`}
+                          aria-hidden="true"
+                        >
+                          {initials}
                         </div>
 
-                        {/* Name & Identifiers */}
-                        <div>
-                          <h3
-                            className="truncate text-xs font-bold text-[#0a0a0a] group-hover:text-[#1a3a3a] sm:text-sm"
-                            title={m.name}
-                          >
-                            {m.name}
-                          </h3>
-                          <div className="mt-0.5 flex flex-wrap items-center gap-1 text-[10px] sm:text-xs">
-                            {m.username && (
-                              <span className="truncate rounded-[4px] bg-[#1a3a3a]/10 px-1.5 py-0.5 font-mono text-[11px] font-semibold text-[#1a3a3a]">
-                                @{m.username}
-                              </span>
-                            )}
-                            {m.user_number && (
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleCopy(m.user_number, "Member ID copied!")
-                                }}
-                                className="inline-flex cursor-pointer items-center gap-1 font-mono text-[11px] text-[#6a6a6a] transition-colors hover:text-[#0a0a0a]"
-                                title="Click to copy Member ID"
-                              >
-                                <span>{m.user_number}</span>
-                                <CopyIcon className="size-2.5 opacity-60" />
-                              </button>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Status */}
-                        <div className="mt-2.5 text-[11px] text-[#6a6a6a]">
-                          {/* Claim Status Badge */}
-                          <div>
-                            {m.is_claimed ? (
-                              <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/20 bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
-                                <CheckCircleIcon className="size-2.5" />
-                                <span>Claimed</span>
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700">
-                                <AlertTriangleIcon className="size-2.5" />
-                                <span>Unclaimed</span>
-                              </span>
-                            )}
-                          </div>
-                        </div>
+                        <Badge variant={getRoleBadgeVariant(m.role)} size="sm">
+                          {formatRoleLabel(m.role)}
+                        </Badge>
                       </div>
 
-                      {/* Bottom row / Action */}
-                      <div className="mt-3 flex items-center justify-between border-t border-[#e6decb]/60 pt-2 text-[10px] font-bold text-[#6a6a6a] transition-colors group-hover:text-[#0a0a0a] sm:text-[11px]">
-                        <span>View Details</span>
-                        <ChevronRightIcon className="size-3.5 shrink-0 transition-transform group-hover:translate-x-0.5" />
+                      {/* Middle: Name + Compact Identifier */}
+                      <div className="min-w-0 space-y-0.5">
+                        <h3
+                          className="truncate text-xs font-bold text-ink group-hover:text-clay-teal sm:text-sm"
+                          title={m.name}
+                        >
+                          {m.name}
+                          {isSelf && (
+                            <span className="ml-1 font-semibold text-text-muted">
+                              (You)
+                            </span>
+                          )}
+                        </h3>
+                        <p className="truncate font-mono text-[11px] font-medium text-clay-teal">
+                          {m.username
+                            ? `@${m.username}`
+                            : m.user_number
+                              ? String(m.user_number)
+                              : "No handle"}
+                        </p>
+                      </div>
+
+                      {/* Bottom: Lightweight Claim Status + Tablet/Desktop Quick ID Copy */}
+                      <div className="flex items-center justify-between gap-1.5 pt-0.5">
+                        {m.is_claimed ? (
+                          <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700">
+                            <span
+                              className="size-1.5 rounded-full bg-emerald-500"
+                              aria-hidden="true"
+                            />
+                            <span>Claimed</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-amber-700">
+                            <span
+                              className="size-1.5 rounded-full bg-amber-500"
+                              aria-hidden="true"
+                            />
+                            <span>Unclaimed</span>
+                          </span>
+                        )}
+
+                        {m.user_number && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleCopy(m.user_number, "Member ID copied!")
+                            }}
+                            className="hidden cursor-pointer items-center gap-1 rounded-xs px-1 py-0.5 font-mono text-[11px] text-text-muted transition-colors hover:bg-surface-card hover:text-ink sm:inline-flex"
+                            title="Click to copy Member ID"
+                          >
+                            <span>{m.user_number}</span>
+                            <CopyIcon className="size-3 opacity-70" />
+                          </button>
+                        )}
                       </div>
                     </div>
                   )
@@ -815,7 +809,7 @@ export function PeoplePage() {
 
             {/* ── PAGINATION CONTROLS ── */}
             {totalItems > 0 && (
-              <div className="flex flex-col gap-3 rounded-[16px] border border-[#e6decb]/80 bg-[#fffaf0]/90 p-3 text-xs text-[#0a0a0a] shadow-2xs backdrop-blur-sm sm:flex-row sm:items-center sm:justify-between sm:p-4">
+              <div className="flex flex-col gap-3 rounded-lg border border-hairline bg-canvas p-3 text-xs text-ink shadow-2xs sm:flex-row sm:items-center sm:justify-between sm:p-4">
                 <Field orientation="horizontal" className="w-fit">
                   <FieldLabel htmlFor="select-rows-per-page">
                     Items per page
@@ -828,30 +822,29 @@ export function PeoplePage() {
                     }}
                   >
                     <SelectTrigger
-                      className="h-8 w-20 rounded-[8px] border-[#e5e5e5] bg-[#fffaf0] text-xs font-bold shadow-xs"
+                      className="h-9 w-20 rounded-sm border-hairline bg-canvas text-xs font-bold shadow-xs"
                       id="select-rows-per-page"
                     >
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent align="start">
                       <SelectGroup>
-                        <SelectItem value="10">10</SelectItem>
-                        <SelectItem value="15">15</SelectItem>
-                        <SelectItem value="25">25</SelectItem>
-                        <SelectItem value="50">50</SelectItem>
-                        <SelectItem value="100">100</SelectItem>
+                        <SelectItem value="12">12</SelectItem>
+                        <SelectItem value="24">24</SelectItem>
+                        <SelectItem value="48">48</SelectItem>
+                        <SelectItem value="96">96</SelectItem>
                       </SelectGroup>
                     </SelectContent>
                   </Select>
                 </Field>
 
-                <div className="flex w-full items-center justify-between gap-3 sm:w-auto">
-                  <span className="text-xs text-[#6a6a6a]">
+                <div className="flex w-full flex-wrap items-center justify-between gap-2 sm:w-auto sm:gap-3">
+                  <span className="text-xs text-text-muted">
                     Showing{" "}
-                    <strong className="text-[#0a0a0a]">
+                    <strong className="text-ink">
                       {totalItems === 0 ? 0 : startIndex + 1}–{endIndex}
                     </strong>{" "}
-                    of <strong className="text-[#0a0a0a]">{totalItems}</strong>{" "}
+                    of <strong className="text-ink">{totalItems}</strong>{" "}
                     (Page {currentPage} of {totalPages})
                   </span>
 
@@ -1213,8 +1206,8 @@ export function PeoplePage() {
         </div>
       )}
 
-      {/* ── MODAL 3: CHANGE MEMBER ROLE (ADMIN ONLY) ── */}
-      {editingMember && (
+      {/* ── MODAL 3: CHANGE MEMBER ROLE (ADMIN ONLY, NEVER SELF) ── */}
+      {editingMember && isAdmin && !isSelfMember(editingMember.id) && (
         <div className="fixed inset-0 z-50 flex animate-in items-center justify-center bg-black/60 p-3.5 backdrop-blur-xs fade-in sm:p-4">
           <div className="relative max-h-[90vh] w-full max-w-md space-y-4 overflow-y-auto rounded-[24px] border border-[#e5e5e5] bg-[#fffaf0] p-4 text-left shadow-2xl sm:space-y-5 sm:p-6">
             <div className="flex items-center justify-between border-b border-[#e5e5e5] pb-3">
@@ -1253,11 +1246,9 @@ export function PeoplePage() {
                     {editingMember.user_number || "—"}
                   </p>
                 </div>
-                <span
-                  className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold capitalize ${roleBadgeStyle[editingMember.role]}`}
-                >
-                  {editingMember.role}
-                </span>
+                <Badge variant={getRoleBadgeVariant(editingMember.role)} size="sm">
+                  {formatRoleLabel(editingMember.role)}
+                </Badge>
               </div>
             </div>
 
@@ -1307,8 +1298,8 @@ export function PeoplePage() {
         </div>
       )}
 
-      {/* ── MODAL 4: DELETE MEMBER CONFIRMATION ── */}
-      {deletingMember && (
+      {/* ── MODAL 4: DELETE MEMBER CONFIRMATION (ADMIN ONLY, NEVER SELF) ── */}
+      {deletingMember && isAdmin && !isSelfMember(deletingMember.id) && (
         <div className="fixed inset-0 z-50 flex animate-in items-center justify-center bg-black/60 p-3.5 backdrop-blur-xs fade-in sm:p-4">
           <div className="relative max-h-[90vh] w-full max-w-sm space-y-4 overflow-y-auto rounded-[24px] border border-[#e5e5e5] bg-[#fffaf0] p-4 text-left shadow-2xl sm:p-6">
             <div className="flex items-center gap-3">

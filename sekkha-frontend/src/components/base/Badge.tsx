@@ -11,6 +11,8 @@ const sekkhaBadgeVariants = cva(
         // DESIGN.md badge-pill: #f5f0e0 cream fill, ink text, hairline border
         default: "border border-[#e5e5e5] bg-[#f5f0e0] text-[#0a0a0a]",
         primary: "border-transparent bg-[#0a0a0a] text-white",
+        obsidian:
+          "border border-[#e8b94a]/40 bg-[#0a0a0a] text-[#e8b94a] font-semibold",
         secondary: "border border-[#e5e5e5] bg-[#faf5e8] text-[#0a0a0a]",
         // 6-color saturated palette
         pink: "border-transparent bg-[#ff4d8b] text-white",
@@ -68,6 +70,8 @@ const badgeGlassVariants: Record<string, string> = {
   default:
     "border-black/[0.08] bg-white/70 text-[#0a0a0a] backdrop-blur-md shadow-2xs ring-1 ring-black/[0.02]",
   primary: "border-black/20 bg-black/80 text-white backdrop-blur-md shadow-2xs",
+  obsidian:
+    "border-[#e8b94a]/40 bg-[#0a0a0a]/90 text-[#e8b94a] backdrop-blur-md ring-1 ring-[#e8b94a]/20",
   secondary:
     "border-black/[0.06] bg-[#faf5e8]/80 text-[#0a0a0a] backdrop-blur-md shadow-2xs",
   pink: "border-[#ff4d8b]/30 bg-[#ff4d8b]/15 text-[#d62865] backdrop-blur-md ring-1 ring-[#ff4d8b]/10",

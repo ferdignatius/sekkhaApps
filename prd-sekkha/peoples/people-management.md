@@ -27,12 +27,16 @@ Di komunitas vihara pemuda, banyak jemaat dan pemuda yang rutin hadir di kebakti
 
 Menggunakan terminologi role Bahasa Inggris resmi: `member`, `activist`, `organizer`, `admin`.
 
-| Role | Lihat Direktori People (`GET /api/people`) | Lihat Detail Jemaat (`GET /api/people/:id`) | Tambah Jemaat Baru (`POST /api/people`) | Edit Profil Jemaat (`PUT /api/people/:id`) | Generate Ulang Password Sementara |
-| --- | :---: | :---: | :---: | :---: | :---: |
-| `member` | x (403 Forbidden) | x (Hanya profil sendiri di `/home/profile`) | x | x | x |
-| `activist` | v (View-only direktori) | v (View-only profil dasar) | x | x | x |
-| `organizer` | v (Semua data) | v (Semua data & riwayat) | v | v | v (Khusus `isClaimed = false`) |
-| `admin` | v (Semua data) | v (Semua data & riwayat) | v | v | v (Khusus `isClaimed = false`) |
+| Role | Lihat Direktori People (`GET /api/people`) | Lihat Detail Jemaat (`GET /api/people/:id`) | Tambah Jemaat Baru (`POST /api/people`) | Edit Profil / Ubah Role (`PUT /api/people/:id`) | Hapus Akun (`DELETE /api/people/:id`) | Generate Ulang Password Sementara |
+| --- | :---: | :---: | :---: | :---: | :---: | :---: |
+| `member` | x (403 Forbidden) | x (Hanya profil sendiri di `/home/profile`) | x | x | x | x |
+| `activist` | v (View-only direktori) | v (View-only profil dasar) | x | x | x | x |
+| `organizer` | v (Semua data) | v (Semua data & riwayat) | v (Akun unclaimed `member`/`activist`) | x (403 Forbidden — termasuk akun sendiri) | x (403 Forbidden — termasuk akun sendiri) | v (Hanya `isClaimed = false`, bukan akun sendiri, & bukan `organizer`/`admin`) |
+| `admin` | v (Semua data) | v (Semua data & riwayat) | v (Akun unclaimed `member`/`activist`) | v (Khusus user lain; **403** untuk akun sendiri) | v (Khusus user lain; **400** untuk akun sendiri) | v (Hanya `isClaimed = false` & bukan akun sendiri) |
+
+> **Aturan Perlindungan Diri & Eskalasi (*Self-Protection & Least-Privilege Guards*)**:
+> 1. **Self-Protection (Berlaku untuk semua role termasuk `admin`)**: Tidak seorang pun diperbolehkan mengubah role, mengubah data profil melalui modul People (`PUT /api/people/:id`), mereset temporary password (`POST /api/people/:id/reset-temporary-password`), ataupun menghapus akunnya sendiri (`DELETE /api/people/:id`). Pengelolaan profil pribadi wajib dilakukan melalui **Profile Settings** (`/profile`).
+> 2. **Pembatasan Wewenang Pengurus (`organizer`)**: Pengurus bersifat **Read-Only** terhadap data akun jemaat yang sudah ada, **tidak dapat mengubah role maupun menghapus akun siapapun** (termasuk miliknya sendiri), tetap dapat mendaftarkan jemaat baru (`POST /api/people`), dan **hanya dapat mereset temporary password untuk akun `member`/`activist` yang belum ter-claim (`isClaimed = false`)**.
 
 ---
 
@@ -77,9 +81,10 @@ Menggunakan terminologi role Bahasa Inggris resmi: `member`, `activist`, `organi
 3. Pengurus menekan tombol **"Reset Temporary Password"**.
 4. Sistem membuat password sementara baru `sekkha#####puggala`, meng-update hash DB, dan mencatat audit log.
 5. Kredensial baru ditampilkan di modal satu kali untuk disalin dan dibagikan ke jemaat.
-6. **Proteksi Keamanan Akun Terklaim**:
+6. **Proteksi Keamanan Akun Terklaim, Self-Account, & Role Istimewa**:
    - Jika akun **sudah diklaim (`isClaimed = true`)**, tombol *"Reset Temporary Password"* **wajib di-DISABLE** (berwarna abu-abu, tidak dapat diklik) dan dilengkapi tooltip: *"Account has been claimed by the member. For security and privacy, members must reset their own password via Forgot Password."*
-   - Di sisi backend: Endpoint `POST /api/people/:id/reset-temporary-password` wajib menolak permintaan dengan `HTTP 400 Bad Request` (`ACCOUNT_ALREADY_CLAIMED`) jika `isClaimed === true`. Pengurus tidak boleh dapat mereset akun yang sudah aktif milik anggota.
+   - Jika melihat **akun sendiri (`isSelf`)** atau jika **`organizer` melihat akun `organizer`/`admin`**, tombol *"Reset Temporary Password"* juga **wajib di-DISABLE**.
+   - Di sisi backend: Endpoint `POST /api/people/:id/reset-temporary-password` wajib menolak dengan `HTTP 400 Bad Request` (`ACCOUNT_ALREADY_CLAIMED`) jika `isClaimed === true`, serta menolak dengan `HTTP 403 Forbidden` jika target adalah akun sendiri atau jika `organizer` mencoba mereset akun `organizer`/`admin`.
 
 ---
 
@@ -169,33 +174,48 @@ Melihat detail profil anggota, data almamater, status pastoral, dan riwayat pres
 * **Akses**: `requireAuth`, `requireRole("activist", "organizer", "admin")`.
 
 #### 4. `PUT /api/people/:id`
-Memperbarui data profil jemaat oleh Organizer / Admin.
-* **Akses**: `requireAuth`, `requireRole("organizer", "admin")`.
-* **Editable Fields**: `name`, `role`, `school_id`, `phone`, `date_of_birth`.
+Memperbarui data profil atau peran (`role`) jemaat lain oleh Admin.
+* **Akses**: `requireAuth`, `requireRole("admin")` *(Khusus Admin; Pengurus/`organizer` dilarang mengubah data maupun role akun siapapun)*.
+* **Editable Fields**: `name`, `username`, `role`, `school_id`, `phone`, `date_of_birth`.
+* **Guard**:
+  * Mengembalikan `403 Forbidden` jika diakses oleh non-admin (`organizer`, `activist`, `member`).
+  * Mengembalikan `403 Forbidden` jika `id === currentUser.userId` (Admin dilarang mengubah role atau data akun miliknya sendiri melalui modul People; gunakan Profile Settings `/profile`).
 
-#### 5. `POST /api/people/:id/reset-temporary-password`
+#### 5. `DELETE /api/people/:id`
+Menghapus akun jemaat lain dari sistem.
+* **Akses**: `requireAuth`, `requireRole("admin")`.
+* **Guard**:
+  * Mengembalikan `403 Forbidden` jika diakses oleh non-admin (termasuk pengurus yang mencoba menghapus akun user lain atau dirinya sendiri).
+  * Mengembalikan `400 Bad Request` (`"You cannot delete your own account."`) jika Admin mencoba menghapus akunnya sendiri.
+
+#### 6. `POST /api/people/:id/reset-temporary-password`
 Men-generate ulang password sementara jika user belum diklaim (`isClaimed = false`).
 * **Akses**: `requireAuth`, `requireRole("organizer", "admin")`.
-* **Guard**: Mengembalikan `400 Bad Request` (`ACCOUNT_ALREADY_CLAIMED`) jika `isClaimed === true`.
+* **Guard**:
+  * Mengembalikan `403 Forbidden` jika `id === currentUser.userId` (tidak boleh mereset akun sendiri).
+  * Mengembalikan `403 Forbidden` jika `organizer` mencoba mereset temporary password milik akun `organizer` atau `admin`.
+  * Mengembalikan `400 Bad Request` (`ACCOUNT_ALREADY_CLAIMED`) jika `isClaimed === true`.
 
 ---
 
 ## 5. Desain Antarmuka & UX (Clay Design System)
 
 1. **Direktori Anggota (`/people`)**:
-   - Clay Card Grid Responsif (`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4`).
-   - Stat Cards di bagian atas: *Total Members*, *Claimed Accounts*, *Unclaimed Accounts*, *Active This Month*.
-   - Filter Bar: Input pencarian dengan *debounce 250ms*, pill filter status klaim (`All`, `Claimed`, `Unclaimed`), dan dropdown filter role.
-   - Kartu Anggota menampilkan:
-     - Avatar inisial dengan badge warna role (`member`, `activist`, `organizer`, `admin`).
-     - Nama lengkap, `userNumber`, dan `username`.
-     - Badge status: Hijau *"Claimed"* atau Kuning *"Unclaimed"*.
-     - Almamater sekolah, nomor WhatsApp/telepon, dan info kehadiran terakhir (`last_attended_at`).
+   - Clay Card Grid Responsif ringan (`grid grid-cols-2 gap-2.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4`, pagination default `12` agar rata di seluruh kolom) tanpa heavy glassmorphism blur per kartu agar render cepat di mobile.
+   - Stat Cards / Role Distribution Chart di bagian atas dengan filter cepat per role (`Organizers`, `Members`, `Activists`).
+   - Filter Bar: Input pencarian dengan *debounce 250ms*, segmented pill filter status klaim (`All Accounts`, `Claimed`, `Unclaimed`), dan dropdown pagination.
+   - Kartu Anggota menampilkan informasi ringkas agar muat rapi pada 2 kolom mobile:
+     - Avatar inisial dengan badge warna role tunggal (`member`, `activist`, `organizer`, `admin`).
+     - Nama lengkap (dengan indikator `(You)` inline jika profil sendiri), `@username` (atau fallback `userNumber`), dan indikator status klaim ringkas (`Claimed` / `Unclaimed`), serta tombol salin `userNumber` cepat di tablet/desktop.
+     - Almamater sekolah, kontak, poin, dan riwayat absensi tidak dimuat di listing — baru dimuat *on-click* saat membuka detail (`/people/:id`).
 2. **Modal Kredensial Baru (One-Time Modal)**:
    - Kartu kontras tinggi yang menampilkan Nomor Anggota, Username, dan Password Sementara.
    - Tombol *"Copy WhatsApp Message"* yang menyalin teks ramah jemaat (`whatsapp_invite_message`) langsung ke clipboard sehingga pengurus tidak perlu mengetik ulang kredensial satu per satu.
-3. **Detail & Reset Password Action**:
-   - Jika `isClaimed === true`: Tombol *"Reset Temporary Password"* **di-disable** dengan pesan: *"Account claimed by user. User must use self-service forgot password."*
+3. **Detail & Guardrails Aksi Administratif**:
+   - **On-Click Detail Loading & Lightweight History**: Direktori `/people` hanya memuat identitas ringkas kartu (`name`, `username`, `user_number`, `role`, `is_claimed`). Data detail sensitif (email, telepon/WhatsApp, tanggal lahir, almamater, poin) baru diambil dan ditampilkan ketika pengguna mengklik kartu anggota untuk membuka detail (`/people/:id`). Riwayat absensi pada halaman detail **dibatasi maksimal 5 event terakhir** (`take: 5`), sementara total kehadiran seumur hidup tetap ditampilkan melalui `total_attendances`.
+   - **Self-Protection UX**: Saat pengguna melihat profil miliknya sendiri di direktori/detail People, badge **`You`** ditampilkan pada kartu/hero profil, dan seluruh tombol aksi (*Reset Password*, *Change Role*, *Delete*) **di-disable** disertai pesan informatif agar pengubahan profil pribadi dilakukan melalui halaman **Profile Settings** (`/profile`).
+   - **Organizer Read-Only UX**: Pengurus (`organizer`) hanya melihat tombol *"Reset Password"* (tanpa tombol *Change Role* maupun *Delete*); tombol ini hanya aktif untuk akun `member`/`activist` dengan `isClaimed === false`.
+   - Jika `isClaimed === true`: Tombol *"Reset Password"* **di-disable** dengan pesan: *"Account has been claimed by the member. Temporary password reset is disabled for member privacy."*
 4. **Bahasa UI**: 100% Bahasa Inggris di seluruh label, placeholder, dialog, dan pesan sukses/error.
 
 ---
@@ -228,8 +248,8 @@ Men-generate ulang password sementara jika user belum diklaim (`isClaimed = fals
 | US-PEOP-02 | Organizer / Admin | View a paginated directory of community members with debounce search by name, username, or member ID | I can quickly find members without experiencing UI lag or loading unneeded records |
 | US-PEOP-03 | Organizer / Admin | Filter directory members by claimed status (`all`, `claimed`, `unclaimed`), assigned role (`member`, `activist`, etc.), and school institution | I can audit community engagement, onboarding progress, and target pastoral outreach |
 | US-PEOP-04 | Organizer / Admin | View detailed member profiles with authorized on-the-fly PII decryption (phone, birth date, class grade) | I can review contact and pastoral data without storing or displaying unencrypted PII in public endpoints |
-| US-PEOP-05 | Organizer / Admin | Reset temporary passwords exclusively for unclaimed accounts (`isClaimed = false`) with one-click copyable WhatsApp templates | I can assist members who lost credentials before first login while preventing unauthorized overrides on active accounts |
-| US-PEOP-06 | Admin | Update member profiles and change assigned roles with strict RBAC guardrails (only Admin can upgrade/downgrade roles; Organizers can edit standard profile fields) | Role elevation stays strictly governed and accidental privilege escalations are prevented |
+| US-PEOP-05 | Organizer / Admin | Reset temporary passwords exclusively for unclaimed member/activist accounts (`isClaimed = false`, non-self) with one-click copyable WhatsApp templates | I can assist members who lost credentials before first login while preventing unauthorized overrides on active, self, or privileged accounts |
+| US-PEOP-06 | Admin | Update other members' profiles and change their assigned roles with strict RBAC and self-protection guardrails (Organizers cannot edit existing users, change roles, or delete accounts; Admin cannot edit, change role of, or delete their own account via People management) | Role elevation and account mutations stay strictly governed and self-lockout/privilege abuses are prevented |
 | US-PEOP-07 | Activist | View read-only directory and basic member profile information without access to editing or credential generation | I can assist temple logistics and verify attendee identity without administrative write privileges |
 
 ---
@@ -242,8 +262,8 @@ Men-generate ulang password sementara jika user belum diklaim (`isClaimed = fals
 | AC-PEOP-02 | Directory pagination & search | `GET /api/people` accepts `page`, `limit` (max 100), `search`, `role`, and `status`. Numeric search executes exact B-Tree lookup on `userNumber`; text search matches name/username via trigram index scan. |
 | AC-PEOP-03 | Claimed vs unclaimed filtering | Setting `status=claimed` filters for `isClaimed = true`; `status=unclaimed` filters for `isClaimed = false`. Summary stat cards display accurate counts. |
 | AC-PEOP-04 | Secure PII decryption on detail view | `GET /api/people/:id` decrypts AES-256-GCM ciphertext on the fly for authorized roles (`activist`, `organizer`, `admin`). Plaintext returned to client; decryption errors gracefully return fallback indicator without leaking ciphertext. |
-| AC-PEOP-05 | Temporary password reset guardrail | `POST /api/people/:id/reset-temporary-password` succeeds with HTTP 200 and audit log when `isClaimed === false`. If `isClaimed === true`, server returns HTTP 400 (`ACCOUNT_ALREADY_CLAIMED`) and UI disables reset button. |
-| AC-PEOP-06 | Role upgrade/downgrade RBAC guardrail | Changing `role` via `PUT /api/people/:id` is permitted only for `admin`. If non-admin (`organizer` or `activist`) attempts to pass `role`, request is rejected with HTTP 403 Forbidden. Admin cannot delete or downgrade their own active account. |
+| AC-PEOP-05 | Temporary password reset guardrail | `POST /api/people/:id/reset-temporary-password` succeeds with HTTP 200 and audit log when `isClaimed === false` and target is not self (and for organizers, target is not `organizer`/`admin`). If `isClaimed === true`, server returns HTTP 400 (`ACCOUNT_ALREADY_CLAIMED`); if targeting self or privileged account by organizer, returns HTTP 403 Forbidden; UI disables reset button accordingly. |
+| AC-PEOP-06 | Admin-only update/delete & self-protection guardrail | `PUT /api/people/:id` and `DELETE /api/people/:id` are permitted exclusively for `admin` on OTHER users' accounts. Organizers receive HTTP 403 Forbidden on any edit/role-change/delete (including their own account). Admins cannot modify their own role/data (`403 Forbidden`) or delete their own account (`400 Bad Request`) via People management, and UI disables self-actions. |
 | AC-PEOP-07 | Activist read-only view | `activist` role can access `GET /api/people` and `GET /api/people/:id`, but encounters HTTP 403 on `POST /api/people`, `PUT /api/people/:id`, `DELETE /api/people/:id`, and reset credentials endpoints. |
 
 ---
@@ -258,11 +278,12 @@ Men-generate ulang password sementara jika user belum diklaim (`isClaimed = fals
 | **TC-PEOP-04** | Status Filter | Filter by claimed vs unclaimed members | Mixed claimed and unclaimed users exist | 1. Send `GET /api/people?status=claimed`.<br>2. Send `GET /api/people?status=unclaimed`. | Step 1 returns only users where `is_claimed === true`. Step 2 returns only users where `is_claimed === false`. | Positive / Functional |
 | **TC-PEOP-05** | Role Filter | Filter directory by role | Users with `member`, `activist`, `organizer` exist | Send `GET /api/people?role=activist`. | Returns list filtered exclusively to users with `role: "activist"`. | Positive / Functional |
 | **TC-PEOP-06** | Detail & PII Decryption | Authorized access to member detail view with encrypted PII | Target user has encrypted phone and birthDate in `UserProfile` | Send `GET /api/people/:id` as `organizer`. | HTTP 200 with standard envelope. PII fields decrypted on the fly to plaintext phone and ISO date. No raw AES ciphertext leaked. | Security / Positive |
-| **TC-PEOP-07** | Reset Temp Password | Reset temporary password on unclaimed user account | User exists with `isClaimed: false` | Organizer submits `POST /api/people/:id/reset-temporary-password`. | HTTP 200. New `temporary_password` and invite message returned once. DB bcrypt hash updated. Audit log `TEMPORARY_PASSWORD_RESET` logged. | Positive / Security |
+| **TC-PEOP-07** | Reset Temp Password | Reset temporary password on unclaimed user account | User exists with `isClaimed: false` and role `member` | Organizer submits `POST /api/people/:id/reset-temporary-password`. | HTTP 200. New `temporary_password` and invite message returned once. DB bcrypt hash updated. Audit log `TEMPORARY_PASSWORD_RESET` logged. | Positive / Security |
 | **TC-PEOP-08** | Reset Temp Password Guardrail | Attempt to reset temporary password on already claimed user account | Target user has `isClaimed: true` | Organizer submits `POST /api/people/:id/reset-temporary-password`. | HTTP 400 Bad Request (`ACCOUNT_ALREADY_CLAIMED`). Temporary password is NOT overwritten. UI displays disabled button with explanatory tooltip. | Negative / Security |
-| **TC-PEOP-09** | Role Upgrade Guardrail | Non-admin organizer attempts to upgrade user role to activist/organizer | Authenticated as `organizer` | Submit `PUT /api/people/:id` with body `{ "role": "activist" }`. | HTTP 403 Forbidden envelope ("Only admin can change member role."). Role remains unchanged in database. | Security / RBAC |
-| **TC-PEOP-10** | Admin Role Change | Admin updates user role from member to activist | Authenticated as `admin` | Admin submits `PUT /api/people/:id` with `{ "role": "activist" }`. | HTTP 200 envelope. Role updated in DB. Profile cache invalidated. | Positive / RBAC |
-| **TC-PEOP-11** | Self-Deletion Guardrail | Admin attempts to delete their own account | Authenticated as `admin` | Admin submits `DELETE /api/people/:own_user_id`. | HTTP 400 Bad Request ("You cannot delete your own account."). Deletion blocked. | Negative / Safety |
+| **TC-PEOP-09** | Organizer Write Restriction | Non-admin organizer attempts to edit data, upgrade role, or delete any user (including self) | Authenticated as `organizer` | 1. Submit `PUT /api/people/:id` with `{ "role": "activist" }` or `{ "name": "New Name" }`.<br>2. Submit `DELETE /api/people/:id` (target other or self). | HTTP 403 Forbidden envelope across all `PUT` and `DELETE` attempts. Database remains untouched. | Security / RBAC |
+| **TC-PEOP-10** | Admin Role Change | Admin updates another user's role from member to activist | Authenticated as `admin`, target `id !== admin.userId` | Admin submits `PUT /api/people/:id` with `{ "role": "activist" }`. | HTTP 200 envelope. Role updated in DB. Audit log `USER_ROLE_CHANGED` logged. Profile cache invalidated. | Positive / RBAC |
+| **TC-PEOP-11** | Self-Protection Guardrail | Admin attempts to modify own role/data or delete own account via People module | Authenticated as `admin` | 1. Submit `PUT /api/people/:own_user_id` with `{ "role": "member" }` or `{ "name": "Edit" }`.<br>2. Submit `DELETE /api/people/:own_user_id`.<br>3. Submit `POST /api/people/:own_user_id/reset-temporary-password`. | 1 & 3 return HTTP 403 Forbidden; 2 returns HTTP 400 Bad Request ("You cannot delete your own account."). UI disables Change Role, Delete, and Reset Temp Pass buttons on own detail view. | Negative / Safety |
 | **TC-PEOP-12** | Activist Permissions | Activist attempts administrative write actions on people directory | Authenticated as `activist` | 1. Submit `GET /api/people` (Read).<br>2. Submit `POST /api/people` (Create).<br>3. Submit `PUT /api/people/:id` (Update). | Step 1 succeeds with HTTP 200. Steps 2 & 3 return HTTP 403 Forbidden. Activists have strictly read-only access. | Security / RBAC |
 | **TC-PEOP-13** | Member Access Denial | Regular member attempts to access people directory endpoint | Authenticated as `member` | Member submits `GET /api/people`. | HTTP 403 Forbidden envelope. Members are blocked from viewing community directory. | Security |
 | **TC-PEOP-14** | One-Time Credentials Display | Temporary password omitted from subsequent detail fetches | User created via pre-provisioning | Query `GET /api/people/:id` or subsequent list `GET /api/people`. | Response contains user profile, but never exposes `temporary_password` field after initial creation/reset response. | Security |
+| **TC-PEOP-15** | Privilege Escalation Guard | Organizer attempts to reset temp password of an unclaimed `organizer` or `admin` account (or self) | Authenticated as `organizer` | Submit `POST /api/people/:privileged_or_own_id/reset-temporary-password`. | HTTP 403 Forbidden. Organizer can only reset credentials for unclaimed `member`/`activist` accounts. | Security / RBAC |

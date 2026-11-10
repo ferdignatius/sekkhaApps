@@ -16,9 +16,9 @@ peopleRouter.get("/members/:id", requireAuth, requireRole("organizer", "admin"),
 peopleRouter.post("/", requireAuth, requireRole("organizer", "admin"), peopleControllers.createMember)
 peopleRouter.post("/members", requireAuth, requireRole("organizer", "admin"), peopleControllers.createMember)
 
-// 4. Update member (organizer, admin)
-peopleRouter.put("/:id", requireAuth, requireRole("organizer", "admin"), peopleControllers.updateMember)
-peopleRouter.put("/members/:id", requireAuth, requireRole("organizer", "admin"), peopleControllers.updateMember)
+// 4. Update member (admin only — organizers are read-only for existing accounts except unclaimed temp password reset)
+peopleRouter.put("/:id", requireAuth, requireRole("admin"), peopleControllers.updateMember)
+peopleRouter.put("/members/:id", requireAuth, requireRole("admin"), peopleControllers.updateMember)
 
 // 5. Delete member (admin only)
 peopleRouter.delete("/:id", requireAuth, requireRole("admin"), peopleControllers.deleteMember)

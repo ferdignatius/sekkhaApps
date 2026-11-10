@@ -1,176 +1,239 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import {
-  CoinsIcon,
-  CalendarIcon,
   SparklesIcon,
-  ArrowUpRightIcon,
-  ArrowDownLeftIcon,
+  CalendarIcon,
   RefreshCwIcon,
+  AlertCircleIcon,
+  ChevronDownIcon,
+  TrendingUpIcon,
+  TrendingDownIcon,
 } from "lucide-react"
+import { Button, Card } from "@/components/base"
 import { userApi } from "../api/userApi"
 import type { PointTransactionDto } from "../api/userApi"
 
 interface PointsLedgerProps {
+  /** Retained for backwards compatibility; balance lives in the Hero & Pass cards. */
   totalPoints?: number
 }
 
-export function PointsLedger({ totalPoints = 0 }: PointsLedgerProps) {
+const INITIAL_VISIBLE_COUNT = 10
+const LOAD_MORE_STEP = 10
+
+function formatTxDate(dateStr?: string) {
+  if (!dateStr) return "-"
+  try {
+    return new Date(dateStr).toLocaleDateString("en-US", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    })
+  } catch {
+    return dateStr
+  }
+}
+
+function getTxCategoryLabel(type?: string): string {
+  const normalized = (type || "").toLowerCase()
+  if (normalized.includes("attendance") || normalized.includes("checkin")) {
+    return "Attendance"
+  }
+  if (normalized.includes("service") || normalized.includes("duty")) {
+    return "Service"
+  }
+  if (normalized.includes("adjust") || normalized.includes("bonus")) {
+    return "Bonus"
+  }
+  return "Activity"
+}
+
+export function PointsLedger(_props: PointsLedgerProps) {
   const [transactions, setTransactions] = useState<PointTransactionDto[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE_COUNT)
 
-  useEffect(() => {
-    fetchHistory()
-  }, [])
-
-  async function fetchHistory() {
+  const fetchHistory = useCallback(async (isManualRefresh = false) => {
+    if (isManualRefresh) {
+      setRefreshing(true)
+    } else {
+      setLoading(true)
+    }
+    setError(null)
     try {
       const data = await userApi.getPointsHistory(50)
       setTransactions(data)
-    } catch (err) {
+      if (isManualRefresh) {
+        setVisibleCount(INITIAL_VISIBLE_COUNT)
+      }
+    } catch (err: any) {
       console.error("Failed to fetch points history:", err)
+      setError(err?.message || "Please check your connection and try again.")
     } finally {
       setLoading(false)
       setRefreshing(false)
     }
-  }
+  }, [])
 
-  function handleRefresh() {
-    setRefreshing(true)
-    fetchHistory()
-  }
+  useEffect(() => {
+    void fetchHistory(false)
+  }, [fetchHistory])
+
+  const visibleTransactions = transactions.slice(0, visibleCount)
+  const remainingCount = Math.max(0, transactions.length - visibleCount)
 
   return (
-    <div className="space-y-4 rounded-[20px] border border-[#e5e5e5] bg-[#fffaf0] p-5 shadow-xs sm:p-6">
-      {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#e5e5e5] pb-3.5">
-        <div className="flex items-center gap-2.5">
-          <div className="flex size-9 items-center justify-center rounded-[10px] bg-[#0a0a0a] text-white shadow-xs">
-            <CoinsIcon className="size-4.5 text-[#e8b94a]" />
-          </div>
-          <div>
-            <h3 className="text-sm font-bold text-[#0a0a0a] sm:text-base">
-              Points Ledger & History
-            </h3>
-            <p className="text-xs text-[#6a6a6a]">
-              Transparent record of attendance points and service duty rewards
-            </p>
-          </div>
+    <div data-testid="points-ledger-section" className="space-y-4">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h3 className="text-base font-bold text-ink">Karma Points History</h3>
+          <p className="text-xs text-text-muted">
+            Track points earned from attendance, duties, and community events.
+          </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          <div className="rounded-[10px] border border-[#e5e5e5] bg-[#faf5e8] px-3 py-1 text-right">
-            <span className="block text-[9px] font-bold tracking-wider text-[#6a6a6a] uppercase">
-              Current Balance
-            </span>
-            <span className="font-mono text-sm font-black text-[#0a0a0a]">
-              {totalPoints.toLocaleString("en-US")} Pts
-            </span>
-          </div>
-
-          <button
-            type="button"
-            onClick={handleRefresh}
-            disabled={refreshing}
-            className="flex size-8 cursor-pointer items-center justify-center rounded-[8px] border border-[#e5e5e5] bg-[#fffaf0] text-[#6a6a6a] hover:bg-[#faf5e8] hover:text-[#0a0a0a] disabled:opacity-50"
-            title="Refresh Ledger"
-          >
-            <RefreshCwIcon
-              className={`size-3.5 ${refreshing ? "animate-spin" : ""}`}
-            />
-          </button>
-        </div>
+        <Button
+          type="button"
+          variant="secondary"
+          size="icon"
+          onClick={() => void fetchHistory(true)}
+          disabled={loading || refreshing}
+          aria-label="Refresh points history"
+          title="Refresh history"
+          className="h-10 w-10 shrink-0 rounded-[12px]"
+        >
+          <RefreshCwIcon
+            className={`size-4 text-text-muted ${refreshing ? "animate-spin text-ink" : ""}`}
+          />
+        </Button>
       </div>
 
-      {/* Ledger Content */}
       {loading ? (
-        <div className="space-y-2.5 py-4">
-          {[1, 2, 3].map((i) => (
+        <div
+          aria-busy="true"
+          aria-label="Loading points history"
+          className="space-y-2.5"
+        >
+          {[0, 1, 2].map((idx) => (
             <div
-              key={i}
-              className="h-14 animate-pulse rounded-[12px] bg-[#faf5e8]"
-            />
-          ))}
-        </div>
-      ) : transactions.length > 0 ? (
-        <div className="divide-y divide-[#f0f0f0] overflow-hidden rounded-[14px] border border-[#e5e5e5] bg-[#faf5e8]">
-          {transactions.map((tx) => {
-            const delta = tx.points_delta ?? tx.points
-            const isPositive = delta >= 0
-
-            return (
-              <div
-                key={tx.id}
-                className="flex items-center justify-between gap-3 p-3.5 transition-colors hover:bg-[#fffaf0]"
-              >
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`flex size-8 shrink-0 items-center justify-center rounded-[8px] border ${
-                      isPositive
-                        ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                        : "border-rose-200 bg-rose-50 text-rose-700"
-                    }`}
-                  >
-                    {isPositive ? (
-                      <ArrowUpRightIcon className="size-4" />
-                    ) : (
-                      <ArrowDownLeftIcon className="size-4" />
-                    )}
-                  </div>
-
-                  <div className="min-w-0 space-y-0.5">
-                    <p className="truncate text-xs font-bold text-[#0a0a0a] sm:text-sm">
-                      {tx.description || "Point Transaction"}
-                    </p>
-                    <div className="flex flex-wrap items-center gap-2 text-[11px] text-[#6a6a6a]">
-                      <span className="flex items-center gap-1">
-                        <CalendarIcon className="size-3" />
-                        <span>
-                          {new Date(tx.created_at).toLocaleDateString("en-US", {
-                            day: "numeric",
-                            month: "short",
-                            year: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </span>
-                      </span>
-
-                      <span className="py-0.2 rounded-full bg-[#f0f0f0] px-2 text-[10px] font-semibold text-[#0a0a0a] uppercase">
-                        {tx.type || "system"}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="shrink-0 text-right">
-                  <span
-                    className={`inline-block font-mono text-xs font-bold sm:text-sm ${
-                      isPositive ? "text-emerald-700" : "text-rose-700"
-                    }`}
-                  >
-                    {isPositive ? `+${delta}` : delta} Pts
-                  </span>
-                  {tx.running_balance !== undefined && (
-                    <p className="font-mono text-[10px] text-[#6a6a6a]">
-                      Bal: {tx.running_balance} Pts
-                    </p>
-                  )}
+              key={idx}
+              className="flex items-center justify-between rounded-[16px] border border-hairline bg-canvas p-3.5"
+            >
+              <div className="flex items-center gap-3">
+                <div className="size-9 animate-pulse rounded-[10px] bg-surface-soft" />
+                <div className="space-y-1.5">
+                  <div className="h-3.5 w-36 animate-pulse rounded bg-surface-soft" />
+                  <div className="h-3 w-20 animate-pulse rounded bg-surface-soft" />
                 </div>
               </div>
-            )
-          })}
+              <div className="h-6 w-14 animate-pulse rounded-full bg-surface-soft" />
+            </div>
+          ))}
+        </div>
+      ) : error ? (
+        <Card className="border-rose-200 bg-rose-50/70 p-5 text-center shadow-none">
+          <div className="mx-auto mb-2.5 flex size-10 items-center justify-center rounded-full bg-rose-100 text-rose-600">
+            <AlertCircleIcon className="size-5" />
+          </div>
+          <p className="text-sm font-bold text-ink">
+            Unable to load points history
+          </p>
+          <p className="mt-1 text-xs text-text-muted">{error}</p>
+          <div className="mt-4">
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => void fetchHistory(true)}
+              className="h-10 rounded-[12px] px-4 text-xs font-bold"
+            >
+              Try Again
+            </Button>
+          </div>
+        </Card>
+      ) : transactions.length === 0 ? (
+        <div className="rounded-[20px] border border-dashed border-hairline bg-surface-soft/70 p-8 text-center">
+          <div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-[14px] border border-hairline bg-canvas text-text-muted">
+            <SparklesIcon className="size-5" />
+          </div>
+          <p className="text-sm font-bold text-ink">No point history yet</p>
+          <p className="mt-1 text-xs text-text-muted">
+            Attend weekly activities or scan event QR codes to start collecting
+            Karma Points!
+          </p>
         </div>
       ) : (
-        <div className="space-y-2 py-8 text-center text-[#6a6a6a]">
-          <SparklesIcon className="mx-auto size-8 text-[#6a6a6a]/40" />
-          <p className="text-xs font-bold text-[#0a0a0a]">
-            No Point Transactions Yet
-          </p>
-          <p className="text-xs">
-            Attend temple fellowship events or volunteer for service duties to
-            earn karma points.
-          </p>
+        <div className="space-y-2.5">
+          <Card className="overflow-hidden border-hairline bg-canvas p-0 shadow-none">
+            <ul className="divide-y divide-hairline">
+              {visibleTransactions.map((tx) => {
+                const delta = tx.points_delta ?? tx.points ?? 0
+                const isPositive = delta >= 0
+
+                return (
+                  <li
+                    key={tx.id}
+                    className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-surface-soft/50"
+                  >
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div
+                        className={`flex size-9 shrink-0 items-center justify-center rounded-[10px] border ${
+                          isPositive
+                            ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                            : "border-rose-200 bg-rose-50 text-rose-700"
+                        }`}
+                      >
+                        {isPositive ? (
+                          <TrendingUpIcon className="size-4" />
+                        ) : (
+                          <TrendingDownIcon className="size-4" />
+                        )}
+                      </div>
+
+                      <div className="min-w-0 space-y-0.5">
+                        <p className="truncate text-xs font-bold text-ink sm:text-sm">
+                          {tx.description || getTxCategoryLabel(tx.type)}
+                        </p>
+                        <div className="flex flex-wrap items-center gap-2 text-[11px] font-medium text-text-muted">
+                          <span className="inline-flex items-center gap-1 tabular-nums">
+                            <CalendarIcon className="size-3" />
+                            {formatTxDate(tx.created_at)}
+                          </span>
+                          <span aria-hidden="true">·</span>
+                          <span>{getTxCategoryLabel(tx.type)}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <span
+                      className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-bold tabular-nums ${
+                        isPositive
+                          ? "bg-emerald-50 text-emerald-700"
+                          : "bg-rose-50 text-rose-700"
+                      }`}
+                    >
+                      {isPositive ? `+${delta}` : delta} pts
+                    </span>
+                  </li>
+                )
+              })}
+            </ul>
+          </Card>
+
+          {remainingCount > 0 && (
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() =>
+                setVisibleCount((prev) => prev + LOAD_MORE_STEP)
+              }
+              className="h-11 w-full gap-1.5 rounded-[14px] text-xs font-bold"
+            >
+              <span>Show More ({remainingCount} remaining)</span>
+              <ChevronDownIcon className="size-4" />
+            </Button>
+          )}
         </div>
       )}
     </div>

@@ -23,6 +23,12 @@ import {
   ChevronRightIcon,
 } from "lucide-react"
 import { api } from "@/lib/api"
+import { getInitials } from "@/lib/initials"
+import {
+  formatRoleLabel,
+  getRoleAvatarClass,
+  getRoleBadgeVariant,
+} from "@/lib/roles"
 import { DhammaWidget } from "./DhammaWidget"
 import { Link } from "@tanstack/react-router"
 import { ResponsiveFormModal } from "@/components/common/ResponsiveFormModal"
@@ -143,14 +149,7 @@ export function HomePage() {
     authState.status === "authenticated"
       ? (dashboard?.profile.role ?? authState.role ?? "umat")
       : "umat"
-  const roleLabel =
-    role === "admin"
-      ? "Admin"
-      : role === "pengurus" || role === "organizer"
-        ? "Organizer"
-        : role === "aktivis" || role === "activist"
-          ? "Activist"
-          : "Member"
+  const roleLabel = formatRoleLabel(role)
   const displayName = dashboard?.profile.name || authState.name || roleLabel
   const memberId =
     dashboard?.profile.user_number ||
@@ -481,12 +480,10 @@ export function HomePage() {
                   {/* Avatar & Details */}
                   <div className="flex min-w-0 flex-1 items-center gap-3.5 sm:gap-4">
                     {/* Avatar Squircle */}
-                    <div className="flex size-14 shrink-0 items-center justify-center rounded-[18px] bg-[#e8b94a] text-lg font-black text-[#0a0a0a] shadow-xs ring-2 ring-[#e5e5e5] sm:size-16 sm:text-xl md:size-[68px]">
-                      {displayName
-                        .split(" ")
-                        .slice(0, 2)
-                        .map((w: string) => w[0])
-                        .join("")}
+                    <div
+                      className={`flex size-14 shrink-0 items-center justify-center rounded-[18px] border text-lg font-black shadow-xs ring-2 ring-[#e5e5e5] sm:size-16 sm:text-xl md:size-[68px] ${getRoleAvatarClass(role)}`}
+                    >
+                      {getInitials(displayName, "M")}
                     </div>
 
                     {/* Typographic Hierarchy */}
@@ -502,9 +499,9 @@ export function HomePage() {
                       </h1>
                       <div className="mt-1.5 flex flex-wrap items-center gap-1.5 sm:gap-2">
                         <Badge
-                          variant="teal"
+                          variant={getRoleBadgeVariant(role)}
                           size="sm"
-                          className="rounded-full px-2.5 py-0.5 font-semibold capitalize"
+                          className="rounded-full px-2.5 py-0.5 font-semibold"
                         >
                           {roleLabel}
                         </Badge>

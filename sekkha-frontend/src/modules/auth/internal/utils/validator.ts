@@ -2,6 +2,8 @@
 // Form validation utilities for Sign Up and Login forms.
 // Requirements: 1.11, 1.12, 1.13, 3.1, 3.2, 3.3, 3.4, 3.5
 
+import { isValidGeneralEmail, validateGmailField } from "@/lib/emailValidation"
+
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
 export interface FieldError {
@@ -13,10 +15,6 @@ export interface ValidationResult {
   isValid: boolean
   errors: FieldError[]
 }
-
-// ─── Constants ─────────────────────────────────────────────────────────────────
-
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 // ─── validateSignUpForm ────────────────────────────────────────────────────────
 
@@ -59,11 +57,10 @@ export function validateSignUpForm({
     }
   }
 
-  // Email validation
-  if (!email) {
-    errors.push({ field: "email", message: "Email is required" })
-  } else if (!EMAIL_REGEX.test(email)) {
-    errors.push({ field: "email", message: "Invalid email format" })
+  // Email validation (strictly @gmail.com during Sign Up)
+  const emailError = validateGmailField(email)
+  if (emailError) {
+    errors.push({ field: "email", message: emailError })
   }
 
   // Password validation
@@ -126,7 +123,7 @@ export function validateLoginForm({
       field: "identifier",
       message: "Email or username is required",
     })
-  } else if (trimmed.includes("@") && !EMAIL_REGEX.test(trimmed)) {
+  } else if (trimmed.includes("@") && !isValidGeneralEmail(trimmed)) {
     errors.push({ field: "identifier", message: "Invalid email format" })
   } else if (!trimmed.includes("@") && trimmed.length < 3) {
     errors.push({ field: "identifier", message: "Username must be at least 3 characters" })

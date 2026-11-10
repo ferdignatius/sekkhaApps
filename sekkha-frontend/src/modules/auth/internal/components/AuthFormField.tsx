@@ -9,6 +9,7 @@ interface AuthFormFieldProps {
   type: "email" | "password" | "text"
   value: string
   placeholder?: string
+  helperText?: string
   onChange: (value: string) => void
   onBlur?: () => void
   error?: string | null
@@ -21,6 +22,7 @@ export function AuthFormField({
   type,
   value,
   placeholder,
+  helperText,
   onChange,
   onBlur,
   error,
@@ -85,6 +87,7 @@ export function AuthFormField({
       startIcon={startIcon}
       endIcon={endIcon}
       error={error}
+      helperText={helperText}
       onBlur={onBlur}
       onChange={(e) => onChange(e.target.value)}
     />

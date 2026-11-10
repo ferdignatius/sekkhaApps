@@ -6,6 +6,7 @@ import type { UserRegisteredPayload } from "../../core/eventbus"
 import { redis } from "../../lib/redis"
 import { auditLogger } from "../../lib/auditLogger"
 import { AppError } from "../../lib/AppError"
+import { isValidGmailEmail, GMAIL_ERROR_MESSAGE } from "../../lib/emailValidation"
 import * as repo from "./models"
 import type {
   RegisterInput,
@@ -112,6 +113,9 @@ export function generateToken(
  */
 export async function requestRegisterOtp(input: RequestRegisterOtpInput) {
   const normalizedEmail = input.email.toLowerCase().trim()
+  if (!isValidGmailEmail(normalizedEmail)) {
+    throw new AppError(GMAIL_ERROR_MESSAGE, 400, "INVALID_EMAIL_DOMAIN")
+  }
 
   // 1. Check if email already registered (TC-AUTH-02: Throw 409 Conflict per PRD)
   const emailExists = await repo.findUserByEmail(normalizedEmail)
@@ -288,7 +292,12 @@ export async function resendRegisterOtp(input: ResendOtpInput) {
  * Legacy/Direct Register an existing user (backward compatibility).
  */
 export async function registerUser(input: RegisterInput): Promise<AuthResult> {
-  const emailExists = await repo.findUserByEmail(input.email)
+  const normalizedEmail = input.email.toLowerCase().trim()
+  if (!isValidGmailEmail(normalizedEmail)) {
+    throw new AppError(GMAIL_ERROR_MESSAGE, 400, "INVALID_EMAIL_DOMAIN")
+  }
+
+  const emailExists = await repo.findUserByEmail(normalizedEmail)
   if (emailExists) {
     throw new AppError("Email already registered", 409, "EMAIL_ALREADY_REGISTERED")
   }
@@ -526,6 +535,9 @@ export async function logoutUser(token?: string, userId?: string, refreshToken?:
  */
 export async function forgotPasswordRequest(input: ForgotPasswordRequestInput) {
   const normalizedEmail = input.email.toLowerCase().trim()
+  if (!isValidGmailEmail(normalizedEmail)) {
+    throw new AppError(GMAIL_ERROR_MESSAGE, 400, "INVALID_EMAIL_DOMAIN")
+  }
   const user = await repo.findUserByEmail(normalizedEmail)
 
   if (!user) {

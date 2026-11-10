@@ -245,7 +245,7 @@ async function main() {
           phone: encrypt("081234567890"),
           schoolId: schoolBaktiMulia?.id,
           birthDate: encrypt(new Date("2008-05-15").toISOString()),
-          classGrade: encrypt("11"),
+
         },
       },
       stats: {
@@ -276,7 +276,7 @@ async function main() {
           phone: encrypt("081298765432"),
           schoolId: schoolBinaMandiri?.id,
           birthDate: encrypt(new Date("2006-03-20").toISOString()),
-          classGrade: encrypt("12"),
+
         },
       },
       stats: {

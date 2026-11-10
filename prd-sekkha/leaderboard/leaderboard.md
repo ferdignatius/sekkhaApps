@@ -19,8 +19,8 @@ Leaderboard adalah wadah **kompetisi sehat dan apresiasi dedikasi jemaat** berba
 2. **Tab Navigasi Musim Dinamis**: Antarmuka secara otomatis menyajikan tab periode berurutan:
    - `[ Custom Season (e.g. Vassa 2026) ] [ Semester ] [ Annual ]` (jika ada custom season aktif), atau
    - `[ Semester ] [ Annual ]` (jika tidak ada custom season aktif).
-3. **Penghargaan Podium Visual Top 3**: Desain Clay Card visual untuk juara 1, 2, dan 3 yang menonjolkan apresiasi komunitas.
-4. **Posisi Pribadi Mengambang (*Floating Self-Rank Card*)**: Jemaat selalu dapat melihat posisi peringkat dan perolehan poin pribadinya di layar mobile/desktop tanpa harus mencari-cari di dalam tabel.
+3. **Penghargaan Podium Visual Top 3 & Top 10 Ringkas**: Desain Clay Card visual untuk juara 1, 2, dan 3 diikuti daftar peringkat 4–10.
+4. **Posisi Pribadi Inline di Bawah Rank #10**: Jika peringkat pribadi user berada di Top 10 (`#1–#10`), baris/pilar user langsung disorot dengan kartu emas dan badge **`YOU`**. Jika berada di luar Top 10 (`#11+`), sistem menampilkan pemisah `• • •` dan kartu peringkat pribadi user tepat di bawah Rank `#10` tanpa bar melayang agar tidak bertabrakan dengan `MobileDock`. Role ditampilkan sebagai teks subtitle halus agar badge **`YOU`** tidak ambigu.
 5. **Anti-Inflasi & Tanpa Pengali Badge**: Poin didasarkan secara murni pada presensi terverifikasi (50-70 Pts) dan tugas pelayanan ibadah resmi (+30 Pts per `badge_activities`). Seluruh gamifikasi badge dan level artifisial telah dieliminasi.
 
 ---
@@ -44,31 +44,31 @@ Leaderboard dapat diakses oleh seluruh jemaat dan pengurus yang telah login: `me
 
 Halaman `/leaderboard` memiliki tata letak responsif:
 
-### 3.1. Header & Dynamic Season Tabs
-* Judul Halaman: *"Community Leaderboard"*.
-* Subtitle: Menampilkan nama musim yang sedang dipilih, rentang tanggal, dan sisa waktu (*"Vassa Season 2026 • 32 Days Remaining"*).
-* Dynamic Tabs: Mengambil data musim dari `GET /api/configure/seasons`:
+### 3.1. Header Terpadu & Dynamic Season Tabs
+* Header ringkas menampilkan judul *"Leaderboard"*, rentang tanggal musim aktif, chip sisa hari (*"52d left"*), dan tombol refresh `44px`.
+* **Dynamic Season Switcher** terintegrasi langsung di bagian bawah header (tanpa label periode duplikat):
   * Tab 1: **Custom Active Season** (mis. *Vassa Season*) — jika statusnya `is_active: true`.
   * Tab 2: **Semester Period** (mis. *Semester 2 - 2026*).
   * Tab 3: **Annual Period** (mis. *Year 2026*).
 
 ### 3.2. Podium Visual Top 3
-* Tiga kartu Clay terangkat (*Clay Elevation*) di bagian atas:
-  * **Juara 1 (Gold)**: Kartu tengah berukuran paling tinggi dengan aksen emas (`#e8b94a`), avatar inisial besar, mahkota juara, **username jemaat** (misal: `@siddhartha_tan`), sekolah, dan total poin musim. (Tidak menampilkan nama panjang).
-  * **Juara 2 (Silver)**: Kartu sebelah kiri dengan aksen perak halus dan username jemaat (`@ananda_surya`).
-  * **Juara 3 (Bronze)**: Kartu sebelah kanan dengan aksen perunggu hangat dan username jemaat (`@sariputta_h`).
+* Tiga pilar Clay bersih di bagian atas tanpa badge peringkat berulang yang menimpa avatar:
+  * **Juara 1 (Gold)**: Kartu tengah tertinggi dengan mahkota juara, aksen emas (`#e8b94a`), avatar inisial, **username jemaat** (`@siddhartha_tan`), tag `You` bila milik sendiri, skor, dan angka pilar `1`.
+  * **Juara 2 (Silver)**: Pilar sebelah kiri dengan aksen perak halus, username jemaat, skor, dan angka pilar `2`.
+  * **Juara 3 (Bronze)**: Pilar sebelah kanan dengan aksen perunggu hangat, username jemaat, skor, dan angka pilar `3`.
 
-### 3.3. Daftar Peringkat Anggota (Ranks 4-100)
-* Menampilkan daftar baris kartu jemaat berurutan:
-  * Nomor Peringkat (#4, #5, #6...).
-  * Avatar inisial dengan badge role (`member` / `activist`).
-  * **Username jemaat** (misal: `@moggallana_deni`, bukan nama panjang) dan almamater sekolah.
-  * Badge total poin yang dicapai di musim tersebut.
+### 3.3. Daftar Peringkat Anggota (Strict Top 10: Podium 1–3 & List 4–10)
+* Leaderboard menampilkan **10 peringkat teratas** (`limit=10`): Podium untuk peringkat `#1–#3` dan daftar baris ringkas maksimal 7 baris untuk peringkat `#4–#10`:
+  * Nomor Peringkat (#4 – #10).
+  * Avatar inisial + **Username jemaat** (misal: `@moggallana_deni`, bukan nama panjang).
+  * Peran (`Member`, `Activist`, `Organizer`, `Admin`) ditampilkan sebagai **teks subtitle muted** (bukan badge pill) agar tidak menimbulkan ambiguitas visual dengan badge **`YOU`**.
+  * Jika baris milik user sendiri: latar `surface-soft`, border emas (`clay-ochre`), dan satu-satunya pill badge eksklusif **`YOU`** (`bg-clay-ochre text-ink`), plus hint selisih poin ke peringkat di atasnya.
+  * Skor metrik periode aktif.
 
-### 3.4. Kartu Posisi Diri Sendiri (Floating Sticky Bottom Bar)
-* Bar mengambang di bagian bawah layar yang menunjukkan posisi jemaat yang sedang login:
-  * *"Your Ranking: #14 • @budi_santoso • 380 Pts"*
-  * Sisa poin untuk mencapai peringkat di atasnya (*"20 Pts to reach @peringkat_atas"*).
+### 3.4. Kartu Posisi Diri Sendiri di Bawah Rank #10 (`rank > 10`)
+* Tidak menggunakan floating sticky bottom bar agar tidak menumpuk di atas `MobileDock`.
+* Bila user berada pada peringkat `#1–#10`, posisinya disorot langsung di dalam Podium atau daftar `#4–#10` (tanpa kartu ganda).
+* Bila user berada di luar Top 10 (`#11+`), tepat setelah Rank `#10` ditampilkan pemisah `• • •` dan 1 kartu posisi pribadi dengan nomor peringkat aslinya (`#15`, `#24`, dst.), highlight emas + badge **`YOU`**, teks role subtitle, serta skornya.
 
 ---
 
@@ -80,7 +80,7 @@ Mengambil data peringkat leaderboard untuk periode tertentu.
 * **Query Parameters**:
   * `season_id` (string cuid, opsional): ID musim spesifik.
   * `period` (string: `semester`, `annual`, `custom`, default: `semester`).
-  * `limit` (number, default: 50, max: 100).
+  * `limit` (number, default: 10, max: 100).
 * **Response Envelope (200 OK)**:
   ```json
   {
@@ -97,12 +97,14 @@ Mengambil data peringkat leaderboard untuk periode tertentu.
         "days_remaining": 7
       },
       "my_rank": {
-        "rank": 8,
+        "rank": 15,
         "user_id": "cuid_my_user",
         "user_number": 2026102401,
         "username": "budi_santoso",
         "name": "Budi Santoso",
-        "points": 420
+        "role": "member",
+        "is_in_top": false,
+        "points": 120
       },
       "top_three": [
         {
@@ -173,7 +175,7 @@ Mengambil data peringkat leaderboard untuk periode tertentu.
 | ID | As a | I want to | So that |
 | --- | --- | --- | --- |
 | US-LEAD-01 | Community Member | View the leaderboard ranked by Seasonal (Custom / Semester / Annual) and Lifetime karma points | I can track my growth and healthy competition across different timeframes |
-| US-LEAD-02 | Community Member | See a dedicated visual podium for the Top 3 members and a floating sticky card with my personal rank and points | I immediately recognize high achievers and know where I stand relative to the next rank |
+| US-LEAD-02 | Community Member | See a clean Top 10 board (Top 3 podium + Ranks 4–10 list) with my own rank highlighted inline or directly below Rank #10 when outside Top 10 | I immediately recognize achievers and know my exact rank without floating UI clutter over navigation |
 | US-LEAD-03 | Privacy-conscious Member | Keep sensitive PII hidden and only display my public member info (or anonymous alias if toggled) on the public board | My personal contact details stay secure and private while participating in gamification |
 | US-LEAD-04 | Community Member | Have consistent tie-breakers applied fairly when members share identical points (higher streak, higher attendances, then earlier activity) | Ranks remain deterministic, clear, and undisputed during ties |
 | US-LEAD-05 | Community Member | View collective season target progress (e.g. 500 total attendances) with real-time percentage indicators | I feel inspired to participate together toward the shared temple community goal |
@@ -187,7 +189,7 @@ Mengambil data peringkat leaderboard untuk periode tertentu.
 | --- | --- | --- |
 | AC-LEAD-01 | View seasonal vs lifetime tabs | UI offers dynamic tabs: Custom season (if active), Semester, Annual, and Lifetime. Changing tabs recalibrates metrics starting from 0 for seasons without affecting lifetime history. |
 | AC-LEAD-02 | Top 3 podium display | Rank #1 (Gold), Rank #2 (Silver), Rank #3 (Bronze) render elevated cards with distinct styling, usernames (@username), school, and points without exposing full names. |
-| AC-LEAD-03 | Floating self-rank card | Authenticated user sees fixed bottom card showing personal rank, username, current points, and distance in points to the next rank. |
+| AC-LEAD-03 | Self-rank placement & role distinction | Top 10 ranks (#1–#10) highlight the user directly in place using a gold `YOU` pill, while roles render as muted subtitle text to avoid visual ambiguity. If user ranks > 10, a separator (`•••`) and their highlighted rank card render cleanly below Rank #10 without a floating bar. |
 | AC-LEAD-04 | Tie-breaker resolution | If two or more users have identical points, tie-breaking evaluates: 1) higher current streak, 2) higher attendance count in period, 3) earlier latest point transaction. If still tied, sort by ascending userNumber. |
 | AC-LEAD-05 | Privacy & PII protection | Public leaderboard endpoint never returns phone number, email, class grade, or date of birth. Leaderboard strictly uses usernames (@username) instead of full real names to protect privacy. If user enables anonymity toggle, public display masks name to "Member #userNumber" or custom alias while keeping score. |
 | AC-LEAD-06 | Collective season progress | Header displays active season attendance progress bar `total_attendances / target_attendance` with percentage and days remaining. |
@@ -202,7 +204,7 @@ Mengambil data peringkat leaderboard untuk periode tertentu.
 | **TC-LEAD-01** | Navigation & Tabs | Switch between dynamic season tabs (Custom Season, Semester, Annual, Lifetime) | Active custom season (e.g. Vassa 2026) exists in DB alongside default semester/annual periods | 1. Open `/leaderboard`.<br>2. Verify tab order: `[Vassa 2026]` `[Semester]` `[Annual]` `[Lifetime]`.<br>3. Click each tab and observe data request. | `GET /api/leaderboard?period=<tab>` succeeds with HTTP 200. Tab 1 computes points inside custom date range. Lifetime reflects all-time aggregated points. | Positive |
 | **TC-LEAD-02** | Reset Zero | Seasonal reset verification upon new season start | Transition into new season where user has 0 attendances in range | 1. Query leaderboard for new active season.<br>2. Check user rank and points. | User displays 0 seasonal points on seasonal tab while all-time lifetime points in `UserStats` remain intact. | Positive / Functional |
 | **TC-LEAD-03** | Visual Podium | Render Top 3 podium with gold, silver, bronze cards | Leaderboard returns >= 3 ranked users | 1. Open `/leaderboard`.<br>2. Inspect DOM for Top 3 Clay cards. | Rank 1 displays gold crown accent, username (@username), and highest elevation. Rank 2 displays silver card on left with @username. Rank 3 displays bronze card on right with @username. Real long names are never shown. Ranks 4+ render in standard list below with @username. | UI / Positive |
-| **TC-LEAD-04** | Floating Rank Card | Display logged-in user position in sticky bottom bar | User is logged in as `member` with rank #14 (380 Pts) and #13 has 400 Pts | 1. Scroll down past row 20 on `/leaderboard`.<br>2. Observe bottom sticky bar. | Sticky bar remains visible, displaying: *"Your Ranking: #14 • @username • 380 Pts"* and *"20 Pts to reach @peringkat_atas"*. | UI / Functional |
+| **TC-LEAD-04** | Self Rank Placement | Render Top 10 (#1–#10) cleanly and place user's rank below #10 only when > 10 | User is logged in as `member` with rank #15 (120 Pts) | 1. Open `/leaderboard`.<br>2. Inspect podium (#1–#3), list (#4–#10), and bottom row. | No floating bottom bar obscures the screen or `MobileDock`. Ranks #4–#10 display muted role captions (`Member`, `Organizer`), while after Rank #10 a dotted divider and the user's gold-highlighted `#15` row (`YOU` badge, score) are displayed. | UI / Functional |
 | **TC-LEAD-05** | Tie-Breaker | Deterministic ranking when multiple users share identical point totals | User A and User B both have 500 points in active season. User A has streak 4, User B has streak 2 | 1. Trigger leaderboard calculation for period.<br>2. Compare ranks of User A and User B. | User A is ranked ahead of User B based on secondary metric (streak). If streaks match, evaluate total attendances. If still tied, sort by earlier timestamp/userNumber. No indeterminate random shifts. | Positive / Algorithm |
 | **TC-LEAD-06** | Privacy Protection | PII exclusion and username privacy validation | User has sensitive PII (encrypted phone, email, birth date, full name) in `UserProfile` | 1. Call `GET /api/leaderboard`.<br>2. Inspect JSON response fields for all entries.<br>3. Inspect UI rendering. | Response includes username. UI strictly renders @username rather than full real name. Endpoint never leaks phone, email, or raw ciphertext. Anonymized users display masked name `Member #...` or alias; public score remains verifiable. | Security / Privacy |
 | **TC-LEAD-07** | Season Target | Display collective season attendance progress bar | Season has `targetAttendance: 500`, community attended 380 times | 1. Open `/leaderboard`.<br>2. Inspect season header progress bar. | Displays `"380 / 500 Attendances (76%)"` and remaining days countdown. If target reached (>= 100%), visual milestone unlocked banner is presented. | Positive / Functional |

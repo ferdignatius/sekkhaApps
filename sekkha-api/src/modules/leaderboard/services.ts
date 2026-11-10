@@ -455,10 +455,11 @@ export function filterAndRankLeaderboardEntries(
       ? {
           rank: scopedEntries[myIdx].rank ?? myIdx + 1,
           value: scopedEntries[myIdx].value ?? 0,
-          is_in_top: myIdx < 20,
+          is_in_top: myIdx >= 0 && myIdx < limit,
           username: scopedEntries[myIdx].username,
           name: scopedEntries[myIdx].name,
           initials: scopedEntries[myIdx].initials,
+          role: scopedEntries[myIdx].role,
         }
       : userId
         ? {
@@ -468,6 +469,7 @@ export function filterAndRankLeaderboardEntries(
             username: "you",
             name: "You",
             initials: "YO",
+            role: "member",
           }
         : null
 

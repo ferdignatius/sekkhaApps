@@ -85,7 +85,7 @@ model UserProfile {
   name       String
   phone      String?  @map("phone") // Tier 2: AES-256-GCM ciphertext
   schoolId   String?  @map("school_id")
-  classGrade String?  @map("class_grade") // Tier 2: AES-256-GCM ciphertext
+
   birthDate  String?  @map("birth_date") // Tier 2: AES-256-GCM ciphertext of ISO date string
   updatedAt  DateTime @updatedAt @map("updated_at")
 

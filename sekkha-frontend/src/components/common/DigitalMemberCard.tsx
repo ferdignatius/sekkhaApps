@@ -12,19 +12,84 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/base"
 import { MemberQrModal } from "@/components/common/MemberQrModal"
-import type { UserRole } from "../api/userApi"
 
-interface DigitalMemberCardProps {
+export interface DigitalMemberCardProps {
   name: string
   userNumber?: number | string | null
-  role: UserRole | string
+  role?: string | null
   school?: string | null
-  joinedAt?: string
+  joinedAt?: string | null
   username?: string | null
   points?: number
   currentStreak?: number
+  isClaimed?: boolean
+  onCopyMemberId?: (memberId: string) => void
 }
 
+const ROLE_DISPLAY_NAMES: Record<string, string> = {
+  member: "Community Member",
+  activist: "Dhamma Activist",
+  organizer: "Temple Organizer",
+  admin: "System Master",
+}
+
+const ROLE_CARD_STYLES: Record<
+  string,
+  {
+    cardBg: string
+    headerSub: string
+    badge: string
+    numberText: string
+    subtext: string
+    footerText: string
+    accentGlow: string
+  }
+> = {
+  member: {
+    cardBg:
+      "bg-gradient-to-br from-[#FDFBF7] via-[#FAF6ED] to-[#F2EADB] text-[#1C1A17] border-[#E5D9C3] shadow-md ring-1 ring-black/5",
+    headerSub: "text-[#7A7365]",
+    badge: "bg-[#EFE8D8] text-[#4A4437] border-[#DDD3BF]",
+    numberText: "text-[#1C1A17]",
+    subtext: "text-[#7A7365]",
+    footerText: "text-[#8C8474]",
+    accentGlow: "from-amber-200/20 via-transparent to-transparent",
+  },
+  activist: {
+    cardBg:
+      "bg-gradient-to-br from-[#064E3B] via-[#043E2F] to-[#022C22] text-white border-[#10B981]/40 shadow-lg ring-1 ring-emerald-500/20",
+    headerSub: "text-[#A7F3D0]",
+    badge: "bg-[#10B981]/25 text-[#6EE7B7] border-[#10B981]/50",
+    numberText: "text-[#F0FDF4]",
+    subtext: "text-[#A7F3D0]",
+    footerText: "text-[#6EE7B7]/80",
+    accentGlow: "from-emerald-400/15 via-transparent to-transparent",
+  },
+  organizer: {
+    cardBg:
+      "bg-gradient-to-br from-[#1E293B] via-[#131D2E] to-[#0F172A] text-white border-[#3B82F6]/40 shadow-lg ring-1 ring-blue-500/20",
+    headerSub: "text-[#93C5FD]",
+    badge: "bg-[#3B82F6]/25 text-[#93C5FD] border-[#3B82F6]/50",
+    numberText: "text-[#F8FAFC]",
+    subtext: "text-[#93C5FD]",
+    footerText: "text-[#93C5FD]/80",
+    accentGlow: "from-blue-400/15 via-transparent to-transparent",
+  },
+  admin: {
+    cardBg:
+      "bg-gradient-to-br from-[#18181B] via-[#111113] to-[#09090B] text-[#FAFAFA] border-[#E8B94A]/40 shadow-xl ring-1 ring-amber-500/20",
+    headerSub: "text-[#E8B94A]",
+    badge: "bg-[#E8B94A]/20 text-[#F6D87C] border-[#E8B94A]/50",
+    numberText: "text-[#FFFFFF]",
+    subtext: "text-[#D4AF37]",
+    footerText: "text-[#E8B94A]/80",
+    accentGlow: "from-[#E8B94A]/15 via-transparent to-transparent",
+  },
+}
+
+/**
+ * Reusable Digital Membership Pass card (Clay visual language + Apple HIG touch ergonomics).
+ */
 export function DigitalMemberCard({
   name,
   userNumber,
@@ -34,6 +99,8 @@ export function DigitalMemberCard({
   username,
   points,
   currentStreak,
+  isClaimed,
+  onCopyMemberId,
 }: DigitalMemberCardProps) {
   const [copied, setCopied] = useState(false)
   const [showEnlargeQr, setShowEnlargeQr] = useState(false)
@@ -46,6 +113,7 @@ export function DigitalMemberCard({
       .writeText(memberIdStr)
       .then(() => {
         setCopied(true)
+        onCopyMemberId?.(memberIdStr)
         setTimeout(() => setCopied(false), 2000)
       })
       .catch(() => {})
@@ -55,7 +123,6 @@ export function DigitalMemberCard({
     window.print()
   }
 
-  // Format joined date
   const memberSince = joinedAt
     ? new Date(joinedAt).toLocaleDateString("en-US", {
         month: "short",
@@ -63,68 +130,9 @@ export function DigitalMemberCard({
       })
     : null
 
-  // Normalize role
   const normalizedRole = (role || "member").toLowerCase()
-
-  // HIG Role-Specific Styles
-  const roleCardStyles = {
-    member: {
-      cardBg:
-        "bg-gradient-to-br from-[#FDFBF7] via-[#FAF6ED] to-[#F2EADB] text-[#1C1A17] border-[#E5D9C3] shadow-md ring-1 ring-black/5",
-      headerSub: "text-[#7A7365]",
-      badge: "bg-[#EFE8D8] text-[#4A4437] border-[#DDD3BF]",
-      numberText: "text-[#1C1A17]",
-      subtext: "text-[#7A7365]",
-      footerText: "text-[#8C8474]",
-      accentGlow: "from-amber-200/20 via-transparent to-transparent",
-    },
-    activist: {
-      cardBg:
-        "bg-gradient-to-br from-[#064E3B] via-[#043E2F] to-[#022C22] text-white border-[#10B981]/40 shadow-lg ring-1 ring-emerald-500/20",
-      headerSub: "text-[#A7F3D0]",
-      badge: "bg-[#10B981]/25 text-[#6EE7B7] border-[#10B981]/50",
-      numberText: "text-[#F0FDF4]",
-      subtext: "text-[#A7F3D0]",
-      footerText: "text-[#6EE7B7]/80",
-      accentGlow: "from-emerald-400/15 via-transparent to-transparent",
-    },
-    organizer: {
-      cardBg:
-        "bg-gradient-to-br from-[#1E293B] via-[#131D2E] to-[#0F172A] text-white border-[#3B82F6]/40 shadow-lg ring-1 ring-blue-500/20",
-      headerSub: "text-[#93C5FD]",
-      badge: "bg-[#3B82F6]/25 text-[#93C5FD] border-[#3B82F6]/50",
-      numberText: "text-[#F8FAFC]",
-      subtext: "text-[#93C5FD]",
-      footerText: "text-[#93C5FD]/80",
-      accentGlow: "from-blue-400/15 via-transparent to-transparent",
-    },
-    admin: {
-      cardBg:
-        "bg-gradient-to-br from-[#18181B] via-[#111113] to-[#09090B] text-[#FAFAFA] border-[#E8B94A]/40 shadow-xl ring-1 ring-amber-500/20",
-      headerSub: "text-[#E8B94A]",
-      badge: "bg-[#E8B94A]/20 text-[#F6D87C] border-[#E8B94A]/50",
-      numberText: "text-[#FFFFFF]",
-      subtext: "text-[#D4AF37]",
-      footerText: "text-[#E8B94A]/80",
-      accentGlow: "from-[#E8B94A]/15 via-transparent to-transparent",
-    },
-  }[normalizedRole] || {
-    cardBg:
-      "bg-gradient-to-br from-[#FDFBF7] via-[#FAF6ED] to-[#F2EADB] text-[#1C1A17] border-[#E5D9C3] shadow-md ring-1 ring-black/5",
-    headerSub: "text-[#7A7365]",
-    badge: "bg-[#EFE8D8] text-[#4A4437] border-[#DDD3BF]",
-    numberText: "text-[#1C1A17]",
-    subtext: "text-[#7A7365]",
-    footerText: "text-[#8C8474]",
-    accentGlow: "from-amber-200/20 via-transparent to-transparent",
-  }
-
-  const roleDisplayNames: Record<string, string> = {
-    member: "Community Member",
-    activist: "Dhamma Activist",
-    organizer: "Temple Organizer",
-    admin: "System Master",
-  }
+  const roleCardStyles =
+    ROLE_CARD_STYLES[normalizedRole] || ROLE_CARD_STYLES.member
 
   return (
     <div className="space-y-4">
@@ -148,7 +156,6 @@ export function DigitalMemberCard({
                   alt="Sekkha"
                   className="size-full object-contain"
                   onError={(e) => {
-                    // Fallback to minimal glyph if logo svg is unavailable
                     ;(e.target as HTMLElement).style.display = "none"
                   }}
                 />
@@ -165,12 +172,11 @@ export function DigitalMemberCard({
               </div>
             </div>
 
-            {/* Role Badge */}
             <span
               className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-bold capitalize sm:text-xs ${roleCardStyles.badge}`}
             >
               <ShieldCheckIcon className="size-3" />
-              <span>{roleDisplayNames[normalizedRole] || normalizedRole}</span>
+              <span>{ROLE_DISPLAY_NAMES[normalizedRole] || normalizedRole}</span>
             </span>
           </div>
 
@@ -194,7 +200,6 @@ export function DigitalMemberCard({
                 </p>
               )}
 
-              {/* Monospace User Number */}
               <div className="pt-2">
                 <p
                   className={`text-[10px] font-medium tracking-widest uppercase ${roleCardStyles.subtext}`}
@@ -221,7 +226,6 @@ export function DigitalMemberCard({
                 </div>
               )}
 
-              {/* Stats badges inside card */}
               {(points !== undefined || currentStreak !== undefined) && (
                 <div className="flex flex-wrap items-center gap-1.5 pt-2">
                   {points !== undefined && (
@@ -244,7 +248,7 @@ export function DigitalMemberCard({
               )}
             </div>
 
-            {/* High-Contrast QR Code Container (HIG standard: pure white surface) */}
+            {/* High-Contrast QR Code Container */}
             <div className="flex shrink-0 flex-col items-center">
               <div className="rounded-[14px] border border-black/10 bg-white p-2.5 shadow-sm transition-transform hover:scale-105">
                 {memberIdStr ? (
@@ -270,7 +274,7 @@ export function DigitalMemberCard({
             </div>
           </div>
 
-          {/* Card Footer: Joined Date & Security Watermark */}
+          {/* Card Footer: Joined Date & Account Status */}
           <div
             className={`flex items-center justify-between border-t border-black/5 pt-2.5 text-[10px] font-medium sm:text-xs ${roleCardStyles.footerText}`}
           >
@@ -279,50 +283,63 @@ export function DigitalMemberCard({
             </span>
             <span className="flex items-center gap-1 font-mono text-[10px] tracking-wider uppercase opacity-80">
               <SparklesIcon className="size-2.5" />
-              Secured Pass
+              {isClaimed === false ? "Pre-Provisioned Pass" : "Secured Pass"}
             </span>
           </div>
         </div>
       </div>
 
       {/* ── CARD ACTION BUTTONS ── */}
-      <div className="flex flex-wrap gap-2.5 pt-1">
+      <div className="grid grid-cols-3 gap-2 pt-1 sm:gap-2.5">
         <Button
           variant="outlined"
           type="button"
           onClick={handleCopyId}
-          className="flex-1 gap-1.5 rounded-[12px] text-xs font-semibold sm:text-sm"
+          disabled={!memberIdStr}
+          className="h-11 w-full justify-center gap-1.5 rounded-[12px] px-2 text-xs font-semibold sm:px-3 sm:text-sm"
         >
           {copied ? (
-            <CheckIcon className="size-4 text-emerald-600" />
+            <CheckIcon className="size-4 shrink-0 text-emerald-600" />
           ) : (
-            <CopyIcon className="size-4" />
+            <CopyIcon className="size-4 shrink-0" />
           )}
-          <span>{copied ? "Copied!" : "Copy Member ID"}</span>
-        </Button>
-
-        <Button
-          variant="outlined"
-          type="button"
-          onClick={() => setShowEnlargeQr(true)}
-          className="flex-1 gap-1.5 rounded-[12px] text-xs font-semibold sm:text-sm"
-        >
-          <Maximize2Icon className="size-4" />
-          <span>Enlarge QR</span>
+          <span className="truncate">
+            {copied ? (
+              "Copied!"
+            ) : (
+              <>
+                <span className="sm:hidden">Copy ID</span>
+                <span className="hidden sm:inline">Copy Member ID</span>
+              </>
+            )}
+          </span>
         </Button>
 
         <Button
           variant="filled"
           type="button"
-          onClick={handlePrint}
-          className="flex-1 gap-1.5 rounded-[12px] text-xs font-semibold sm:text-sm"
+          onClick={() => setShowEnlargeQr(true)}
+          disabled={!memberIdStr}
+          className="h-11 w-full justify-center gap-1.5 rounded-[12px] px-2 text-xs font-semibold sm:px-3 sm:text-sm"
         >
-          <PrinterIcon className="size-4" />
-          <span>Print Card</span>
+          <Maximize2Icon className="size-4 shrink-0" />
+          <span className="truncate">Enlarge QR</span>
+        </Button>
+
+        <Button
+          variant="outlined"
+          type="button"
+          onClick={handlePrint}
+          className="h-11 w-full justify-center gap-1.5 rounded-[12px] px-2 text-xs font-semibold sm:px-3 sm:text-sm"
+        >
+          <PrinterIcon className="size-4 shrink-0" />
+          <span className="truncate">
+            <span className="sm:hidden">Print</span>
+            <span className="hidden sm:inline">Print Card</span>
+          </span>
         </Button>
       </div>
 
-      {/* ── MODAL: ENLARGE QR FOR EVENT DOOR SCAN ── */}
       <MemberQrModal
         open={showEnlargeQr}
         onClose={() => setShowEnlargeQr(false)}
@@ -332,3 +349,4 @@ export function DigitalMemberCard({
     </div>
   )
 }
+

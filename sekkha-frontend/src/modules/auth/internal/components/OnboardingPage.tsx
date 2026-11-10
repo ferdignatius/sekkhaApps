@@ -10,7 +10,6 @@ import {
   PhoneIcon,
   CalendarIcon,
   AtSignIcon,
-  SparklesIcon,
   UsersIcon,
   XIcon,
   PlusIcon,
@@ -25,9 +24,7 @@ type OnboardingStep = "profile" | "details" | "school"
 
 interface SimilarUsersStats {
   school: string
-  class_grade: string
   totalInSchool: number
-  totalInClass: number
 }
 
 const SCHOOL_TYPES = [
@@ -38,18 +35,6 @@ const SCHOOL_TYPES = [
 ] as const
 
 type SchoolTypeValue = (typeof SCHOOL_TYPES)[number]["value"]
-
-const SMP_GRADE_OPTIONS = [
-  { label: "Grade 7 (Junior High)", value: "Kelas 7" },
-  { label: "Grade 8 (Junior High)", value: "Kelas 8" },
-  { label: "Grade 9 (Junior High)", value: "Kelas 9" },
-]
-
-const SMA_SMK_GRADE_OPTIONS = [
-  { label: "Grade 10 (Senior High / Vocational)", value: "Kelas 10" },
-  { label: "Grade 11 (Senior High / Vocational)", value: "Kelas 11" },
-  { label: "Grade 12 (Senior High / Vocational)", value: "Kelas 12" },
-]
 
 export function OnboardingPage() {
   const { updateUser } = useAuth()
@@ -63,7 +48,7 @@ export function OnboardingPage() {
   // Profile Form State:
   // Step 1: username & name (MANDATORY)
   // Step 2: phone, birth_date (OPTIONAL - CAN SKIP)
-  // Step 3: school, school_id, class_grade (OPTIONAL - CAN SKIP)
+  // Step 3: school, school_id (OPTIONAL - CAN SKIP)
   const [profileForm, setProfileForm] = useState({
     username: "",
     name: "",
@@ -71,7 +56,6 @@ export function OnboardingPage() {
     birth_date: "",
     school: "",
     school_id: "",
-    class_grade: "",
   })
 
   // Selected school metadata
@@ -90,22 +74,6 @@ export function OnboardingPage() {
   const [stats, setStats] = useState<SimilarUsersStats | null>(null)
   const [loadingStats, setLoadingStats] = useState(false)
 
-  // Grade levels only applicable to SMP, SMA/SMK (supports legacy SMA/SMK as well)
-  const hasGradeLevel =
-    selectedSchoolType === "SMP" ||
-    selectedSchoolType === "SMA/SMK" ||
-    selectedSchoolType === "SMA" ||
-    selectedSchoolType === "SMK"
-
-  const availableGradeOptions =
-    selectedSchoolType === "SMP"
-      ? SMP_GRADE_OPTIONS
-      : selectedSchoolType === "SMA/SMK" ||
-          selectedSchoolType === "SMA" ||
-          selectedSchoolType === "SMK"
-        ? SMA_SMK_GRADE_OPTIONS
-        : []
-
   // Prefill profile data on mount
   useEffect(() => {
     api
@@ -116,7 +84,6 @@ export function OnboardingPage() {
         phone?: string
         school?: string
         school_id?: string
-        class_grade?: string
         birth_date?: string
       }>("/users/me")
       .then(async (u) => {
@@ -136,7 +103,6 @@ export function OnboardingPage() {
           phone: u.phone || prev.phone,
           school: u.school || prev.school,
           school_id: u.school_id || prev.school_id,
-          class_grade: u.class_grade || prev.class_grade,
           birth_date: u.birth_date
             ? u.birth_date.split("T")[0]
             : prev.birth_date,
@@ -162,7 +128,7 @@ export function OnboardingPage() {
       .catch(() => {})
   }, [])
 
-  // Fetch similar users stats when school or class_grade changes
+  // Fetch similar users stats when school changes
   useEffect(() => {
     if (!profileForm.school) {
       setStats(null)
@@ -174,9 +140,6 @@ export function OnboardingPage() {
 
     const params = new URLSearchParams()
     params.set("school", profileForm.school)
-    if (hasGradeLevel && profileForm.class_grade) {
-      params.set("class_grade", profileForm.class_grade)
-    }
 
     api
       .get<SimilarUsersStats>(`/schools/stats?${params.toString()}`)
@@ -193,7 +156,7 @@ export function OnboardingPage() {
     return () => {
       isCurrent = false
     }
-  }, [profileForm.school, profileForm.class_grade, hasGradeLevel])
+  }, [profileForm.school])
 
   // ── Step 1 Handler: Username & Full Name (MANDATORY) ─────────────────────────
   async function handleStep1Submit(e: React.FormEvent) {
@@ -276,22 +239,15 @@ export function OnboardingPage() {
     window.scrollTo({ top: 0, behavior: "smooth" })
   }
 
-  // ── Step 3 Handlers: School & Class (OPTIONAL - CAN SKIP) ────────────────────
+  // ── Step 3 Handlers: School (OPTIONAL - CAN SKIP) ───────────────────────────
   function handleSchoolChange(schoolName: string, schoolObj?: SchoolOption) {
     const nextType = schoolObj?.type || null
     setSelectedSchoolType(nextType)
-
-    const nextHasGrade =
-      nextType === "SMP" ||
-      nextType === "SMA/SMK" ||
-      nextType === "SMA" ||
-      nextType === "SMK"
 
     setProfileForm((prev) => ({
       ...prev,
       school: schoolName,
       school_id: schoolObj?.id || "",
-      class_grade: nextHasGrade ? prev.class_grade : "",
     }))
   }
 
@@ -350,10 +306,6 @@ export function OnboardingPage() {
       if (!skipped && profileForm.school_id) {
         await api.patch("/users/me", {
           school_id: profileForm.school_id,
-          class_grade:
-            hasGradeLevel && profileForm.class_grade
-              ? profileForm.class_grade.trim()
-              : null,
         })
       }
 
@@ -723,7 +675,7 @@ export function OnboardingPage() {
           )}
 
           {/* ─────────────────────────────────────────────────────────────────── */}
-          {/* STEP 3: SCHOOL & CLASS (OPTIONAL - CAN SKIP)                        */}
+          {/* STEP 3: SCHOOL (OPTIONAL - CAN SKIP)                                */}
           {/* ─────────────────────────────────────────────────────────────────── */}
           {step === "school" && (
             <div className="animate-in space-y-4 fade-in">
@@ -759,41 +711,6 @@ export function OnboardingPage() {
                 </p>
               </div>
 
-              {/* Grade / Class Level (Junior & Senior High) */}
-              {hasGradeLevel && (
-                <div className="animate-in space-y-1.5 duration-200 fade-in">
-                  <div className="flex items-center justify-between">
-                    <label
-                      htmlFor="grade-select"
-                      className="text-xs font-semibold text-[#0a0a0a]"
-                    >
-                      Grade / Class Level
-                    </label>
-                    <span className="rounded bg-[#ebe6d6] px-1.5 py-0.5 text-[10px] font-semibold text-[#0a0a0a]">
-                      Level: {selectedSchoolType}
-                    </span>
-                  </div>
-                  <select
-                    id="grade-select"
-                    value={profileForm.class_grade}
-                    onChange={(e) =>
-                      setProfileForm({
-                        ...profileForm,
-                        class_grade: e.target.value,
-                      })
-                    }
-                    className="h-11 w-full cursor-pointer rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 py-2 text-sm text-[#0a0a0a] transition-all outline-none focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a]"
-                  >
-                    <option value="">Select your grade (Optional)...</option>
-                    {availableGradeOptions.map((opt) => (
-                      <option key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
               {/* Social Proof Peer Widget */}
               {profileForm.school && (
                 <div className="space-y-2 rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] p-4 text-xs shadow-2xs">
@@ -826,17 +743,6 @@ export function OnboardingPage() {
                         </span>{" "}
                         who have joined Sekkha!
                       </p>
-                      {hasGradeLevel &&
-                        profileForm.class_grade &&
-                        stats.totalInClass > 0 && (
-                          <p className="flex items-center gap-1 font-semibold text-[#22c55e]">
-                            <SparklesIcon className="size-3" />
-                            <span>
-                              {stats.totalInClass} of them are in{" "}
-                              {profileForm.class_grade}!
-                            </span>
-                          </p>
-                        )}
                     </div>
                   ) : (
                     <p className="text-[#6a6a6a]">

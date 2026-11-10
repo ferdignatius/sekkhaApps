@@ -22,6 +22,7 @@ import type { AttendanceRecord, UserRole } from "../types"
 import { ConfirmDialog } from "@/components/base/AlertDialog"
 import { Badge } from "@/components/base/Badge"
 import { api } from "@/lib/api"
+import { getInitials } from "@/lib/initials"
 
 interface BadgeActivityOption {
   id: string
@@ -50,13 +51,6 @@ function formatTime(iso: string): string {
   } catch {
     return "-"
   }
-}
-
-function getInitials(name: string): string {
-  const parts = name.trim().split(/\s+/)
-  if (parts.length === 0 || !parts[0]) return "U"
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
-  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
 }
 
 export function AttendanceListSheet({

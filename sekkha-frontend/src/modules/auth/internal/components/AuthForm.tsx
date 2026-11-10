@@ -118,7 +118,12 @@ export function AuthForm({
             label={isSignUp ? "Email Address" : "Email or Username"}
             type={isSignUp ? "email" : "text"}
             placeholder={
-              isSignUp ? "name@email.com" : "name@email.com or username"
+              isSignUp ? "name@gmail.com" : "name@email.com or username"
+            }
+            helperText={
+              isSignUp
+                ? "Only @gmail.com email addresses are currently supported."
+                : undefined
             }
             value={
               isSignUp

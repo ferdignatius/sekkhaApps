@@ -20,7 +20,7 @@ export const userModels = {
           select: {
             name: true,
             schoolId: true,
-            classGrade: true,
+
             phone: true,
             birthDate: true,
             school: { select: { id: true, name: true, status: true } },

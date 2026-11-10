@@ -64,7 +64,13 @@ export const peopleModels = {
         stats: {
           select: {
             points: true,
+            totalAttendances: true,
             lastActivityAt: true,
+          },
+        },
+        _count: {
+          select: {
+            attendances: true,
           },
         },
         attendances: {
@@ -81,7 +87,7 @@ export const peopleModels = {
             },
           },
           orderBy: { scannedAt: "desc" },
-          take: 30,
+          take: 5,
         },
       },
     })

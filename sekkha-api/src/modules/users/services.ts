@@ -11,6 +11,7 @@ import { calculateWeeklyStreak } from "./internal/utils"
 import { emailVerificationStore } from "./internal/emailVerificationStore"
 import { passwordChangeOtpStore } from "./internal/passwordChangeOtpStore"
 import { sendEmailVerificationOtpEmail, sendChangePasswordOtpEmail } from "../../lib/email"
+import { isValidGmailEmail, GMAIL_ERROR_MESSAGE } from "../../lib/emailValidation"
 import crypto, { createHash } from "crypto"
 
 function safeDecrypt(val: string | null | undefined, fallback: string | null = null): string | null {
@@ -211,9 +212,8 @@ export const userServices = {
 
   async requestEmailVerification(userId: string, targetEmail: string) {
     const normalizedEmail = targetEmail.trim().toLowerCase()
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(normalizedEmail)) {
-      const err = new Error("Format alamat email tidak valid") as any
+    if (!isValidGmailEmail(normalizedEmail)) {
+      const err = new Error(GMAIL_ERROR_MESSAGE) as any
       err.statusCode = 400
       throw err
     }

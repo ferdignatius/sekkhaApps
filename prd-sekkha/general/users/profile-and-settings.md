@@ -49,7 +49,7 @@ Fitur Profil & Pengaturan Akun berlaku universal untuk seluruh role jemaat dan p
 Halaman `/profile` menggunakan kontainer standar `max-w-7xl` dengan 3 tab terorganisir sesuai Clay & HIG Design System:
 
 ```
-[ Tab 1: Member Card & Points ]  |  [ Tab 2: Personal Profile ]  |  [ Tab 3: Security & Settings ]
+[ Tab 1: Pass / Member Pass ]  |  [ Tab 2: Profile / Personal Profile ]  |  [ Tab 3: Security / Security & Settings ]
 ```
 
 ### 3.1. Tab 1: Digital Member ID Card & Points History
@@ -71,7 +71,8 @@ Halaman `/profile` menggunakan kontainer standar `max-w-7xl` dengan 3 tab terorg
     * **High-Contrast QR Code Container**: Kotak putih bersih kontras tinggi (`bg-white p-2.5 rounded-[14px] shadow-sm`) memuat QR Code statis permanen berbasis teks `userNumber` (mis. `2026102401`), menjamin keterbacaan instan kamera scanner presensi dalam kondisi pencahayaan vihara apa pun.
     * **Footer**: Tanggal bergabung (*"Member since [Month Year]"*).
   * **Tombol Aksi**:
-    * *"Download Card"*: Simpan kartu ke galeri/perangkat sebagai format gambar (PNG) beresolusi tinggi.
+    * *"Print Card"* / *"Print"*: Membuka dialog cetak siap pakai browser (`window.print()`) untuk mencetak kartu anggota.
+    * **Tombol Responsif Satu Baris (`grid-cols-3`)**: `Copy ID`, `Enlarge QR` (CTA primary), dan `Print` tampil sejajar satu baris di mobile tanpa terpotong.
     * *"Enlarge QR"*: Modal fullscreen QR Code kontras tinggi dengan kecerahan optimal untuk kemudahan pemindaian di pintu masuk kebaktian.
 * **Riwayat Poin Transparan (Points History)**:
   * Menampilkan daftar transaksi poin dari endpoint `GET /api/users/me/points-history`.
@@ -215,11 +216,11 @@ Memperbarui data diri pribadi.
   ```
 
 ### 5.3. `POST /api/users/email-verification/request`
-Meminta pengiriman kode OTP ke email baru.
+Meminta pengiriman kode OTP ke email baru. Hanya menerima alamat `@gmail.com` dengan format local-part valid (tanpa titik ganda/awal/akhir) di frontend dan backend untuk mencegah spam.
 * **Request Body**:
   ```json
   {
-    "new_email": "budi.new@gmail.com"
+    "email": "budi.new@gmail.com"
   }
   ```
 * **Response**: `200 OK` (Message: *"Verification OTP sent to your new email"*).
@@ -316,8 +317,16 @@ Mengambil buku besar catatan mutasi poin pengguna yang login.
 
 ## 6. Antarmuka Pengguna & Standar Human Interface Guidelines (HIG)
 
+* **Tata Letak Responsif Halaman `/profile`**:
+  * **Desktop 2-Kolom (`lg:grid-cols-12`)**: Kolom kiri (`lg:col-span-4`, sticky) berisi *Lean Hero Identity Card* (avatar inisial, nama, badge role, `@username`, `Karma Points`, dan `Weekly Streak` tanpa duplikasi email/telepon/member ID). Kolom kanan (`lg:col-span-8`) menampilkan tab tersegmen dan konten aktif.
+  * **3 Tab Responsif**: Label ringkas pada mobile (`Pass`, `Profile`, `Security`) agar tidak terpotong (`min-h-[44px]`), serta label lengkap pada desktop (`Member Pass`, `Personal Profile`, `Security & Settings`).
+  * **Sign Out Terjangkau di Bagian Bawah**: Kartu aksi **Session & Sign Out** ditempatkan secara konsisten di bagian paling bawah `/profile` (lintas tab, dilengkapi safe-area padding di atas MobileDock) dengan dialog konfirmasi aksesibel (`ConfirmDialog`), sementara Tab 3 fokus penuh pada Password OTP, Verifikasi Email, dan Danger Zone (Radix `Dialog` dengan dukungan tombol Escape).
+* **Progressive Points Ledger & Lazy Schools Loading**:
+  * `PointsLedger` menampilkan **10** transaksi mutasi terbaru secara default dengan tombol *"Show More"* untuk memuat sisa riwayat serta banner error dengan tombol *"Try Again"*, tanpa kotak ringkasan *"Current Balance"* yang duplikatif.
+  * Daftar sekolah (`GET /api/configure/schools`) dimuat secara *lazy* hanya ketika user menekan *"Edit Profile"* di tab `Personal Profile`. Field email pada View Mode bersifat *read-only* dengan tautan pintas langsung ke tab `Security & Settings`.
 * **Prinsip HIG pada Digital Member Card**:
   * **Clarity & Visual Focus**: Informasi terpenting (Nama Jemaat, Nomor Anggota `userNumber`, QR Code, dan Role) memiliki kontras visual tinggi tanpa elemen dekoratif sekunder atau ticker statistik yang mengaburkan fungsi utama identitas fisik-digital.
+  * **3 Aksi Kartu Satu Baris (`grid-cols-3`)**: Tombol `Copy ID` (`Copy Member ID`), `Enlarge QR` (CTA utama kontras tinggi `filled`), dan `Print` (`Print Card`) tersusun sejajar satu baris tanpa wrapping canggung di layar mobile.
   * **Standard Aspect Ratio (ID-1 / ISO 7810)**: Rasio 1.586 : 1 yang natural menyerupai kartu fisik pada Apple Wallet / Google Wallet (`aspect-[1.586/1]`).
   * **Continuous Curve Squircle**: Sudut `rounded-[20px]` / `rounded-[22px]` dengan specular hairline border (`ring-1 ring-black/5` atau `border-white/20`) dan ambient elevation shadow yang halus (`shadow-md`).
   * **Diferensiasi Palet Warna Per Role**:
@@ -330,7 +339,7 @@ Mengambil buku besar catatan mutasi poin pengguna yang login.
   * Mengeliminasi disrupsi konteks modal popup. User mengedit data profil langsung di halaman `/profile` dengan transisi in-place.
   * Focus ring aksesibel (`focus-visible:ring-2 focus-visible:ring-[#0a0a0a]`), touch target minimal 44x44px sesuai pedoman HIG accessibility.
 * **OTP Input Component**: Menggunakan 6 kotak input terpisah dengan transisi fokus otomatis, paste clipboard support, dan hitung mundur timer 60 detik untuk tombol *"Resend OTP"*.
-* **Semua Label Bahasa Inggris**: *"Digital Member ID"*, *"Personal Information"*, *"Edit Profile"*, *"Save Changes"*, *"Cancel"*, *"Account Security"*, *"Change Password"*, *"Verify New Email"*, *"Enter 6-Digit OTP"*, *"Points Ledger"*.
+* **Semua Label Bahasa Inggris**: *"Member Pass"*, *"Personal Information"*, *"Edit Profile"*, *"Save Changes"*, *"Cancel"*, *"Security & Settings"*, *"Change Account Password"*, *"Verify New Email"*, *"Enter 6-Digit OTP"*, *"Karma Points History"*, *"Session & Sign Out"*.
 
 ---
 
@@ -339,12 +348,13 @@ Mengambil buku besar catatan mutasi poin pengguna yang login.
 | ID | Sebagai | Saya ingin | Supaya |
 | --- | --- | --- | --- |
 | **US-PROF-01** | Jemaat terdaftar | Melihat Kartu Anggota Digital berdesain HIG dengan QR Code statis permanen | Saya dapat menunjukkan identitas anggota dan melakukan presensi kebaktian dengan mudah |
-| **US-PROF-02** | Jemaat terdaftar | Mengunduh kartu digital dalam format PNG resolusi tinggi dan memperbesar tampilan QR Code | Saya tetap bisa melakukan presensi meski tidak membawa smartphone fisik atau saat offline |
+| **US-PROF-02** | Jemaat terdaftar | Mencetak kartu digital (`Print Card`) dan memperbesar tampilan QR Code (`Enlarge QR`) | Saya tetap bisa melakukan presensi meski tidak membawa smartphone fisik atau saat offline |
 | **US-PROF-03** | Jemaat terdaftar | Mengedit nama, username, nomor telepon, tanggal lahir, dan almamater sekolah secara inline tanpa modal popup | Data personal saya selalu akurat dengan pengalaman UI yang mulus tanpa disrupsi konteks |
-| **US-PROF-04** | Jemaat terdaftar | Melihat riwayat mutasi Karma Points saya secara transparan dan detail | Saya mengetahui rincian perolehan poin dari kehadiran, tugas pelayanan, dan bonus mingguan |
+| **US-PROF-04** | Jemaat terdaftar | Melihat riwayat mutasi Karma Points saya secara bertahap (10 terbaru + *"Show More"*) | Halaman tetap ringan namun saya tetap mengetahui rincian perolehan poin secara detail |
 | **US-PROF-05** | Jemaat terdaftar | Mengganti kata sandi dengan perlindungan 2-Faktor OTP email | Akun saya tetap terlindungi dari penyalahgunaan pihak tidak bertanggung jawab |
 | **US-PROF-06** | Jemaat yang mengganti kata sandi | Mendapatkan token sesi baru langsung di respons tanpa logout paksa | Sesi saya di perangkat yang sedang dipakai tetap berjalan lancar tanpa mengalami 401 error |
 | **US-PROF-07** | Jemaat terdaftar | Memperbarui alamat email dengan verifikasi kode OTP 6 digit di email baru | Akun saya terhindar dari pembajakan email (*account takeover*) dan email baru sah terverifikasi |
+| **US-PROF-08** | Jemaat terdaftar | Menemukan aksi **Sign Out** di bagian bawah halaman `/profile` dengan konfirmasi dialog | Saya tidak perlu mencari tombol keluar jauh di dalam sub-tab keamanan |
 
 ---
 
@@ -352,16 +362,17 @@ Mengambil buku besar catatan mutasi poin pengguna yang login.
 
 | ID | Skenario Pengujian | Hasil yang Diharapkan |
 | --- | --- | --- |
-| **AC-PROF-01** | User membuka tab Member Card & Points | Menampilkan Hero Stats (Karma Points & Streak) serta kartu anggota digital bergradasi sesuai warna role (`member`, `activist`, `organizer`, `admin`) dengan QR Code berbasis `userNumber`. |
+| **AC-PROF-01** | User membuka `/profile` Tab Pass | Menampilkan Lean Hero Card (tanpa duplikasi ID/email/telepon), 3 label tab unclipped (`Pass`/`Profile`/`Security`), kartu anggota digital per role, serta 10 transaksi terbaru di `PointsLedger`. |
 | **AC-PROF-02** | User mengklik "Enlarge QR" | Modal dialog kontras tinggi fullscreen muncul menampilkan QR Code dan nomor anggota dengan kecerahan optimal. |
-| **AC-PROF-03** | User mengklik "Download Card" | Kartu anggota di-render dan diunduh sebagai gambar PNG beresolusi tinggi ke perangkat user. |
-| **AC-PROF-04** | User membuka tab Personal Profile dalam mode baca | Data diri tampil rapi dalam View Mode tanpa form input yang aktif. |
-| **AC-PROF-05** | User mengklik "Edit Profile" lalu "Cancel" | Form inline berubah ke Edit Mode. Saat cancel diklik, form kembali ke View Mode tanpa menyimpan perubahan. |
+| **AC-PROF-03** | User mengklik "Print Card" / "Print" | Membuka dialog cetak siap pakai browser (`window.print()`) untuk mencetak kartu identitas anggota. |
+| **AC-PROF-04** | User membuka tab Personal Profile dalam mode baca | Data diri (termasuk email *read-only* dengan pintasan ke tab Security) tampil rapi dalam View Mode tanpa form input aktif dan tanpa fetch daftar sekolah sebelum mode Edit dibuka. |
+| **AC-PROF-05** | User mengklik "Edit Profile" lalu "Cancel" | Form inline berubah ke Edit Mode dan me-load daftar sekolah secara *lazy*. Saat cancel diklik, form kembali ke View Mode tanpa menyimpan perubahan. |
 | **AC-PROF-06** | User menyimpan perubahan profil valid | Memanggil `PUT /api/users/me/profile` (atau `PATCH /api/users/me`), menampilkan toast notifikasi sukses, dan kembali ke View Mode dengan data terbaru. |
 | **AC-PROF-07** | User meminta OTP ganti password dengan password lama salah | Ditolak HTTP 400 Bad Request ("Kata sandi lama tidak cocok"). Kode OTP tidak dikirim ke email. |
 | **AC-PROF-08** | User meminta OTP ganti password dengan password lama benar | HTTP 200. Kode OTP 6 digit dikirim ke email terdaftar. Tampilan otomatis beralih ke form input 6-digit OTP dengan timer 60 detik. |
 | **AC-PROF-09** | User memasukkan OTP ganti password yang benar | HTTP 200. Password diperbarui, sesi lain di-revoke, `accessToken` baru dikembalikan di response dan langsung disimpan di `localStorage` tanpa 401 redirect. |
 | **AC-PROF-10** | User mengganti email ke email baru | Kode OTP dikirim ke email baru. Setelah diverifikasi dengan kode yang valid, kolom `email` (dienkripsi AES-256-GCM) dan `emailBindex` di-update. |
+| **AC-PROF-11** | User menekan tombol Sign Out di bagian bawah `/profile` | Membuka dialog konfirmasi `ConfirmDialog` berbahasa Inggris (*"Confirm Sign Out"*); konfirmasi mengeksekusi logout sesi dengan aman. |
 
 ---
 
@@ -371,8 +382,8 @@ Mengambil buku besar catatan mutasi poin pengguna yang login.
 | --- | --- | --- | --- | --- | --- | --- |
 | **TC-PROF-01** | Digital Card | Render Digital Member ID Card sesuai tema role | User login dengan role `activist` | 1. Buka tab `/profile` Tab 1.<br>2. Periksa palet warna kartu dan role chip. | Kartu dirender dengan tema Emerald Seva (`from-[#064E3B] to-[#022C22]`), teks putih, role chip activist. QR code putih bersih kontras tinggi. | Positive |
 | **TC-PROF-02** | Digital Card QR | Pemindaian QR code statis permanen | User kartu anggota ditampilkan | 1. Scan QR code menggunakan barcode reader / kamera panitia. | Nilai terbaca adalah string persis `userNumber` (misal `"2026102401"`). Tidak ada kedaluwarsa atau rolling token. | Positive |
-| **TC-PROF-03** | Digital Card Action | Download kartu anggota sebagai gambar PNG | Di halaman Tab 1 | 1. Klik tombol "Download Card". | Canvas HTML5 men-generate blob PNG kartu dan memicu download browser dengan nama file `sekkha-card-<userNumber>.png`. | Positive |
-| **TC-PROF-04** | Inline Edit | Transisi mulus View Mode ke Edit Mode dan Cancel | Di Tab 2 Personal Profile | 1. Klik "Edit Profile".<br>2. Ubah field Full Name.<br>3. Klik "Cancel". | Form kembali ke View Mode seketika. Nama kembali ke nilai awal sebelum diedit. Tidak ada request API terkirim. | Positive |
+| **TC-PROF-03** | Digital Card Action | Cetak kartu anggota (`Print Card`) & perbesar QR (`Enlarge QR`) | Di halaman Tab 1 | 1. Periksa 3 tombol aksi sejajar satu baris (`Copy ID`, `Enlarge QR` primary, `Print`).<br>2. Klik `Print Card`. | Dialog cetak browser terbuka (`window.print()`) dengan layout kartu tetap utuh; klik `Enlarge QR` membuka modal QR kontras tinggi. | Positive |
+| **TC-PROF-04** | Inline Edit | Transisi mulus View Mode ke Edit Mode (Lazy School Load) dan Cancel | Di Tab 2 Personal Profile | 1. Buka Tab Profile (pastikan dropdown sekolah belum di-fetch).<br>2. Klik "Edit Profile".<br>3. Ubah field Full Name lalu klik "Cancel". | Saat klik "Edit Profile", daftar sekolah di-fetch sekali secara *lazy*. Saat cancel diklik, form kembali ke View Mode tanpa request simpan. | Positive |
 | **TC-PROF-05** | Inline Edit | Update profil dengan data valid | Di Tab 2 Edit Mode | 1. Ubah `name: "Upasaka Budi"`.<br>2. Ubah `username: "upasaka.budi"`.<br>3. Pilih sekolah dari dropdown `GET /api/schools`.<br>4. Klik "Save Changes". | HTTP 200 envelope. Data tersimpan di DB, toast sukses muncul, form kembali ke View Mode dengan data terbaru. | Positive |
 | **TC-PROF-06** | Inline Edit | Update username dengan format tidak valid | Di Tab 2 Edit Mode | 1. Masukkan `username: "bu di@!"` (mengandung spasi dan simbol terlarang).<br>2. Klik "Save Changes". | Validasi client Zod memblokir submit ("Username can only contain lowercase letters, numbers, dots, and underscores"). | Negative |
 | **TC-PROF-07** | Inline Edit | Update username yang sudah dipakai pengguna lain | Username `budi.santoso` sudah ada di akun lain | 1. Masukkan `username: "budi.santoso"`.<br>2. Klik "Save Changes". | HTTP 409 Conflict envelope ("Username already in use"). Pesan error muncul di field username. | Negative |

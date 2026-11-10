@@ -168,4 +168,43 @@ describe("SecuritySettingsSection - Change Password with OTP", () => {
       expect(onLogout).toHaveBeenCalled()
     })
   })
+
+  it("rejects non-@gmail.com emails in Change Email without calling API and allows valid @gmail.com", async () => {
+    vi.mocked(userApi.requestEmailVerification).mockResolvedValueOnce({
+      expires_in_seconds: 600,
+      resend_after_seconds: 60,
+    })
+
+    render(
+      <SecuritySettingsSection
+        currentEmail="user@gmail.com"
+        emailVerified={true}
+        onEmailUpdated={onEmailUpdated}
+        onLogout={onLogout}
+        onToast={onToast}
+      />
+    )
+
+    fireEvent.click(screen.getByRole("button", { name: /Change Email/i }))
+
+    const newEmailInput = screen.getByPlaceholderText("e.g. yourname@gmail.com")
+    fireEvent.change(newEmailInput, { target: { value: "spam@mailinator.com" } })
+    fireEvent.click(screen.getByRole("button", { name: /Send 6-Digit Code/i }))
+
+    expect(
+      screen.getByText(/Please use a valid @gmail\.com email address/i)
+    ).toBeDefined()
+    expect(userApi.requestEmailVerification).not.toHaveBeenCalled()
+
+    fireEvent.change(newEmailInput, {
+      target: { value: "  New.Member@Gmail.COM  " },
+    })
+    fireEvent.click(screen.getByRole("button", { name: /Send 6-Digit Code/i }))
+
+    await waitFor(() => {
+      expect(userApi.requestEmailVerification).toHaveBeenCalledWith(
+        "new.member@gmail.com"
+      )
+    })
+  })
 })

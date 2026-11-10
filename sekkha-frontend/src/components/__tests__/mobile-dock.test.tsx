@@ -2,7 +2,7 @@
 // Tests that MobileDock navigation items match the sidebar order and permissions.
 
 import { describe, it, expect, vi, afterEach } from "vitest"
-import { render, screen, cleanup, fireEvent } from "@testing-library/react"
+import { render, screen, cleanup } from "@testing-library/react"
 import { MobileDock } from "@/components/common/MobileDock"
 import { AuthContext } from "@/modules/auth/internal/context/AuthContext"
 import { initialAuthState } from "@/modules/auth/internal/context/authReducer"
@@ -131,15 +131,19 @@ describe("MobileDock", () => {
     expect(homeLink.getAttribute("aria-current")).toBeNull()
   })
 
-  it("allows organizer/admin to open More menu for /insight and /configure/master/event-type", () => {
+  it("does not render More overflow button or menu on mobile dock for organizer and admin", () => {
     renderDock("organizer")
+    expect(screen.queryByRole("button", { name: /more/i })).toBeNull()
+    expect(screen.queryByText("More")).toBeNull()
 
-    const moreBtn = screen.getByRole("button", { name: /more/i })
-    fireEvent.click(moreBtn)
+    const links = screen.getAllByRole("link")
+    const hrefs = links.map((link) => link.getAttribute("href"))
+    expect(hrefs).not.toContain("/insight")
+    expect(hrefs).not.toContain("/configure/master/event-type")
+    cleanup()
 
-    const allLinks = screen.getAllByRole("link")
-    const hrefs = allLinks.map((link) => link.getAttribute("href"))
-    expect(hrefs).toContain("/insight")
-    expect(hrefs).toContain("/configure/master/event-type")
+    renderDock("admin")
+    expect(screen.queryByRole("button", { name: /more/i })).toBeNull()
+    expect(screen.queryByText("More")).toBeNull()
   })
 })

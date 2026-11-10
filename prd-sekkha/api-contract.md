@@ -839,10 +839,13 @@ Menghapus acara secara permanen dari sistem.
 Sistem peringkat gamifikasi komunitas vihara berbasis snapshot berkecepatan tinggi ($O(1)$) untuk mencegah beban komputasi berlebih.
 
 ### 1. `GET /api/leaderboard`
-Mengambil data papan peringkat komunitas berdasarkan metrik tertentu.
+Mengambil data papan peringkat komunitas berdasarkan metrik dan periode tertentu (default Top 10: podium `#1–#3` dan list `#4–#10`; jika peringkat user `> 10`, dirender di bagian bawah setelah rank `#10` via `my_rank`).
 - **Akses**: Opsional / Terautentikasi (`optionalAuth` / `requireAuth`)
 - **Query Parameters**:
   - `metric` (`points` | `streak` | `attendance`, default: `points`)
+  - `period` (`custom` | `semester` | `annual`, opsional)
+  - `roles` (comma-separated: `umat,aktivis,pengurus`, opsional)
+  - `limit` (number, default: `10`, max: `100`)
   - `refresh` (`true` | `false`, opsional): Khusus pengurus/admin untuk memicu kalkulasi ulang snapshot secara paksa.
 - **Response (200 OK)**:
   ```json
@@ -855,25 +858,18 @@ Mengambil data papan peringkat komunitas berdasarkan metrik tertentu.
         "name": "Budi Santoso",
         "initials": "BS",
         "user_number": 2026102301,
+        "role": "member",
         "value": 450
-      },
-      {
-        "rank": 2,
-        "user_id": "usr_def456",
-        "username": "dewi_lestari",
-        "name": "Dewi Lestari",
-        "initials": "DL",
-        "user_number": 2026102302,
-        "value": 420
       }
     ],
     "my_rank": {
-      "rank": 1,
-      "value": 450,
-      "is_in_top": true,
-      "username": "budi_santoso",
-      "name": "Budi Santoso",
-      "initials": "BS"
+      "rank": 15,
+      "value": 120,
+      "is_in_top": false,
+      "username": "siti_rahma",
+      "name": "Siti Rahma",
+      "initials": "SR",
+      "role": "member"
     },
     "season": {
       "id": "sea_2026_q3",
@@ -939,9 +935,9 @@ Mencari dan menampilkan daftar anggota jemaat komunitas.
   ```
 
 ### 2. `GET /api/people/members/:id`
-Mengambil rekam jejak mendalam dari salah satu jemaat.
+Mengambil rekam jejak mendalam dari salah satu jemaat secara **lazy (on-click)** saat membuka halaman detail (`/people/:id`). Endpoint listing (`GET /api/people/members`) tidak memuat PII sensitif, poin, maupun riwayat absensi.
 - **Akses**: Organizer & Admin (`requireRole("organizer", "admin")`)
-- **Response (200 OK)**: Objek profil anggota lengkap dengan riwayat absensi terbaru.
+- **Response (200 OK)**: Objek profil anggota lengkap (`email`, `phone`, `birth_date`, `school`, `points`, `total_attendances`) dengan daftar `attendances` yang **dibatasi maksimal 5 event terakhir** (`take: 5`, terurut `scannedAt DESC`) agar payload ringan.
 
 ### 3. `POST /api/people/members`
 Menambahkan data profil jemaat baru secara pra-registrasi (*pre-provisioning*) oleh organizer. Sistem otomatis men-generate `user_number` (`yyyymmddnum`), `username` (nama normalized + angka random), dan password dummy (`sekkha` + 5 angka random + `puggala`, disimpan hashed).
@@ -976,14 +972,17 @@ Menambahkan data profil jemaat baru secara pra-registrasi (*pre-provisioning*) o
   ```
 
 ### 4. `PUT /api/people/members/:id`
-Memperbarui data anggota jemaat.
-- **Akses**: Organizer & Admin (`requireRole("organizer", "admin")`)
-  *(Catatan: Perubahan peran/role ke `activist`/`organizer`/`admin` mewajibkan otorisasi `admin`).*
+Memperbarui data atau role anggota jemaat lain.
+- **Akses**: Khusus Super Administrator (`requireRole("admin")`)
+  - *Guard Pengurus (`organizer`)*: Ditolak `403 Forbidden` (Pengurus bersifat read-only terhadap data akun yang sudah ada dan tidak boleh mengubah data maupun role siapapun).
+  - *Guard Perlindungan Diri (`Self-Protection`)*: Ditolak `403 Forbidden` jika `id === currentUser.userId` (bahkan `admin` dilarang mengubah role atau data miliknya sendiri via modul People; gunakan `/api/users/me`).
 - **Response (200 OK)**: Objek anggota yang telah diperbarui.
 
 ### 5. `DELETE /api/people/members/:id`
-Menghapus akun anggota dari database.
+Menghapus akun anggota lain dari database.
 - **Akses**: Khusus Super Administrator (`requireRole("admin")`)
+  - *Guard Pengurus (`organizer`)*: Ditolak `403 Forbidden` (termasuk jika mencoba menghapus akun miliknya sendiri).
+  - *Guard Perlindungan Diri (`Self-Deletion`)*: Ditolak `400 Bad Request` (`"You cannot delete your own account."`) jika `admin` mencoba menghapus akunnya sendiri.
 - **Response (200 OK)**:
   ```json
   {
@@ -992,34 +991,24 @@ Menghapus akun anggota dari database.
   }
   ```
 
-### 6. `POST /api/people/members/:id/reset-password`
-Mereset kata sandi anggota oleh administrator.
-- **Akses**: Khusus Super Administrator (`requireRole("admin")`)
-- **Request Body**:
-  ```json
-  { "newPassword": "TemporaryPassword123!" }
-  ```
-- **Response (200 OK)**:
-  ```json
-  {
-    "success": true,
-    "message": "Password anggota berhasil direset."
-  }
-  ```
-
-### 7. `POST /api/people/members/:id/regenerate-credentials`
-Menerbitkan ulang password dummy untuk anggota yang belum claim. Password lama langsung invalid.
+### 6. `POST /api/people/members/:id/reset-temporary-password` *(alias: `/reset-password`)*
+Menerbitkan ulang temporary password (`sekkha#####puggala`) untuk anggota yang belum claim. Password lama langsung invalid.
 - **Akses**: Organizer & Admin (`requireRole("organizer", "admin")`)
-- **Aturan**: Hanya untuk `is_claimed: false`. Anggota yang sudah claim memakai alur lupa password biasa (`409 Conflict`).
+- **Guards**:
+  - Hanya untuk `is_claimed: false` (jika sudah ter-claim, mengembalikan `400 Bad Request` / `ACCOUNT_ALREADY_CLAIMED`).
+  - Ditolak `403 Forbidden` jika mencoba mereset akun sendiri (`id === currentUser.userId`).
+  - Ditolak `403 Forbidden` jika `organizer` mencoba mereset temporary password akun `organizer` atau `admin`.
 - **Response (200 OK)** *(password hanya tampil sekali)*:
   ```json
   {
     "status": "success",
     "code": 200,
-    "message": "Credentials regenerated",
+    "message": "Temporary password reset successfully",
     "data": {
+      "id": "usr_def456",
       "user_number": 2026102302,
       "username": "siti73104",
+      "name": "Siti Rahma",
       "temporary_password": "sekkha18462puggala"
     }
   }

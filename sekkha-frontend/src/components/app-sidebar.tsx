@@ -39,6 +39,13 @@ import { api } from "@/lib/api"
 import { activeModules } from "@/shell/registry"
 import { iconMap } from "@/shell/icon-map"
 import { cn } from "@/lib/utils"
+import { getInitials } from "@/lib/initials"
+import {
+  formatRoleLabel,
+  getRoleAvatarClass,
+  getRoleBadgeVariant,
+} from "@/lib/roles"
+import { Badge } from "@/components/base"
 
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const { logout, authState, updateUser } = useAuth()
@@ -122,25 +129,13 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
     (m) => m.configureSections ?? []
   )
 
-  const roleLabel =
-    role === "admin"
-      ? "Admin"
-      : role === "organizer"
-        ? "Organizer"
-        : role === "activist"
-          ? "Activist"
-          : "Member"
+  const roleLabel = formatRoleLabel(role)
   // Render blank when no real name is available — avoid flashing a default
   // (e.g. "Member") before the /users/me hydration completes.
   const userName =
     authState.status === "authenticated" && authState.name ? authState.name : ""
   const userInitials =
-    userName
-      .split(" ")
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((w) => w[0].toUpperCase())
-      .join("") ||
+    getInitials(userName, "") ||
     (userId
       ? userId.slice(-2).toUpperCase()
       : authState.email
@@ -458,16 +453,22 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                 : "border border-[#e5e5e5] bg-[#fffaf0] p-2 hover:border-[#ebe6d6] hover:bg-[#f5f0e0]"
             )}
           >
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[#0a0a0a] text-xs font-bold text-white uppercase shadow-xs transition-transform active:scale-95">
+            <div
+              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border text-xs font-bold uppercase shadow-xs transition-transform active:scale-95 ${getRoleAvatarClass(role)}`}
+            >
               {userInitials}
             </div>
             <div className="flex min-w-0 flex-1 flex-col text-left group-data-[collapsible=icon]:hidden">
               <span className="truncate text-xs font-bold text-[#0a0a0a]">
                 {userName}
               </span>
-              <span className="truncate text-[11px] font-medium text-[#6a6a6a]">
+              <Badge
+                variant={getRoleBadgeVariant(role)}
+                size="sm"
+                className="mt-0.5 w-fit px-2 py-0 text-[10px]"
+              >
                 {roleLabel}
-              </span>
+              </Badge>
             </div>
             <ChevronUpIcon
               className={cn(

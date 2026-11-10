@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from "express"
 import { z } from "zod"
+import { gmailEmailSchema } from "../../lib/emailValidation"
 import { userServices } from "./services"
 
 export const UpdateProfileSchema = z.object({
@@ -20,7 +21,7 @@ export const UpdateProfileSchema = z.object({
 })
 
 export const RequestEmailVerificationSchema = z.object({
-  email: z.string().trim().email("Invalid email format"),
+  email: gmailEmailSchema,
 })
 
 export const ConfirmEmailVerificationSchema = z.object({

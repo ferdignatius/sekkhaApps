@@ -86,7 +86,7 @@ Existing users with `onboarding_completed: true` go directly to `/home` after si
 ## 6. Validation
 
 - `name`: required, at least 2 characters.
-- `email`: required, valid email format.
+- `email`: required, valid `@gmail.com` email format on Sign Up and Forgot Password (no consecutive or leading/trailing dots, normalized trimmed & lowercased; Sign In `identifier` continues accepting existing legacy/system emails such as `@sekkha.com`).
 - `password`: required, at least 8 characters.
 - `confirm_password`: required, equal to password, never sent to API.
 - `identifier`: required; accepts registered email or username.

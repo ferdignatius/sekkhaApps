@@ -102,17 +102,13 @@ export const userApi = {
       if (res && Array.isArray(res.items)) return res.items
       return []
     } catch {
-      try {
-        const fallback = await api.get<any>(
-          `/users/me/point-transactions?limit=${limit}`
-        )
-        if (Array.isArray(fallback)) return fallback
-        if (fallback && Array.isArray(fallback.data)) return fallback.data
-        if (fallback && Array.isArray(fallback.items)) return fallback.items
-        return []
-      } catch {
-        return []
-      }
+      const fallback = await api.get<any>(
+        `/users/me/point-transactions?limit=${limit}`
+      )
+      if (Array.isArray(fallback)) return fallback
+      if (fallback && Array.isArray(fallback.data)) return fallback.data
+      if (fallback && Array.isArray(fallback.items)) return fallback.items
+      return []
     }
   },
 

@@ -35,8 +35,8 @@ Role resmi sistem menggunakan standar Bahasa Inggris:
 | --- | --- |
 | `member` | Membaca dan memperbarui profil pribadi, meminta verifikasi perubahan email, membaca riwayat presensi sendiri, streak, dan mutasi poin. |
 | `activist` | Hak akses setara `member` pada modul Users. (Aktivis memiliki izin scan presensi di modul Event, namun tidak memiliki hak khusus di data profil jemaat lain). |
-| `organizer` | Seluruh akses `activist` + melihat metrik agregat internal anggota lain (`points`, `streak`) dan membuat People manual (*pre-provisioning*). |
-| `admin` | Seluruh akses `organizer` + mengubah role, mereset password jemaat, dan audit sistem penuh. |
+| `organizer` | Seluruh akses `activist` + melihat metrik agregat internal anggota lain (`points`, `streak`), melihat direktori People, membuat People manual (*pre-provisioning*), dan mereset password sementara khusus akun `member`/`activist` yang belum ter-claim. (Tidak dapat mengubah data/role atau menghapus akun). |
+| `admin` | Seluruh akses `organizer` + mengubah data/role, menghapus akun user lain, dan audit sistem penuh (dilarang mengubah role/data maupun menghapus akun sendiri via modul People). |
 
 ---
 

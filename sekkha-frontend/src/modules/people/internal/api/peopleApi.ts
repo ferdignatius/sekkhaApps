@@ -10,10 +10,11 @@ export interface MemberDto {
   phone?: string | null
   school?: string | null
   school_id?: string | null
+  school_status?: string | null
   date_of_birth?: string | null
   birth_date?: string | null
   role: PeopleRole
-  user_number?: string | null
+  user_number?: string | number | null
   is_claimed: boolean
   claimed_at?: string | null
   created_at: string
@@ -22,6 +23,7 @@ export interface MemberDto {
 
 export interface MemberDetailDto extends MemberDto {
   points?: number
+  total_attendances?: number
   attendances: Array<{
     id: string
     event_title: string

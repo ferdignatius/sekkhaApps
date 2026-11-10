@@ -8,15 +8,22 @@ import {
   EyeIcon,
   EyeOffIcon,
   Loader2Icon,
-  LogOutIcon,
   RefreshCwIcon,
   ArrowLeftIcon,
   Trash2Icon,
   AlertTriangleIcon,
 } from "lucide-react"
-import { Button } from "@/components/base"
+import {
+  Button,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/base"
 import { safeStorage } from "@/lib/storage"
 import { clearApiCache } from "@/lib/api"
+import { validateGmailField } from "@/lib/emailValidation"
 import { userApi } from "../api/userApi"
 
 interface SecuritySettingsSectionProps {
@@ -74,7 +81,6 @@ export function SecuritySettingsSection({
   const [emailSuccess, setEmailSuccess] = useState(false)
 
   // Logout confirm modal state
-  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
 
   // Delete account modal & form state
   const [showDeleteModal, setShowDeleteModal] = useState(false)
@@ -222,9 +228,9 @@ export function SecuritySettingsSection({
   async function handleRequestOtp(e: React.FormEvent) {
     e.preventDefault()
     const cleanEmail = newEmail.trim().toLowerCase()
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(cleanEmail)) {
-      setOtpError("Please enter a valid email address")
+    const emailError = validateGmailField(cleanEmail)
+    if (emailError) {
+      setOtpError(emailError)
       return
     }
 
@@ -658,6 +664,7 @@ export function SecuritySettingsSection({
         {emailStep === "request" && (
           <form
             onSubmit={handleRequestOtp}
+            noValidate
             className="animate-in space-y-3.5 rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] p-4 duration-200 fade-in"
           >
             <div className="flex items-center justify-between">
@@ -691,10 +698,16 @@ export function SecuritySettingsSection({
                 type="email"
                 required
                 value={newEmail}
-                onChange={(e) => setNewEmail(e.target.value)}
-                placeholder="e.g. yourname@domain.com"
+                onChange={(e) => {
+                  setNewEmail(e.target.value)
+                  if (otpError) setOtpError(null)
+                }}
+                placeholder="e.g. yourname@gmail.com"
                 className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-xs font-semibold text-[#0a0a0a] transition-colors outline-none focus:border-[#0a0a0a] sm:text-sm"
               />
+              <p className="text-[11px] text-[#6a6a6a]">
+                Only @gmail.com email addresses are currently supported.
+              </p>
             </div>
 
             <div className="flex justify-end gap-2 pt-1">
@@ -827,44 +840,7 @@ export function SecuritySettingsSection({
         )}
       </div>
 
-      {/* ── CARD 3: ACCOUNT & SESSION MANAGEMENT ── */}
-      <div className="space-y-4 rounded-[20px] border border-[#e5e5e5] bg-[#fffaf0] p-5 shadow-xs sm:p-6">
-        <div className="flex items-center gap-2.5 border-b border-[#e5e5e5] pb-3.5">
-          <div className="flex size-9 items-center justify-center rounded-[10px] bg-[#0a0a0a] text-white shadow-xs">
-            <ShieldCheckIcon className="size-4.5 text-[#e8b94a]" />
-          </div>
-          <div>
-            <h3 className="text-sm font-bold text-[#0a0a0a] sm:text-base">
-              Session & Sign Out
-            </h3>
-            <p className="text-xs text-[#6a6a6a]">
-              Manage your active authentication session on this device
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-xs font-bold text-[#0a0a0a]">
-              Sign out of Sekkha
-            </p>
-            <p className="text-[11px] text-[#6a6a6a]">
-              End your active session securely on this browser
-            </p>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => setShowLogoutConfirm(true)}
-            className="flex h-10 cursor-pointer items-center justify-center gap-1.5 rounded-[12px] border border-rose-200 bg-rose-50 px-4 text-xs font-bold text-rose-700 transition-colors hover:bg-rose-100"
-          >
-            <LogOutIcon className="size-3.5" />
-            <span>Sign Out</span>
-          </button>
-        </div>
-      </div>
-
-      {/* ── CARD 4: DANGER ZONE — DELETE ACCOUNT ── */}
+      {/* ── CARD 3: DANGER ZONE — DELETE ACCOUNT ── */}
       <div className="space-y-4 rounded-[20px] border border-rose-200 bg-rose-50/40 p-5 shadow-xs sm:p-6">
         <div className="flex items-center gap-2.5 border-b border-rose-200/80 pb-3.5">
           <div className="flex size-9 items-center justify-center rounded-[10px] bg-rose-600 text-white shadow-xs">
@@ -890,42 +866,47 @@ export function SecuritySettingsSection({
             </p>
           </div>
 
-          <button
+          <Button
             type="button"
+            variant="destructive"
             onClick={() => {
               setDeletePassword("")
               setDeleteReason("")
               setDeleteError(null)
               setShowDeleteModal(true)
             }}
-            className="flex h-10 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-[12px] bg-rose-600 px-4 text-xs font-bold text-white shadow-xs transition-colors hover:bg-rose-700"
+            className="h-11 shrink-0 gap-1.5 rounded-[12px] px-4 text-xs font-bold"
           >
             <Trash2Icon className="size-3.5" />
             <span>Delete Account</span>
-          </button>
+          </Button>
         </div>
       </div>
 
-      {/* ── MODAL: DELETE ACCOUNT CONFIRMATION ── */}
-      {showDeleteModal && (
-        <div className="fixed inset-0 z-50 flex animate-in items-center justify-center bg-black/60 p-4 backdrop-blur-xs fade-in">
-          <form
-            onSubmit={handleDeleteAccount}
-            className="relative w-full max-w-md space-y-4 rounded-[20px] border border-rose-200 bg-[#fffaf0] p-5 text-left shadow-2xl sm:p-6"
-          >
-            <div className="flex items-start gap-3">
-              <div className="flex size-10 shrink-0 items-center justify-center rounded-[12px] bg-rose-100 text-rose-600">
-                <AlertTriangleIcon className="size-5" />
+      {/* ── MODAL: DELETE ACCOUNT CONFIRMATION (Accessible Radix Dialog) ── */}
+      <Dialog
+        open={showDeleteModal}
+        onOpenChange={(open) => {
+          if (!deletingAccount) setShowDeleteModal(open)
+        }}
+      >
+        <DialogContent className="rounded-[24px] border border-rose-200 bg-canvas p-5 text-left sm:max-w-md sm:p-6">
+          <form onSubmit={handleDeleteAccount} className="space-y-4">
+            <DialogHeader className="text-left">
+              <div className="flex items-start gap-3">
+                <div className="flex size-10 shrink-0 items-center justify-center rounded-[12px] bg-rose-100 text-rose-600">
+                  <AlertTriangleIcon className="size-5" />
+                </div>
+                <div>
+                  <DialogTitle className="text-base font-bold text-ink">
+                    Confirm Account Deletion
+                  </DialogTitle>
+                  <DialogDescription className="mt-1 text-xs leading-relaxed text-text-muted">
+                    This action is permanent and cannot be undone. Please enter your current password to confirm deleting your account.
+                  </DialogDescription>
+                </div>
               </div>
-              <div>
-                <h3 className="text-base font-bold text-[#0a0a0a]">
-                  Confirm Account Deletion
-                </h3>
-                <p className="mt-1 text-xs leading-relaxed text-[#6a6a6a]">
-                  This action is permanent and cannot be undone. Please enter your current password to confirm deleting your account.
-                </p>
-              </div>
-            </div>
+            </DialogHeader>
 
             {deleteError && (
               <div className="flex items-center gap-2 rounded-[10px] border border-rose-200 bg-rose-50 p-2.5 text-xs font-medium text-rose-800">
@@ -938,7 +919,7 @@ export function SecuritySettingsSection({
               <div className="space-y-1.5">
                 <label
                   htmlFor="delete-account-password"
-                  className="text-xs font-bold text-[#0a0a0a]"
+                  className="text-xs font-bold text-ink"
                 >
                   Current Password
                 </label>
@@ -953,12 +934,13 @@ export function SecuritySettingsSection({
                       if (deleteError) setDeleteError(null)
                     }}
                     placeholder="Confirm your current password"
-                    className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] pr-10 pl-3.5 text-xs font-semibold text-[#0a0a0a] transition-colors outline-none focus:border-rose-600 focus:bg-[#fffaf0] sm:text-sm"
+                    className="h-11 w-full rounded-[12px] border border-hairline bg-surface-soft pr-10 pl-3.5 text-xs font-semibold text-ink transition-colors outline-none focus:border-rose-600 focus:bg-canvas sm:text-sm"
                   />
                   <button
                     type="button"
+                    aria-label={showDeletePass ? "Hide password" : "Show password"}
                     onClick={() => setShowDeletePass(!showDeletePass)}
-                    className="absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer text-[#6a6a6a] hover:text-[#0a0a0a]"
+                    className="absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer text-text-muted hover:text-ink"
                   >
                     {showDeletePass ? (
                       <EyeOffIcon className="size-4" />
@@ -972,7 +954,7 @@ export function SecuritySettingsSection({
               <div className="space-y-1.5">
                 <label
                   htmlFor="delete-account-reason"
-                  className="text-xs font-bold text-[#0a0a0a]"
+                  className="text-xs font-bold text-ink"
                 >
                   Reason for leaving (optional)
                 </label>
@@ -982,24 +964,26 @@ export function SecuritySettingsSection({
                   value={deleteReason}
                   onChange={(e) => setDeleteReason(e.target.value)}
                   placeholder="Optional feedback"
-                  className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] px-3.5 text-xs font-medium text-[#0a0a0a] transition-colors outline-none focus:border-[#0a0a0a] focus:bg-[#fffaf0] sm:text-sm"
+                  className="h-11 w-full rounded-[12px] border border-hairline bg-surface-soft px-3.5 text-xs font-medium text-ink transition-colors outline-none focus:border-ink focus:bg-canvas sm:text-sm"
                 />
               </div>
             </div>
 
             <div className="flex gap-2.5 pt-2">
-              <button
+              <Button
                 type="button"
+                variant="secondary"
                 disabled={deletingAccount}
                 onClick={() => setShowDeleteModal(false)}
-                className="h-10 flex-1 cursor-pointer rounded-[10px] border border-[#e5e5e5] bg-[#fffaf0] text-xs font-semibold text-[#0a0a0a] hover:bg-[#faf5e8] disabled:opacity-50"
+                className="h-11 flex-1 rounded-[12px] text-xs font-semibold"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
+                variant="destructive"
                 disabled={deletingAccount || !deletePassword}
-                className="flex h-10 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-[10px] bg-rose-600 text-xs font-bold text-white shadow-xs hover:bg-rose-700 disabled:opacity-50"
+                className="h-11 flex-1 gap-1.5 rounded-[12px] text-xs font-bold"
               >
                 {deletingAccount ? (
                   <>
@@ -1009,43 +993,12 @@ export function SecuritySettingsSection({
                 ) : (
                   <span>Permanently Delete</span>
                 )}
-              </button>
+              </Button>
             </div>
           </form>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
 
-      {/* ── MODAL: LOGOUT CONFIRMATION ── */}
-      {showLogoutConfirm && (
-        <div className="fixed inset-0 z-50 flex animate-in items-center justify-center bg-black/60 p-4 backdrop-blur-xs fade-in">
-          <div className="relative w-full max-w-sm space-y-4 rounded-[20px] border border-[#e5e5e5] bg-[#fffaf0] p-5 text-left shadow-2xl">
-            <h3 className="text-base font-bold text-[#0a0a0a]">
-              Confirm Sign Out
-            </h3>
-            <p className="text-xs leading-relaxed text-[#6a6a6a]">
-              Are you sure you want to end your current session? You will need
-              your username or member ID to sign back in.
-            </p>
-
-            <div className="flex gap-2.5 pt-2">
-              <button
-                type="button"
-                onClick={() => setShowLogoutConfirm(false)}
-                className="h-10 flex-1 cursor-pointer rounded-[10px] border border-[#e5e5e5] bg-[#fffaf0] text-xs font-semibold text-[#0a0a0a] hover:bg-[#faf5e8]"
-              >
-                Stay Signed In
-              </button>
-              <button
-                type="button"
-                onClick={onLogout}
-                className="h-10 flex-1 cursor-pointer rounded-[10px] bg-rose-600 text-xs font-bold text-white shadow-xs hover:bg-rose-700"
-              >
-                Sign Out
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

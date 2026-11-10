@@ -6,6 +6,7 @@ import { generateUniqueUserNumber } from "../../lib/userNumber"
 import { encrypt, decrypt, generateBlindIndex } from "../../lib/crypto"
 import { auditLogger } from "../../lib/auditLogger"
 import { prisma } from "../../lib/prisma"
+import { AppError } from "../../lib/AppError"
 
 function safeDecrypt(val: string | null | undefined, fallback: string | null = null): string | null {
   if (!val) return fallback
@@ -229,8 +230,11 @@ export const peopleServices = {
       role: member.role,
       is_claimed: member.isClaimed ?? true,
       points: canViewSensitive ? member.stats?.points ?? 0 : 0,
+      total_attendances: canViewSensitive
+        ? (member.stats?.totalAttendances ?? member._count?.attendances ?? (member.attendances?.length || 0))
+        : 0,
       created_at: new Date(member.createdAt).toISOString(),
-      attendances: (member.attendances || []).map((a: any) => ({
+      attendances: (member.attendances || []).slice(0, 5).map((a: any) => ({
         id: a.id,
         event_title: a.event?.title || "Event",
         event_date: a.event?.eventDate ? new Date(a.event.eventDate).toISOString() : new Date().toISOString(),
@@ -251,6 +255,10 @@ export const peopleServices = {
     email?: string | null
     username?: string | null
   }, actor?: CurrentUser) {
+    if (actor && actor.role !== "organizer" && actor.role !== "admin") {
+      throw new AppError("Only organizers or admins can pre-provision members.", 403, "FORBIDDEN")
+    }
+
     const role = data.role === "activist" ? "activist" : "member"
     const birthDateVal = data.date_of_birth || null
     const validatedBirthDateIso = parseSafeIsoDate(birthDateVal)
@@ -373,17 +381,21 @@ export const peopleServices = {
   },
 
   async updateMember(id: string, data: any, currentUser?: CurrentUser) {
-    if (data.role && currentUser?.role !== "admin") {
-      const error = new Error("Only admin can change member role.") as any
-      error.statusCode = 403
-      throw error
+    if (currentUser?.role !== "admin") {
+      throw new AppError("Only admin can update member profiles or change roles.", 403, "FORBIDDEN")
+    }
+
+    if (id === currentUser.userId) {
+      throw new AppError(
+        "You cannot modify your own role or account data through People management.",
+        403,
+        "SELF_MODIFICATION_FORBIDDEN"
+      )
     }
 
     const existing = await peopleModels.findUserWithProfile(id)
     if (!existing) {
-      const error = new Error("Member not found") as any
-      error.statusCode = 404
-      throw error
+      throw new AppError("Member not found", 404, "MEMBER_NOT_FOUND")
     }
 
     if (data.username && data.username !== existing.username) {
@@ -441,6 +453,17 @@ export const peopleServices = {
 
     await invalidate(CacheKeys.userProfile(id))
 
+    if (data.role && data.role !== existing.role) {
+      auditLogger.log({
+        actorId: currentUser.userId,
+        actorRole: currentUser.role,
+        action: "USER_ROLE_CHANGED",
+        targetId: id,
+        status: "SUCCESS",
+        details: { previousRole: existing.role, newRole: data.role },
+      })
+    }
+
     return {
       id: updatedUser.id,
       name: updatedProfile.name,
@@ -456,56 +479,66 @@ export const peopleServices = {
   },
 
   async deleteMember(id: string, currentUser?: CurrentUser) {
-    if (id === currentUser?.userId) {
-      const error = new Error("You cannot delete your own account.") as any
-      error.statusCode = 400
-      throw error
+    if (currentUser?.role !== "admin") {
+      throw new AppError("Only admin can delete member accounts.", 403, "FORBIDDEN")
+    }
+
+    if (id === currentUser.userId) {
+      throw new AppError("You cannot delete your own account.", 400, "SELF_DELETION_FORBIDDEN")
     }
 
     const member = await peopleModels.findUserById(id)
     if (!member) {
-      const error = new Error("Member not found") as any
-      error.statusCode = 404
-      throw error
-    }
-
-    if (member.role === "admin" && currentUser?.role !== "admin") {
-      const error = new Error("Only Admins can delete another Admin.") as any
-      error.statusCode = 403
-      throw error
+      throw new AppError("Member not found", 404, "MEMBER_NOT_FOUND")
     }
 
     await peopleModels.delete(id)
     await invalidate(CacheKeys.userProfile(id))
 
-    if (currentUser) {
-      auditLogger.log({
-        actorId: currentUser.userId,
-        actorRole: currentUser.role,
-        action: "USER_DELETED",
-        targetId: id,
-        status: "SUCCESS",
-      })
-    }
+    auditLogger.log({
+      actorId: currentUser.userId,
+      actorRole: currentUser.role,
+      action: "USER_DELETED",
+      targetId: id,
+      status: "SUCCESS",
+    })
 
     return { success: true, message: "Member deleted successfully." }
   },
 
   async resetTemporaryPassword(id: string, actor: CurrentUser) {
+    if (!actor || (actor.role !== "organizer" && actor.role !== "admin")) {
+      throw new AppError("Access denied.", 403, "FORBIDDEN")
+    }
+
+    if (id === actor.userId) {
+      throw new AppError(
+        "You cannot reset your own temporary password.",
+        403,
+        "SELF_RESET_FORBIDDEN"
+      )
+    }
+
     const targetUser = await peopleModels.findUserWithProfile(id)
     if (!targetUser) {
-      const error = new Error("Member not found.") as any
-      error.statusCode = 404
-      throw error
+      throw new AppError("Member not found.", 404, "MEMBER_NOT_FOUND")
+    }
+
+    if (actor.role !== "admin" && (targetUser.role === "admin" || targetUser.role === "organizer")) {
+      throw new AppError(
+        "Organizers cannot reset temporary passwords for organizer or admin accounts.",
+        403,
+        "FORBIDDEN"
+      )
     }
 
     // STRICT GUARD: If account is claimed, reject!
     if (targetUser.isClaimed === true || targetUser.passwordChangedByUser === true) {
-      const error = new Error(
-        "ACCOUNT_ALREADY_CLAIMED: This account has already been claimed by the member. For security and privacy, members must use the self-service forgot password feature."
-      ) as any
-      error.statusCode = 400
-      throw error
+      throw new AppError(
+        "ACCOUNT_ALREADY_CLAIMED: This account has already been claimed by the member. For security and privacy, members must use the self-service forgot password feature.",
+        400,
+        "ACCOUNT_ALREADY_CLAIMED"
+      )
     }
 
     // Generate new temporary password

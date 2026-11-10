@@ -35,15 +35,6 @@ export const schoolModels = {
     })
   },
 
-  findClassGradesBySchoolName(schoolName: string) {
-    return prisma.userProfile.findMany({
-      where: {
-        school: { name: { equals: schoolName, mode: "insensitive" } },
-      },
-      select: { classGrade: true },
-    })
-  },
-
   findSchoolByName(name: string) {
     return prisma.school.findFirst({
       where: { name: { equals: name, mode: "insensitive" } },

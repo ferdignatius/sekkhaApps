@@ -22,6 +22,8 @@ export interface EventCalendarProps {
   compact?: boolean
   /** Whether to hide the built-in month navigation header */
   hideHeader?: boolean
+  /** Whether clicking the already-selected day deselects it (default true) */
+  allowDeselect?: boolean
 }
 
 const DAYS_EN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
@@ -84,6 +86,7 @@ export function EventCalendar({
   onMonthChange,
   compact = false,
   hideHeader = false,
+  allowDeselect = true,
 }: EventCalendarProps) {
   const today = new Date()
   const year = month.getFullYear()
@@ -104,7 +107,9 @@ export function EventCalendar({
   function handleDayClick(date: Date) {
     const key = toKey(date)
     if (selected === key) {
-      onSelect?.(null)
+      if (allowDeselect) {
+        onSelect?.(null)
+      }
     } else {
       onSelect?.(key)
     }

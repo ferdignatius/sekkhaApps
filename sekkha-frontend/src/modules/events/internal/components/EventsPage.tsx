@@ -41,6 +41,13 @@ import type {
   AttendanceRecord,
 } from "../types"
 import { hexToTagColors } from "../types"
+import {
+  toWibDateKey as toDateKey,
+  formatMonthParam,
+  formatSelectedDate,
+  getDefaultSelectedDateForMonth,
+  sortEventsForDisplay,
+} from "../utils/eventOrdering"
 
 const EventsResponseSchema = z.array(
   z.object({
@@ -76,64 +83,6 @@ const EventsResponseSchema = z.array(
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function toDateKey(iso?: string): string {
-  if (!iso) return ""
-  const d = new Date(iso)
-  if (isNaN(d.getTime())) return ""
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Jakarta",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(d)
-  const values = Object.fromEntries(
-    parts.map((part) => [part.type, part.value])
-  )
-  const y = values.year
-  const m = values.month
-  const day = values.day
-  return `${y}-${m}-${day}`
-}
-
-function isSameMonth(iso?: string, month?: Date): boolean {
-  if (!iso || !month) return false
-  const d = new Date(iso)
-  if (isNaN(d.getTime())) return false
-  return (
-    d.getFullYear() === month.getFullYear() && d.getMonth() === month.getMonth()
-  )
-}
-
-function formatSelectedDate(key: string): string {
-  const d = new Date(key + "T00:00:00")
-  return d.toLocaleDateString("en-US", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  })
-}
-
-function formatSelectedDateShort(key: string): string {
-  const d = new Date(key + "T00:00:00")
-  return d.toLocaleDateString("en-US", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  })
-}
-
-function formatMonthLabel(month: Date): string {
-  return month.toLocaleDateString("en-US", { month: "long", year: "numeric" })
-}
-
-function formatMonthParam(date: Date): string {
-  const y = date.getFullYear()
-  const m = String(date.getMonth() + 1).padStart(2, "0")
-  return `${y}-${m}`
-}
-
 const MONTH_NAMES_SHORT = [
   "Jan",
   "Feb",
@@ -166,8 +115,10 @@ export function EventsPage() {
   const [formOpen, setFormOpen] = useState(false)
   const [formSubmitting, setFormSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
-  const [activeMonth, setActiveMonth] = useState<Date>(new Date())
-  const [selectedDate, setSelectedDate] = useState<string | null>(null)
+  const [activeMonth, setActiveMonth] = useState<Date>(() => new Date())
+  const [selectedDate, setSelectedDate] = useState<string>(() =>
+    toDateKey(new Date().toISOString())
+  )
   const [searchQuery, setSearchQuery] = useState("")
   const debouncedSearchQuery = useDebounce(searchQuery, 250)
   const [selectedCategoryTag, setSelectedCategoryTag] = useState<string>("all")
@@ -473,11 +424,7 @@ export function EventsPage() {
         return titleMatch || locMatch || descMatch || tagMatch || typeMatch
       })
     } else {
-      if (selectedDate) {
-        base = base.filter((ev) => toDateKey(ev.event_date) === selectedDate)
-      } else {
-        base = base.filter((ev) => isSameMonth(ev.event_date, activeMonth))
-      }
+      base = base.filter((ev) => toDateKey(ev.event_date) === selectedDate)
     }
 
     if (selectedCategoryTag !== "all") {
@@ -487,26 +434,74 @@ export function EventsPage() {
       )
     }
 
-    return base
+    return sortEventsForDisplay(base)
   }, [
     events,
     accessibleTagsSet,
-    activeMonth,
     selectedDate,
     debouncedSearchQuery,
     selectedCategoryTag,
   ])
 
+  const todayKey = toDateKey(new Date().toISOString())
+  const safeCreateInitialDate =
+    !editTarget && selectedDate >= todayKey ? selectedDate : todayKey
+
+  const handleMonthChange = useCallback((month: Date) => {
+    const normalizedMonth = new Date(month.getFullYear(), month.getMonth(), 1)
+    setActiveMonth(normalizedMonth)
+    setSelectedDate(getDefaultSelectedDateForMonth(normalizedMonth))
+  }, [])
+
+  const handleGoToday = useCallback(() => {
+    const now = new Date()
+    const currentMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+    setActiveMonth(currentMonth)
+    setSelectedDate(toDateKey(now.toISOString()))
+  }, [])
+
+  const handleCalendarSelect = useCallback((dateKey: string | null) => {
+    if (!dateKey) return
+    setSelectedDate(dateKey)
+    const [yStr, mStr] = dateKey.split("-")
+    const y = Number(yStr)
+    const m = Number(mStr)
+    if (Number.isFinite(y) && Number.isFinite(m) && m >= 1 && m <= 12) {
+      setActiveMonth((prev) =>
+        prev.getFullYear() === y && prev.getMonth() === m - 1
+          ? prev
+          : new Date(y, m - 1, 1)
+      )
+    }
+  }, [])
+
   async function handleFormSubmit(payload: CreateEventPayload) {
     try {
       setFormSubmitting(true)
       setFormError(null)
-      if (editTarget) {
-        await api.put(`/events/${editTarget.id}`, payload)
-      } else {
-        await api.post("/events", payload)
-      }
-      await loadEvents(activeMonth, true)
+      const saved = editTarget
+        ? await api.put<EventListItem>(`/events/${editTarget.id}`, payload)
+        : await api.post<EventListItem>("/events", payload)
+
+      clearApiCache()
+
+      const targetDateKey =
+        toDateKey(
+          (saved as { event_date?: string } | null | undefined)?.event_date ??
+          payload.event_date
+        ) || selectedDate
+      const [yStr, mStr] = targetDateKey.split("-")
+      const y = Number(yStr)
+      const m = Number(mStr)
+      const targetMonth =
+        Number.isFinite(y) && Number.isFinite(m) && m >= 1 && m <= 12
+          ? new Date(y, m - 1, 1)
+          : activeMonth
+
+      await loadEvents(targetMonth, true)
+      setActiveMonth(targetMonth)
+      setSelectedDate(targetDateKey)
+      setSearchQuery("")
       setEditTarget(null)
       setFormOpen(false)
     } catch (err) {
@@ -571,10 +566,10 @@ export function EventsPage() {
               onEdit={
                 isPengurus
                   ? (ev) => {
-                      setEditTarget(ev)
-                      setFormError(null)
-                      setFormOpen(true)
-                    }
+                    setEditTarget(ev)
+                    setFormError(null)
+                    setFormOpen(true)
+                  }
                   : undefined
               }
               onDelete={
@@ -583,116 +578,116 @@ export function EventsPage() {
               onDuplicate={
                 isPengurus
                   ? async (ev) => {
-                      try {
-                        const payload: CreateEventPayload = {
-                          title: `${ev.title} (Copy)`,
-                          description: ev.description ?? "",
-                          location: ev.location ?? "",
-                          event_date: ev.event_date,
-                          event_type:
-                            typeof ev.event_type === "string"
-                              ? (ev.event_type as any)
-                              : ev.event_type?.code,
-                          event_type_id:
-                            typeof ev.event_type === "object"
-                              ? ev.event_type?.id
-                              : undefined,
-                          tag: getEventTag(ev),
-                        }
-                        const dup = await api.post<EventListItem>(
-                          "/events",
-                          payload
-                        )
-                        setEvents((prev) => [dup, ...prev])
-                        setSelected(dup)
-                      } catch (err) {
-                        console.error("Failed to duplicate event:", err)
-                        alert("Failed to duplicate event on server.")
+                    try {
+                      const payload: CreateEventPayload = {
+                        title: `${ev.title} (Copy)`,
+                        description: ev.description ?? "",
+                        location: ev.location ?? "",
+                        event_date: ev.event_date,
+                        event_type:
+                          typeof ev.event_type === "string"
+                            ? (ev.event_type as any)
+                            : ev.event_type?.code,
+                        event_type_id:
+                          typeof ev.event_type === "object"
+                            ? ev.event_type?.id
+                            : undefined,
+                        tag: getEventTag(ev),
                       }
+                      const dup = await api.post<EventListItem>(
+                        "/events",
+                        payload
+                      )
+                      setEvents((prev) => [dup, ...prev])
+                      setSelected(dup)
+                    } catch (err) {
+                      console.error("Failed to duplicate event:", err)
+                      alert("Failed to duplicate event on server.")
                     }
+                  }
                   : undefined
               }
               onStatusChange={
                 isPengurus
                   ? async (eventId, newStatus, newEventDate) => {
-                      try {
-                        const updatePayload: {
-                          status: string
-                          event_date?: string
-                        } = {
-                          status: newStatus,
-                        }
-                        if (newEventDate) {
-                          updatePayload.event_date = new Date(
-                            newEventDate
-                          ).toISOString()
-                        }
+                    try {
+                      const updatePayload: {
+                        status: string
+                        event_date?: string
+                      } = {
+                        status: newStatus,
+                      }
+                      if (newEventDate) {
+                        updatePayload.event_date = new Date(
+                          newEventDate
+                        ).toISOString()
+                      }
 
-                        // 1. Optimistic update for immediate UI feedback
-                        setSelected((prev) =>
-                          prev && prev.id === eventId
+                      // 1. Optimistic update for immediate UI feedback
+                      setSelected((prev) =>
+                        prev && prev.id === eventId
+                          ? {
+                            ...prev,
+                            status: newStatus,
+                            ...(updatePayload.event_date
+                              ? { event_date: updatePayload.event_date }
+                              : {}),
+                          }
+                          : prev
+                      )
+                      setEvents((prev) =>
+                        prev.map((e) =>
+                          e.id === eventId
                             ? {
-                                ...prev,
+                              ...e,
+                              status: newStatus,
+                              ...(updatePayload.event_date
+                                ? { event_date: updatePayload.event_date }
+                                : {}),
+                            }
+                            : e
+                        )
+                      )
+                      setEventsCache((prev) => {
+                        const next: Record<string, EventListItem[]> = {}
+                        for (const key of Object.keys(prev)) {
+                          next[key] = prev[key].map((e) =>
+                            e.id === eventId
+                              ? {
+                                ...e,
                                 status: newStatus,
                                 ...(updatePayload.event_date
                                   ? { event_date: updatePayload.event_date }
                                   : {}),
                               }
-                            : prev
-                        )
-                        setEvents((prev) =>
-                          prev.map((e) =>
-                            e.id === eventId
-                              ? {
-                                  ...e,
-                                  status: newStatus,
-                                  ...(updatePayload.event_date
-                                    ? { event_date: updatePayload.event_date }
-                                    : {}),
-                                }
                               : e
                           )
-                        )
-                        setEventsCache((prev) => {
-                          const next: Record<string, EventListItem[]> = {}
-                          for (const key of Object.keys(prev)) {
-                            next[key] = prev[key].map((e) =>
-                              e.id === eventId
-                                ? {
-                                    ...e,
-                                    status: newStatus,
-                                    ...(updatePayload.event_date
-                                      ? { event_date: updatePayload.event_date }
-                                      : {}),
-                                  }
-                                : e
-                            )
-                          }
-                          return next
-                        })
+                        }
+                        return next
+                      })
 
-                        // 2. Call API patch
-                        await api.patch(
-                          `/events/${eventId}/status`,
-                          updatePayload
-                        )
-                        clearApiCache()
+                      // 2. Call API patch
+                      await api.patch(
+                        `/events/${eventId}/status`,
+                        updatePayload
+                      )
+                      clearApiCache()
 
-                        // 3. Reload month events to ensure server truth
-                        await loadEvents(activeMonth, true)
-                      } catch (err) {
-                        console.error("Failed to update event status:", err)
-                        // In case of error, re-fetch server state
-                        try {
-                          const fresh = await api.get<EventListItem>(
-                            `/events/${eventId}`,
-                            { noCache: true }
-                          )
-                          if (fresh) setSelected(fresh)
-                        } catch {}
-                        await loadEvents(activeMonth, true)
-                      }
+                      // 3. Reload month events to ensure server truth
+                      await loadEvents(activeMonth, true)
+                    } catch (err) {
+                      console.error("Failed to update event status:", err)
+                      // In case of error, re-fetch server state
+                      try {
+                        const fresh = await api.get<EventListItem>(
+                          `/events/${eventId}`,
+                          { noCache: true }
+                        )
+                        if (fresh) setSelected(fresh)
+                      } catch { }
+                      await loadEvents(activeMonth, true)
                     }
+                  }
                   : undefined
               }
               attendances={attendances[selected.id] ?? []}
@@ -701,18 +696,18 @@ export function EventsPage() {
               onDeleteAttendance={
                 isPengurus
                   ? async (userId) => {
-                      try {
-                        await api.delete(
-                          `/events/${selected.id}/attendances/${userId}`
-                        )
-                        await loadEventAttendances(selected.id)
-                      } catch (err) {
-                        console.error(
-                          "Failed to remove attendance record:",
-                          err
-                        )
-                      }
+                    try {
+                      await api.delete(
+                        `/events/${selected.id}/attendances/${userId}`
+                      )
+                      await loadEventAttendances(selected.id)
+                    } catch (err) {
+                      console.error(
+                        "Failed to remove attendance record:",
+                        err
+                      )
                     }
+                  }
                   : undefined
               }
             />
@@ -735,7 +730,7 @@ export function EventsPage() {
         >
           <EventForm
             initial={editTarget ?? undefined}
-            initialDate={!editTarget && selectedDate ? selectedDate : undefined}
+            initialDate={!editTarget ? safeCreateInitialDate : undefined}
             onSubmit={handleFormSubmit}
             isSubmitting={formSubmitting}
             submissionError={formError}
@@ -817,41 +812,28 @@ export function EventsPage() {
                   <button
                     type="button"
                     onClick={() => {
-                      if (!selectedDate) {
-                        setPickerYear(activeMonth.getFullYear())
-                        setMonthPickerOpen(!monthPickerOpen)
-                      }
+                      setPickerYear(activeMonth.getFullYear())
+                      setMonthPickerOpen(!monthPickerOpen)
                     }}
-                    className={`group flex min-w-0 items-center gap-1.5 text-base font-bold tracking-tight text-[#0a0a0a] sm:text-xl md:text-2xl ${
-                      !selectedDate ? "cursor-pointer hover:text-[#c28e20]" : ""
-                    }`}
-                    title={!selectedDate ? "Choose month and year" : undefined}
+                    className="group flex min-w-0 cursor-pointer items-center gap-1.5 text-base font-bold tracking-tight text-[#0a0a0a] hover:text-[#c28e20] sm:text-xl md:text-2xl"
+                    title="Choose month and year"
                   >
                     <span className="truncate">
-                      {selectedDate ? (
-                        <>
-                          <span className="hidden sm:inline">
-                            {formatSelectedDate(selectedDate)}
-                          </span>
-                          <span className="sm:hidden">
-                            {formatSelectedDateShort(selectedDate)}
-                          </span>
-                        </>
-                      ) : (
-                        formatMonthLabel(activeMonth)
-                      )}
+                      <span className="hidden sm:inline">
+                        {formatSelectedDate(selectedDate)}
+                      </span>
+                      <span className="sm:hidden">
+                        {formatSelectedDate(selectedDate, "short")}
+                      </span>
                     </span>
-                    {!selectedDate && (
-                      <ChevronDownIcon
-                        className={`size-4 shrink-0 text-[#6a6a6a] transition-transform duration-200 group-hover:text-[#0a0a0a] sm:size-5 ${
-                          monthPickerOpen ? "rotate-180" : ""
+                    <ChevronDownIcon
+                      className={`size-4 shrink-0 text-[#6a6a6a] transition-transform duration-200 group-hover:text-[#0a0a0a] sm:size-5 ${monthPickerOpen ? "rotate-180" : ""
                         }`}
-                      />
-                    )}
+                    />
                   </button>
 
                   {/* Apple HIG Month/Year Picker Popover */}
-                  {monthPickerOpen && !selectedDate && (
+                  {monthPickerOpen && (
                     <div className="absolute top-full left-0 z-40 mt-2 w-68 animate-in space-y-3 rounded-[24px] border border-[#ded5c0] bg-[#faf5e8]/95 p-3.5 shadow-[0_16px_40px_rgba(0,0,0,0.12)] ring-1 ring-black/[0.04] backdrop-blur-2xl zoom-in-95 fade-in">
                       {/* Year Navigation Bar */}
                       <div className="flex items-center justify-between border-b border-black/[0.06] px-1 pb-2">
@@ -889,15 +871,13 @@ export function EventsPage() {
                               key={m}
                               type="button"
                               onClick={() => {
-                                setActiveMonth(new Date(pickerYear, idx, 1))
-                                setSelectedDate(null)
+                                handleMonthChange(new Date(pickerYear, idx, 1))
                                 setMonthPickerOpen(false)
                               }}
-                              className={`cursor-pointer rounded-[14px] py-2 text-center transition-all ${
-                                isSelected
+                              className={`cursor-pointer rounded-[14px] py-2 text-center transition-all ${isSelected
                                   ? "bg-[#0a0a0a] font-bold text-white shadow-xs"
                                   : "text-[#3a3a3a] hover:bg-[#f0e8d5] hover:text-[#0a0a0a]"
-                              }`}
+                                }`}
                             >
                               {m}
                             </button>
@@ -907,17 +887,6 @@ export function EventsPage() {
                     </div>
                   )}
                 </div>
-
-                {selectedDate && (
-                  <Chip
-                    variant="assist"
-                    onClick={() => setSelectedDate(null)}
-                    title="View full month"
-                    className="hidden sm:inline-flex"
-                  >
-                    Full Month
-                  </Chip>
-                )}
 
                 {/* Custom Category Filter Dropdown (Desktop Beside Title) */}
                 <div
@@ -957,11 +926,10 @@ export function EventsPage() {
                           setSelectedCategoryTag("all")
                           setCategoryDropdownOpen(false)
                         }}
-                        className={`flex w-full cursor-pointer items-center justify-between rounded-[12px] px-3 py-2 text-xs font-semibold transition-colors ${
-                          selectedCategoryTag === "all"
+                        className={`flex w-full cursor-pointer items-center justify-between rounded-[12px] px-3 py-2 text-xs font-semibold transition-colors ${selectedCategoryTag === "all"
                             ? "bg-[#fffaf0] font-bold text-[#0a0a0a] shadow-2xs"
                             : "text-[#6a6a6a] hover:bg-[#fffaf0]/80 hover:text-[#0a0a0a]"
-                        }`}
+                          }`}
                       >
                         <span>All Categories</span>
                         {selectedCategoryTag === "all" && (
@@ -984,11 +952,10 @@ export function EventsPage() {
                               setSelectedCategoryTag(cat.tag)
                               setCategoryDropdownOpen(false)
                             }}
-                            className={`flex w-full cursor-pointer items-center justify-between rounded-[12px] px-3 py-2 text-xs font-semibold transition-colors ${
-                              isSelected
+                            className={`flex w-full cursor-pointer items-center justify-between rounded-[12px] px-3 py-2 text-xs font-semibold transition-colors ${isSelected
                                 ? "bg-[#fffaf0] font-bold text-[#0a0a0a] shadow-2xs"
                                 : "text-[#6a6a6a] hover:bg-[#fffaf0]/80 hover:text-[#0a0a0a]"
-                            }`}
+                              }`}
                           >
                             <div className="flex items-center gap-2">
                               <span
@@ -1008,78 +975,55 @@ export function EventsPage() {
                 </div>
               </div>
 
-              {/* Mobile-Only Action: Shows Full Month button if date selected, or Today + Prev/Next if browsing whole month */}
+              {/* Mobile-Only Action: Today + Prev/Next month */}
               <div className="flex shrink-0 items-center gap-1 sm:hidden">
-                {selectedDate ? (
-                  <Button
-                    variant="outlined"
-                    size="sm"
-                    onClick={() => setSelectedDate(null)}
-                    className="h-9 shrink-0 gap-1 rounded-full border-[#ded6c2] bg-[#faf5e8] px-3 text-xs font-semibold shadow-2xs backdrop-blur-md hover:bg-[#f5efe0]"
-                    title="Show full month events"
+                <Button
+                  variant="outlined"
+                  size="sm"
+                  onClick={handleGoToday}
+                  className="h-9 rounded-full border-[#ded6c2] bg-[#faf5e8] px-3 text-xs font-semibold shadow-2xs backdrop-blur-md hover:bg-[#f5efe0]"
+                  title="Go to Today"
+                >
+                  Today
+                </Button>
+
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleMonthChange(
+                        new Date(
+                          activeMonth.getFullYear(),
+                          activeMonth.getMonth() - 1,
+                          1
+                        )
+                      )
+                    }
+                    className="flex size-9 cursor-pointer items-center justify-center rounded-full border border-[#ded6c2] bg-[#faf5e8] text-[#0a0a0a] shadow-2xs backdrop-blur-md transition-all hover:bg-[#f5efe0] active:scale-95"
+                    title="Previous month"
+                    aria-label="Previous month"
                   >
-                    <XIcon className="size-3" />
-                    <span>Full Month</span>
-                  </Button>
-                ) : (
-                  <>
-                    <Button
-                      variant="outlined"
-                      size="sm"
-                      onClick={() => {
-                        const now = new Date()
-                        setActiveMonth(now)
-                        setSelectedDate(toDateKey(now.toISOString()))
-                      }}
-                      className="h-9 rounded-full border-[#ded6c2] bg-[#faf5e8] px-3 text-xs font-semibold shadow-2xs backdrop-blur-md hover:bg-[#f5efe0]"
-                      title="Go to Today"
-                    >
-                      Today
-                    </Button>
+                    <ChevronLeftIcon className="size-4" />
+                  </button>
 
-                    <div className="flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setActiveMonth(
-                            (prev) =>
-                              new Date(
-                                prev.getFullYear(),
-                                prev.getMonth() - 1,
-                                1
-                              )
-                          )
-                          setSelectedDate(null)
-                        }}
-                        className="flex size-9 cursor-pointer items-center justify-center rounded-full border border-[#ded6c2] bg-[#faf5e8] text-[#0a0a0a] shadow-2xs backdrop-blur-md transition-all hover:bg-[#f5efe0] active:scale-95"
-                        title="Previous month"
-                        aria-label="Previous month"
-                      >
-                        <ChevronLeftIcon className="size-4" />
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setActiveMonth(
-                            (prev) =>
-                              new Date(
-                                prev.getFullYear(),
-                                prev.getMonth() + 1,
-                                1
-                              )
-                          )
-                          setSelectedDate(null)
-                        }}
-                        className="flex size-9 cursor-pointer items-center justify-center rounded-full border border-[#ded6c2] bg-[#faf5e8] text-[#0a0a0a] shadow-2xs backdrop-blur-md transition-all hover:bg-[#f5efe0] active:scale-95"
-                        title="Next month"
-                        aria-label="Next month"
-                      >
-                        <ChevronRightIcon className="size-4" />
-                      </button>
-                    </div>
-                  </>
-                )}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleMonthChange(
+                        new Date(
+                          activeMonth.getFullYear(),
+                          activeMonth.getMonth() + 1,
+                          1
+                        )
+                      )
+                    }
+                    className="flex size-9 cursor-pointer items-center justify-center rounded-full border border-[#ded6c2] bg-[#faf5e8] text-[#0a0a0a] shadow-2xs backdrop-blur-md transition-all hover:bg-[#f5efe0] active:scale-95"
+                    title="Next month"
+                    aria-label="Next month"
+                  >
+                    <ChevronRightIcon className="size-4" />
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -1120,11 +1064,7 @@ export function EventsPage() {
               <Button
                 variant="outlined"
                 size="sm"
-                onClick={() => {
-                  const now = new Date()
-                  setActiveMonth(now)
-                  setSelectedDate(toDateKey(now.toISOString()))
-                }}
+                onClick={handleGoToday}
                 className="h-9 rounded-full border-[#ded6c2] bg-[#faf5e8] px-3.5 text-xs font-semibold shadow-2xs backdrop-blur-md hover:bg-[#f5efe0]"
                 title="Go to Today"
               >
@@ -1134,13 +1074,15 @@ export function EventsPage() {
               <div className="flex items-center gap-1">
                 <button
                   type="button"
-                  onClick={() => {
-                    setActiveMonth(
-                      (prev) =>
-                        new Date(prev.getFullYear(), prev.getMonth() - 1, 1)
+                  onClick={() =>
+                    handleMonthChange(
+                      new Date(
+                        activeMonth.getFullYear(),
+                        activeMonth.getMonth() - 1,
+                        1
+                      )
                     )
-                    setSelectedDate(null)
-                  }}
+                  }
                   className="flex size-9 cursor-pointer items-center justify-center rounded-full border border-[#ded6c2] bg-[#faf5e8] text-[#0a0a0a] shadow-2xs backdrop-blur-md transition-all hover:bg-[#f5efe0] active:scale-95"
                   title="Previous month"
                   aria-label="Previous month"
@@ -1150,13 +1092,15 @@ export function EventsPage() {
 
                 <button
                   type="button"
-                  onClick={() => {
-                    setActiveMonth(
-                      (prev) =>
-                        new Date(prev.getFullYear(), prev.getMonth() + 1, 1)
+                  onClick={() =>
+                    handleMonthChange(
+                      new Date(
+                        activeMonth.getFullYear(),
+                        activeMonth.getMonth() + 1,
+                        1
+                      )
                     )
-                    setSelectedDate(null)
-                  }}
+                  }
                   className="flex size-9 cursor-pointer items-center justify-center rounded-full border border-[#ded6c2] bg-[#faf5e8] text-[#0a0a0a] shadow-2xs backdrop-blur-md transition-all hover:bg-[#f5efe0] active:scale-95"
                   title="Next month"
                   aria-label="Next month"
@@ -1177,12 +1121,10 @@ export function EventsPage() {
               <EventCalendar
                 dots={dotMap}
                 selected={selectedDate}
-                onSelect={setSelectedDate}
+                allowDeselect={false}
+                onSelect={handleCalendarSelect}
                 month={activeMonth}
-                onMonthChange={(month) => {
-                  setActiveMonth(month)
-                  setSelectedDate(null)
-                }}
+                onMonthChange={handleMonthChange}
                 hideHeader={true}
               />
             </Card>
@@ -1263,16 +1205,13 @@ export function EventsPage() {
                       {listedEvents.length === 1 ? "Event" : "Events"}
                     </Badge>
                   </div>
-                  {(selectedDate || searchQuery.trim()) && (
+                  {searchQuery.trim() && (
                     <button
                       type="button"
-                      onClick={() => {
-                        setSelectedDate(null)
-                        setSearchQuery("")
-                      }}
+                      onClick={() => setSearchQuery("")}
                       className="cursor-pointer text-xs font-semibold text-[#1a3a3a] hover:underline"
                     >
-                      {searchQuery.trim() ? "Clear Search" : "Show All"}
+                      Clear Search
                     </button>
                   )}
                 </div>
@@ -1312,9 +1251,7 @@ export function EventsPage() {
                     <p className="text-xs font-medium text-[#6a6a6a]">
                       {searchQuery.trim()
                         ? `No events found matching "${searchQuery}".`
-                        : selectedDate
-                          ? "No events on this date."
-                          : "No events available for this month."}
+                        : "No events on this date."}
                     </p>
                     {searchQuery.trim() && (
                       <button
@@ -1350,12 +1287,10 @@ export function EventsPage() {
                 <EventCalendar
                   dots={dotMap}
                   selected={selectedDate}
-                  onSelect={setSelectedDate}
+                  allowDeselect={false}
+                  onSelect={handleCalendarSelect}
                   month={activeMonth}
-                  onMonthChange={(month) => {
-                    setActiveMonth(month)
-                    setSelectedDate(null)
-                  }}
+                  onMonthChange={handleMonthChange}
                   hideHeader={true}
                 />
 

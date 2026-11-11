@@ -59,7 +59,15 @@ export function EventCard({ event, onClick }: EventCardProps) {
       <button
         type="button"
         onClick={onClick}
-        className="group relative w-full cursor-pointer overflow-hidden rounded-[20px] border border-[#e6decb]/80 bg-[#fffaf0]/90 p-3.5 text-left shadow-2xs ring-1 ring-black/[0.03] backdrop-blur-md transition-all hover:border-[#d9cfb8] hover:bg-[#faf5e8] hover:shadow-xs active:scale-[0.985] sm:p-4"
+        className={`group relative w-full cursor-pointer overflow-hidden rounded-[20px] border bg-[#fffaf0]/90 p-3.5 text-left shadow-2xs ring-1 backdrop-blur-md transition-all hover:border-[#d9cfb8] hover:bg-[#faf5e8] hover:shadow-xs active:scale-[0.985] sm:p-4 ${
+          status === "active"
+            ? "border-emerald-300/90 ring-emerald-500/20"
+            : status === "closed"
+              ? "border-[#e6decb]/80 opacity-80 ring-black/[0.03]"
+              : status === "cancel"
+                ? "border-rose-200/70 opacity-70 ring-black/[0.03]"
+                : "border-[#e6decb]/80 ring-black/[0.03]"
+        }`}
       >
         <div className="flex items-center gap-3 sm:gap-3.5">
           {/* Dynamic Color Accent Bar */}
@@ -108,7 +116,7 @@ export function EventCard({ event, onClick }: EventCardProps) {
 
               {/* Status: Closed */}
               {status === "closed" && (
-                <Badge variant="secondary" glass>
+                <Badge variant="slate" glass>
                   Closed
                 </Badge>
               )}
@@ -122,7 +130,11 @@ export function EventCard({ event, onClick }: EventCardProps) {
 
               {/* Status: Scheduled / Upcoming */}
               {status === "scheduled" && !isLive && (
-                <Badge variant="secondary" glass>
+                <Badge
+                  variant="secondary"
+                  glass
+                  className="font-semibold text-[#0a0a0a]"
+                >
                   Scheduled
                 </Badge>
               )}

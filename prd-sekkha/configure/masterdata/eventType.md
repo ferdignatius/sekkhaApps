@@ -216,7 +216,7 @@ Base route: `/api/configure/event-types`
 
 | Method | Endpoint | Access Role | Description |
 | --- | --- | --- | --- |
-| `GET` | `/api/configure/event-types` | `organizer`, `admin` | Mengambil seluruh daftar Event Type (opsional query `?is_active=true`) |
+| `GET` | `/api/configure/event-types` | `organizer`, `admin` | Mengambil daftar Event Type (dukungan opsional `?is_active=true`, `search`, `page`, `limit=5` + `paginated=true` untuk infinite-scroll dropdown) |
 | `POST` | `/api/configure/event-types` | `admin` | Membuat Event Type baru (`code` otomatis digenerate jika kosong) |
 | `PUT` | `/api/configure/event-types/:id` | `admin` | Mengubah label (otomatis menyesuaikan code), color, points, is_active |
 | `PATCH` | `/api/configure/event-types/:id` | `admin` | Alias parsial update untuk PUT (otomatis menyesuaikan code) |
@@ -225,7 +225,8 @@ Base route: `/api/configure/event-types`
 ### 8.2 Payload & Response Examples
 
 #### `GET /api/configure/event-types`
-**Response (200 OK)**:
+- **Query Params Opsional**: `is_active` (`true`/`false`), `search` (pencarian label/code), `page` (default `1`), `limit` / `page_size` (maks `200`; filter dropdown Events menggunakan `limit=5` + infinite scroll saat digulir), `paginated` (`"true"` untuk format `{ items, total, page, limit, total_pages, has_more }`).
+**Response (200 OK — default array / tanpa `paginated=true`)**:
 ```json
 [
   {

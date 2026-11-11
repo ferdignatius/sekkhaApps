@@ -9,12 +9,9 @@ import {
   AlertTriangleIcon,
   XIcon,
   CopyIcon,
-  CheckIcon,
   ShieldCheckIcon,
-  Share2Icon,
 } from "lucide-react"
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
-import { ResponsiveFormModal } from "@/components/common/ResponsiveFormModal"
 import { useAuth } from "@/modules/auth"
 import { useDebounce } from "@/hooks/useDebounce"
 import { Field, FieldLabel } from "@/components/ui/field"
@@ -41,14 +38,12 @@ import {
   getRoleAvatarClass,
   getRoleBadgeVariant,
 } from "../utils/memberFormatters"
+import { PreProvisionMemberModal } from "./PreProvisionMemberModal"
 import { peopleApi } from "../api/peopleApi"
 import type {
   MemberDto,
-  CreateMemberPayload,
-  CreateMemberResponse,
   UpdateMemberPayload,
   PaginatedMembersResponse,
-  VerifiedSchoolDto,
 } from "../api/peopleApi"
 
 function CommunityRoleChart({
@@ -328,34 +323,18 @@ export function PeoplePage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(12)
 
-  // Master data
-  const [verifiedSchools, setVerifiedSchools] = useState<VerifiedSchoolDto[]>(
-    []
-  )
-
   // Modals
   const [showCreateModal, setShowCreateModal] = useState(false)
-  const [createdCredentials, setCreatedCredentials] =
-    useState<CreateMemberResponse | null>(null)
   const [editingMember, setEditingMember] = useState<MemberDto | null>(null)
   const [deletingMember, setDeletingMember] = useState<MemberDto | null>(null)
 
   // Form states
-  const [createForm, setCreateForm] = useState<CreateMemberPayload>({
-    name: "",
-    role: "member",
-    school_id: "",
-    phone: "",
-    date_of_birth: "",
-  })
   const [updateForm, setUpdateForm] = useState<UpdateMemberPayload>({})
   const [submitting, setSubmitting] = useState(false)
-  const [createError, setCreateError] = useState<string | null>(null)
   const [toastMessage, setToastMessage] = useState<{
     text: string
     type: "success" | "error"
   } | null>(null)
-  const [copiedInvite, setCopiedInvite] = useState(false)
 
   // Defense-in-depth: Redirect non-organizer/non-admin users to home
   useEffect(() => {
@@ -367,13 +346,6 @@ export function PeoplePage() {
       navigate({ to: "/home" })
     }
   }, [authState.status, authState.role, isOrganizerOrAdmin, navigate])
-
-  // Lazy-load verified schools only when Add Member modal is opened
-  useEffect(() => {
-    if (isOrganizerOrAdmin && showCreateModal && verifiedSchools.length === 0) {
-      peopleApi.getVerifiedSchools().then(setVerifiedSchools)
-    }
-  }, [isOrganizerOrAdmin, showCreateModal, verifiedSchools.length])
 
   const prevFiltersRef = useRef({
     debouncedSearchQuery,
@@ -445,43 +417,6 @@ export function PeoplePage() {
     }
   }
 
-  // Pre-provisioning: Handle Create Member
-  async function handleCreateMember(e: React.FormEvent) {
-    e.preventDefault()
-    if (!createForm.name.trim() || createForm.name.trim().length < 2) {
-      setCreateError("Full name must be at least 2 characters.")
-      return
-    }
-
-    try {
-      setSubmitting(true)
-      setCreateError(null)
-      const created = await peopleApi.createMember({
-        name: createForm.name.trim(),
-        role: createForm.role || "member",
-        school_id: createForm.school_id || null,
-        phone: createForm.phone?.trim() || null,
-        date_of_birth: createForm.date_of_birth || null,
-      })
-
-      setShowCreateModal(false)
-      setCreatedCredentials(created)
-      setCreateForm({
-        name: "",
-        role: "member",
-        school_id: "",
-        phone: "",
-        date_of_birth: "",
-      })
-      await loadData()
-      showToast(`Member "${created.name}" registered successfully!`)
-    } catch (err: any) {
-      setCreateError(err.message || "Failed to add member")
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
   const isSelfMember = (targetId?: string) =>
     Boolean(authState.userId && targetId && authState.userId === targetId)
 
@@ -542,18 +477,6 @@ export function PeoplePage() {
       .writeText(String(text))
       .then(() => {
         showToast(successMessage)
-      })
-      .catch(() => showToast("Clipboard access denied.", "error"))
-  }
-
-  function handleCopyWhatsAppInvitation(message?: string) {
-    if (!message) return
-    navigator.clipboard
-      .writeText(message)
-      .then(() => {
-        setCopiedInvite(true)
-        showToast("Invitation message copied for WhatsApp!")
-        setTimeout(() => setCopiedInvite(false), 2500)
       })
       .catch(() => showToast("Clipboard access denied.", "error"))
   }
@@ -881,330 +804,16 @@ export function PeoplePage() {
         </div>
       </div>
 
-      {/* ── MODAL 1: PRE-PROVISION NEW MEMBER ── */}
-      <ResponsiveFormModal
+      {/* ── MODAL 1 & 2: PRE-PROVISION NEW MEMBER & CREDENTIALS ── */}
+      <PreProvisionMemberModal
         open={showCreateModal}
-        onOpenChange={(open) => {
-          setShowCreateModal(open)
-          if (open) setCreateError(null)
+        onOpenChange={setShowCreateModal}
+        canLoadSchools={isOrganizerOrAdmin}
+        onSuccess={async () => {
+          await loadData()
         }}
-        title="Pre-Provision New Member"
-        description="Register a community member before they download the app. System will generate a permanent Member ID and temporary login credentials."
-        maxWidth="max-w-xl"
-      >
-        <form onSubmit={handleCreateMember} className="space-y-4">
-          {createError && (
-            <div
-              role="alert"
-              className="flex items-start gap-2.5 rounded-[12px] border border-[#ef4444]/30 bg-[#ef4444]/5 p-3 text-xs font-semibold text-[#991b1b]"
-            >
-              <AlertTriangleIcon
-                className="mt-0.5 size-4 shrink-0"
-                aria-hidden="true"
-              />
-              <span>{createError}</span>
-            </div>
-          )}
-
-          <div className="space-y-3.5">
-            {/* Full Name */}
-            <div className="space-y-1.5">
-              <label
-                htmlFor="people-create-name"
-                className="text-xs font-bold text-[#0a0a0a]"
-              >
-                Full Name <span className="text-[#ef4444]">*</span>
-              </label>
-              <input
-                id="people-create-name"
-                type="text"
-                required
-                value={createForm.name}
-                onChange={(e) =>
-                  setCreateForm({ ...createForm, name: e.target.value })
-                }
-                placeholder="e.g. Budi Santoso"
-                className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-sm text-[#0a0a0a] transition-colors outline-none focus:border-[#0a0a0a] focus:ring-2 focus:ring-[#0a0a0a]/15"
-              />
-            </div>
-
-            {/* Role & School */}
-            <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <label
-                  htmlFor="people-create-role"
-                  className="text-xs font-bold text-[#0a0a0a]"
-                >
-                  Initial Role
-                </label>
-                <select
-                  id="people-create-role"
-                  value={createForm.role || "member"}
-                  onChange={(e) =>
-                    setCreateForm({
-                      ...createForm,
-                      role: e.target.value as any,
-                    })
-                  }
-                  className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-sm text-[#0a0a0a] transition-colors outline-none focus:border-[#0a0a0a]"
-                >
-                  <option value="member">Member (Regular)</option>
-                  <option value="activist">Activist (Volunteer)</option>
-                </select>
-              </div>
-
-              <div className="space-y-1.5">
-                <label
-                  htmlFor="people-create-school"
-                  className="text-xs font-bold text-[#0a0a0a]"
-                >
-                  School / Institution
-                </label>
-                <select
-                  id="people-create-school"
-                  value={createForm.school_id || ""}
-                  onChange={(e) =>
-                    setCreateForm({
-                      ...createForm,
-                      school_id: e.target.value || null,
-                    })
-                  }
-                  className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-sm text-[#0a0a0a] transition-colors outline-none focus:border-[#0a0a0a]"
-                >
-                  <option value="">None / Not set</option>
-                  {verifiedSchools.map((sch) => (
-                    <option key={sch.id} value={sch.id}>
-                      {sch.name} ({sch.type})
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {/* Phone & Date of Birth */}
-            <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <label
-                  htmlFor="people-create-phone"
-                  className="text-xs font-bold text-[#0a0a0a]"
-                >
-                  Phone Number / WhatsApp
-                </label>
-                <input
-                  id="people-create-phone"
-                  type="tel"
-                  value={createForm.phone || ""}
-                  onChange={(e) =>
-                    setCreateForm({ ...createForm, phone: e.target.value })
-                  }
-                  placeholder="e.g. 08123456789"
-                  className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-sm text-[#0a0a0a] transition-colors outline-none focus:border-[#0a0a0a]"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label
-                  htmlFor="people-create-dob"
-                  className="text-xs font-bold text-[#0a0a0a]"
-                >
-                  Date of Birth
-                </label>
-                <input
-                  id="people-create-dob"
-                  type="date"
-                  value={createForm.date_of_birth || ""}
-                  onChange={(e) =>
-                    setCreateForm({
-                      ...createForm,
-                      date_of_birth: e.target.value,
-                    })
-                  }
-                  className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-sm text-[#0a0a0a] transition-colors outline-none focus:border-[#0a0a0a]"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="flex flex-col-reverse gap-2.5 border-t border-[#e5e5e5] pt-4 sm:flex-row sm:justify-end">
-            <button
-              type="button"
-              disabled={submitting}
-              onClick={() => setShowCreateModal(false)}
-              className="min-h-11 flex-1 cursor-pointer rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-4 text-sm font-semibold text-[#0a0a0a] transition-colors hover:bg-[#f5f0e0] disabled:opacity-50 sm:flex-none"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={submitting}
-              className="inline-flex min-h-11 flex-1 cursor-pointer items-center justify-center gap-2 rounded-[12px] bg-[#0a0a0a] px-5 text-sm font-bold text-white transition-colors hover:bg-[#1f1f1f] disabled:cursor-wait disabled:opacity-50 sm:flex-none"
-            >
-              {submitting && (
-                <span
-                  className="size-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
-                  aria-hidden="true"
-                />
-              )}
-              {submitting ? "Registering..." : "Register Member"}
-            </button>
-          </div>
-        </form>
-      </ResponsiveFormModal>
-
-      {/* ── MODAL 2: ONE-TIME TEMPORARY CREDENTIALS MODAL ── */}
-      {createdCredentials && (
-        <div className="fixed inset-0 z-50 flex animate-in items-center justify-center bg-black/60 p-3.5 backdrop-blur-xs fade-in sm:p-4">
-          <div className="relative max-h-[90vh] w-full max-w-lg space-y-4 overflow-y-auto rounded-[24px] border border-[#e5e5e5] bg-[#fffaf0] p-5 text-left shadow-2xl sm:p-6">
-            <div className="flex items-center gap-3 border-b border-[#e5e5e5] pb-3">
-              <div className="flex size-10 items-center justify-center rounded-[12px] bg-emerald-500 text-white shadow-xs">
-                <CheckCircleIcon className="size-6" />
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-[#0a0a0a] sm:text-lg">
-                  Member Pre-Provisioned!
-                </h3>
-                <p className="text-xs text-[#6a6a6a]">
-                  Share these temporary credentials with the member for initial
-                  login.
-                </p>
-              </div>
-            </div>
-
-            {/* Credentials Card */}
-            <div className="space-y-3 rounded-[16px] border border-[#e8b94a]/40 bg-[#faf5e8] p-4">
-              <div>
-                <span className="block text-[10px] font-bold tracking-wider text-[#6a6a6a] uppercase">
-                  Full Name
-                </span>
-                <span className="text-sm font-bold text-[#0a0a0a]">
-                  {createdCredentials.name}
-                </span>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 border-t border-[#e6decb]/80 pt-2.5">
-                <div>
-                  <span className="block text-[10px] font-bold tracking-wider text-[#6a6a6a] uppercase">
-                    Member ID
-                  </span>
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-mono text-sm font-bold text-[#1a3a3a]">
-                      {createdCredentials.user_number}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        handleCopy(
-                          createdCredentials.user_number,
-                          "Member ID copied!"
-                        )
-                      }
-                      className="cursor-pointer text-[#6a6a6a] hover:text-[#0a0a0a]"
-                      title="Copy Member ID"
-                    >
-                      <CopyIcon className="size-3" />
-                    </button>
-                  </div>
-                </div>
-
-                <div>
-                  <span className="block text-[10px] font-bold tracking-wider text-[#6a6a6a] uppercase">
-                    Username
-                  </span>
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-mono text-sm font-bold text-[#1a3a3a]">
-                      @{createdCredentials.username}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        handleCopy(
-                          createdCredentials.username,
-                          "Username copied!"
-                        )
-                      }
-                      className="cursor-pointer text-[#6a6a6a] hover:text-[#0a0a0a]"
-                      title="Copy Username"
-                    >
-                      <CopyIcon className="size-3" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="border-t border-[#e6decb]/80 pt-2.5">
-                <div className="flex items-center justify-between">
-                  <span className="block text-[10px] font-bold tracking-wider text-[#6a6a6a] uppercase">
-                    Temporary Password
-                  </span>
-                  <span className="text-[10px] font-semibold text-rose-600">
-                    *Shown once only
-                  </span>
-                </div>
-                <div className="mt-1 flex items-center justify-between rounded-[8px] border border-[#e5e5e5] bg-[#fffaf0] px-3 py-2">
-                  <span className="font-mono text-xs font-extrabold text-[#0a0a0a] select-all sm:text-sm">
-                    {createdCredentials.temporary_password}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      handleCopy(
-                        createdCredentials.temporary_password,
-                        "Password copied!"
-                      )
-                    }
-                    className="inline-flex cursor-pointer items-center gap-1 text-xs font-bold text-[#0a0a0a] hover:underline"
-                  >
-                    <CopyIcon className="size-3" />
-                    <span>Copy</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* WhatsApp Invite Action */}
-            <div className="space-y-2">
-              <Button
-                variant="filled"
-                type="button"
-                onClick={() =>
-                  handleCopyWhatsAppInvitation(
-                    createdCredentials.whatsapp_invite_message ||
-                      createdCredentials.copy_template
-                  )
-                }
-                className="w-full gap-2 rounded-[12px] bg-emerald-600 text-white hover:bg-emerald-700"
-              >
-                {copiedInvite ? (
-                  <CheckIcon className="size-4" />
-                ) : (
-                  <Share2Icon className="size-4" />
-                )}
-                <span>
-                  {copiedInvite
-                    ? "Copied for WhatsApp!"
-                    : "Copy WhatsApp Invitation Message"}
-                </span>
-              </Button>
-
-              <p className="text-center text-[11px] text-[#6a6a6a]">
-                Member can activate their account and set permanent password at{" "}
-                <strong>/login</strong>.
-              </p>
-            </div>
-
-            <div className="flex justify-end border-t border-[#e5e5e5] pt-3">
-              <Button
-                variant="outlined"
-                type="button"
-                onClick={() => setCreatedCredentials(null)}
-                className="rounded-[12px] px-6"
-              >
-                Done
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+        onToast={showToast}
+      />
 
       {/* ── MODAL 3: CHANGE MEMBER ROLE (ADMIN ONLY, NEVER SELF) ── */}
       {editingMember && isAdmin && !isSelfMember(editingMember.id) && (

@@ -4,9 +4,11 @@ import { peopleControllers } from "./controllers"
 
 export const peopleRouter: Router = Router()
 
-// 1. List members (organizer, admin only)
+// 1. List & fuzzy similar-name lookup (organizer, admin only — registered before /:id)
 peopleRouter.get("/", requireAuth, requireRole("organizer", "admin"), peopleControllers.getMembers)
 peopleRouter.get("/members", requireAuth, requireRole("organizer", "admin"), peopleControllers.getMembers)
+peopleRouter.get("/similar", requireAuth, requireRole("organizer", "admin"), peopleControllers.findSimilarMembers)
+peopleRouter.get("/members/similar", requireAuth, requireRole("organizer", "admin"), peopleControllers.findSimilarMembers)
 
 // 2. Member detail (organizer, admin only)
 peopleRouter.get("/:id", requireAuth, requireRole("organizer", "admin"), peopleControllers.getMemberDetail)

@@ -21,6 +21,8 @@ import {
   Input,
   Select,
 } from "@/components/base"
+import { usePaginatedDropdown } from "@/hooks/usePaginatedDropdown"
+import { DROPDOWN_PAGE_SIZE } from "@/lib/pagination"
 import { userApi } from "../api/userApi"
 import type { UserProfileDto, VerifiedSchoolDto } from "../api/userApi"
 
@@ -75,12 +77,6 @@ export function PersonalProfileSection({
     formatDateForInput(profile.date_of_birth)
   )
 
-  const [verifiedSchools, setVerifiedSchools] = useState<VerifiedSchoolDto[]>(
-    []
-  )
-  const [schoolsLoaded, setSchoolsLoaded] = useState(false)
-  const [schoolsLoading, setSchoolsLoading] = useState(false)
-
   // Reset draft values whenever server profile updates while not editing
   useEffect(() => {
     if (isEditing) return
@@ -95,28 +91,19 @@ export function PersonalProfileSection({
     setDateOfBirth(formatDateForInput(profile.date_of_birth))
   }, [profile, isEditing])
 
-  // Lazy-load school options only when the user actually enters Edit mode
-  useEffect(() => {
-    if (!isEditing || schoolsLoaded) return
-    let active = true
-    setSchoolsLoading(true)
-
-    userApi
-      .getVerifiedSchools()
-      .then((schools) => {
-        if (!active) return
-        setVerifiedSchools(schools)
-        setSchoolsLoaded(true)
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (active) setSchoolsLoading(false)
-      })
-
-    return () => {
-      active = false
-    }
-  }, [isEditing, schoolsLoaded])
+  const {
+    items: verifiedSchools,
+    hasMore: hasMoreSchools,
+    loading: schoolsLoading,
+    loadingMore: loadingMoreSchools,
+    total: totalSchools,
+    loadMore: loadMoreSchools,
+  } = usePaginatedDropdown<VerifiedSchoolDto>({
+    fetcher: (params) => userApi.getVerifiedSchools(params),
+    getKey: (s) => s.id,
+    pageSize: DROPDOWN_PAGE_SIZE,
+    enabled: isEditing,
+  })
 
   function handleCancel() {
     setError(null)
@@ -383,6 +370,10 @@ export function PersonalProfileSection({
                 onValueChange={(val) => setSelectedSchoolId(val)}
                 options={schoolOptions}
                 disabled={schoolsLoading}
+                hasMore={hasMoreSchools}
+                isLoadingMore={loadingMoreSchools}
+                totalCount={totalSchools}
+                onLoadMore={loadMoreSchools}
               />
             </div>
 

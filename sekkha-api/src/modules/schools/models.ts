@@ -14,7 +14,13 @@ export const schoolModels = {
     })
   },
 
-  findSchools(whereClause: Prisma.SchoolWhereInput, limit: number) {
+  countSchoolsByWhere(whereClause: Prisma.SchoolWhereInput) {
+    return prisma.school.count({
+      where: whereClause,
+    })
+  },
+
+  findSchools(whereClause: Prisma.SchoolWhereInput, limit: number, skip = 0) {
     return prisma.school.findMany({
       where: whereClause,
       include: {
@@ -23,6 +29,7 @@ export const schoolModels = {
         },
       },
       orderBy: [{ name: "asc" }],
+      skip,
       take: limit,
     })
   },

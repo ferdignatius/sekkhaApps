@@ -163,10 +163,12 @@ Umat di Step 3 Onboarding
 
 ## 7. UI Requirements
 
-### 7.1 Onboarding Component (`SchoolCombobox` & Modal)
-- **SchoolCombobox**:
-  - Mengambil daftar sekolah dengan `status = "active"` dan `is_active = true`.
-  - Filter pencarian debounce (250ms) berbasis query string server-side.
+### 7.1 Onboarding Component (`SchoolCombobox` & Shared Infinite-Scroll School Dropdown)
+- **SchoolCombobox & Shared School Dropdown (`limit=5` + Infinite Scroll)**:
+  - Mengambil daftar sekolah dengan `status = "active"` dan `is_active = true` secara bertahap (**default initial load = 5 item per halaman** via `page=1&limit=5&paginated=true`).
+  - Saat user melakukan **scroll ke bagian bawah menu dropdown**, client otomatis memanggil halaman berikutnya (`page + 1`, `limit = 5`) hingga seluruh data termuat (`has_more === false`), mencegah query payload besar sejak awal.
+  - Filter pencarian debounce (250ms) berbasis query string server-side (otomatis mereset `page` ke `1`).
+  - Tetap menjaga label sekolah yang sudah terpilih pada profil anggota (`selectedLabel` preservation) meskipun item tersebut belum masuk pada halaman pertama.
   - Menampilkan badge tipe sekolah (`SMP`, `SMA/SMK`, `Universitas`, `Umum`).
   - Menampilkan badge social proof (jumlah umat dari almamater tersebut).
   - Empty state menampilkan tombol **"Request New School"**.
@@ -245,24 +247,40 @@ Base URL: `/api/configure` (atau endpoint modular `/api/schools`)
 }
 ```
 
-#### `GET /api/configure/schools?search=mandiri`
-**Response (200 OK)**:
+#### `GET /api/configure/schools?search=mandiri&page=1&limit=5&paginated=true`
+- **Query Params**: `search` (opsional), `type` (opsional), `is_active` (`true`/`false`), `include_pending` (`true`/`false`), `page` (default `1`), `limit` / `page_size` (default `100` untuk direktori, **`5`** untuk dropdown onboarding/profil/people; max `200`), `paginated` (`true` opsional untuk mengembalikan object metadata paginasi di `data`).
+**Response (200 OK — dengan `paginated=true`)**:
 ```json
 {
   "status": "success",
   "code": 200,
   "message": "Schools retrieved successfully",
-  "data": [
-    {
-      "id": "clysch001abc",
-      "name": "SMK Bina Mandiri",
-      "type": "SMA/SMK",
-      "userCount": 14
-    }
-  ],
-  "total": 1
+  "data": {
+    "items": [
+      {
+        "id": "clysch001abc",
+        "name": "SMK Bina Mandiri",
+        "type": "SMA/SMK",
+        "userCount": 14
+      }
+    ],
+    "total": 18,
+    "page": 1,
+    "limit": 5,
+    "total_pages": 4,
+    "has_more": true
+  },
+  "total": 18,
+  "pagination": {
+    "page": 1,
+    "limit": 5,
+    "total": 18,
+    "total_pages": 4,
+    "has_more": true
+  }
 }
 ```
+*(Tanpa parameter `paginated=true`, `data` tetap berupa array langsung untuk kompatibilitas mundur konsumen direktori lama).*
 
 ---
 

@@ -940,17 +940,14 @@ Mengambil rekam jejak mendalam dari salah satu jemaat secara **lazy (on-click)**
 - **Response (200 OK)**: Objek profil anggota lengkap (`email`, `phone`, `birth_date`, `school`, `points`, `total_attendances`) dengan daftar `attendances` yang **dibatasi maksimal 5 event terakhir** (`take: 5`, terurut `scannedAt DESC`) agar payload ringan.
 
 ### 3. `POST /api/people/members`
-Menambahkan data profil jemaat baru secara pra-registrasi (*pre-provisioning*) oleh organizer. Sistem otomatis men-generate `user_number` (`yyyymmddnum`), `username` (nama normalized + angka random), dan password dummy (`sekkha` + 5 angka random + `puggala`, disimpan hashed).
+Menambahkan data profil jemaat baru secara pra-registrasi (*pre-provisioning*) oleh organizer/admin. Sistem otomatis menetapkan `role: "member"` sebagai default, memvalidasi `school_id` ke Master Data Schools aktif, serta men-generate `user_number` (`yyyymmddnum`), `username` (nama normalized + angka random), dan password dummy (`sekkha` + 5 angka random + `puggala`, disimpan hashed).
 - **Akses**: Organizer & Admin (`requireRole("organizer", "admin")`)
 - **Request Body**:
   ```json
   {
     "name": "Siti Rahma",
-    "email": null,
     "school_id": "sch_12345",
-    "class_grade": "10",
-    "phone": "081987654321",
-    "role": "member"
+    "phone": "081987654321"
   }
   ```
 - **Response (201 Created)** *(satu-satunya response yang memuat `temporary_password`, tidak dapat diambil ulang)*:
@@ -1010,6 +1007,36 @@ Menerbitkan ulang temporary password (`sekkha#####puggala`) untuk anggota yang b
       "username": "siti73104",
       "name": "Siti Rahma",
       "temporary_password": "sekkha18462puggala"
+    }
+  }
+  ```
+
+### 7. `GET /api/people/members/similar` *(alias: `/api/people/similar`)*
+Mengambil daftar kandidat anggota eksisting dengan nama mirip untuk tampilan info non-blocking saat *pre-provisioning* member baru dan *Manual Entry* absensi.
+- **Akses**: Organizer & Admin (`requireRole("organizer", "admin")`)
+- **Query Parameters**:
+  - `name` (string, wajib, min 2, max 100)
+  - `limit` (number, opsional, default: `5`, hard max: `5`)
+- **Response (200 OK)** *(ringan, tanpa dekripsi PII sensitif)*:
+  ```json
+  {
+    "status": "success",
+    "code": 200,
+    "message": "Similar members retrieved successfully",
+    "data": {
+      "items": [
+        {
+          "id": "usr_123",
+          "user_number": 2026102401,
+          "username": "budi1492",
+          "name": "Budi Santoso",
+          "role": "member",
+          "is_claimed": false,
+          "school": "SMA Tri Ratna",
+          "similarity_score": 92
+        }
+      ],
+      "total": 1
     }
   }
   ```
@@ -1199,6 +1226,7 @@ Manajemen konfigurasi sistem master vihara: kategori acara (*event types*), pera
 ### 9.1. Kategori Acara (`/api/configure/event-types`)
 
 #### `GET /api/configure/event-types`
+- **Query Parameters**: `is_active` (`true` | `false`, opsional), `search` (opsional), `page` (default `1`, opsional), `limit` / `page_size` (opsional, maks `200`; dropdown filter kategori event menggunakan `limit=5`), `paginated` (`"true"` untuk envelope `{ items, total, page, limit, total_pages, has_more }`).
 - **Response (200 OK)**:
   ```json
   {
@@ -1265,7 +1293,7 @@ Manajemen konfigurasi sistem master vihara: kategori acara (*event types*), pera
 Manajemen master peran pelayanan jemaat pada kegiatan vihara (MC, Puja Leader, Musician, dll).
 
 #### `GET /api/configure/badge-activities`
-- **Query Parameters**: `is_active` (`true` | `false`, opsional), `search` (string, opsional)
+- **Query Parameters**: `is_active` (`true` | `false`, opsional), `search` (string, opsional), `page` (default `1`, opsional), `limit` / `page_size` (opsional, maks `200`; picker peran attendance menggunakan `limit=5`), `paginated` (`"true"` untuk envelope `{ items, total, page, limit, total_pages, has_more }`).
 - **Response (200 OK)**:
   ```json
   {

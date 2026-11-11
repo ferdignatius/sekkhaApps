@@ -19,22 +19,109 @@ function toKebabCase(str: string): string {
     .replace(/^-+|-+$/g, "")
 }
 
+function formatEventType(t: {
+  id: string
+  code: string
+  label: string
+  color: string
+  description: string | null
+  defaultPointReward: number
+  isActive: boolean
+  createdAt: Date
+  updatedAt: Date
+}) {
+  return {
+    id: t.id,
+    code: t.code,
+    label: t.label,
+    color: t.color,
+    description: t.description,
+    default_point_reward: t.defaultPointReward,
+    is_active: t.isActive,
+    created_at: t.createdAt.toISOString(),
+    updated_at: t.updatedAt.toISOString(),
+  }
+}
+
+function formatBadgeActivity(b: {
+  id: string
+  code: string
+  label: string
+  description: string | null
+  bonusPoints: number
+  isActive: boolean
+  createdAt: Date
+  updatedAt: Date
+}) {
+  return {
+    id: b.id,
+    code: b.code,
+    label: b.label,
+    description: b.description,
+    bonus_points: b.bonusPoints,
+    is_active: b.isActive,
+    created_at: b.createdAt.toISOString(),
+    updated_at: b.updatedAt.toISOString(),
+  }
+}
+
+function resolvePaginationWindow(page?: number, limit?: number) {
+  const validPage = Math.max(Math.floor(Number(page) || 1), 1)
+  const validLimit = Math.min(Math.max(Math.floor(Number(limit) || 20), 1), 200)
+  return {
+    page: validPage,
+    limit: validLimit,
+    skip: (validPage - 1) * validLimit,
+  }
+}
+
 export const configureServices = {
 
   // ─── Event Types ───────────────────────────────────────────────────────────
-  async getEventTypes(filter?: { isActive?: boolean }) {
-    const types = await configureModels.findEventTypes(filter)
-    return types.map((t) => ({
-      id: t.id,
-      code: t.code,
-      label: t.label,
-      color: t.color,
-      description: t.description,
-      default_point_reward: t.defaultPointReward,
-      is_active: t.isActive,
-      created_at: t.createdAt.toISOString(),
-      updated_at: t.updatedAt.toISOString(),
-    }))
+  async getEventTypes(filter?: {
+    isActive?: boolean
+    search?: string
+    page?: number
+    limit?: number
+  }) {
+    const window =
+      filter?.limit !== undefined ? resolvePaginationWindow(filter.page, filter.limit) : undefined
+    const types = await configureModels.findEventTypes({
+      isActive: filter?.isActive,
+      search: filter?.search,
+      ...(window ? { skip: window.skip, take: window.limit } : {}),
+    })
+    return types.map(formatEventType)
+  },
+
+  async getEventTypesPaginated(filter: {
+    isActive?: boolean
+    search?: string
+    page?: number
+    limit?: number
+  }) {
+    const { page, limit, skip } = resolvePaginationWindow(filter.page, filter.limit)
+    const [types, total] = await Promise.all([
+      configureModels.findEventTypes({
+        isActive: filter.isActive,
+        search: filter.search,
+        skip,
+        take: limit,
+      }),
+      configureModels.countEventTypes({
+        isActive: filter.isActive,
+        search: filter.search,
+      }),
+    ])
+    const items = types.map(formatEventType)
+    return {
+      items,
+      total,
+      page,
+      limit,
+      total_pages: Math.max(1, Math.ceil(total / limit)),
+      has_more: skip + items.length < total,
+    }
   },
 
   async createEventType(data: {
@@ -449,18 +536,50 @@ export const configureServices = {
   },
 
   // ─── Badge Activities (Master Data) ─────────────────────────────────────────
-  async getBadgeActivities(filter?: { isActive?: boolean; search?: string }) {
-    const list = await configureModels.findBadgeActivities(filter)
-    return list.map((b) => ({
-      id: b.id,
-      code: b.code,
-      label: b.label,
-      description: b.description,
-      bonus_points: b.bonusPoints,
-      is_active: b.isActive,
-      created_at: b.createdAt.toISOString(),
-      updated_at: b.updatedAt.toISOString(),
-    }))
+  async getBadgeActivities(filter?: {
+    isActive?: boolean
+    search?: string
+    page?: number
+    limit?: number
+  }) {
+    const window =
+      filter?.limit !== undefined ? resolvePaginationWindow(filter.page, filter.limit) : undefined
+    const list = await configureModels.findBadgeActivities({
+      isActive: filter?.isActive,
+      search: filter?.search,
+      ...(window ? { skip: window.skip, take: window.limit } : {}),
+    })
+    return list.map(formatBadgeActivity)
+  },
+
+  async getBadgeActivitiesPaginated(filter: {
+    isActive?: boolean
+    search?: string
+    page?: number
+    limit?: number
+  }) {
+    const { page, limit, skip } = resolvePaginationWindow(filter.page, filter.limit)
+    const [list, total] = await Promise.all([
+      configureModels.findBadgeActivities({
+        isActive: filter.isActive,
+        search: filter.search,
+        skip,
+        take: limit,
+      }),
+      configureModels.countBadgeActivities({
+        isActive: filter.isActive,
+        search: filter.search,
+      }),
+    ])
+    const items = list.map(formatBadgeActivity)
+    return {
+      items,
+      total,
+      page,
+      limit,
+      total_pages: Math.max(1, Math.ceil(total / limit)),
+      has_more: skip + items.length < total,
+    }
   },
 
   async getBadgeActivityById(id: string) {

@@ -256,11 +256,80 @@ describe("ProfilePage UI/UX, Layout & Behavioral Improvements", () => {
       })
     ).toBeDefined()
 
-    // Enter Edit Mode -> fetches verified schools lazily
+    // Enter Edit Mode -> fetches verified schools lazily with limit=5 and loads page 2 on scroll
+    if (!HTMLElement.prototype.scrollIntoView) {
+      HTMLElement.prototype.scrollIntoView = vi.fn()
+    }
+    vi.mocked(userApi.getVerifiedSchools)
+      .mockResolvedValueOnce({
+        items: [
+          { id: "sch_1", name: "Universitas Multimedia Nusantara", status: "verified" },
+          { id: "sch_2", name: "SMA Negeri 1 Tangerang", status: "verified" },
+          { id: "sch_3", name: "SMA Tri Ratna", status: "verified" },
+          { id: "sch_4", name: "SMA Dhammasavana", status: "verified" },
+          { id: "sch_5", name: "Universitas Tarumanagara", status: "verified" },
+        ],
+        total: 7,
+        page: 1,
+        limit: 5,
+        total_pages: 2,
+        has_more: true,
+      })
+      .mockResolvedValueOnce({
+        items: [
+          { id: "sch_6", name: "Universitas Indonesia", status: "verified" },
+          { id: "sch_7", name: "ITB Bandung", status: "verified" },
+        ],
+        total: 7,
+        page: 2,
+        limit: 5,
+        total_pages: 2,
+        has_more: false,
+      })
+
     fireEvent.click(screen.getByRole("button", { name: /Edit Profile/i }))
 
     await waitFor(() => {
       expect(userApi.getVerifiedSchools).toHaveBeenCalledTimes(1)
+      expect(userApi.getVerifiedSchools).toHaveBeenCalledWith({
+        page: 1,
+        limit: 5,
+        search: undefined,
+      })
+    })
+
+    const schoolTrigger = await waitFor(() => {
+      const el = screen.getByRole("combobox") as HTMLButtonElement
+      expect(el.disabled).toBe(false)
+      return el
+    })
+    fireEvent.click(schoolTrigger)
+    fireEvent.keyDown(schoolTrigger, { key: "ArrowDown" })
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole("option", { name: /Universitas Tarumanagara/i })
+      ).toBeDefined()
+    })
+
+    const scrollList = document.querySelector(
+      '[data-slot="select-infinite-list"]'
+    ) as HTMLElement
+    expect(scrollList).not.toBeNull()
+    Object.defineProperty(scrollList, "scrollHeight", { value: 260, configurable: true })
+    Object.defineProperty(scrollList, "clientHeight", { value: 168, configurable: true })
+    Object.defineProperty(scrollList, "scrollTop", { value: 85, configurable: true })
+    fireEvent.scroll(scrollList)
+
+    await waitFor(() => {
+      expect(userApi.getVerifiedSchools).toHaveBeenCalledWith({
+        page: 2,
+        limit: 5,
+        search: undefined,
+      })
+      expect(
+        screen.getByRole("option", { name: /ITB Bandung/i })
+      ).toBeDefined()
     })
   })
 

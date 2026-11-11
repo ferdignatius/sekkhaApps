@@ -5,6 +5,7 @@ import {
   cleanup,
   fireEvent,
   waitFor,
+  within,
 } from "@testing-library/react"
 import { AuthContext } from "@/modules/auth/internal/context/AuthContext"
 import { initialAuthState } from "@/modules/auth/internal/context/authReducer"
@@ -367,5 +368,85 @@ describe("eventOrdering unit helpers", () => {
       "2",
       "1",
     ])
+  })
+})
+
+describe("EventsPage Category Filter Dropdown — Initial 5 + Infinite Scroll", () => {
+  afterEach(() => {
+    cleanup()
+    vi.restoreAllMocks()
+  })
+
+  it("loads initial 5 categories (limit=5) and loads page 2 when scrolling the category menu", async () => {
+    const getSpy = vi.spyOn(api, "get").mockImplementation((url: string) => {
+      if (url.includes("/configure/event-types")) {
+        if (url.includes("page=2&limit=5")) {
+          return Promise.resolve({
+            items: [
+              { id: "et_6", code: "retreat", label: "Retreat", color: "#8B5CF6", default_point_reward: 100, is_active: true },
+            ],
+            total: 6,
+            page: 2,
+            limit: 5,
+            total_pages: 2,
+            has_more: false,
+          }) as any
+        }
+        return Promise.resolve({
+          items: [
+            { id: "et_1", code: "cat-1", label: "Category 1", color: "#4262FF", default_point_reward: 50, is_active: true },
+            { id: "et_2", code: "cat-2", label: "Category 2", color: "#0D9488", default_point_reward: 50, is_active: true },
+            { id: "et_3", code: "cat-3", label: "Category 3", color: "#EC4899", default_point_reward: 50, is_active: true },
+            { id: "et_4", code: "cat-4", label: "Category 4", color: "#F59E0B", default_point_reward: 50, is_active: true },
+            { id: "et_5", code: "cat-5", label: "Category 5", color: "#10B981", default_point_reward: 50, is_active: true },
+          ],
+          total: 6,
+          page: 1,
+          limit: 5,
+          total_pages: 2,
+          has_more: true,
+        }) as any
+      }
+      return Promise.resolve([]) as any
+    })
+
+    const authState: AuthState = {
+      ...initialAuthState,
+      status: "authenticated",
+      userId: "usr_org_1",
+      role: "organizer",
+      name: "Organizer Sekkha",
+    }
+
+    render(
+      <AuthContext.Provider value={{ authState } as any}>
+        <EventsPage />
+      </AuthContext.Provider>
+    )
+
+    await waitFor(() => {
+      expect(getSpy).toHaveBeenCalledWith(
+        expect.stringContaining("/configure/event-types?is_active=true&page=1&limit=5&paginated=true")
+      )
+    })
+
+    fireEvent.click(screen.getByTitle(/Filter by category/i))
+
+    const listEl = screen.getByTestId("events-category-scroll-list")
+    expect(within(listEl).getByText("Category 5")).toBeTruthy()
+    expect(within(listEl).queryByText("Retreat")).toBeNull()
+
+    Object.defineProperty(listEl, "scrollHeight", { value: 240, configurable: true })
+    Object.defineProperty(listEl, "clientHeight", { value: 168, configurable: true })
+    Object.defineProperty(listEl, "scrollTop", { value: 68, configurable: true })
+
+    fireEvent.scroll(listEl)
+
+    await waitFor(() => {
+      expect(getSpy).toHaveBeenCalledWith(
+        expect.stringContaining("/configure/event-types?is_active=true&page=2&limit=5&paginated=true")
+      )
+      expect(within(listEl).getByText("Retreat")).toBeTruthy()
+    })
   })
 })

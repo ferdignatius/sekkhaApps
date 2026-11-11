@@ -116,7 +116,7 @@ Base URL: `/api/configure/badge-activities`
 
 | Method | Endpoint | Access Role | Description |
 | --- | --- | --- | --- |
-| `GET` | `/api/configure/badge-activities` | `organizer`, `admin` | Mengambil daftar Badge Activity aktif (dukungan filter `is_active`) |
+| `GET` | `/api/configure/badge-activities` | `organizer`, `admin` | Mengambil daftar Badge Activity (dukungan filter `is_active`, `search`, `page`, `limit=5` + `paginated=true` untuk infinite-scroll picker) |
 | `GET` | `/api/configure/badge-activities/:id` | `organizer`, `admin` | Mengambil detail satu Badge Activity |
 | `POST` | `/api/configure/badge-activities` | `admin` | Menambahkan Badge Activity baru (auto-code) |
 | `PUT` / `PATCH` | `/api/configure/badge-activities/:id` | `admin` | Memperbarui label (otomatis menyesuaikan code), deskripsi, bonus points, atau status |

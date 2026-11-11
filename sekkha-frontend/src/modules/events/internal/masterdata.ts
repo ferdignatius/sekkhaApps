@@ -4,6 +4,11 @@
 
 import type { AttendanceBadge } from "./types"
 import { api } from "@/lib/api"
+import {
+  DROPDOWN_PAGE_SIZE,
+  normalizePaginatedResult,
+} from "@/lib/pagination"
+import type { PaginatedFetchParams, PaginatedResult } from "@/lib/pagination"
 
 // ─── 1. Kategori Event Master Data ────────────────────────────────────────────
 
@@ -213,30 +218,63 @@ const STORAGE_KEYS = {
   BADGES: "sekkha_master_badges",
 }
 
+function mapEventTypeDtoToCategory(t: any): EventCategoryItem {
+  const hex = t.color || "#4262FF"
+  return {
+    id: t.id,
+    tag: t.code,
+    name: t.label,
+    colorHex: hex,
+    bg: `bg-[${hex}]/10`,
+    text: `text-[${hex}]`,
+    dot: `bg-[${hex}]`,
+    points: t.default_point_reward ?? 50,
+    is_active: t.is_active !== false,
+    autofillTitle: t.label,
+    autofillLocation: "Vihara Sekkha",
+    autofillDesc:
+      t.description || `${t.label} session with Sekkha community members.`,
+    target_roles: ["admin", "organizer", "activist", "member"],
+  }
+}
+
+export async function fetchMasterCategoriesPage(
+  params?: PaginatedFetchParams & { isActive?: boolean; role?: string | null }
+): Promise<PaginatedResult<EventCategoryItem>> {
+  const page = Math.max(1, Math.floor(params?.page ?? 1))
+  const limit = Math.max(1, Math.floor(params?.limit ?? DROPDOWN_PAGE_SIZE))
+  const isActive = params?.isActive ?? true
+
+  try {
+    const q = new URLSearchParams({
+      is_active: String(isActive),
+      page: String(page),
+      limit: String(limit),
+      paginated: "true",
+    })
+    if (params?.search?.trim()) q.set("search", params.search.trim())
+
+    const res = await api.get<unknown>(`/configure/event-types?${q.toString()}`)
+    const normalized = normalizePaginatedResult<any>(res, page, limit)
+    if (normalized.items.length > 0) {
+      return {
+        ...normalized,
+        items: normalized.items.map(mapEventTypeDtoToCategory),
+      }
+    }
+  } catch (err) {
+    console.warn("Could not load paginated event categories:", err)
+  }
+
+  const fallbackAll = getAccessibleCategories(params?.role, isActive)
+  return normalizePaginatedResult<EventCategoryItem>(fallbackAll, page, limit)
+}
+
 export async function syncMasterCategories(): Promise<EventCategoryItem[]> {
   try {
     const data = await api.get<any[]>("/configure/event-types")
     if (Array.isArray(data) && data.length > 0) {
-      const items: EventCategoryItem[] = data.map((t) => {
-        const hex = t.color || "#4262FF"
-        return {
-          id: t.id,
-          tag: t.code,
-          name: t.label,
-          colorHex: hex,
-          bg: `bg-[${hex}]/10`,
-          text: `text-[${hex}]`,
-          dot: `bg-[${hex}]`,
-          points: t.default_point_reward ?? 50,
-          is_active: t.is_active !== false,
-          autofillTitle: t.label,
-          autofillLocation: "Vihara Sekkha",
-          autofillDesc:
-            t.description ||
-            `${t.label} session with Sekkha community members.`,
-          target_roles: ["admin", "organizer", "activist", "member"],
-        }
-      })
+      const items: EventCategoryItem[] = data.map(mapEventTypeDtoToCategory)
       if (typeof window !== "undefined") {
         try {
           localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(items))

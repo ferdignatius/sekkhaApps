@@ -106,7 +106,7 @@ export function OnboardingPage() {
         if (u.school) {
           try {
             await api.get(
-              `/configure/schools?limit=200&include_pending=true&search=${encodeURIComponent(u.school)}`
+              `/configure/schools?limit=5&include_pending=true&search=${encodeURIComponent(u.school)}`
             )
           } catch {}
         }

@@ -7,6 +7,11 @@ import { encrypt, decrypt, generateBlindIndex } from "../../lib/crypto"
 import { auditLogger } from "../../lib/auditLogger"
 import { prisma } from "../../lib/prisma"
 import { AppError } from "../../lib/AppError"
+import {
+  MIN_NAME_SIMILARITY,
+  buildNameSearchProbes,
+  computeNameSimilarityScore,
+} from "./utils/nameSimilarity"
 
 function safeDecrypt(val: string | null | undefined, fallback: string | null = null): string | null {
   if (!val) return fallback
@@ -196,6 +201,55 @@ export const peopleServices = {
     }
   },
 
+  async findSimilarMembers(
+    query: { name: string; limit?: number },
+    actor?: CurrentUser
+  ) {
+    if (actor && actor.role !== "organizer" && actor.role !== "admin") {
+      throw new AppError("Only organizers or admins can search similar members.", 403, "FORBIDDEN")
+    }
+
+    const rawName = (query.name || "").trim()
+    const limit = Math.min(Math.max(Number(query.limit) || 5, 1), 5)
+    const probes = buildNameSearchProbes(rawName)
+    if (probes.length === 0) {
+      return { items: [], total: 0 }
+    }
+
+    const candidates = await peopleModels.findSimilarNameCandidates(probes, 25)
+
+    const scored = candidates
+      .filter((candidate: any) => Boolean(candidate.profile?.name?.trim()))
+      .map((candidate: any) => {
+        const displayName = candidate.profile.name.trim()
+        const score = computeNameSimilarityScore(rawName, displayName)
+
+        return {
+          id: candidate.id,
+          user_number: candidate.userNumber ? Number(candidate.userNumber) : null,
+          username: candidate.username || null,
+          name: displayName,
+          role: candidate.role,
+          is_claimed: candidate.isClaimed ?? true,
+          school: candidate.profile?.school?.name || null,
+          similarity_score: Math.round(score * 100),
+          _rawScore: score,
+        }
+      })
+      .filter((item) => item._rawScore >= MIN_NAME_SIMILARITY)
+      .sort((a, b) => {
+        if (b._rawScore !== a._rawScore) return b._rawScore - a._rawScore
+        return a.name.localeCompare(b.name)
+      })
+
+    const items = scored.slice(0, limit).map(({ _rawScore, ...rest }) => rest)
+
+    return {
+      items,
+      total: items.length,
+    }
+  },
+
   async getMemberDetail(id: string, currentUser?: CurrentUser) {
     const isPrivileged = currentUser?.role === "organizer" || currentUser?.role === "admin"
     const isSelf = currentUser?.userId === id
@@ -247,11 +301,9 @@ export const peopleServices = {
 
   async createMember(data: {
     name: string
-    role?: "member" | "activist"
     school_id?: string | null
     school?: string | null
     phone?: string | null
-    date_of_birth?: string | null
     email?: string | null
     username?: string | null
   }, actor?: CurrentUser) {
@@ -259,16 +311,21 @@ export const peopleServices = {
       throw new AppError("Only organizers or admins can pre-provision members.", 403, "FORBIDDEN")
     }
 
-    const role = data.role === "activist" ? "activist" : "member"
-    const birthDateVal = data.date_of_birth || null
-    const validatedBirthDateIso = parseSafeIsoDate(birthDateVal)
+    // Pre-provisioned members always start with default role "member"
+    const role = "member" as const
 
-    let resolvedSchoolId = data.school_id || null
-    if (!resolvedSchoolId && data.school) {
-      const s = await peopleModels.findSchoolByName(data.school.trim())
-      if (s) {
-        resolvedSchoolId = s.id
+    let resolvedSchoolId = data.school_id?.trim() || null
+    if (resolvedSchoolId) {
+      const s = await peopleModels.findSchoolById(resolvedSchoolId)
+      if (!s || !s.isActive || s.status !== "active") {
+        throw new AppError("Selected school was not found in active master data.", 400, "INVALID_SCHOOL")
       }
+    } else if (data.school?.trim()) {
+      const s = await peopleModels.findSchoolByName(data.school.trim())
+      if (!s || !s.isActive || s.status !== "active") {
+        throw new AppError("Selected school was not found in active master data.", 400, "INVALID_SCHOOL")
+      }
+      resolvedSchoolId = s.id
     }
 
     // Auto-generate username per PRD formula: firstName + 4 random digits
@@ -303,7 +360,7 @@ export const peopleServices = {
                 name: data.name.trim(),
                 phone: data.phone ? encrypt(data.phone.trim()) : null,
                 schoolId: resolvedSchoolId,
-                birthDate: validatedBirthDateIso ? encrypt(validatedBirthDateIso) : null,
+                birthDate: null,
               },
             },
             stats: {

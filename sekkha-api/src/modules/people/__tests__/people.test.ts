@@ -2,6 +2,7 @@ import { describe, it, expect } from "bun:test"
 import { peopleServices } from "../services"
 import { peopleModels } from "../models"
 import { peopleRouter } from "../routes"
+import { CreateMemberSchema, SimilarMembersQuerySchema } from "../controllers"
 
 const ADMIN_ACTOR = { userId: "usr_admin_1", role: "admin" }
 const ORGANIZER_ACTOR = { userId: "usr_org_1", role: "organizer" }
@@ -451,6 +452,212 @@ describe("People Module RBAC & Self-Protection Guardrails", () => {
         peopleModels.findMany = origFindMany
         peopleModels.countByRole = origRoleCounts
         peopleModels.countByClaimStatus = origClaimCounts
+      }
+    })
+  })
+
+  describe("Rule 4: Create Member Pre-Provisioning Defaults & Master Data School", () => {
+    it("strips role and date_of_birth from CreateMemberSchema and validates name, school_id, phone", () => {
+      const parsed = CreateMemberSchema.parse({
+        name: "Budi Santoso",
+        school_id: "sch_123",
+        phone: "08123456789",
+        role: "activist",
+        date_of_birth: "2004-05-10",
+      }) as Record<string, unknown>
+
+      expect(parsed.name).toBe("Budi Santoso")
+      expect(parsed.school_id).toBe("sch_123")
+      expect(parsed.phone).toBe("08123456789")
+      expect(parsed.role).toBeUndefined()
+      expect(parsed.date_of_birth).toBeUndefined()
+    })
+
+    it("always defaults pre-provisioned member role to 'member', links active master data school, and omits birthDate", async () => {
+      const origFindSchoolById = peopleModels.findSchoolById
+      const origFindByUsername = peopleModels.findUserByUsername
+      const origCreate = peopleModels.create
+      let capturedCreateData: any = null
+
+      peopleModels.findSchoolById = async (id: string) =>
+        id === "sch_active_1"
+          ? ({ id: "sch_active_1", name: "SMA Tri Ratna", type: "SMA/SMK", status: "active", isActive: true } as any)
+          : null
+      peopleModels.findUserByUsername = async () => null
+      peopleModels.create = async (data: any) => {
+        capturedCreateData = data
+        return {
+          id: "usr_new_1",
+          username: data.username,
+          role: data.role,
+          userNumber: data.userNumber,
+          createdAt: new Date("2026-11-11T08:00:00Z"),
+          profile: {
+            name: data.profile.create.name,
+            schoolId: data.profile.create.schoolId,
+            school: { id: "sch_active_1", name: "SMA Tri Ratna", status: "active" },
+          },
+        } as any
+      }
+
+      try {
+        const created = await peopleServices.createMember(
+          {
+            name: "Budi Santoso",
+            school_id: "sch_active_1",
+            phone: "08123456789",
+            role: "activist",
+            date_of_birth: "2004-05-10",
+          } as any,
+          ORGANIZER_ACTOR
+        )
+
+        expect(created.role).toBe("member")
+        expect(created.school_id).toBe("sch_active_1")
+        expect(created.school).toBe("SMA Tri Ratna")
+        expect(capturedCreateData.role).toBe("member")
+        expect(capturedCreateData.profile.create.schoolId).toBe("sch_active_1")
+        expect(capturedCreateData.profile.create.birthDate).toBeNull()
+      } finally {
+        peopleModels.findSchoolById = origFindSchoolById
+        peopleModels.findUserByUsername = origFindByUsername
+        peopleModels.create = origCreate
+      }
+    })
+
+    it("rejects createMember when school_id is not found or inactive in master data schools", async () => {
+      const origFindSchoolById = peopleModels.findSchoolById
+      peopleModels.findSchoolById = async () => null
+
+      try {
+        await peopleServices.createMember(
+          { name: "Budi Santoso", school_id: "sch_missing" },
+          ORGANIZER_ACTOR
+        )
+        expect(true).toBe(false)
+      } catch (err: any) {
+        expect(err.statusCode).toBe(400)
+        expect(err.message).toContain("master data")
+      } finally {
+        peopleModels.findSchoolById = origFindSchoolById
+      }
+    })
+  })
+
+  describe("Rule 5: Fuzzy Similar Members Lookup & Route Precedence", () => {
+    it("ranks fuzzy, typo, and reversed-word matches by descending similarity without exposing PII", async () => {
+      const origFindSimilar = (peopleModels as any).findSimilarNameCandidates
+      ;(peopleModels as any).findSimilarNameCandidates = async () => [
+        {
+          id: "usr_1",
+          username: "budi1492",
+          role: "member",
+          userNumber: BigInt(2026110101),
+          isClaimed: false,
+          email: "encrypted_secret_email",
+          profile: {
+            name: "Budi Santoso",
+            phone: "encrypted_secret_phone",
+            school: { name: "SMA Tri Ratna" },
+          },
+        },
+        {
+          id: "usr_2",
+          username: "santo9911",
+          role: "activist",
+          userNumber: BigInt(2026110102),
+          isClaimed: true,
+          profile: {
+            name: "Santoso Budi",
+            school: { name: "UMN" },
+          },
+        },
+        {
+          id: "usr_3",
+          username: "budi_santosa",
+          role: "member",
+          userNumber: BigInt(2026110103),
+          isClaimed: true,
+          profile: {
+            name: "Zyxwvu Unique",
+            school: null,
+          },
+        },
+      ]
+
+      try {
+        const res = await (peopleServices as any).findSimilarMembers(
+          { name: "Budi Santosa", limit: 5 },
+          ORGANIZER_ACTOR
+        )
+
+        expect(res.items.length).toBe(2)
+        expect(res.total).toBe(2)
+        expect(res.items[0].name).toBe("Budi Santoso")
+        expect(res.items[0].school).toBe("SMA Tri Ratna")
+        expect(res.items[0].similarity_score).toBeGreaterThanOrEqual(70)
+        // Must match full name only, never leak or match via username when full name differs
+        expect(res.items.map((x: any) => x.id)).not.toContain("usr_3")
+
+        // Ensure PII ciphertext is never surfaced in similar candidates
+        const first = res.items[0] as Record<string, unknown>
+        expect(first.email).toBeUndefined()
+        expect(first.phone).toBeUndefined()
+        expect(first.birth_date).toBeUndefined()
+      } finally {
+        ;(peopleModels as any).findSimilarNameCandidates = origFindSimilar
+      }
+    })
+
+    it("registers GET /similar and /members/similar before /:id routes for organizer/admin", () => {
+      const getPaths = peopleRouter.stack
+        .filter((l: any) => l.route && l.route.methods.get)
+        .map((l: any) => l.route.path)
+
+      const similarIdx = getPaths.indexOf("/similar")
+      const membersSimilarIdx = getPaths.indexOf("/members/similar")
+      const idIdx = getPaths.indexOf("/:id")
+      const membersIdIdx = getPaths.indexOf("/members/:id")
+
+      expect(similarIdx).toBeGreaterThan(-1)
+      expect(membersSimilarIdx).toBeGreaterThan(-1)
+      expect(similarIdx).toBeLessThan(idIdx)
+      expect(membersSimilarIdx).toBeLessThan(membersIdIdx)
+    })
+
+    it("enforces hard maximum of 5 similar members in both query schema and service response", async () => {
+      const parsedDefault = SimilarMembersQuerySchema.parse({ name: "Budi" })
+      expect(parsedDefault.limit).toBe(5)
+
+      const rejectedOverMax = SimilarMembersQuerySchema.safeParse({
+        name: "Budi",
+        limit: 6,
+      })
+      expect(rejectedOverMax.success).toBe(false)
+
+      const origFindSimilar = peopleModels.findSimilarNameCandidates
+      peopleModels.findSimilarNameCandidates = async () =>
+        Array.from({ length: 7 }).map((_, idx) => ({
+          id: `usr_budi_${idx + 1}`,
+          username: `budi00${idx + 1}`,
+          role: "member",
+          userNumber: BigInt(2026110100 + idx + 1),
+          isClaimed: false,
+          profile: {
+            name: `Budi Pratama ${idx + 1}`,
+            school: null,
+          },
+        })) as any
+
+      try {
+        const res = await peopleServices.findSimilarMembers(
+          { name: "Budi Pratama", limit: 20 },
+          ORGANIZER_ACTOR
+        )
+        expect(res.items.length).toBe(5)
+        expect(res.total).toBe(5)
+      } finally {
+        peopleModels.findSimilarNameCandidates = origFindSimilar
       }
     })
   })

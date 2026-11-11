@@ -32,8 +32,11 @@ import {
   getAccessibleCategories,
   getCategoryColor,
   getEventTag,
-  syncMasterCategories,
+  fetchMasterCategoriesPage,
 } from "../masterdata"
+import { InfiniteScrollFooter } from "@/components/common/InfiniteScrollFooter"
+import { usePaginatedDropdown } from "@/hooks/usePaginatedDropdown"
+import { DROPDOWN_PAGE_SIZE } from "@/lib/pagination"
 import type { EventCategoryItem } from "../masterdata"
 import type {
   EventListItem,
@@ -131,23 +134,21 @@ export function EventsPage() {
   const [deletingEvent, setDeletingEvent] = useState(false)
   const monthPickerRef = useRef<HTMLDivElement>(null)
 
-  const [masterCategories, setMasterCategories] = useState<EventCategoryItem[]>(
-    () => getAccessibleCategories(role, true)
-  )
-
-  useEffect(() => {
-    let cancelled = false
-    async function fetchMasterCategories() {
-      const items = await syncMasterCategories()
-      if (!cancelled && items && items.length > 0) {
-        setMasterCategories(items)
-      }
-    }
-    fetchMasterCategories()
-    return () => {
-      cancelled = true
-    }
-  }, [])
+  const {
+    items: masterCategories,
+    hasMore: hasMoreCategories,
+    loadingMore: loadingMoreCategories,
+    total: totalCategories,
+    loadMore: loadMoreCategories,
+    handleScroll: handleCategoryScroll,
+  } = usePaginatedDropdown<EventCategoryItem>({
+    fetcher: ({ page, limit }) =>
+      fetchMasterCategoriesPage({ page, limit, isActive: true, role }),
+    getKey: (cat) => cat.id || cat.tag,
+    pageSize: DROPDOWN_PAGE_SIZE,
+    enabled: true,
+    initialItems: [],
+  })
 
   // Dynamic Accessible Categories for logged in User Role, merged with actual event types from API
   const accessibleCategories = useMemo(() => {
@@ -939,37 +940,51 @@ export function EventsPage() {
 
                       <div className="my-1 h-px bg-black/[0.06]" />
 
-                      {accessibleCategories.map((cat) => {
-                        const isSelected =
-                          selectedCategoryTag.toLowerCase() ===
-                          cat.tag.toLowerCase()
-                        const colorHex = cat.colorHex || "#1a3a3a"
-                        return (
-                          <button
-                            key={cat.id}
-                            type="button"
-                            onClick={() => {
-                              setSelectedCategoryTag(cat.tag)
-                              setCategoryDropdownOpen(false)
-                            }}
-                            className={`flex w-full cursor-pointer items-center justify-between rounded-[12px] px-3 py-2 text-xs font-semibold transition-colors ${isSelected
-                                ? "bg-[#fffaf0] font-bold text-[#0a0a0a] shadow-2xs"
-                                : "text-[#6a6a6a] hover:bg-[#fffaf0]/80 hover:text-[#0a0a0a]"
-                              }`}
-                          >
-                            <div className="flex items-center gap-2">
-                              <span
-                                className="h-2 w-2 shrink-0 rounded-full shadow-2xs"
-                                style={{ backgroundColor: colorHex }}
-                              />
-                              <span className="capitalize">{cat.name}</span>
-                            </div>
-                            {isSelected && (
-                              <CheckIcon className="size-3.5 text-[#0a0a0a]" />
-                            )}
-                          </button>
-                        )
-                      })}
+                      <div
+                        data-testid="events-category-scroll-list"
+                        onScroll={handleCategoryScroll}
+                        className="max-h-[168px] space-y-0.5 overflow-y-auto overscroll-contain pr-0.5"
+                      >
+                        {accessibleCategories.map((cat) => {
+                          const isSelected =
+                            selectedCategoryTag.toLowerCase() ===
+                            cat.tag.toLowerCase()
+                          const colorHex = cat.colorHex || "#1a3a3a"
+                          return (
+                            <button
+                              key={cat.id}
+                              type="button"
+                              onClick={() => {
+                                setSelectedCategoryTag(cat.tag)
+                                setCategoryDropdownOpen(false)
+                              }}
+                              className={`flex w-full cursor-pointer items-center justify-between rounded-[12px] px-3 py-2 text-xs font-semibold transition-colors ${isSelected
+                                  ? "bg-[#fffaf0] font-bold text-[#0a0a0a] shadow-2xs"
+                                  : "text-[#6a6a6a] hover:bg-[#fffaf0]/80 hover:text-[#0a0a0a]"
+                                }`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <span
+                                  className="h-2 w-2 shrink-0 rounded-full shadow-2xs"
+                                  style={{ backgroundColor: colorHex }}
+                                />
+                                <span className="capitalize">{cat.name}</span>
+                              </div>
+                              {isSelected && (
+                                <CheckIcon className="size-3.5 text-[#0a0a0a]" />
+                              )}
+                            </button>
+                          )
+                        })}
+                        <InfiniteScrollFooter
+                          hasMore={hasMoreCategories}
+                          isLoadingMore={loadingMoreCategories}
+                          loadedCount={masterCategories.length}
+                          totalCount={totalCategories}
+                          onLoadMore={loadMoreCategories}
+                          itemLabel="categories"
+                        />
+                      </div>
                     </div>
                   )}
                 </div>

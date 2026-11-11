@@ -150,8 +150,9 @@ Mengambil daftar master sekolah yang tersedia untuk dipilih.
 - **Akses**: Terautentikasi (`requireAuth`).
 - **Query Params**:
   - `search`: string (pencarian nama sekolah).
-  - `page`: number (default: 1).
-  - `limit`: number (default: 20).
+  - `page`: number (default: `1`).
+  - `limit`: number (default `100` umum; dropdown onboarding menggunakan **`5`** item per fetch dengan infinite scroll saat digulir).
+  - `paginated`: boolean string (`"true"` untuk mengembalikan metadata `{ items, total, page, limit, total_pages, has_more }` di `data`).
 - **Aturan Filter Backend**: Otomatis memfilter `status = 'approved'` AND `is_active = true`. Sekolah berstatus `pending` atau `rejected` tidak boleh ditampilkan di list dropdown.
 - **Response 200 OK**:
   ```json

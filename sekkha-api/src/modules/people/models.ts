@@ -132,6 +132,38 @@ export const peopleModels = {
     return prisma.school.findUnique({ where: { id } })
   },
 
+  findSimilarNameCandidates(probes: string[], take = 25) {
+    if (probes.length === 0) return Promise.resolve([])
+    return prisma.user.findMany({
+      where: {
+        profile: {
+          is: {
+            OR: probes.map((probe) => ({
+              name: { contains: probe, mode: "insensitive" as const },
+            })),
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+      take,
+      select: {
+        id: true,
+        username: true,
+        role: true,
+        userNumber: true,
+        isClaimed: true,
+        profile: {
+          select: {
+            name: true,
+            school: {
+              select: { name: true },
+            },
+          },
+        },
+      },
+    })
+  },
+
   transaction<T>(fn: (tx: any) => Promise<T>): Promise<T> {
     return prisma.$transaction(fn)
   },

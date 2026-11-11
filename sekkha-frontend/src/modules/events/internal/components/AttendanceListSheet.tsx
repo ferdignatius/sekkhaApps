@@ -21,6 +21,9 @@ import {
 import type { AttendanceRecord, UserRole } from "../types"
 import { ConfirmDialog } from "@/components/base/AlertDialog"
 import { Badge } from "@/components/base/Badge"
+import { InfiniteScrollFooter } from "@/components/common/InfiniteScrollFooter"
+import { usePaginatedDropdown } from "@/hooks/usePaginatedDropdown"
+import { DROPDOWN_PAGE_SIZE, normalizePaginatedResult } from "@/lib/pagination"
 import { api } from "@/lib/api"
 import { getInitials } from "@/lib/initials"
 
@@ -28,7 +31,8 @@ interface BadgeActivityOption {
   id: string
   code: string
   label: string
-  bonusPoints: number
+  bonus_points?: number
+  bonusPoints?: number
 }
 
 interface AttendanceListSheetProps {
@@ -70,10 +74,31 @@ export function AttendanceListSheet({
   )
   const [badgePickerTarget, setBadgePickerTarget] =
     useState<AttendanceRecord | null>(null)
-  const [badgeActivities, setBadgeActivities] = useState<BadgeActivityOption[]>(
-    []
-  )
-  const [loadingBadges, setLoadingBadges] = useState(false)
+  const {
+    items: badgeActivities,
+    hasMore: hasMoreBadges,
+    loading: loadingBadges,
+    loadingMore: loadingMoreBadges,
+    total: totalBadges,
+    loadMore: loadMoreBadges,
+    handleScroll: handleBadgesScroll,
+  } = usePaginatedDropdown<BadgeActivityOption>({
+    fetcher: async ({ page, limit }) => {
+      const q = new URLSearchParams({
+        is_active: "true",
+        page: String(page),
+        limit: String(limit),
+        paginated: "true",
+      })
+      const res = await api.get<unknown>(
+        `/configure/badge-activities?${q.toString()}`
+      )
+      return normalizePaginatedResult<BadgeActivityOption>(res, page, limit)
+    },
+    getKey: (act) => act.id,
+    pageSize: DROPDOWN_PAGE_SIZE,
+    enabled: isEditable && Boolean(badgePickerTarget),
+  })
   const [searchQuery, setSearchQuery] = useState("")
   const [filterMethod, setFilterMethod] = useState<"all" | "qr" | "manual">(
     "all"
@@ -83,21 +108,6 @@ export function AttendanceListSheet({
   useEffect(() => {
     setLocalRecords(records)
   }, [records])
-
-  // Load badge activities for service assignment
-  useEffect(() => {
-    if (isEditable) {
-      setLoadingBadges(true)
-      api
-        .get<BadgeActivityOption[]>("/configure/badge-activities")
-        .then((res) => {
-          const list = Array.isArray(res) ? res : (res as any)?.items || []
-          setBadgeActivities(list)
-        })
-        .catch(() => {})
-        .finally(() => setLoadingBadges(false))
-    }
-  }, [isEditable])
 
   const displayRecords = localRecords.length > 0 ? localRecords : records
 
@@ -139,7 +149,7 @@ export function AttendanceListSheet({
                 badge_activity_id: badgeActivityId,
                 badge_activity: selectedBadge ? selectedBadge.label : null,
                 badge_bonus_points: selectedBadge
-                  ? selectedBadge.bonusPoints
+                  ? (selectedBadge.bonus_points ?? selectedBadge.bonusPoints ?? 30)
                   : 0,
               }
             : rec
@@ -597,7 +607,11 @@ export function AttendanceListSheet({
                 Loading service roles...
               </div>
             ) : (
-              <div className="max-h-60 space-y-2 overflow-y-auto pr-1">
+              <div
+                data-testid="badge-activity-scroll-list"
+                onScroll={handleBadgesScroll}
+                className="max-h-[168px] space-y-2 overflow-y-auto overscroll-contain pr-1"
+              >
                 <button
                   type="button"
                   onClick={() =>
@@ -618,6 +632,7 @@ export function AttendanceListSheet({
                 {badgeActivities.map((act) => {
                   const isSelected =
                     badgePickerTarget.badge_activity_id === act.id
+                  const bonus = act.bonus_points ?? act.bonusPoints ?? 30
                   return (
                     <button
                       key={act.id}
@@ -641,11 +656,19 @@ export function AttendanceListSheet({
                         </span>
                       </div>
                       <span className="rounded-full border border-[#e5e5e5] bg-[#faf5e8] px-2 py-0.5 text-[11px] font-bold text-[#0a0a0a]">
-                        +{act.bonusPoints} Pts
+                        +{bonus} Pts
                       </span>
                     </button>
                   )
                 })}
+                <InfiniteScrollFooter
+                  hasMore={hasMoreBadges}
+                  isLoadingMore={loadingMoreBadges}
+                  loadedCount={badgeActivities.length}
+                  totalCount={totalBadges}
+                  onLoadMore={loadMoreBadges}
+                  itemLabel="roles"
+                />
               </div>
             )}
           </div>

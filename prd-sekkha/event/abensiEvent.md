@@ -348,9 +348,13 @@ Pada halaman `/events/:id` untuk organizer dan admin, tombol aksi berubah secara
 
 ## 10. UI: Modal Absensi Manual (Fallback)
 
-* Input pencarian berdasarkan **`userNumber`** (nomor anggota) atau Nama jemaat.
-* Tampilan hasil: Nama Jemaat, Nomor Anggota (`userNumber`), Role, Asal Sekolah.
-* Tombol **"Catat Hadir"** $\rightarrow$ Menembak endpoint presensi manual `POST /api/events/:id/attendances` dengan `method: "manual"`.
+* Input pencarian berdasarkan **`userNumber`** (nomor anggota) atau **Nama jemaat**.
+* **Async Fuzzy Similar-Name Notice & Modal "See More"**:
+  * Saat organizer mengetik nama (≥ 3 huruf) pada pencarian manual maupun form registrasi anggota baru on-the-spot, frontend memanggil `GET /api/people/members/similar` secara asinkron (debounce 300ms, non-blocking).
+  * Jika ditemukan anggota dengan nama mirip (toleran typo/urutan kata), tampil info banner di atas hasil beserta tombol **"See More"** yang membuka modal daftar anggota mirip (**maksimal 5 nama teratas** agar ringan) lengkap dengan status hadir/belum hadir dan aksi **"+ Check In"** langsung. Jika tidak ada kecocokan (`0`), banner & tombol **See More** disembunyikan (*hidden*).
+* Tampilan hasil: Nama Jemaat, Nomor Anggota (`userNumber`), `@username`, Role, Status Klaim, dan Asal Sekolah.
+* **Quick Pre-Provision Member**: Jika peserta walk-in belum punya akun, tersedia tombol **"Register New Member"** langsung dari Manual Entry (memakai modal Pre-Provision yang sama: terhubung Master Data Schools, tanpa Role/DOB, default `role: "member"`, dengan opsi auto-check-in manual ke acara aktif).
+* Tombol **"Check In"** / **"Catat Hadir"** $\rightarrow$ Menembak endpoint presensi manual `POST /api/events/:id/attendances` dengan `method: "manual"`.
 
 ---
 
@@ -580,6 +584,7 @@ model Attendance {
 | **AC-ATT-08** | Organizer klik "Close & Finalize Event" | Status event berubah menjadi `closed` (code `200`), seluruh presensi ditandai `is_finalized = true`, poin dikreditkan serentak dalam 1 transaksi DB. |
 | **AC-ATT-09** | Organizer membuka Rekap Kehadiran (`/events/:id/attendances`) | Menampilkan `total_attended`, status finalisasi, dan daftar peserta dengan nomor anggota, sekolah, dan waktu scan (tanpa photo_url, tanpa RSVP, tanpa attendance rate). |
 | **AC-ATT-10** | Organizer melakukan "Reschedule Event" pada event `cancel` | Menentukan tanggal baru (`event_date >= current date`), status berubah kembali menjadi `scheduled` (code `200`). |
+| **AC-ATT-11** | Organizer mengetik nama di Manual Attendance (`/events/scan`) atau mendaftarkan member walk-in | Pencarian asinkron ke `GET /api/people/members/similar` menampilkan info banner non-blocking + tombol **"See More"** untuk modal daftar lengkap (tersembunyi bila kosong), serta memperbolehkan check-in langsung atau registrasi member baru. |
 
 ---
 
@@ -619,4 +624,5 @@ model Attendance {
 | **TC-ATT-14** | Batch Point Finalization | Penutupan acara secara serentak memfinalisasi seluruh kehadiran jemaat | 50 jemaat tercatat draft di acara `active` | Organizer klik "Close & Finalize Event" (`PATCH /status` target `closed`). | Transaksi atomik database: semua baris kehadiran berubah menjadi `isFinalized: true`, saldo `UserStats.points` bertambah, record `PointTransaction` terbit, streak bertambah, status event menjadi `closed`. | Positive |
 | **TC-ATT-15** | Daily Point Cap | Finalisasi poin jemaat yang melebihi batas maksimal harian (150 poin) | Jemaat telah memperoleh 120 poin hari ini, kehadiran acara baru bernilai 50 poin | Organizer menutup acara yang dihadiri jemaat tersebut. | Sistem melakukan clamp perolehan poin acara kedua menjadi +30 poin (sehingga akumulasi harian genap 150 poin). Poin tidak melebihi daily cap. | Edge Case / Rule |
 | **TC-ATT-16** | Recap Access Security | Role `activist` atau `member` mencoba melihat lembar rekap presensi | User login dengan role `activist` atau `member` | Kirim `GET /api/events/:id/attendances`. | HTTP 403 Forbidden envelope ("Forbidden: Insufficient permissions"). Menu dan data rekapitulasi kehadiran tidak dapat diakses. | Security |
+| **TC-ATT-17** | Manual Entry Similar Name & Walk-In Pre-Provision | Pencarian nama mirip asinkron + modal See More dan registrasi walk-in di Manual Attendance | Event `active`, organizer membuka tab **Manual Entry** di `/events/scan` | 1. Ketik nama mirip `"Budi Santosa"` (>= 3 huruf) di pencarian nama.<br>2. Klik **"See More"** untuk melihat modal daftar mirip atau klik **"+ Register New Member"** untuk mendaftarkan peserta baru. | Info banner non-blocking + modal **See More** muncul hanya ketika ada kecocokan mirip (hilang jika 0 hasil); organizer dapat langsung `+ Check In` dari modal/list atau mendaftarkan peserta baru terhubung Master Data School (role default `member`). | Positive / UX |
 

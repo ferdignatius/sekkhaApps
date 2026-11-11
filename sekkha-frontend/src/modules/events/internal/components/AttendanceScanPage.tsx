@@ -23,8 +23,14 @@ import {
 } from "lucide-react"
 import { useAuth } from "@/modules/auth"
 import { api } from "@/lib/api"
-import { peopleApi } from "@/modules/people"
-import type { MemberDto } from "@/modules/people"
+import {
+  peopleApi,
+  PreProvisionMemberModal,
+  SimilarMembersModal,
+  SimilarMembersNotice,
+  useSimilarMembers,
+} from "@/modules/people"
+import type { MemberDto, SimilarMemberDto } from "@/modules/people"
 import type { EventListItem, AttendanceRecord, UserRole } from "../types"
 import { QrScannerCamera } from "./QrScannerCamera"
 import { ConfirmDialog } from "@/components/base/AlertDialog"
@@ -173,6 +179,13 @@ export function AttendanceScanPage() {
   const [peopleList, setPeopleList] = useState<MemberDto[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [manualUserNumber, setManualUserNumber] = useState("")
+  const [similarModalOpen, setSimilarModalOpen] = useState(false)
+  const [preProvisionOpen, setPreProvisionOpen] = useState(false)
+
+  // Async non-blocking fuzzy similarity search while searching by name in Manual Entry
+  const { similarMembers, totalMatches } = useSimilarMembers(searchQuery, {
+    enabled: isPengurus && pengurusMode === "search",
+  })
 
   // Attendance state
   const [sessionAttendedIds, setSessionAttendedIds] = useState<Set<string>>(
@@ -584,6 +597,16 @@ export function AttendanceScanPage() {
       .slice(0, 10)
   }, [peopleList, searchQuery])
 
+  const displayedManualPeople: Array<MemberDto | SimilarMemberDto> = useMemo(() => {
+    if (!searchQuery.trim()) return []
+    if (searchQuery.trim().length >= 3 && similarMembers.length > 0) {
+      const seen = new Set(similarMembers.map((m) => m.id))
+      const extraLocal = filteredPeople.filter((p) => !seen.has(p.id))
+      return [...similarMembers, ...extraLocal].slice(0, 5)
+    }
+    return filteredPeople.slice(0, 5)
+  }, [searchQuery, similarMembers, filteredPeople])
+
   return (
     <div className="fixed inset-0 z-50 flex h-screen w-screen flex-col overflow-hidden bg-[#0d2222] font-sans select-none">
       {/* ── 1. Top Glass Header Bar ── */}
@@ -797,11 +820,11 @@ export function AttendanceScanPage() {
                 </form>
 
                 {/* Search in Registered Members */}
-                <div className="border-t border-white/10 pt-3">
+                <div className="space-y-2.5 border-t border-white/10 pt-3">
                   <label className="text-[11px] font-semibold text-white/70">
                     Or Search by Member Name
                   </label>
-                  <div className="relative mt-1">
+                  <div className="relative">
                     <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-white/40" />
                     <input
                       type="text"
@@ -812,24 +835,33 @@ export function AttendanceScanPage() {
                     />
                   </div>
 
-                  <div className="mt-2 max-h-48 space-y-1.5 overflow-y-auto pr-1">
-                    {filteredPeople.map((p) => {
+                  {/* Non-blocking Informational Banner + See More (hidden when empty) */}
+                  <SimilarMembersNotice
+                    variant="dark"
+                    members={similarMembers}
+                    totalCount={totalMatches}
+                    onSeeMore={() => setSimilarModalOpen(true)}
+                  />
+
+                  <div className="max-h-48 space-y-1.5 overflow-y-auto pr-1">
+                    {displayedManualPeople.map((p) => {
                       const isAttended = sessionAttendedIds.has(p.id)
                       return (
                         <div
                           key={p.id}
-                          className="flex items-center justify-between rounded-xl bg-white/5 p-2"
+                          className="flex items-center justify-between gap-2 rounded-xl bg-white/5 p-2"
                         >
                           <div className="min-w-0 flex-1">
                             <p className="truncate text-xs font-bold text-white">
                               {p.name}
                             </p>
-                            <p className="text-[10px] text-white/60">
+                            <p className="truncate text-[10px] text-white/60">
                               {p.user_number || "-"}
+                              {"school" in p && p.school ? ` · ${p.school}` : ""}
                             </p>
                           </div>
                           {isAttended ? (
-                            <span className="text-[10px] font-bold text-emerald-400">
+                            <span className="shrink-0 text-[10px] font-bold text-emerald-400">
                               Present
                             </span>
                           ) : (
@@ -842,7 +874,7 @@ export function AttendanceScanPage() {
                                 )
                                 setSearchQuery("")
                               }}
-                              className="rounded-lg bg-white/15 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-white/25"
+                              className="shrink-0 cursor-pointer rounded-lg bg-white/15 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-white/25"
                             >
                               + Check In
                             </button>
@@ -850,6 +882,21 @@ export function AttendanceScanPage() {
                         </div>
                       )
                     })}
+                  </div>
+
+                  {/* Walk-in Quick Pre-Provision New Member */}
+                  <div className="flex items-center justify-between gap-2 border-t border-white/10 pt-2.5">
+                    <span className="text-[11px] text-white/65">
+                      Walk-in participant not registered?
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setPreProvisionOpen(true)}
+                      className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl border border-amber-300/40 bg-amber-400/15 px-3 py-1.5 text-[11px] font-bold text-amber-200 transition-colors hover:bg-amber-400/25"
+                    >
+                      <UserPlusIcon className="size-3.5" />
+                      <span>Register New Member</span>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -1002,6 +1049,68 @@ export function AttendanceScanPage() {
           </button>
         </div>
       )}
+
+      {/* ── Similar Existing Members Modal (Manual Entry See More) ── */}
+      <SimilarMembersModal
+        open={similarModalOpen}
+        onOpenChange={setSimilarModalOpen}
+        searchTerm={searchQuery}
+        members={similarMembers}
+        renderItemAction={(member) =>
+          sessionAttendedIds.has(member.id) ? (
+            <span className="rounded-full border border-emerald-500/30 bg-emerald-500/15 px-2.5 py-1 text-[11px] font-bold text-emerald-700">
+              Present
+            </span>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                void recordManualAttendance(
+                  member.user_number ? String(member.user_number) : member.id,
+                  member.name
+                )
+                setSimilarModalOpen(false)
+                setSearchQuery("")
+              }}
+              className="cursor-pointer rounded-[10px] bg-[#0a0a0a] px-3 py-1.5 text-[11px] font-bold text-white transition-colors hover:bg-[#1f1f1f]"
+            >
+              + Check In
+            </button>
+          )
+        }
+      />
+
+      {/* ── Quick Pre-Provision Member Modal (Walk-in Manual Entry) ── */}
+      <PreProvisionMemberModal
+        open={preProvisionOpen}
+        onOpenChange={setPreProvisionOpen}
+        initialName={searchQuery.trim()}
+        canLoadSchools={isPengurus}
+        submitLabel="Register & Check In"
+        onSuccess={async (created) => {
+          setPeopleList((prev) => [
+            {
+              id: created.id,
+              name: created.name,
+              username: created.username,
+              role: created.role,
+              user_number: created.user_number,
+              is_claimed: created.is_claimed,
+              school: created.school ?? null,
+              school_id: created.school_id ?? null,
+              created_at: created.created_at,
+            },
+            ...prev,
+          ])
+          if (created.user_number) {
+            await recordManualAttendance(
+              String(created.user_number),
+              created.name
+            )
+          }
+          setSearchQuery("")
+        }}
+      />
 
       {/* ── Finalize Confirmation Dialog ── */}
       <ConfirmDialog

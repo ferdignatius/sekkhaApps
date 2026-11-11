@@ -162,19 +162,13 @@ export const schoolServices = {
     return cached(cacheKey, 300, async () => {
       const totalInSchool = await schoolModels.countProfilesBySchoolName(trimmedSchool)
 
-      let totalInClass = 0
-      if (trimmedGrade) {
-        const profiles = await schoolModels.findClassGradesBySchoolName(trimmedSchool)
-        totalInClass = profiles.filter(
-          (p) => p.classGrade && (decrypt(p.classGrade) || "").toLowerCase() === trimmedGrade.toLowerCase()
-        ).length
-      }
+
 
       return {
         school: trimmedSchool,
         class_grade: trimmedGrade,
         totalInSchool,
-        totalInClass,
+        totalInClass: 0,
       }
     })
   },

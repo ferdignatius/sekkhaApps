@@ -41,7 +41,7 @@ export function isValidRedirectTo(value: string | undefined): value is string {
   return true
 }
 
-async function waitForAuthResolution(
+export async function waitForAuthResolution(
   context: RouterContext,
   timeoutMs: number
 ): Promise<void> {

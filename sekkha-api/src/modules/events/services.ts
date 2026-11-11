@@ -8,7 +8,7 @@ import { AppError } from "../../lib/AppError"
 import type { Prisma as PrismaTypes } from "@prisma/client"
 import { canViewEvent } from "./policy"
 import { eventbus, DomainEvents } from "../../core/eventbus"
-import { calculateWeeklyStreak, toWeekKey } from "../users/internal/utils"
+import { calculateWeeklyStreak, toWeekKey } from "../users"
 
 const VALID_EVENT_STATUSES = ["scheduled", "active", "closed", "cancel"] as const
 const WIB_OFFSET_MS = 7 * 60 * 60 * 1000

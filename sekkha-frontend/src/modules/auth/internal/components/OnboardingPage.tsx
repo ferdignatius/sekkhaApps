@@ -17,8 +17,8 @@ import {
 } from "lucide-react"
 import { api } from "@/lib/api"
 import { useAuth } from "@/modules/auth"
-import { SchoolCombobox } from "@/components/ui/SchoolCombobox"
-import type { SchoolOption } from "@/components/ui/SchoolCombobox"
+import { SchoolCombobox } from "@/components/common/SchoolCombobox"
+import type { SchoolOption } from "@/components/common/SchoolCombobox"
 
 type OnboardingStep = "profile" | "details" | "school"
 
@@ -57,11 +57,6 @@ export function OnboardingPage() {
     school: "",
     school_id: "",
   })
-
-  // Selected school metadata
-  const [selectedSchoolType, setSelectedSchoolType] = useState<string | null>(
-    null
-  )
 
   // School Request Modal State
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false)
@@ -110,18 +105,9 @@ export function OnboardingPage() {
 
         if (u.school) {
           try {
-            const res: any = await api.get(
+            await api.get(
               `/configure/schools?limit=200&include_pending=true&search=${encodeURIComponent(u.school)}`
             )
-            const list: SchoolOption[] = Array.isArray(res)
-              ? res
-              : res?.schools || res?.data || []
-            const matched = list.find(
-              (s) => s.name.toLowerCase() === u.school?.toLowerCase()
-            )
-            if (matched) {
-              setSelectedSchoolType(matched.type)
-            }
           } catch {}
         }
       })
@@ -241,9 +227,6 @@ export function OnboardingPage() {
 
   // ── Step 3 Handlers: School (OPTIONAL - CAN SKIP) ───────────────────────────
   function handleSchoolChange(schoolName: string, schoolObj?: SchoolOption) {
-    const nextType = schoolObj?.type || null
-    setSelectedSchoolType(nextType)
-
     setProfileForm((prev) => ({
       ...prev,
       school: schoolName,

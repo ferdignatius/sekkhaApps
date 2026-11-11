@@ -19,13 +19,16 @@ export const schoolServices = {
     isActive?: boolean
     includePending?: boolean
     status?: string
+    page?: number
     limit?: number
   }) {
     // Non-blocking backfill for historical data where requester wasn't linked
     void schoolModels.backfillApprovedSchoolRequesters()
 
     const search = params?.search?.trim() || ""
-    const validLimit = Math.min(Number(params?.limit) || 100, 200)
+    const validLimit = Math.min(Math.max(Math.floor(Number(params?.limit) || 100), 1), 200)
+    const validPage = Math.max(Math.floor(Number(params?.page) || 1), 1)
+    const skip = (validPage - 1) * validLimit
 
     const whereClause: any = {}
 
@@ -54,7 +57,10 @@ export const schoolServices = {
       ]
     }
 
-    const schools = await schoolModels.findSchools(whereClause, validLimit)
+    const [schools, total] = await Promise.all([
+      schoolModels.findSchools(whereClause, validLimit, skip),
+      schoolModels.countSchoolsByWhere(whereClause),
+    ])
     const result = schools.map((s) => ({
       id: s.id,
       name: s.name,
@@ -66,8 +72,13 @@ export const schoolServices = {
       updated_at: s.updatedAt.toISOString(),
     }))
 
+    const totalPages = Math.max(1, Math.ceil(total / validLimit))
     return {
-      total: result.length,
+      total,
+      page: validPage,
+      limit: validLimit,
+      total_pages: totalPages,
+      has_more: skip + result.length < total,
       schools: result,
       items: result,
     }

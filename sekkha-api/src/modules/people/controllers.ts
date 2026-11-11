@@ -15,18 +15,16 @@ export const ListMembersQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(500).default(20),
 })
 
+export const SimilarMembersQuerySchema = z.object({
+  name: z.string().trim().min(2, "Name query must be at least 2 characters").max(100),
+  limit: z.coerce.number().int().min(1).max(5).default(5),
+})
+
 export const CreateMemberSchema = z.object({
   name: z.string().trim().min(2, "Full name must be at least 2 characters").max(100),
-  role: z.enum(["member", "activist"]).default("member"),
   school_id: z.string().trim().optional().nullable().or(z.literal("")),
   school: z.string().trim().max(100).optional().nullable().or(z.literal("")),
   phone: z.string().trim().max(20).optional().nullable().or(z.literal("")),
-  date_of_birth: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format (YYYY-MM-DD)")
-    .optional()
-    .nullable()
-    .or(z.literal("")),
   email: z.string().trim().email("Invalid email format").max(255).optional().nullable().or(z.literal("")),
   username: z
     .string()
@@ -79,6 +77,22 @@ export const peopleControllers = {
         message: "People list retrieved successfully",
         data: result,
         ...result, // Backward-compat for legacy unwrap
+      })
+    } catch (err) {
+      next(err)
+    }
+  },
+
+  async findSimilarMembers(req: Request, res: Response, next: NextFunction) {
+    try {
+      const parsed = SimilarMembersQuerySchema.parse(req.query)
+      const result = await peopleServices.findSimilarMembers(parsed, req.user)
+      res.json({
+        status: "success",
+        code: 200,
+        message: "Similar members retrieved successfully",
+        data: result,
+        ...result,
       })
     } catch (err) {
       next(err)

@@ -204,7 +204,8 @@ Visibilitas menentukan siapa yang dapat melihat jadwal event:
   * Metrik ringkasan: Total kehadiran jemaat (`total_attended`), status finalisasi (`is_finalized`).
   * Tabel data presensi: Nama Jemaat, Nomor Anggota (`userNumber`), Role, Sekolah, Waktu Presensi, dan Metode (`qr` / `manual`). *(Tidak memuat photo URL, total RSVP, atau attendance rate karena Sekkha tidak menggunakan sistem RSVP).*
   * **Badge Aktivitas & Peran (*Badge Activity*)**:
-    * Organizer dapat menetapkan peran pelayanan jemaat melalui dropdown Badge Activity (MC, Puja Leader, Musician).
+    * Organizer dapat menetapkan peran pelayanan jemaat melalui dropdown/picker Badge Activity (`GET /api/configure/badge-activities?is_active=true&page=1&limit=5&paginated=true`, initial load 5 item + *infinite scroll* saat daftar peran digulir ke bawah).
+    * Filter kategori pada halaman `/events` juga memuat kategori aktif secara bertahap (`limit=5` per fetch + *infinite scroll* saat menu filter kategori digulir).
     * Saat dipilih, tampil badge **"Badge Activity: +30 Pts"** di samping nama jemaat.
   * **Badge Keterlambatan (*Late Badge*)**:
     * Muncul otomatis sebagai badge **"Late (-15 Pts)"** di samping nama jemaat jika jemaat di-scan melewati batas toleransi `max_late_minutes`.

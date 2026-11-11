@@ -8,6 +8,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { InfiniteScrollFooter } from "@/components/common/InfiniteScrollFooter"
+import { isNearScrollBottom } from "@/lib/pagination"
 import { cn } from "@/lib/utils"
 
 export interface SelectOption {
@@ -29,10 +31,16 @@ export interface SimpleSelectProps {
   error?: string | null
   className?: string
   children?: React.ReactNode
+  hasMore?: boolean
+  isLoadingMore?: boolean
+  totalCount?: number
+  onLoadMore?: () => void
+  emptyText?: string
 }
 
 /**
  * Sekkha base Select — aligned strictly with DESIGN.md specifications.
+ * Supports optional infinite scrolling when `hasMore` / `onLoadMore` are provided.
  */
 export function Select({
   id,
@@ -47,11 +55,48 @@ export function Select({
   error,
   className,
   children,
+  hasMore,
+  isLoadingMore = false,
+  totalCount,
+  onLoadMore,
+  emptyText,
 }: SimpleSelectProps) {
   const generatedId = React.useId()
   const selectId = id || generatedId
   const hasError = Boolean(error)
   const handleValueChange = onValueChange || onChange
+  const isInfinite = hasMore !== undefined || Boolean(onLoadMore)
+  const [menuOpen, setMenuOpen] = React.useState(false)
+  const scrollContainerRef = React.useRef<HTMLDivElement>(null)
+  const sentinelRef = React.useRef<HTMLDivElement>(null)
+
+  React.useEffect(() => {
+    if (!isInfinite || !menuOpen || !hasMore || isLoadingMore || !onLoadMore) {
+      return
+    }
+    if (typeof IntersectionObserver === "undefined") return
+    const root = scrollContainerRef.current
+    const target = sentinelRef.current
+    if (!root || !target) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          onLoadMore()
+        }
+      },
+      { root, rootMargin: "24px", threshold: 0.1 }
+    )
+    observer.observe(target)
+    return () => observer.disconnect()
+  }, [isInfinite, menuOpen, hasMore, isLoadingMore, onLoadMore, options?.length])
+
+  const handleListScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    if (!hasMore || isLoadingMore || !onLoadMore) return
+    if (isNearScrollBottom(e.currentTarget)) {
+      onLoadMore()
+    }
+  }
 
   // If children provided, render as primitive wrapper
   if (children && !options) {
@@ -96,6 +141,7 @@ export function Select({
         value={value}
         defaultValue={defaultValue}
         onValueChange={handleValueChange}
+        onOpenChange={setMenuOpen}
         disabled={disabled}
       >
         <SelectTrigger
@@ -108,19 +154,55 @@ export function Select({
         >
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
-        <SelectContent className="rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] p-1 text-[#0a0a0a] shadow-lg">
-          <SelectGroup>
-            {options?.map((opt) => (
-              <SelectItem
-                key={opt.value}
-                value={opt.value}
-                disabled={opt.disabled}
-                className="rounded-[8px] px-3 py-2 text-sm text-[#0a0a0a] hover:bg-[#f5f0e0] focus:bg-[#f5f0e0]"
-              >
-                {opt.label}
-              </SelectItem>
-            ))}
-          </SelectGroup>
+        <SelectContent className="z-[115] rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] p-1 text-[#0a0a0a] shadow-lg">
+          {isInfinite ? (
+            <div
+              data-slot="select-infinite-list"
+              ref={scrollContainerRef}
+              onScroll={handleListScroll}
+              className="max-h-[168px] overflow-y-auto overscroll-contain pr-0.5"
+            >
+              <SelectGroup>
+                {options && options.length > 0 ? (
+                  options.map((opt) => (
+                    <SelectItem
+                      key={opt.value}
+                      value={opt.value}
+                      disabled={opt.disabled}
+                      className="rounded-[8px] px-3 py-2 text-sm text-[#0a0a0a] hover:bg-[#f5f0e0] focus:bg-[#f5f0e0]"
+                    >
+                      {opt.label}
+                    </SelectItem>
+                  ))
+                ) : emptyText ? (
+                  <p className="px-3 py-2.5 text-xs text-[#6a6a6a]">
+                    {emptyText}
+                  </p>
+                ) : null}
+              </SelectGroup>
+              <InfiniteScrollFooter
+                hasMore={Boolean(hasMore)}
+                isLoadingMore={isLoadingMore}
+                loadedCount={options?.length ?? 0}
+                totalCount={totalCount}
+                sentinelRef={sentinelRef}
+                onLoadMore={onLoadMore}
+              />
+            </div>
+          ) : (
+            <SelectGroup>
+              {options?.map((opt) => (
+                <SelectItem
+                  key={opt.value}
+                  value={opt.value}
+                  disabled={opt.disabled}
+                  className="rounded-[8px] px-3 py-2 text-sm text-[#0a0a0a] hover:bg-[#f5f0e0] focus:bg-[#f5f0e0]"
+                >
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          )}
         </SelectContent>
       </ShadcnSelect>
       {hasError && (

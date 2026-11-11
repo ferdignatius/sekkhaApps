@@ -135,12 +135,34 @@ export const configureControllers = {
   async getEventTypes(req: Request, res: Response, next: NextFunction) {
     try {
       const isActiveParam = req.query.is_active
-      let filter: { isActive?: boolean } | undefined = undefined
+      let isActive: boolean | undefined = undefined
       if (isActiveParam === "true") {
-        filter = { isActive: true }
+        isActive = true
       } else if (isActiveParam === "false") {
-        filter = { isActive: false }
+        isActive = false
       }
+      const search = typeof req.query.search === "string" ? req.query.search : undefined
+      const limitParam = req.query.limit ?? req.query.page_size
+      const page = req.query.page !== undefined ? Number(req.query.page) : undefined
+      const limit = limitParam !== undefined ? Number(limitParam) : undefined
+      const paginated = req.query.paginated === "true"
+
+      if (paginated) {
+        res.json(
+          await configureServices.getEventTypesPaginated({
+            isActive,
+            search,
+            page: page ?? 1,
+            limit: limit ?? 5,
+          })
+        )
+        return
+      }
+
+      const filter =
+        isActive !== undefined || search !== undefined || page !== undefined || limit !== undefined
+          ? { isActive, search, page, limit }
+          : undefined
       res.json(await configureServices.getEventTypes(filter))
     } catch (err) { next(err) }
   },
@@ -237,7 +259,24 @@ export const configureControllers = {
     try {
       const isActive = req.query.is_active !== undefined ? req.query.is_active === "true" : undefined
       const search = req.query.search ? String(req.query.search) : undefined
-      res.json(await configureServices.getBadgeActivities({ isActive, search }))
+      const limitParam = req.query.limit ?? req.query.page_size
+      const page = req.query.page !== undefined ? Number(req.query.page) : undefined
+      const limit = limitParam !== undefined ? Number(limitParam) : undefined
+      const paginated = req.query.paginated === "true"
+
+      if (paginated) {
+        res.json(
+          await configureServices.getBadgeActivitiesPaginated({
+            isActive,
+            search,
+            page: page ?? 1,
+            limit: limit ?? 5,
+          })
+        )
+        return
+      }
+
+      res.json(await configureServices.getBadgeActivities({ isActive, search, page, limit }))
     } catch (err) { next(err) }
   },
   async getBadgeActivityById(req: Request, res: Response, next: NextFunction) {

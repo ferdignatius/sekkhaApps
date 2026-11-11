@@ -1,4 +1,9 @@
 import { api } from "@/lib/api"
+import {
+  DROPDOWN_PAGE_SIZE,
+  fetchSchoolsPaginated,
+} from "@/lib/pagination"
+import type { PaginatedFetchParams, PaginatedResult } from "@/lib/pagination"
 
 export type UserRole = "member" | "activist" | "organizer" | "admin"
 
@@ -164,28 +169,25 @@ export const userApi = {
     return res?.data || res
   },
 
-  getVerifiedSchools: async (): Promise<VerifiedSchoolDto[]> => {
+  getVerifiedSchools: async (
+    params?: PaginatedFetchParams
+  ): Promise<VerifiedSchoolDto[] | PaginatedResult<VerifiedSchoolDto>> => {
     try {
-      const res = await api.get<any>(
-        "/configure/schools?page=1&page_size=100&include_pending=true"
-      )
-      if (Array.isArray(res)) return res
-      if (res && Array.isArray(res.data)) return res.data
-      if (res && Array.isArray(res.schools)) return res.schools
-      if (res && Array.isArray(res.items)) return res.items
-      return []
+      return await fetchSchoolsPaginated<VerifiedSchoolDto>({
+        page: params?.page ?? 1,
+        limit: params?.limit ?? DROPDOWN_PAGE_SIZE,
+        search: params?.search,
+        includePending: true,
+        fallbackToPublic: true,
+      })
     } catch {
-      try {
-        const fallback = await api.get<any>(
-          "/schools?limit=100&include_pending=true"
-        )
-        if (Array.isArray(fallback)) return fallback
-        if (fallback && Array.isArray(fallback.data)) return fallback.data
-        if (fallback && Array.isArray(fallback.schools)) return fallback.schools
-        if (fallback && Array.isArray(fallback.items)) return fallback.items
-        return []
-      } catch {
-        return []
+      return {
+        items: [],
+        total: 0,
+        page: params?.page ?? 1,
+        limit: params?.limit ?? DROPDOWN_PAGE_SIZE,
+        total_pages: 1,
+        has_more: false,
       }
     }
   },

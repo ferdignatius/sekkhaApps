@@ -91,7 +91,7 @@ Halaman `/profile` menggunakan kontainer standar `max-w-7xl` dengan 3 tab terorg
       * **Full Name** *(Input teks, wajib, min 1 karakter)*.
       * **Username** *(Input teks dengan prefix `@`, wajib, min 3 s.d. 30 karakter, format regex `[a-z0-9._]`, divalidasi keunikan oleh server)*.
       * **Phone Number / WhatsApp** *(Input nomor telepon, e.g. `08123456789`)*.
-      * **School / University** *(Dropdown interaktif dari master data `GET /api/schools`, menampilkan institusi terverifikasi aktif)*.
+      * **School / University** *(Dropdown infinite-scroll dari master data `GET /api/configure/schools` / `GET /api/schools`: dimuat secara lazy saat Edit Profile dengan batch awal 5 institusi [`page=1&limit=5&paginated=true`], memuat 5 item berikutnya saat di-scroll, dan tetap menjaga tampilan nama sekolah terpilih jika belum ada di halaman pertama)*.
       * **Date of Birth** *(Input tanggal / Datepicker `YYYY-MM-DD`)*.
     * **Tombol Aksi Bawah Form**:
       * Tombol *"Cancel"*: Mengembalikan form ke View Mode tanpa menyimpan perubahan (reset ke data sebelumnya).
@@ -323,7 +323,7 @@ Mengambil buku besar catatan mutasi poin pengguna yang login.
   * **Sign Out Terjangkau di Bagian Bawah**: Kartu aksi **Session & Sign Out** ditempatkan secara konsisten di bagian paling bawah `/profile` (lintas tab, dilengkapi safe-area padding di atas MobileDock) dengan dialog konfirmasi aksesibel (`ConfirmDialog`), sementara Tab 3 fokus penuh pada Password OTP, Verifikasi Email, dan Danger Zone (Radix `Dialog` dengan dukungan tombol Escape).
 * **Progressive Points Ledger & Lazy Schools Loading**:
   * `PointsLedger` menampilkan **10** transaksi mutasi terbaru secara default dengan tombol *"Show More"* untuk memuat sisa riwayat serta banner error dengan tombol *"Try Again"*, tanpa kotak ringkasan *"Current Balance"* yang duplikatif.
-  * Daftar sekolah (`GET /api/configure/schools`) dimuat secara *lazy* hanya ketika user menekan *"Edit Profile"* di tab `Personal Profile`. Field email pada View Mode bersifat *read-only* dengan tautan pintas langsung ke tab `Security & Settings`.
+  * Daftar sekolah (`GET /api/configure/schools?page=1&limit=5&paginated=true`) dimuat secara *lazy* hanya ketika user menekan *"Edit Profile"* di tab `Personal Profile` menggunakan pagination bertahap (`limit=5` + *infinite scroll* saat menu dropdown digulir). Field email pada View Mode bersifat *read-only* dengan tautan pintas langsung ke tab `Security & Settings`.
 * **Prinsip HIG pada Digital Member Card**:
   * **Clarity & Visual Focus**: Informasi terpenting (Nama Jemaat, Nomor Anggota `userNumber`, QR Code, dan Role) memiliki kontras visual tinggi tanpa elemen dekoratif sekunder atau ticker statistik yang mengaburkan fungsi utama identitas fisik-digital.
   * **3 Aksi Kartu Satu Baris (`grid-cols-3`)**: Tombol `Copy ID` (`Copy Member ID`), `Enlarge QR` (CTA utama kontras tinggi `filled`), dan `Print` (`Print Card`) tersusun sejajar satu baris tanpa wrapping canggung di layar mobile.

@@ -35,16 +35,33 @@ export const schoolControllers = {
         req.query.include_pending === "true" ||
         req.query.includePending === "true"
 
+      const page = Number(req.query.page) || 1
       const limit = Number(req.query.limit) || Number(req.query.page_size) || 100
-      const result = await schoolServices.getSchools({ search, type, isActive, includePending, limit })
+      const paginated = req.query.paginated === "true"
+      const result = await schoolServices.getSchools({
+        search,
+        type,
+        isActive,
+        includePending,
+        page,
+        limit,
+      })
+      const pagination = {
+        page: result.page,
+        limit: result.limit,
+        total: result.total,
+        total_pages: result.total_pages,
+        has_more: result.has_more,
+      }
       res.json({
         status: "success",
         code: 200,
         message: "Schools retrieved successfully",
-        data: result.schools,
+        data: paginated ? { items: result.schools, ...pagination } : result.schools,
         schools: result.schools,
         items: result.schools,
         total: result.total,
+        pagination,
       })
     } catch (err) {
       next(err)

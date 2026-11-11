@@ -1,12 +1,61 @@
 import { prisma } from "../../lib/prisma"
 
+function buildEventTypeWhere(where?: { isActive?: boolean; search?: string }) {
+  const trimmedSearch = where?.search?.trim()
+  if (where?.isActive === undefined && !trimmedSearch) {
+    return undefined
+  }
+  return {
+    ...(where?.isActive !== undefined ? { isActive: where.isActive } : {}),
+    ...(trimmedSearch
+      ? {
+          OR: [
+            { label: { contains: trimmedSearch, mode: "insensitive" as const } },
+            { code: { contains: trimmedSearch, mode: "insensitive" as const } },
+            { description: { contains: trimmedSearch, mode: "insensitive" as const } },
+          ],
+        }
+      : {}),
+  }
+}
+
+function buildBadgeActivityWhere(where?: { isActive?: boolean; search?: string }) {
+  const trimmedSearch = where?.search?.trim()
+  if (where?.isActive === undefined && !trimmedSearch) {
+    return undefined
+  }
+  return {
+    ...(where?.isActive !== undefined ? { isActive: where.isActive } : {}),
+    ...(trimmedSearch
+      ? {
+          OR: [
+            { label: { contains: trimmedSearch, mode: "insensitive" as const } },
+            { description: { contains: trimmedSearch, mode: "insensitive" as const } },
+          ],
+        }
+      : {}),
+  }
+}
+
 export const configureModels = {
 
   // Event Types
-  findEventTypes(where?: { isActive?: boolean }) {
+  countEventTypes(where?: { isActive?: boolean; search?: string }) {
+    return prisma.eventType.count({
+      where: buildEventTypeWhere(where),
+    })
+  },
+  findEventTypes(where?: {
+    isActive?: boolean
+    search?: string
+    skip?: number
+    take?: number
+  }) {
     return prisma.eventType.findMany({
-      where: where?.isActive !== undefined ? { isActive: where.isActive } : undefined,
+      where: buildEventTypeWhere(where),
       orderBy: [{ isActive: "desc" }, { label: "asc" }],
+      ...(where?.skip !== undefined ? { skip: where.skip } : {}),
+      ...(where?.take !== undefined ? { take: where.take } : {}),
     })
   },
   findEventTypeById(id: string) {
@@ -150,20 +199,22 @@ export const configureModels = {
   },
 
   // Badge Activities (Master Data)
-  findBadgeActivities(where?: { isActive?: boolean; search?: string }) {
+  countBadgeActivities(where?: { isActive?: boolean; search?: string }) {
+    return prisma.badgeActivity.count({
+      where: buildBadgeActivityWhere(where),
+    })
+  },
+  findBadgeActivities(where?: {
+    isActive?: boolean
+    search?: string
+    skip?: number
+    take?: number
+  }) {
     return prisma.badgeActivity.findMany({
-      where: {
-        ...(where?.isActive !== undefined ? { isActive: where.isActive } : {}),
-        ...(where?.search
-          ? {
-              OR: [
-                { label: { contains: where.search, mode: "insensitive" } },
-                { description: { contains: where.search, mode: "insensitive" } },
-              ],
-            }
-          : {}),
-      },
+      where: buildBadgeActivityWhere(where),
       orderBy: [{ isActive: "desc" }, { label: "asc" }],
+      ...(where?.skip !== undefined ? { skip: where.skip } : {}),
+      ...(where?.take !== undefined ? { take: where.take } : {}),
     })
   },
   findBadgeActivityById(id: string) {

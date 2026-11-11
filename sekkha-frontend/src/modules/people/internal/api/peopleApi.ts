@@ -1,4 +1,9 @@
 import { api } from "@/lib/api"
+import {
+  DROPDOWN_PAGE_SIZE,
+  fetchSchoolsPaginated,
+} from "@/lib/pagination"
+import type { PaginatedFetchParams, PaginatedResult } from "@/lib/pagination"
 
 export type PeopleRole = "member" | "activist" | "organizer" | "admin"
 
@@ -36,11 +41,8 @@ export interface MemberDetailDto extends MemberDto {
 
 export interface CreateMemberPayload {
   name: string
-  role?: PeopleRole
   school_id?: string | null
-  school?: string | null
   phone?: string | null
-  date_of_birth?: string | null
 }
 
 export interface CreateMemberResponse {
@@ -112,6 +114,24 @@ export interface VerifiedSchoolDto {
   id: string
   name: string
   type: string
+  status?: string
+  is_active?: boolean
+}
+
+export interface SimilarMemberDto {
+  id: string
+  user_number?: string | number | null
+  username?: string | null
+  name: string
+  role: PeopleRole
+  is_claimed: boolean
+  school?: string | null
+  similarity_score?: number
+}
+
+export interface SimilarMembersResponse {
+  items: SimilarMemberDto[]
+  total: number
 }
 
 export const peopleApi = {
@@ -143,6 +163,39 @@ export const peopleApi = {
 
   getMember: (id: string) => api.get<MemberDetailDto>(`/people/members/${id}`),
 
+  findSimilarMembers: async (
+    name: string,
+    limit = 5,
+    options?: { signal?: AbortSignal }
+  ): Promise<SimilarMembersResponse> => {
+    const trimmed = name.trim()
+    if (trimmed.length < 2) return { items: [], total: 0 }
+    const cappedLimit = Math.min(Math.max(limit, 1), 5)
+    const res = await api.get<unknown>(
+      `/people/members/similar?name=${encodeURIComponent(trimmed)}&limit=${cappedLimit}`,
+      { noCache: true, signal: options?.signal }
+    )
+    if (Array.isArray(res)) {
+      const sliced = (res as SimilarMemberDto[]).slice(0, cappedLimit)
+      return { items: sliced, total: sliced.length }
+    }
+    if (res && typeof res === "object") {
+      const obj = res as Record<string, unknown>
+      const rawItems = Array.isArray(obj.items)
+        ? (obj.items as SimilarMemberDto[])
+        : Array.isArray(obj.data)
+          ? (obj.data as SimilarMemberDto[])
+          : []
+      const items = rawItems.slice(0, cappedLimit)
+      const total = Math.min(
+        typeof obj.total === "number" ? obj.total : items.length,
+        cappedLimit
+      )
+      return { items, total }
+    }
+    return { items: [], total: 0 }
+  },
+
   createMember: (data: CreateMemberPayload) =>
     api.post<CreateMemberResponse>("/people/members", data),
 
@@ -157,14 +210,27 @@ export const peopleApi = {
       `/people/members/${id}/reset-temporary-password`
     ),
 
-  getVerifiedSchools: async (): Promise<VerifiedSchoolDto[]> => {
+  getVerifiedSchools: async (
+    params?: PaginatedFetchParams
+  ): Promise<PaginatedResult<VerifiedSchoolDto> | VerifiedSchoolDto[]> => {
     try {
-      const res = await api.get<{ items: VerifiedSchoolDto[] }>(
-        "/configure/schools?is_active=true&limit=100"
-      )
-      return res?.items || []
+      return await fetchSchoolsPaginated<VerifiedSchoolDto>({
+        page: params?.page ?? 1,
+        limit: params?.limit ?? DROPDOWN_PAGE_SIZE,
+        search: params?.search,
+        isActive: true,
+        fallbackToPublic: true,
+        noCache: true,
+      })
     } catch {
-      return []
+      return {
+        items: [],
+        total: 0,
+        page: params?.page ?? 1,
+        limit: params?.limit ?? DROPDOWN_PAGE_SIZE,
+        total_pages: 1,
+        has_more: false,
+      }
     }
   },
 }

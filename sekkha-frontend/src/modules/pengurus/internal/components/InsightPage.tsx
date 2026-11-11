@@ -24,6 +24,8 @@ import {
   YAxis,
 } from "recharts"
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
+import { InfiniteScrollFooter } from "@/components/common/InfiniteScrollFooter"
+import { DROPDOWN_PAGE_SIZE, isNearScrollBottom } from "@/lib/pagination"
 import {
   Card,
   CardContent,
@@ -80,6 +82,10 @@ export function InsightPage() {
     EventCategoryFilter[]
   >(["all"])
   const [isCategorySelectOpen, setIsCategorySelectOpen] = useState(false)
+  const [visibleCategoryCount, setVisibleCategoryCount] =
+    useState(DROPDOWN_PAGE_SIZE)
+  const [visiblePeriodCount, setVisiblePeriodCount] =
+    useState(DROPDOWN_PAGE_SIZE)
   const dropdownCategoryRef = useRef<HTMLDivElement>(null)
 
   // Multi-Select Selected Periods State (dynamically generated from current year)
@@ -113,6 +119,7 @@ export function InsightPage() {
 
   // Reset selected periods when timeUnit changes
   useEffect(() => {
+    setVisiblePeriodCount(DROPDOWN_PAGE_SIZE)
     if (timeUnit === "year") {
       setSelectedPeriods([defaultYearOption])
     } else {
@@ -402,45 +409,86 @@ export function InsightPage() {
 
                   {/* Dropdown Menu Popover with Checkboxes */}
                   {isCategorySelectOpen && (
-                    <div className="animate-fadeIn absolute top-full right-0 left-0 z-30 mt-2 w-full space-y-1.5 rounded-2xl border border-hairline bg-canvas p-3 shadow-xl backdrop-blur-md sm:right-auto sm:w-72">
-                      <div className="text-micro-bold border-b border-hairline px-2 pb-1 font-extrabold tracking-wider text-text-muted uppercase">
+                    <div className="animate-fadeIn absolute top-full right-0 left-0 z-30 mt-2 w-full rounded-2xl border border-hairline bg-canvas p-3 shadow-xl backdrop-blur-md sm:right-auto sm:w-72">
+                      <div className="text-micro-bold mb-1.5 border-b border-hairline px-2 pb-1 font-extrabold tracking-wider text-text-muted uppercase">
                         Select Event Categories:
                       </div>
-                      {MASTER_EVENT_CATEGORIES.map((cat) => {
-                        const isSelected =
-                          cat.id === "all"
-                            ? selectedCategories.includes("all") ||
-                              selectedCategories.length === 5
-                            : selectedCategories.includes(cat.id)
+                      <div
+                        data-testid="insight-category-scroll-list"
+                        onScroll={(e) => {
+                          if (
+                            isNearScrollBottom(e.currentTarget) &&
+                            visibleCategoryCount < MASTER_EVENT_CATEGORIES.length
+                          ) {
+                            setVisibleCategoryCount((c) =>
+                              Math.min(
+                                MASTER_EVENT_CATEGORIES.length,
+                                c + DROPDOWN_PAGE_SIZE
+                              )
+                            )
+                          }
+                        }}
+                        className="max-h-[168px] space-y-1.5 overflow-y-auto overscroll-contain pr-0.5"
+                      >
+                        {MASTER_EVENT_CATEGORIES.slice(
+                          0,
+                          visibleCategoryCount
+                        ).map((cat) => {
+                          const isSelected =
+                            cat.id === "all"
+                              ? selectedCategories.includes("all") ||
+                                selectedCategories.length === 5
+                              : selectedCategories.includes(cat.id)
 
-                        return (
-                          <label
-                            key={cat.id}
-                            onClick={(e) => {
-                              e.preventDefault()
-                              toggleCategorySelection(cat.id)
-                            }}
-                            className="text-caption-bold flex cursor-pointer items-center justify-between rounded-xl px-2.5 py-2 text-ink transition select-none hover:bg-surface-soft"
-                          >
-                            <div className="flex min-w-0 items-center gap-2.5">
-                              <div
-                                className={`flex size-4.5 shrink-0 items-center justify-center rounded-md border transition ${
-                                  isSelected
-                                    ? "border-[#1a3a3a] bg-[#1a3a3a] text-[#e8b94a]"
-                                    : "border-hairline bg-surface-soft"
-                                }`}
-                              >
-                                {isSelected && (
-                                  <CheckIcon className="size-3 stroke-[3]" />
-                                )}
+                          return (
+                            <label
+                              key={cat.id}
+                              onClick={(e) => {
+                                e.preventDefault()
+                                toggleCategorySelection(cat.id)
+                              }}
+                              className="text-caption-bold flex cursor-pointer items-center justify-between rounded-xl px-2.5 py-2 text-ink transition select-none hover:bg-surface-soft"
+                            >
+                              <div className="flex min-w-0 items-center gap-2.5">
+                                <div
+                                  className={`flex size-4.5 shrink-0 items-center justify-center rounded-md border transition ${
+                                    isSelected
+                                      ? "border-[#1a3a3a] bg-[#1a3a3a] text-[#e8b94a]"
+                                      : "border-hairline bg-surface-soft"
+                                  }`}
+                                >
+                                  {isSelected && (
+                                    <CheckIcon className="size-3 stroke-[3]" />
+                                  )}
+                                </div>
+                                <span className="truncate font-bold">
+                                  {cat.label}
+                                </span>
                               </div>
-                              <span className="truncate font-bold">
-                                {cat.label}
-                              </span>
-                            </div>
-                          </label>
-                        )
-                      })}
+                            </label>
+                          )
+                        })}
+                        <InfiniteScrollFooter
+                          hasMore={
+                            visibleCategoryCount <
+                            MASTER_EVENT_CATEGORIES.length
+                          }
+                          loadedCount={Math.min(
+                            visibleCategoryCount,
+                            MASTER_EVENT_CATEGORIES.length
+                          )}
+                          totalCount={MASTER_EVENT_CATEGORIES.length}
+                          onLoadMore={() =>
+                            setVisibleCategoryCount((c) =>
+                              Math.min(
+                                MASTER_EVENT_CATEGORIES.length,
+                                c + DROPDOWN_PAGE_SIZE
+                              )
+                            )
+                          }
+                          itemLabel="categories"
+                        />
+                      </div>
                     </div>
                   )}
                 </div>
@@ -478,52 +526,91 @@ export function InsightPage() {
 
                 {/* Dropdown Menu Popover with Checkboxes */}
                 {isMultiSelectOpen && (
-                  <div className="animate-fadeIn absolute top-full right-0 left-0 z-30 mt-2 w-full space-y-1.5 rounded-2xl border border-hairline bg-canvas p-3 shadow-xl backdrop-blur-md sm:left-auto sm:w-64">
-                    <div className="text-micro-bold border-b border-hairline px-2 pb-1 font-extrabold tracking-wider text-text-muted uppercase">
+                  <div className="animate-fadeIn absolute top-full right-0 left-0 z-30 mt-2 w-full rounded-2xl border border-hairline bg-canvas p-3 shadow-xl backdrop-blur-md sm:left-auto sm:w-64">
+                    <div className="text-micro-bold mb-1.5 border-b border-hairline px-2 pb-1 font-extrabold tracking-wider text-text-muted uppercase">
                       Select Active Periods:
                     </div>
-                    {availablePeriodOptions.map((periodKey) => {
-                      const isSelected = selectedPeriods.includes(periodKey)
-                      return (
-                        <label
-                          key={periodKey}
-                          onClick={(e) => {
-                            e.preventDefault()
-                            togglePeriodSelection(periodKey)
-                          }}
-                          className="text-caption-bold flex cursor-pointer items-center justify-between rounded-xl px-2.5 py-2 text-ink transition select-none hover:bg-surface-soft"
-                        >
-                          <div className="flex min-w-0 items-center gap-2.5">
-                            <div
-                              className={`flex size-4.5 shrink-0 items-center justify-center rounded-md border transition ${
-                                isSelected
-                                  ? "border-[#1a3a3a] bg-[#1a3a3a] text-[#e8b94a]"
-                                  : "border-hairline bg-surface-soft"
-                              }`}
-                            >
-                              {isSelected && (
-                                <CheckIcon className="size-3 stroke-[3]" />
-                              )}
-                            </div>
-                            <span className="truncate font-bold">
-                              {periodKey}
-                            </span>
-                          </div>
-                          {isSelected && (
-                            <span
-                              className="size-2.5 shrink-0 rounded-full"
-                              style={{
-                                backgroundColor:
-                                  SERIES_COLORS[
-                                    selectedPeriods.indexOf(periodKey) %
-                                      SERIES_COLORS.length
-                                  ],
+                    <div
+                      data-testid="insight-period-scroll-list"
+                      onScroll={(e) => {
+                        if (
+                          isNearScrollBottom(e.currentTarget) &&
+                          visiblePeriodCount < availablePeriodOptions.length
+                        ) {
+                          setVisiblePeriodCount((c) =>
+                            Math.min(
+                              availablePeriodOptions.length,
+                              c + DROPDOWN_PAGE_SIZE
+                            )
+                          )
+                        }
+                      }}
+                      className="max-h-[168px] space-y-1.5 overflow-y-auto overscroll-contain pr-0.5"
+                    >
+                      {availablePeriodOptions
+                        .slice(0, visiblePeriodCount)
+                        .map((periodKey) => {
+                          const isSelected = selectedPeriods.includes(periodKey)
+                          return (
+                            <label
+                              key={periodKey}
+                              onClick={(e) => {
+                                e.preventDefault()
+                                togglePeriodSelection(periodKey)
                               }}
-                            />
-                          )}
-                        </label>
-                      )
-                    })}
+                              className="text-caption-bold flex cursor-pointer items-center justify-between rounded-xl px-2.5 py-2 text-ink transition select-none hover:bg-surface-soft"
+                            >
+                              <div className="flex min-w-0 items-center gap-2.5">
+                                <div
+                                  className={`flex size-4.5 shrink-0 items-center justify-center rounded-md border transition ${
+                                    isSelected
+                                      ? "border-[#1a3a3a] bg-[#1a3a3a] text-[#e8b94a]"
+                                      : "border-hairline bg-surface-soft"
+                                  }`}
+                                >
+                                  {isSelected && (
+                                    <CheckIcon className="size-3 stroke-[3]" />
+                                  )}
+                                </div>
+                                <span className="truncate font-bold">
+                                  {periodKey}
+                                </span>
+                              </div>
+                              {isSelected && (
+                                <span
+                                  className="size-2.5 shrink-0 rounded-full"
+                                  style={{
+                                    backgroundColor:
+                                      SERIES_COLORS[
+                                        selectedPeriods.indexOf(periodKey) %
+                                          SERIES_COLORS.length
+                                      ],
+                                  }}
+                                />
+                              )}
+                            </label>
+                          )
+                        })}
+                      <InfiniteScrollFooter
+                        hasMore={
+                          visiblePeriodCount < availablePeriodOptions.length
+                        }
+                        loadedCount={Math.min(
+                          visiblePeriodCount,
+                          availablePeriodOptions.length
+                        )}
+                        totalCount={availablePeriodOptions.length}
+                        onLoadMore={() =>
+                          setVisiblePeriodCount((c) =>
+                            Math.min(
+                              availablePeriodOptions.length,
+                              c + DROPDOWN_PAGE_SIZE
+                            )
+                          )
+                        }
+                        itemLabel="periods"
+                      />
+                    </div>
                   </div>
                 )}
               </div>

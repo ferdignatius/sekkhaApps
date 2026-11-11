@@ -8,6 +8,7 @@ import {
   BadgeActivitySchema,
   BadgeActivityUpdateSchema,
   ThresholdSchema,
+  configureControllers,
 } from "../controllers"
 import { configureServices } from "../services"
 import { configureModels } from "../models"
@@ -225,5 +226,121 @@ describe("Configure Services & Business Policies", () => {
 
     configureModels.findBadgeActivityById = originalFindBadge
     configureModels.countAttendancesByBadgeActivityId = originalCountAttendances
+  })
+
+  it("supports paginated=true (limit=5, skip, total, has_more) for event-types and badge-activities while keeping legacy array responses", async () => {
+    const origFindEventTypes = configureModels.findEventTypes
+    const origCountEventTypes = configureModels.countEventTypes
+    const origFindBadges = configureModels.findBadgeActivities
+    const origCountBadges = configureModels.countBadgeActivities
+
+    let eventTypeSkip: number | undefined
+    let eventTypeTake: number | undefined
+    let badgeSkip: number | undefined
+    let badgeTake: number | undefined
+
+    configureModels.countEventTypes = async () => 9
+    configureModels.findEventTypes = async (where) => {
+      eventTypeSkip = where?.skip
+      eventTypeTake = where?.take
+      return Array.from({ length: 5 }).map((_, i) => ({
+        id: `et_${i + 1}`,
+        code: `cat-${i + 1}`,
+        label: `Category ${i + 1}`,
+        color: "#4262FF",
+        description: null,
+        defaultPointReward: 50,
+        isActive: true,
+        createdAt: new Date("2026-11-01T00:00:00Z"),
+        updatedAt: new Date("2026-11-01T00:00:00Z"),
+      })) as any
+    }
+
+    configureModels.countBadgeActivities = async () => 7
+    configureModels.findBadgeActivities = async (where) => {
+      badgeSkip = where?.skip
+      badgeTake = where?.take
+      return Array.from({ length: 2 }).map((_, i) => ({
+        id: `ba_${i + 6}`,
+        code: `role-${i + 6}`,
+        label: `Role ${i + 6}`,
+        description: null,
+        bonusPoints: 30,
+        isActive: true,
+        createdAt: new Date("2026-11-01T00:00:00Z"),
+        updatedAt: new Date("2026-11-01T00:00:00Z"),
+      })) as any
+    }
+
+    const captureRes = () => {
+      let body: any
+      const res: any = {
+        json(payload: any) {
+          body = payload
+        },
+      }
+      return { res, getBody: () => body }
+    }
+
+    try {
+      const etPaginated = captureRes()
+      await configureControllers.getEventTypes(
+        { query: { is_active: "true", page: "1", limit: "5", paginated: "true" } } as any,
+        etPaginated.res,
+        (() => {}) as any
+      )
+      expect(eventTypeSkip).toBe(0)
+      expect(eventTypeTake).toBe(5)
+      expect(etPaginated.getBody()).toEqual(
+        expect.objectContaining({
+          total: 9,
+          page: 1,
+          limit: 5,
+          total_pages: 2,
+          has_more: true,
+        })
+      )
+      expect(etPaginated.getBody().items).toHaveLength(5)
+
+      const etLegacy = captureRes()
+      await configureControllers.getEventTypes(
+        { query: { is_active: "true" } } as any,
+        etLegacy.res,
+        (() => {}) as any
+      )
+      expect(Array.isArray(etLegacy.getBody())).toBe(true)
+
+      const baPaginated = captureRes()
+      await configureControllers.getBadgeActivities(
+        { query: { is_active: "true", page: "2", limit: "5", paginated: "true" } } as any,
+        baPaginated.res,
+        (() => {}) as any
+      )
+      expect(badgeSkip).toBe(5)
+      expect(badgeTake).toBe(5)
+      expect(baPaginated.getBody()).toEqual(
+        expect.objectContaining({
+          total: 7,
+          page: 2,
+          limit: 5,
+          total_pages: 2,
+          has_more: false,
+        })
+      )
+      expect(baPaginated.getBody().items).toHaveLength(2)
+
+      const baLegacy = captureRes()
+      await configureControllers.getBadgeActivities(
+        { query: {} } as any,
+        baLegacy.res,
+        (() => {}) as any
+      )
+      expect(Array.isArray(baLegacy.getBody())).toBe(true)
+    } finally {
+      configureModels.findEventTypes = origFindEventTypes
+      configureModels.countEventTypes = origCountEventTypes
+      configureModels.findBadgeActivities = origFindBadges
+      configureModels.countBadgeActivities = origCountBadges
+    }
   })
 })

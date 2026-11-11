@@ -9,7 +9,10 @@ import {
   Users,
   Plus,
 } from "lucide-react"
-import { api } from "@/lib/api"
+import { InfiniteScrollFooter } from "@/components/common/InfiniteScrollFooter"
+import { useDebounce } from "@/hooks/useDebounce"
+import { usePaginatedDropdown } from "@/hooks/usePaginatedDropdown"
+import { DROPDOWN_PAGE_SIZE, fetchSchoolsPaginated } from "@/lib/pagination"
 import { cn } from "@/lib/utils"
 
 export interface SchoolOption {
@@ -41,45 +44,54 @@ export function SchoolCombobox({
 }: SchoolComboboxProps) {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState("")
-  const [schools, setSchools] = useState<SchoolOption[]>([])
-  const [loading, setLoading] = useState(false)
+  const debouncedSearch = useDebounce(search, 250)
   const [highlightedIndex, setHighlightedIndex] = useState(0)
 
   const containerRef = useRef<HTMLDivElement>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
   const listRef = useRef<HTMLUListElement>(null)
+  const sentinelRef = useRef<HTMLDivElement>(null)
 
-  // Keep onboarding result set bounded and search active schools server-side.
+  const {
+    items: schools,
+    hasMore,
+    loading,
+    loadingMore,
+    total: totalSchools,
+    loadMore,
+    handleScroll,
+  } = usePaginatedDropdown<SchoolOption>({
+    fetcher: ({ page, limit, search: term }) =>
+      fetchSchoolsPaginated<SchoolOption>({
+        page,
+        limit,
+        search: term,
+        includePending: true,
+      }),
+    getKey: (s) => s.id,
+    pageSize: DROPDOWN_PAGE_SIZE,
+    search: debouncedSearch,
+    enabled: open,
+  })
+
   useEffect(() => {
-    if (!open) return
-    let isMounted = true
-    const timer = window.setTimeout(() => {
-      setLoading(true)
-      api
-        .get<any>(
-          `/configure/schools?page=1&page_size=20&include_pending=true&search=${encodeURIComponent(search)}`
-        )
-        .then((res) => {
-          if (isMounted) {
-            const list = Array.isArray(res)
-              ? res
-              : res?.schools || res?.data || []
-            setSchools(list)
-          }
-        })
-        .catch(() => {
-          if (isMounted) setSchools([])
-        })
-        .finally(() => {
-          if (isMounted) setLoading(false)
-        })
-    }, 250)
+    if (!open || !hasMore || loading || loadingMore) return
+    if (typeof IntersectionObserver === "undefined") return
+    const root = listRef.current
+    const target = sentinelRef.current
+    if (!root || !target) return
 
-    return () => {
-      isMounted = false
-      window.clearTimeout(timer)
-    }
-  }, [open, search])
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          loadMore()
+        }
+      },
+      { root, rootMargin: "24px", threshold: 0.1 }
+    )
+    observer.observe(target)
+    return () => observer.disconnect()
+  }, [open, hasMore, loading, loadingMore, loadMore, schools.length])
 
   // Close when clicking outside
   useEffect(() => {
@@ -270,7 +282,8 @@ export function SchoolCombobox({
           <ul
             ref={listRef}
             role="listbox"
-            className="max-h-60 space-y-1 divide-y-0 overflow-y-auto p-1.5"
+            onScroll={handleScroll}
+            className="max-h-[168px] space-y-1 divide-y-0 overflow-y-auto overscroll-contain p-1.5"
           >
             {loading ? (
               <li className="py-6 text-center text-xs text-[#6a6a6a]">
@@ -357,13 +370,28 @@ export function SchoolCombobox({
                 )
               })
             )}
+            {!loading && filteredSchools.length > 0 && (
+              <li aria-hidden="true">
+                <InfiniteScrollFooter
+                  hasMore={hasMore}
+                  isLoadingMore={loadingMore}
+                  loadedCount={schools.length}
+                  totalCount={totalSchools}
+                  sentinelRef={sentinelRef}
+                  onLoadMore={loadMore}
+                  itemLabel="schools"
+                />
+              </li>
+            )}
           </ul>
 
           {/* Footer Note */}
           <div className="flex items-center justify-between border-t border-[#e5e5e5] bg-[#faf5e8] px-3 py-2 text-[11px] text-[#6a6a6a]">
             <span>Verified & Pending Schools</span>
             <span className="font-semibold text-[#0a0a0a]">
-              {schools.length} Available
+              {totalSchools > schools.length
+                ? `${schools.length} of ${totalSchools} Loaded`
+                : `${schools.length} Available`}
             </span>
           </div>
         </div>

@@ -121,3 +121,107 @@ Setelah keputusan di atas dikonfirmasi:
 5. **Testing & Verification**:
    - Buat unit test komprehensif di `sekkha-api` mencakup: event wajib vs non-wajib, bulan 4 vs 5 minggu, hari libur vihara, dan batch reset saat absen.
 
+---
+
+# TODO & Improvement (Part II): Sistem Affiliasi & Referral (Activist Ke Atas)
+
+Dokumen bagian ini mencatat rancangan fitur **Affiliasi / Referral Member** bagi role **`activist` ke atas (`activist`, `organizer`, `admin`)** agar anggota aktif mendapatkan apresiasi poin tambahan saat berhasil mengajak teman/umat baru bergabung dan aktif berkegiatan di Sekkha.
+
+---
+
+## 1. Tujuan & Batasan Hak Akses (Role Eligibility)
+
+- **Role yang Berhak Punya Affiliasi**:
+  - `activist`, `organizer`, dan `admin` otomatis memiliki **Kode & Link Affiliasi** unik.
+  - `member` standar tidak memiliki link/kode affiliasi (UI affiliasi disembunyikan, API mengembalikan `403 Forbidden` atau tidak menerbitkan kode).
+- **Tujuan Desain**:
+  - Mendorong kader aktif (*activist* & pengurus) menjadi duta komunitas (*ambassador*) untuk mengajak remaja baru hadir ke vihara.
+  - Menjaga integritas gamifikasi dan Leaderboard agar poin bonus hanya diberikan dari rekrutmen **umat baru yang benar-benar hadir**, bukan dari akun spam.
+
+---
+
+## 2. Arsitektur Alur Affiliasi & Anti-Fraud
+
+```
+[Activist+ Share Link / Code (?ref=SKH8A2)]
+          │
+          ▼
+[Calon Umat Daftar (/sign-up?ref=SKH8A2) / Add Member]
+          │  • Simpan `referred_by_id` + status `pending`
+          ▼
+[Umat Baru Hadir di Event Pertama & Event Berstatus `closed`]
+          │  • Verifikasi: bukan self-referral, status belum `awarded`
+          │  • Idempotency key: `referral_bonus:{referredUserId}`
+          ▼
+[Reward Poin Cair Otomatis ke `UserStats` + `point_transactions` (Activist+ & opsional Welcome Bonus Umat Baru)]
+```
+
+### Mekanisme Pengaman (Guardrails)
+1. **Trigger Pencairan Berbasis Kehadiran Pertama (Anti-Spam Farming)**:
+   - Poin affiliasi **tidak langsung cair saat registrasi OTP selesai**, melainkan berstatus `pending` sampai umat baru (`referee`) tercatat **hadir minimal 1x pada event yang ditutup (`status = 'closed'`)**.
+   - Jika memakai mekanisme instan saat Sign Up tanpa kehadiran nyata, sistem berisiko disalahgunakan untuk membuat banyak akun Gmail dummy demi memompa poin Leaderboard.
+2. **Idempotency & Satu Kali Seumur Hidup**:
+   - Satu akun baru (`referee`) hanya bisa memiliki **1 referrer** (`referredById`) yang bersifat *immutable* setelah tercatat saat registrasi/claim.
+   - Pencairan bonus dikunci dengan `referenceId: referral_bonus:{referredUserId}` pada `point_transactions` sehingga tidak pernah terhitung ganda meski event di-reopen/reclose.
+3. **Kode Referral Independen (`referralCode`)**:
+   - Gunakan kode acak unik 6–8 karakter huruf kapital & angka (misal `SKH7K9M`) pada tabel `users`, **terpisah dari `username`**, agar jika *activist* mengubah `username`, tautan affiliasi yang sudah disebar tidak putus.
+   - Generate kode dilakukan secara *lazy* atau otomatis saat user dipromosikan ke `activist+`.
+4. **Anti-Self-Referral & Anti-Circular**:
+   - Validasi backend memastikan `referrerId !== refereeId` dan tidak boleh saling mereferensikan antar akun existing.
+   - Tidak berlaku mundur untuk akun yang sudah pernah hadir di event sebelumnya (*new joiner only*).
+
+---
+
+## 3. Perubahan Data & Modul Terkait
+
+### A. Prisma Database Schema (`sekkha-api/prisma/schema.prisma`)
+- Pada model `User`:
+  - `referralCode String? @unique @map("referral_code")` — diterbitkan untuk role `activist`, `organizer`, `admin`.
+  - `referredById String? @map("referred_by_id")` — relasi *self-relation* ke `User` pengajak.
+- Model baru opsional / tracking terstruktur `ReferralRecord` (`referrals`):
+  - `id`, `referrerId`, `referredUserId @unique`, `referralCodeUsed`, `status` (`pending` | `qualified` | `rejected`), `pointsAwarded Int`, `qualifiedEventId?`, `createdAt`, `awardedAt?`.
+  - Memudahkan tampilan riwayat status undangan (*Pending* vs *Joined & Attended*) di UI tanpa query berat ke `point_transactions`.
+- Master Konfigurasi / Rules (`Configure`):
+  - Pengaturan besaran poin bonus referral (`referralRewardPoints`, misal `+50 pts` ke pengajak) & opsi *welcome bonus* umat baru agar Admin bisa mengatur angka tanpa mengubah kode.
+
+### B. Backend (`sekkha-api`)
+- **Module `auth` (`requestRegisterOtp` / `verifyRegisterOtp` & `/sign-up`)**:
+  - Terima opsional `referral_code` saat registrasi (dari URL `?ref=...` atau input manual).
+  - Validasi bahwa pemilik kode memiliki role $\ge$ `activist`; jika tidak valid/bukan `activist+`, beri feedback jelas (atau abaikan aman sesuai keputusan UX) sebelum menyimpan `referredById` dan record `ReferralRecord(status: 'pending')`.
+- **Module `people` (`createMember` / Add Member by Organizer/Admin)**:
+  - Opsional field `referralCode` / *Referred By* saat Pengurus/Admin mendaftarkan akun *unclaimed* dari umat yang datang langsung diajak oleh seorang Activist di vihara.
+- **Module `events` (saat `updateEventStatus(..., 'closed')` / settlement absensi)**:
+  - Cek daftar peserta hadir yang memiliki `ReferralRecord` berstatus `pending` -> ubah ke `qualified` dalam satu transaksi DB, tambahkan poin ke `UserStats.points` pengajak, dan catat ke `point_transactions` (`type: 'reward'`, `referenceId: 'referral_bonus:<referredUserId>'`).
+- **Module `users` (API Profil & Affiliasi)**:
+  - Endpoint `GET /api/users/me/referrals` (khusus `activist`, `organizer`, `admin`) mengembalikan `referral_code`, `referral_link`, ringkasan counter (`total_invited`, `qualified_count`, `pending_count`, `total_points_earned`), dan daftar ringkas nama/inisial + status ajakan (tanpa membocorkan PII email/HP invitee!).
+
+### C. Frontend (`sekkha-frontend`)
+- **Halaman `/sign-up` (`AuthForm.tsx` / `useSignUpForm.ts` / `sign-up.tsx`)**:
+  - Baca query param `?ref=KODE` secara otomatis dan tampilkan badge *"Invited via referral code: KODE"*, dengan input kode referral opsional yang bisa diisi manual atau diubah sebelum submit.
+- **Halaman `/profile` (`ProfilePage.tsx`) — Khusus Role `activist`, `organizer`, `admin`**:
+  - Kartu / panel **Referral & Affiliate Program** (di tab `Member Pass` atau tab `Personal Profile`) menampilkan:
+    - Kode Referral + tombol **Copy Code** & **Copy Invite Link** (`/sign-up?ref=...`) serta opsi **Share**.
+    - Metrik ringkas: *Friends Invited*, *Attended (Qualified)*, dan *Bonus Karma Earned*.
+    - Daftar riwayat undangan (status *Pending First Attendance* vs *Rewarded +50 Pts*).
+- **Halaman `/configure` (Admin)**:
+  - Panel aturan poin affiliasi (aktif/nonaktif, poin pengajak, poin bonus umat baru, batas maksimal referral per periode jika diaktifkan).
+
+---
+
+## 4. Poin Keputusan yang Perlu Dikonfirmasi (Open Decisions — Affiliasi)
+
+1. **[ ] Syarat Pencairan Poin Affiliasi (Trigger)**:
+   - *Rekomendasi*: **Hadir minimal 1x event berstatus `closed`** (mencegah akun Gmail dummy/bot *farming* poin tanpa pernah datang).
+   - *Alternatif*: Instan langsung cair begitu OTP registrasi terverifikasi (berisiko spam leaderboard).
+2. **[ ] Keterkaitan dengan Batas Harian 150 Poin/Hari (`AGENTS.md`)**:
+   - *Pertanyaan*: Apakah bonus referral terkena cap harian 150 poin/hari?
+   - *Rekomendasi*: **Dikecualikan dari cap 150 poin/hari** (atau punya *monthly/season cap* terpisah, misal maks 10 referral berhadiah per season), supaya activist yang hadir di vihara pada hari tutup event (+100 pts) tidak kehilangan bonus affiliasi karena menyentuh limit 150 pts/hari.
+3. **[ ] Welcome Bonus untuk Orang yang Diajak (*Two-Sided Reward*)**:
+   - *Rekomendasi*: Pengajak (`activist+`) dapat poin lebih besar (misal **+50 pts**) dan jemaat baru yang mendaftar pakai link affiliasi juga mendapat bonus sambutan kecil (misal **+20 pts** setelah hadir pertama kali) agar umat baru termotivasi memakai link referral.
+4. **[ ] Perubahan Role ke Bawah (*Demote*)**:
+   - Jika seorang `activist` diturunkan kembali menjadi `member` saat sudah ada referral berstatus `pending`, apakah referral pending tersebut tetap cair atau hangus?
+   - *Rekomendasi*: Tetap cair untuk ajakan yang tercipta saat user masih berstatus `activist+`, namun link/kode affiliasi dinonaktifkan untuk ajakan baru.
+5. **[ ] Besaran Nominal Poin & Kebijakan Leaderboard**:
+   - Perlu konfirmasi apakah poin affiliasi langsung masuk ke total **Points Leaderboard** reguler atau dibatasi kuota per bulan/season agar juara Leaderboard tetap mencerminkan keaktifan hadir di vihara.
+
+

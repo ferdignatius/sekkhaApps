@@ -1,5 +1,5 @@
 import { cached, CacheKeys } from "../../lib/cache"
-import { calculateWeeklyStreak } from "../users/internal/utils"
+import { calculateWeeklyStreak } from "../users"
 import { homeModels } from "./models"
 import type { EventVisibility } from "@prisma/client"
 

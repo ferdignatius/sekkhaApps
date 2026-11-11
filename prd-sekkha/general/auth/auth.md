@@ -76,6 +76,7 @@ New accounts always receive `member`. Only authorized administration may change 
 - `GET /api/auth/verify` validates access token.
 - `POST /api/auth/refresh` rotates refresh token.
 - `POST /api/auth/logout` invalidates current session and clears refresh cookie.
+- Authenticated users visiting base URL `/` automatically redirect to `/home` (or `/onboarding` when `onboarding_completed` is `false`); unauthenticated guests continue viewing the public Landing Page at `/`.
 
 ## 5. Onboarding handoff
 

@@ -133,11 +133,23 @@ Visibilitas menentukan siapa yang dapat melihat jadwal event:
 
 ### 6.1. Halaman Daftar Event (`GET /api/events`)
 * **Route**: `/events`
-* **Tampilan**: Dukungan tampilan Kalender dan List View.
-* **Filter**:
+* **Tampilan**: Dukungan tampilan Kalender dan List View berbasis tanggal aktif.
+* **Aturan Tanggal Aktif (*Always-Active Date* — Default Today)**:
+  * Daftar event di sisi kalender **selalu memiliki satu tanggal yang aktif** (tidak ada lagi mode "tanpa tanggal terpilih" / *Full Month* / *Show All* yang menumpuk seluruh event sebulan dalam satu list).
+  * **Default Initial Load**: Saat halaman `/events` pertama kali dibuka, `selectedDate` otomatis mengarah ke **Today** (tanggal hari ini, zona waktu WIB / `Asia/Jakarta`).
+  * **Interaksi Kalender & Navigasi Bulan**:
+    * Mengklik tanggal di `EventCalendar` memindahkan tanggal aktif ke tanggal tersebut. Mengklik ulang tanggal yang sedang aktif **tidak me-reset / men-deselect tanggal** (tanggal tetap aktif).
+    * Tombol **Full Month** dan **Show All** dihapus.
+    * Tombol **Today** mengarahkan kalender dan tanggal aktif kembali ke hari ini.
+    * Saat berpindah bulan (**Prev / Next month**), tanggal aktif otomatis berpindah ke tanggal 1 bulan target (atau ke **Today** jika kembali ke bulan berjalan saat ini) sehingga selalu ada tanggal aktif.
+  * **Pengecualian Search Global**: Saat user mengetik kata kunci di **Search Bar**, list beralih ke mode pencarian lintas semua tanggal & bulan (tanpa dibatasi tanggal aktif). Ketika Search Bar dibersihkan (`Clear Search`), tampilan kembali ke event pada tanggal aktif.
+* **Urutan Event dalam Tanggal Aktif**:
+  * Di dalam tanggal aktif, event tetap diurutkan berdasarkan prioritas status & waktu (`active` di posisi teratas -> `scheduled` urut jam `event_date ASC` -> `closed` -> `cancel`) dengan highlight visual tegas antara `Live Attendance` (`active`), `Scheduled` / `Today`, dan `Closed` / `Cancelled` (*muted*).
+* **Perilaku Setelah Create Event**:
+  * Setelah Pengurus berhasil membuat event baru (`POST /api/events`), UI otomatis mengarahkan kalender (`activeMonth`) dan tanggal aktif (`selectedDate`) langsung ke tanggal pelaksanaan event yang baru dibuat, sehingga event baru langsung terlihat di daftar tanpa tertumpuk event lama.
+* **Filter Lainnya**:
   * Jenis Event (`event_type_id`) berdasarkan master data aktif.
-  * Status Event: `scheduled`, `active`, `closed`, `cancel` (default filter: `scheduled` dan `active`).
-  * Bulan / Periode tanggal.
+  * Bulan / Periode tanggal kalender (`activeMonth`).
 * **Visibilitas Server-Side**:
   * `member`: hanya mengambil event dengan `visibility IN ('all', 'member')` dan status `scheduled`, `active`, atau `closed`.
   * `activist`: hanya mengambil event dengan `visibility IN ('all', 'activist')`.
@@ -308,6 +320,7 @@ Mengambil daftar event terfilter.
   - `status` (`scheduled`, `active`, `closed`, `cancel`)
   - `event_type_id` (cuid string)
   - `month` (`YYYY-MM`)
+  - `search` (string — pencarian lintas bulan pada judul, lokasi, deskripsi)
 - **Response 200 OK**:
   ```json
   {
@@ -527,6 +540,8 @@ Menghapus event permanen.
 | **AC-EVT-12** | Organizer membuat event baru dengan tanggal lampau (`event_date < current date`) | Validasi frontend & backend menolak dengan `400 Bad Request` dan pesan error "Event date cannot be in the past". Event hanya tersimpan jika `event_date >= current date`. |
 | **AC-EVT-13** | Organizer menekan tombol action "Reschedule Event" pada event `cancel` | Menampilkan modal pemilihan tanggal baru (`event_date >= current date`). Setelah disimpan, status event berubah kembali menjadi `scheduled` via `PATCH /api/events/:id/status`. |
 | **AC-EVT-14** | Organizer mencoba menekan "Start Event" ketika tanggal saat ini sudah melewati jadwal pelaksanaan event (`current date > event_date`) | Tombol di UI disabled / request `PATCH status: active` ditolak oleh backend dengan `400 Bad Request` dan pesan "Event cannot be activated because its scheduled date has already passed" (event harus di-reschedule atau di-cancel). |
+| **AC-EVT-15** | User membuka halaman `/events` | Kalender langsung menyorot tanggal **Today** sebagai tanggal aktif dan hanya menampilkan event pada tanggal tersebut (`active` -> `scheduled` -> `closed` -> `cancel`). Tidak ada tombol "Full Month" / "Show All" atau kondisi tanpa tanggal terpilih; event di hari lain terlihat dari *dot* kalender dan dapat diklik langsung. |
+| **AC-EVT-16** | Organizer baru saja membuat event untuk tanggal mendatang (di bulan ini maupun bulan depan) | Setelah submit sukses, kalender (`activeMonth`) dan tanggal aktif (`selectedDate`) otomatis berpindah ke tanggal pelaksanaan event baru tersebut sehingga langsung tampil di daftar. |
 
 ---
 
@@ -569,6 +584,9 @@ Menghapus event permanen.
 | **TC-EVT-16** | Data Integrity | Form edit umum mencoba memanipulasi status event | Event berstatus `scheduled` | Kirim `PUT /api/events/:id` dengan payload menyertakan `{ "status": "closed" }`. | Server mengabaikan field `status` pada endpoint `PUT`. Status event tetap `scheduled` (perubahan status hanya diizinkan via `PATCH /status`). | Security |
 | **TC-EVT-17** | Data Immutability | Organizer mencoba mengedit data acara yang sudah berstatus `closed` | Event berstatus `closed` | Kirim `PUT /api/events/:id` dengan judul baru. | HTTP 400 Bad Request envelope ("Event yang sudah ditutup tidak dapat diubah."). Data event yang sudah difinalisasi bersifat terkunci (*immutable*). | Negative / Edge Case |
 | **TC-EVT-18** | Data Deletion | Organizer mencoba menghapus acara yang sudah ditutup | Event berstatus `closed` | Kirim `DELETE /api/events/:id` dengan token organizer. | HTTP 400 Bad Request envelope ("Event yang sudah ditutup tidak dapat dihapus."). Integritas riwayat kehadiran dan audit poin tetap terjaga. | Negative / Security |
+| **TC-EVT-19** | Always-Active Date (Default Today) | Halaman `/events` selalu memilih tanggal aktif secara default tanpa menampilkan list sebulan penuh | Bulan aktif memiliki event `closed` tgl 2, `active` hari ini, dan `scheduled` tgl 24 | 1. Buka `/events`.<br>2. Klik ulang tanggal hari ini di kalender.<br>3. Klik tgl 24 di kalender. | Saat dibuka, `selectedDate` otomatis terpilih ke **Today** (menampilkan event hari ini). Mengklik ulang tanggal yang aktif tidak membuatnya kosong/unselected, dan tombol `Full Month` / `Show All` tidak ada. Mengklik tgl 24 memindahkan list ke event tgl 24 (urut `active` -> `scheduled` -> `closed` -> `cancel`). | Positive |
+| **TC-EVT-20** | Calendar Month Nav & Global Search | Pindah bulan tetap menjaga tanggal aktif, sementara Search menampilkan hasil lintas tanggal | Berada di `/events` dengan tanggal aktif hari ini | 1. Klik Next month lalu klik Today.<br>2. Ketik kata kunci judul event di Search Bar, lalu hapus. | Saat pindah bulan, tanggal aktif otomatis memilih tgl 1 bulan target (atau `Today` saat tombol Today / kembali ke bulan berjalan). Saat Search terisi, hasil tampil lintas tanggal/bulan; setelah dibersihkan kembali menampilkan event tanggal aktif. | Positive |
+| **TC-EVT-21** | Post-Create Navigation | Organizer membuat event baru untuk tanggal mendatang | Tanggal aktif di Today (11 Nov); event baru dijadwalkan untuk 24 Nov atau 3 Des | Submit form Create Event. | Kalender (`activeMonth`) dan tanggal aktif (`selectedDate`) otomatis berpindah ke 24 Nov / 3 Des sehingga event baru langsung tampil di layar. | Positive |
 
 
 

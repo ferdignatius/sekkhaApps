@@ -23,6 +23,10 @@
     "release": "bun scripts/release.mjs"
   },
   "overrides": {
-    "qs": ">=6.16.0"
+    "qs": ">=6.16.1",
+    "seroval": ">=1.8.1",
+    "@vitest/mocker": "^4.1.12",
+    "nodemailer": "^10.5.0",
+    "compression": "^1.8.2"
   }
 }

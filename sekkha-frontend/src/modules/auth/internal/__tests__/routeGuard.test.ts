@@ -12,7 +12,7 @@ import type { AuthState } from "../context/authReducer"
 // ─── Import the functions under test ───────────────────────────────────────────
 
 import type * as ReactRouter from "@tanstack/react-router"
-import { routeGuardBeforeLoad } from "../../../../routes/_authenticated"
+import { routeGuardBeforeLoad } from "../utils/routeGuards"
 import { LoginPage } from "../components/LoginPage"
 
 // ─── Module-level mocks ────────────────────────────────────────────────────────

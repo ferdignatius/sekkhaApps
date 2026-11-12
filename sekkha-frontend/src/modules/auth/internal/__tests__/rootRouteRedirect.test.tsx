@@ -4,10 +4,8 @@ import type * as ReactRouter from "@tanstack/react-router"
 import { AuthContext } from "../context/AuthContext"
 import { initialAuthState } from "../context/authReducer"
 import type { AuthState, RouterContext } from "../../index"
-import {
-  rootBeforeLoad,
-  IndexRouteComponent,
-} from "../../../../routes/index"
+import { rootBeforeLoad } from "../utils/routeGuards"
+import { IndexRouteComponent } from "@/shell/IndexRouteComponent"
 
 const navigateMock = vi.fn().mockResolvedValue(undefined)
 

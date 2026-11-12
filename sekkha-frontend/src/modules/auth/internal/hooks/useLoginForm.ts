@@ -5,14 +5,10 @@
 import { useState } from "react"
 import { useNavigate, useSearch } from "@tanstack/react-router"
 import { validateLoginForm } from "../utils/validator"
+import { isValidRedirectTo } from "../utils/routeGuards"
 import { useAuth } from "./useAuth"
 import { AuthError } from "../context/authReducer"
 import { api } from "@/lib/api"
-
-// ─── Constants ─────────────────────────────────────────────────────────────────
-
-/** Maximum allowed length for the redirectTo path (req 5.5, 6.3, 6.5) */
-const MAX_REDIRECT_LENGTH = 2048
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -34,29 +30,7 @@ export interface UseLoginFormReturn {
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 
-/**
- * Validates whether a redirectTo value is a safe internal path.
- * Requirements: 5.4, 5.5, 6.3, 6.5
- *
- * A valid redirectTo path:
- * - Must be a non-empty string
- * - Must start with "/" (internal path)
- * - Must not contain "http://" or "https://" (no external URLs)
- * - Must not exceed MAX_REDIRECT_LENGTH characters
- */
-export function isValidRedirectTo(value: string | undefined): value is string {
-  if (!value) return false
-  if (value.length > MAX_REDIRECT_LENGTH) return false
-  if (
-    !value.startsWith("/") ||
-    value.startsWith("//") ||
-    value.startsWith("/\\")
-  ) {
-    return false
-  }
-  if (value.includes("http://") || value.includes("https://")) return false
-  return true
-}
+export { isValidRedirectTo }
 
 // ─── Hook ──────────────────────────────────────────────────────────────────────
 

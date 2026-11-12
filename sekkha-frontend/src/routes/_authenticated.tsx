@@ -9,77 +9,15 @@ import { useEffect } from "react"
 import {
   createFileRoute,
   Outlet,
-  redirect,
   useRouterState,
   useNavigate,
 } from "@tanstack/react-router"
-import { useAuth } from "@/modules/auth"
+import { routeGuardBeforeLoad, useAuth } from "@/modules/auth"
 import type { RouterContext } from "@/modules/auth"
 import { AppSidebar } from "@/components/app-sidebar"
 import { MobileDock } from "@/components/common/MobileDock"
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
 import { TooltipProvider } from "@/components/ui/tooltip"
-import { safeStorage } from "@/lib/storage"
-
-// ─── Constants ─────────────────────────────────────────────────────────────────
-
-const MAX_REDIRECT_LENGTH = 2048
-
-// ─── Helpers ───────────────────────────────────────────────────────────────────
-
-export function isValidRedirectTo(value: string | undefined): value is string {
-  if (!value) return false
-  if (value.length > MAX_REDIRECT_LENGTH) return false
-  if (
-    !value.startsWith("/") ||
-    value.startsWith("//") ||
-    value.startsWith("/\\")
-  ) {
-    return false
-  }
-  if (value.includes("http://") || value.includes("https://")) return false
-  return true
-}
-
-export async function waitForAuthResolution(
-  context: RouterContext,
-  timeoutMs: number
-): Promise<void> {
-  if (context.authState.status !== "loading") return
-
-  return new Promise<void>((resolve) => {
-    const start = Date.now()
-    function poll() {
-      if (context.authState.status !== "loading") {
-        resolve()
-        return
-      }
-      if (Date.now() - start >= timeoutMs) {
-        resolve()
-        return
-      }
-      setTimeout(poll, 50)
-    }
-    poll()
-  })
-}
-
-export async function routeGuardBeforeLoad(
-  context: RouterContext,
-  locationHref: string
-): Promise<void> {
-  const token = safeStorage.getItem("sekkha_access_token")
-  if (!token && context.authState?.status === "loading") {
-    await waitForAuthResolution(context, 1000)
-  }
-  const isAuthenticated =
-    context.authState?.status === "authenticated" ||
-    (token !== null && token !== "")
-
-  if (!isAuthenticated) {
-    throw redirect({ to: "/login", search: { redirectTo: locationHref } })
-  }
-}
 
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
 

@@ -1,5 +1,6 @@
 import * as React from "react"
 import { useRouter } from "@tanstack/react-router"
+import { MotionConfig } from "motion/react"
 
 import { useAuthState } from "../hooks/useAuthState"
 import { useScrollPosition } from "../hooks/useScrollPosition"
@@ -15,14 +16,12 @@ import { CTABanner } from "./CTABanner"
 import { LandingFooter } from "./LandingFooter"
 
 /**
- * LandingPage — halaman utama Sekkha (Komunitas Remaja Vihara Tri Maha Dharma).
+ * LandingPage — public pre-login home page for Sekkha (Vihara Tri Maha Dharma).
  *
- * Susunan section:
- *   Hero → Features → Stats → Events → Leaderboard → CTA Banner → Footer
+ * Section order:
+ *   Hero -> Features -> Stats -> Events -> Leaderboard -> CTA Banner -> Footer
  *
- * Tidak mengimpor dari app-sidebar, nav-main, nav-user, nav-projects, team-switcher.
- *
- * @requirements 1.1, 1.2, 1.3, 9.1, 9.6, 10.3
+ * 100% static showcase data; zero backend API queries are performed here.
  */
 export function LandingPage() {
   const router = useRouter()
@@ -41,65 +40,67 @@ export function LandingPage() {
     try {
       await router.navigate({ to: "/sign-up" as string })
     } catch {
-      setErrorMessage("Halaman pendaftaran tidak tersedia saat ini.")
+      setErrorMessage("Sign-up page is currently unavailable.")
     }
   }
 
   return (
-    <div className="relative min-h-screen bg-sekkha-canvas">
-      {/* Skip link */}
-      <a
-        href="#main-content"
-        className="sr-only focus-visible:not-sr-only focus-visible:absolute focus-visible:top-4 focus-visible:left-4 focus-visible:z-[100] focus-visible:rounded-md focus-visible:bg-sekkha-canvas focus-visible:px-4 focus-visible:py-2 focus-visible:text-sekkha-ink focus-visible:ring-2 focus-visible:ring-sekkha-primary focus-visible:ring-offset-2 focus-visible:outline-none"
-      >
-        Skip to main content
-      </a>
-
-      {/* Error toast */}
-      {errorMessage !== null && (
-        <div
-          role="alert"
-          aria-live="assertive"
-          className="text-body-sm fixed bottom-6 left-1/2 z-[200] -translate-x-1/2 rounded-xl bg-sekkha-ink px-6 py-3 text-sekkha-on-dark shadow-lg"
+    <MotionConfig reducedMotion="user">
+      <div className="relative min-h-screen bg-sekkha-canvas">
+        {/* Skip link */}
+        <a
+          href="#main-content"
+          className="sr-only focus-visible:not-sr-only focus-visible:absolute focus-visible:top-4 focus-visible:left-4 focus-visible:z-[100] focus-visible:rounded-md focus-visible:bg-sekkha-canvas focus-visible:px-4 focus-visible:py-2 focus-visible:text-sekkha-ink focus-visible:ring-2 focus-visible:ring-sekkha-primary focus-visible:ring-offset-2 focus-visible:outline-none"
         >
-          {errorMessage}
-        </div>
-      )}
+          Skip to main content
+        </a>
 
-      {/* Navbar */}
-      <LandingNavbar authState={authState} scrollY={scrollY} />
+        {/* Error toast */}
+        {errorMessage !== null && (
+          <div
+            role="alert"
+            aria-live="assertive"
+            className="text-body-sm fixed bottom-6 left-1/2 z-[200] -translate-x-1/2 rounded-xl bg-sekkha-ink px-6 py-3 text-sekkha-on-dark shadow-lg"
+          >
+            {errorMessage}
+          </div>
+        )}
 
-      {/* Main content */}
-      <main id="main-content">
-        <HeroSection
-          headline={landingContent.hero.headline}
-          subheadline={landingContent.hero.subheadline}
-        />
+        {/* Navbar */}
+        <LandingNavbar authState={authState} scrollY={scrollY} />
 
-        <FeatureSection features={landingContent.features} />
+        {/* Main content */}
+        <main id="main-content">
+          <HeroSection
+            headline={landingContent.hero.headline}
+            subheadline={landingContent.hero.subheadline}
+          />
 
-        <StatsSection stats={landingContent.stats} />
+          <FeatureSection features={landingContent.features} />
 
-        <EventsSection
-          heading={landingContent.events.heading}
-          subheading={landingContent.events.subheading}
-          items={landingContent.events.items}
-        />
+          <StatsSection stats={landingContent.stats} />
 
-        <LeaderboardSection
-          heading={landingContent.leaderboard.heading}
-          subheading={landingContent.leaderboard.subheading}
-          entries={landingContent.leaderboard.entries}
-        />
+          <EventsSection
+            heading={landingContent.events.heading}
+            subheading={landingContent.events.subheading}
+            items={landingContent.events.items}
+          />
 
-        <CTABanner
-          heading={landingContent.ctaBanner.heading}
-          onSignUpNavigate={handleSignUpNavigate}
-        />
-      </main>
+          <LeaderboardSection
+            heading={landingContent.leaderboard.heading}
+            subheading={landingContent.leaderboard.subheading}
+            entries={landingContent.leaderboard.entries}
+          />
 
-      {/* Footer */}
-      <LandingFooter navColumns={landingContent.footer.navColumns} />
-    </div>
+          <CTABanner
+            heading={landingContent.ctaBanner.heading}
+            onSignUpNavigate={handleSignUpNavigate}
+          />
+        </main>
+
+        {/* Footer */}
+        <LandingFooter navColumns={landingContent.footer.navColumns} />
+      </div>
+    </MotionConfig>
   )
 }

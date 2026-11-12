@@ -287,7 +287,7 @@ describe("Configure Services & Business Policies", () => {
       await configureControllers.getEventTypes(
         { query: { is_active: "true", page: "1", limit: "5", paginated: "true" } } as any,
         etPaginated.res,
-        (() => {}) as any
+        (() => { }) as any
       )
       expect(eventTypeSkip).toBe(0)
       expect(eventTypeTake).toBe(5)
@@ -306,7 +306,7 @@ describe("Configure Services & Business Policies", () => {
       await configureControllers.getEventTypes(
         { query: { is_active: "true" } } as any,
         etLegacy.res,
-        (() => {}) as any
+        (() => { }) as any
       )
       expect(Array.isArray(etLegacy.getBody())).toBe(true)
 
@@ -314,7 +314,7 @@ describe("Configure Services & Business Policies", () => {
       await configureControllers.getBadgeActivities(
         { query: { is_active: "true", page: "2", limit: "5", paginated: "true" } } as any,
         baPaginated.res,
-        (() => {}) as any
+        (() => { }) as any
       )
       expect(badgeSkip).toBe(5)
       expect(badgeTake).toBe(5)
@@ -333,7 +333,7 @@ describe("Configure Services & Business Policies", () => {
       await configureControllers.getBadgeActivities(
         { query: {} } as any,
         baLegacy.res,
-        (() => {}) as any
+        (() => { }) as any
       )
       expect(Array.isArray(baLegacy.getBody())).toBe(true)
     } finally {

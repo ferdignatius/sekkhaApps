@@ -20,26 +20,26 @@ export const ALL_USER_ROLES: {
   bg: string
   text: string
 }[] = [
-  { id: "admin", label: "Admin", bg: "bg-purple-100", text: "text-purple-800" },
-  {
-    id: "organizer",
-    label: "Organizer",
-    bg: "bg-blue-100",
-    text: "text-blue-800",
-  },
-  {
-    id: "activist",
-    label: "Activist",
-    bg: "bg-amber-100",
-    text: "text-amber-800",
-  },
-  {
-    id: "member",
-    label: "Member",
-    bg: "bg-emerald-100",
-    text: "text-emerald-800",
-  },
-]
+    { id: "admin", label: "Admin", bg: "bg-purple-100", text: "text-purple-800" },
+    {
+      id: "organizer",
+      label: "Organizer",
+      bg: "bg-blue-100",
+      text: "text-blue-800",
+    },
+    {
+      id: "activist",
+      label: "Activist",
+      bg: "bg-amber-100",
+      text: "text-amber-800",
+    },
+    {
+      id: "member",
+      label: "Member",
+      bg: "bg-emerald-100",
+      text: "text-emerald-800",
+    },
+  ]
 
 export interface ColorSchemeOption {
   id: string
@@ -278,7 +278,7 @@ export async function syncMasterCategories(): Promise<EventCategoryItem[]> {
       if (typeof window !== "undefined") {
         try {
           localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(items))
-        } catch {}
+        } catch { }
       }
       return items
     }
@@ -294,7 +294,7 @@ export function getMasterCategories(activeOnly = false): EventCategoryItem[] {
     try {
       const raw = localStorage.getItem(STORAGE_KEYS.CATEGORIES)
       if (raw) res = JSON.parse(raw)
-    } catch {}
+    } catch { }
   }
   if (!res || res.length === 0) {
     res = DEFAULT_CATEGORIES
@@ -419,7 +419,7 @@ export function getMasterBadges(activeOnly = false): AttendanceBadge[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.BADGES)
     if (raw) res = JSON.parse(raw)
-  } catch {}
+  } catch { }
   if (activeOnly) return res.filter((b) => b.is_active !== false)
   return res
 }

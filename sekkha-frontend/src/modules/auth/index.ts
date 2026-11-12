@@ -11,6 +11,12 @@ export { SignUpPage } from "./internal/components/SignUpPage"
 export { LoginPage } from "./internal/components/LoginPage"
 export { OnboardingPage } from "./internal/components/OnboardingPage"
 export { ForgotPasswordPage } from "./internal/components/ForgotPasswordPage"
+export {
+  rootBeforeLoad,
+  routeGuardBeforeLoad,
+  waitForAuthResolution,
+  isValidRedirectTo,
+} from "./internal/utils/routeGuards"
 
 // ── Type exports ────────────────────────────────────────────────────────────
 export type {

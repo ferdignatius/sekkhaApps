@@ -24,7 +24,6 @@ export const CreateMemberSchema = z.object({
   name: z.string().trim().min(2, "Full name must be at least 2 characters").max(100),
   school_id: z.string().trim().optional().nullable().or(z.literal("")),
   school: z.string().trim().max(100).optional().nullable().or(z.literal("")),
-  phone: z.string().trim().max(20).optional().nullable().or(z.literal("")),
   email: z.string().trim().email("Invalid email format").max(255).optional().nullable().or(z.literal("")),
   username: z
     .string()
@@ -42,13 +41,6 @@ export const UpdateMemberSchema = z.object({
   role: z.enum(["member", "activist", "organizer", "admin"]).optional(),
   school_id: z.string().trim().optional().nullable().or(z.literal("")),
   school: z.string().trim().max(100).optional().nullable().or(z.literal("")),
-  phone: z.string().trim().max(20).optional().nullable().or(z.literal("")),
-  date_of_birth: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format (YYYY-MM-DD)")
-    .optional()
-    .nullable()
-    .or(z.literal("")),
   email: z.string().trim().email().max(255).optional().nullable().or(z.literal("")),
   username: z
     .string()

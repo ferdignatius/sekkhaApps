@@ -2,12 +2,13 @@ import { prisma } from "../../lib/prisma"
 
 export const peopleModels = {
   count(where?: any) {
-    return prisma.user.count({ where })
+    return prisma.user.count({ where: { ...(where || {}), anonymizedAt: null } })
   },
 
   countByRole() {
     return prisma.user.groupBy({
       by: ["role"],
+      where: { anonymizedAt: null },
       _count: { _all: true },
     })
   },
@@ -15,13 +16,14 @@ export const peopleModels = {
   countByClaimStatus() {
     return prisma.user.groupBy({
       by: ["isClaimed"],
+      where: { anonymizedAt: null },
       _count: { _all: true },
     })
   },
 
   findMany(where: any, take: number, skip: number) {
     return prisma.user.findMany({
-      where,
+      where: { ...(where || {}), anonymizedAt: null },
       orderBy: { createdAt: "desc" },
       take,
       skip,
@@ -42,8 +44,8 @@ export const peopleModels = {
   },
 
   findMemberDetail(id: string) {
-    return prisma.user.findUnique({
-      where: { id },
+    return prisma.user.findFirst({
+      where: { id, anonymizedAt: null },
       select: {
         id: true,
         username: true,
@@ -55,9 +57,7 @@ export const peopleModels = {
         profile: {
           select: {
             name: true,
-            phone: true,
             schoolId: true,
-            birthDate: true,
             school: { select: { id: true, name: true, status: true } },
           },
         },
@@ -94,22 +94,22 @@ export const peopleModels = {
   },
 
   findUserWithProfile(id: string) {
-    return prisma.user.findUnique({
-      where: { id },
+    return prisma.user.findFirst({
+      where: { id, anonymizedAt: null },
       include: { profile: { include: { school: true } } },
     })
   },
 
   findUserById(id: string) {
-    return prisma.user.findUnique({ where: { id } })
+    return prisma.user.findFirst({ where: { id, anonymizedAt: null } })
   },
 
   findUserByUsername(username: string) {
-    return prisma.user.findUnique({ where: { username } })
+    return prisma.user.findFirst({ where: { username, anonymizedAt: null } })
   },
 
   findUserByEmailBindex(emailBindex: string) {
-    return prisma.user.findUnique({ where: { emailBindex } })
+    return prisma.user.findFirst({ where: { emailBindex, anonymizedAt: null } })
   },
 
   create(data: any, include?: any) {
@@ -136,6 +136,7 @@ export const peopleModels = {
     if (probes.length === 0) return Promise.resolve([])
     return prisma.user.findMany({
       where: {
+        anonymizedAt: null,
         profile: {
           is: {
             OR: probes.map((probe) => ({

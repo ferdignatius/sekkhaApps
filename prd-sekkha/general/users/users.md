@@ -22,7 +22,7 @@ Modul **Users** adalah pusat data personal anggota: profil, identitas login, reg
 Tujuan utama:
 1. **Single Source of User Identity**: Mengelola data personal, kredensial login, dan nomor anggota terstandardisasi.
 2. **Konsistensi Penomoran Anggota**: `userNumber` selalu otomatis di-generate oleh sistem, unik, dan tidak dapat diubah oleh siapapun.
-3. **Keamanan & Privasi (UU PDP / GDPR)**: Perlindungan data pribadi (enkripsi at-rest Tier 2 pada kolom PII seperti telepon dan tanggal lahir) serta pembatasan field publik vs internal.
+3. **Keamanan, Privasi & Retensi Data (UU PDP No. 27/2022)**: Perlindungan data pribadi (enkripsi at-rest Tier 2 AES-256-GCM pada `email`, minimisasi data tanpa menyimpan nomor telepon/tanggal lahir, pembatasan field publik vs internal, serta anonimisasi otomatis akun tidak aktif > 2 tahun kalender berturut-turut dengan tetap menjaga arsip statistik kehadiran agregat).
 4. **Verifikasi Perubahan Email**: User dapat mengganti alamat email mandiri kapan saja, dengan keharusan verifikasi kode 6 digit sebelum email baru dapat digunakan untuk login atau pemulihan akun.
 
 ---
@@ -126,11 +126,11 @@ User yang telah memiliki akun dapat memperbarui alamat email mereka kapan saja m
 * **Data Publik (Tampil pada profil jemaat lain)**:
   `id`, `name`, `role`, `school`, `class_grade`, `joined_at`.
 * **Data Privat (Hanya terlihat oleh pemilik akun)**:
-  `email`, `email_verified`, `pending_email`, `phone`, `birth_date`, `username`, `user_number`.
+  `email`, `email_verified`, `pending_email`, `username`, `user_number`.
 * **Data Internal Pengurus (`organizer` / `admin` only)**:
   `points`, `streak`, `consecutive_missed`, `total_attendances`.
-* **Field Dihapus (Out of Scope)**:
-  `avatar_url`, `school_level`, `attendance_count_30d`, `badges_count`, `level`, `badges`.
+* **Field Dihapus (Out of Scope / Data Minimization)**:
+  `avatar_url`, `school_level`, `attendance_count_30d`, `badges_count`, `level`, `badges`, `phone`, `birth_date`.
 
 ---
 
@@ -169,8 +169,6 @@ Mengambil data lengkap profil pengguna yang sedang login.
       "school_id": "sch_12345",
       "school": "SMA Negeri 1 Jakarta",
       "class_grade": "11",
-      "phone": "081234567890",
-      "birth_date": "2008-05-14",
       "points": 350,
       "joined_at": "2026-10-23T00:00:00.000Z"
     }
@@ -187,9 +185,7 @@ Memperbarui informasi profil mandiri pengguna (termasuk `username` yang dapat di
     "name": "Budi Santoso",
     "username": "budi.santoso",
     "school_id": "sch_12345",
-    "class_grade": "11",
-    "phone": "081234567890",
-    "birth_date": "2008-05-14"
+    "class_grade": "11"
   }
   ```
 - **Response 200 OK**: Envelope standar dengan payload data profil terbaru (format identik `GET /api/users/me`).
@@ -391,11 +387,19 @@ Mengambil data kartu anggota digital jemaat beserta representasi QR Code statis 
 | **US-USR-01** | Jemaat baru / Pengurus | Memperoleh `userNumber` 10-digit format numerik `yyyymmddnn` secara otomatis dari sistem | Setiap anggota memiliki nomor induk unik permanen tanpa repot menginput manual |
 | **US-USR-02** | Pengguna terdaftar | Menggunakan salah satu dari `userNumber`, `username`, atau `email` terverifikasi untuk masuk aplikasi | Saya memiliki fleksibilitas login saat lupa salah satu pengenal akun saya |
 | **US-USR-03** | Pengguna terdaftar | Melihat profil lengkap, almamater sekolah, status keanggotaan, dan metrik gamifikasi diri sendiri | Saya mengetahui data pribadi yang tersimpan dan progres keaktifan saya di vihara |
-| **US-USR-04** | Pengguna terdaftar | Memperbarui nama lengkap, username, nomor telepon, dan data almamater secara mandiri | Data profil saya selalu terbarui tanpa harus menghubungi pengurus vihara |
+| **US-USR-04** | Pengguna terdaftar | Memperbarui nama lengkap, username, dan data almamater secara mandiri | Data profil saya selalu terbarui tanpa harus menghubungi pengurus vihara |
 | **US-USR-05** | Pengguna terdaftar | Memperbarui alamat email dengan perlindungan OTP verifikasi 6-digit | Keamanan akun saya terjamin dari pengambilalihan akun sepihak |
 | **US-USR-06** | Pengguna terdaftar | Melihat riwayat kehadiran kebaktian beserta metode presensi dan perolehan poin per acara | Saya dapat mengevaluasi konsistensi kehadiran ibadah saya secara transparan |
 | **US-USR-07** | Pengguna terdaftar | Memantau capaian *weekly streak* kehadiran rutin saya | Saya termotivasi untuk hadir kebaktian pemuda vihara secara konsisten setiap minggu |
 | **US-USR-08** | Pengguna terdaftar | Mengunduh salinan seluruh data pribadi saya dalam format JSON (UU PDP) | Saya memiliki hak akses penuh terhadap transparansi data pribadi saya |
+
+### Otomatisasi Masa Retensi & Anonimisasi Data (UU PDP Pasal 43 & Pasal 44)
+- **Tracking Aktivitas (`lastActiveAt`)**: Diperbarui secara otomatis saat pengguna login, refresh token, registrasi, atau tercatat presensi kehadiran (`ATTENDANCE_RECORDED`).
+- **Cron Retensi Harian (`retentionCron.ts`)**: Berjalan setiap hari pukul `02:30 WIB` (`"30 2 * * *"` `Asia/Jakarta`).
+- **Aturan 2 Tahun Kalender**: Akun yang belum pernah dianonimkan (`anonymizedAt IS NULL`) dan tidak aktif lebih dari **2 tahun kalender berturut-turut** (`lastActiveAt < cutoff` maupun `stats.lastActivityAt < cutoff`) secara otomatis dianonimkan:
+  - Menghapus identitas langsung (`email = null`, `emailBindex = null`, `emailVerifiedAt = null`, `password = null`, `username = null`, `userNumber = null`, `profile.name = "Former Member"`, `profile.schoolId = null`, `anonymizedAt = now()`).
+  - Mencabut seluruh token refresh & cache sesi, serta mencatat audit log `USER_RETENTION_ANONYMIZED`.
+  - **Tetap mempertahankan** baris historis agregat `Attendance` dan `PointTransaction` (tanpa identitas pribadi aktif) demi arsip sejarah & laporan statistik tahunan vihara.
 
 ---
 
@@ -406,13 +410,14 @@ Mengambil data kartu anggota digital jemaat beserta representasi QR Code statis 
 | **AC-USR-01** | Pengurus membuat People manual via `POST /api/people/members` | Sistem otomatis men-generate `userNumber` integer format numerik `yyyymmddnn` tanpa input client. |
 | **AC-USR-02** | Calon jemaat mendaftar mandiri via alur register OTP | Sistem otomatis men-generate `userNumber` integer format numerik `yyyymmddnn` yang persis sama. |
 | **AC-USR-03** | Dua akun dibuat pada tanggal yang sama | Nomor urut `num` bertambah berurutan (`...0001`, `...0002`) tanpa benturan duplikasi. |
-| **AC-USR-04** | User memanggil `GET /api/users/me` | Respons tidak memuat field `avatar_url`, `school_level`, `attendance_count_30d`, `badges_count`, `level`, maupun badge. |
+| **AC-USR-04** | User memanggil `GET /api/users/me` | Respons tidak memuat field `avatar_url`, `school_level`, `attendance_count_30d`, `badges_count`, `level`, `badges`, `phone`, maupun `birth_date`. |
 | **AC-USR-05** | User mencoba mengirim `email`, `user_number`, atau `role` ke `PATCH /api/users/me` | Request ditolak dengan error 400 Bad Request / 403 Forbidden (`username` diperbolehkan untuk diubah selama unik dan valid). |
 | **AC-USR-06** | User meminta ganti email ke `POST /api/users/email-verification/request` | Kode OTP dikirim ke email baru, email baru dicatat sebagai `pendingEmail`, email lama tetap aktif. |
 | **AC-USR-07** | User memasukkan kode verifikasi email yang benar ke `POST /api/users/email-verification/confirm` | Email aktif berubah ke email baru, `pendingEmail` di-reset `null`, `emailVerifiedAt` terisi waktu sekarang. |
 | **AC-USR-08** | Percobaan input kode verifikasi salah hingga 5 kali | Challenge terkunci/batal, percobaan ke-6 ditolak dengan kode error `429 Too Many Requests` / `400 Challenge Expired`. |
 | **AC-USR-09** | User mengakses `/api/users/me/badges` atau `/api/users/me/level` | Mengembalikan respons `404 Not Found` (endpoint ditiadakan). |
 | **AC-USR-10** | User membuka kartu anggota di `/profile/qr` | Menampilkan kartu anggota dengan QR statis berisi `userNumber`, nama, dan sekolah yang dapat di-scan panitia offline. |
+| **AC-USR-11** | Cron retensi mengevaluasi akun tidak aktif > 2 tahun kalender | Data PII langsung dihapus/dianonimkan (`anonymizedAt` terisi), token sesi dicabut, audit log `USER_RETENTION_ANONYMIZED` tercatat, sementara statistik kehadiran agregat tetap tersimpan. |
 
 ---
 
@@ -425,7 +430,7 @@ Mengambil data kartu anggota digital jemaat beserta representasi QR Code statis 
 | **TC-USR-03** | UserNumber Immutability | Mencegah modifikasi `userNumber` via update profil | Akun user aktif | Submit `PATCH /api/users/me` dengan payload `{ "user_number": 9999999999 }`. | HTTP 400 Bad Request envelope. Nilai `userNumber` tetap tidak berubah di database. | Security |
 | **TC-USR-04** | Login Identifier | Login menggunakan 10-digit `userNumber` | Akun aktif dengan userNumber `2026102301` | Submit `POST /api/auth/login` dengan `identifier: "2026102301"` dan password benar. | HTTP 200 envelope. Login berhasil dan token sesi diterbitkan. | Positive |
 | **TC-USR-05** | Get Profile | Ambil data profil pribadi user (`GET /api/users/me`) | User login terautentikasi | Panggil `GET /api/users/me`. | HTTP 200 envelope. Data memuat `user_number`, `username`, `name`, `email`, data profil terdekripsi, `stats`, dan almamater sekolah. Tidak ada field terlarang (`avatar_url`, `badges`). | Positive |
-| **TC-USR-06** | Update Profile | Update nama dan nomor telepon valid | User login terautentikasi | Submit `PATCH /api/users/me` dengan `name: "Ananda Budi"`, `phone: "081234567890"`. | HTTP 200 envelope. Data nama diperbarui, nomor telepon dienkripsi AES-256-GCM di DB. | Positive |
+| **TC-USR-06** | Update Profile | Update nama lengkap dan username valid | User login terautentikasi | Submit `PATCH /api/users/me` dengan `name: "Ananda Budi"`, `username: "ananda.budi"`. | HTTP 200 envelope. Data nama dan username diperbarui di DB. | Positive |
 | **TC-USR-07** | Privilege Guard | User mencoba mengubah `role` atau `points` via update profil | User role `member` | Submit `PATCH /api/users/me` dengan payload `{ "role": "admin", "points": 10000 }`. | HTTP 400 Bad Request / parameter diabaikan. `role` tetap `member` dan `points` tidak bertambah. | Security |
 | **TC-USR-08** | Email Request | Permintaan ganti email mencatat `pendingEmail` | Email lama `lama@example.com` aktif | Submit `POST /api/users/email-verification/request` dengan `email: "baru@example.com"`. | HTTP 200 generic success. `lama@example.com` tetap aktif untuk login. `baru@example.com` tercatat di `pendingEmail`. Kode OTP 6 digit terkirim. | Positive |
 | **TC-USR-09** | Email Confirm | Konfirmasi ganti email dengan OTP valid | Request ganti email aktif | Submit `POST /api/users/email-verification/confirm` dengan kode OTP valid. | HTTP 200 envelope. `email` resmi berubah menjadi `baru@example.com`, `emailBindex` dihitung ulang, `pendingEmail` di-reset ke `null`, `emailVerifiedAt` terisi. | Positive |
@@ -436,3 +441,4 @@ Mengambil data kartu anggota digital jemaat beserta representasi QR Code statis 
 | **TC-USR-14** | Data Export | Ekspor data lengkap privasi pengguna (UU PDP) | User login terautentikasi | Panggil `GET /api/users/me/export`. | HTTP 200 envelope dengan payload arsip JSON berisi seluruh data profil terdekripsi, riwayat kehadiran, dan mutasi poin milik pengguna yang bersangkutan. | Positive / Compliance |
 | **TC-USR-15** | Digital Card QR | Pengambilan payload QR Code kartu anggota | User login terautentikasi | Panggil `GET /api/users/me/card`. | HTTP 200 envelope. `qr_payload` mengembalikan string persis `userNumber` tanpa tanggal kedaluwarsa. | Positive |
 | **TC-USR-16** | Deprecated Endpoints | Mengakses endpoint badge atau level yang sudah dihapus | Sistem versi terkini | Panggil `GET /api/users/me/badges` atau `GET /api/users/me/level`. | HTTP 404 Not Found envelope. Sistem bersih dari legacy gamification abstractions. | Negative / Deprecation |
+| **TC-USR-17** | Retention Anonymization | Anonimisasi otomatis akun tidak aktif > 2 tahun kalender | Akun dengan `lastActiveAt` > 2 tahun lalu & `stats.lastActivityAt` kedaluwarsa | Jalankan `runInactiveAccountRetentionCleanup`. | PII dihapus/dianonimkan (`email=null`, `name="Former Member"`, `anonymizedAt != null`), token sesi dicabut, login ditolak, riwayat agregat `Attendance` tetap terjaga. | Compliance / Security |

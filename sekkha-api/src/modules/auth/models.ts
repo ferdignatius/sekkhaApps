@@ -18,8 +18,11 @@ export const authModels = {
   async findUserByEmail(email: string) {
     const clean = email.toLowerCase().trim()
     const bindex = generateBlindIndex(clean)
-    const user = await prisma.user.findUnique({
-      where: { emailBindex: bindex || undefined },
+    const user = await prisma.user.findFirst({
+      where: {
+        emailBindex: bindex || undefined,
+        anonymizedAt: null,
+      },
       include: { profile: true, stats: true },
     })
     if (!user) return null
@@ -31,8 +34,11 @@ export const authModels = {
   },
 
   async findUserByUsername(username: string) {
-    const user = await prisma.user.findUnique({
-      where: { username: username.toLowerCase().trim() },
+    const user = await prisma.user.findFirst({
+      where: {
+        username: username.toLowerCase().trim(),
+        anonymizedAt: null,
+      },
       include: { profile: true, stats: true },
     })
     if (!user) return null
@@ -49,6 +55,7 @@ export const authModels = {
     const bindex = generateBlindIndex(clean)
     const user = await prisma.user.findFirst({
       where: {
+        anonymizedAt: null,
         OR: [
           ...(isNumericId ? [{ userNumber: BigInt(clean) }] : []),
           ...(bindex ? [{ emailBindex: bindex, emailVerifiedAt: { not: null } }] : []),
@@ -66,8 +73,11 @@ export const authModels = {
   },
 
   async findUserById(userId: string) {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
+    const user = await prisma.user.findFirst({
+      where: {
+        id: userId,
+        anonymizedAt: null,
+      },
       select: {
         id: true,
         userNumber: true,
@@ -76,6 +86,7 @@ export const authModels = {
         role: true,
         passwordChangedAt: true,
         onboardingCompleted: true,
+        anonymizedAt: true,
         profile: {
           select: { name: true },
         },
@@ -91,6 +102,7 @@ export const authModels = {
       role: user.role,
       passwordChangedAt: user.passwordChangedAt,
       onboardingCompleted: user.onboardingCompleted,
+      anonymizedAt: user.anonymizedAt,
     }
   },
 
@@ -153,6 +165,7 @@ export const authModels = {
             isClaimed: true,
             emailVerifiedAt: new Date(),
             onboardingCompleted: false,
+            lastActiveAt: new Date(),
             profile: {
               create: {
                 name: data.name,
@@ -207,6 +220,13 @@ export const authModels = {
       },
     })
   },
+
+  async touchLastActiveAt(userId: string, at: Date = new Date()) {
+    return prisma.user.updateMany({
+      where: { id: userId, anonymizedAt: null },
+      data: { lastActiveAt: at },
+    })
+  },
 }
 
 // Named exports delegating dynamically to authModels
@@ -217,3 +237,4 @@ export const findUserById = (...args: Parameters<typeof authModels.findUserById>
 export const generateUniqueUsername = (...args: Parameters<typeof authModels.generateUniqueUsername>) => authModels.generateUniqueUsername(...args)
 export const createUser = (...args: Parameters<typeof authModels.createUser>) => authModels.createUser(...args)
 export const updateUserPassword = (...args: Parameters<typeof authModels.updateUserPassword>) => authModels.updateUserPassword(...args)
+export const touchLastActiveAt = (...args: Parameters<typeof authModels.touchLastActiveAt>) => authModels.touchLastActiveAt(...args)

@@ -50,11 +50,3 @@ export function formatAttendanceMethodLabel(method?: string | null): string {
   if (!m || m === "qr_scan" || m === "qr") return "QR Scan"
   return method || "QR Scan"
 }
-
-export function normalizeWhatsAppNumber(phone?: string | null): string | null {
-  if (!phone) return null
-  const digits = phone.replace(/\D/g, "")
-  if (!digits) return null
-  if (digits.startsWith("0")) return `62${digits.slice(1)}`
-  return digits
-}

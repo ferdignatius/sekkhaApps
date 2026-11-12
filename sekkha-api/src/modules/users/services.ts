@@ -23,21 +23,6 @@ function safeDecrypt(val: string | null | undefined, fallback: string | null = n
   return decrypted
 }
 
-function parseSafeIsoDate(val: string | null | undefined, throwOnInvalid: boolean = false): string | null {
-  if (!val) return null
-  const parsed = new Date(val)
-  if (Number.isNaN(parsed.getTime())) {
-    if (throwOnInvalid) {
-      const err = new Error("Format tanggal lahir tidak valid") as any
-      err.statusCode = 400
-      err.status = 400
-      throw err
-    }
-    return null
-  }
-  return parsed.toISOString()
-}
-
 function maskEmail(email: string): string {
   const atIndex = email.indexOf("@")
   if (atIndex <= 1) return "***"
@@ -52,9 +37,6 @@ export interface UpdateProfileInput {
   name?: string
   school?: string | null
   school_id?: string | null
-  phone?: string | null
-  date_of_birth?: string | null
-  birth_date?: string | null
 }
 
 export const userServices = {
@@ -79,10 +61,6 @@ export const userServices = {
     }
 
     const decryptedEmail = safeDecrypt(user.email, "") || ""
-    const decryptedPhone = safeDecrypt(user.profile?.phone, null)
-    const rawBirthDate = safeDecrypt(user.profile?.birthDate, null)
-    const isoBirthDate = parseSafeIsoDate(rawBirthDate, false)
-    const decryptedBirthDate = isoBirthDate ? isoBirthDate.split("T")[0] : null
     return {
       id: user.id,
       user_number: Number(uNum),
@@ -96,9 +74,6 @@ export const userServices = {
       school_id: user.profile?.schoolId || null,
       school: user.profile?.school?.name || null,
       school_status: user.profile?.school?.status || null,
-      phone: decryptedPhone,
-      date_of_birth: decryptedBirthDate,
-      birth_date: decryptedBirthDate,
       stats: {
         total_points: user.stats?.points ?? 0,
         current_streak: user.stats?.currentStreak ?? 0,
@@ -161,24 +136,15 @@ export const userServices = {
       }
     }
 
-    const birthDateVal = body.birth_date !== undefined ? body.birth_date : body.date_of_birth
-    const validatedBirthDateIso = birthDateVal ? parseSafeIsoDate(birthDateVal, true) : null
-
     const profileUpdateData = {
       ...(body.name && { name: body.name.trim() }),
       ...(resolvedSchoolId !== undefined && { schoolId: resolvedSchoolId }),
-      ...(body.phone !== undefined && { phone: body.phone ? encrypt(body.phone.trim()) : null }),
-      ...(birthDateVal !== undefined && {
-        birthDate: validatedBirthDateIso ? encrypt(validatedBirthDateIso) : null,
-      }),
     }
 
     const profileCreateData = {
       userId,
       name: body.name ? body.name.trim() : (userData.username as string) || existing.username || "Member",
       schoolId: resolvedSchoolId || null,
-      phone: body.phone ? encrypt(body.phone.trim()) : null,
-      birthDate: validatedBirthDateIso ? encrypt(validatedBirthDateIso) : null,
     }
 
     const { user, profile } = await userModels.updateUserAndProfile(
@@ -529,8 +495,6 @@ export const userServices = {
       },
       profile: {
         name: user.profile?.name ?? null,
-        phone: safeDecrypt(user.profile?.phone, null),
-        birth_date: safeDecrypt(user.profile?.birthDate, null),
         school: user.profile?.school?.name ?? null,
         school_id: user.profile?.schoolId ?? null,
         school_status: user.profile?.school?.status ?? null,

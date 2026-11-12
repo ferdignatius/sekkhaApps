@@ -17,7 +17,7 @@ Onboarding introduces newly registered or first-time claiming users to Sekkha, g
 Principles:
 - **Concise & Non-blocking**: Mobile-friendly, simple, and skippable where stated.
 - **Required Fields**: Only `username` and `fullname` (nama lengkap) are mandatory during onboarding.
-- **Optional & Skippable**: All other profile fields (`phone`, `birth_date`, `school`, `class_grade`) can be skipped during onboarding and filled/edited later via the User Profile edit page (`/profile` or `/settings`).
+- **Optional & Skippable**: All other profile fields (`school`, `class_grade`) can be skipped during onboarding and filled/edited later via the User Profile edit page (`/profile` or `/settings`). (`phone` and `birth_date` have been removed from the system for data minimization under UU PDP No. 27/2022.)
 - **No Product Tour**: Product tour/walkthrough is completely removed. After completing or skipping optional onboarding steps, user immediately proceeds to Home (`/home`).
 - **Self-Registration Claim State**: User registering manually via sign-up with email OTP automatically has `isClaimed = true` upon creation.
 - **School Request & Search**: Users search for existing schools by name. If not found, a dedicated button allows requesting a new school (`status: "pending"`). Only active and approved schools appear in the school selection dropdown.
@@ -77,14 +77,8 @@ Principles:
                 │ Next
                 ▼
        ┌─────────────────┐
-       │     Step 2:     │ ◄── OPTIONAL: Phone, Birth Date (Can Skip)
-       │ Additional Data │
-       └────────┬────────┘
-                │ Next / Skip
-                ▼
-       ┌─────────────────┐
-       │     Step 3:     │ ◄── OPTIONAL: Search & Select Active School,
-       │ School & Grade  │     or Request New School (Pending) (Can Skip)
+       │     Step 2:     │ ◄── OPTIONAL: Search & Select Active School,
+       │ School / Campus │     or Request New School (Pending) (Can Skip)
        └────────┬────────┘
                 │ Finish / Skip
                 ▼
@@ -96,18 +90,10 @@ Principles:
   - **Full Name (`name`)**: Pre-filled from sign-up / manual provisioning, mandatory to verify/fill (minimum 2 characters).
   - **Username (`username`)**: Pre-filled from auto-generated suggestion, unique, mandatory.
 * **Actions**:
-  - Button: **"Lanjutkan" (Continue)**.
+  - Button: **"Continue"**.
   - User cannot proceed or skip until both `name` and `username` are valid.
 
-### Step 2: Additional Personal Data (OPTIONAL - CAN SKIP)
-* **Fields**:
-  - Nomor Telepon (`phone`): Opsional, format nomor Indonesia.
-  - Tanggal Lahir (`birth_date`): Opsional, date picker ISO.
-* **Actions**:
-  - Button: **"Lanjutkan" (Continue)** (saves provided fields).
-  - Button / Link: **"Lewati" (Skip)** (proceeds without saving, fields can be updated later in edit profile).
-
-### Step 3: School Selection & Class Grade (OPTIONAL - CAN SKIP)
+### Step 2: School Selection & Class Grade (OPTIONAL - CAN SKIP)
 * **Logic Pencarian & Pemilihan Sekolah**:
   1. User mencari nama sekolah pada input search / autocomplete combobox.
   2. Input query memanggil API pencarian sekolah aktif: `GET /api/configure/schools?search=<query>&status=approved&is_active=true`.
@@ -214,11 +200,9 @@ Memperbarui data profil pengguna secara berkala di setiap step.
     "username": "budi48291"
   }
   ```
-- **Step 2 & 3 Request (Opsional)**:
+- **Step 2 Request (Opsional)**:
   ```json
   {
-    "phone": "081234567890",
-    "birth_date": "2008-05-14",
     "school_id": "sch_12345",
     "class_grade": "11"
   }
@@ -248,11 +232,10 @@ Menandai bahwa onboarding telah selesai atau di-skip oleh user.
 | --- | --- | --- | --- |
 | **US-ONB-01** | Pengguna yang baru mendaftar / menyelesaikan klaim | Diarahkan otomatis ke alur onboarding ringkas | Saya dapat melengkapi identitas dasar saya sebelum menggunakan aplikasi |
 | **US-ONB-02** | Pengguna di Step 1 Onboarding | Memverifikasi dan menyesuaikan nama lengkap serta username unik | Identitas saya tercatat dengan benar dan dapat digunakan untuk login |
-| **US-ONB-03** | Pengguna di Step 2 Onboarding | Memilih untuk mengisi nomor telepon dan tanggal lahir atau memilih opsi "Lewati" | Proses pendaftaran fleksibel dan tidak menghambat saya jika belum ingin mengisi data personal |
-| **US-ONB-04** | Pengguna di Step 3 Onboarding | Mencari dan memilih institusi sekolah/universitas yang sudah terverifikasi aktif | Profil akademik/almamater saya terhubung ke komunitas vihara |
-| **US-ONB-05** | Pengguna di Step 3 Onboarding | Mengajukan penambahan sekolah baru jika sekolah saya belum terdaftar di sistem | Pengurus dapat memverifikasi sekolah saya tanpa menghambat saya menyelesaikan onboarding |
-| **US-ONB-06** | Pengguna yang selesai onboarding | Langsung masuk ke halaman `/home` tanpa terganggu pop-up tour/walkthrough | Saya bisa langsung melihat jadwal acara kebaktian dan kartu anggota digital saya |
-| **US-ONB-07** | Pengguna belum selesai onboarding | Dicegah mengakses rute utama aplikasi (`/home`, `/events`, dll.) dan diarahkan ke `/onboarding` | Sistem memastikan identitas wajib saya terpenuhi sebelum beraktivitas di aplikasi |
+| **US-ONB-03** | Pengguna di Step 2 Onboarding | Mencari dan memilih institusi sekolah/universitas yang sudah terverifikasi aktif atau memilih opsi "Skip" | Profil akademik/almamater saya terhubung ke komunitas vihara |
+| **US-ONB-04** | Pengguna di Step 2 Onboarding | Mengajukan penambahan sekolah baru jika sekolah saya belum terdaftar di sistem | Pengurus dapat memverifikasi sekolah saya tanpa menghambat saya menyelesaikan onboarding |
+| **US-ONB-05** | Pengguna yang selesai onboarding | Langsung masuk ke halaman `/home` tanpa terganggu pop-up tour/walkthrough | Saya bisa langsung melihat jadwal acara kebaktian dan kartu anggota digital saya |
+| **US-ONB-06** | Pengguna belum selesai onboarding | Dicegah mengakses rute utama aplikasi (`/home`, `/events`, dll.) dan diarahkan ke `/onboarding` | Sistem memastikan identitas wajib saya terpenuhi sebelum beraktivitas di aplikasi |
 
 ---
 
@@ -262,14 +245,13 @@ Menandai bahwa onboarding telah selesai atau di-skip oleh user.
 | --- | --- | --- |
 | **AC-ONB-01** | User mendaftar akun baru mandiri via sign-up email OTP | Akun berhasil dibuat dengan `isClaimed = true` dan `onboardingCompleted = false`. User langsung diarahkan ke `/onboarding`. |
 | **AC-ONB-02** | User di halaman Step 1 Onboarding mencoba lanjut tanpa `name` atau `username` | Validasi error muncul. Form tidak dapat di-submit dan tidak dapat di-skip. |
-| **AC-ONB-03** | User di Step 2 (Phone, Birth Date) mengklik "Lewati" | Tidak ada data profil tambahan yang disimpan, step berpindah ke Step 3 tanpa error. |
-| **AC-ONB-04** | User mencari nama sekolah yang sudah terdaftar dan aktif | Nama sekolah muncul di dropdown dan dapat dipilih (`school_id` tersimpan). |
-| **AC-ONB-05** | User mencari nama sekolah yang belum terdaftar | Muncul tombol "Ajukan Sekolah Baru". User mengisi modal pengajuan. |
-| **AC-ONB-06** | User submit pengajuan sekolah baru | Request tersimpan dengan status `pending` dan `isActive: false`. Sekolah tersebut **tidak langsung muncul** di dropdown pemilihan. User dapat menyelesaikan onboarding. |
-| **AC-ONB-07** | Organizer meng-approve pengajuan sekolah di panel admin | Status sekolah berubah menjadi `approved` dan `isActive: true`. Sekolah kini muncul di dropdown pemilihan sekolah profil. |
-| **AC-ONB-08** | Selesai Step 3 Onboarding (baik isi sekolah maupun lewati) | Sistem memanggil `PATCH /api/users/me/onboarding` -> `onboardingCompleted = true` -> langsung redirect ke `/home` **tanpa ada product tour**. |
-| **AC-ONB-09** | User yang sudah menyelesaikan onboarding login kembali | Langsung diarahkan ke `/home`. Halaman `/onboarding` tidak pernah muncul lagi. |
-| **AC-ONB-10** | User yang melewatkan data opsional membuka halaman Edit Profile | Semua data opsional (`phone`, `birth_date`, `school`, `class_grade`) dapat diisi dan diedit secara manual. |
+| **AC-ONB-03** | User mencari nama sekolah yang sudah terdaftar dan aktif di Step 2 | Nama sekolah muncul di dropdown dan dapat dipilih (`school_id` tersimpan). |
+| **AC-ONB-04** | User mencari nama sekolah yang belum terdaftar di Step 2 | Muncul tombol "Request School". User mengisi modal pengajuan. |
+| **AC-ONB-05** | User submit pengajuan sekolah baru | Request tersimpan dengan status `pending` dan `isActive: false`. Sekolah tersebut **tidak langsung muncul** di dropdown pemilihan. User dapat menyelesaikan onboarding. |
+| **AC-ONB-06** | Organizer meng-approve pengajuan sekolah di panel admin | Status sekolah berubah menjadi `approved` dan `isActive: true`. Sekolah kini muncul di dropdown pemilihan sekolah profil. |
+| **AC-ONB-07** | Selesai Step 2 Onboarding (baik isi sekolah maupun skip) | Sistem memanggil `PATCH /api/users/me/onboarding` -> `onboardingCompleted = true` -> langsung redirect ke `/home` **tanpa ada product tour**. |
+| **AC-ONB-08** | User yang sudah menyelesaikan onboarding login kembali | Langsung diarahkan ke `/home`. Halaman `/onboarding` tidak pernah muncul lagi. |
+| **AC-ONB-09** | User yang melewatkan data opsional membuka halaman Edit Profile | Semua data opsional (`school`, `class_grade`) dapat diisi dan diedit secara manual. |
 
 ---
 
@@ -278,15 +260,13 @@ Menandai bahwa onboarding telah selesai atau di-skip oleh user.
 | Test Case ID | Kategori | Skenario / Deskripsi | Kondisi Awal (Preconditions) | Langkah Pengujian | Hasil yang Diharapkan | Tipe |
 | --- | --- | --- | --- | --- | --- | --- |
 | **TC-ONB-01** | Entry Guard | User baru dengan `onboardingCompleted: false` diarahkan ke `/onboarding` | User baru selesai verifikasi OTP sign-up | 1. User login / selesai register OTP.<br>2. Akses navigasi browser ke `/home`. | Router intercept mendeteksi `onboarding_completed: false`, redirect otomatis ke `/onboarding`. | Positive |
-| **TC-ONB-02** | Step 1 | Submit Step 1 dengan `name` dan `username` valid | User di halaman `/onboarding` Step 1 | 1. Masukkan `name: "Siddhartha Gautama"`.<br>2. Masukkan `username: "siddhartha"`.<br>3. Klik tombol "Lanjutkan". | HTTP 200 via `PATCH /api/users/me`, data tersimpan, UI bertransisi mulus ke Step 2. | Positive |
-| **TC-ONB-03** | Step 1 | Submit Step 1 dengan `name` kosong atau `< 2` karakter | User di Step 1 | 1. Hapus isi input `name` (kosong).<br>2. Klik "Lanjutkan". | Tombol submit disable / validasi Zod error muncul ("Full name must be at least 2 characters"). Tidak berpindah step. | Negative |
-| **TC-ONB-04** | Step 1 | Submit Step 1 dengan `username` yang sudah dipakai user lain | User di Step 1, username `budi` sudah ada di DB | 1. Masukkan `username: "budi"`.<br>2. Klik "Lanjutkan". | HTTP 409 Conflict envelope ("Username already in use"). Pesan error spesifik muncul di bawah field input. | Negative |
-| **TC-ONB-05** | Step 2 | Simpan data personal opsional di Step 2 | User di Step 2 | 1. Masukkan nomor telepon `081234567890`.<br>2. Pilih tanggal lahir `2005-04-12`.<br>3. Klik "Lanjutkan". | Data terenkripsi AES-256-GCM tersimpan via `PATCH /api/users/me`, UI lanjut ke Step 3. | Positive |
-| **TC-ONB-06** | Step 2 | Lewati (Skip) Step 2 tanpa mengisi data personal | User di Step 2 | 1. Biarkan nomor telepon dan tanggal lahir kosong.<br>2. Klik tombol "Lewati". | Tidak ada request update profil yang gagal; UI langsung bertransisi ke Step 3. | Positive |
-| **TC-ONB-07** | Step 3 | Cari dan pilih sekolah yang berstatus `approved` & `is_active: true` | User di Step 3, master sekolah ada di DB | 1. Ketik "Tri Ratna" di search box sekolah.<br>2. Pilih "SMA Tri Ratna" dari dropdown.<br>3. Isi kelas "11".<br>4. Klik "Selesai". | `school_id` terasosiasi, `PATCH /api/users/me/onboarding` dipanggil, redirect ke `/home`. | Positive |
-| **TC-ONB-08** | Step 3 | Filter dropdown sekolah tidak menampilkan status `pending` atau `inactive` | Terdapat sekolah pending "SMA Harapan Bangsa" di DB | 1. Ketik "Harapan Bangsa" pada kolom pencarian sekolah. | Sekolah berstatus `pending` atau `is_active: false` tidak muncul pada list dropdown (`status=approved&is_active=true`). | Edge / Security |
-| **TC-ONB-09** | Step 3 | Request penambahan sekolah baru ketika sekolah tidak ditemukan | User di Step 3, sekolah belum ada | 1. Cari sekolah yang tidak ada.<br>2. Klik "Ajukan Sekolah Baru".<br>3. Isi modal nama: "SMA Bodhisatta", jenjang: "SMA".<br>4. Submit. | HTTP 201 via `POST /api/configure/school-requests`. Sekolah tercatat dengan `status: "pending"` dan `requested_by = currentUserId`. Notifikasi sukses muncul, onboarding dapat dilanjutkan. | Positive |
-| **TC-ONB-10** | Step 3 | Request sekolah baru dengan nama yang sudah terdaftar (Conflict) | Sekolah dengan nama tersebut sudah ada di DB | 1. Buka modal ajukan sekolah.<br>2. Masukkan nama sekolah yang persis sama.<br>3. Submit. | HTTP 409 Conflict envelope. Pesan error ditampilkan ("School already exists"). | Negative |
-| **TC-ONB-11** | Step 3 | Lewati (Skip) Step 3 dan menyelesaikan onboarding | User di Step 3 | 1. Klik tombol "Lewati". | Sistem memanggil `PATCH /api/users/me/onboarding`. Response status success (`onboarding_completed: true`). Redirect langsung ke `/home`. | Positive |
-| **TC-ONB-12** | Completion & Tour | User selesai onboarding langsung ke `/home` tanpa product tour | Onboarding Step 3 terselesaikan | 1. Selesai Step 3.<br>2. Amati layar landing `/home`. | Tidak ada tour popup, tooltip modal, atau walkthrough spotlight. Halaman `/home` langsung interaktif normal. | Positive |
-| **TC-ONB-13** | Exit Guard | User dengan `onboardingCompleted: true` login kembali | Akun user sudah pernah menyelesaikan onboarding | 1. User login dengan kredensial valid.<br>2. Akses URL manual `/onboarding`. | Login langsung mengarahkan ke `/home`. Akses langsung ke `/onboarding` di-redirect kembali ke `/home`. | Positive |
+| **TC-ONB-02** | Step 1 | Submit Step 1 dengan `name` dan `username` valid | User di halaman `/onboarding` Step 1 | 1. Masukkan `name: "Siddhartha Gautama"`.<br>2. Masukkan `username: "siddhartha"`.<br>3. Klik tombol "Continue". | HTTP 200 via `PATCH /api/users/me`, data tersimpan, UI bertransisi mulus ke Step 2. | Positive |
+| **TC-ONB-03** | Step 1 | Submit Step 1 dengan `name` kosong atau `< 2` karakter | User di Step 1 | 1. Hapus isi input `name` (kosong).<br>2. Klik "Continue". | Tombol submit disable / validasi Zod error muncul ("Full name must be at least 2 characters"). Tidak berpindah step. | Negative |
+| **TC-ONB-04** | Step 1 | Submit Step 1 dengan `username` yang sudah dipakai user lain | User di Step 1, username `budi` sudah ada di DB | 1. Masukkan `username: "budi"`.<br>2. Klik "Continue". | HTTP 409 Conflict envelope ("Username already in use"). Pesan error spesifik muncul di bawah field input. | Negative |
+| **TC-ONB-05** | Step 2 | Cari dan pilih sekolah yang berstatus `approved` & `is_active: true` | User di Step 2, master sekolah ada di DB | 1. Ketik "Tri Ratna" di search box sekolah.<br>2. Pilih "SMA Tri Ratna" dari dropdown.<br>3. Klik "Finish Onboarding". | `school_id` terasosiasi, `PATCH /api/users/me/onboarding` dipanggil, redirect ke `/home`. | Positive |
+| **TC-ONB-06** | Step 2 | Filter dropdown sekolah tidak menampilkan status `pending` atau `inactive` | Terdapat sekolah pending "SMA Harapan Bangsa" di DB | 1. Ketik "Harapan Bangsa" pada kolom pencarian sekolah. | Sekolah berstatus `pending` atau `is_active: false` tidak muncul pada list dropdown (`status=approved&is_active=true`). | Edge / Security |
+| **TC-ONB-07** | Step 2 | Request penambahan sekolah baru ketika sekolah tidak ditemukan | User di Step 2, sekolah belum ada | 1. Cari sekolah yang tidak ada.<br>2. Klik "Request School".<br>3. Isi modal nama: "SMA Bodhisatta", jenjang: "SMA".<br>4. Submit. | HTTP 201 via `POST /api/configure/school-requests`. Sekolah tercatat dengan `status: "pending"` dan `requested_by = currentUserId`. Notifikasi sukses muncul, onboarding dapat dilanjutkan. | Positive |
+| **TC-ONB-08** | Step 2 | Request sekolah baru dengan nama yang sudah terdaftar (Conflict) | Sekolah dengan nama tersebut sudah ada di DB | 1. Buka modal request school.<br>2. Masukkan nama sekolah yang persis sama.<br>3. Submit. | HTTP 409 Conflict envelope. Pesan error ditampilkan ("School already exists"). | Negative |
+| **TC-ONB-09** | Step 2 | Lewati (Skip) Step 2 dan menyelesaikan onboarding | User di Step 2 | 1. Klik tombol "Skip for now". | Sistem memanggil `PATCH /api/users/me/onboarding`. Response status success (`onboarding_completed: true`). Redirect langsung ke `/home`. | Positive |
+| **TC-ONB-10** | Completion & Tour | User selesai onboarding langsung ke `/home` tanpa product tour | Onboarding Step 2 terselesaikan | 1. Selesai Step 2.<br>2. Amati layar landing `/home`. | Tidak ada tour popup, tooltip modal, atau walkthrough spotlight. Halaman `/home` langsung interaktif normal. | Positive |
+| **TC-ONB-11** | Exit Guard | User dengan `onboardingCompleted: true` login kembali | Akun user sudah pernah menyelesaikan onboarding | 1. User login dengan kredensial valid.<br>2. Akses URL manual `/onboarding`. | Login langsung mengarahkan ke `/home`. Akses langsung ke `/onboarding` di-redirect kembali ke `/home`. | Positive |

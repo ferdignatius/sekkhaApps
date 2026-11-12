@@ -4,6 +4,7 @@ export const pengurusModels = {
 
   findUsersForInsights() {
     return prisma.user.findMany({
+      where: { anonymizedAt: null },
       select: {
         id: true,
         role: true,

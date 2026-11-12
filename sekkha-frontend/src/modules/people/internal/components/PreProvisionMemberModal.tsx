@@ -49,7 +49,6 @@ export function PreProvisionMemberModal({
   const [createForm, setCreateForm] = useState<CreateMemberPayload>({
     name: "",
     school_id: "",
-    phone: "",
   })
   const [submitting, setSubmitting] = useState(false)
   const [createError, setCreateError] = useState<string | null>(null)
@@ -71,7 +70,6 @@ export function PreProvisionMemberModal({
     setCreateForm({
       name: initialName || "",
       school_id: "",
-      phone: "",
     })
   }, [open, initialName])
 
@@ -102,13 +100,12 @@ export function PreProvisionMemberModal({
       const created = await peopleApi.createMember({
         name: createForm.name.trim(),
         school_id: createForm.school_id || null,
-        phone: createForm.phone?.trim() || null,
       })
 
       setSimilarModalOpen(false)
       onOpenChange(false)
       setCreatedCredentials(created)
-      setCreateForm({ name: "", school_id: "", phone: "" })
+      setCreateForm({ name: "", school_id: "" })
       await onSuccess?.(created)
       onToast?.(`Member "${created.name}" registered successfully!`)
     } catch (err: any) {
@@ -378,26 +375,6 @@ export function PreProvisionMemberModal({
                     ? `Connected to Master Data Schools (${totalSchools > verifiedSchools.length ? `${verifiedSchools.length} of ${totalSchools} loaded` : `${verifiedSchools.length} active`}).`
                     : "No active schools found in Master Data."}
               </p>
-            </div>
-
-            {/* Phone Number / WhatsApp */}
-            <div className="space-y-1.5">
-              <label
-                htmlFor="people-create-phone"
-                className="text-xs font-bold text-[#0a0a0a]"
-              >
-                Phone Number / WhatsApp
-              </label>
-              <input
-                id="people-create-phone"
-                type="tel"
-                value={createForm.phone || ""}
-                onChange={(e) =>
-                  setCreateForm({ ...createForm, phone: e.target.value })
-                }
-                placeholder="e.g. 08123456789"
-                className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-sm text-[#0a0a0a] transition-colors outline-none focus:border-[#0a0a0a]"
-              />
             </div>
           </div>
 

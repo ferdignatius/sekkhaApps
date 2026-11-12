@@ -172,7 +172,7 @@ Sistem peringatan dini berbasis algoritma statistik cerdas untuk mendeteksi penu
 
 #### C. Alur Kerja Pastoral Care (*Pastoral Action Pipeline*)
 1. Pengurus menyaring jemaat bertanda `At Risk` atau `High Risk`.
-2. Pengurus membuka **Pastoral Detail Sheet** (timeline 15 event terakhir, nomor WhatsApp, almamater sekolah).
+2. Pengurus membuka **Pastoral Detail Sheet** (timeline 15 event terakhir, almamater sekolah, outreach log).
 3. Pencatatan **Outreach Log** (*Pastoral Notes*): Status penanganan (`Pending`, `Contacted`, `In Care`, `Resolved`) dan catatan follow-up.
 
 ---

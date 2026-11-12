@@ -12,12 +12,9 @@ export interface MemberDto {
   name: string
   username?: string | null
   email?: string | null
-  phone?: string | null
   school?: string | null
   school_id?: string | null
   school_status?: string | null
-  date_of_birth?: string | null
-  birth_date?: string | null
   role: PeopleRole
   user_number?: string | number | null
   is_claimed: boolean
@@ -42,7 +39,6 @@ export interface MemberDetailDto extends MemberDto {
 export interface CreateMemberPayload {
   name: string
   school_id?: string | null
-  phone?: string | null
 }
 
 export interface CreateMemberResponse {
@@ -75,10 +71,8 @@ export interface UpdateMemberPayload {
   name?: string
   username?: string | null
   email?: string | null
-  phone?: string | null
   school_id?: string | null
   school?: string | null
-  date_of_birth?: string | null
   role?: PeopleRole
 }
 

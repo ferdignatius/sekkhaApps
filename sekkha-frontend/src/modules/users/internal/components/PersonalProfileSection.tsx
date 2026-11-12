@@ -1,9 +1,7 @@
 import { useState, useEffect } from "react"
 import {
   UserIcon,
-  PhoneIcon,
   GraduationCapIcon,
-  CalendarIcon,
   PencilIcon,
   CheckIcon,
   XIcon,
@@ -36,24 +34,6 @@ interface PersonalProfileSectionProps {
 const NO_SCHOOL_VALUE = "__none__"
 const OTHER_SCHOOL_VALUE = "__other__"
 
-function formatDateForInput(dateStr?: string | null): string {
-  if (!dateStr) return ""
-  return String(dateStr).slice(0, 10)
-}
-
-function formatDisplayDate(dateStr?: string | null): string {
-  if (!dateStr) return "Not set"
-  try {
-    return new Date(dateStr).toLocaleDateString("en-US", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    })
-  } catch {
-    return dateStr
-  }
-}
-
 export function PersonalProfileSection({
   profile,
   onProfileUpdated,
@@ -66,15 +46,11 @@ export function PersonalProfileSection({
 
   const [username, setUsername] = useState(profile.username || "")
   const [name, setName] = useState(profile.name || "")
-  const [phone, setPhone] = useState(profile.phone || "")
   const [selectedSchoolId, setSelectedSchoolId] = useState(
     profile.school_id || (profile.school ? OTHER_SCHOOL_VALUE : NO_SCHOOL_VALUE)
   )
   const [customSchool, setCustomSchool] = useState(
     !profile.school_id && profile.school ? profile.school : ""
-  )
-  const [dateOfBirth, setDateOfBirth] = useState(
-    formatDateForInput(profile.date_of_birth)
   )
 
   // Reset draft values whenever server profile updates while not editing
@@ -82,13 +58,11 @@ export function PersonalProfileSection({
     if (isEditing) return
     setUsername(profile.username || "")
     setName(profile.name || "")
-    setPhone(profile.phone || "")
     setSelectedSchoolId(
       profile.school_id ||
         (profile.school ? OTHER_SCHOOL_VALUE : NO_SCHOOL_VALUE)
     )
     setCustomSchool(!profile.school_id && profile.school ? profile.school : "")
-    setDateOfBirth(formatDateForInput(profile.date_of_birth))
   }, [profile, isEditing])
 
   const {
@@ -153,10 +127,8 @@ export function PersonalProfileSection({
       const updated = await userApi.updateProfile({
         username: cleanUsername,
         name: cleanName,
-        phone: phone.trim() || null,
         school_id: schoolIdPayload,
         school: schoolNamePayload,
-        date_of_birth: dateOfBirth || null,
       })
 
       onProfileUpdated(updated)
@@ -278,26 +250,6 @@ export function PersonalProfileSection({
             </p>
           </div>
 
-          <div className="rounded-[16px] border border-hairline bg-surface-soft/55 p-3.5">
-            <div className="flex items-center gap-1.5 text-[11px] font-bold tracking-wider text-text-muted uppercase">
-              <PhoneIcon className="size-3.5" />
-              <span>Phone Number</span>
-            </div>
-            <p className="mt-1.5 text-sm font-bold text-ink tabular-nums">
-              {profile.phone || "Not set"}
-            </p>
-          </div>
-
-          <div className="rounded-[16px] border border-hairline bg-surface-soft/55 p-3.5">
-            <div className="flex items-center gap-1.5 text-[11px] font-bold tracking-wider text-text-muted uppercase">
-              <CalendarIcon className="size-3.5" />
-              <span>Date of Birth</span>
-            </div>
-            <p className="mt-1.5 text-sm font-bold text-ink">
-              {formatDisplayDate(profile.date_of_birth)}
-            </p>
-          </div>
-
           <div className="rounded-[16px] border border-hairline bg-surface-soft/55 p-3.5 sm:col-span-2">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-1.5 text-[11px] font-bold tracking-wider text-text-muted uppercase">
@@ -340,23 +292,6 @@ export function PersonalProfileSection({
               placeholder="username"
               startIcon={<AtSignIcon className="size-4" />}
               required
-            />
-
-            <Input
-              label="Phone Number"
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="08xxxxxxxxxx"
-              startIcon={<PhoneIcon className="size-4" />}
-            />
-
-            <Input
-              label="Date of Birth"
-              type="date"
-              value={dateOfBirth}
-              onChange={(e) => setDateOfBirth(e.target.value)}
-              startIcon={<CalendarIcon className="size-4" />}
             />
 
             <div className="sm:col-span-2">

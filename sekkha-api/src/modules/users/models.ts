@@ -3,8 +3,8 @@ import type { Prisma } from "@prisma/client"
 
 export const userModels = {
   findUserWithProfileAndStats(userId: string) {
-    return prisma.user.findUnique({
-      where: { id: userId },
+    return prisma.user.findFirst({
+      where: { id: userId, anonymizedAt: null },
       select: {
         id: true,
         username: true,
@@ -20,9 +20,6 @@ export const userModels = {
           select: {
             name: true,
             schoolId: true,
-
-            phone: true,
-            birthDate: true,
             school: { select: { id: true, name: true, status: true } },
           },
         },
@@ -37,20 +34,20 @@ export const userModels = {
   },
 
   findUserById(userId: string) {
-    return prisma.user.findUnique({
-      where: { id: userId },
+    return prisma.user.findFirst({
+      where: { id: userId, anonymizedAt: null },
     })
   },
 
   findUserByUsername(username: string) {
-    return prisma.user.findUnique({
-      where: { username },
+    return prisma.user.findFirst({
+      where: { username, anonymizedAt: null },
     })
   },
 
   findUserByEmailBindex(emailBindex: string) {
-    return prisma.user.findUnique({
-      where: { emailBindex },
+    return prisma.user.findFirst({
+      where: { emailBindex, anonymizedAt: null },
     })
   },
 
@@ -199,6 +196,78 @@ export const userModels = {
   deleteUserById(userId: string) {
     return prisma.user.delete({
       where: { id: userId },
+    })
+  },
+
+  touchLastActiveAt(userId: string, at: Date = new Date()) {
+    return prisma.user.updateMany({
+      where: { id: userId, anonymizedAt: null },
+      data: { lastActiveAt: at },
+    })
+  },
+
+  findRetentionCandidates(cutoffDate: Date, take: number = 100) {
+    return prisma.user.findMany({
+      where: {
+        anonymizedAt: null,
+        OR: [
+          { lastActiveAt: { lt: cutoffDate } },
+          { lastActiveAt: null, createdAt: { lt: cutoffDate } },
+        ],
+        AND: [
+          {
+            OR: [
+              { stats: { is: null } },
+              { stats: { is: { lastActivityAt: null } } },
+              { stats: { is: { lastActivityAt: { lt: cutoffDate } } } },
+            ],
+          },
+        ],
+      },
+      orderBy: [{ lastActiveAt: "asc" }, { createdAt: "asc" }],
+      take,
+      select: { id: true },
+    })
+  },
+
+  async anonymizeUserForRetention(userId: string, anonymizedAt: Date = new Date()): Promise<boolean> {
+    return prisma.$transaction(async (tx) => {
+      const result = await tx.user.updateMany({
+        where: { id: userId, anonymizedAt: null },
+        data: {
+          email: null,
+          emailBindex: null,
+          emailVerifiedAt: null,
+          password: null,
+          username: null,
+          userNumber: null,
+          isClaimed: false,
+          onboardingCompleted: false,
+          passwordChangedAt: anonymizedAt,
+          anonymizedAt,
+        },
+      })
+
+      if (result.count === 0) {
+        return false
+      }
+
+      // Erase direct profile PII while leaving Attendance & PointTransaction intact
+      // for aggregated historical community archives and annual temple reporting.
+      await tx.userProfile.upsert({
+        where: { userId },
+        update: {
+          name: "Former Member",
+          schoolId: null,
+        },
+        create: {
+          userId,
+          name: "Former Member",
+          schoolId: null,
+        },
+      })
+
+      return true
     })
   },
 }

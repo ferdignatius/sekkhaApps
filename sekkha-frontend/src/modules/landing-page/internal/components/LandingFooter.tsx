@@ -1,13 +1,9 @@
 import { motion } from "motion/react"
-
-interface FooterLink {
-  label: string
-  href: string
-}
+import type { FooterLinkItem } from "../data/landingContent"
 
 interface FooterNavColumn {
   heading: string
-  links: FooterLink[]
+  links: FooterLinkItem[]
 }
 
 interface LandingFooterProps {
@@ -16,8 +12,8 @@ interface LandingFooterProps {
 
 /**
  * Landing Footer — bottom section of the Sekkha landing page.
- * Apple HIG: Uses warm cream footer per DESIGN.md (not dark footer).
- * @requirements 7.1–7.7
+ * Unimplemented placeholder links with disabled=true render as non-navigating
+ * aria-disabled labels so visitors never encounter 404 routes.
  */
 export function LandingFooter({ navColumns }: LandingFooterProps) {
   return (
@@ -26,13 +22,12 @@ export function LandingFooter({ navColumns }: LandingFooterProps) {
       className="w-full border-t border-sekkha-hairline bg-sekkha-surface py-16 text-sekkha-ink md:py-20"
     >
       <div className="mx-auto w-full max-w-[1280px] px-4 md:px-8">
-        {/* Top area - 8pt grid spacing */}
         <motion.div
           className="flex flex-col gap-10 md:flex-row md:justify-between"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.6, ease: "easeOut" }}
+          transition={{ duration: 0.55, ease: "easeOut" }}
         >
           {/* Brand */}
           <div className="flex max-w-[320px] flex-col gap-3">
@@ -45,12 +40,12 @@ export function LandingFooter({ navColumns }: LandingFooterProps) {
               <span>Sekkha</span>
             </span>
             <p className="text-body-sm leading-relaxed text-sekkha-slate">
-              Digital community & fellowship platform for Buddhist youth of
+              Digital community &amp; fellowship platform for Buddhist youth of
               Vihara Tri Maha Dharma.
             </p>
           </div>
 
-          {/* Nav columns - 8pt grid */}
+          {/* Nav columns */}
           <div className="grid grid-cols-2 gap-8 sm:grid-cols-3 md:gap-16">
             {navColumns.map((column) => (
               <div key={column.heading} className="flex flex-col gap-3.5">
@@ -59,13 +54,23 @@ export function LandingFooter({ navColumns }: LandingFooterProps) {
                 </p>
                 <ul className="flex flex-col gap-2.5">
                   {column.links.map((link) => (
-                    <li key={link.href}>
-                      <a
-                        href={link.href}
-                        className="text-body-sm rounded-sm text-sekkha-slate transition-colors duration-150 hover:text-sekkha-ink focus-visible:ring-2 focus-visible:ring-sekkha-primary focus-visible:ring-offset-2 focus-visible:outline-none"
-                      >
-                        {link.label}
-                      </a>
+                    <li key={`${column.heading}-${link.href}`}>
+                      {link.disabled ? (
+                        <span
+                          aria-disabled="true"
+                          title="Coming soon"
+                          className="text-body-sm inline-flex cursor-not-allowed items-center gap-1.5 text-placeholder select-none"
+                        >
+                          <span>{link.label}</span>
+                        </span>
+                      ) : (
+                        <a
+                          href={link.href}
+                          className="text-body-sm rounded-sm py-1 text-sekkha-slate transition-colors duration-150 hover:text-sekkha-ink focus-visible:ring-2 focus-visible:ring-sekkha-primary focus-visible:ring-offset-2 focus-visible:outline-none"
+                        >
+                          {link.label}
+                        </a>
+                      )}
                     </li>
                   ))}
                 </ul>
@@ -74,7 +79,7 @@ export function LandingFooter({ navColumns }: LandingFooterProps) {
           </div>
         </motion.div>
 
-        {/* Divider + copyright - 8pt grid spacing */}
+        {/* Divider + copyright */}
         <div className="mt-14 flex flex-col items-start justify-between gap-4 border-t border-sekkha-hairline pt-8 md:flex-row md:items-center">
           <p className="text-micro text-sekkha-slate">
             © {new Date().getFullYear()} Vihara Tri Maha Dharma — Sekkha. All

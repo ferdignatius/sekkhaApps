@@ -17,7 +17,7 @@ Kumpulan PRD yang menjadi **sumber kebenaran kebutuhan produk** sebelum implemen
 | `pengurus/` | Community insights & Seva contributor leadership dashboard | [`pengurus/pengurus-analytics-and-pastoral.md`](pengurus/pengurus-analytics-and-pastoral.md) | [`api-contract.md#modul-7-analitik-pengurus--contributor-insights-apipengurus`](api-contract.md#modul-7-analitik-pengurus--contributor-insights-apipengurus) | Approved (v2.1.0) |
 | `configure/masterdata/` | Master sekolah & statistik distribusi jemaat (`configure/schools.md`) | [`configure/masterdata/schools.md`](configure/masterdata/schools.md) | [`api-contract.md#modul-8-master-data-sekolah-apischools`](api-contract.md#modul-8-master-data-sekolah-apischools) | Approved (v2.0.0) |
 | `configure/` | Master data UI, kategori event (`configure/eventType.md`), peran pelayanan (`configure/badgeActivity.md`), aturan poin (`configure/pointRules.md`), & season (`configure/seasons.md`) | [`configure/configure.md`](configure/configure.md), [`configure/masterdata/eventType.md`](configure/masterdata/eventType.md), [`configure/masterdata/badgeActivity.md`](configure/masterdata/badgeActivity.md), [`configure/pointRules.md`](configure/pointRules.md), [`configure/seasons.md`](configure/seasons.md) | [`api-contract.md#modul-9-konfigurasi--master-data-apiconfigure`](api-contract.md#modul-9-konfigurasi--master-data-apiconfigure) | Approved (v2.0.0) |
-| `landing-page/` | Halaman publik pra-login (hero, features, CTA) | [`landing-page/landing-page.md`](landing-page/landing-page.md) | — | Approved (v1.0.0) |
+| `landing-page/` | Halaman publik pra-login (hero, features, CTA) | [`landing-page/landing-page.md`](landing-page/landing-page.md) | — | Approved (v2.0.0) |
 
 ## Tujuan Folder Ini
 

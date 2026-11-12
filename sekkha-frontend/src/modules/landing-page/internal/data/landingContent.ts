@@ -1,9 +1,10 @@
 // Static content data for the Sekkha Landing Page
-// Sekkha — digital community & youth fellowship platform for Vihara Tri Maha Dharma
+// 100% static data — zero backend API requests are triggered from the landing page.
 
 export interface LeaderboardEntry {
   rank: number
   name: string
+  subtitle?: string
   points: number
   badge: string
 }
@@ -15,6 +16,12 @@ export interface EventItem {
   category: "fellowship" | "retreat" | "social" | "event"
 }
 
+export interface FooterLinkItem {
+  label: string
+  href: string
+  disabled?: boolean
+}
+
 export interface LandingContent {
   hero: {
     headline: string
@@ -23,6 +30,7 @@ export interface LandingContent {
   features: Array<{
     title: string
     description: string
+    tag?: string
   }>
   stats: Array<{
     value: string
@@ -44,7 +52,7 @@ export interface LandingContent {
   footer: {
     navColumns: Array<{
       heading: string
-      links: Array<{ label: string; href: string }>
+      links: FooterLinkItem[]
     }>
   }
 }
@@ -53,34 +61,45 @@ export const landingContent: LandingContent = {
   hero: {
     headline: "Buddhist Youth Community of Vihara Tri Maha Dharma",
     subheadline:
-      "An integrated digital platform for youth fellowship — scan attendance, join retreats, earn merit points, and stay connected with the community.",
+      "An integrated digital platform for youth fellowship — scan attendance with your Digital Member Card, build weekly streaks, contribute through Seva duties, and grow with the community.",
   },
 
   features: [
     {
-      title: "Quick-Scan Attendance",
+      title: "Quick-Scan & Manual Attendance",
       description:
-        "Attend regular Sunday services, scan instant QR codes at the temple, and your attendance history is recorded automatically.",
+        "Attend Sunday Puja and youth gatherings, scan event QR codes at arrival, and keep a verified record of every check-in.",
+      tag: "Attendance",
     },
     {
-      title: "Merit Points & Leaderboard",
+      title: "Digital Member QR Card",
       description:
-        "Earn merit points every time you participate in fellowship and activities, maintain your streak, and climb the community leaderboard.",
+        "Access your unique 10-digit Sekkha Member ID and personal QR card directly from Home or Profile for fast temple check-in.",
+      tag: "Member ID",
     },
     {
-      title: "Retreat & Event Registration",
+      title: "Weekly Attendance Streaks",
       description:
-        "Register for youth retreats, Dhamma camps, and self-development workshops in just a few taps with instant confirmation.",
+        "Stay consistent with automated weekly Sunday streaks, season progress tracking, and inspiring Daily Dhamma Wisdom.",
+      tag: "Consistency",
     },
     {
-      title: "Social Impact & Charity",
+      title: "Season Leaderboard & Seva",
       description:
-        "Join hands-on community service, blood donation drives, and environmental initiatives alongside your fellow Dhamma friends.",
+        "Join zero-reset Seasons such as Vassa, Semester, and Annual, earning points for verified attendance and Seva service duties.",
+      tag: "Season",
     },
     {
-      title: "Dhamma Resources & Chanting",
+      title: "Event Schedule & Categories",
       description:
-        "Access interactive Dhamma teachings, service chanting parittas, and audio guides anytime to deepen your spiritual journey.",
+        "Explore Sunday fellowships, retreats, social outreach, and major Buddhist celebrations organized clearly by category.",
+      tag: "Events",
+    },
+    {
+      title: "Account Claim & OTP Security",
+      description:
+        "Pre-provisioned members can claim existing attendance history seamlessly with verified Gmail OTP protection.",
+      tag: "Security",
     },
   ],
 
@@ -106,42 +125,72 @@ export const landingContent: LandingContent = {
   leaderboard: {
     heading: "Community Leaderboard",
     subheading:
-      "Most active youth members this month based on attendance, contributions, and community involvement.",
+      "Sample highlights from the active Vassa Season based on verified attendance points and Seva service duties.",
     entries: [
-      { rank: 1, name: "@sari_dewi", points: 980, badge: "🥇" },
-      { rank: 2, name: "@budi_santoso", points: 870, badge: "🥈" },
-      { rank: 3, name: "@mei_ling", points: 820, badge: "🥉" },
-      { rank: 4, name: "@andi_wijaya", points: 760, badge: "⭐" },
-      { rank: 5, name: "@ratna_sari", points: 710, badge: "⭐" },
+      {
+        rank: 1,
+        name: "@sari_dewi",
+        subtitle: "Seva Coordinator • Vihara Member",
+        points: 980,
+        badge: "🥇",
+      },
+      {
+        rank: 2,
+        name: "@budi_santoso",
+        subtitle: "Dhamma Host • Vihara Member",
+        points: 870,
+        badge: "🥈",
+      },
+      {
+        rank: 3,
+        name: "@mei_ling",
+        subtitle: "Youth Usher • Vihara Member",
+        points: 820,
+        badge: "🥉",
+      },
+      {
+        rank: 4,
+        name: "@andi_wijaya",
+        subtitle: "Sound & Media • Vihara Member",
+        points: 760,
+        badge: "⭐",
+      },
+      {
+        rank: 5,
+        name: "@ratna_sari",
+        subtitle: "Regular Attendee • Vihara Member",
+        points: 710,
+        badge: "⭐",
+      },
     ],
   },
 
   events: {
     heading: "Upcoming Events",
     subheading:
-      "Discover meaningful gatherings, spiritual retreats, and fun activities crafted for youth.",
+      "Discover recurring Sunday gatherings, retreats, and social outreach crafted for Buddhist youth.",
     items: [
       {
         title: "Sunday Youth Fellowship",
-        date: "Jun 15, 2026",
+        date: "Every Sunday • 09:00 WIB",
         location: "Main Temple Hall",
         category: "fellowship",
       },
       {
         title: "Youth Dhamma Retreat",
-        date: "Jun 20–22, 2026",
+        date: "Upcoming • 3-Day Camp",
         location: "Bogor Highlands",
         category: "retreat",
       },
       {
         title: "Community Outreach & Charity",
-        date: "Jun 28, 2026",
-        location: "Cahaya Orphanage",
+        date: "Monthly • Social Action",
+        location: "Cahaya Partner Home",
         category: "social",
       },
       {
-        title: "Asadha Youth Celebration",
-        date: "Jul 5, 2026",
+        title: "Vihara Youth Celebration",
+        date: "Upcoming • Seasonal Gathering",
         location: "Vihara Tri Maha Dharma",
         category: "event",
       },
@@ -157,28 +206,28 @@ export const landingContent: LandingContent = {
       {
         heading: "Community",
         links: [
-          { label: "About Us", href: "/about" },
-          { label: "Fellowship", href: "#fellowship" },
+          { label: "Features", href: "#features" },
           { label: "Events", href: "#events" },
           { label: "Leaderboard", href: "#leaderboard" },
+          { label: "About Us", href: "/about", disabled: true },
         ],
       },
       {
         heading: "Programs",
         links: [
-          { label: "Retreats & Camps", href: "/retreat" },
-          { label: "Social Action", href: "/social" },
-          { label: "Dhamma Forum", href: "/forum" },
-          { label: "Study Resources", href: "/resources" },
+          { label: "Retreats & Camps", href: "/retreat", disabled: true },
+          { label: "Social Action", href: "/social", disabled: true },
+          { label: "Dhamma Forum", href: "/forum", disabled: true },
+          { label: "Study Resources", href: "/resources", disabled: true },
         ],
       },
       {
         heading: "Information",
         links: [
-          { label: "Contact", href: "/contact" },
           { label: "Privacy Policy", href: "/privacy" },
-          { label: "Terms of Service", href: "/terms" },
-          { label: "FAQ", href: "/faq" },
+          { label: "Contact", href: "/contact", disabled: true },
+          { label: "Terms of Service", href: "/terms", disabled: true },
+          { label: "FAQ", href: "/faq", disabled: true },
         ],
       },
     ],

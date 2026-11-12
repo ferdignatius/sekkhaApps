@@ -43,8 +43,8 @@ export interface PrivacyPolicyData {
 
 export const privacyPolicyData: PrivacyPolicyData = {
   lastUpdated: {
-    id: "25 Oktober 2026",
-    en: "October 25, 2026",
+    id: "12 November 2026",
+    en: "November 12, 2026",
   },
   effectiveDate: {
     id: "1 September 2026",
@@ -259,18 +259,18 @@ export const privacyPolicyData: PrivacyPolicyData = {
         en: "7. Data Retention & Permanent Disposal",
       },
       summary: {
-        id: "Data disimpan selama akun aktif. Akun tidak aktif lebih dari 3 tahun dapat dianonimkan demi privasi.",
-        en: "Data is retained while membership is active. Inactive accounts exceeding 3 years may be anonymized.",
+        id: "Data disimpan selama akun aktif. Akun tidak aktif lebih dari 2 tahun dapat dianonimkan demi privasi.",
+        en: "Data is retained while membership is active. Inactive accounts exceeding 2 years may be anonymized.",
       },
       paragraphs: {
         id: [
           "Data Pribadi Anda disimpan selama akun Anda aktif sebagai anggota komunitas pemuda Vihara Tri Maha Dharma.",
-          "Apabila Anda mengajukan permohonan penutupan akun, atau jika akun tidak aktif selama lebih dari 3 (tiga) tahun kalender berturut-turut, seluruh data identitas langsung (nama lengkap, kontak telepon, email) akan dihapus atau dianonimkan secara permanen dari basis data utama.",
+          "Apabila Anda mengajukan permohonan penutupan akun, atau jika akun tidak aktif selama lebih dari 2 (dua) tahun kalender berturut-turut, seluruh data identitas langsung (nama lengkap, kontak telepon, email) akan dihapus atau dianonimkan secara permanen dari basis data utama.",
           "Data statistik kehadiran agregat masa lalu dapat tetap disimpan tanpa identitas pribadi untuk kepentingan arsip sejarah dan laporan tahunan vihara.",
         ],
         en: [
           "Your Personal Data is maintained throughout your active membership period in the youth community of Vihara Tri Maha Dharma.",
-          "Upon an approved account closure request or sustained inactivity exceeding 3 consecutive calendar years, direct identifying markers (full name, phone, email) will be deleted or permanently anonymized from active operational databases.",
+          "Upon an approved account closure request or sustained inactivity exceeding 2 consecutive calendar years, direct identifying markers (full name, phone, email) will be deleted or permanently anonymized from active operational databases.",
           "Aggregated historical attendance figures may be retained without personal identifiers for historical community archives and annual temple reporting.",
         ],
       },

@@ -78,4 +78,20 @@ describe("PrivacyPolicyPage", () => {
     expect(screen.getByText("Table of Contents")).toBeDefined()
     expect(screen.getByText("Data Controller Secretariat")).toBeDefined()
   })
+
+  it("displays 2 calendar years inactivity retention policy in both Indonesian and English", () => {
+    const { container } = render(<PrivacyPolicyPage />)
+
+    expect(container.textContent).toContain(
+      "2 (dua) tahun kalender berturut-turut"
+    )
+    expect(container.textContent).not.toContain(
+      "3 (tiga) tahun kalender berturut-turut"
+    )
+
+    fireEvent.click(screen.getByRole("button", { name: /🇬🇧 English/i }))
+
+    expect(container.textContent).toContain("2 consecutive calendar years")
+    expect(container.textContent).not.toContain("3 consecutive calendar years")
+  })
 })

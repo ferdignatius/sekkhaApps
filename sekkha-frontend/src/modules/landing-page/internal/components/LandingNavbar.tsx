@@ -390,10 +390,10 @@ export function LandingNavbar({ authState, scrollY }: LandingNavbarProps) {
         <a
           href="/"
           className={cn(
-            "text-heading-5 flex shrink-0 items-center gap-2.5 font-bold text-sekkha-ink",
+            "text-heading-5 flex min-h-[44px] shrink-0 items-center gap-2.5 font-bold text-sekkha-ink",
             "rounded-sm focus-visible:ring-2 focus-visible:ring-sekkha-primary focus-visible:ring-offset-2 focus-visible:outline-none"
           )}
-          aria-label="Sekkha — Kembali ke beranda"
+          aria-label="Sekkha — Back to home"
         >
           <img
             src="/sekkha_logo.svg"
@@ -413,8 +413,8 @@ export function LandingNavbar({ authState, scrollY }: LandingNavbarProps) {
               key={link.href}
               href={link.href}
               className={cn(
-                "text-body-sm-medium text-sekkha-ink",
-                "rounded-sm focus-visible:ring-2 focus-visible:ring-sekkha-primary focus-visible:ring-offset-2 focus-visible:outline-none"
+                "text-body-sm-medium text-sekkha-ink transition-colors hover:text-sekkha-slate",
+                "rounded-sm py-2 focus-visible:ring-2 focus-visible:ring-sekkha-primary focus-visible:ring-offset-2 focus-visible:outline-none"
               )}
             >
               {link.label}
@@ -433,14 +433,14 @@ export function LandingNavbar({ authState, scrollY }: LandingNavbarProps) {
             ref={hamburgerRef}
             type="button"
             aria-label={
-              isDrawerOpen ? "Tutup menu navigasi" : "Buka menu navigasi"
+              isDrawerOpen ? "Close navigation menu" : "Open navigation menu"
             }
             aria-expanded={isDrawerOpen}
             aria-controls="mobile-nav-drawer"
             onClick={isDrawerOpen ? closeDrawer : openDrawer}
             className={cn(
-              "flex items-center justify-center p-1 text-sekkha-ink",
-              "rounded-sm focus-visible:ring-2 focus-visible:ring-sekkha-primary focus-visible:ring-offset-2 focus-visible:outline-none"
+              "flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md text-sekkha-ink",
+              "focus-visible:ring-2 focus-visible:ring-sekkha-primary focus-visible:ring-offset-2 focus-visible:outline-none"
             )}
           >
             <HamburgerIcon isOpen={isDrawerOpen} />

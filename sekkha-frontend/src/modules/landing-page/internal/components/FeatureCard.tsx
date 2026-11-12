@@ -3,27 +3,37 @@ import { truncateDescription } from "../utils/truncateDescription"
 import type { FeatureCardColor } from "../utils/getFeatureCardColor"
 import {
   QrCodeIcon,
-  AwardIcon,
+  IdCardIcon,
+  FlameIcon,
+  TrophyIcon,
   CalendarIcon,
-  HeartHandshakeIcon,
-  BookOpenIcon,
-  BellIcon,
+  ShieldCheckIcon,
 } from "lucide-react"
 
 interface FeatureCardProps {
   title: string
   description: string
+  tag?: string
   colorVariant: FeatureCardColor
   index: number
 }
 
 const iconsMap = [
-  <QrCodeIcon className="size-6" key="1" />,
-  <AwardIcon className="size-6" key="2" />,
-  <CalendarIcon className="size-6" key="3" />,
-  <HeartHandshakeIcon className="size-6" key="4" />,
-  <BookOpenIcon className="size-6" key="5" />,
-  <BellIcon className="size-6" key="6" />,
+  <QrCodeIcon className="size-6" key="qr" />,
+  <IdCardIcon className="size-6" key="id" />,
+  <FlameIcon className="size-6" key="streak" />,
+  <TrophyIcon className="size-6" key="season" />,
+  <CalendarIcon className="size-6" key="events" />,
+  <ShieldCheckIcon className="size-6" key="security" />,
+]
+
+const defaultTagLabels = [
+  "Attendance",
+  "Member ID",
+  "Consistency",
+  "Season",
+  "Events",
+  "Security",
 ]
 
 const colorGradientMap: Record<
@@ -38,68 +48,67 @@ const colorGradientMap: Record<
   }
 > = {
   pink: {
-    bg: "bg-[#ff4d8b]",
-    badgeBg: "bg-white/15 border-white/20",
+    bg: "bg-clay-pink",
+    badgeBg: "bg-white/15 border-white/25",
     titleText: "text-white",
-    bodyText: "text-white/90",
+    bodyText: "text-white/95",
     iconColor: "text-white",
   },
   teal: {
-    bg: "bg-[#1a3a3a]",
-    badgeBg: "bg-white/15 border-white/20",
+    bg: "bg-clay-teal",
+    badgeBg: "bg-white/15 border-white/25",
     titleText: "text-white",
-    bodyText: "text-white/80",
+    bodyText: "text-white/90",
     iconColor: "text-white",
   },
   lavender: {
-    bg: "bg-[#b8a4ed]",
+    bg: "bg-clay-lavender",
     badgeBg: "bg-black/10 border-black/10",
-    titleText: "text-[#0a0a0a]",
-    bodyText: "text-[#2a2a2a]",
-    iconColor: "text-[#0a0a0a]",
+    titleText: "text-sekkha-ink",
+    bodyText: "text-sekkha-body",
+    iconColor: "text-sekkha-ink",
   },
   peach: {
-    bg: "bg-[#ffb084]",
+    bg: "bg-clay-peach",
     badgeBg: "bg-black/10 border-black/10",
-    titleText: "text-[#0a0a0a]",
-    bodyText: "text-[#2a2a2a]",
-    iconColor: "text-[#0a0a0a]",
+    titleText: "text-sekkha-ink",
+    bodyText: "text-sekkha-body",
+    iconColor: "text-sekkha-ink",
   },
   ochre: {
-    bg: "bg-[#e8b94a]",
+    bg: "bg-clay-ochre",
     badgeBg: "bg-black/10 border-black/10",
-    titleText: "text-[#0a0a0a]",
-    bodyText: "text-[#2a2a2a]",
-    iconColor: "text-[#0a0a0a]",
+    titleText: "text-sekkha-ink",
+    bodyText: "text-sekkha-body",
+    iconColor: "text-sekkha-ink",
   },
   cream: {
-    bg: "bg-[#f5f0e0]",
-    badgeBg: "bg-black/5 border-black/10",
-    titleText: "text-[#0a0a0a]",
-    bodyText: "text-[#3a3a3a]",
-    iconColor: "text-[#0a0a0a]",
-    border: "border border-[#e5e5e5]",
+    bg: "bg-surface-card",
+    badgeBg: "bg-white/75 border-sekkha-hairline",
+    titleText: "text-sekkha-ink",
+    bodyText: "text-sekkha-body",
+    iconColor: "text-sekkha-ink",
+    border: "border border-sekkha-hairline",
   },
-  // Legacy aliases
   yellow: {
-    bg: "bg-[#e8b94a]",
+    bg: "bg-clay-ochre",
     badgeBg: "bg-black/10 border-black/10",
-    titleText: "text-[#0a0a0a]",
-    bodyText: "text-[#2a2a2a]",
-    iconColor: "text-[#0a0a0a]",
+    titleText: "text-sekkha-ink",
+    bodyText: "text-sekkha-body",
+    iconColor: "text-sekkha-ink",
   },
   coral: {
-    bg: "bg-[#ffb084]",
+    bg: "bg-clay-peach",
     badgeBg: "bg-black/10 border-black/10",
-    titleText: "text-[#0a0a0a]",
-    bodyText: "text-[#2a2a2a]",
-    iconColor: "text-[#0a0a0a]",
+    titleText: "text-sekkha-ink",
+    bodyText: "text-sekkha-body",
+    iconColor: "text-sekkha-ink",
   },
   rose: {
-    bg: "bg-[#ff4d8b]",
-    badgeBg: "bg-white/15 border-white/20",
+    bg: "bg-clay-pink",
+    badgeBg: "bg-white/15 border-white/25",
     titleText: "text-white",
-    bodyText: "text-white/90",
+    bodyText: "text-white/95",
     iconColor: "text-white",
   },
 }
@@ -107,35 +116,28 @@ const colorGradientMap: Record<
 export function FeatureCard({
   title,
   description,
+  tag,
   colorVariant,
   index,
 }: FeatureCardProps) {
   const truncated = truncateDescription(description, 130)
   const variant = colorGradientMap[colorVariant] || colorGradientMap.ochre
   const icon = iconsMap[index % iconsMap.length]
+  const badgeLabel = tag || defaultTagLabels[index % defaultTagLabels.length]
 
   return (
     <motion.div
-      className={`relative overflow-hidden rounded-[24px] p-6 sm:p-8 ${variant.bg} ${variant.border ?? ""} group flex flex-col justify-between shadow-xs transition-all`}
+      className={`relative overflow-hidden rounded-[24px] p-6 sm:p-8 ${variant.bg} ${variant.border ?? ""} group flex flex-col justify-between shadow-xs transition-transform`}
       data-index={index}
-      initial={{ opacity: 0, y: 24 }}
+      initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-60px" }}
-      transition={{ duration: 0.55, delay: index * 0.08, ease: "easeOut" }}
-      whileHover={{
-        y: -4,
-        scale: 1.015,
-        boxShadow: "0 20px 40px -15px rgba(10,10,10,0.12)",
-        transition: { duration: 0.25 },
-      }}
+      viewport={{ once: true, margin: "-50px" }}
+      transition={{ duration: 0.45, delay: index * 0.06, ease: "easeOut" }}
+      whileHover={{ y: -3, transition: { duration: 0.2 } }}
     >
-      {/* Decorative subtle corner glow */}
-      <div className="pointer-events-none absolute -top-10 -right-10 h-32 w-32 rounded-full bg-white/20 blur-2xl transition-all duration-500 group-hover:scale-150" />
-
       <div>
-        {/* Icon Badge */}
         <div
-          className={`mb-5 inline-flex items-center justify-center rounded-xl border p-2.5 shadow-xs backdrop-blur-md sm:p-3 ${variant.badgeBg} ${variant.iconColor}`}
+          className={`mb-5 inline-flex items-center justify-center rounded-xl border p-2.5 sm:p-3 ${variant.badgeBg} ${variant.iconColor}`}
         >
           {icon}
         </div>
@@ -150,13 +152,12 @@ export function FeatureCard({
         </p>
       </div>
 
-      {/* Mini Product UI fragment badge */}
-      <div className="text-micro mt-6 flex items-center justify-between border-t border-black/5 pt-4 font-medium opacity-85">
-        <span className={variant.bodyText}>Feature Module #{index + 1}</span>
+      <div className="text-micro mt-6 flex items-center justify-between border-t border-black/10 pt-4 font-medium opacity-90">
+        <span className={variant.bodyText}>Sekkha Community</span>
         <span
-          className={`rounded-full px-2 py-0.5 text-[11px] ${variant.badgeBg}`}
+          className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${variant.badgeBg} ${variant.titleText}`}
         >
-          Active
+          {badgeLabel}
         </span>
       </div>
     </motion.div>

@@ -107,4 +107,37 @@ describe("LandingFooter", () => {
     expect(screen.getByText("Features")).toBeDefined()
     expect(screen.getByText("About")).toBeDefined()
   })
+
+  it("renders disabled footer links as non-clickable aria-disabled elements and keeps active links clickable", () => {
+    const columnsWithDisabled = [
+      {
+        heading: "Community",
+        links: [
+          { label: "Features", href: "#features" },
+          { label: "About Us", href: "/about", disabled: true },
+        ],
+      },
+      {
+        heading: "Legal",
+        links: [
+          { label: "Privacy Policy", href: "/privacy" },
+          { label: "Terms of Service", href: "/terms", disabled: true },
+        ],
+      },
+    ]
+
+    render(<LandingFooter navColumns={columnsWithDisabled} />)
+
+    const activePrivacy = screen.getByRole("link", { name: "Privacy Policy" })
+    expect(activePrivacy.getAttribute("href")).toBe("/privacy")
+
+    const activeFeatures = screen.getByRole("link", { name: "Features" })
+    expect(activeFeatures.getAttribute("href")).toBe("#features")
+
+    expect(screen.queryByRole("link", { name: /About Us/i })).toBeNull()
+    expect(screen.queryByRole("link", { name: /Terms of Service/i })).toBeNull()
+
+    const disabledAbout = screen.getByText("About Us").closest("[aria-disabled='true']")
+    expect(disabledAbout).not.toBeNull()
+  })
 })

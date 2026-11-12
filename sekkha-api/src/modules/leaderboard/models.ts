@@ -45,6 +45,7 @@ export const leaderboardModels = {
 
   findLeaderboardUsers() {
     return prisma.user.findMany({
+      where: { anonymizedAt: null },
       select: {
         id: true,
         username: true,

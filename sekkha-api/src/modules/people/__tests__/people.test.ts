@@ -21,9 +21,7 @@ function makeUserRecord(overrides: Record<string, any> = {}) {
     profile: {
       userId: "usr_target_1",
       name: "Budi Santoso",
-      phone: null,
       schoolId: null,
-      birthDate: null,
       school: null,
     },
     stats: {
@@ -76,7 +74,7 @@ describe("People Module RBAC & Self-Protection Guardrails", () => {
       try {
         await peopleServices.updateMember(
           ADMIN_ACTOR.userId,
-          { name: "Renamed Admin", phone: "081234567890" },
+          { name: "Renamed Admin" },
           ADMIN_ACTOR
         )
         expect(true).toBe(false)
@@ -457,7 +455,7 @@ describe("People Module RBAC & Self-Protection Guardrails", () => {
   })
 
   describe("Rule 4: Create Member Pre-Provisioning Defaults & Master Data School", () => {
-    it("strips role and date_of_birth from CreateMemberSchema and validates name, school_id, phone", () => {
+    it("strips role, phone, and date_of_birth from CreateMemberSchema and validates name, school_id", () => {
       const parsed = CreateMemberSchema.parse({
         name: "Budi Santoso",
         school_id: "sch_123",
@@ -468,12 +466,12 @@ describe("People Module RBAC & Self-Protection Guardrails", () => {
 
       expect(parsed.name).toBe("Budi Santoso")
       expect(parsed.school_id).toBe("sch_123")
-      expect(parsed.phone).toBe("08123456789")
+      expect(parsed.phone).toBeUndefined()
       expect(parsed.role).toBeUndefined()
       expect(parsed.date_of_birth).toBeUndefined()
     })
 
-    it("always defaults pre-provisioned member role to 'member', links active master data school, and omits birthDate", async () => {
+    it("always defaults pre-provisioned member role to 'member' and links active master data school without phone or birthDate", async () => {
       const origFindSchoolById = peopleModels.findSchoolById
       const origFindByUsername = peopleModels.findUserByUsername
       const origCreate = peopleModels.create
@@ -505,9 +503,7 @@ describe("People Module RBAC & Self-Protection Guardrails", () => {
           {
             name: "Budi Santoso",
             school_id: "sch_active_1",
-            phone: "08123456789",
             role: "activist",
-            date_of_birth: "2004-05-10",
           } as any,
           ORGANIZER_ACTOR
         )
@@ -517,7 +513,8 @@ describe("People Module RBAC & Self-Protection Guardrails", () => {
         expect(created.school).toBe("SMA Tri Ratna")
         expect(capturedCreateData.role).toBe("member")
         expect(capturedCreateData.profile.create.schoolId).toBe("sch_active_1")
-        expect(capturedCreateData.profile.create.birthDate).toBeNull()
+        expect(capturedCreateData.profile.create.phone).toBeUndefined()
+        expect(capturedCreateData.profile.create.birthDate).toBeUndefined()
       } finally {
         peopleModels.findSchoolById = origFindSchoolById
         peopleModels.findUserByUsername = origFindByUsername

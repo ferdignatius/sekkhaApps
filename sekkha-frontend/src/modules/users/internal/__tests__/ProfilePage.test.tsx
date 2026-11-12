@@ -49,8 +49,6 @@ const mockProfile: UserProfileDto = {
   school_id: "sch_1",
   school: "Universitas Multimedia Nusantara",
   school_status: "verified",
-  phone: "081199887766",
-  date_of_birth: "2002-04-10",
   stats: {
     total_points: 100,
     current_streak: 1,

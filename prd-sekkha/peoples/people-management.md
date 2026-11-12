@@ -15,7 +15,7 @@
 ## 1. Ringkasan Eksekutif & Latar Belakang Masalah
 
 Di komunitas vihara pemuda, banyak jemaat dan pemuda yang rutin hadir di kebaktian atau kegiatan sosial **sebelum mereka mengunduh aplikasi Sekkha**. Pengurus vihara membutuhkan mekanisme untuk:
-1. **Mendaftarkan Jemaat Terlebih Dahulu (*Pre-provisioning*)**: Pengurus (`organizer` atau `admin`) dapat mendaftarkan jemaat baru secara langsung di sistem dengan data dasar minimal (nama lengkap, sekolah dari Master Data Schools, dan kontak WhatsApp) dengan `role` otomatis ditetapkan ke **`member`**.
+1. **Mendaftarkan Jemaat Terlebih Dahulu (*Pre-provisioning*)**: Pengurus (`organizer` atau `admin`) dapat mendaftarkan jemaat baru secara langsung di sistem dengan data dasar minimal (nama lengkap dan sekolah opsional dari Master Data Schools) dengan `role` otomatis ditetapkan ke **`member`**.
 2. **Kredensial Login Mandiri Otomatis**: Sistem secara otomatis meng-generate nomor anggota resmi (`userNumber` format `yyyymmddnn`), `username` yang mudah dibaca, serta password sementara (*temporary password* berformat `sekkha#####puggala`) yang disimpan dalam bentuk hash `bcrypt`.
 3. **Pencatatan Presensi Langsung**: Profil jemaat pre-provisioned langsung memiliki kartu identitas digital dan `userNumber` aktif yang dapat langsung di-scan saat absensi event tanpa menunggu user melakukan aktivasi akun.
 4. **Klaim Akun Tanpa Kehilangan Data**: Ketika jemaat siap menggunakan aplikasi, mereka cukup login pertama kali menggunakan `userNumber` / `username` dan password sementara tersebut, kemudian dipandu mengganti password dan memverifikasi email tanpa kehilangan riwayat poin atau streak.
@@ -50,8 +50,7 @@ Menggunakan terminologi role Bahasa Inggris resmi: `member`, `activist`, `organi
      - Jika ditemukan ≥ 1 anggota eksisting dengan penamaan mirip, muncul banner informasi di bagian atas (di atas daftar/form) berisi ringkasan kandidat mirip + tombol **"See More"** untuk membuka modal daftar anggota mirip (**maksimal 5 nama teratas**: `Name`, `Member ID`, `@username`, `Role`, status `Claimed/Unclaimed`, dan `School`).
      - Jika **tidak ada** anggota mirip (empty state), banner dan tombol **See More** disembunyikan total (*hidden*) agar form tetap ringkas. Pencarian ini murni bersifat informasi dan **tidak pernah memblokir** pembuatan member baru.
    - **School / Institution** *(Opsional, dropdown infinite-scroll terhubung ke Master Data Verified & Active Schools via `GET /api/configure/schools?is_active=true&page=1&limit=5&paginated=true`: hanya memuat 5 sekolah awal dan mengambil 5 item berikutnya otomatis saat user men-scroll dropdown)*.
-   - **Phone Number / WhatsApp** *(Opsional, format nomor telepon Indonesia e.g. `08...` atau `+62...`)*.
-   - *(Catatan: Field **Role** dan **Date of Birth** sengaja tidak ditampilkan pada form Add Member agar registrasi di lapangan ringkas; sistem otomatis menetapkan `role` default = **`member`**. Perubahan role menjadi `activist`/`organizer`/`admin` dilakukan oleh `admin` lewat detail anggota, sementara tanggal lahir dapat dilengkapi sendiri oleh jemaat pada onboarding atau Profile Settings.)*
+   - *(Catatan: Field **Role** sengaja tidak ditampilkan pada form Add Member agar registrasi di lapangan ringkas; sistem otomatis menetapkan `role` default = **`member`**. Field `phone` dan `birth_date` telah ditiadakan dari sistem untuk prinsip minimisasi data UU PDP No. 27/2022.)*
 3. Saat form disubmit (`POST /api/people`):
    - Sistem secara atomik meng-generate `userNumber` integer `yyyymmddnn` (contoh: `2026102401`).
    - Sistem men-generate `username` unik: **First name (lowercase, huruf saja) + 4 digit angka acak** (contoh: "Budi Santoso" -> `budi1492`). Jika first name kurang dari 3 karakter, gunakan nama lengkap tanpa spasi + 4 digit angka acak.
@@ -123,7 +122,6 @@ Mengambil daftar anggota komunitas dengan pagination, search, dan filter.
             "id": "sch_1",
             "name": "SMA Tri Ratna"
           },
-          "phone": "08123456789",
           "created_at": "2026-10-24T08:00:00.000Z",
           "last_attended_at": "2026-10-20T10:00:00.000Z"
         }
@@ -147,7 +145,6 @@ Mendaftarkan anggota baru dan men-generate temporary credentials.
   export const CreatePeopleSchema = z.object({
     name: z.string().trim().min(2, "Full name must be at least 2 characters").max(100),
     school_id: z.string().trim().optional().nullable(),
-    phone: z.string().trim().max(20).optional().nullable(),
   })
   // Catatan: Server selalu menetapkan role: "member" sebagai default saat pre-provisioning dan memvalidasi school_id terhadap Master Data Schools aktif.
   ```
@@ -177,7 +174,7 @@ Melihat detail profil anggota, data almamater, status pastoral, dan riwayat pres
 #### 4. `PUT /api/people/:id`
 Memperbarui data profil atau peran (`role`) jemaat lain oleh Admin.
 * **Akses**: `requireAuth`, `requireRole("admin")` *(Khusus Admin; Pengurus/`organizer` dilarang mengubah data maupun role akun siapapun)*.
-* **Editable Fields**: `name`, `username`, `role`, `school_id`, `phone`, `date_of_birth`.
+* **Editable Fields**: `name`, `username`, `role`, `school_id`.
 * **Guard**:
   * Mengembalikan `403 Forbidden` jika diakses oleh non-admin (`organizer`, `activist`, `member`).
   * Mengembalikan `403 Forbidden` jika `id === currentUser.userId` (Admin dilarang mengubah role atau data akun miliknya sendiri melalui modul People; gunakan Profile Settings `/profile`).
@@ -203,7 +200,7 @@ Pencarian ringan berbasis fuzzy similarity untuk mendeteksi nama anggota eksisti
 * **Query Parameters**:
   * `name` (string, min 2 karakter, max 100)
   * `limit` (number, default: 5, hard max: 5)
-* **Mekanisme Performa**: DB pre-filter dibatasi maksimal 25 kandidat **khusus pada kolom Full Name (`profile.name`) tanpa query `username`** via token/prefix `ILIKE`, lalu diberi skor kemiripan in-memory (kombinasi prefix/substring, token-order overlap, Dice character bigram, & normalized Levenshtein) tanpa membaca atau mendekripsi kolom PII (`email`, `phone`, `birthDate`), dan dipotong maksimal 5 hasil teratas.
+* **Mekanisme Performa**: DB pre-filter dibatasi maksimal 25 kandidat **khusus pada kolom Full Name (`profile.name`) tanpa query `username`** via token/prefix `ILIKE`, lalu diberi skor kemiripan in-memory (kombinasi prefix/substring, token-order overlap, Dice character bigram, & normalized Levenshtein) tanpa membaca atau mendekripsi kolom PII (`email`), dan dipotong maksimal 5 hasil teratas.
 * **Response Envelope (200 OK)**: `{ items: Array<{ id, user_number, username, name, role, is_claimed, school, similarity_score }>, total: number }` *(maksimal 5 item)*.
 
 ---
@@ -222,7 +219,7 @@ Pencarian ringan berbasis fuzzy similarity untuk mendeteksi nama anggota eksisti
    - Kartu kontras tinggi yang menampilkan Nomor Anggota, Username, dan Password Sementara.
    - Tombol *"Copy WhatsApp Message"* yang menyalin teks ramah jemaat (`whatsapp_invite_message`) langsung ke clipboard sehingga pengurus tidak perlu mengetik ulang kredensial satu per satu.
 3. **Detail & Guardrails Aksi Administratif**:
-   - **On-Click Detail Loading & Lightweight History**: Direktori `/people` hanya memuat identitas ringkas kartu (`name`, `username`, `user_number`, `role`, `is_claimed`). Data detail sensitif (email, telepon/WhatsApp, tanggal lahir, almamater, poin) baru diambil dan ditampilkan ketika pengguna mengklik kartu anggota untuk membuka detail (`/people/:id`). Riwayat absensi pada halaman detail **dibatasi maksimal 5 event terakhir** (`take: 5`), sementara total kehadiran seumur hidup tetap ditampilkan melalui `total_attendances`.
+   - **On-Click Detail Loading & Lightweight History**: Direktori `/people` hanya memuat identitas ringkas kartu (`name`, `username`, `user_number`, `role`, `is_claimed`). Data detail sensitif (email, almamater, poin) baru diambil dan ditampilkan ketika pengguna mengklik kartu anggota untuk membuka detail (`/people/:id`). Riwayat absensi pada halaman detail **dibatasi maksimal 5 event terakhir** (`take: 5`), sementara total kehadiran seumur hidup tetap ditampilkan melalui `total_attendances`.
    - **Self-Protection UX**: Saat pengguna melihat profil miliknya sendiri di direktori/detail People, badge **`You`** ditampilkan pada kartu/hero profil, dan seluruh tombol aksi (*Reset Password*, *Change Role*, *Delete*) **di-disable** disertai pesan informatif agar pengubahan profil pribadi dilakukan melalui halaman **Profile Settings** (`/profile`).
    - **Organizer Read-Only UX**: Pengurus (`organizer`) hanya melihat tombol *"Reset Password"* (tanpa tombol *Change Role* maupun *Delete*); tombol ini hanya aktif untuk akun `member`/`activist` dengan `isClaimed === false`.
    - Jika `isClaimed === true`: Tombol *"Reset Password"* **di-disable** dengan pesan: *"Account has been claimed by the member. Temporary password reset is disabled for member privacy."*
@@ -254,10 +251,10 @@ Pencarian ringan berbasis fuzzy similarity untuk mendeteksi nama anggota eksisti
 
 | ID | As a | I want to | So that |
 | --- | --- | --- | --- |
-| US-PEOP-01 | Organizer / Admin | Pre-provision new temple members with essential info (name, master-data school, phone) defaulting role to `member` and receive temporary credentials | Unregistered youth can receive official member IDs and participate in event attendance immediately |
+| US-PEOP-01 | Organizer / Admin | Pre-provision new temple members with essential info (name, optional master-data school) defaulting role to `member` and receive temporary credentials | Unregistered youth can receive official member IDs and participate in event attendance immediately |
 | US-PEOP-02 | Organizer / Admin | View a paginated directory of community members with debounce search by name, username, or member ID | I can quickly find members without experiencing UI lag or loading unneeded records |
 | US-PEOP-03 | Organizer / Admin | Filter directory members by claimed status (`all`, `claimed`, `unclaimed`), assigned role (`member`, `activist`, etc.), and school institution | I can audit community engagement, onboarding progress, and target pastoral outreach |
-| US-PEOP-04 | Organizer / Admin | View detailed member profiles with authorized on-the-fly PII decryption (phone, birth date, class grade) | I can review contact and pastoral data without storing or displaying unencrypted PII in public endpoints |
+| US-PEOP-04 | Organizer / Admin | View detailed member profiles with authorized on-the-fly PII decryption (email, class grade) | I can review authorized profile data without storing or displaying unencrypted PII in public endpoints |
 | US-PEOP-05 | Organizer / Admin | Reset temporary passwords exclusively for unclaimed member/activist accounts (`isClaimed = false`, non-self) with one-click copyable WhatsApp templates | I can assist members who lost credentials before first login while preventing unauthorized overrides on active, self, or privileged accounts |
 | US-PEOP-06 | Admin | Update other members' profiles and change their assigned roles with strict RBAC and self-protection guardrails (Organizers cannot edit existing users, change roles, or delete accounts; Admin cannot edit, change role of, or delete their own account via People management) | Role elevation and account mutations stay strictly governed and self-lockout/privilege abuses are prevented |
 | US-PEOP-07 | Activist | View read-only directory and basic member profile information without access to editing or credential generation | I can assist temple logistics and verify attendee identity without administrative write privileges |
@@ -283,12 +280,12 @@ Pencarian ringan berbasis fuzzy similarity untuk mendeteksi nama anggota eksisti
 
 | Test Case ID | Category | Scenario / Description | Preconditions | Test Steps | Expected Result | Type |
 | --- | --- | --- | --- | --- | --- | --- |
-| **TC-PEOP-01** | Pre-provisioning | Create new member with valid payload by Organizer | Authenticated as `organizer` or `admin` | Submit `POST /api/people` with `name: "Budi Santoso"`, valid active `school_id` from Master Data, `phone: "08123456789"`. | HTTP 201 Created. Returns `role: "member"`, linked `school_id`/`school`, `user_number` (10 digits), `username` (`budi####`), `temporary_password` (`sekkha#####puggala`), `is_claimed: false`, and `whatsapp_invite_message`. Audit log `PEOPLE_CREATED` recorded. | Positive |
+| **TC-PEOP-01** | Pre-provisioning | Create new member with valid payload by Organizer | Authenticated as `organizer` or `admin` | Submit `POST /api/people` with `name: "Budi Santoso"` and valid active `school_id` from Master Data. | HTTP 201 Created. Returns `role: "member"`, linked `school_id`/`school`, `user_number` (10 digits), `username` (`budi####`), `temporary_password` (`sekkha#####puggala`), `is_claimed: false`, and `whatsapp_invite_message`. Audit log `PEOPLE_CREATED` recorded. | Positive |
 | **TC-PEOP-02** | Validation | Create member with empty name or invalid/inactive `school_id` | Authenticated as `organizer` | 1. Submit `POST /api/people` with `name: ""`.<br>2. Submit `POST /api/people` with non-existent or inactive `school_id`. | HTTP 400 Bad Request envelope with validation / `INVALID_SCHOOL` error. No user created. | Negative |
 | **TC-PEOP-03** | Pagination & Search | Search people by 10-digit userNumber vs text search | Directory populated with >= 25 members | 1. Query `GET /api/people?search=2026102401`.<br>2. Query `GET /api/people?search=Budi&page=1&limit=10`. | Step 1 executes $O(\log N)$ B-Tree lookup matching exact userNumber in $< 1\text{ ms}$. Step 2 returns paginated results matching `Budi` with pagination metadata (`page: 1`, `limit: 10`, `total`, `total_pages`). | Positive / Performance |
 | **TC-PEOP-04** | Status Filter | Filter by claimed vs unclaimed members | Mixed claimed and unclaimed users exist | 1. Send `GET /api/people?status=claimed`.<br>2. Send `GET /api/people?status=unclaimed`. | Step 1 returns only users where `is_claimed === true`. Step 2 returns only users where `is_claimed === false`. | Positive / Functional |
 | **TC-PEOP-05** | Role Filter | Filter directory by role | Users with `member`, `activist`, `organizer` exist | Send `GET /api/people?role=activist`. | Returns list filtered exclusively to users with `role: "activist"`. | Positive / Functional |
-| **TC-PEOP-06** | Detail & PII Decryption | Authorized access to member detail view with encrypted PII | Target user has encrypted phone and birthDate in `UserProfile` | Send `GET /api/people/:id` as `organizer`. | HTTP 200 with standard envelope. PII fields decrypted on the fly to plaintext phone and ISO date. No raw AES ciphertext leaked. | Security / Positive |
+| **TC-PEOP-06** | Detail & PII Decryption | Authorized access to member detail view with encrypted PII | Target user has encrypted email / classGrade in `UserProfile` / `User` | Send `GET /api/people/:id` as `organizer`. | HTTP 200 with standard envelope. PII fields decrypted on the fly to plaintext email / classGrade. No raw AES ciphertext leaked. | Security / Positive |
 | **TC-PEOP-07** | Reset Temp Password | Reset temporary password on unclaimed user account | User exists with `isClaimed: false` and role `member` | Organizer submits `POST /api/people/:id/reset-temporary-password`. | HTTP 200. New `temporary_password` and invite message returned once. DB bcrypt hash updated. Audit log `TEMPORARY_PASSWORD_RESET` logged. | Positive / Security |
 | **TC-PEOP-08** | Reset Temp Password Guardrail | Attempt to reset temporary password on already claimed user account | Target user has `isClaimed: true` | Organizer submits `POST /api/people/:id/reset-temporary-password`. | HTTP 400 Bad Request (`ACCOUNT_ALREADY_CLAIMED`). Temporary password is NOT overwritten. UI displays disabled button with explanatory tooltip. | Negative / Security |
 | **TC-PEOP-09** | Organizer Write Restriction | Non-admin organizer attempts to edit data, upgrade role, or delete any user (including self) | Authenticated as `organizer` | 1. Submit `PUT /api/people/:id` with `{ "role": "activist" }` or `{ "name": "New Name" }`.<br>2. Submit `DELETE /api/people/:id` (target other or self). | HTTP 403 Forbidden envelope across all `PUT` and `DELETE` attempts. Database remains untouched. | Security / RBAC |

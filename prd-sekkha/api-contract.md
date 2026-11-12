@@ -313,8 +313,6 @@ Mengambil detail profil akun yang sedang login.
       "school_id": "sch_12345",
       "school": "SMA Negeri 1 Jakarta",
       "class_grade": "11",
-      "phone": "081234567890",
-      "birth_date": "2008-05-14",
       "points": 350,
       "joined_at": "2026-10-23T00:00:00.000Z"
     }
@@ -330,9 +328,7 @@ Memperbarui profil mandiri pengguna.
     "name": "Budi Santoso",
     "username": "budi.santoso",
     "school_id": "sch_12345",
-    "class_grade": "11",
-    "phone": "081234567890",
-    "birth_date": "2008-05-14"
+    "class_grade": "11"
   }
   ```
   *(Catatan: `email`, `user_number`, dan `role` tidak dapat diubah lewat endpoint ini. Email diubah lewat `POST /api/users/email-verification/request`.)*
@@ -937,7 +933,7 @@ Mencari dan menampilkan daftar anggota jemaat komunitas.
 ### 2. `GET /api/people/members/:id`
 Mengambil rekam jejak mendalam dari salah satu jemaat secara **lazy (on-click)** saat membuka halaman detail (`/people/:id`). Endpoint listing (`GET /api/people/members`) tidak memuat PII sensitif, poin, maupun riwayat absensi.
 - **Akses**: Organizer & Admin (`requireRole("organizer", "admin")`)
-- **Response (200 OK)**: Objek profil anggota lengkap (`email`, `phone`, `birth_date`, `school`, `points`, `total_attendances`) dengan daftar `attendances` yang **dibatasi maksimal 5 event terakhir** (`take: 5`, terurut `scannedAt DESC`) agar payload ringan.
+- **Response (200 OK)**: Objek profil anggota lengkap (`email`, `school`, `points`, `total_attendances`) dengan daftar `attendances` yang **dibatasi maksimal 5 event terakhir** (`take: 5`, terurut `scannedAt DESC`) agar payload ringan.
 
 ### 3. `POST /api/people/members`
 Menambahkan data profil jemaat baru secara pra-registrasi (*pre-provisioning*) oleh organizer/admin. Sistem otomatis menetapkan `role: "member"` sebagai default, memvalidasi `school_id` ke Master Data Schools aktif, serta men-generate `user_number` (`yyyymmddnum`), `username` (nama normalized + angka random), dan password dummy (`sekkha` + 5 angka random + `puggala`, disimpan hashed).
@@ -946,8 +942,7 @@ Menambahkan data profil jemaat baru secara pra-registrasi (*pre-provisioning*) o
   ```json
   {
     "name": "Siti Rahma",
-    "school_id": "sch_12345",
-    "phone": "081987654321"
+    "school_id": "sch_12345"
   }
   ```
 - **Response (201 Created)** *(satu-satunya response yang memuat `temporary_password`, tidak dapat diambil ulang)*:

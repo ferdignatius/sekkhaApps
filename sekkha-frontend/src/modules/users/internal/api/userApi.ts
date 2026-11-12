@@ -24,8 +24,6 @@ export interface UserProfileDto {
   school_id?: string | null
   school?: string | null
   school_status?: string | null
-  phone?: string | null
-  date_of_birth?: string | null
   stats?: UserStatsDto
   joined_at?: string
 }
@@ -33,10 +31,8 @@ export interface UserProfileDto {
 export interface UpdateProfilePayload {
   username?: string
   name?: string
-  phone?: string | null
   school_id?: string | null
   school?: string | null
-  date_of_birth?: string | null
 }
 
 export interface PointTransactionDto {

@@ -239,13 +239,11 @@ async function main() {
       role: Role.member,
       userNumber: BigInt(26010101),
       onboardingCompleted: true,
+      lastActiveAt: new Date(),
       profile: {
         create: {
           name: "Sari Dewi (Umat)",
-          phone: encrypt("081234567890"),
           schoolId: schoolBaktiMulia?.id,
-          birthDate: encrypt(new Date("2008-05-15").toISOString()),
-
         },
       },
       stats: {
@@ -270,13 +268,11 @@ async function main() {
       role: Role.activist,
       userNumber: BigInt(26010102),
       onboardingCompleted: true,
+      lastActiveAt: new Date(),
       profile: {
         create: {
           name: "Budi Santoso (Aktivis)",
-          phone: encrypt("081298765432"),
           schoolId: schoolBinaMandiri?.id,
-          birthDate: encrypt(new Date("2006-03-20").toISOString()),
-
         },
       },
       stats: {
@@ -301,12 +297,11 @@ async function main() {
       role: Role.organizer,
       userNumber: BigInt(26010103),
       onboardingCompleted: true,
+      lastActiveAt: new Date(),
       profile: {
         create: {
           name: "Budi Wijaya (Pengurus)",
-          phone: encrypt("081311223344"),
           schoolId: schoolBuddhi?.id,
-          birthDate: encrypt(new Date("2001-11-10").toISOString()),
         },
       },
       stats: {
@@ -331,12 +326,11 @@ async function main() {
       role: Role.admin,
       userNumber: BigInt(26010104),
       onboardingCompleted: true,
+      lastActiveAt: new Date(),
       profile: {
         create: {
           name: "Admin Sekkha",
-          phone: encrypt("081199887766"),
           schoolId: schoolUMN?.id,
-          birthDate: encrypt(new Date("1998-07-01").toISOString()),
         },
       },
       stats: {

@@ -360,7 +360,7 @@ export async function registerUser(input: RegisterInput): Promise<AuthResult> {
 export async function loginUser(input: LoginInput): Promise<AuthResult> {
   const identifier = input.identifier
   const user = await repo.findUserByIdentifier(identifier)
-  if (!user || !user.password) {
+  if (!user || !user.password || (user as any).anonymizedAt) {
     await verifyPassword(input.password, DUMMY_BCRYPT_HASH)
     auditLogger.log({
       actorId: "unknown",
@@ -407,6 +407,8 @@ export async function loginUser(input: LoginInput): Promise<AuthResult> {
     cacheUserSession(token, userData),
   ])
 
+  repo.touchLastActiveAt(user.id).catch(() => {})
+
   auditLogger.log({
     actorId: user.id,
     actorRole: user.role,
@@ -447,7 +449,7 @@ export async function verifyToken(token: string) {
   }
 
   const user = await repo.findUserById(payload.userId)
-  if (!user) {
+  if (!user || (user as any).anonymizedAt) {
     throw new AppError("User not found", 401, "USER_NOT_FOUND")
   }
 
@@ -482,7 +484,7 @@ export async function refreshSession(refreshToken: string): Promise<AuthResult> 
   }
 
   const user = await repo.findUserById(record.userId)
-  if (!user) {
+  if (!user || (user as any).anonymizedAt) {
     throw new AppError("User not found", 401, "USER_NOT_FOUND")
   }
 
@@ -493,6 +495,8 @@ export async function refreshSession(refreshToken: string): Promise<AuthResult> 
   const newAccessToken = generateToken(user.id, user.role, user.name, user.passwordChangedAt)
   const newRefreshToken = randomBytes(32).toString("hex")
   await saveRefreshToken(user.id, newRefreshToken, getRefreshTokenTtlSeconds())
+
+  repo.touchLastActiveAt(user.id).catch(() => {})
 
   const userData = {
     id: user.id,

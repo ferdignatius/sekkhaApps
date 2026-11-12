@@ -35,11 +35,8 @@ function makeMemberDetail(
     name: "Budi Santoso",
     username: "budi1234",
     email: null,
-    phone: "08123456789",
     school: "SMA Negeri 1",
     school_id: "sch_1",
-    date_of_birth: null,
-    birth_date: null,
     role: "member",
     user_number: "2026111001",
     is_claimed: false,
@@ -280,12 +277,10 @@ describe("MemberDetailPage Clay + HIG UI/UX Improvements", () => {
     expect(spy).toHaveBeenCalledTimes(2)
   })
 
-  it("groups profile data into Direct Communication, Academic & Community, and Account Timeline sections", async () => {
+  it("groups profile data into Direct Communication, Academic & Community, and Account Timeline sections without phone or birth date", async () => {
     const member = makeMemberDetail({
       email: "budi@example.com",
-      phone: "081234567890",
       school: "SMA Negeri 1",
-      birth_date: "2005-05-15T00:00:00Z",
     })
 
     renderWithAuth("admin", "usr_admin_1", member)
@@ -296,9 +291,8 @@ describe("MemberDetailPage Clay + HIG UI/UX Improvements", () => {
 
     expect(screen.getByText("Academic & Community")).toBeTruthy()
     expect(screen.getByText("Personal & Account Timeline")).toBeTruthy()
-
-    const waLink = screen.getByRole("link", { name: /Chat on WhatsApp/i })
-    expect(waLink.getAttribute("href")).toBe("https://wa.me/6281234567890")
+    expect(screen.queryByText(/Phone \/ WhatsApp/i)).toBeNull()
+    expect(screen.queryByText(/Birth Date/i)).toBeNull()
     expect(screen.getByText("budi@example.com")).toBeTruthy()
   })
 

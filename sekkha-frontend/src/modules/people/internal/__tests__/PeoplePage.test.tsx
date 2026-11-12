@@ -197,8 +197,9 @@ describe("PeoplePage 2-Column Mobile Grid, Fast Loading & Directory Isolation", 
         expect(schoolsSpy).toHaveBeenCalledTimes(1)
       })
 
-      // Role and Date of Birth inputs must NOT exist in Create New Member modal
+      // Role, Phone, and Date of Birth inputs must NOT exist in Create New Member modal
       expect(screen.queryByLabelText(/Initial Role/i)).toBeNull()
+      expect(screen.queryByLabelText(/Phone Number/i)).toBeNull()
       expect(screen.queryByLabelText(/Date of Birth/i)).toBeNull()
 
       // Master Data school options should be wired to the School selector
@@ -215,9 +216,6 @@ describe("PeoplePage 2-Column Mobile Grid, Fast Loading & Directory Isolation", 
       fireEvent.change(screen.getByLabelText(/Full Name/i), {
         target: { value: "Sari Dewi" },
       })
-      fireEvent.change(screen.getByLabelText(/Phone Number \/ WhatsApp/i), {
-        target: { value: "08123456789" },
-      })
 
       fireEvent.click(screen.getByRole("button", { name: /Register Member/i }))
 
@@ -225,10 +223,10 @@ describe("PeoplePage 2-Column Mobile Grid, Fast Loading & Directory Isolation", 
         expect(createSpy).toHaveBeenCalledWith({
           name: "Sari Dewi",
           school_id: "sch_umn",
-          phone: "08123456789",
         })
       })
       expect(createSpy.mock.calls[0][0]).not.toHaveProperty("role")
+      expect(createSpy.mock.calls[0][0]).not.toHaveProperty("phone")
       expect(createSpy.mock.calls[0][0]).not.toHaveProperty("date_of_birth")
     } finally {
       HTMLElement.prototype.scrollIntoView = origScrollIntoView

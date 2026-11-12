@@ -71,10 +71,11 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
         id: true,
         role: true,
         passwordChangedAt: true,
+        anonymizedAt: true,
       },
     })
 
-    if (!user) {
+    if (!user || user.anonymizedAt) {
       apiFailure(res, 401, "User not found or account deactivated", null)
       return
     }

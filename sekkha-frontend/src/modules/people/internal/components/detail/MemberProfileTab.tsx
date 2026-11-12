@@ -1,12 +1,9 @@
 import {
-  CalendarIcon,
   CheckCircle2Icon,
   CopyIcon,
-  ExternalLinkIcon,
   GraduationCapIcon,
   MailIcon,
   MessageCircleIcon,
-  PhoneIcon,
   ShieldCheckIcon,
   SparklesIcon,
 } from "lucide-react"
@@ -15,7 +12,6 @@ import type { MemberDetailDto } from "../../api/peopleApi"
 import {
   formatRoleLabel,
   getRoleDescription,
-  normalizeWhatsAppNumber,
 } from "../../utils/memberFormatters"
 
 export interface MemberProfileTabProps {
@@ -31,16 +27,6 @@ export function MemberProfileTab({
   member,
   onCopyValue,
 }: MemberProfileTabProps) {
-  const waNumber = normalizeWhatsAppNumber(member.phone)
-
-  const birthDateFormatted = member.birth_date
-    ? new Date(member.birth_date).toLocaleDateString("en-US", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      })
-    : null
-
   const memberSinceFormatted = member.created_at
     ? new Date(member.created_at).toLocaleDateString("en-US", {
         day: "numeric",
@@ -67,44 +53,6 @@ export function MemberProfileTab({
         </div>
 
         <div className="divide-y divide-hairline-soft">
-          {/* Phone & WhatsApp Row */}
-          <div className="flex flex-col justify-between gap-3 p-4 sm:flex-row sm:items-center sm:px-5">
-            <div className="flex items-center gap-2.5 text-xs text-text-muted">
-              <PhoneIcon className="size-4 shrink-0 text-ink" aria-hidden="true" />
-              <span className="font-semibold">Phone / WhatsApp</span>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="font-mono text-sm font-semibold text-ink">
-                {member.phone || "Not provided"}
-              </span>
-
-              {member.phone && (
-                <button
-                  type="button"
-                  onClick={() => onCopyValue(member.phone!, "Phone number")}
-                  aria-label="Copy phone number"
-                  className="inline-flex min-h-[36px] cursor-pointer items-center gap-1 rounded-sm border border-hairline bg-surface-soft px-2.5 py-1 text-xs font-semibold text-ink transition-colors hover:bg-surface-card focus-visible:ring-2 focus-visible:ring-ink focus-visible:outline-none"
-                >
-                  <CopyIcon className="size-3.5" aria-hidden="true" />
-                  <span>Copy</span>
-                </button>
-              )}
-
-              {waNumber && (
-                <a
-                  href={`https://wa.me/${waNumber}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex min-h-[36px] items-center gap-1.5 rounded-sm border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800 transition-colors hover:bg-emerald-100 focus-visible:ring-2 focus-visible:ring-ink focus-visible:outline-none"
-                >
-                  <span>Chat on WhatsApp</span>
-                  <ExternalLinkIcon className="size-3.5" aria-hidden="true" />
-                </a>
-              )}
-            </div>
-          </div>
-
           {/* Email Row */}
           <div className="flex flex-col justify-between gap-3 p-4 sm:flex-row sm:items-center sm:px-5">
             <div className="flex items-center gap-2.5 text-xs text-text-muted">
@@ -221,19 +169,6 @@ export function MemberProfileTab({
         </div>
 
         <div className="divide-y divide-hairline-soft">
-          <div className="flex items-center justify-between gap-3 p-4 sm:px-5">
-            <div className="flex items-center gap-2.5 text-xs text-text-muted">
-              <CalendarIcon
-                className="size-4 shrink-0 text-ink"
-                aria-hidden="true"
-              />
-              <span className="font-semibold">Birth Date</span>
-            </div>
-            <span className="text-sm font-semibold text-ink">
-              {birthDateFormatted || "Not provided"}
-            </span>
-          </div>
-
           <div className="flex items-center justify-between gap-3 p-4 sm:px-5">
             <div className="flex items-center gap-2.5 text-xs text-text-muted">
               <SparklesIcon

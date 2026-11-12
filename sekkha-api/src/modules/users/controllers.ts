@@ -15,9 +15,6 @@ export const UpdateProfileSchema = z.object({
   name: z.string().trim().min(1, "Name must be at least 1 character").max(100).optional(),
   school: z.string().trim().max(100).optional().nullable(),
   school_id: z.string().optional().nullable(),
-  phone: z.string().trim().max(20).optional().nullable(),
-  date_of_birth: z.string().optional().nullable(),
-  birth_date: z.string().optional().nullable(),
 })
 
 export const RequestEmailVerificationSchema = z.object({

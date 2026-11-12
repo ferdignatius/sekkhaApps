@@ -13,6 +13,7 @@ export interface AuditLogEntry {
     | "USER_PASSWORD_RESET"
     | "USER_ROLE_CHANGED"
     | "USER_DELETED"
+    | "USER_RETENTION_ANONYMIZED"
     | "ATTENDANCE_RECORDED"
     | "ATTENDANCE_DELETED"
     | "EVENT_CREATED"

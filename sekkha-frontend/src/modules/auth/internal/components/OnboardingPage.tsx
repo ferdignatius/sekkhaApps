@@ -7,8 +7,6 @@ import {
   ArrowLeftIcon,
   UserIcon,
   GraduationCapIcon,
-  PhoneIcon,
-  CalendarIcon,
   AtSignIcon,
   UsersIcon,
   XIcon,
@@ -20,7 +18,7 @@ import { useAuth } from "@/modules/auth"
 import { SchoolCombobox } from "@/components/common/SchoolCombobox"
 import type { SchoolOption } from "@/components/common/SchoolCombobox"
 
-type OnboardingStep = "profile" | "details" | "school"
+type OnboardingStep = "profile" | "school"
 
 interface SimilarUsersStats {
   school: string
@@ -47,13 +45,10 @@ export function OnboardingPage() {
 
   // Profile Form State:
   // Step 1: username & name (MANDATORY)
-  // Step 2: phone, birth_date (OPTIONAL - CAN SKIP)
-  // Step 3: school, school_id (OPTIONAL - CAN SKIP)
+  // Step 2: school, school_id (OPTIONAL - CAN SKIP)
   const [profileForm, setProfileForm] = useState({
     username: "",
     name: "",
-    phone: "",
-    birth_date: "",
     school: "",
     school_id: "",
   })
@@ -76,10 +71,8 @@ export function OnboardingPage() {
         username?: string
         name?: string
         email?: string
-        phone?: string
         school?: string
         school_id?: string
-        birth_date?: string
       }>("/users/me")
       .then(async (u) => {
         const autoUsername =
@@ -95,12 +88,8 @@ export function OnboardingPage() {
           ...prev,
           username: autoUsername || prev.username,
           name: u.name || prev.name,
-          phone: u.phone || prev.phone,
           school: u.school || prev.school,
           school_id: u.school_id || prev.school_id,
-          birth_date: u.birth_date
-            ? u.birth_date.split("T")[0]
-            : prev.birth_date,
         }))
 
         if (u.school) {
@@ -186,7 +175,7 @@ export function OnboardingPage() {
         name: cleanName,
       })
       updateUser({ name: cleanName })
-      setStep("details")
+      setStep("school")
       window.scrollTo({ top: 0, behavior: "smooth" })
     } catch (err: any) {
       setErrorMsg(
@@ -197,35 +186,7 @@ export function OnboardingPage() {
     }
   }
 
-  // ── Step 2 Handlers: Additional Details (OPTIONAL - CAN SKIP) ────────────────
-  async function handleStep2Submit(e: React.FormEvent) {
-    e.preventDefault()
-    setErrorMsg(null)
-
-    try {
-      setSubmitting(true)
-      await api.patch("/users/me", {
-        phone: profileForm.phone.trim() || null,
-        birth_date: profileForm.birth_date || null,
-      })
-      setStep("school")
-      window.scrollTo({ top: 0, behavior: "smooth" })
-    } catch (err: any) {
-      setErrorMsg(
-        err.message || "Failed to save additional details. Please try again."
-      )
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
-  function handleStep2Skip() {
-    setErrorMsg(null)
-    setStep("school")
-    window.scrollTo({ top: 0, behavior: "smooth" })
-  }
-
-  // ── Step 3 Handlers: School (OPTIONAL - CAN SKIP) ───────────────────────────
+  // ── Step 2 Handlers: School (OPTIONAL - CAN SKIP) ───────────────────────────
   function handleSchoolChange(schoolName: string, schoolObj?: SchoolOption) {
     setProfileForm((prev) => ({
       ...prev,
@@ -336,14 +297,12 @@ export function OnboardingPage() {
           <p className="mx-auto max-w-md text-xs font-medium text-[#6a6a6a] sm:text-sm">
             {step === "profile" &&
               "Step 1: Confirm your basic identity to set up your official account"}
-            {step === "details" &&
-              "Step 2: Complete contact & personal details (optional • can skip)"}
             {step === "school" &&
-              "Step 3: Select your school or campus (optional • can skip)"}
+              "Step 2: Select your school or campus (optional • can skip)"}
           </p>
         </div>
 
-        {/* 3-Step Progress Indicator */}
+        {/* 2-Step Progress Indicator */}
         <div className="rounded-[16px] border border-[#e5e5e5] bg-[#ffffff] p-3 shadow-xs">
           <div className="flex items-center justify-between gap-1 sm:gap-2">
             {/* Step 1 Indicator */}
@@ -364,37 +323,12 @@ export function OnboardingPage() {
             <div className="relative mx-1 h-0.5 flex-1 overflow-hidden rounded-full bg-[#e5e5e5]">
               <div
                 className={`h-full bg-[#0a0a0a] transition-all duration-300 ${
-                  step === "profile" ? "w-0" : "w-full"
-                }`}
-              />
-            </div>
-
-            {/* Step 2 Indicator */}
-            <div
-              className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold transition-all sm:px-3 sm:py-1.5 ${
-                step === "details"
-                  ? "bg-[#0a0a0a] text-white"
-                  : step === "school"
-                    ? "border border-[#22c55e]/30 bg-[#22c55e]/15 text-[#22c55e]"
-                    : "border border-[#e5e5e5] bg-[#faf5e8] text-[#6a6a6a]"
-              }`}
-            >
-              <span className="flex size-4 items-center justify-center rounded-full bg-current/20 text-[10px] font-bold sm:size-5 sm:text-[11px]">
-                {step === "school" ? <CheckIcon className="size-3" /> : "2"}
-              </span>
-              <span className="text-[11px] sm:text-xs">Additional Details</span>
-            </div>
-
-            {/* Line 2 */}
-            <div className="relative mx-1 h-0.5 flex-1 overflow-hidden rounded-full bg-[#e5e5e5]">
-              <div
-                className={`h-full bg-[#0a0a0a] transition-all duration-300 ${
                   step === "school" ? "w-full" : "w-0"
                 }`}
               />
             </div>
 
-            {/* Step 3 Indicator */}
+            {/* Step 2 Indicator */}
             <div
               className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold transition-all sm:px-3 sm:py-1.5 ${
                 step === "school"
@@ -403,7 +337,7 @@ export function OnboardingPage() {
               }`}
             >
               <span className="flex size-4 items-center justify-center rounded-full bg-current/20 text-[10px] font-bold sm:size-5 sm:text-[11px]">
-                3
+                2
               </span>
               <span className="text-[11px] sm:text-xs">School / Campus</span>
             </div>
@@ -531,7 +465,7 @@ export function OnboardingPage() {
                     "Saving..."
                   ) : (
                     <>
-                      <span>Continue to Additional Details</span>
+                      <span>Continue to School Selection</span>
                       <ArrowRightIcon className="size-4" />
                     </>
                   )}
@@ -541,124 +475,7 @@ export function OnboardingPage() {
           )}
 
           {/* ─────────────────────────────────────────────────────────────────── */}
-          {/* STEP 2: ADDITIONAL DETAILS (OPTIONAL - CAN SKIP)                    */}
-          {/* ─────────────────────────────────────────────────────────────────── */}
-          {step === "details" && (
-            <form
-              onSubmit={handleStep2Submit}
-              className="animate-in space-y-4 fade-in"
-            >
-              <div className="flex items-center justify-between border-b border-[#e5e5e5] pb-3">
-                <div className="flex items-center gap-2">
-                  <UserIcon className="size-4 text-[#0a0a0a]" />
-                  <span className="text-xs font-bold tracking-wider text-[#0a0a0a] uppercase">
-                    Additional Personal Details
-                  </span>
-                </div>
-                <span className="rounded-full border border-[#e5e5e5] bg-[#faf5e8] px-2.5 py-0.5 text-[10px] font-semibold text-[#6a6a6a] uppercase">
-                  Optional • Can Skip
-                </span>
-              </div>
-
-              {/* Phone / WhatsApp */}
-              <div className="space-y-1.5">
-                <label
-                  htmlFor="phone-input"
-                  className="flex items-center gap-1 text-xs font-semibold text-[#0a0a0a]"
-                >
-                  <PhoneIcon className="size-3 text-[#6a6a6a]" />
-                  <span>Phone / WhatsApp Number</span>
-                  <span className="text-[11px] font-normal text-[#6a6a6a]">
-                    (Optional)
-                  </span>
-                </label>
-                <input
-                  id="phone-input"
-                  type="tel"
-                  placeholder="081234567890"
-                  value={profileForm.phone}
-                  onChange={(e) =>
-                    setProfileForm({ ...profileForm, phone: e.target.value })
-                  }
-                  className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 py-2 text-sm text-[#0a0a0a] transition-all outline-none placeholder:text-[#767676] focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a]"
-                />
-              </div>
-
-              {/* Date of Birth */}
-              <div className="space-y-1.5">
-                <label
-                  htmlFor="birthdate-input"
-                  className="flex items-center gap-1 text-xs font-semibold text-[#0a0a0a]"
-                >
-                  <CalendarIcon className="size-3 text-[#6a6a6a]" />
-                  <span>Date of Birth</span>
-                  <span className="text-[11px] font-normal text-[#6a6a6a]">
-                    (Optional)
-                  </span>
-                </label>
-                <input
-                  id="birthdate-input"
-                  type="date"
-                  value={profileForm.birth_date}
-                  onChange={(e) =>
-                    setProfileForm({
-                      ...profileForm,
-                      birth_date: e.target.value,
-                    })
-                  }
-                  className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 py-2 text-sm text-[#0a0a0a] transition-all outline-none focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a]"
-                />
-              </div>
-
-              <p className="text-[11px] text-[#6a6a6a]">
-                These details can be updated or filled in at any time from
-                Profile Settings.
-              </p>
-
-              {/* Action Buttons */}
-              <div className="space-y-2 pt-3">
-                <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setErrorMsg(null)
-                      setStep("profile")
-                    }}
-                    className="flex h-11 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-4 text-sm font-semibold text-[#0a0a0a] transition-all hover:bg-[#faf5e8]"
-                  >
-                    <ArrowLeftIcon className="size-4" />
-                    <span>Back</span>
-                  </button>
-
-                  <button
-                    type="submit"
-                    disabled={submitting}
-                    className="flex h-11 flex-1 cursor-pointer items-center justify-center gap-2 rounded-[12px] bg-[#0a0a0a] text-sm font-semibold text-white shadow-xs transition-all hover:bg-[#1f1f1f] disabled:opacity-50"
-                  >
-                    {submitting ? (
-                      "Saving..."
-                    ) : (
-                      <>
-                        <span>Save & Continue</span>
-                        <ArrowRightIcon className="size-4" />
-                      </>
-                    )}
-                  </button>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={handleStep2Skip}
-                  className="w-full cursor-pointer py-2 text-center text-xs font-semibold text-[#6a6a6a] transition-colors hover:text-[#0a0a0a]"
-                >
-                  Skip this step →
-                </button>
-              </div>
-            </form>
-          )}
-
-          {/* ─────────────────────────────────────────────────────────────────── */}
-          {/* STEP 3: SCHOOL (OPTIONAL - CAN SKIP)                                */}
+          {/* STEP 2: SCHOOL (OPTIONAL - CAN SKIP)                                */}
           {/* ─────────────────────────────────────────────────────────────────── */}
           {step === "school" && (
             <div className="animate-in space-y-4 fade-in">
@@ -746,7 +563,7 @@ export function OnboardingPage() {
                     type="button"
                     onClick={() => {
                       setErrorMsg(null)
-                      setStep("details")
+                      setStep("profile")
                     }}
                     className="flex h-11 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-4 text-sm font-semibold text-[#0a0a0a] transition-all hover:bg-[#faf5e8]"
                   >

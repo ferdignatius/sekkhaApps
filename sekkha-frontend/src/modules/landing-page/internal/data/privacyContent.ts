@@ -104,14 +104,14 @@ export const privacyPolicyData: PrivacyPolicyData = {
       },
       bulletPoints: {
         id: [
-          "Data Identitas Akun: Nama lengkap, alamat email aktif, nomor telepon/WhatsApp, tanggal lahir, nama institusi sekolah atau perguruan tinggi (kampus), username, serta kata sandi terenkripsi.",
+          "Data Identitas Akun: Nama lengkap, alamat email aktif, nama institusi sekolah atau perguruan tinggi (kampus), username, serta kata sandi terenkripsi.",
           "Identitas Anggota Komunitas (Member ID & QR Code): Nomor identitas unik anggota yang dihasilkan sistem secara otomatis untuk verifikasi kartu anggota digital dan presensi acara vihara.",
           "Riwayat Kehadiran & Partisipasi: Catatan check-in kebaktian Minggu, retreat pemuda, perayaan hari besar Buddhis (Waisak, Kathina, Asadha, Magha Puja), cap waktu kedatangan, serta peran tugas kebaktian (pembaca paritta, usher, dokumentasi, panitia acara).",
           "Data Gamifikasi & Keaktifan: Perolehan poin Dhamma, catatan rekor streak mingguan, lencana (badges) pencapaian, serta peringkat pada leaderboard komunitas.",
           "Data Teknis & Sesi: Alamat IP saat masuk (login), tipe peramban (browser), waktu akses (timestamp), serta token sesi terenkripsi (JWT). Kami tidak melacak lokasi GPS perangkat Anda di latar belakang secara berkelanjutan.",
         ],
         en: [
-          "Account Identity Information: Full legal name, active email address, WhatsApp/phone number, date of birth, school or campus name, username, and encrypted password credentials.",
+          "Account Identity Information: Full legal name, active email address, school or campus name, username, and encrypted password credentials.",
           "Community Member Identifier (Member ID & QR Code): A system-generated unique membership ID and digital QR code used for temple service verification and digital card check-in.",
           "Attendance & Participation Records: Check-in timestamps for Sunday services, youth retreats, Buddhist festive ceremonies (Vesak, Kathina, Asadha, Magha Puja), and assigned liturgical duties (chanting leader, usher, multimedia, committee roles).",
           "Gamification & Engagement Metrics: Dhamma points earned, weekly attendance streaks, unlocked achievement badges, and public leaderboard standings.",
@@ -265,12 +265,12 @@ export const privacyPolicyData: PrivacyPolicyData = {
       paragraphs: {
         id: [
           "Data Pribadi Anda disimpan selama akun Anda aktif sebagai anggota komunitas pemuda Vihara Tri Maha Dharma.",
-          "Apabila Anda mengajukan permohonan penutupan akun, atau jika akun tidak aktif selama lebih dari 2 (dua) tahun kalender berturut-turut, seluruh data identitas langsung (nama lengkap, kontak telepon, email) akan dihapus atau dianonimkan secara permanen dari basis data utama.",
+          "Apabila Anda mengajukan permohonan penutupan akun, atau jika akun tidak aktif selama lebih dari 2 (dua) tahun kalender berturut-turut, seluruh data identitas langsung (nama lengkap, email, username) akan dihapus atau dianonimkan secara permanen dari basis data utama.",
           "Data statistik kehadiran agregat masa lalu dapat tetap disimpan tanpa identitas pribadi untuk kepentingan arsip sejarah dan laporan tahunan vihara.",
         ],
         en: [
           "Your Personal Data is maintained throughout your active membership period in the youth community of Vihara Tri Maha Dharma.",
-          "Upon an approved account closure request or sustained inactivity exceeding 2 consecutive calendar years, direct identifying markers (full name, phone, email) will be deleted or permanently anonymized from active operational databases.",
+          "Upon an approved account closure request or sustained inactivity exceeding 2 consecutive calendar years, direct identifying markers (full name, email, username) will be deleted or permanently anonymized from active operational databases.",
           "Aggregated historical attendance figures may be retained without personal identifiers for historical community archives and annual temple reporting.",
         ],
       },

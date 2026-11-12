@@ -16,7 +16,7 @@
 
 Profil dan Pengaturan Akun adalah pusat identitas mandiri bagi setiap jemaat vihara yang telah terdaftar di Sekkha Apps (`/profile`). Modul ini menggabungkan:
 1. **Identitas Komunitas (Digital Member Card) & Hero Header**: Kartu identitas permanen berdesain minimalis sesuai standar HIG (Apple Human Interface Guidelines) yang menampilkan Nama Lengkap, Nomor Anggota (`userNumber`), Almamater Sekolah/Institusi, Tanggal Bergabung, Role Badge dengan tema warna unik per role, serta **QR Code Statis Permanen** berkontras tinggi untuk presensi event. Hero header profil menampilkan ringkasan **Karma Points** dan **Weekly Streak** (dengan ikon api aktif).
-2. **Manajemen Data Pribadi (In-Page Inline Form)**: Jemaat dapat memperbarui profil langsung di halaman (*in-place inline editing* tanpa modal popup), mencakup nama lengkap, **username unik**, nomor WhatsApp, tanggal lahir, dan sekolah almamater (terhubung langsung ke `GET /api/schools`).
+2. **Manajemen Data Pribadi (In-Page Inline Form)**: Jemaat dapat memperbarui profil langsung di halaman (*in-place inline editing* tanpa modal popup), mencakup nama lengkap, **username unik**, dan sekolah almamater (terhubung langsung ke `GET /api/schools`). *(Nomor telepon/WhatsApp dan tanggal lahir ditiadakan untuk prinsip minimisasi data UU PDP.)*
 3. **Buku Besar Poin Transparan (*Points Ledger / History*)**: Riwayat mutasi perolehan poin yang transparan (`/api/users/me/points-history`) mencakup tanggal kegiatan, jenis transaksi (kehadiran rutin, tugas pelayanan ibadah, bonus streak, dll.), poin masuk/keluar, dan saldo akhir.
 4. **Keamanan Akun & Pengaturan (*Account Security & 2FA*)**:
    - **Ganti Password Mandiri dengan Proteksi 2-Faktor (OTP 6-Digit)**: Verifikasi password lama, pengiriman 6-digit OTP ke email terdaftar, dan verifikasi kode sebelum kata sandi diperbarui. Menerbitkan token sesi baru secara otomatis sehingga sesi aktif tidak terputus (anti-401 loop).
@@ -83,16 +83,14 @@ Halaman `/profile` menggunakan kontainer standar `max-w-7xl` dengan 3 tab terorg
   * Tab profil **TIDAK menggunakan modal atau drawer popup**. Pengeditan data dilakukan langsung di tempat (*in-place inline editing*) pada halaman `/profile`.
   * **State 1: View Mode (Default / Read-Only)**:
     * Menampilkan kartu ringkasan informasi data diri jemaat dalam layout dua kolom yang rapi dan terstruktur.
-    * Memuat info: Full Name, Username (`@username`), Phone Number (WhatsApp), School / University Almamater, dan Date of Birth.
+    * Memuat info: Full Name, Username (`@username`), Email (read-only), dan School / University Almamater.
     * Tombol *"Edit Profile"* di pojok kanan atas kartu dengan ikon pensil.
   * **State 2: Edit Mode (Inline Form Transition)**:
     * Saat user mengklik *"Edit Profile"*, kartu data profil langsung bertransformasi menjadi form interaktif di halaman yang sama (animasi transisi halus fade/slide tanpa layout shift).
     * **Field Input Form**:
       * **Full Name** *(Input teks, wajib, min 1 karakter)*.
       * **Username** *(Input teks dengan prefix `@`, wajib, min 3 s.d. 30 karakter, format regex `[a-z0-9._]`, divalidasi keunikan oleh server)*.
-      * **Phone Number / WhatsApp** *(Input nomor telepon, e.g. `08123456789`)*.
       * **School / University** *(Dropdown infinite-scroll dari master data `GET /api/configure/schools` / `GET /api/schools`: dimuat secara lazy saat Edit Profile dengan batch awal 5 institusi [`page=1&limit=5&paginated=true`], memuat 5 item berikutnya saat di-scroll, dan tetap menjaga tampilan nama sekolah terpilih jika belum ada di halaman pertama)*.
-      * **Date of Birth** *(Input tanggal / Datepicker `YYYY-MM-DD`)*.
     * **Tombol Aksi Bawah Form**:
       * Tombol *"Cancel"*: Mengembalikan form ke View Mode tanpa menyimpan perubahan (reset ke data sebelumnya).
       * Tombol *"Save Changes"*: Memvalidasi payload dan memanggil `PUT /api/users/me/profile` (atau fallback `PATCH /api/users/me`). Menampilkan indikator loading saat proses penyimpanan dan notifikasi toast sukses, lalu otomatis kembali ke View Mode dengan data terbaru.
@@ -186,8 +184,6 @@ Mengambil data profil lengkap, metadata akun, dan almamater user yang sedang log
       "created_at": "2026-08-10T12:00:00.000Z",
       "profile": {
         "name": "Budi Santoso",
-        "phone": "08123456789",
-        "date_of_birth": "2005-04-12",
         "school": {
           "id": "sch_12",
           "name": "SMA Tri Ratna",
@@ -209,9 +205,8 @@ Memperbarui data diri pribadi.
   ```typescript
   export const UpdateProfileSchema = z.object({
     name: z.string().trim().min(2).max(100).optional(),
-    phone: z.string().trim().max(20).optional().nullable(),
+    username: z.string().trim().min(3).max(30).optional(),
     school_id: z.string().cuid().optional().nullable(),
-    date_of_birth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
   })
   ```
 
@@ -349,7 +344,7 @@ Mengambil buku besar catatan mutasi poin pengguna yang login.
 | --- | --- | --- | --- |
 | **US-PROF-01** | Jemaat terdaftar | Melihat Kartu Anggota Digital berdesain HIG dengan QR Code statis permanen | Saya dapat menunjukkan identitas anggota dan melakukan presensi kebaktian dengan mudah |
 | **US-PROF-02** | Jemaat terdaftar | Mencetak kartu digital (`Print Card`) dan memperbesar tampilan QR Code (`Enlarge QR`) | Saya tetap bisa melakukan presensi meski tidak membawa smartphone fisik atau saat offline |
-| **US-PROF-03** | Jemaat terdaftar | Mengedit nama, username, nomor telepon, tanggal lahir, dan almamater sekolah secara inline tanpa modal popup | Data personal saya selalu akurat dengan pengalaman UI yang mulus tanpa disrupsi konteks |
+| **US-PROF-03** | Jemaat terdaftar | Mengedit nama, username, dan almamater sekolah secara inline tanpa modal popup | Data personal saya selalu akurat dengan pengalaman UI yang mulus tanpa disrupsi konteks |
 | **US-PROF-04** | Jemaat terdaftar | Melihat riwayat mutasi Karma Points saya secara bertahap (10 terbaru + *"Show More"*) | Halaman tetap ringan namun saya tetap mengetahui rincian perolehan poin secara detail |
 | **US-PROF-05** | Jemaat terdaftar | Mengganti kata sandi dengan perlindungan 2-Faktor OTP email | Akun saya tetap terlindungi dari penyalahgunaan pihak tidak bertanggung jawab |
 | **US-PROF-06** | Jemaat yang mengganti kata sandi | Mendapatkan token sesi baru langsung di respons tanpa logout paksa | Sesi saya di perangkat yang sedang dipakai tetap berjalan lancar tanpa mengalami 401 error |
@@ -362,7 +357,7 @@ Mengambil buku besar catatan mutasi poin pengguna yang login.
 
 | ID | Skenario Pengujian | Hasil yang Diharapkan |
 | --- | --- | --- |
-| **AC-PROF-01** | User membuka `/profile` Tab Pass | Menampilkan Lean Hero Card (tanpa duplikasi ID/email/telepon), 3 label tab unclipped (`Pass`/`Profile`/`Security`), kartu anggota digital per role, serta 10 transaksi terbaru di `PointsLedger`. |
+| **AC-PROF-01** | User membuka `/profile` Tab Pass | Menampilkan Lean Hero Card (tanpa duplikasi ID/email), 3 label tab unclipped (`Pass`/`Profile`/`Security`), kartu anggota digital per role, serta 10 transaksi terbaru di `PointsLedger`. |
 | **AC-PROF-02** | User mengklik "Enlarge QR" | Modal dialog kontras tinggi fullscreen muncul menampilkan QR Code dan nomor anggota dengan kecerahan optimal. |
 | **AC-PROF-03** | User mengklik "Print Card" / "Print" | Membuka dialog cetak siap pakai browser (`window.print()`) untuk mencetak kartu identitas anggota. |
 | **AC-PROF-04** | User membuka tab Personal Profile dalam mode baca | Data diri (termasuk email *read-only* dengan pintasan ke tab Security) tampil rapi dalam View Mode tanpa form input aktif dan tanpa fetch daftar sekolah sebelum mode Edit dibuka. |

@@ -22,18 +22,6 @@ function safeDecrypt(val: string | null | undefined, fallback: string | null = n
   return decrypted
 }
 
-function parseSafeIsoDate(val: string | null | undefined): string | null {
-  if (!val) return null
-  const parsed = new Date(val)
-  if (Number.isNaN(parsed.getTime())) {
-    const err = new Error("Invalid birth date format") as any
-    err.statusCode = 400
-    err.status = 400
-    throw err
-  }
-  return parsed.toISOString()
-}
-
 export function generateTemporaryPassword(): string {
   const digits = randomInt(10000, 100000) // 5 random digits: 10000..99999
   return `sekkha${digits}puggala`
@@ -102,7 +90,7 @@ export const peopleServices = {
     const roleFilter = queryParams.role || "all"
     const isPrivileged = currentUser?.role === "organizer" || currentUser?.role === "admin"
 
-    const where: any = {}
+    const where: any = { anonymizedAt: null }
 
     if (claimedStatus === "claimed") {
       where.isClaimed = true
@@ -269,18 +257,9 @@ export const peopleServices = {
       username: member.username,
       name: member.profile?.name || member.username || "Member",
       email: canViewSensitive && member.email ? safeDecrypt(member.email, null) : null,
-      phone: canViewSensitive && member.profile?.phone ? safeDecrypt(member.profile.phone, null) : null,
       school: member.profile?.school?.name || null,
       school_id: member.profile?.schoolId || null,
       school_status: member.profile?.school?.status || null,
-      date_of_birth:
-        canViewSensitive && member.profile?.birthDate
-          ? safeDecrypt(member.profile.birthDate, null)
-          : null,
-      birth_date:
-        canViewSensitive && member.profile?.birthDate
-          ? safeDecrypt(member.profile.birthDate, null)
-          : null,
       role: member.role,
       is_claimed: member.isClaimed ?? true,
       points: canViewSensitive ? member.stats?.points ?? 0 : 0,
@@ -303,7 +282,6 @@ export const peopleServices = {
     name: string
     school_id?: string | null
     school?: string | null
-    phone?: string | null
     email?: string | null
     username?: string | null
   }, actor?: CurrentUser) {
@@ -358,9 +336,7 @@ export const peopleServices = {
             profile: {
               create: {
                 name: data.name.trim(),
-                phone: data.phone ? encrypt(data.phone.trim()) : null,
                 schoolId: resolvedSchoolId,
-                birthDate: null,
               },
             },
             stats: {
@@ -472,9 +448,6 @@ export const peopleServices = {
       }
     }
 
-    const birthDateVal = data.date_of_birth !== undefined ? data.date_of_birth : data.birth_date
-    const validatedBirthDateIso = birthDateVal ? parseSafeIsoDate(birthDateVal) : null
-
     const userData: any = {}
     if (data.username !== undefined) {
       userData.username = data.username ? data.username.toLowerCase().trim() : null
@@ -485,11 +458,7 @@ export const peopleServices = {
 
     const profileData: any = {}
     if (data.name) profileData.name = data.name.trim()
-    if (data.phone !== undefined) profileData.phone = data.phone ? encrypt(data.phone.trim()) : null
     if (resolvedSchoolId !== undefined) profileData.schoolId = resolvedSchoolId
-    if (birthDateVal !== undefined) {
-      profileData.birthDate = validatedBirthDateIso ? encrypt(validatedBirthDateIso) : null
-    }
 
     const { updatedUser, updatedProfile } = await peopleModels.transaction(async (tx) => {
       const updatedUser = await tx.user.update({ where: { id }, data: userData })
@@ -499,9 +468,7 @@ export const peopleServices = {
         create: {
           userId: id,
           name: data.name ? data.name.trim() : existing.profile?.name || existing.username || "Member",
-          phone: data.phone ? encrypt(data.phone.trim()) : null,
           schoolId: resolvedSchoolId || null,
-          birthDate: validatedBirthDateIso ? encrypt(validatedBirthDateIso) : null,
         },
         include: { school: true },
       })

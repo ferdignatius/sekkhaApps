@@ -189,5 +189,40 @@ describe("SMTP Email Delivery & Retry Limit", () => {
     expect(maskEmail("jasthiankeiven@gmail.com")).toBe("ja***@gmail.com")
     expect(maskEmail("ab@gmail.com")).toBe("a***@gmail.com")
   })
+
+  it("renders valid HTML email layouts without malformed spaces in tags or entities across all OTP emails", async () => {
+    const senders = [
+      sendRegisterOtpEmail,
+      sendForgotPasswordOtpEmail,
+      sendEmailVerificationOtpEmail,
+      sendChangePasswordOtpEmail,
+    ]
+
+    for (const sendFn of senders) {
+      let sentHtml = ""
+      const transporter: MailTransportLike = {
+        async sendMail(opts) {
+          sentHtml = opts.html
+          return { messageId: "html-check-ok" }
+        },
+      }
+
+      const res = await sendFn(
+        { to: "member@gmail.com", otp: "903853", name: "Ferdinand" },
+        { transporter, retryOptions: { sleep: noOpSleep } }
+      )
+
+      expect(res.success).toBe(true)
+      expect(sentHtml).toContain("<!DOCTYPE html>")
+      expect(sentHtml).toContain('<html lang="id">')
+      expect(sentHtml).toContain("903853")
+      expect(sentHtml).toContain("<strong>")
+      expect(sentHtml).toContain("</strong>")
+      expect(sentHtml).toContain("&copy; 2026")
+      expect(sentHtml).not.toMatch(/<\s+[a-zA-Z!/]/) // No space after opening '<' (e.g. '< tr >', '< !DOCTYPE', '< div')
+      expect(sentHtml).not.toMatch(/& copy;/) // Valid entity
+      expect(sentHtml).not.toMatch(/max\s+-\s+width/) // Valid attributes
+    }
+  })
 })
 

@@ -25,15 +25,6 @@ interface SimilarUsersStats {
   totalInSchool: number
 }
 
-const SCHOOL_TYPES = [
-  { label: "Junior High (SMP)", value: "SMP" },
-  { label: "Senior & Vocational High (SMA/SMK)", value: "SMA/SMK" },
-  { label: "University", value: "Universitas" },
-  { label: "General / Other", value: "Umum" },
-] as const
-
-type SchoolTypeValue = (typeof SCHOOL_TYPES)[number]["value"]
-
 export function OnboardingPage() {
   const { updateUser } = useAuth()
   const navigate = useNavigate()
@@ -56,7 +47,6 @@ export function OnboardingPage() {
   // School Request Modal State
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false)
   const [requestName, setRequestName] = useState("")
-  const [requestType, setRequestType] = useState<SchoolTypeValue>("SMA/SMK")
   const [requestSubmitting, setRequestSubmitting] = useState(false)
   const [requestError, setRequestError] = useState<string | null>(null)
 
@@ -197,7 +187,6 @@ export function OnboardingPage() {
 
   function handleOpenRequestModal(searchTerm: string) {
     setRequestName(searchTerm.trim())
-    setRequestType("SMA/SMK")
     setRequestError(null)
     setIsRequestModalOpen(true)
   }
@@ -215,7 +204,6 @@ export function OnboardingPage() {
       setRequestError(null)
       const res: any = await api.post("/configure/school-requests", {
         name: trimmed,
-        type: requestType,
       })
       const created = res?.data || res
       setIsRequestModalOpen(false)
@@ -224,7 +212,7 @@ export function OnboardingPage() {
         handleSchoolChange(created.name, {
           id: created.id,
           name: created.name,
-          type: created.type || requestType,
+          type: created.type || "Umum",
           status: created.status || "pending",
           userCount: created.userCount || 1,
         })
@@ -644,25 +632,6 @@ export function OnboardingPage() {
                   onChange={(e) => setRequestName(e.target.value)}
                   className="h-10 w-full rounded-[10px] border border-[#e5e5e5] bg-[#fffaf0] px-3 text-xs text-[#0a0a0a] transition outline-none focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a]"
                 />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-[#0a0a0a]">
-                  Education Level
-                </label>
-                <select
-                  value={requestType}
-                  onChange={(e) =>
-                    setRequestType(e.target.value as SchoolTypeValue)
-                  }
-                  className="h-10 w-full cursor-pointer rounded-[10px] border border-[#e5e5e5] bg-[#fffaf0] px-3 text-xs text-[#0a0a0a] transition outline-none focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a]"
-                >
-                  {SCHOOL_TYPES.map((t) => (
-                    <option key={t.value} value={t.value}>
-                      {t.label}
-                    </option>
-                  ))}
-                </select>
               </div>
 
               <p className="text-[11px] leading-relaxed text-[#6a6a6a]">

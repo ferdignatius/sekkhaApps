@@ -44,12 +44,20 @@ Leaderboard dapat diakses oleh seluruh jemaat dan pengurus yang telah login: `me
 
 Halaman `/leaderboard` memiliki tata letak responsif:
 
-### 3.1. Header Terpadu & Dynamic Season Tabs
+### 3.1. Header Terpadu, Metrik Switcher & Dynamic Season Tabs
 * Header ringkas menampilkan judul *"Leaderboard"*, rentang tanggal musim aktif, chip sisa hari (*"52d left"*), dan tombol refresh `44px`.
-* **Dynamic Season Switcher** terintegrasi langsung di bagian bawah header (tanpa label periode duplikat):
-  * Tab 1: **Custom Active Season** (mis. *Vassa Season*) — jika statusnya `is_active: true`.
-  * Tab 2: **Semester Period** (mis. *Semester 2 - 2026*).
-  * Tab 3: **Annual Period** (mis. *Year 2026*).
+* **Metrik Leaderboard (Points & Attendance Saja)**:
+  * **Points (Default)**: Akumulasi perolehan poin karma kebaktian dan pelayanan jemaat dalam rentang waktu season bersangkutan (`[start_date, end_date]`).
+  * **Attendance**: Total jumlah kehadiran event terverifikasi jemaat dalam rentang waktu season bersangkutan.
+  * *(Catatan Arsitektur: Tab metrik `Streak` **dihapus sepenuhnya** dari tampilan Leaderboard. Streak berfokus pada personal journey jemaat di Dashboard Home, Profil, dan Kartu Anggota, serta berperan di balik layar Leaderboard sebagai **Primary Tie-Breaker** ketika poin sama).*
+* **Interaksi Metrik dengan Dynamic Season Tabs**:
+  * Baik metrik `Points` maupun `Attendance` dievaluasi murni dalam batasan season aktif (`season-based zero reset`):
+    * Tab 1: **Custom Active Season** (mis. *Vassa Season*) — jika statusnya `is_active: true`.
+    * Tab 2: **Semester Period** (mis. *Semester 2 - 2026*).
+    * Tab 3: **Annual Period** (mis. *Year 2026*).
+    * Di setiap season baru, skor kompetisi dihitung murni dari awal `[start_date, end_date]` (reset ke 0).
+  * **Peran Streak di Balik Layar (Primary Tie-Breaker)**:
+    Jika dua atau lebih anggota memiliki total perolehan poin musim yang sama persis di tab `Points`, maka sistem otomatis memeringkatkan anggota dengan angka streak (`current_streak`) tertinggi di atasnya sebelum mengevaluasi jumlah kehadiran.
 
 ### 3.2. Podium Visual Top 3
 * Tiga pilar Clay bersih di bagian atas tanpa badge peringkat berulang yang menimpa avatar:
@@ -78,6 +86,7 @@ Halaman `/leaderboard` memiliki tata letak responsif:
 Mengambil data peringkat leaderboard untuk periode tertentu.
 * **Akses**: `requireAuth`.
 * **Query Parameters**:
+  * `metric` (string: `points` | `attendance`, default: `points`): Metrik pemeringkatan leaderboard musiman.
   * `season_id` (string cuid, opsional): ID musim spesifik.
   * `period` (string: `semester`, `annual`, `custom`, default: `semester`).
   * `limit` (number, default: 10, max: 100).

@@ -22,6 +22,7 @@ export interface DigitalMemberCardProps {
   username?: string | null
   points?: number
   currentStreak?: number
+  streakStatus?: "active" | "paused" | "inactive" | "expired"
   isClaimed?: boolean
   onCopyMemberId?: (memberId: string) => void
 }
@@ -99,6 +100,7 @@ export function DigitalMemberCard({
   username,
   points,
   currentStreak,
+  streakStatus = "active",
   isClaimed,
   onCopyMemberId,
 }: DigitalMemberCardProps) {
@@ -241,7 +243,11 @@ export function DigitalMemberCard({
                       className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold ${roleCardStyles.badge}`}
                     >
                       <FlameIcon className="size-2.5 fill-current" />
-                      <span>{currentStreak} Wk Streak</span>
+                      <span>
+                        {streakStatus === "paused" && currentStreak > 0
+                          ? `${currentStreak} Wk Paused`
+                          : `${currentStreak} Wk Streak`}
+                      </span>
                     </span>
                   )}
                 </div>

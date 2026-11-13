@@ -243,4 +243,60 @@ describe("LeaderboardPage Top 10, Bottom Self-Rank (>10) & Visual Role/Self Sepa
     expect(screen.getByTestId("self-you-badge").className).toContain("bg-clay-ochre")
     consoleSpy.mockRestore()
   })
+
+  it("switches metric between points and attendance and refetches leaderboard data", async () => {
+    const entries = makeEntries(5, { id: "usr_me", rank: 1 })
+    const { getSpy } = renderLeaderboard({
+      entries,
+      my_rank: { rank: 1, value: 8, initials: "CM", username: "current_member" },
+      season: {
+        id: "s_1",
+        name: "Semester 2 · 2026",
+        start_date: "2026-07-01T00:00:00Z",
+        end_date: "2026-12-31T00:00:00Z",
+        days_left: 52,
+        target_attendance: 500,
+      },
+      available_periods: [
+        {
+          id: "s_1",
+          key: "semester",
+          name: "Semester 2 · 2026",
+          start_date: "2026-07-01T00:00:00Z",
+          end_date: "2026-12-31T00:00:00Z",
+          days_left: 52,
+          target_attendance: 500,
+          is_active: true,
+          is_custom: false,
+        },
+      ],
+      community_goal: {
+        current: 150,
+        target: 500,
+        label: "Community Attendance Target",
+      },
+    })
+
+    await waitFor(() => {
+      expect(screen.getByText("@current_member")).toBeTruthy()
+    })
+
+    // Season tab is visible
+    expect(screen.getByRole("button", { name: "Semester 2 · 2026" })).toBeTruthy()
+
+    // Streak tab is completely removed from leaderboard
+    expect(screen.queryByRole("tab", { name: /Streak/i })).toBeNull()
+
+    // Switch to Attendance metric tab
+    const attendanceTab = screen.getByRole("tab", { name: /Attendance/i })
+    fireEvent.mouseDown(attendanceTab, { button: 0 })
+    fireEvent.click(attendanceTab)
+
+    await waitFor(() => {
+      expect(getSpy).toHaveBeenCalledWith(
+        expect.stringContaining("metric=attendance"),
+        expect.anything()
+      )
+    })
+  })
 })

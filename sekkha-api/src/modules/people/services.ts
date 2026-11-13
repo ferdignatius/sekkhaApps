@@ -321,7 +321,7 @@ export const peopleServices = {
 
     while (attempts < 5) {
       attempts++
-      const userNumber = await generateUniqueUserNumber(prisma)
+      const userNumber = await peopleModels.generateUserNumber()
       try {
         newMember = await peopleModels.create(
           {

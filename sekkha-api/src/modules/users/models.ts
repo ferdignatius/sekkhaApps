@@ -1,7 +1,11 @@
 import { prisma } from "../../lib/prisma"
+import { generateUniqueUserNumber } from "../../lib/userNumber"
 import type { Prisma } from "@prisma/client"
 
 export const userModels = {
+  generateUserNumber(client?: any, date?: Date) {
+    return generateUniqueUserNumber(client || prisma, date)
+  },
   findUserWithProfileAndStats(userId: string) {
     return prisma.user.findFirst({
       where: { id: userId, anonymizedAt: null },

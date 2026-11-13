@@ -145,8 +145,9 @@ Visibilitas menentukan siapa yang dapat melihat jadwal event:
   * **Pengecualian Search Global**: Saat user mengetik kata kunci di **Search Bar**, list beralih ke mode pencarian lintas semua tanggal & bulan (tanpa dibatasi tanggal aktif). Ketika Search Bar dibersihkan (`Clear Search`), tampilan kembali ke event pada tanggal aktif.
 * **Urutan Event dalam Tanggal Aktif**:
   * Di dalam tanggal aktif, event tetap diurutkan berdasarkan prioritas status & waktu (`active` di posisi teratas -> `scheduled` urut jam `event_date ASC` -> `closed` -> `cancel`) dengan highlight visual tegas antara `Live Attendance` (`active`), `Scheduled` / `Today`, dan `Closed` / `Cancelled` (*muted*).
-* **Perilaku Setelah Create Event**:
+* **Perilaku Setelah Create Event & Toast Feedback CRUD**:
   * Setelah Pengurus berhasil membuat event baru (`POST /api/events`), UI otomatis mengarahkan kalender (`activeMonth`) dan tanggal aktif (`selectedDate`) langsung ke tanggal pelaksanaan event yang baru dibuat, sehingga event baru langsung terlihat di daftar tanpa tertumpuk event lama.
+  * Seluruh aksi CRUD event dan presensi menampilkan notifikasi toast non-blocking berbahasa Inggris (hilang otomatis dalam 3.5 detik): `"Event created successfully!"`, `"Event updated successfully!"`, `"Event duplicated successfully!"`, toast transisi status (`active`, `closed`, `cancel`, `planned`), `"Attendance record removed."`, `"Event deleted successfully."`, serta toast error yang menggantikan browser `alert()`.
 * **Filter Lainnya**:
   * Jenis Event (`event_type_id`) berdasarkan master data aktif.
   * Bulan / Periode tanggal kalender (`activeMonth`).
@@ -157,29 +158,44 @@ Visibilitas menentukan siapa yang dapat melihat jadwal event:
 
 ### 6.2. Detail Event (`GET /api/events/:id`)
 * **Route**: `/events/:id`
+* **Desain & Token Visual (`DESIGN.md`)**: Seluruh kontainer kartu, tab segment, dialog konfirmasi, dan modal reschedule menggunakan semantic design tokens (`bg-canvas`, `bg-surface-soft`, `bg-surface-card`, `text-ink`, `text-text-muted`, `border-hairline`) serta radius standar (`rounded-xl`, `rounded-2xl`) tanpa nilai hex mentah.
 * **Komponen Tampilan**:
-  * Header: Judul, badge tipe kegiatan (warna dinamis), tanggal, waktu, dan lokasi.
-  * Status badge (`scheduled`, `active`, `closed`, `cancel`).
+  * Header: Judul, tanggal squircle, badge tipe kegiatan (warna dinamis), status badge (`scheduled`, `active`, `closed`, `cancel`), dan tombol Share. *(Tombol **Export / Add to Google Calendar** telah dihapus sepenuhnya dari dropdown header, kartu tanggal, dan baris non-pengurus).*
+  * **Overview Bento Grid**:
+    * **Date & Time**: Hari, tanggal, jam WIB, dan keterangan zona waktu `"Western Indonesia Time (WIB · UTC+7)"`.
+    * **Venue & Location (Smart Location Context)**: Menghapus teks hardcoded lama dan menentukan konteks lokasi otomatis:
+      * Untuk lokasi virtual (kata kunci seperti `zoom`, `online`, `meet`, `teams`, `discord`, `virtual` atau berupa URL `https://`): menampilkan subjudul `"Online Virtual Session"`. Jika berupa URL valid menampilkan tautan `"Join Virtual Session"`, jika hanya nama platform tanpa URL menampilkan keterangan `"Link shared by event organizers"` tanpa tautan Google Maps yang membingungkan.
+      * Untuk ruangan fisik vihara: menampilkan subjudul `"Vihara Sekkha Community Center"` dengan tautan Google Maps menggunakan query `"Vihara Sekkha <location>"`.
+    * **Seva Reward & Event Rules**: Menampilkan reward poin dan kebijakan keterlambatan; apabila `late_penalty_points === 0`, baris **Late Penalty** menampilkan `"No Penalty (0 Pts)"` alih-alih angka penalti minus.
   * Panel Action Buttons:
-    * Tombol status transition ("Start Event", "Close & Finalize Event", "Cancel Event", "Reschedule Event") sesuai status berjalan (khusus `organizer`/`admin`). Saat event `cancel`, muncul tombol **"Reschedule Event"** untuk mengatur tanggal baru dan mengembalikan status ke `scheduled`.
-    * Tombol **"Buka Scanner Presensi"**: Tampil saat event `active` **khusus untuk role `organizer` dan `admin`** (`activist` tidak memiliki akses).
-    * Tombol **"Lihat Rekap Kehadiran"**: Tampil saat event `active` atau `closed` **khusus untuk `organizer` dan `admin`**.
-    * Tombol **"Edit Event"** dan **"Hapus Event"**: Khusus `organizer` dan `admin`.
+    * Tombol status transition ("Start Event", "Finalize Event", "Cancel Event", "Reschedule Event") sesuai status berjalan (khusus `organizer`/`admin`). Saat event `cancel`, muncul tombol **"Reschedule Event"** untuk mengatur tanggal baru dan mengembalikan status ke `scheduled`.
+    * Tombol **"Live Scanner"**: Tampil saat event `active` **khusus untuk role `organizer` dan `admin`** (`activist` tidak memiliki akses).
+    * Tombol **"Manage Attendance List"**: Tampil pada tab Attendance **khusus untuk `organizer` dan `admin`**.
+    * Tombol **"Edit Event"**, **"Duplicate Event"**, dan **"Delete Event"**: Khusus `organizer` dan `admin`.
 
 ### 6.3. Buat & Edit Event
 * **Route**: `/events/new` dan `/events/:id/edit`
 * **Akses**: Hanya `organizer` dan `admin`.
-* **Field Form & Validasi**:
+* **Struktur Form 3 Bagian & UX Enhancements**:
+  1. **Section 1 — Basic Details**: `Event name` (`title`), `Description` (textarea opsional yang **selalu tampil** tanpa tersembunyi di balik toggle), `Event Type` (`event_type_id` dari Master Data), dan `Visibility` radio (`all`, `member`, `activist`, `organizer`).
+  2. **Section 2 — Schedule & Venue**:
+     * `DateTimePickerPopover`: menggunakan semantic token `DESIGN.md` (`z-[120]`), chip pilihan tanggal cepat (**`Today`**, **`Tomorrow`**, **`Next Sun`**), preset waktu cepat (**`08:00`**, **`09:00`**, **`13:00`**, **`17:00`**, **`19:00`**) + custom time input, serta menonaktifkan tanggal masa lampau (`disablePastDates`) saat membuat event baru.
+     * `Location`: input teks bebas (*free-text*) dilengkapi dropdown **"Recent Locations"** yang menampilkan maksimal **3 lokasi berbeda terakhir** yang pernah digunakan oleh event sebelumnya (tanpa chip/autofill lokasi hardcode).
+  3. **Section 3 — Attendance & Late Policy**:
+     * **Apply Late Penalty Toggle (`<Switch>`)**: Mengontrol penerapan potongan poin keterlambatan per event.
+       * Saat **OFF**: `max_late_minutes` dan `late_penalty_points` diset ke `0` dan input detail disembunyikan.
+       * Saat **ON**: Menampilkan input `Grace Period (minutes)` (`max_late_minutes`) dan `Late Penalty (points)` (`late_penalty_points`) yang dapat diedit, dengan default awal mengikuti master data Event Type (misal 15 menit & 15 poin).
+* **Field Form & Validasi Inti**:
   * `title`: Nama Acara (wajib, min 3 karakter).
   * `description`: Deskripsi lengkap kegiatan (opsional).
-  * `event_type_id`: Dropdown pilihan dari Master Data Event Type (wajib). Saat dipilih, otomatis mengisi nilai `point_reward`, `max_late_minutes` (default 30 menit), dan `late_penalty_points` (default 15 poin).
+  * `event_type_id`: Dropdown pilihan dari Master Data Event Type (wajib). Saat dipilih, otomatis mengisi nilai `point_reward`, serta default `max_late_minutes` dan `late_penalty_points` apabila toggle penalti aktif.
   * `visibility`: Radio pilihan `all`, `member`, `activist`, `organizer` (wajib, default: `all`).
   * `event_date`: Tanggal dan jam pelaksanaan (wajib, DateTime ISO).
-    * **Validasi Pembuatan Event Baru**: **`event_date >= current date`** (waktu saat request dibuat). Form menolak tanggal di masa lampau dan menampilkan pesan *"Tanggal pelaksanaan tidak boleh di masa lampau"*.
+    * **Validasi Pembuatan Event Baru**: **`event_date >= current date`** (waktu saat request dibuat). Form menolak tanggal di masa lampau dan menampilkan pesan error validasi.
   * `location`: Lokasi kegiatan (wajib, teks).
   * `point_reward`: Poin presensi jemaat (angka positif, default mengikuti master data).
-  * `max_late_minutes`: Batas menit toleransi keterlambatan (default 30 menit dari master data, editable per-event).
-  * `late_penalty_points`: Jumlah potongan poin jika terlambat (default 15 poin dari master data, editable per-event).
+  * `max_late_minutes`: Batas menit toleransi keterlambatan (`0` jika toggle Late Penalty dimatikan).
+  * `late_penalty_points`: Jumlah potongan poin jika terlambat (`0` jika toggle Late Penalty dimatikan).
   * `capacity`: Kapasitas kuota peserta (opsional).
   *(Catatan: Input status **ditiadakan** dari form create/edit; status baru selalu default `scheduled`).*
 
@@ -543,6 +559,9 @@ Menghapus event permanen.
 | **AC-EVT-14** | Organizer mencoba menekan "Start Event" ketika tanggal saat ini sudah melewati jadwal pelaksanaan event (`current date > event_date`) | Tombol di UI disabled / request `PATCH status: active` ditolak oleh backend dengan `400 Bad Request` dan pesan "Event cannot be activated because its scheduled date has already passed" (event harus di-reschedule atau di-cancel). |
 | **AC-EVT-15** | User membuka halaman `/events` | Kalender langsung menyorot tanggal **Today** sebagai tanggal aktif dan hanya menampilkan event pada tanggal tersebut (`active` -> `scheduled` -> `closed` -> `cancel`). Tidak ada tombol "Full Month" / "Show All" atau kondisi tanpa tanggal terpilih; event di hari lain terlihat dari *dot* kalender dan dapat diklik langsung. |
 | **AC-EVT-16** | Organizer baru saja membuat event untuk tanggal mendatang (di bulan ini maupun bulan depan) | Setelah submit sukses, kalender (`activeMonth`) dan tanggal aktif (`selectedDate`) otomatis berpindah ke tanggal pelaksanaan event baru tersebut sehingga langsung tampil di daftar. |
+| **AC-EVT-17** | Organizer menggunakan form Create/Edit Event dan toggle Late Penalty | Form tertata dalam 3 bagian terstruktur dengan deskripsi selalu terlihat, chip lokasi cepat, `DateTimePickerPopover` ber-preset tanggal/waktu (menonaktifkan tanggal lampau saat create), dan toggle `<Switch>` **"Apply Late Penalty"** yang mengirim `0` jika dimatikan. |
+| **AC-EVT-18** | Organizer mengeksekusi aksi CRUD Event (Create, Update, Duplicate, Delete, Status, Remove Attendance) | Muncul banner toast berbahasa Inggris yang informatif (sukses atau error) tanpa memakai browser `alert()`. |
+| **AC-EVT-19** | Pengguna membuka halaman Detail Event | Seluruh tampilan memakai token semantik `DESIGN.md`, tidak menampilkan tombol/link Google Calendar export maupun teks hardcoded Vihara Tri Maha Dharma, menampilkan lokasi pintar (virtual vs ruangan Vihara Sekkha), serta menampilkan `"No Penalty (0 Pts)"` bila penalti bernilai 0. |
 
 ---
 
@@ -588,6 +607,10 @@ Menghapus event permanen.
 | **TC-EVT-19** | Always-Active Date (Default Today) | Halaman `/events` selalu memilih tanggal aktif secara default tanpa menampilkan list sebulan penuh | Bulan aktif memiliki event `closed` tgl 2, `active` hari ini, dan `scheduled` tgl 24 | 1. Buka `/events`.<br>2. Klik ulang tanggal hari ini di kalender.<br>3. Klik tgl 24 di kalender. | Saat dibuka, `selectedDate` otomatis terpilih ke **Today** (menampilkan event hari ini). Mengklik ulang tanggal yang aktif tidak membuatnya kosong/unselected, dan tombol `Full Month` / `Show All` tidak ada. Mengklik tgl 24 memindahkan list ke event tgl 24 (urut `active` -> `scheduled` -> `closed` -> `cancel`). | Positive |
 | **TC-EVT-20** | Calendar Month Nav & Global Search | Pindah bulan tetap menjaga tanggal aktif, sementara Search menampilkan hasil lintas tanggal | Berada di `/events` dengan tanggal aktif hari ini | 1. Klik Next month lalu klik Today.<br>2. Ketik kata kunci judul event di Search Bar, lalu hapus. | Saat pindah bulan, tanggal aktif otomatis memilih tgl 1 bulan target (atau `Today` saat tombol Today / kembali ke bulan berjalan). Saat Search terisi, hasil tampil lintas tanggal/bulan; setelah dibersihkan kembali menampilkan event tanggal aktif. | Positive |
 | **TC-EVT-21** | Post-Create Navigation | Organizer membuat event baru untuk tanggal mendatang | Tanggal aktif di Today (11 Nov); event baru dijadwalkan untuk 24 Nov atau 3 Des | Submit form Create Event. | Kalender (`activeMonth`) dan tanggal aktif (`selectedDate`) otomatis berpindah ke 24 Nov / 3 Des sehingga event baru langsung tampil di layar. | Positive |
+| **TC-EVT-22** | Late Penalty Toggle & Presets | Organizer membuat event tanpa penalti keterlambatan dengan preset jadwal/lokasi | Organizer membuka Create New Event | 1. Pilih preset tanggal `Tomorrow` & jam `09:00` serta chip `Main Hall`.<br>2. Matikan toggle **"Apply Late Penalty"**.<br>3. Submit form. | Input Grace Period/Penalty tersembunyi saat OFF; payload mengirim `max_late_minutes: 0` dan `late_penalty_points: 0`; kalender tanggal lampau nonaktif saat create. | Positive / UX |
+| **TC-EVT-23** | CRUD Action Toasts | Organizer membuat, menduplikasi, mengubah status, dan menghapus event | Role `organizer` di halaman `/events` | Jalankan Create, Update, Duplicate, Start/Close Event, dan Delete Event. | Setiap aksi menampilkan toast feedback English yang sesuai (`Event created successfully!`, `Event duplicated successfully!`, `Event deleted successfully.`, dll.) dan tidak memanggil `window.alert()`. | Positive / UX |
+| **TC-EVT-24** | Smart Location & No Calendar Export | Pengguna membuka Detail Event fisik maupun virtual | Tersedia event berlokasi `"Main Hall"` dan event berlokasi `"Online (Zoom)"` | Buka tab Overview kedua event. | Tidak ada tombol Google Calendar export; lokasi `"Online (Zoom)"` menampilkan subjudul `"Online Virtual Session"` tanpa query Maps palsu, sedangkan `"Main Hall"` menampilkan `"Vihara Sekkha Community Center"` + tautan Maps `"Vihara Sekkha Main Hall"`. | Positive / UX |
+| **TC-EVT-25** | Design Tokens & Zero Penalty Label | Memverifikasi token warna dan penalti 0 di Detail Event | Event memiliki `late_penalty_points: 0` | Buka Detail Event tab Overview. | Komponen memakai semantic tokens `DESIGN.md` (`bg-canvas`, `bg-surface-soft`, `border-hairline`, `text-ink`) dan baris Late Penalty menampilkan `"No Penalty (0 Pts)"`. | Positive / UI |
 
 
 

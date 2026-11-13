@@ -299,4 +299,116 @@ describe("LeaderboardPage Top 10, Bottom Self-Rank (>10) & Visual Role/Self Sepa
       )
     })
   })
+
+  it("allows selecting a past/archived season and displays its final standings & winner", async () => {
+    const activeEntries = makeEntries(5, { id: "usr_me", rank: 2 })
+    const pastEntries = makeEntries(4)
+    pastEntries[0] = {
+      ...pastEntries[0],
+      name: "Vassa Champion",
+      username: "vassa_champ",
+      value: 950,
+      label: "950 points",
+    }
+
+    const activePayload = {
+      entries: activeEntries,
+      my_rank: { rank: 2, value: 80, initials: "CM", username: "current_member" },
+      season: {
+        id: "s_1",
+        name: "Semester 2 · 2026",
+        start_date: "2026-07-01T00:00:00Z",
+        end_date: "2026-12-31T00:00:00Z",
+        days_left: 52,
+        target_attendance: 500,
+      },
+      available_periods: [
+        {
+          id: "s_1",
+          key: "semester",
+          name: "Semester 2 · 2026",
+          start_date: "2026-07-01T00:00:00Z",
+          end_date: "2026-12-31T00:00:00Z",
+          days_left: 52,
+          target_attendance: 500,
+          is_active: true,
+          is_custom: false,
+        },
+      ],
+      archived_periods: [
+        {
+          id: "season_past_2025",
+          key: "custom",
+          name: "Vassa Retreat 2025",
+          code: "VASSA-2025",
+          start_date: "2025-07-01T00:00:00Z",
+          end_date: "2025-09-30T23:59:59Z",
+          days_left: 0,
+          target_attendance: 250,
+          is_active: false,
+          is_custom: true,
+          is_archived: true,
+        },
+      ],
+      community_goal: {
+        current: 150,
+        target: 500,
+        label: "Community Attendance Target",
+      },
+    }
+
+    const pastPayload = {
+      ...activePayload,
+      entries: pastEntries,
+      active_period: activePayload.archived_periods[0],
+      season: {
+        id: "season_past_2025",
+        name: "Vassa Retreat 2025",
+        start_date: "2025-07-01T00:00:00Z",
+        end_date: "2025-09-30T23:59:59Z",
+        days_left: 0,
+        target_attendance: 250,
+      },
+    }
+
+    const getSpy = vi.spyOn(api, "get").mockImplementation((url: string) => {
+      if (url.includes("period=season_past_2025")) {
+        return Promise.resolve(pastPayload as any)
+      }
+      return Promise.resolve(activePayload as any)
+    })
+
+    const authState: AuthState = {
+      ...initialAuthState,
+      status: "authenticated",
+      userId: "usr_me",
+      role: "admin",
+      username: "current_member",
+      name: "Current Member",
+    }
+
+    render(
+      <AuthContext.Provider value={{ authState } as any}>
+        <LeaderboardPage />
+      </AuthContext.Provider>
+    )
+
+    const pastBtn = await screen.findByRole("button", { name: /Past Seasons/i })
+    fireEvent.click(pastBtn)
+
+    const archivedOption = await screen.findByText("Vassa Retreat 2025")
+    fireEvent.click(archivedOption)
+
+    await waitFor(() => {
+      expect(getSpy).toHaveBeenCalledWith(
+        expect.stringContaining("period=season_past_2025"),
+        expect.anything()
+      )
+    })
+
+    await waitFor(() => {
+      expect(screen.getByText(/Archived Season · Final Standings/i)).toBeTruthy()
+      expect(screen.getByText("@vassa_champ")).toBeTruthy()
+    })
+  })
 })

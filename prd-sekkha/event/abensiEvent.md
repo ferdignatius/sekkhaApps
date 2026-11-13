@@ -309,40 +309,41 @@ Pada halaman `/events/:id` untuk organizer dan admin, tombol aksi berubah secara
 
 ## 9. UI: Halaman Scanner (`/events/:id/scan`)
 
-### 9.1. Layout
+### 9.1. Layout & Top Mode Toggle (`QR Scanner` vs `Manual Entry`)
 
 ```
 ┌─────────────────────────────────────┐
-│  ←  Kebaktian Remaja                │
-│  🔴 SESI ABSENSI AKTIF              │
+│  ←  Kebaktian Remaja   [Finalize]   │
+│  🔴 Live Session (38 Present)       │
+├─────────────────────────────────────┤
+│    ( [📷 QR Scanner] [👤 Manual Entry] )
 ├─────────────────────────────────────┤
 │                                     │
-│     [ LIVE CAMERA VIEW ]            │
+│     [ LIVE CAMERA / MANUAL FORM ]   │
 │   ┌──────────────────┐              │
 │   │   [ SCAN FRAME ] │              │
 │   └──────────────────┘              │
 │                                     │
+│      ╭───────────────────────╮      │
+│      │ ✓ Hendra Santoso +50  │  <- Floating Random Bubble Toast
+│      ╰───────────────────────╯      │
 ├─────────────────────────────────────┤
-│  38 Jemaat Tercatat                 │
-│  ─────────────────────────────────  │
-│  • Hendra Santoso (202610230001)    │
-│  • Lina Wijaya    (202610230002)    │
-│  • Budi Raharjo   (202610230003)    │
-│         [ scroll list ]             │
-├─────────────────────────────────────┤
-│  [ + Absensi Manual (userNumber) ]  │
-│  [   Tutup & Finalisasi Poin     ]  │
+│          [ History (38) ]           │
 └─────────────────────────────────────┘
 ```
 
-### 9.2. State Feedback Scan
+* **Top Segmented Mode Toggle (`QR Scanner` vs `Manual Entry`)**: Pengurus (`organizer`/`admin`) selalu melihat kontrol segmen mode aktif di bagian atas layar scanner (`aria-pressed`), tanpa duplikasi tombol toggle di dock bawah atau di dalam kartu form manual, sehingga status kamera vs input manual selalu eksplisit.
 
-| Kondisi | Tampilan Feedback |
+### 9.2. State Feedback Scan & Floating Random Bubble Toasts
+
+Selain banner status di bagian atas dan umpan balik audio, setiap hasil check-in (scan QR maupun manual) juga memunculkan **Floating Random Bubble Toast** beranimasi di atas dock bawah (maksimal 4 gelembung terbaru secara bersamaan) dengan offset horizontal acak (`-28px` s/d `+28px`) dan hilang otomatis setelah `2600ms`.
+
+| Kondisi | Tampilan Feedback (Top Banner + Floating Bubble Toast) |
 | --- | --- |
-| Scan baru berhasil | ✅ Beep + Toast hijau: *"Hendra Santoso tercatat hadir"* |
-| Jemaat terlambat | ⚠️ Beep + Toast oranye: *"Hendra Santoso tercatat (Terlambat -15 Pts)"* |
-| User sudah tercatat sebelumnya | ⚠️ Buzz + Toast kuning: *"Peserta sudah tercatat hadir"* (HTTP 409) |
-| Nomor anggota tidak valid | ❌ Buzz + Toast merah: *"Nomor anggota tidak ditemukan"* (HTTP 404) |
+| Scan baru berhasil | ✅ Beep + Toast & Bubble hijau: *"Check-In Recorded — Hendra Santoso"* |
+| Jemaat terlambat | ⚠️ Beep + Toast & Bubble sesuai status terlambat (*"-15 Pts Late Penalty"*) |
+| User sudah tercatat sebelumnya | ⚠️ Buzz + Toast & Bubble kuning/amber: *"Already Checked In"* (HTTP 409) |
+| Nomor anggota tidak valid / gagal | ❌ Buzz + Toast & Bubble merah/rose: *"Check-In Failed"* (HTTP 404 / error) |
 
 ---
 
@@ -585,6 +586,7 @@ model Attendance {
 | **AC-ATT-09** | Organizer membuka Rekap Kehadiran (`/events/:id/attendances`) | Menampilkan `total_attended`, status finalisasi, dan daftar peserta dengan nomor anggota, sekolah, dan waktu scan (tanpa photo_url, tanpa RSVP, tanpa attendance rate). |
 | **AC-ATT-10** | Organizer melakukan "Reschedule Event" pada event `cancel` | Menentukan tanggal baru (`event_date >= current date`), status berubah kembali menjadi `scheduled` (code `200`). |
 | **AC-ATT-11** | Organizer mengetik nama di Manual Attendance (`/events/scan`) atau mendaftarkan member walk-in | Pencarian asinkron ke `GET /api/people/members/similar` menampilkan info banner non-blocking + tombol **"See More"** untuk modal daftar lengkap (tersembunyi bila kosong), serta memperbolehkan check-in langsung atau registrasi member baru. |
+| **AC-ATT-12** | Organizer menggunakan mode toggle dan melihat feedback hasil scan di `/events/scan` | Segmented control **`QR Scanner`** vs **`Manual Entry`** tampil konsisten di bagian atas tanpa tombol toggle ganda, dan setiap aksi check-in memunculkan *floating bubble toast* ber-offset acak (`-28px` s/d `+28px`) yang hilang otomatis dalam `2600ms`. |
 
 ---
 
@@ -625,4 +627,5 @@ model Attendance {
 | **TC-ATT-15** | Daily Point Cap | Finalisasi poin jemaat yang melebihi batas maksimal harian (150 poin) | Jemaat telah memperoleh 120 poin hari ini, kehadiran acara baru bernilai 50 poin | Organizer menutup acara yang dihadiri jemaat tersebut. | Sistem melakukan clamp perolehan poin acara kedua menjadi +30 poin (sehingga akumulasi harian genap 150 poin). Poin tidak melebihi daily cap. | Edge Case / Rule |
 | **TC-ATT-16** | Recap Access Security | Role `activist` atau `member` mencoba melihat lembar rekap presensi | User login dengan role `activist` atau `member` | Kirim `GET /api/events/:id/attendances`. | HTTP 403 Forbidden envelope ("Forbidden: Insufficient permissions"). Menu dan data rekapitulasi kehadiran tidak dapat diakses. | Security |
 | **TC-ATT-17** | Manual Entry Similar Name & Walk-In Pre-Provision | Pencarian nama mirip asinkron + modal See More dan registrasi walk-in di Manual Attendance | Event `active`, organizer membuka tab **Manual Entry** di `/events/scan` | 1. Ketik nama mirip `"Budi Santosa"` (>= 3 huruf) di pencarian nama.<br>2. Klik **"See More"** untuk melihat modal daftar mirip atau klik **"+ Register New Member"** untuk mendaftarkan peserta baru. | Info banner non-blocking + modal **See More** muncul hanya ketika ada kecocokan mirip (hilang jika 0 hasil); organizer dapat langsung `+ Check In` dari modal/list atau mendaftarkan peserta baru terhubung Master Data School (role default `member`). | Positive / UX |
+| **TC-ATT-18** | Mode Toggle & Floating Bubble Toasts | Perpindahan mode QR Scanner / Manual Entry dan munculnya floating random bubble toast saat scan | Event `active`, role `organizer` berada di `/events/scan` | 1. Periksa posisi segmented toggle `QR Scanner` & `Manual Entry` di bagian atas.<br>2. Lakukan check-in sukses dan check-in duplikat/error. | Toggle `Manual Entry` muncul unik di bar atas; setiap respons check-in memicu munculnya *floating bubble toast* di atas dock bawah dengan posisi horizontal acak dan auto-dismiss setelah 2.6 detik. | Positive / UX |
 

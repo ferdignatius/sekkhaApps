@@ -36,6 +36,7 @@ export interface LeaderboardPeriod {
   target_attendance: number
   is_active: boolean
   is_custom: boolean
+  is_archived?: boolean
   description?: string | null
 }
 
@@ -44,6 +45,7 @@ export interface LeaderboardSnapshot {
   community_total: number
   season: SeasonInfo
   available_periods: LeaderboardPeriod[]
+  archived_periods?: LeaderboardPeriod[]
   active_period: LeaderboardPeriod
   calculated_at: string
 }
@@ -63,6 +65,7 @@ function leaderboardCacheKey(metric: MetricType, periodKey: string, identifier: 
  */
 export async function resolveLeaderboardPeriods(now = new Date()): Promise<{
   periods: LeaderboardPeriod[]
+  archivedPeriods: LeaderboardPeriod[]
   activeCustom: any | null
 }> {
   const year = now.getFullYear()
@@ -139,7 +142,38 @@ export async function resolveLeaderboardPeriods(now = new Date()): Promise<{
     description: `Auto-active full year evaluation period (${year})`,
   })
 
-  return { periods, activeCustom: isCustomReal ? activeCustom : null }
+  // Resolve past / archived seasons from DB so users can inspect historical standings
+  const rawPastSeasons = await (leaderboardModels.findPastSeasons?.(now).catch(() => []) ?? Promise.resolve([]))
+  const activePeriodCodes = new Set(periods.map((p) => p.code).filter(Boolean) as string[])
+  const archivedPeriods: LeaderboardPeriod[] = rawPastSeasons
+    .filter((s) => {
+      if (isCustomReal && activeCustom && s.id === activeCustom.id) return false
+      if (s.endDate >= now && s.code && activePeriodCodes.has(s.code)) return false
+      return true
+    })
+    .map((s) => {
+      const periodKey: "custom" | "semester" | "annual" = s.code?.includes("-SEM")
+        ? "semester"
+        : s.code?.includes("-ANNUAL")
+          ? "annual"
+          : "custom"
+      return {
+        id: s.id,
+        key: periodKey,
+        name: s.name,
+        code: s.code,
+        start_date: s.startDate.toISOString(),
+        end_date: s.endDate.toISOString(),
+        days_left: 0,
+        target_attendance: s.targetAttendance,
+        is_active: false,
+        is_custom: periodKey === "custom",
+        is_archived: true,
+        description: s.description,
+      }
+    })
+
+  return { periods, archivedPeriods, activeCustom: isCustomReal ? activeCustom : null }
 }
 
 export async function resolveActiveSeason(now = new Date()) {
@@ -323,21 +357,34 @@ async function computeAndCacheLeaderboardInternal(periodTarget?: LeaderboardPeri
 /**
  * Gets the pre-computed snapshot for a given metric and period. If missing or stale, computes immediately.
  */
+function attachArchivedMetadata(
+  snapshot: LeaderboardSnapshot,
+  periods: LeaderboardPeriod[],
+  archivedPeriods: LeaderboardPeriod[],
+  targetPeriod: LeaderboardPeriod
+): LeaderboardSnapshot {
+  snapshot.available_periods = periods
+  snapshot.archived_periods = archivedPeriods
+  snapshot.active_period = targetPeriod
+  return snapshot
+}
+
 export async function getLeaderboardSnapshot(
   metric: MetricType,
   periodKey?: string,
   forceRefresh = false
 ): Promise<LeaderboardSnapshot> {
   const now = new Date()
-  const { periods } = await resolveLeaderboardPeriods(now)
+  const { periods, archivedPeriods } = await resolveLeaderboardPeriods(now)
+  const allPeriods = [...periods, ...archivedPeriods]
 
-  // Find requested period or fallback to default highest-priority period (index 0)
+  // Find requested period (across active & archived seasons) or fallback to index 0
   const targetPeriod = periodKey
-    ? periods.find(
+    ? allPeriods.find(
         (p) =>
-          p.key.toLowerCase() === periodKey.toLowerCase() ||
           p.id === periodKey ||
-          (p.code && p.code.toLowerCase() === periodKey.toLowerCase())
+          (p.code && p.code.toLowerCase() === periodKey.toLowerCase()) ||
+          (!p.is_archived && p.key.toLowerCase() === periodKey.toLowerCase())
       ) || periods[0]
     : periods[0]
 
@@ -350,10 +397,7 @@ export async function getLeaderboardSnapshot(
           const parsed = JSON.parse(raw) as LeaderboardSnapshot
           const isStale = parsed.entries?.some((e) => !e.role || !e.username)
           if (!isStale) {
-            // Always ensure available_periods are updated to real-time status
-            parsed.available_periods = periods
-            parsed.active_period = targetPeriod
-            return parsed
+            return attachArchivedMetadata(parsed, periods, archivedPeriods, targetPeriod)
           }
         }
       }
@@ -365,9 +409,7 @@ export async function getLeaderboardSnapshot(
     if (cachedMem) {
       const isStale = cachedMem.entries?.some((e) => !e.role || !e.username)
       if (!isStale) {
-        cachedMem.available_periods = periods
-        cachedMem.active_period = targetPeriod
-        return cachedMem
+        return attachArchivedMetadata(cachedMem, periods, archivedPeriods, targetPeriod)
       }
     }
   }
@@ -384,38 +426,40 @@ export async function getLeaderboardSnapshot(
       const raw = await redis.get(cacheKey).catch(() => null)
       if (raw) {
         const parsed = JSON.parse(raw) as LeaderboardSnapshot
-        parsed.available_periods = periods
-        parsed.active_period = targetPeriod
-        return parsed
+        return attachArchivedMetadata(parsed, periods, archivedPeriods, targetPeriod)
       }
     }
   } catch {}
 
   const cachedMem = memoryLeaderboardCache.get(cacheKey)
   if (cachedMem) {
-    cachedMem.available_periods = periods
-    cachedMem.active_period = targetPeriod
-    return cachedMem
+    return attachArchivedMetadata(cachedMem, periods, archivedPeriods, targetPeriod)
   }
 
   // In-memory minimal fallback if DB / Redis is empty or down
-  return {
-    entries: [],
-    community_total: 0,
-    season: {
-      id: targetPeriod.id,
-      name: targetPeriod.name,
-      code: targetPeriod.code,
-      start_date: targetPeriod.start_date,
-      end_date: targetPeriod.end_date,
-      days_left: targetPeriod.days_left,
-      target_attendance: targetPeriod.target_attendance,
-      description: targetPeriod.description,
+  return attachArchivedMetadata(
+    {
+      entries: [],
+      community_total: 0,
+      season: {
+        id: targetPeriod.id,
+        name: targetPeriod.name,
+        code: targetPeriod.code,
+        start_date: targetPeriod.start_date,
+        end_date: targetPeriod.end_date,
+        days_left: targetPeriod.days_left,
+        target_attendance: targetPeriod.target_attendance,
+        description: targetPeriod.description,
+      },
+      available_periods: periods,
+      archived_periods: archivedPeriods,
+      active_period: targetPeriod,
+      calculated_at: new Date().toISOString(),
     },
-    available_periods: periods,
-    active_period: targetPeriod,
-    calculated_at: new Date().toISOString(),
-  }
+    periods,
+    archivedPeriods,
+    targetPeriod
+  )
 }
 
 export function normalizeLeaderboardRole(role: string): string {

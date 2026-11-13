@@ -24,6 +24,8 @@ export interface EventCalendarProps {
   hideHeader?: boolean
   /** Whether clicking the already-selected day deselects it (default true) */
   allowDeselect?: boolean
+  /** Visually dim and disable dates strictly before today (default false) */
+  disablePastDates?: boolean
 }
 
 const DAYS_EN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
@@ -87,8 +89,10 @@ export function EventCalendar({
   compact = false,
   hideHeader = false,
   allowDeselect = true,
+  disablePastDates = false,
 }: EventCalendarProps) {
   const today = new Date()
+  const todayKey = toKey(today)
   const year = month.getFullYear()
   const mo = month.getMonth()
   const grid = buildGrid(year, mo)
@@ -106,6 +110,7 @@ export function EventCalendar({
 
   function handleDayClick(date: Date) {
     const key = toKey(date)
+    if (disablePastDates && key < todayKey) return
     if (selected === key) {
       if (allowDeselect) {
         onSelect?.(null)
@@ -181,12 +186,15 @@ export function EventCalendar({
           const isCurrentMonth = date.getMonth() === mo
           const isToday = isSameDay(date, today)
           const isSelected = selected === key
+          const isPast = disablePastDates && key < todayKey
           const dayDots = (dots[key] ?? []).slice(0, 3)
 
           return (
             <button
               key={i}
               type="button"
+              disabled={isPast}
+              title={isPast ? "Past dates cannot be selected for new events" : undefined}
               onClick={() => handleDayClick(date)}
               aria-label={date.toLocaleDateString("en-US", {
                 day: "numeric",
@@ -195,17 +203,19 @@ export function EventCalendar({
               })}
               aria-pressed={isSelected}
               className={[
-                "relative mx-auto flex cursor-pointer flex-col items-center justify-center transition-all",
+                "relative mx-auto flex flex-col items-center justify-center transition-all",
                 compact
                   ? "h-7 w-7 rounded-[8px] text-xs font-semibold"
                   : "h-9 w-9 rounded-[10px] text-xs font-semibold sm:h-9.5 sm:w-9.5",
-                isSelected
-                  ? "scale-105 bg-[#0a0a0a] font-bold text-white shadow-xs"
-                  : isToday
-                    ? "border-2 border-[#0a0a0a] bg-[#faf5e8] font-bold text-[#0a0a0a] shadow-2xs"
-                    : isCurrentMonth
-                      ? "text-[#0a0a0a] hover:scale-105 hover:bg-[#faf5e8]"
-                      : "font-normal text-[#6a6a6a]/40 hover:bg-[#faf5e8]/50",
+                isPast
+                  ? "cursor-not-allowed text-[#6a6a6a]/30 line-through"
+                  : isSelected
+                    ? "cursor-pointer scale-105 bg-[#0a0a0a] font-bold text-white shadow-xs"
+                    : isToday
+                      ? "cursor-pointer border-2 border-[#0a0a0a] bg-[#faf5e8] font-bold text-[#0a0a0a] shadow-2xs"
+                      : isCurrentMonth
+                        ? "cursor-pointer text-[#0a0a0a] hover:scale-105 hover:bg-[#faf5e8]"
+                        : "cursor-pointer font-normal text-[#6a6a6a]/40 hover:bg-[#faf5e8]/50",
               ].join(" ")}
             >
               {/* Day number */}

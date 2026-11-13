@@ -474,6 +474,65 @@ describe("PeoplePage 2-Column Mobile Grid, Fast Loading & Directory Isolation", 
       expect(screen.queryByRole("button", { name: /See More/i })).toBeNull()
     })
   })
+
+  it("supports searching schools by keyword inside Create New Member modal", async () => {
+    const origScrollIntoView = HTMLElement.prototype.scrollIntoView
+    HTMLElement.prototype.scrollIntoView = vi.fn()
+    try {
+      const { schoolsSpy } = renderPeoplePage({
+        items: [],
+        total: 0,
+        page: 1,
+        limit: 12,
+        totalPages: 1,
+        stats: { total: 0, member: 0, activist: 0, organizer: 0 },
+      })
+
+      schoolsSpy.mockImplementation(({ search } = {}) => {
+        if (search === "Tarumanagara") {
+          return Promise.resolve([
+            {
+              id: "sch_untar",
+              name: "Universitas Tarumanagara",
+              type: "Universitas",
+            },
+          ])
+        }
+        return Promise.resolve([
+          { id: "sch_tr", name: "SMA Tri Ratna", type: "SMA/SMK" },
+          {
+            id: "sch_untar",
+            name: "Universitas Tarumanagara",
+            type: "Universitas",
+          },
+        ])
+      })
+
+      fireEvent.click(await screen.findByRole("button", { name: /Add Member/i }))
+
+      const trigger = await waitFor(() => {
+        const el = document.getElementById("people-create-school") as HTMLButtonElement
+        expect(el.disabled).toBe(false)
+        return el
+      })
+      fireEvent.click(trigger)
+
+      const searchInput = await screen.findByPlaceholderText("Search school name...")
+      fireEvent.change(searchInput, { target: { value: "Tarumanagara" } })
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole("option", { name: /Universitas Tarumanagara/i })
+        ).toBeDefined()
+        expect(screen.queryByRole("option", { name: /SMA Tri Ratna/i })).toBeNull()
+        expect(schoolsSpy).toHaveBeenCalledWith(
+          expect.objectContaining({ search: "Tarumanagara" })
+        )
+      })
+    } finally {
+      HTMLElement.prototype.scrollIntoView = origScrollIntoView
+    }
+  })
 })
 
 describe("peopleApi.getVerifiedSchools master data unwrapping", () => {

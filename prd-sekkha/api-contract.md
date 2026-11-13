@@ -838,8 +838,8 @@ Sistem peringkat gamifikasi komunitas vihara berbasis snapshot berkecepatan ting
 Mengambil data papan peringkat komunitas berdasarkan metrik dan periode tertentu (default Top 10: podium `#1–#3` dan list `#4–#10`; jika peringkat user `> 10`, dirender di bagian bawah setelah rank `#10` via `my_rank`).
 - **Akses**: Opsional / Terautentikasi (`optionalAuth` / `requireAuth`)
 - **Query Parameters**:
-  - `metric` (`points` | `streak` | `attendance`, default: `points`)
-  - `period` (`custom` | `semester` | `annual`, opsional)
+  - `metric` (`points` | `attendance`, default: `points`)
+  - `period` (`custom` | `semester` | `annual` atau `id`/`code` musim arsip, opsional)
   - `roles` (comma-separated: `umat,aktivis,pengurus`, opsional)
   - `limit` (number, default: `10`, max: `100`)
   - `refresh` (`true` | `false`, opsional): Khusus pengurus/admin untuk memicu kalkulasi ulang snapshot secara paksa.
@@ -873,6 +873,47 @@ Mengambil data papan peringkat komunitas berdasarkan metrik dan periode tertentu
       "start_date": "2026-07-01T00:00:00.000Z",
       "end_date": "2026-09-30T23:59:59.000Z",
       "target_attendance": 500
+    },
+    "available_periods": [
+      {
+        "id": "sea_2026_q3",
+        "key": "custom",
+        "name": "Musim Vassa 2026",
+        "code": "VASSA-2026",
+        "start_date": "2026-07-01T00:00:00.000Z",
+        "end_date": "2026-09-30T23:59:59.000Z",
+        "days_left": 18,
+        "target_attendance": 500,
+        "is_active": true,
+        "is_custom": true
+      }
+    ],
+    "archived_periods": [
+      {
+        "id": "sea_2025_vassa",
+        "key": "custom",
+        "name": "Vassa Retreat 2025",
+        "code": "VASSA-2025",
+        "start_date": "2025-07-01T00:00:00.000Z",
+        "end_date": "2025-09-30T23:59:59.000Z",
+        "days_left": 0,
+        "target_attendance": 250,
+        "is_active": false,
+        "is_custom": true,
+        "is_archived": true
+      }
+    ],
+    "active_period": {
+      "id": "sea_2026_q3",
+      "key": "custom",
+      "name": "Musim Vassa 2026",
+      "code": "VASSA-2026",
+      "start_date": "2026-07-01T00:00:00.000Z",
+      "end_date": "2026-09-30T23:59:59.000Z",
+      "days_left": 18,
+      "target_attendance": 500,
+      "is_active": true,
+      "is_custom": true
     },
     "community_goal": {
       "current": 385,

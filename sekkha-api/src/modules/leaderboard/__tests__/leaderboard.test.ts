@@ -11,6 +11,7 @@ import { redis } from "../../../lib/redis"
 describe("Leaderboard Module — Unit Tests", () => {
   const originalFindActiveSeason = leaderboardModels.findActiveSeason
   const originalFindScheduledSeason = leaderboardModels.findScheduledSeason
+  const originalFindPastSeasons = leaderboardModels.findPastSeasons
   const originalDeactivateOtherSeasons = leaderboardModels.deactivateOtherSeasons
   const originalDeactivateAllSeasons = leaderboardModels.deactivateAllSeasons
   const originalActivateSeason = leaderboardModels.activateSeason
@@ -27,6 +28,7 @@ describe("Leaderboard Module — Unit Tests", () => {
     // Default model mocks: in-memory safe
     leaderboardModels.findActiveSeason = async () => null
     leaderboardModels.findScheduledSeason = async () => null
+    leaderboardModels.findPastSeasons = async () => []
     leaderboardModels.deactivateOtherSeasons = async () => ({ count: 0 } as any)
     leaderboardModels.deactivateAllSeasons = async () => ({ count: 0 } as any)
     leaderboardModels.activateSeason = async (id: string) => ({ id, isActive: true } as any)
@@ -44,6 +46,7 @@ describe("Leaderboard Module — Unit Tests", () => {
   afterEach(() => {
     leaderboardModels.findActiveSeason = originalFindActiveSeason
     leaderboardModels.findScheduledSeason = originalFindScheduledSeason
+    leaderboardModels.findPastSeasons = originalFindPastSeasons
     leaderboardModels.deactivateOtherSeasons = originalDeactivateOtherSeasons
     leaderboardModels.deactivateAllSeasons = originalDeactivateAllSeasons
     leaderboardModels.activateSeason = originalActivateSeason
@@ -407,6 +410,47 @@ describe("Leaderboard Module — Unit Tests", () => {
       } finally {
         ;(redis as any).status = origStatus
       }
+    })
+
+    it("resolves archived/past seasons and queries historical standings by archived period id or code", async () => {
+      leaderboardModels.findPastSeasons = async () =>
+        [
+          {
+            id: "season_past_2025",
+            name: "Vassa Retreat 2025",
+            code: "VASSA-2025",
+            startDate: new Date("2025-07-01T00:00:00.000Z"),
+            endDate: new Date("2025-09-30T23:59:59.000Z"),
+            isActive: false,
+            targetAttendance: 250,
+            description: "Completed retreat season",
+          },
+        ] as any
+
+      leaderboardModels.findLeaderboardUsers = async () =>
+        [
+          {
+            id: "u_past_1",
+            username: "past_champ",
+            role: "member",
+            profile: { name: "Past Champion" },
+            stats: { points: 50, currentStreak: 2, totalAttendances: 3 },
+          },
+        ] as any
+
+      leaderboardModels.findAttendanceCountsByUser = async () =>
+        [{ userId: "u_past_1", _count: { _all: 14 } }] as any
+      leaderboardModels.countTotalAttendances = async () => 14
+      leaderboardModels.findPointTotalsByUser = async () =>
+        [{ userId: "u_past_1", _sum: { amount: 720 } }] as any
+
+      const snapshot = await getLeaderboardSnapshot("points", "VASSA-2025", true)
+      expect(snapshot.archived_periods).toHaveLength(1)
+      expect(snapshot.archived_periods?.[0].is_archived).toBe(true)
+      expect(snapshot.active_period.id).toBe("season_past_2025")
+      expect(snapshot.active_period.is_archived).toBe(true)
+      expect(snapshot.entries[0].name).toBe("Past Champion")
+      expect(snapshot.entries[0].value).toBe(720)
     })
   })
 })

@@ -36,6 +36,7 @@ export const leaderboardControllers = {
         my_rank: myRank,
         season: snapshot.season,
         available_periods: snapshot.available_periods,
+        archived_periods: snapshot.archived_periods ?? [],
         active_period: snapshot.active_period,
         community_goal: {
           current: snapshot.community_total ?? 0,

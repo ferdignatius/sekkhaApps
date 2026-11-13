@@ -154,7 +154,12 @@ export function Select({
         >
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
-        <SelectContent className="z-[115] rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] p-1 text-[#0a0a0a] shadow-lg">
+        <SelectContent
+          position="popper"
+          sideOffset={6}
+          align="start"
+          className="z-[115] w-[var(--radix-select-trigger-width)] rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] p-1 text-[#0a0a0a] shadow-lg"
+        >
           {isInfinite ? (
             <div
               data-slot="select-infinite-list"

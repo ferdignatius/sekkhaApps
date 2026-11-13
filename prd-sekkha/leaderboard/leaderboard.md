@@ -16,9 +16,10 @@
 
 Leaderboard adalah wadah **kompetisi sehat dan apresiasi dedikasi jemaat** berbasis perolehan poin kehadiran dan pelayanan kebaktian. Sistem leaderboard dirancang dengan prinsip:
 1. **Berbasis Musim (Season-Based Zero Reset)**: Peringkat dihitung murni berdasarkan transaksi poin yang terjadi dalam rentang tanggal musim bersangkutan `[start_date, end_date]`. Setiap musim baru dimulai, semua jemaat berkompetisi kembali dari 0 poin tanpa menghapus catatan historis sebelumnya.
-2. **Tab Navigasi Musim Dinamis**: Antarmuka secara otomatis menyajikan tab periode berurutan:
+2. **Tab Navigasi Musim Dinamis & Arsip Riwayat Musim (*Past Seasons*)**: Antarmuka menyajikan tab periode aktif berurutan:
    - `[ Custom Season (e.g. Vassa 2026) ] [ Semester ] [ Annual ]` (jika ada custom season aktif), atau
    - `[ Semester ] [ Annual ]` (jika tidak ada custom season aktif).
+   - Selain periode aktif, musim yang telah berakhir (`endDate < now` atau musim lampau nonaktif) **tetap tersimpan sebagai arsip (`archived_periods`)** dan dapat diakses melalui dropdown **"Past Seasons"** di sebelah tab periode aktif untuk melihat klasemen final musim tersebut.
 3. **Penghargaan Podium Visual Top 3 & Top 10 Ringkas**: Desain Clay Card visual untuk juara 1, 2, dan 3 diikuti daftar peringkat 4–10.
 4. **Posisi Pribadi Inline di Bawah Rank #10**: Jika peringkat pribadi user berada di Top 10 (`#1–#10`), baris/pilar user langsung disorot dengan kartu emas dan badge **`YOU`**. Jika berada di luar Top 10 (`#11+`), sistem menampilkan pemisah `• • •` dan kartu peringkat pribadi user tepat di bawah Rank `#10` tanpa bar melayang agar tidak bertabrakan dengan `MobileDock`. Role ditampilkan sebagai teks subtitle halus agar badge **`YOU`** tidak ambigu.
 5. **Anti-Inflasi & Tanpa Pengali Badge**: Poin didasarkan secara murni pada presensi terverifikasi (50-70 Pts) dan tugas pelayanan ibadah resmi (+30 Pts per `badge_activities`). Seluruh gamifikasi badge dan level artifisial telah dieliminasi.
@@ -58,6 +59,10 @@ Halaman `/leaderboard` memiliki tata letak responsif:
     * Di setiap season baru, skor kompetisi dihitung murni dari awal `[start_date, end_date]` (reset ke 0).
   * **Peran Streak di Balik Layar (Primary Tie-Breaker)**:
     Jika dua atau lebih anggota memiliki total perolehan poin musim yang sama persis di tab `Points`, maka sistem otomatis memeringkatkan anggota dengan angka streak (`current_streak`) tertinggi di atasnya sebelum mengevaluasi jumlah kehadiran.
+* **Inspeksi Musim Lampau (*Past / Archived Seasons Selector*)**:
+  * Saat terdapat musim yang sudah selesai (`archived_periods.length > 0`), header menampilkan tombol dropdown **"Past Seasons"** yang berisi daftar musim lampau (diurutkan terbaru berdasarkan `endDate`, disertai ringkasan tanggal).
+  * Ketika pengguna memilih salah satu musim arsip:
+    * Chip sisa hari diganti dengan badge **`Archived Season · Final Standings`**, sementara podium & daftar Top 10 memuat klasemen historis musim tersebut.
 
 ### 3.2. Podium Visual Top 3
 * Tiga pilar Clay bersih di bagian atas tanpa badge peringkat berulang yang menimpa avatar:
@@ -87,9 +92,12 @@ Mengambil data peringkat leaderboard untuk periode tertentu.
 * **Akses**: `requireAuth`.
 * **Query Parameters**:
   * `metric` (string: `points` | `attendance`, default: `points`): Metrik pemeringkatan leaderboard musiman.
-  * `season_id` (string cuid, opsional): ID musim spesifik.
-  * `period` (string: `semester`, `annual`, `custom`, default: `semester`).
+  * `period` (string, opsional): Dapat berupa periode aktif (`custom` | `semester` | `annual`) maupun `id` / `code` dari musim arsip (`archived_periods`) untuk menginspeksi klasemen & pemenang historis.
   * `limit` (number, default: 10, max: 100).
+* **Field Tambahan Periode & Arsip dalam Response**:
+  * `available_periods`: Daftar tab periode aktif (`custom` / `semester` / `annual`).
+  * `archived_periods`: Daftar musim yang telah berakhir dengan `is_archived: true` agar pengguna tetap dapat membuka dan melihat klasemen leaderboard musim sebelumnya.
+  * `active_period`: Periode yang sedang ditampilkan (aktif atau arsip).
 * **Response Envelope (200 OK)**:
   ```json
   {
@@ -189,6 +197,7 @@ Mengambil data peringkat leaderboard untuk periode tertentu.
 | US-LEAD-04 | Community Member | Have consistent tie-breakers applied fairly when members share identical points (higher streak, higher attendances, then earlier activity) | Ranks remain deterministic, clear, and undisputed during ties |
 | US-LEAD-05 | Community Member | View collective season target progress (e.g. 500 total attendances) with real-time percentage indicators | I feel inspired to participate together toward the shared temple community goal |
 | US-LEAD-06 | Organizer / Admin | Trigger a manual cache refresh for leaderboard metrics | I can ensure displayed rankings reflect recent event closures immediately if needed |
+| US-LEAD-07 | Community Member | Browse past/archived seasons via a Past Seasons selector and view final standings | Historical leaderboard standings remain discoverable after a season ends |
 
 ---
 
@@ -203,6 +212,7 @@ Mengambil data peringkat leaderboard untuk periode tertentu.
 | AC-LEAD-05 | Privacy & PII protection | Public leaderboard endpoint never returns email or class grade (nor any direct contact/birth fields, which have been removed under UU PDP data minimization). Leaderboard strictly uses usernames (@username) instead of full real names to protect privacy, and excludes permanently anonymized former accounts (`anonymizedAt != null`). |
 | AC-LEAD-06 | Collective season progress | Header displays active season attendance progress bar `total_attendances / target_attendance` with percentage and days remaining. |
 | AC-LEAD-07 | Cache invalidation on event close | When an event status transitions to `closed`, active leaderboard Redis/memory cache is invalidated and fresh ranks compute on next request. |
+| AC-LEAD-08 | Past / Archived Seasons browsing | `GET /api/leaderboard` returns ended seasons in `archived_periods` (`is_archived: true`) and supports querying them by season `id` or `code`. UI renders a **"Past Seasons"** selector and displays `"Archived Season · Final Standings"` alongside final standings. |
 
 ---
 
@@ -222,3 +232,4 @@ Mengambil data peringkat leaderboard untuk periode tertentu.
 | **TC-LEAD-10** | Empty State | Season with zero point transactions | Newly created season with no finalized events | 1. Open `/leaderboard?season_id=<empty_season>`. | HTTP 200 with empty `rankings: []`, `top_three: []`, and friendly empty state: *"No points recorded for this season yet. Attend events to make the board!"* | Edge / Negative |
 | **TC-LEAD-11** | Unauthenticated Access | Unauthenticated request to leaderboard endpoint | No bearer token provided | Send `GET /api/leaderboard` without Authorization header. | HTTP 401 Unauthorized with standard error envelope. | Security |
 | **TC-LEAD-12** | Max Limit Enforcement | Pagination parameter exceeding limit (`limit=500`) | Authenticated session | Send `GET /api/leaderboard?limit=500`. | Request automatically clamped to max limit (100) or rejected with HTTP 400 validation error; prevents memory exhaustion. | Security / Boundary |
+| **TC-LEAD-13** | Archived Season History | View past season leaderboard standings | At least one ended season (`endDate < now`) exists in DB | 1. Open `/leaderboard` and click **"Past Seasons"** dropdown.<br>2. Select `"Vassa Retreat 2025"`. | Request calls `GET /api/leaderboard?metric=points&period=<archived_id>`; UI shows `"Archived Season · Final Standings"` badge and historical Top 10 podium/list. | Positive / Functional |

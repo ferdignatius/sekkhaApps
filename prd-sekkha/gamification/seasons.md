@@ -18,7 +18,7 @@ Season dirancang murni sebagai **pengatur batas waktu (timeframe filtering) bagi
 1. **Reset Peringkat ke Nol di Setiap Season Baru**:
    - Di awal season baru, **semua orang memulai kompetisi dari 0 poin di leaderboard season tersebut**.
    - Ini memastikan umat baru yang bergabung di tengah tahun memiliki peluang yang sama dan tidak merasa mustahil mengejar peringkat teratas.
-   - *Catatan Penting*: Akumulasi poin seumur hidup di profil umat (`UserStats.points`) tetap tersimpan sebagai rekaman historis dedikasi, namun poin kompetisi musiman dihitung murni dari transaksi dalam rentang season berjalan.
+   - *Catatan Penting*: Akumulasi poin seumur hidup di profil umat (`UserStats.points`) tetap tersimpan sebagai rekaman historis dedikasi, namun poin kompetisi musiman dihitung murni dari transaksi dalam rentang season berjalan. Ketika sebuah season berakhir (`endDate < now`), data dan klasemen season tersebut **tidak hilang**, melainkan otomatis tersimpan dalam arsip **`archived_periods`** dan tetap dapat dibuka kembali melalui menu **Past Seasons** di Leaderboard.
 2. **Auto-Active Default Periods (Semester & Annual Selalu Aktif)**:
    - Sistem secara default dan otomatis menyediakan dua periode standar kalender:
      - **Semester**: Periode 6 bulan berjalan (Semester 1: 1 Jan - 30 Jun & Semester 2: 1 Jul - 31 Des).
@@ -139,6 +139,12 @@ model Season {
     ```
 - **Reset Indikator**:
   - Menampilkan countdown penutupan musim dan pengingat reset awal periode.
+- **Pemilih Musim Lampau (*Past Seasons Archive*)**:
+  - Jika tersedia musim yang telah selesai (`archived_periods`), tampil dropdown **"Past Seasons"** di sisi kanan switcher periode aktif.
+  - Saat musim lampau dipilih, header menampilkan badge `"Archived Season · Final Standings"`, memungkinkan jemaat meninjau hasil klasemen final di periode-periode sebelumnya.
+- **Pemilih Musim Lampau (*Past Seasons Archive*)**:
+  - Jika tersedia musim yang telah selesai (`archived_periods`), tampil dropdown **"Past Seasons"** di sisi kanan switcher periode aktif.
+  - Saat musim lampau dipilih, header menampilkan badge `"Archived Season · Final Standings"`, memungkinkan jemaat meninjau hasil klasemen final di periode-periode sebelumnya.
 
 ---
 
@@ -166,6 +172,8 @@ Base Route: `/api/configure/seasons`
 | US-SEAS-04 | Member | Compete on seasonal leaderboards starting from zero points at the beginning of each cycle | Every youth member has an equal opportunity to rank regardless of join date |
 | US-SEAS-05 | Member | View active custom season tab positioned on the far left of the Leaderboard alongside Semester and Annual tabs | I can immediately focus on the active featured community event |
 | US-SEAS-06 | Organizer | Inspect configured seasons and collective attendance progress bars in read-only mode | I can track community attendance targets and guide youth members |
+| US-SEAS-07 | Community Member | Select completed/past seasons on the Leaderboard to review final standings | Ended seasons stay inspectable and past leaderboard results remain accessible |
+| US-SEAS-07 | Community Member | Select completed/past seasons on the Leaderboard to review final standings | Ended seasons stay inspectable and past leaderboard results remain accessible |
 
 ---
 
@@ -181,6 +189,7 @@ Base Route: `/api/configure/seasons`
 | AC-SEAS-06 | Admin deletes season with linked events | Server returns HTTP 409 Conflict error ("Cannot delete season associated with events"); deletion rejected. |
 | AC-SEAS-07 | Admin deletes season without linked events | Season is successfully removed from database; returns HTTP 200/204 envelope. |
 | AC-SEAS-08 | Non-admin user attempts mutation endpoints | Server returns HTTP 403 Forbidden envelope. |
+| AC-SEAS-09 | Ended seasons retained as archived periods | Seasons with `endDate < now` (or deactivated past custom seasons) are surfaced in `archived_periods` with `is_archived: true` and queryable via `/api/leaderboard?period=<id|code>`. |
 
 ---
 
@@ -198,3 +207,5 @@ Base Route: `/api/configure/seasons`
 | **TC-SEAS-08** | Leaderboard Tabs | Verify tab layout when no custom season active | No custom season has `isActive: true` | Inspect `/leaderboard` tab structure. | UI renders default tabs: `[ Semester ] [ Annual ]`. | Positive / UI |
 | **TC-SEAS-09** | Point Isolation | Seasonal score isolated strictly within date range | Member has 500 lifetime points, 100 earned in season X | Query leaderboard for season X. | Member displays score of 100 for season X, not lifetime 500. Lifetime profile total unaffected. | Positive / Logic |
 | **TC-SEAS-10** | RBAC Guard | Organizer attempts to create or delete season | Authenticated as `organizer` | Send `POST /api/configure/seasons` or `DELETE /api/configure/seasons/:id`. | HTTP 403 Forbidden envelope. No mutations applied. | Security / RBAC |
+| **TC-SEAS-11** | Past Season Archive | Inspect ended season via Leaderboard `archived_periods` | Season `"Vassa 2025"` has `endDate < now` | Call `GET /api/leaderboard?period=VASSA-2025` or pick it in UI **Past Seasons** menu. | Season appears in `archived_periods` with `is_archived: true`, and final podium/list reflects transactions inside its `[startDate, endDate]`. | Positive / Historical |
+| **TC-SEAS-11** | Past Season Archive | Inspect ended season via Leaderboard `archived_periods` | Season `"Vassa 2025"` has `endDate < now` | Call `GET /api/leaderboard?period=VASSA-2025` or pick it in UI **Past Seasons** menu. | Season appears in `archived_periods` with `is_archived: true`, and final podium/list reflects transactions inside its `[startDate, endDate]`. | Positive / Historical |

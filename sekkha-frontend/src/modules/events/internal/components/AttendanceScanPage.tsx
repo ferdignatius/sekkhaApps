@@ -9,16 +9,14 @@ import { useNavigate, useSearch } from "@tanstack/react-router"
 import {
   ArrowLeftIcon,
   CheckCircle2Icon,
-  CameraIcon,
   SearchIcon,
   AlertTriangleIcon,
-  ListFilterIcon,
-  ChevronDownIcon,
-  RefreshCwIcon,
   UserPlusIcon,
   XIcon,
   LockIcon,
-  Trash2Icon,
+  MoreVerticalIcon,
+  ImageIcon,
+  RefreshCwIcon,
   ZapIcon,
 } from "lucide-react"
 import { useAuth } from "@/modules/auth"
@@ -26,14 +24,11 @@ import { api } from "@/lib/api"
 import {
   peopleApi,
   PreProvisionMemberModal,
-  SimilarMembersModal,
-  SimilarMembersNotice,
   useSimilarMembers,
 } from "@/modules/people"
 import type { MemberDto, SimilarMemberDto } from "@/modules/people"
 import type { EventListItem, AttendanceRecord, UserRole } from "../types"
 import { QrScannerCamera } from "./QrScannerCamera"
-import { ConfirmDialog } from "@/components/base/AlertDialog"
 
 interface RecentScanItem {
   id: string
@@ -43,6 +38,14 @@ interface RecentScanItem {
   time: string
   status: "success" | "duplicate" | "error"
   message: string
+}
+
+/** Format attendance check-in timestamps uniformly without seconds. */
+function formatScanTime(input: Date | string): string {
+  return new Date(input).toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+  })
 }
 
 let sharedAudioCtx: AudioContext | null = null
@@ -59,7 +62,7 @@ function getSharedAudioContext(): AudioContext | null {
     }
   }
   if (sharedAudioCtx && sharedAudioCtx.state === "suspended") {
-    void sharedAudioCtx.resume().catch(() => {})
+    void sharedAudioCtx.resume().catch(() => { })
   }
   return sharedAudioCtx
 }
@@ -79,7 +82,7 @@ function playScanChime() {
     gain.connect(ctx.destination)
     osc.start(ctx.currentTime)
     osc.stop(ctx.currentTime + 0.15)
-  } catch {}
+  } catch { }
 }
 
 function playWarningBuzz() {
@@ -97,7 +100,7 @@ function playWarningBuzz() {
     gain.connect(ctx.destination)
     osc.start(ctx.currentTime)
     osc.stop(ctx.currentTime + 0.25)
-  } catch {}
+  } catch { }
 }
 
 function triggerHaptic(type: "success" | "error") {
@@ -108,7 +111,7 @@ function triggerHaptic(type: "success" | "error") {
       } else {
         navigator.vibrate?.([80, 50, 80])
       }
-    } catch {}
+    } catch { }
   }
 }
 
@@ -126,9 +129,6 @@ export function AttendanceScanPage() {
   const [loadingEvent, setLoadingEvent] = useState(true)
   const [eventError, setEventError] = useState<string | null>(null)
 
-  const [pengurusMode, setPengurusMode] = useState<"camera" | "search">(
-    "camera"
-  )
   const [cameras, setCameras] = useState<Array<{ id: string; label: string }>>(
     []
   )
@@ -150,7 +150,7 @@ export function AttendanceScanPage() {
           return
         }
       }
-    } catch {}
+    } catch { }
     setHasTorchSupport(false)
   }, [])
 
@@ -178,14 +178,41 @@ export function AttendanceScanPage() {
   // People list for manual attendance
   const [peopleList, setPeopleList] = useState<MemberDto[]>([])
   const [searchQuery, setSearchQuery] = useState("")
-  const [manualUserNumber, setManualUserNumber] = useState("")
-  const [similarModalOpen, setSimilarModalOpen] = useState(false)
   const [preProvisionOpen, setPreProvisionOpen] = useState(false)
 
-  // Async non-blocking fuzzy similarity search while searching by name in Manual Entry
-  const { similarMembers, totalMatches } = useSimilarMembers(searchQuery, {
-    enabled: isPengurus && pengurusMode === "search",
+  const isNumericQuery = /^\d+$/.test(searchQuery.trim())
+
+  // Async fuzzy similarity lookup powers typo-tolerant results inside the floating search dropdown
+  const { similarMembers } = useSimilarMembers(searchQuery, {
+    enabled: isPengurus && !isNumericQuery,
   })
+
+  // Bottom sheet drag gesture state for History drawer
+  const sheetDragStartYRef = useRef<number | null>(null)
+  const sheetDraggedRef = useRef(false)
+
+  function handleSheetPointerDown(e: React.PointerEvent<HTMLElement>) {
+    sheetDragStartYRef.current = e.clientY
+    sheetDraggedRef.current = false
+  }
+
+  function handleSheetPointerMove(e: React.PointerEvent<HTMLElement>) {
+    if (sheetDragStartYRef.current === null) return
+    const deltaY = e.clientY - sheetDragStartYRef.current
+    if (Math.abs(deltaY) > 24) {
+      sheetDraggedRef.current = true
+      if (deltaY < -24) {
+        setIsHistoryDrawerOpen(true)
+      } else if (deltaY > 24) {
+        setIsHistoryDrawerOpen(false)
+      }
+      sheetDragStartYRef.current = null
+    }
+  }
+
+  function handleSheetPointerEnd() {
+    sheetDragStartYRef.current = null
+  }
 
   // Attendance state
   const [sessionAttendedIds, setSessionAttendedIds] = useState<Set<string>>(
@@ -194,13 +221,31 @@ export function AttendanceScanPage() {
   const [recentScans, setRecentScans] = useState<RecentScanItem[]>([])
   const [sessionSuccessCount, setSessionSuccessCount] = useState(0)
 
-  // Feedback banner
+  // Feedback banner & floating random bubble toasts
   const [lastFeedback, setLastFeedback] = useState<{
     type: "success" | "duplicate" | "error"
     title: string
     subtitle: string
   } | null>(null)
+  const [floatingBubbles, setFloatingBubbles] = useState<
+    Array<{
+      id: string
+      type: "success" | "duplicate" | "error"
+      title: string
+      subtitle: string
+      offsetX: number
+    }>
+  >([])
   const feedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const bubbleTimersRef = useRef<Array<ReturnType<typeof setTimeout>>>([])
+
+  useEffect(() => {
+    return () => {
+      if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current)
+      bubbleTimersRef.current.forEach(clearTimeout)
+      bubbleTimersRef.current = []
+    }
+  }, [])
 
   // In-flight mutex & 3-second rapid scan cooldown buffer
   const inFlightScanRef = useRef(false)
@@ -209,9 +254,9 @@ export function AttendanceScanPage() {
     timestamp: 0,
   })
 
-  // Finalize dialog
-  const [closeDialogOpen, setCloseDialogOpen] = useState(false)
-  const [closingEvent, setClosingEvent] = useState(false)
+  // Scanner options menu & imperative actions
+  const [menuOpen, setMenuOpen] = useState(false)
+  const scannerActionsRef = useRef<{ openGallery: () => void } | null>(null)
 
   // Lock body scroll
   useEffect(() => {
@@ -266,10 +311,7 @@ export function AttendanceScanPage() {
           userId: r.user_id,
           name: r.name,
           userNumber: r.user_number,
-          time: new Date(r.scanned_at).toLocaleTimeString("en-US", {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
+          time: formatScanTime(r.scanned_at),
           status: "success",
           message: r.is_late
             ? `Checked in (Late -${r.late_penalty_applied ?? 15} Pts)`
@@ -303,7 +345,7 @@ export function AttendanceScanPage() {
           const items = Array.isArray(data) ? data : data?.items || []
           setPeopleList(items)
         })
-        .catch(() => {})
+        .catch(() => { })
     }
   }, [isPengurus])
 
@@ -317,6 +359,17 @@ export function AttendanceScanPage() {
     feedbackTimerRef.current = setTimeout(() => {
       setLastFeedback(null)
     }, 3500)
+
+    const id = `bubble-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+    const offsetX = Math.round((Math.random() - 0.5) * 56)
+    setFloatingBubbles((prev) => [
+      ...prev.slice(-3),
+      { id, type, title, subtitle, offsetX },
+    ])
+    const timer = setTimeout(() => {
+      setFloatingBubbles((prev) => prev.filter((b) => b.id !== id))
+    }, 2600)
+    bubbleTimersRef.current.push(timer)
   }
 
   const handleCamerasDetected = useCallback(
@@ -370,13 +423,9 @@ export function AttendanceScanPage() {
           .toString()
           .trim()
       }
-    } catch {}
+    } catch { }
 
-    const nowFormatted = new Date().toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    })
+    const nowFormatted = formatScanTime(new Date())
 
     try {
       const res = await api.post<any>(`/events/${eventId}/attendances`, {
@@ -466,11 +515,7 @@ export function AttendanceScanPage() {
   ) {
     if (!eventId || !targetNumberOrId) return
 
-    const nowFormatted = new Date().toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    })
+    const nowFormatted = formatScanTime(new Date())
 
     try {
       const res = await api.post<any>(`/events/${eventId}/attendances`, {
@@ -508,7 +553,7 @@ export function AttendanceScanPage() {
         "Attendance Recorded!",
         `${returnedName} checked in manually.`
       )
-      setManualUserNumber("")
+      setSearchQuery("")
     } catch (err: any) {
       playWarningBuzz()
       triggerHaptic("error")
@@ -534,54 +579,6 @@ export function AttendanceScanPage() {
     }
   }
 
-  // ── Delete Draft Attendance ──
-  async function handleDeleteDraft(userId: string) {
-    if (!eventId) return
-    try {
-      await api.delete(`/events/${eventId}/attendances/${userId}`)
-      setSessionAttendedIds((prev) => {
-        const next = new Set(prev)
-        next.delete(userId)
-        return next
-      })
-      setRecentScans((prev) => prev.filter((item) => item.userId !== userId))
-      setSessionSuccessCount((prev) => Math.max(0, prev - 1))
-      triggerFeedback(
-        "success",
-        "Attendance Cancelled",
-        "Draft check-in was successfully removed."
-      )
-    } catch (err: any) {
-      triggerFeedback(
-        "error",
-        "Deletion Failed",
-        err?.message || "Failed to delete draft attendance."
-      )
-    }
-  }
-
-  // ── Finalize & Close Event ──
-  async function handleCloseAndFinalize() {
-    if (!eventId) return
-    try {
-      setClosingEvent(true)
-      await api.patch(`/events/${eventId}/status`, { status: "closed" })
-      navigate({ to: "/events", search: { eventId } })
-    } catch (err: any) {
-      alert(err?.message || "Failed to finalize event.")
-    } finally {
-      setClosingEvent(false)
-      setCloseDialogOpen(false)
-    }
-  }
-
-  const currentCamLabel = useMemo(() => {
-    const found = cameras.find((c) => c.id === activeCameraId)
-    if (!found) return "Rear Camera"
-    const l = found.label.toLowerCase()
-    return l.includes("front") ? "Front Camera" : "Rear Camera"
-  }, [cameras, activeCameraId])
-
   const filteredPeople = useMemo(() => {
     if (!searchQuery.trim()) return []
     const q = searchQuery.toLowerCase().trim()
@@ -599,18 +596,18 @@ export function AttendanceScanPage() {
 
   const displayedManualPeople: Array<MemberDto | SimilarMemberDto> = useMemo(() => {
     if (!searchQuery.trim()) return []
-    if (searchQuery.trim().length >= 3 && similarMembers.length > 0) {
-      const seen = new Set(similarMembers.map((m) => m.id))
-      const extraLocal = filteredPeople.filter((p) => !seen.has(p.id))
-      return [...similarMembers, ...extraLocal].slice(0, 5)
+    if (!isNumericQuery && searchQuery.trim().length >= 3 && similarMembers.length > 0) {
+      const seen = new Set(filteredPeople.map((p) => p.id))
+      const extraFuzzy = similarMembers.filter((m) => !seen.has(m.id))
+      return [...filteredPeople, ...extraFuzzy].slice(0, 8)
     }
-    return filteredPeople.slice(0, 5)
-  }, [searchQuery, similarMembers, filteredPeople])
+    return filteredPeople.slice(0, 8)
+  }, [searchQuery, isNumericQuery, similarMembers, filteredPeople])
 
   return (
-    <div className="fixed inset-0 z-50 flex h-screen w-screen flex-col overflow-hidden bg-[#0d2222] font-sans select-none">
-      {/* ── 1. Top Glass Header Bar ── */}
-      <div className="absolute inset-x-0 top-0 z-30 flex items-center justify-between border-b border-white/10 bg-[#102828]/85 p-3 backdrop-blur-xl sm:p-4">
+    <div className="fixed inset-0 z-50 flex h-screen w-screen flex-col overflow-hidden bg-[#fffaf0] font-sans select-none">
+      {/* ── 1. Top Transparent Floating Header Bar ── */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-40 flex items-center justify-between bg-gradient-to-b from-black/25 via-black/5 to-transparent p-3 pb-6 sm:p-4 sm:pb-8">
         <button
           type="button"
           onClick={() =>
@@ -619,22 +616,22 @@ export function AttendanceScanPage() {
               search: eventId ? { eventId } : undefined,
             })
           }
-          className="flex size-10 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-white/10 text-white transition-all hover:bg-white/20 active:scale-95"
+          className="pointer-events-auto flex size-10 cursor-pointer items-center justify-center rounded-full border border-[#ded5c0] bg-[#fffaf0]/92 text-[#0a0a0a] shadow-m3-1 backdrop-blur-md transition-all hover:bg-[#faf5e8] active:scale-95"
           title="Back to Events"
         >
           <ArrowLeftIcon className="size-4" />
         </button>
 
-        <div className="max-w-[60%] min-w-0 text-center">
-          <p className="text-caption truncate font-bold text-white">
+        <div className="max-w-[60%] min-w-0 rounded-full border border-[#ded5c0] bg-[#fffaf0]/92 px-3.5 py-1 text-center shadow-m3-1 backdrop-blur-md">
+          <p className="text-caption truncate font-bold text-[#0a0a0a]">
             {loadingEvent
               ? "Loading Session..."
               : eventError
                 ? "Event Not Found"
                 : event?.title || "Attendance Session"}
           </p>
-          <div className="flex items-center justify-center gap-1.5 text-[10px] text-amber-300">
-            <span className="size-1.5 animate-pulse rounded-full bg-emerald-400" />
+          <div className="flex items-center justify-center gap-1.5 text-[10px] font-medium text-[#6a6a6a]">
+            <span className="size-1.5 animate-pulse rounded-full bg-emerald-500" />
             <span>
               {isPengurus
                 ? `Live Session (${sessionSuccessCount} Present)`
@@ -644,44 +641,77 @@ export function AttendanceScanPage() {
         </div>
 
         {isPengurus ? (
-          <div className="flex items-center gap-2">
-            {hasTorchSupport && pengurusMode === "camera" && (
-              <button
-                type="button"
-                onClick={handleToggleTorch}
-                className={`flex size-10 cursor-pointer items-center justify-center rounded-full border transition-all active:scale-95 ${
-                  isTorchOn
-                    ? "border-amber-300 bg-amber-400 text-black shadow-lg shadow-amber-400/30"
-                    : "border-white/20 bg-white/10 text-white hover:bg-white/20"
-                }`}
-                title={isTorchOn ? "Turn off flashlight" : "Turn on flashlight"}
-              >
-                <ZapIcon
-                  className={`size-4 ${
-                    isTorchOn ? "fill-black text-black" : "text-amber-300"
-                  }`}
-                />
-              </button>
-            )}
-            {cameras.length > 1 && (
-              <button
-                type="button"
-                onClick={handleToggleCamera}
-                className="flex size-10 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-white/10 text-white transition-all hover:bg-white/20 active:scale-95"
-                title={`Switch Camera (${currentCamLabel})`}
-              >
-                <RefreshCwIcon className="size-4 text-amber-300" />
-              </button>
-            )}
+          <div className="pointer-events-auto relative">
             <button
               type="button"
-              onClick={() => setCloseDialogOpen(true)}
-              className="flex min-h-[38px] cursor-pointer items-center gap-1.5 rounded-full bg-rose-600/90 px-3.5 text-xs font-bold text-white shadow-xs hover:bg-rose-600 active:scale-95"
-              title="Close & Finalize Event"
+              onClick={() => setMenuOpen((prev) => !prev)}
+              aria-label="Scanner options"
+              aria-expanded={menuOpen}
+              className="flex size-10 cursor-pointer items-center justify-center rounded-full border border-[#ded5c0] bg-[#fffaf0]/92 text-[#0a0a0a] shadow-m3-1 backdrop-blur-md transition-all hover:bg-[#faf5e8] active:scale-95"
+              title="More options"
             >
-              <LockIcon className="size-3.5" />
-              <span className="hidden sm:inline">Finalize Event</span>
+              <MoreVerticalIcon className="size-4" />
             </button>
+
+            {menuOpen && (
+              <>
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setMenuOpen(false)}
+                />
+                <div
+                  role="menu"
+                  className="absolute top-12 right-0 z-50 w-52 animate-in rounded-2xl border border-[#ded5c0] bg-[#fffaf0]/95 p-1.5 text-[#0a0a0a] shadow-m3-2 backdrop-blur-xl duration-150 fade-in zoom-in-95"
+                >
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setMenuOpen(false)
+                      scannerActionsRef.current?.openGallery()
+                    }}
+                    className="flex w-full cursor-pointer items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-xs font-semibold text-[#0a0a0a] transition-colors hover:bg-[#f5f0e0]"
+                  >
+                    <ImageIcon className="size-4 text-[#9a6e13]" />
+                    <span>Upload QR Image</span>
+                  </button>
+
+                  {cameras.length > 1 && (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setMenuOpen(false)
+                        handleToggleCamera()
+                      }}
+                      className="flex w-full cursor-pointer items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-xs font-semibold text-[#0a0a0a] transition-colors hover:bg-[#f5f0e0]"
+                    >
+                      <RefreshCwIcon className="size-4 text-[#9a6e13]" />
+                      <span>Flip Camera</span>
+                    </button>
+                  )}
+
+                  {hasTorchSupport && (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setMenuOpen(false)
+                        void handleToggleTorch()
+                      }}
+                      className="flex w-full cursor-pointer items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-xs font-semibold text-[#0a0a0a] transition-colors hover:bg-[#f5f0e0]"
+                    >
+                      <ZapIcon
+                        className={`size-4 ${isTorchOn ? "fill-[#e8b94a] text-[#9a6e13]" : "text-[#9a6e13]"}`}
+                      />
+                      <span>
+                        {isTorchOn ? "Turn Off Flash" : "Turn On Flash"}
+                      </span>
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
           </div>
         ) : (
           <div className="size-10" />
@@ -690,13 +720,13 @@ export function AttendanceScanPage() {
 
       {/* Error state overlay if event loading failed */}
       {eventError && (
-        <div className="absolute inset-0 z-40 flex flex-col items-center justify-center gap-3 bg-[#0d2222]/95 p-6 text-center">
-          <AlertTriangleIcon className="size-8 text-amber-400" />
-          <p className="text-sm font-semibold text-white">{eventError}</p>
+        <div className="absolute inset-0 z-40 flex flex-col items-center justify-center gap-3 bg-[#fffaf0]/95 p-6 text-center text-[#0a0a0a]">
+          <AlertTriangleIcon className="size-8 text-[#b47f14]" />
+          <p className="text-sm font-semibold text-[#0a0a0a]">{eventError}</p>
           <button
             type="button"
             onClick={() => navigate({ to: "/events" })}
-            className="cursor-pointer rounded-full bg-white px-5 py-2 text-xs font-bold text-black hover:bg-neutral-100"
+            className="cursor-pointer rounded-full bg-[#0a0a0a] px-5 py-2 text-xs font-bold text-white hover:bg-[#262626]"
           >
             Back to Events
           </button>
@@ -711,13 +741,12 @@ export function AttendanceScanPage() {
           className="absolute inset-x-3 top-16 z-40 mx-auto max-w-sm animate-in duration-200 fade-in slide-in-from-top-4 sm:top-20"
         >
           <div
-            className={`flex items-start gap-2.5 rounded-2xl border p-3 shadow-2xl backdrop-blur-xl ${
-              lastFeedback.type === "success"
-                ? "border-emerald-400/80 bg-emerald-950/90 text-white"
-                : lastFeedback.type === "duplicate"
-                  ? "border-amber-400/80 bg-amber-950/90 text-white"
-                  : "border-rose-400/80 bg-rose-950/90 text-white"
-            }`}
+            className={`flex items-start gap-2.5 rounded-2xl border p-3 shadow-2xl backdrop-blur-xl ${lastFeedback.type === "success"
+              ? "border-emerald-400/80 bg-emerald-950/90 text-white"
+              : lastFeedback.type === "duplicate"
+                ? "border-amber-400/80 bg-amber-950/90 text-white"
+                : "border-rose-400/80 bg-rose-950/90 text-white"
+              }`}
           >
             {lastFeedback.type === "success" ? (
               <div className="flex size-7 shrink-0 items-center justify-center rounded-xl bg-emerald-500/30 text-emerald-300">
@@ -725,11 +754,10 @@ export function AttendanceScanPage() {
               </div>
             ) : (
               <div
-                className={`flex size-7 shrink-0 items-center justify-center rounded-xl ${
-                  lastFeedback.type === "duplicate"
-                    ? "bg-amber-500/30 text-amber-300"
-                    : "bg-rose-500/30 text-rose-300"
-                }`}
+                className={`flex size-7 shrink-0 items-center justify-center rounded-xl ${lastFeedback.type === "duplicate"
+                  ? "bg-amber-500/30 text-amber-300"
+                  : "bg-rose-500/30 text-rose-300"
+                  }`}
               >
                 <AlertTriangleIcon className="size-4" />
               </div>
@@ -753,169 +781,33 @@ export function AttendanceScanPage() {
         </div>
       )}
 
-      {/* ── 3. Main Body (Camera Scanner or Member QR Card) ── */}
+      {/* ── 3. Main Body (Full-Screen Live QR Camera Scanner) ── */}
       <div className="relative flex h-full w-full flex-1 flex-col items-center justify-center overflow-hidden">
         {isPengurus ? (
-          pengurusMode === "camera" ? (
-            <QrScannerCamera
-              onScan={processPengurusQrText}
-              onError={() => {}}
-              isFullScreen={true}
-              hideControls={true}
-              onCamerasDetected={handleCamerasDetected}
-              externalCameraId={activeCameraId}
-            />
-          ) : (
-            /* Manual Attendance Form */
-            <div className="mx-auto max-h-[80vh] w-full max-w-md animate-in space-y-4 overflow-y-auto p-4 duration-150 zoom-in-95 fade-in">
-              <div className="space-y-4 rounded-3xl border border-white/20 bg-[#102828]/95 p-5 shadow-2xl backdrop-blur-xl">
-                <div className="flex items-center justify-between">
-                  <h4 className="flex items-center gap-2 text-sm font-bold text-white">
-                    <UserPlusIcon className="size-4 text-amber-400" />
-                    <span>Manual Attendance</span>
-                  </h4>
-                  <button
-                    type="button"
-                    onClick={() => setPengurusMode("camera")}
-                    className="text-xs font-semibold text-amber-300 hover:text-amber-200"
-                  >
-                    Open Camera
-                  </button>
-                </div>
-
-                {/* Direct Number Input */}
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault()
-                    if (manualUserNumber.trim()) {
-                      void recordManualAttendance(manualUserNumber.trim())
-                    }
-                  }}
-                  className="space-y-2"
-                >
-                  <label className="text-[11px] font-semibold text-white/70">
-                    Input Member Number (userNumber)
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      maxLength={10}
-                      value={manualUserNumber}
-                      onChange={(e) =>
-                        setManualUserNumber(e.target.value.replace(/\D/g, ""))
-                      }
-                      placeholder="e.g. 2026110801"
-                      className="flex-1 rounded-xl border border-white/20 bg-[#1a3a3a] px-3 py-2 font-mono text-xs tracking-wider text-white outline-none placeholder:text-white/40 focus:border-amber-400"
-                    />
-                    <button
-                      type="submit"
-                      disabled={!manualUserNumber.trim()}
-                      className="rounded-xl bg-amber-400 px-4 py-2 text-xs font-bold text-[#1a3a3a] shadow-xs hover:bg-amber-300 disabled:opacity-50"
-                    >
-                      Check In
-                    </button>
-                  </div>
-                </form>
-
-                {/* Search in Registered Members */}
-                <div className="space-y-2.5 border-t border-white/10 pt-3">
-                  <label className="text-[11px] font-semibold text-white/70">
-                    Or Search by Member Name
-                  </label>
-                  <div className="relative">
-                    <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-white/40" />
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Type member name..."
-                      className="w-full rounded-xl border border-white/20 bg-[#1a3a3a] py-2 pr-3 pl-9 text-xs text-white outline-none placeholder:text-white/40 focus:border-amber-400"
-                    />
-                  </div>
-
-                  {/* Non-blocking Informational Banner + See More (hidden when empty) */}
-                  <SimilarMembersNotice
-                    variant="dark"
-                    members={similarMembers}
-                    totalCount={totalMatches}
-                    onSeeMore={() => setSimilarModalOpen(true)}
-                  />
-
-                  <div className="max-h-48 space-y-1.5 overflow-y-auto pr-1">
-                    {displayedManualPeople.map((p) => {
-                      const isAttended = sessionAttendedIds.has(p.id)
-                      return (
-                        <div
-                          key={p.id}
-                          className="flex items-center justify-between gap-2 rounded-xl bg-white/5 p-2"
-                        >
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-xs font-bold text-white">
-                              {p.name}
-                            </p>
-                            <p className="truncate text-[10px] text-white/60">
-                              {p.user_number || "-"}
-                              {"school" in p && p.school ? ` · ${p.school}` : ""}
-                            </p>
-                          </div>
-                          {isAttended ? (
-                            <span className="shrink-0 text-[10px] font-bold text-emerald-400">
-                              Present
-                            </span>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                void recordManualAttendance(
-                                  p.user_number ? String(p.user_number) : p.id,
-                                  p.name
-                                )
-                                setSearchQuery("")
-                              }}
-                              className="shrink-0 cursor-pointer rounded-lg bg-white/15 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-white/25"
-                            >
-                              + Check In
-                            </button>
-                          )}
-                        </div>
-                      )
-                    })}
-                  </div>
-
-                  {/* Walk-in Quick Pre-Provision New Member */}
-                  <div className="flex items-center justify-between gap-2 border-t border-white/10 pt-2.5">
-                    <span className="text-[11px] text-white/65">
-                      Walk-in participant not registered?
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setPreProvisionOpen(true)}
-                      className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl border border-amber-300/40 bg-amber-400/15 px-3 py-1.5 text-[11px] font-bold text-amber-200 transition-colors hover:bg-amber-400/25"
-                    >
-                      <UserPlusIcon className="size-3.5" />
-                      <span>Register New Member</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )
+          <QrScannerCamera
+            onScan={processPengurusQrText}
+            onError={() => { }}
+            isFullScreen={true}
+            hideControls={true}
+            isPaused={searchQuery.trim().length > 0 || preProvisionOpen}
+            onCamerasDetected={handleCamerasDetected}
+            externalCameraId={activeCameraId}
+            actionsRef={scannerActionsRef}
+          />
         ) : (
           /* Non-organizer / non-admin blocked access per PRD AC-EVT-01 */
           <div className="mx-auto w-full max-w-sm animate-in space-y-4 p-4 duration-150 zoom-in-95 fade-in">
-            <div className="space-y-4 rounded-3xl border border-rose-500/30 bg-[#102828]/95 p-6 text-center shadow-2xl backdrop-blur-xl">
+            <div className="space-y-4 rounded-3xl border border-[#e5e5e5] bg-[#fffaf0] p-6 text-center shadow-m3-2">
               <div className="flex justify-center">
-                <span className="flex size-12 items-center justify-center rounded-2xl bg-rose-500/20 text-rose-400">
+                <span className="flex size-12 items-center justify-center rounded-2xl bg-rose-500/10 text-rose-600">
                   <LockIcon className="size-6" />
                 </span>
               </div>
               <div className="space-y-1">
-                <h4 className="text-base font-extrabold text-white">
+                <h4 className="text-base font-extrabold text-[#0a0a0a]">
                   Access Restricted
                 </h4>
-                <p className="text-xs text-zinc-400">
+                <p className="text-xs text-[#6a6a6a]">
                   Attendance scanning is strictly restricted to event organizers and administrators. Your personal QR card can be viewed in your Profile.
                 </p>
               </div>
@@ -924,7 +816,7 @@ export function AttendanceScanPage() {
                 <button
                   type="button"
                   onClick={() => navigate({ to: "/events" })}
-                  className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/10 py-3 text-xs font-bold text-white transition-all hover:bg-white/20 active:scale-[0.98]"
+                  className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl border border-[#e5e5e5] bg-[#faf5e8] py-3 text-xs font-bold text-[#0a0a0a] transition-all hover:bg-[#ebe6d6] active:scale-[0.98]"
                 >
                   <ArrowLeftIcon className="size-4" />
                   <span>Back to Events List</span>
@@ -935,150 +827,247 @@ export function AttendanceScanPage() {
         )}
       </div>
 
-      {/* ── 4. Collapsible History Drawer ── */}
-      {isHistoryDrawerOpen && isPengurus && (
-        <div className="absolute inset-x-2.5 bottom-20 z-40 mx-auto max-w-md animate-in rounded-3xl border border-white/20 bg-[#102828]/95 p-4 shadow-2xl backdrop-blur-2xl duration-200 slide-in-from-bottom-5 fade-in sm:inset-x-4 sm:p-5">
-          <div className="flex items-center justify-between border-b border-white/10 pb-3">
-            <div className="flex items-center gap-2">
-              <ListFilterIcon className="size-4 text-amber-400" />
-              <h4 className="text-xs font-bold text-white">
-                Live Scan History
-              </h4>
-              <span className="rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-bold text-white">
-                {recentScans.length}
+      {/* ── Floating Random Bubble Toasts ── */}
+      {floatingBubbles.length > 0 && (
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-4 bottom-24 z-40 flex flex-col items-center gap-2"
+        >
+          {floatingBubbles.map((bubble) => (
+            <div
+              key={bubble.id}
+              style={{ transform: `translateX(${bubble.offsetX}px)` }}
+              className={`inline-flex max-w-xs animate-in items-center gap-2 rounded-full border px-3.5 py-2 text-xs font-bold shadow-2xl backdrop-blur-xl duration-300 fade-in slide-in-from-bottom-4 zoom-in-95 ${bubble.type === "success"
+                ? "border-emerald-300/70 bg-emerald-900/90 text-emerald-50"
+                : bubble.type === "duplicate"
+                  ? "border-amber-300/70 bg-amber-900/90 text-amber-50"
+                  : "border-rose-300/70 bg-rose-900/90 text-rose-50"
+                }`}
+            >
+              {bubble.type === "success" ? (
+                <CheckCircle2Icon className="size-4 shrink-0 text-emerald-300" />
+              ) : (
+                <AlertTriangleIcon className="size-4 shrink-0 text-amber-300" />
+              )}
+              <span className="truncate">{bubble.title}</span>
+              <span className="max-w-[140px] truncate text-[11px] font-medium opacity-80">
+                {bubble.subtitle}
               </span>
             </div>
-            <button
-              type="button"
-              onClick={() => setIsHistoryDrawerOpen(false)}
-              className="flex size-8 cursor-pointer items-center justify-center rounded-full text-zinc-400 hover:bg-white/10 hover:text-white"
-            >
-              <ChevronDownIcon className="size-4" />
-            </button>
-          </div>
+          ))}
+        </div>
+      )}
 
-          <div className="mt-3 max-h-56 space-y-2 divide-y divide-white/5 overflow-y-auto pr-1">
-            {recentScans.length > 0 ? (
-              recentScans.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex items-center justify-between pt-2 first:pt-0"
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-xs font-bold text-white">
-                      {item.name}
-                    </p>
-                    <p className="truncate text-[10px] text-zinc-400">
-                      {item.userNumber ? `${item.userNumber} • ` : ""}
-                      {item.message}
-                    </p>
+      {/* ── 4. iOS-style Bottom Frosted Search Bar + Draggable History Sheet ── */}
+      {isPengurus && !eventError && (
+        <>
+          {(searchQuery.trim().length > 0 || isHistoryDrawerOpen) && (
+            <div
+              className="fixed inset-0 z-20"
+              onClick={() => {
+                setSearchQuery("")
+                setIsHistoryDrawerOpen(false)
+              }}
+            />
+          )}
+
+          <div className="pointer-events-none fixed inset-x-3 bottom-[max(0.85rem,env(safe-area-inset-bottom))] z-30 mx-auto max-w-md">
+            <div
+              onPointerDown={handleSheetPointerDown}
+              onPointerMove={handleSheetPointerMove}
+              onPointerUp={handleSheetPointerEnd}
+              onPointerCancel={handleSheetPointerEnd}
+              className="pointer-events-auto overflow-hidden rounded-[24px] border border-[#ded5c0] bg-[#fffaf0]/92 text-[#0a0a0a] shadow-m3-2 backdrop-blur-xl transition-all duration-200"
+            >
+              {/* Drag Handle Bar — swipe up anywhere on pill or tap handle to reveal History */}
+              <div
+                onClick={() => {
+                  if (sheetDraggedRef.current) {
+                    sheetDraggedRef.current = false
+                    return
+                  }
+                  if (searchQuery.trim().length > 0) return
+                  setIsHistoryDrawerOpen((prev) => !prev)
+                }}
+                aria-label="Drag up or tap for attendance history"
+                className="flex cursor-grab touch-none justify-center pt-2 pb-1 active:cursor-grabbing"
+              >
+                <div className="h-1 w-9 rounded-full bg-[#0a0a0a]/20" />
+              </div>
+
+              {/* iOS-Style Frosted Search Input Row (stays at top of sheet when dragged up) */}
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  const q = searchQuery.trim()
+                  if (!q) return
+                  if (/^\d+$/.test(q)) {
+                    void recordManualAttendance(q)
+                  } else if (displayedManualPeople.length === 1) {
+                    const onlyMatch = displayedManualPeople[0]!
+                    void recordManualAttendance(
+                      onlyMatch.user_number
+                        ? String(onlyMatch.user_number)
+                        : onlyMatch.id,
+                      onlyMatch.name
+                    )
+                  }
+                }}
+                className="flex items-center gap-2 px-3.5 pt-1 pb-2.5"
+              >
+                <SearchIcon className="size-4 shrink-0 text-[#6a6a6a]" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value)
+                    if (e.target.value.trim()) {
+                      setIsHistoryDrawerOpen(false)
+                    }
+                  }}
+                  placeholder="Search member name or ID..."
+                  className="min-w-0 flex-1 bg-transparent text-xs font-medium text-[#0a0a0a] outline-none placeholder:text-[#6a6a6a]"
+                />
+                {searchQuery.trim().length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery("")}
+                    aria-label="Clear search"
+                    className="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-full text-[#6a6a6a] transition-colors hover:bg-[#ebe6d6] hover:text-[#0a0a0a]"
+                  >
+                    <XIcon className="size-3.5" />
+                  </button>
+                )}
+                {isNumericQuery && (
+                  <button
+                    type="submit"
+                    className="shrink-0 cursor-pointer rounded-xl bg-[#0a0a0a] px-3 py-1.5 text-[11px] font-bold text-white shadow-xs hover:bg-[#262626]"
+                  >
+                    Check In
+                  </button>
+                )}
+              </form>
+
+              {/* Expanded Area Below Search Bar: either Live Search Results OR Dragged-Up History */}
+              {searchQuery.trim().length > 0 ? (
+                <div className="animate-in border-t border-[#e5e5e5] px-2.5 pt-2.5 pb-2.5 duration-150 fade-in slide-in-from-bottom-2">
+                  <div className="max-h-[42vh] touch-pan-y space-y-1.5 overflow-y-auto pr-0.5">
+                    {displayedManualPeople.map((p) => {
+                      const isAttended = sessionAttendedIds.has(p.id)
+                      return (
+                        <button
+                          key={p.id}
+                          type="button"
+                          disabled={isAttended}
+                          onClick={() => {
+                            if (isAttended) return
+                            void recordManualAttendance(
+                              p.user_number ? String(p.user_number) : p.id,
+                              p.name
+                            )
+                          }}
+                          className={`flex w-full items-center justify-between gap-2 rounded-xl border p-2.5 text-left transition-all ${
+                            isAttended
+                              ? "cursor-default border-emerald-500/30 bg-emerald-500/10"
+                              : "cursor-pointer border-[#ded5c0] bg-[#faf5e8] hover:border-[#e8b94a] hover:bg-[#f5f0e0] active:scale-[0.99]"
+                          }`}
+                        >
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-xs font-bold text-[#0a0a0a]">
+                              {p.name}
+                            </p>
+                            <p className="truncate text-[10px] text-[#6a6a6a]">
+                              {p.user_number || "-"}
+                              {"school" in p && p.school ? ` · ${p.school}` : ""}
+                            </p>
+                          </div>
+                          {isAttended ? (
+                            <span className="shrink-0 rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-[10px] font-bold text-emerald-700">
+                              Present
+                            </span>
+                          ) : (
+                            <span className="shrink-0 rounded-lg bg-[#0a0a0a] px-2.5 py-1 text-[11px] font-bold text-white shadow-xs">
+                              + Check In
+                            </span>
+                          )}
+                        </button>
+                      )
+                    })}
+
+                    {displayedManualPeople.length === 0 && (
+                      <p className="py-3 text-center text-xs text-[#6a6a6a]">
+                        No registered member matches &ldquo;{searchQuery.trim()}&rdquo;.
+                      </p>
+                    )}
                   </div>
-                  <div className="flex items-center gap-2 pl-2">
-                    <span
-                      className={`rounded-full border px-2 py-0.5 text-[9px] font-bold ${
-                        item.status === "success"
-                          ? "border-emerald-500/30 bg-emerald-500/20 text-emerald-300"
-                          : "border-amber-500/30 bg-amber-500/20 text-amber-300"
-                      }`}
+
+                  {/* Create New Member Action at the bottom of results */}
+                  <div className="mt-2 border-t border-[#e5e5e5] pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setPreProvisionOpen(true)}
+                      className="flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-[#e8b94a]/70 bg-[#faf5e8] px-3 py-2 text-xs font-bold text-[#0a0a0a] transition-colors hover:bg-[#f5ebd0]"
                     >
-                      {item.time}
-                    </span>
-                    {item.userId !== "unknown" && (
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteDraft(item.userId)}
-                        className="text-zinc-400 hover:text-rose-400"
-                        title="Delete draft attendance"
-                      >
-                        <Trash2Icon className="size-3" />
-                      </button>
+                      <UserPlusIcon className="size-3.5 text-[#9a6e13]" />
+                      <span>Create New Member</span>
+                    </button>
+                  </div>
+                </div>
+              ) : isHistoryDrawerOpen ? (
+                <div className="animate-in border-t border-[#e5e5e5] px-3.5 pt-2.5 pb-3 duration-150 fade-in slide-in-from-bottom-2">
+                  <div className="mb-2 flex items-center justify-between">
+                    <p className="text-[11px] font-bold tracking-wider text-[#6a6a6a] uppercase">
+                      Session Attendance ({recentScans.length})
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setIsHistoryDrawerOpen(false)}
+                      aria-label="Close history"
+                      className="flex size-6 cursor-pointer items-center justify-center rounded-full text-[#6a6a6a] hover:bg-[#ebe6d6] hover:text-[#0a0a0a]"
+                    >
+                      <XIcon className="size-3.5" />
+                    </button>
+                  </div>
+
+                  <div className="max-h-[42vh] touch-pan-y space-y-2 divide-y divide-[#e5e5e5] overflow-y-auto pr-1">
+                    {recentScans.length > 0 ? (
+                      recentScans.map((item) => (
+                        <div
+                          key={item.id}
+                          className="flex items-center justify-between pt-2 first:pt-0"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-xs font-bold text-[#0a0a0a]">
+                              {item.name}
+                            </p>
+                            <p className="truncate text-[10px] text-[#6a6a6a]">
+                              {item.userNumber ? `${item.userNumber} • ` : ""}
+                              {item.message}
+                            </p>
+                          </div>
+                          <span
+                            className={`ml-2 shrink-0 rounded-full border px-2 py-0.5 text-[9px] font-bold ${
+                              item.status === "success"
+                                ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700"
+                                : "border-[#e8b94a]/50 bg-[#e8b94a]/15 text-[#8a6110]"
+                            }`}
+                          >
+                            {item.time}
+                          </span>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="py-4 text-center text-xs text-[#6a6a6a]">
+                        No attendance scans recorded in this session yet.
+                      </p>
                     )}
                   </div>
                 </div>
-              ))
-            ) : (
-              <p className="py-6 text-center text-xs text-zinc-400">
-                No attendance scans recorded in this session yet.
-              </p>
-            )}
+              ) : null}
+            </div>
           </div>
-        </div>
+        </>
       )}
-
-      {/* ── 5. Bottom Navigation Dock ── */}
-      {isPengurus && (
-        <div className="absolute inset-x-0 bottom-0 z-30 flex items-center justify-center gap-2 bg-gradient-to-t from-[#102828]/95 via-[#102828]/70 to-transparent p-3 pb-[max(1rem,env(safe-area-inset-bottom))] sm:gap-3 sm:p-4">
-          <button
-            type="button"
-            onClick={() => {
-              setPengurusMode((prev) =>
-                prev === "camera" ? "search" : "camera"
-              )
-              setIsHistoryDrawerOpen(false)
-            }}
-            className={`flex min-h-[44px] cursor-pointer items-center gap-1.5 rounded-full border px-4 py-2 text-xs font-bold shadow-lg backdrop-blur-xl transition-all active:scale-95 ${
-              pengurusMode === "search"
-                ? "border-amber-300 bg-amber-400 text-[#1a3a3a]"
-                : "border-white/25 bg-[#102828]/85 text-white hover:bg-[#1a3a3a]"
-            }`}
-          >
-            {pengurusMode === "search" ? (
-              <>
-                <CameraIcon className="size-4 text-[#1a3a3a]" />
-                <span>Open Camera</span>
-              </>
-            ) : (
-              <>
-                <UserPlusIcon className="size-4 text-amber-300" />
-                <span>Manual Entry</span>
-              </>
-            )}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setIsHistoryDrawerOpen((prev) => !prev)}
-            className={`flex min-h-[44px] cursor-pointer items-center gap-1.5 rounded-full border px-4 py-2 text-xs font-bold shadow-lg backdrop-blur-xl transition-all active:scale-95 ${
-              isHistoryDrawerOpen
-                ? "border-white bg-white text-[#1a3a3a]"
-                : "border-white/25 bg-[#102828]/85 text-white hover:bg-[#1a3a3a]"
-            }`}
-          >
-            <ListFilterIcon className="size-4 text-amber-400" />
-            <span>History ({recentScans.length})</span>
-          </button>
-        </div>
-      )}
-
-      {/* ── Similar Existing Members Modal (Manual Entry See More) ── */}
-      <SimilarMembersModal
-        open={similarModalOpen}
-        onOpenChange={setSimilarModalOpen}
-        searchTerm={searchQuery}
-        members={similarMembers}
-        renderItemAction={(member) =>
-          sessionAttendedIds.has(member.id) ? (
-            <span className="rounded-full border border-emerald-500/30 bg-emerald-500/15 px-2.5 py-1 text-[11px] font-bold text-emerald-700">
-              Present
-            </span>
-          ) : (
-            <button
-              type="button"
-              onClick={() => {
-                void recordManualAttendance(
-                  member.user_number ? String(member.user_number) : member.id,
-                  member.name
-                )
-                setSimilarModalOpen(false)
-                setSearchQuery("")
-              }}
-              className="cursor-pointer rounded-[10px] bg-[#0a0a0a] px-3 py-1.5 text-[11px] font-bold text-white transition-colors hover:bg-[#1f1f1f]"
-            >
-              + Check In
-            </button>
-          )
-        }
-      />
 
       {/* ── Quick Pre-Provision Member Modal (Walk-in Manual Entry) ── */}
       <PreProvisionMemberModal
@@ -1110,18 +1099,6 @@ export function AttendanceScanPage() {
           }
           setSearchQuery("")
         }}
-      />
-
-      {/* ── Finalize Confirmation Dialog ── */}
-      <ConfirmDialog
-        open={closeDialogOpen}
-        onOpenChange={(open) => !open && setCloseDialogOpen(false)}
-        variant="destructive"
-        title="Complete & Finalize Attendance Session?"
-        description="Closing the event will mark all draft attendances as finalized and credit attendance points directly to members' balances in a single transaction. This action cannot be reversed."
-        confirmLabel={closingEvent ? "Finalizing..." : "Yes, Finalize & Close"}
-        cancelLabel="Keep Session Active"
-        onConfirm={handleCloseAndFinalize}
       />
     </div>
   )

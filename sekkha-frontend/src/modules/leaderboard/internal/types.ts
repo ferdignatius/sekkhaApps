@@ -21,11 +21,29 @@ export interface LeaderboardEntry {
   role?: "umat" | "pengurus" | "admin" | "aktivis" | string
 }
 
+export interface LeaderboardPeriod {
+  id: string
+  key: "custom" | "semester" | "annual"
+  name: string
+  code?: string | null
+  start_date: string
+  end_date: string
+  days_left: number
+  target_attendance: number
+  is_active: boolean
+  is_custom: boolean
+  is_archived?: boolean
+  description?: string | null
+}
+
 export interface LeaderboardResponse {
   season: Season
   metric: LeaderboardMetric
   entries: LeaderboardEntry[]
   my_rank: MyRank
+  available_periods?: LeaderboardPeriod[]
+  archived_periods?: LeaderboardPeriod[]
+  active_period?: LeaderboardPeriod
 }
 
 export interface MyRank {

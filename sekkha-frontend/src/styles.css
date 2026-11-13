@@ -680,6 +680,21 @@
   .bg-sekkha-brand-yellow { background-color: var(--color-sekkha-brand-yellow); }
   .bg-sekkha-teal-light { background-color: var(--color-sekkha-teal-light); }
   .bg-sekkha-rose-light { background-color: var(--color-sekkha-rose-light); }
+
+  @keyframes qr-scan-sweep {
+    0%, 100% {
+      top: 10%;
+      opacity: 0.75;
+    }
+    50% {
+      top: 88%;
+      opacity: 1;
+    }
+  }
+
+  .animate-qr-sweep {
+    animation: qr-scan-sweep 2.2s ease-in-out infinite;
+  }
 }
 
 /* ─── Physical ID Card Print Engine ─── */

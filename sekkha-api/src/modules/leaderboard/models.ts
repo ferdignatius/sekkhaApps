@@ -19,6 +19,23 @@ export const leaderboardModels = {
     })
   },
 
+  findPastSeasons(now: Date) {
+    return prisma.season.findMany({
+      where: {
+        OR: [
+          { endDate: { lt: now } },
+          { isActive: false, startDate: { lte: now } },
+        ],
+      },
+      orderBy: [{ endDate: "desc" }],
+      take: 24,
+    })
+  },
+
+  findSeasonById(id: string) {
+    return prisma.season.findUnique({ where: { id } })
+  },
+
   deactivateOtherSeasons(excludeId: string) {
     return prisma.season.updateMany({
       where: { isActive: true, id: { not: excludeId } },

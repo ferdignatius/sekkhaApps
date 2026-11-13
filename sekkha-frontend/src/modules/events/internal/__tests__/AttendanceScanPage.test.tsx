@@ -74,8 +74,8 @@ function renderAttendanceScan() {
   )
 }
 
-describe("AttendanceScanPage Manual Entry — Fuzzy Similar Name Notice, See More & Quick Pre-Provision", () => {
-  it("shows similar existing members banner + See More modal in Manual Entry when typing a name, hides when empty, and supports quick registration", async () => {
+describe("AttendanceScanPage Manual Entry — Unified Search, Clickable Rows, ID Check-In & Quick Pre-Provision", () => {
+  it("supports unified name/ID search with clickable member rows (no SimilarMembersNotice clutter) and quick registration", async () => {
     const similarSpy = vi
       .spyOn(peopleApi, "findSimilarMembers")
       .mockImplementation((name: string) => {
@@ -110,20 +110,22 @@ describe("AttendanceScanPage Manual Entry — Fuzzy Similar Name Notice, See Mor
 
     renderAttendanceScan()
 
-    // Switch to Manual Entry
-    const manualBtn = await screen.findByRole("button", { name: /Manual Entry/i })
-    fireEvent.click(manualBtn)
+    // Camera scanner & floating search bar are mounted together without mode tabs
+    expect(screen.queryByRole("button", { name: /Manual Entry/i })).toBeNull()
+    expect(screen.queryByRole("button", { name: /QR Scanner/i })).toBeNull()
+    expect(await screen.findByTestId("mock-qr-camera")).toBeTruthy()
 
-    await waitFor(() => {
-      expect(screen.getByPlaceholderText(/Type member name.../i)).toBeTruthy()
-    })
+    const searchInput = await screen.findByPlaceholderText(
+      /Search member name or ID/i
+    )
+    expect(searchInput).toBeTruthy()
 
-    // Empty initially: no similar notice & no See More button
+    // Empty initially: no results dropdown & no confusing "Similar existing members found" banner
     expect(screen.queryByText(/Similar existing members? found/i)).toBeNull()
-    expect(screen.queryByRole("button", { name: /See More/i })).toBeNull()
+    expect(screen.queryByRole("button", { name: /Create New Member/i })).toBeNull()
 
-    // Type similar name -> async lookup runs & displays banner + See More + Register New Member
-    fireEvent.change(screen.getByPlaceholderText(/Type member name.../i), {
+    // Type a name -> fuzzy search runs & renders directly clickable member row in dropdown
+    fireEvent.change(searchInput, {
       target: { value: "Budi Santosa" },
     })
 
@@ -133,19 +135,12 @@ describe("AttendanceScanPage Manual Entry — Fuzzy Similar Name Notice, See Mor
         5,
         expect.objectContaining({ signal: expect.any(AbortSignal) })
       )
-      expect(screen.getByText(/Similar existing members? found/i)).toBeTruthy()
+      expect(screen.getByText("Budi Santoso")).toBeTruthy()
     })
+    expect(screen.queryByText(/Similar existing members? found/i)).toBeNull()
 
-    const seeMoreBtn = screen.getByRole("button", { name: /See More/i })
-    fireEvent.click(seeMoreBtn)
-
-    await waitFor(() => {
-      expect(screen.getByRole("dialog", { name: /Similar Existing Members/i })).toBeTruthy()
-    })
-
-    // Check-in directly from the See More modal
-    const modalCheckInButtons = screen.getAllByRole("button", { name: /\+ Check In/i })
-    fireEvent.click(modalCheckInButtons[modalCheckInButtons.length - 1])
+    // Clicking the member row itself triggers manual check-in directly
+    fireEvent.click(screen.getByRole("button", { name: /Budi Santoso/i }))
 
     await waitFor(() => {
       expect(postSpy).toHaveBeenCalledWith(
@@ -157,17 +152,16 @@ describe("AttendanceScanPage Manual Entry — Fuzzy Similar Name Notice, See Mor
       )
     })
 
-    // Typing non-matching name hides the banner cleanly
-    fireEvent.change(screen.getByPlaceholderText(/Type member name.../i), {
+    // Typing non-matching name shows empty message + allows Create New Member
+    fireEvent.change(screen.getByPlaceholderText(/Search member name or ID/i), {
       target: { value: "Zyxwvu Unique" },
     })
     await waitFor(() => {
-      expect(screen.queryByText(/Similar existing members? found/i)).toBeNull()
-      expect(screen.queryByRole("button", { name: /See More/i })).toBeNull()
+      expect(screen.getByText(/No registered member matches/i)).toBeTruthy()
     })
 
-    // Quick Register New Member button opens Pre-Provision modal pre-filled with typed name
-    fireEvent.click(screen.getByRole("button", { name: /Register New Member/i }))
+    // Create New Member button at bottom of dropdown opens Pre-Provision modal pre-filled with typed name
+    fireEvent.click(screen.getByRole("button", { name: /Create New Member/i }))
     await waitFor(() => {
       expect(screen.getByLabelText(/Full Name/i)).toBeTruthy()
     })

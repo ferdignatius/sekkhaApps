@@ -9,9 +9,8 @@ import {
 } from "lucide-react"
 import { ResponsiveFormModal } from "@/components/common/ResponsiveFormModal"
 import { Button } from "@/components/base/Button"
-import {
-  Select,
-} from "@/components/base/Select"
+import { ManyToOneSelect } from "@/components/base/ManyToOneSelect"
+import { useDebounce } from "@/hooks/useDebounce"
 import { usePaginatedDropdown } from "@/hooks/usePaginatedDropdown"
 import { DROPDOWN_PAGE_SIZE } from "@/lib/pagination"
 import { peopleApi } from "../api/peopleApi"
@@ -56,6 +55,8 @@ export function PreProvisionMemberModal({
     useState<CreateMemberResponse | null>(null)
   const [copiedInvite, setCopiedInvite] = useState(false)
   const [similarModalOpen, setSimilarModalOpen] = useState(false)
+  const [schoolSearch, setSchoolSearch] = useState("")
+  const debouncedSchoolSearch = useDebounce(schoolSearch, 250)
 
   // Async non-blocking fuzzy similarity check while typing Full Name
   const { similarMembers, totalMatches } = useSimilarMembers(createForm.name, {
@@ -67,6 +68,7 @@ export function PreProvisionMemberModal({
     if (!open) return
     setCreateError(null)
     setSimilarModalOpen(false)
+    setSchoolSearch("")
     setCreateForm({
       name: initialName || "",
       school_id: "",
@@ -84,6 +86,7 @@ export function PreProvisionMemberModal({
     fetcher: (params) => peopleApi.getVerifiedSchools(params),
     getKey: (s) => s.id,
     pageSize: DROPDOWN_PAGE_SIZE,
+    search: debouncedSchoolSearch,
     enabled: open && canLoadSchools,
   })
 
@@ -339,27 +342,39 @@ export function PreProvisionMemberModal({
               />
             </div>
 
-            {/* School / Institution (Master Data Schools — initial 5 + infinite scroll) */}
+            {/* School / Institution (Master Data Schools — searchable + infinite scroll) */}
             <div className="space-y-1">
-              <Select
+              <ManyToOneSelect
                 id="people-create-school"
                 label={
-                  schoolsLoading
+                  schoolsLoading && verifiedSchools.length === 0 && !schoolSearch
                     ? "School / Institution (Loading...)"
                     : "School / Institution"
                 }
+                placeholder="Select school or institution..."
+                searchPlaceholder="Search school name..."
                 value={createForm.school_id || "__none__"}
                 onValueChange={(val) =>
                   setCreateForm({
                     ...createForm,
-                    school_id: val === "__none__" ? null : val,
+                    school_id: val === "__none__" || !val ? null : val,
                   })
                 }
-                disabled={schoolsLoading}
+                disabled={
+                  schoolsLoading && verifiedSchools.length === 0 && !schoolSearch
+                }
+                loading={schoolsLoading && verifiedSchools.length === 0}
+                search={schoolSearch}
+                onSearchChange={setSchoolSearch}
+                clientFilter={true}
+                clearable={Boolean(createForm.school_id)}
                 hasMore={hasMoreSchools}
                 isLoadingMore={loadingMoreSchools}
                 totalCount={totalSchools}
                 onLoadMore={loadMoreSchools}
+                emptyText="No matching school found."
+                itemLabel="schools"
+                menuClassName="z-[120]"
                 options={[
                   { value: "__none__", label: "None / Not set" },
                   ...verifiedSchools.map((sch) => ({

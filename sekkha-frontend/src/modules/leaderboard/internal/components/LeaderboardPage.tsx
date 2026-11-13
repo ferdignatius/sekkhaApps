@@ -159,6 +159,11 @@ export function LeaderboardPage() {
   const [availablePeriods, setAvailablePeriods] = useState<SeasonPeriodOption[]>(
     []
   )
+  const [archivedPeriods, setArchivedPeriods] = useState<SeasonPeriodOption[]>(
+    []
+  )
+  const [activePeriodObj, setActivePeriodObj] =
+    useState<SeasonPeriodOption | null>(null)
   const [selectedPeriodKey, setSelectedPeriodKey] = useState<string>("default")
   const [communityGoal, setCommunityGoal] = useState({
     current: 0,
@@ -175,6 +180,8 @@ export function LeaderboardPage() {
         seasonData: SeasonSummary | null
         communityGoal: { current: number; target: number; label: string }
         availablePeriods: SeasonPeriodOption[]
+        archivedPeriods: SeasonPeriodOption[]
+        activePeriodObj: SeasonPeriodOption | null
       }
     >()
   )
@@ -191,6 +198,8 @@ export function LeaderboardPage() {
         setSeasonData(cached.seasonData)
         setCommunityGoal(cached.communityGoal)
         setAvailablePeriods(cached.availablePeriods)
+        setArchivedPeriods(cached.archivedPeriods)
+        setActivePeriodObj(cached.activePeriodObj)
         setIsLoading(false)
         return
       }
@@ -210,6 +219,8 @@ export function LeaderboardPage() {
           my_rank: any
           season?: any
           available_periods?: SeasonPeriodOption[]
+          archived_periods?: SeasonPeriodOption[]
+          active_period?: SeasonPeriodOption | null
           community_goal?: { current: number; target: number; label: string }
         }>(
           `/leaderboard?metric=${metric}${periodParam}&roles=${encodeURIComponent(roleScope)}&limit=${LEADERBOARD_LIMIT}${refreshParam}`,
@@ -221,6 +232,8 @@ export function LeaderboardPage() {
         setMyRankData(res.my_rank ?? null)
         if (res.season) setSeasonData(res.season)
         if (res.available_periods) setAvailablePeriods(res.available_periods)
+        setArchivedPeriods(res.archived_periods ?? [])
+        setActivePeriodObj(res.active_period ?? null)
         if (res.community_goal) setCommunityGoal(res.community_goal)
         leaderboardCacheRef.current.set(cacheKey, {
           entries: res.entries ?? [],
@@ -232,6 +245,8 @@ export function LeaderboardPage() {
             label: "Community Attendance Target",
           },
           availablePeriods: res.available_periods ?? [],
+          archivedPeriods: res.archived_periods ?? [],
+          activePeriodObj: res.active_period ?? null,
         })
       } catch (err) {
         if (cancelled) return
@@ -362,6 +377,8 @@ export function LeaderboardPage() {
           <LeaderboardHeader
             seasonData={seasonData}
             availablePeriods={availablePeriods}
+            archivedPeriods={archivedPeriods}
+            activePeriod={activePeriodObj}
             selectedPeriodKey={selectedPeriodKey}
             onSelectPeriod={setSelectedPeriodKey}
             isLoading={isLoading}

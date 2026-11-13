@@ -11,6 +11,8 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   CheckIcon,
+  CheckCircle2Icon,
+  AlertTriangleIcon,
   FilterIcon,
   XIcon,
 } from "lucide-react"
@@ -27,7 +29,7 @@ import { useDebounce } from "@/hooks/useDebounce"
 import { Skeleton } from "@/components/ui/skeleton"
 import { EventCard } from "./EventCard"
 import { EventDetailSheet } from "./EventDetailSheet"
-import { EventForm } from "./EventForm"
+import { EventForm, extractRecentLocations } from "./EventForm"
 import {
   getAccessibleCategories,
   getCategoryColor,
@@ -132,7 +134,27 @@ export function EventsPage() {
   const [deleteEventTarget, setDeleteEventTarget] =
     useState<EventListItem | null>(null)
   const [deletingEvent, setDeletingEvent] = useState(false)
+  const [toast, setToast] = useState<{
+    text: string
+    type: "success" | "error"
+  } | null>(null)
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const monthPickerRef = useRef<HTMLDivElement>(null)
+
+  const showToast = useCallback(
+    (text: string, type: "success" | "error" = "success") => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
+      setToast({ text, type })
+      toastTimerRef.current = setTimeout(() => setToast(null), 3500)
+    },
+    []
+  )
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
+    }
+  }, [])
 
   const {
     items: masterCategories,
@@ -448,6 +470,11 @@ export function EventsPage() {
   const safeCreateInitialDate =
     !editTarget && selectedDate >= todayKey ? selectedDate : todayKey
 
+  const recentLocations = useMemo(() => {
+    const cachedEvents = Object.values(eventsCache).flat()
+    return extractRecentLocations([...events, ...cachedEvents], 3)
+  }, [events, eventsCache])
+
   const handleMonthChange = useCallback((month: Date) => {
     const normalizedMonth = new Date(month.getFullYear(), month.getMonth(), 1)
     setActiveMonth(normalizedMonth)
@@ -480,11 +507,16 @@ export function EventsPage() {
     try {
       setFormSubmitting(true)
       setFormError(null)
+      const isEditing = Boolean(editTarget)
       const saved = editTarget
         ? await api.put<EventListItem>(`/events/${editTarget.id}`, payload)
         : await api.post<EventListItem>("/events", payload)
 
       clearApiCache()
+
+      if (isEditing && saved && selected && selected.id === editTarget?.id) {
+        setSelected(saved)
+      }
 
       const targetDateKey =
         toDateKey(
@@ -505,6 +537,11 @@ export function EventsPage() {
       setSearchQuery("")
       setEditTarget(null)
       setFormOpen(false)
+      showToast(
+        isEditing
+          ? "Event updated successfully!"
+          : "Event created successfully!"
+      )
     } catch (err) {
       console.error("Failed to save event:", err)
       setFormError(
@@ -516,6 +553,34 @@ export function EventsPage() {
       setFormSubmitting(false)
     }
   }
+
+  const toastBanner = toast ? (
+    <div
+      role="status"
+      aria-live="polite"
+      data-testid="events-toast-banner"
+      className={`fixed right-4 bottom-24 z-[130] flex max-w-sm animate-in items-center gap-2.5 rounded-2xl border px-4 py-3 text-xs font-bold shadow-xl backdrop-blur-md duration-200 fade-in slide-in-from-bottom-4 md:bottom-6 ${
+        toast.type === "error"
+          ? "border-rose-300 bg-rose-50/95 text-rose-900"
+          : "border-clay-teal/30 bg-surface-soft/95 text-ink"
+      }`}
+    >
+      {toast.type === "error" ? (
+        <AlertTriangleIcon className="size-4 shrink-0 text-rose-600" aria-hidden="true" />
+      ) : (
+        <CheckCircle2Icon className="size-4 shrink-0 text-clay-teal" aria-hidden="true" />
+      )}
+      <span className="flex-1">{toast.text}</span>
+      <button
+        type="button"
+        onClick={() => setToast(null)}
+        aria-label="Dismiss notification"
+        className="cursor-pointer rounded-full p-1 text-text-muted transition-colors hover:bg-surface-card hover:text-ink"
+      >
+        <XIcon className="size-3.5" />
+      </button>
+    </div>
+  ) : null
 
   function handleCloseDetail() {
     setSelected(null)
@@ -601,9 +666,13 @@ export function EventsPage() {
                       )
                       setEvents((prev) => [dup, ...prev])
                       setSelected(dup)
+                      showToast("Event duplicated successfully!")
                     } catch (err) {
                       console.error("Failed to duplicate event:", err)
-                      alert("Failed to duplicate event on server.")
+                      showToast(
+                        "Failed to duplicate event. Please try again.",
+                        "error"
+                      )
                     }
                   }
                   : undefined
@@ -676,8 +745,23 @@ export function EventsPage() {
 
                       // 3. Reload month events to ensure server truth
                       await loadEvents(activeMonth, true)
-                    } catch (err) {
+
+                      const statusMessages: Record<string, string> = {
+                        active: "Event activated and open for check-in!",
+                        closed: "Event closed successfully!",
+                        cancelled: "Event cancelled.",
+                        planned: "Event moved back to planned.",
+                      }
+                      showToast(
+                        statusMessages[newStatus] ??
+                          `Event status updated to ${newStatus}.`
+                      )
+                    } catch (err: any) {
                       console.error("Failed to update event status:", err)
+                      showToast(
+                        err?.message || "Failed to update event status.",
+                        "error"
+                      )
                       // In case of error, re-fetch server state
                       try {
                         const fresh = await api.get<EventListItem>(
@@ -702,10 +786,15 @@ export function EventsPage() {
                         `/events/${selected.id}/attendances/${userId}`
                       )
                       await loadEventAttendances(selected.id)
+                      showToast("Attendance record removed.")
                     } catch (err) {
                       console.error(
                         "Failed to remove attendance record:",
                         err
+                      )
+                      showToast(
+                        "Failed to remove attendance record.",
+                        "error"
                       )
                     }
                   }
@@ -732,6 +821,7 @@ export function EventsPage() {
           <EventForm
             initial={editTarget ?? undefined}
             initialDate={!editTarget ? safeCreateInitialDate : undefined}
+            recentLocations={recentLocations}
             onSubmit={handleFormSubmit}
             isSubmitting={formSubmitting}
             submissionError={formError}
@@ -766,13 +856,16 @@ export function EventsPage() {
               )
               setDeleteEventTarget(null)
               handleCloseDetail()
+              showToast("Event deleted successfully.")
             } catch (err) {
               console.error("Failed to delete event:", err)
+              showToast("Failed to delete event. Please try again.", "error")
             } finally {
               setDeletingEvent(false)
             }
           }}
         />
+        {toastBanner}
       </main>
     )
   }
@@ -1349,6 +1442,7 @@ export function EventsPage() {
         <EventForm
           initial={editTarget ?? undefined}
           initialDate={!editTarget && selectedDate ? selectedDate : undefined}
+          recentLocations={recentLocations}
           onSubmit={handleFormSubmit}
           isSubmitting={formSubmitting}
           submissionError={formError}
@@ -1358,6 +1452,7 @@ export function EventsPage() {
           }}
         />
       </ResponsiveFormModal>
+      {toastBanner}
     </main>
   )
 }

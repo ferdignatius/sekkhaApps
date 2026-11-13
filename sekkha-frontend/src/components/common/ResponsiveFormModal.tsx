@@ -114,7 +114,7 @@ export function ResponsiveFormModal({
               <XIcon className="size-4" />
             </button>
           </div>
-          <div className="flex-1 overflow-y-auto px-1 pt-3">{children}</div>
+          <div className="scrollbar-none flex-1 overflow-y-auto px-1 pt-3">{children}</div>
         </div>
       </div>
     )
@@ -134,7 +134,7 @@ export function ResponsiveFormModal({
         </div>
 
         {/* Scrollable Container */}
-        <div className="flex-1 overflow-y-auto px-5 pt-3 pb-8">
+        <div className="scrollbar-none flex-1 overflow-y-auto px-5 pt-3 pb-8">
           <DrawerHeader className="mb-3 border-b border-white/30 px-0 pt-0 pb-3 text-left">
             <DrawerTitle className="text-sm font-bold text-[#0a0a0a]">
               {title}

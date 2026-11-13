@@ -8,7 +8,12 @@ import { AppError } from "../../lib/AppError"
 import type { Prisma as PrismaTypes } from "@prisma/client"
 import { canViewEvent } from "./policy"
 import { eventbus, DomainEvents } from "../../core/eventbus"
-import { calculateWeeklyStreak, toWeekKey } from "../users"
+import {
+  calculateWeeklyStreak,
+  toWeekKey,
+  toMonthKey,
+  evaluatePerfectMonthBonus,
+} from "../users"
 
 const VALID_EVENT_STATUSES = ["scheduled", "active", "closed", "cancel"] as const
 const WIB_OFFSET_MS = 7 * 60 * 60 * 1000
@@ -514,6 +519,57 @@ export const eventServices = {
               attendancesByUser.set(fa.userId, list)
             }
 
+            const eventDt = new Date(currentEvent.eventDate)
+            const monthStart = new Date(
+              Date.UTC(eventDt.getUTCFullYear(), eventDt.getUTCMonth(), 1, 0, 0, 0, 0)
+            )
+            const monthEnd = new Date(
+              Date.UTC(eventDt.getUTCFullYear(), eventDt.getUTCMonth() + 1, 0, 23, 59, 59, 999)
+            )
+            const currentEventWeekKey = toWeekKey(eventDt)
+            const currentMonthKey = toMonthKey(eventDt)
+
+            const activeCommunityWeeks = new Set<string>([currentEventWeekKey])
+            let monthEventDates: Date[] = [eventDt]
+            let hasFutureUnclosedWeeksInMonth = false
+
+            if (typeof (tx.event as any).findMany === "function") {
+              const [closedEvents, monthEvents] = await Promise.all([
+                tx.event.findMany({
+                  where: { status: "closed", eventDate: { lte: eventDt } },
+                  select: { eventDate: true },
+                }),
+                tx.event.findMany({
+                  where: {
+                    status: { in: ["closed", "active", "scheduled"] },
+                    eventDate: { gte: monthStart, lte: monthEnd },
+                  },
+                  select: { id: true, eventDate: true, status: true },
+                }),
+              ])
+              for (const ce of closedEvents) {
+                activeCommunityWeeks.add(toWeekKey(new Date(ce.eventDate)))
+              }
+              monthEventDates = monthEvents.map((e) => new Date(e.eventDate))
+              if (!monthEvents.some((e) => e.id === currentEvent.id)) {
+                monthEventDates.push(eventDt)
+              }
+              hasFutureUnclosedWeeksInMonth = monthEvents.some(
+                (e) =>
+                  e.id !== currentEvent.id &&
+                  e.status !== "closed" &&
+                  toWeekKey(new Date(e.eventDate)) > currentEventWeekKey
+              )
+            } else {
+              for (const fa of finalizedAttendances) {
+                const faDt = new Date(fa.scannedAt)
+                activeCommunityWeeks.add(toWeekKey(faDt))
+                if (toMonthKey(faDt) === currentMonthKey) {
+                  monthEventDates.push(faDt)
+                }
+              }
+            }
+
             const pointTxData: PrismaTypes.PointTransactionCreateManyInput[] = []
             const statsByUser = new Map<
               string,
@@ -543,7 +599,11 @@ export const eventServices = {
                 if (att.scannedAt > current.scannedAt) current.scannedAt = att.scannedAt
               } else {
                 const userAtts = attendancesByUser.get(att.userId) ?? [{ scannedAt: att.scannedAt }]
-                const { current_streak } = calculateWeeklyStreak(userAtts, currentEvent.eventDate)
+                const { current_streak } = calculateWeeklyStreak(
+                  userAtts,
+                  eventDt,
+                  activeCommunityWeeks
+                )
                 statsByUser.set(att.userId, {
                   points: clampedAmount,
                   count: 1,
@@ -555,25 +615,20 @@ export const eventServices = {
 
             // Check first_attendance_bonus & streak_monthly_bonus per attendee
             const bonusCandidateRefs: string[] = []
-            for (const [userId, stats] of statsByUser) {
+            const monthBonusByUser = new Map<string, ReturnType<typeof evaluatePerfectMonthBonus>>()
+            for (const [userId] of statsByUser) {
               bonusCandidateRefs.push(`first_attendance:${userId}`)
-              const userMeta = userMetaById.get(userId)
-              const previousStreak = userMeta?.stats?.currentStreak ?? 0
-              const newStreak = stats.currentStreak
-              const prevMilestone = Math.floor(previousStreak / 4)
-              const newMilestone = Math.floor(newStreak / 4)
-
-              if (newMilestone > prevMilestone) {
-                for (let m = prevMilestone + 1; m <= newMilestone; m++) {
-                  const milestoneStreak = m * 4
-                  bonusCandidateRefs.push(
-                    `streak_${milestoneStreak}w:${userId}:${toWeekKey(currentEvent.eventDate)}`
-                  )
-                }
-              } else if (newStreak > 0 && newStreak % 4 === 0) {
-                bonusCandidateRefs.push(
-                  `streak_${newStreak}w:${userId}:${toWeekKey(currentEvent.eventDate)}`
-                )
+              const userAtts = attendancesByUser.get(userId) ?? []
+              const monthEval = evaluatePerfectMonthBonus({
+                userId,
+                userAttendances: userAtts,
+                monthEventDates,
+                referenceEventDate: eventDt,
+                hasFutureUnclosedWeeksInMonth,
+              })
+              monthBonusByUser.set(userId, monthEval)
+              if (monthEval.eligible) {
+                bonusCandidateRefs.push(monthEval.referenceId)
               }
             }
 
@@ -612,37 +667,21 @@ export const eventServices = {
                 }
               }
 
-              // 2) streak_monthly_bonus (4-week continuous streak milestone, immune to daily point cap per PRD 2.2)
+              // 2) streak_monthly_bonus (Perfect Month >= 3 active weeks, immune to daily point cap)
               if (streakMonthlyRule && streakMonthlyRule.points > 0) {
-                const previousStreak = userMeta?.stats?.currentStreak ?? 0
-                const newStreak = stats.currentStreak
-                const prevMilestone = Math.floor(previousStreak / 4)
-                const newMilestone = Math.floor(newStreak / 4)
-
-                const milestonesToAward: number[] = []
-                if (newMilestone > prevMilestone) {
-                  for (let m = prevMilestone + 1; m <= newMilestone; m++) {
-                    milestonesToAward.push(m * 4)
-                  }
-                } else if (newStreak > 0 && newStreak % 4 === 0) {
-                  milestonesToAward.push(newStreak)
-                }
-
-                for (const milestoneStreak of milestonesToAward) {
-                  const streakRef = `streak_${milestoneStreak}w:${userId}:${toWeekKey(currentEvent.eventDate)}`
-                  if (!existingBonusRefSet.has(streakRef)) {
-                    const bonusAmount = streakMonthlyRule.points
-                    stats.points += bonusAmount
-                    pointTxData.push({
-                      userId,
-                      ruleId: streakMonthlyRule.id,
-                      amount: bonusAmount,
-                      type: "system" as const,
-                      description: `${streakMonthlyRule.label} (${milestoneStreak} minggu)`,
-                      referenceId: streakRef,
-                    })
-                    existingBonusRefSet.add(streakRef)
-                  }
+                const monthEval = monthBonusByUser.get(userId)
+                if (monthEval && monthEval.eligible && !existingBonusRefSet.has(monthEval.referenceId)) {
+                  const bonusAmount = streakMonthlyRule.points
+                  stats.points += bonusAmount
+                  pointTxData.push({
+                    userId,
+                    ruleId: streakMonthlyRule.id,
+                    amount: bonusAmount,
+                    type: "system" as const,
+                    description: `${streakMonthlyRule.label} (${monthEval.yearMonth})`,
+                    referenceId: monthEval.referenceId,
+                  })
+                  existingBonusRefSet.add(monthEval.referenceId)
                 }
               }
             }

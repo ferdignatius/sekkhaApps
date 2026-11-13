@@ -93,6 +93,7 @@ type HomeDashboard = {
   streak: {
     current_streak: number
     longest_streak: number
+    status?: "active" | "paused" | "inactive" | "expired"
     last_attended: string | null
   }
   season?: HomeSeason | null
@@ -156,6 +157,7 @@ export function HomePage() {
     (authState.userId ? `SKH-${authState.userId.slice(-4)}` : "SKH-8821")
   const totalPoints = dashboard?.profile.points ?? 0
   const currentStreak = dashboard?.streak.current_streak ?? 0
+  const streakStatus = dashboard?.streak.status ?? "active"
   const events = dashboard?.events ?? []
   const activities = dashboard?.activities ?? []
 
@@ -540,7 +542,9 @@ export function HomePage() {
                         Streak
                       </p>
                       <p className="mt-0.5 truncate text-xs leading-tight font-bold whitespace-nowrap text-[#0a0a0a] sm:text-sm">
-                        {currentStreak}x Active
+                        {streakStatus === "paused" && currentStreak > 0
+                          ? `${currentStreak}x Paused`
+                          : `${currentStreak}x Active`}
                       </p>
                     </div>
                   </div>

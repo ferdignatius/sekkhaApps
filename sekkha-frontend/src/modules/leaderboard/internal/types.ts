@@ -2,7 +2,7 @@
 // Season-based leaderboard — each season = 6 months.
 // Season 1: Jan–Jun, Season 2: Jul–Dec
 
-export type LeaderboardMetric = "points" | "streak" | "attendance"
+export type LeaderboardMetric = "points" | "attendance"
 
 export interface Season {
   year: number

@@ -33,6 +33,9 @@ Season dirancang murni sebagai **pengatur batas waktu (timeframe filtering) bagi
 4. **Penghapusan Bonus Points & Penguatan Target Attendance**:
    - Field `bonus_points` **dihapus**, karena pembagian poin instan di akhir season merusak kompetisi dan menimbulkan inflasi poin.
    - Field `target_attendance` dipertahankan sebagai **Target Kolektif Komunitas (Gotong Royong)**.
+5. **Cakupan Season terhadap Metrik (Poin & Kehadiran vs Streak)**:
+   - Pembatasan rentang waktu musiman (`[start_date, end_date]`) berlaku secara khusus untuk metrik **Poin Kompetisi (Points)** dan **Jumlah Kehadiran (Attendance)**, yang selalu di-reset ke nol di awal musim baru.
+   - Tab metrik **Streak dihapus dari Leaderboard** agar Leaderboard murni mencerminkan pencapaian musiman. Angka streak jemaat tetap kontinu lintas musim untuk profil dan kartu anggota, serta difungsikan di balik layar Leaderboard sebagai *Primary Tie-Breaker* (pemecah seri) jika perolehan poin musiman bernilai sama.
 
 ---
 

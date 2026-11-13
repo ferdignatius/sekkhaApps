@@ -123,7 +123,7 @@ describe("Event Closure Point Distribution & Milestone Bonuses", () => {
     }
   })
 
-  it("awards catch-up streak milestones if batch closing causes streak to skip multiples of 4", async () => {
+  it("denies streak_monthly_bonus when the calendar month has fewer than 3 active weeks", async () => {
     let createdPointTxs: any[] = []
 
     const eventDate = new Date("2026-03-22T10:00:00Z")
@@ -133,15 +133,19 @@ describe("Event Closure Point Distribution & Milestone Bonuses", () => {
       const txMock = {
         event: {
           findUnique: async () => ({
-            id: "evt_batch_close",
-            title: "Sunday Puja Week 8",
+            id: "evt_short_month",
+            title: "Sunday Puja Late March",
             eventDate,
             status: "active",
             type: { id: "type_1", code: "regular_puja" },
           }),
+          findMany: async () => [
+            { id: "evt_m1", eventDate: new Date("2026-03-08T10:00:00Z"), status: "closed" },
+            { id: "evt_short_month", eventDate, status: "closed" },
+          ],
           update: async () => ({
-            id: "evt_batch_close",
-            title: "Sunday Puja Week 8",
+            id: "evt_short_month",
+            title: "Sunday Puja Late March",
             eventDate,
             status: "closed",
           }),
@@ -151,19 +155,19 @@ describe("Event Closure Point Distribution & Milestone Bonuses", () => {
             if (where.eventId) {
               return [
                 {
-                  id: "att_batch",
-                  userId: "usr_batch",
+                  id: "att_short",
+                  userId: "usr_short",
                   pointsEarned: 20,
                   badgeBonusPoints: 0,
                   scannedAt: eventDate,
                 },
               ]
             }
-            // 8 weeks of attendances
-            return Array.from({ length: 8 }, (_, i) => ({
-              userId: "usr_batch",
-              scannedAt: new Date(eventDate.getTime() - (7 - i) * 7 * 86400000),
-            }))
+            // Only 2 active weeks in March 2026
+            return [
+              { userId: "usr_short", scannedAt: new Date("2026-03-08T09:00:00Z") },
+              { userId: "usr_short", scannedAt: eventDate },
+            ]
           },
           updateMany: async () => ({ count: 1 }),
         },
@@ -180,7 +184,7 @@ describe("Event Closure Point Distribution & Milestone Bonuses", () => {
             {
               id: "rule_streak_4w",
               code: "streak_monthly_bonus",
-              label: "4-Week Attendance Streak",
+              label: "Perfect Month Attendance",
               points: 50,
               isActive: true,
             },
@@ -189,11 +193,11 @@ describe("Event Closure Point Distribution & Milestone Bonuses", () => {
         user: {
           findMany: async () => [
             {
-              id: "usr_batch",
+              id: "usr_short",
               isClaimed: true,
               stats: {
-                totalAttendances: 0,
-                currentStreak: 2, // previous recorded streak was 2
+                totalAttendances: 1,
+                currentStreak: 1,
               },
             },
           ],
@@ -209,15 +213,10 @@ describe("Event Closure Point Distribution & Milestone Bonuses", () => {
     }
 
     try {
-      await eventServices.updateEventStatus("usr_admin", "admin", "evt_batch_close", "closed")
+      await eventServices.updateEventStatus("usr_admin", "admin", "evt_short_month", "closed")
 
-      // Streak jumped from 2 to 8 -> milestones for 4 weeks and 8 weeks must both be generated
       const streakTxs = createdPointTxs.filter((tx) => tx.ruleId === "rule_streak_4w")
-      expect(streakTxs.length).toBe(2)
-      expect(streakTxs[0].referenceId).toContain("streak_4w:usr_batch")
-      expect(streakTxs[1].referenceId).toContain("streak_8w:usr_batch")
-      expect(streakTxs[0].amount).toBe(50)
-      expect(streakTxs[1].amount).toBe(50)
+      expect(streakTxs.length).toBe(0)
     } finally {
       prisma.$transaction = originalTransaction
     }

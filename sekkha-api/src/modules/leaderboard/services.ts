@@ -48,7 +48,7 @@ export interface LeaderboardSnapshot {
   calculated_at: string
 }
 
-const METRICS = ["points", "streak", "attendance"] as const
+const METRICS = ["points", "attendance"] as const
 export type MetricType = (typeof METRICS)[number]
 
 function leaderboardCacheKey(metric: MetricType, periodKey: string, identifier: string) {
@@ -234,6 +234,8 @@ async function computeAndCacheLeaderboardInternal(periodTarget?: LeaderboardPeri
       description: activePeriod.description,
     }
 
+    const streakByUser = new Map(users.map((u) => [u.id, u.stats?.currentStreak ?? 0]))
+
     for (const metric of METRICS) {
       const isAllTimeFallback = (activePeriod.key as string) === "all_time"
       const list: LeaderboardUserEntry[] = users
@@ -260,12 +262,7 @@ async function computeAndCacheLeaderboardInternal(periodTarget?: LeaderboardPeri
               : (pointsByUser.get(u.id) ?? 0)
           const streakCount = u.stats?.currentStreak ?? 0
 
-          const val =
-            metric === "points"
-              ? pointsCount
-              : metric === "streak"
-                ? streakCount
-                : attendanceCount
+          const val = metric === "points" ? pointsCount : attendanceCount
 
           return {
             user_id: u.id,
@@ -279,7 +276,15 @@ async function computeAndCacheLeaderboardInternal(periodTarget?: LeaderboardPeri
             role: u.role || "member",
           }
         })
-        .sort((a, b) => b.value - a.value)
+        .sort((a, b) => {
+          if (b.value !== a.value) return b.value - a.value
+          const streakDiff = (streakByUser.get(b.user_id) ?? 0) - (streakByUser.get(a.user_id) ?? 0)
+          if (streakDiff !== 0) return streakDiff
+          if (b.attendances_count !== a.attendances_count) {
+            return b.attendances_count - a.attendances_count
+          }
+          return a.user_id.localeCompare(b.user_id)
+        })
         .map((entry, idx) => ({
           ...entry,
           rank: idx + 1,

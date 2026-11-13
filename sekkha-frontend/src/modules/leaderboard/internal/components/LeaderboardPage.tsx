@@ -4,7 +4,6 @@
 import { useState, useEffect, useRef, useMemo } from "react"
 import {
   StarIcon,
-  FlameIcon,
   CheckSquareIcon,
   TrophyIcon,
   UserIcon,
@@ -38,12 +37,6 @@ const METRIC_OPTIONS: {
     label: "Total Points",
     shortLabel: "Points",
     icon: <StarIcon className="size-4" aria-hidden="true" />,
-  },
-  {
-    value: "streak",
-    label: "Streak",
-    shortLabel: "Streak",
-    icon: <FlameIcon className="size-4" aria-hidden="true" />,
   },
   {
     value: "attendance",
@@ -304,12 +297,7 @@ export function LeaderboardPage() {
     [filteredEntries, myId]
   )
 
-  const metricUnit =
-    metric === "points"
-      ? "points"
-      : metric === "streak"
-        ? "weeks"
-        : "attendances"
+  const metricUnit = metric === "points" ? "points" : "attendances"
 
   // Show personal card cleanly at the bottom below Rank #10 when user ranks > 10
   const outsideTop10Entry: LeaderboardEntry | null = useMemo(() => {

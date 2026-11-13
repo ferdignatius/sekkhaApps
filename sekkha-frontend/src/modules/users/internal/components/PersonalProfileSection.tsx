@@ -17,8 +17,9 @@ import {
   Button,
   Card,
   Input,
-  Select,
+  ManyToOneSelect,
 } from "@/components/base"
+import { useDebounce } from "@/hooks/useDebounce"
 import { usePaginatedDropdown } from "@/hooks/usePaginatedDropdown"
 import { DROPDOWN_PAGE_SIZE } from "@/lib/pagination"
 import { userApi } from "../api/userApi"
@@ -52,6 +53,11 @@ export function PersonalProfileSection({
   const [customSchool, setCustomSchool] = useState(
     !profile.school_id && profile.school ? profile.school : ""
   )
+  const [selectedSchoolLabel, setSelectedSchoolLabel] = useState<string | null>(
+    null
+  )
+  const [schoolSearch, setSchoolSearch] = useState("")
+  const debouncedSchoolSearch = useDebounce(schoolSearch, 250)
 
   // Reset draft values whenever server profile updates while not editing
   useEffect(() => {
@@ -76,11 +82,13 @@ export function PersonalProfileSection({
     fetcher: (params) => userApi.getVerifiedSchools(params),
     getKey: (s) => s.id,
     pageSize: DROPDOWN_PAGE_SIZE,
+    search: debouncedSchoolSearch,
     enabled: isEditing,
   })
 
   function handleCancel() {
     setError(null)
+    setSchoolSearch("")
     setIsEditing(false)
   }
 
@@ -121,7 +129,8 @@ export function PersonalProfileSection({
       } else if (selectedSchoolId !== NO_SCHOOL_VALUE) {
         schoolIdPayload = selectedSchoolId
         const matched = verifiedSchools.find((s) => s.id === selectedSchoolId)
-        schoolNamePayload = matched?.name ?? profile.school ?? null
+        schoolNamePayload =
+          matched?.name ?? selectedSchoolLabel ?? profile.school ?? null
       }
 
       const updated = await userApi.updateProfile({
@@ -137,13 +146,20 @@ export function PersonalProfileSection({
     } catch (err: any) {
       console.error("Failed to update profile:", err)
       const msg =
-        err?.message || "Failed to update profile information. Please try again."
+        err?.message ||
+        "Failed to update profile information. Please try again."
       setError(msg)
       onToast(msg, "error")
     } finally {
       setSaving(false)
     }
   }
+
+  const hasSelectedInList =
+    selectedSchoolId === NO_SCHOOL_VALUE ||
+    selectedSchoolId === OTHER_SCHOOL_VALUE ||
+    verifiedSchools.some((s) => s.id === selectedSchoolId) ||
+    profile.school_id === selectedSchoolId
 
   const schoolOptions = [
     { value: NO_SCHOOL_VALUE, label: "Not linked to a school" },
@@ -160,6 +176,9 @@ export function PersonalProfileSection({
           },
         ]
       : []),
+    ...(!hasSelectedInList && selectedSchoolLabel && selectedSchoolId
+      ? [{ value: selectedSchoolId, label: selectedSchoolLabel }]
+      : []),
     { value: OTHER_SCHOOL_VALUE, label: "Other / Enter school manually..." },
   ]
 
@@ -169,7 +188,8 @@ export function PersonalProfileSection({
         <div>
           <h3 className="text-base font-bold text-ink">Personal Information</h3>
           <p className="text-xs text-text-muted">
-            Manage your member identity, contact details, and school affiliation.
+            Manage your member identity, contact details, and school
+            affiliation.
           </p>
         </div>
 
@@ -244,7 +264,9 @@ export function PersonalProfileSection({
                   Security &amp; Settings
                 </button>
               ) : (
-                <span className="font-bold text-ink">Security &amp; Settings</span>
+                <span className="font-bold text-ink">
+                  Security &amp; Settings
+                </span>
               )}
               .
             </p>
@@ -295,20 +317,27 @@ export function PersonalProfileSection({
             />
 
             <div className="sm:col-span-2">
-              <Select
+              <ManyToOneSelect
                 label={
                   schoolsLoading
                     ? "School / University (Loading...)"
                     : "School / University"
                 }
                 value={selectedSchoolId}
-                onValueChange={(val) => setSelectedSchoolId(val)}
+                onValueChange={(val, opt) => {
+                  setSelectedSchoolId(val)
+                  setSelectedSchoolLabel(opt?.label ?? null)
+                }}
                 options={schoolOptions}
                 disabled={schoolsLoading}
                 hasMore={hasMoreSchools}
                 isLoadingMore={loadingMoreSchools}
                 totalCount={totalSchools}
                 onLoadMore={loadMoreSchools}
+                onSearchChange={setSchoolSearch}
+                placeholder="Select school or university..."
+                searchPlaceholder="Search school or university..."
+                itemLabel="schools"
               />
             </div>
 

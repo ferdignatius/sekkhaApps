@@ -286,44 +286,41 @@ describe("Leaderboard Module — Unit Tests", () => {
       expect(snapshot.entries[2].rank).toBe(3)
     })
 
-    it("evaluates metric types (points, streak, attendance) using appropriate data sources", async () => {
+    it("evaluates metric types (points, attendance) using appropriate data sources with streak tie-breaker", async () => {
       leaderboardModels.findLeaderboardUsers = async () => [
         {
-          id: "u_high_streak",
+          id: "u_tied_high_streak",
           username: "streak_master",
           role: "member",
           profile: { name: "Streak Master" },
-          stats: { points: 50, currentStreak: 12, totalAttendances: 2 },
+          stats: { points: 500, currentStreak: 12, totalAttendances: 8 },
         },
         {
-          id: "u_high_points",
+          id: "u_tied_low_streak",
           username: "points_master",
           role: "member",
           profile: { name: "Points Master" },
-          stats: { points: 500, currentStreak: 1, totalAttendances: 1 },
+          stats: { points: 500, currentStreak: 2, totalAttendances: 8 },
         },
       ]
       leaderboardModels.findPointTotalsByUser = async () => [
-        { userId: "u_high_streak", _sum: { amount: 50 } },
-        { userId: "u_high_points", _sum: { amount: 500 } },
+        { userId: "u_tied_high_streak", _sum: { amount: 500 } },
+        { userId: "u_tied_low_streak", _sum: { amount: 500 } },
       ] as any
       leaderboardModels.findAttendanceCountsByUser = async () => [
-        { userId: "u_high_streak", _count: { _all: 8 } },
-        { userId: "u_high_points", _count: { _all: 4 } },
+        { userId: "u_tied_high_streak", _count: { _all: 8 } },
+        { userId: "u_tied_low_streak", _count: { _all: 4 } },
       ] as any
 
       await computeAndCacheLeaderboard()
 
-      const streakSnapshot = await getLeaderboardSnapshot("streak")
-      expect(streakSnapshot.entries[0].user_id).toBe("u_high_streak")
-      expect(streakSnapshot.entries[0].value).toBe(12)
-
       const pointsSnapshot = await getLeaderboardSnapshot("points")
-      expect(pointsSnapshot.entries[0].user_id).toBe("u_high_points")
+      expect(pointsSnapshot.entries[0].user_id).toBe("u_tied_high_streak")
       expect(pointsSnapshot.entries[0].value).toBe(500)
+      expect(pointsSnapshot.entries[1].user_id).toBe("u_tied_low_streak")
 
       const attendanceSnapshot = await getLeaderboardSnapshot("attendance")
-      expect(attendanceSnapshot.entries[0].user_id).toBe("u_high_streak")
+      expect(attendanceSnapshot.entries[0].user_id).toBe("u_tied_high_streak")
       expect(attendanceSnapshot.entries[0].value).toBe(8)
     })
   })

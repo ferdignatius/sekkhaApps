@@ -158,6 +158,13 @@ export const userModels = {
     })
   },
 
+  findClosedEventDates() {
+    return prisma.event.findMany({
+      where: { status: "closed" },
+      select: { eventDate: true },
+    })
+  },
+
   countUserAttendances(userId: string) {
     return prisma.attendance.count({
       where: { userId },

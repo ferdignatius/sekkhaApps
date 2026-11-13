@@ -7,7 +7,7 @@ import { generateUniqueUserNumber } from "../../lib/userNumber"
 import { prisma } from "../../lib/prisma"
 import { redis } from "../../lib/redis"
 import { revokeToken, generateToken, revokeAllUserRefreshTokens } from "../auth"
-import { calculateWeeklyStreak } from "./internal/utils"
+import { calculateWeeklyStreak, toWeekKey } from "./internal/utils"
 import { emailVerificationStore } from "./internal/emailVerificationStore"
 import { passwordChangeOtpStore } from "./internal/passwordChangeOtpStore"
 import { sendEmailVerificationOtpEmail, sendChangePasswordOtpEmail } from "../../lib/email"
@@ -294,8 +294,15 @@ export const userServices = {
   },
 
   async getStreak(userId: string) {
-    const attendances = await userModels.findUserAttendancesForStreak(userId)
-    const streak = calculateWeeklyStreak(attendances)
+    const [attendances, closedEvents] = await Promise.all([
+      userModels.findUserAttendancesForStreak(userId),
+      userModels.findClosedEventDates?.().catch(() => []) ?? Promise.resolve([]),
+    ])
+    const activeWeeks =
+      closedEvents.length > 0
+        ? closedEvents.map((e) => toWeekKey(new Date(e.eventDate)))
+        : undefined
+    const streak = calculateWeeklyStreak(attendances, new Date(), activeWeeks)
     const lastAttended = attendances.length > 0 && attendances[0].scannedAt
       ? new Date(attendances[0].scannedAt).toISOString()
       : null
@@ -303,6 +310,7 @@ export const userServices = {
     return {
       current_streak: streak.current_streak,
       longest_streak: streak.longest_streak,
+      status: streak.status,
       last_attended: lastAttended,
     }
   },

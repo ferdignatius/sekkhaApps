@@ -11,7 +11,7 @@ export const leaderboardControllers = {
     try {
       const { metric = "points", period, refresh, roles, limit = 10 } = z
         .object({
-          metric: z.enum(["points", "streak", "attendance"]).optional(),
+          metric: z.enum(["points", "attendance"]).optional(),
           period: z.string().optional(),
           refresh: z.enum(["true", "false", "1", "0"]).optional(),
           roles: z.string().optional(),

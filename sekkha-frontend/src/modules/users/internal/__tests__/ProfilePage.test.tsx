@@ -155,6 +155,7 @@ describe("ProfilePage UI/UX, Layout & Behavioral Improvements", () => {
   })
 
   it("renders recoverable error card with Try Again button when loading profile fails", async () => {
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {})
     vi.mocked(userApi.getProfile)
       .mockRejectedValueOnce(new Error("Network error"))
       .mockResolvedValueOnce(mockProfile)
@@ -172,9 +173,11 @@ describe("ProfilePage UI/UX, Layout & Behavioral Improvements", () => {
       expect(screen.getByTestId("profile-hero-card")).toBeDefined()
     })
     expect(userApi.getProfile).toHaveBeenCalledTimes(2)
+    consoleSpy.mockRestore()
   })
 
   it("uses unclipped concise mobile tab labels and progressive 10-item PointsLedger with error retry and no duplicate Current Balance box", async () => {
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {})
     vi.mocked(userApi.getProfile).mockResolvedValueOnce(mockProfile)
     vi.mocked(userApi.getPointsHistory)
       .mockRejectedValueOnce(new Error("History timeout"))
@@ -222,6 +225,7 @@ describe("ProfilePage UI/UX, Layout & Behavioral Improvements", () => {
     fireEvent.click(screen.getByRole("button", { name: /Show More/i }))
 
     expect(screen.getByText("Transaction 15")).toBeDefined()
+    consoleSpy.mockRestore()
   })
 
   it("lazy-loads verified schools only when entering Edit Profile and displays read-only email hint in View Mode", async () => {

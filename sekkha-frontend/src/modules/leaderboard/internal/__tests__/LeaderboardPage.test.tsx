@@ -188,6 +188,7 @@ describe("LeaderboardPage Top 10, Bottom Self-Rank (>10) & Visual Role/Self Sepa
   })
 
   it("highlights user cleanly in-place inside Ranks 4-10 without duplicating row at bottom or floating", async () => {
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {})
     const entries = makeEntries(10, { id: "usr_me", rank: 6 })
     const getSpy = vi
       .spyOn(api, "get")
@@ -240,5 +241,6 @@ describe("LeaderboardPage Top 10, Bottom Self-Rank (>10) & Visual Role/Self Sepa
     expect(screen.queryByLabelText("Your ranking outside Top 10")).toBeNull()
     expect(screen.getAllByText("@current_member")).toHaveLength(1)
     expect(screen.getByTestId("self-you-badge").className).toContain("bg-clay-ochre")
+    consoleSpy.mockRestore()
   })
 })

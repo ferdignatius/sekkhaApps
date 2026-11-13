@@ -31,3 +31,21 @@ if (typeof window !== "undefined" && !window.matchMedia) {
       dispatchEvent: () => false,
     }) as unknown as MediaQueryList
 }
+
+// Suppress jsdom "Not implemented: navigation to another Document"
+if (typeof window !== "undefined") {
+  const vc = (window as unknown as { _virtualConsole?: { listeners: (event: string) => Array<(...args: unknown[]) => void>; removeAllListeners: (event: string) => void; on: (event: string, fn: (...args: unknown[]) => void) => void } })._virtualConsole
+  if (vc) {
+    const originalListeners = [...vc.listeners("jsdomError")]
+    vc.removeAllListeners("jsdomError")
+    vc.on("jsdomError", (error: any) => {
+      if (error?.message?.includes("Not implemented: navigation to another Document")) {
+        return
+      }
+      for (const listener of originalListeners) {
+        listener(error)
+      }
+    })
+  }
+}
+

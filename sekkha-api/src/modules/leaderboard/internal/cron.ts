@@ -26,7 +26,7 @@ export function initLeaderboardCron(): void {
 
   console.log("🕒 Leaderboard cron scheduled: Setiap Minggu malam jam 03:00 WIB (Asia/Jakarta)")
 
-  if (process.env.NODE_ENV === "test") {
+  if (process.env.NODE_ENV === "test" || process.env.BUN_ENV === "test" || typeof (globalThis as any).Bun !== "undefined") {
     return
   }
 

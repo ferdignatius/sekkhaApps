@@ -56,7 +56,7 @@ export const userServices = {
 
     let uNum = user.userNumber
     if (!uNum) {
-      uNum = await generateUniqueUserNumber(prisma, new Date(user.createdAt))
+      uNum = await userModels.generateUserNumber(prisma, new Date(user.createdAt))
       await userModels.updateUser(user.id, { userNumber: uNum }).catch(() => {})
     }
 

@@ -1,4 +1,5 @@
 import { prisma } from "../../lib/prisma"
+import { generateUniqueUserNumber } from "../../lib/userNumber"
 
 export const peopleModels = {
   count(where?: any) {
@@ -163,6 +164,10 @@ export const peopleModels = {
         },
       },
     })
+  },
+
+  generateUserNumber(client?: any) {
+    return generateUniqueUserNumber(client || prisma)
   },
 
   transaction<T>(fn: (tx: any) => Promise<T>): Promise<T> {

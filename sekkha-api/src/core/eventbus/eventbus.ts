@@ -57,10 +57,26 @@ class EventBus {
     }
 
     const wrapper = (payload: T) => {
-      // Wrap in async IIFE so both synchronous throws and async rejections are caught safely
-      ;(async () => handler(payload))().catch((err) => {
-        console.error(`❌ EventBus handler error for "${event}":`, err)
-      })
+      // Wrap in async IIFE with retry & dead-letter audit log for critical events
+      ;(async () => {
+        try {
+          await handler(payload)
+        } catch {
+          try {
+            await handler(payload)
+          } catch (err) {
+            console.error(`❌ EventBus handler error for "${event}":`, (err as Error)?.message || String(err))
+            console.error(
+              `🛡️ [AUDIT] ${JSON.stringify({
+                timestamp: new Date().toISOString(),
+                type: "EVENTBUS_DEAD_LETTER",
+                event,
+                error: (err as Error)?.message || String(err),
+              })}`
+            )
+          }
+        }
+      })()
     }
 
     eventMap.set(handler, wrapper)

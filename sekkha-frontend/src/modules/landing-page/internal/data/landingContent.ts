@@ -105,15 +105,15 @@ export const landingContent: LandingContent = {
 
   stats: [
     {
-      value: "500+",
+      value: "100+",
       label: "Active Members",
     },
     {
-      value: "120+",
-      label: "Annual Events",
+      value: "100+",
+      label: "Events on This Year",
     },
     {
-      value: "15+",
+      value: "10+",
       label: "Years of Community",
     },
     {

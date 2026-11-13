@@ -243,6 +243,7 @@ describe("MemberDetailPage Clay + HIG UI/UX Improvements", () => {
   })
 
   it("renders recoverable HIG error state with Retry button when API fetch fails", async () => {
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {})
     const spy = vi
       .spyOn(peopleApi, "getMember")
       .mockRejectedValueOnce(new Error("Network error"))
@@ -275,6 +276,7 @@ describe("MemberDetailPage Clay + HIG UI/UX Improvements", () => {
       expect(screen.getByText("Direct Communication")).toBeTruthy()
     })
     expect(spy).toHaveBeenCalledTimes(2)
+    consoleSpy.mockRestore()
   })
 
   it("groups profile data into Direct Communication, Academic & Community, and Account Timeline sections without phone or birth date", async () => {

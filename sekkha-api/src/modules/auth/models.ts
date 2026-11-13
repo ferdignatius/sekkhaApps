@@ -138,6 +138,10 @@ export const authModels = {
     return `${clean}${counter}`
   },
 
+  generateUserNumber(client?: any, date?: Date) {
+    return generateUniqueUserNumber(client || prisma, date)
+  },
+
   async createUser(data: {
     email: string
     name: string
@@ -148,7 +152,7 @@ export const authModels = {
     let attempts = 0
     while (attempts < 5) {
       attempts++
-      const userNumber = await generateUniqueUserNumber(prisma)
+      const userNumber = await this.generateUserNumber(prisma)
       const cleanEmail = data.email ? data.email.toLowerCase().trim() : null
       const encryptedEmail = cleanEmail ? encrypt(cleanEmail) : null
       const emailBindex = cleanEmail ? generateBlindIndex(cleanEmail) : null

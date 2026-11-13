@@ -475,7 +475,10 @@ describe("People Module RBAC & Self-Protection Guardrails", () => {
       const origFindSchoolById = peopleModels.findSchoolById
       const origFindByUsername = peopleModels.findUserByUsername
       const origCreate = peopleModels.create
+      const origGenerateUserNumber = peopleModels.generateUserNumber
       let capturedCreateData: any = null
+
+      peopleModels.generateUserNumber = async () => 2026111101n
 
       peopleModels.findSchoolById = async (id: string) =>
         id === "sch_active_1"
@@ -519,6 +522,7 @@ describe("People Module RBAC & Self-Protection Guardrails", () => {
         peopleModels.findSchoolById = origFindSchoolById
         peopleModels.findUserByUsername = origFindByUsername
         peopleModels.create = origCreate
+        peopleModels.generateUserNumber = origGenerateUserNumber
       }
     })
 

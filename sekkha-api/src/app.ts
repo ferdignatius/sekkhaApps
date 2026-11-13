@@ -2,7 +2,7 @@ import express, { type Application } from "express"
 import cors from "cors"
 import helmet from "helmet"
 import compression from "compression"
-import rateLimit, { MemoryStore, type Store } from "express-rate-limit"
+import rateLimit, { ipKeyGenerator, MemoryStore, type Store } from "express-rate-limit"
 import cookieParser from "cookie-parser"
 import { RedisStore } from "rate-limit-redis"
 import { errorHandler } from "./middleware/errorHandler"
@@ -225,6 +225,11 @@ export function createApp(): Application {
     max: 5,
     standardHeaders: true,
     legacyHeaders: false,
+    keyGenerator: (req) => {
+      const email = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : ""
+      const ip = ipKeyGenerator(req.ip || req.socket.remoteAddress || "unknown")
+      return email ? `${ip}:${email}` : ip
+    },
     store: createRateLimitStore("otp"),
     passOnStoreError: true,
     skip: skipPreflight,

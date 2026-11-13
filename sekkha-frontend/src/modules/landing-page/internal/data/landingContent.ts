@@ -109,7 +109,7 @@ export const landingContent: LandingContent = {
       label: "Active Members",
     },
     {
-      value: "100+",
+      value: "50+",
       label: "Events on This Year",
     },
     {

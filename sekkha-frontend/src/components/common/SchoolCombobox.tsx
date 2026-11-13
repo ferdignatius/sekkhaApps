@@ -193,7 +193,7 @@ export function SchoolCombobox({
           "flex h-11 w-full items-center justify-between gap-2 rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 py-2 text-left text-sm transition-all outline-none",
           "hover:bg-[#faf5e8] focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a]",
           error &&
-            "border-[#ef4444] bg-[#ef4444]/5 focus:border-[#ef4444] focus:ring-[#ef4444]",
+          "border-[#ef4444] bg-[#ef4444]/5 focus:border-[#ef4444] focus:ring-[#ef4444]",
           disabled && "cursor-not-allowed opacity-50",
           open && "border-[#0a0a0a] ring-1 ring-[#0a0a0a]"
         )}
@@ -283,7 +283,7 @@ export function SchoolCombobox({
             ref={listRef}
             role="listbox"
             onScroll={handleScroll}
-            className="max-h-[168px] space-y-1 divide-y-0 overflow-y-auto overscroll-contain p-1.5"
+            className="max-h-60 space-y-1 divide-y-0 overflow-y-auto overscroll-contain p-1.5"
           >
             {loading ? (
               <li className="py-6 text-center text-xs text-[#6a6a6a]">
@@ -384,6 +384,25 @@ export function SchoolCombobox({
               </li>
             )}
           </ul>
+
+          {/* Quick Request Action if searched school isn't in results */}
+          {onRequestSchool && !loading && search.trim().length >= 2 && filteredSchools.length > 0 && (
+            <div className="border-t border-[#e5e5e5] bg-[#fffaf0] p-2 text-center">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  setOpen(false)
+                  onRequestSchool(search)
+                }}
+                className="inline-flex cursor-pointer items-center gap-1.5 rounded-[8px] px-2.5 py-1 text-xs font-semibold text-[#0a0a0a] transition-colors hover:bg-[#faf5e8]"
+              >
+                <Plus className="size-3.5 text-[#0a0a0a]" />
+                <span>Can't find your school? Request "{search.trim()}"</span>
+              </button>
+            </div>
+          )}
 
           {/* Footer Note */}
           <div className="flex items-center justify-between border-t border-[#e5e5e5] bg-[#faf5e8] px-3 py-2 text-[11px] text-[#6a6a6a]">

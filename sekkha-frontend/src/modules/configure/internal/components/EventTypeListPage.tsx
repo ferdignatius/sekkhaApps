@@ -10,6 +10,7 @@ import {
   XCircleIcon,
   AlertTriangleIcon,
   CoinsIcon,
+  ShieldCheckIcon,
 } from "lucide-react"
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
 import { useAuth } from "@/modules/auth"
@@ -339,7 +340,7 @@ export function EventTypePage() {
                     )}
                   </div>
 
-                  {/* Badges: Code & Point Reward */}
+                  {/* Badges: Code, Point Reward & Late Penalty */}
                   <div className="flex flex-wrap items-center gap-2">
                     <code className="rounded-[6px] border border-[#e5e5e5] bg-[#fffaf0] px-2 py-0.5 font-mono text-[11px] font-bold text-[#0a0a0a]">
                       {type.code}
@@ -347,6 +348,18 @@ export function EventTypePage() {
                     <span className="inline-flex items-center gap-1 rounded-full border border-[#e5e5e5] bg-[#fffaf0] px-2.5 py-0.5 text-[11px] font-bold text-[#0a0a0a]">
                       <CoinsIcon className="size-3 text-clay-ochre" />
                       {type.default_point_reward} Pts
+                    </span>
+                    <span
+                      className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${
+                        type.apply_late_penalty === false
+                          ? "border-[#e5e5e5] bg-[#ebe6d6]/70 text-[#6a6a6a]"
+                          : "border-clay-ochre/30 bg-[#FFF9F2] text-[#0a0a0a]"
+                      }`}
+                    >
+                      <ShieldCheckIcon className="size-3 text-clay-ochre" />
+                      {type.apply_late_penalty === false
+                        ? "No Late Penalty"
+                        : `${type.default_max_late_minutes ?? 30}m / -${type.default_late_penalty_points ?? 15} pts`}
                     </span>
                     <span className="font-mono text-[10px] text-[#6a6a6a] uppercase">
                       {type.color}

@@ -1,24 +1,29 @@
 // feature/events/components/EventForm
 // Create / edit event form for pengurus+ with unified categories, masterdata autofill, & optional location.
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import {
   AlertCircleIcon,
   CalendarIcon,
-  ChevronDownIcon,
   FileTextIcon,
   LoaderCircleIcon,
   MapPinIcon,
+  Maximize2Icon,
+  Minimize2Icon,
   ShieldCheckIcon,
   TagIcon,
   CheckIcon,
 } from "lucide-react"
 import { useAuth } from "@/modules/auth"
 import { api } from "@/lib/api"
+import { Chip } from "@/components/base"
 import { DateTimePicker } from "@/components/common/DateTimePicker"
 import { Switch } from "@/components/ui/switch"
 import type { CreateEventPayload, EventListItem } from "../types"
 import { getAccessibleCategories, getEventTag } from "../masterdata"
+import { buildDefaultEventDescription } from "../utils/eventDescriptionTemplate"
+
+export { buildDefaultEventDescription }
 
 interface EventFormProps {
   /** If provided, pre-fill the form for editing */
@@ -27,6 +32,8 @@ interface EventFormProps {
   initialDate?: string
   /** Optional list of up to 3 recently used distinct locations */
   recentLocations?: string[]
+  /** Optional list of up to 3 recently used distinct event times (HH:mm) */
+  recentTimes?: string[]
   onSubmit: (payload: CreateEventPayload) => void | Promise<void>
   onCancel: () => void
   isSubmitting?: boolean
@@ -95,12 +102,66 @@ export function extractRecentLocations(
   return result
 }
 
+const DEFAULT_LOCATION_RECOMMENDATIONS = [
+  "Vihara Tri Maha Dharma",
+  "Dharmasala Utama",
+  "Vihara Sekkha",
+] as const
+
+function deduplicateTimes(items: string[], maxItems = 3): string[] {
+  const cap = Math.min(3, Math.max(0, maxItems))
+  if (cap === 0) return []
+  const seen = new Set<string>()
+  const result: string[] = []
+  for (const raw of items) {
+    const trimmed = raw?.trim()
+    if (!trimmed || !/^([01]\d|2[0-3]):[0-5]\d$/.test(trimmed)) continue
+    if (seen.has(trimmed)) continue
+    seen.add(trimmed)
+    result.push(trimmed)
+    if (result.length >= cap) break
+  }
+  return result
+}
+
+export function extractRecentTimes(
+  events: Array<{ event_date?: string | null }>,
+  maxItems = 3
+): string[] {
+  const cap = Math.min(3, Math.max(0, maxItems))
+  if (cap === 0 || events.length === 0) return []
+
+  const sorted = [...events].sort((a, b) => {
+    const tA = a.event_date ? new Date(a.event_date).getTime() : 0
+    const tB = b.event_date ? new Date(b.event_date).getTime() : 0
+    const safeA = Number.isNaN(tA) ? 0 : tA
+    const safeB = Number.isNaN(tB) ? 0 : tB
+    return safeB - safeA
+  })
+
+  const pad = (n: number) => String(n).padStart(2, "0")
+  const seen = new Set<string>()
+  const result: string[] = []
+  for (const ev of sorted) {
+    if (!ev.event_date) continue
+    const d = new Date(ev.event_date)
+    if (Number.isNaN(d.getTime())) continue
+    const hhmm = `${pad(d.getHours())}:${pad(d.getMinutes())}`
+    if (seen.has(hhmm)) continue
+    seen.add(hhmm)
+    result.push(hhmm)
+    if (result.length >= cap) break
+  }
+  return result
+}
+
 export interface CategoryOption {
   id: string
   code: string
   label: string
   bg: string
   colorHex?: string
+  applyLatePenalty?: boolean
   defaultMaxLateMinutes?: number
   defaultLatePenaltyPoints?: number
   autofill: {
@@ -115,6 +176,7 @@ export function EventForm({
   initial,
   initialDate,
   recentLocations,
+  recentTimes,
   onSubmit,
   onCancel,
   isSubmitting = false,
@@ -131,6 +193,9 @@ export function EventForm({
       label: cat.name,
       bg: `${cat.bg} ${cat.text}`,
       colorHex: cat.colorHex,
+      applyLatePenalty: cat.applyLatePenalty ?? true,
+      defaultMaxLateMinutes: cat.maxLateMinutes ?? 30,
+      defaultLatePenaltyPoints: cat.latePenaltyPoints ?? 15,
       autofill: {
         title: cat.autofillTitle ?? `${cat.name} Activity`,
         description:
@@ -152,14 +217,20 @@ export function EventForm({
         if (Array.isArray(types) && types.length > 0) {
           const mapped: CategoryOption[] = types.map((t) => {
             const hex = t.color || "#4262FF"
+            const applyLatePenalty = t.apply_late_penalty ?? true
             return {
               id: t.id,
               code: t.code,
               label: t.label,
               bg: `bg-[${hex}]/10 text-[${hex}]`,
               colorHex: hex,
-              defaultMaxLateMinutes: t.default_max_late_minutes ?? 30,
-              defaultLatePenaltyPoints: t.default_late_penalty_points ?? 15,
+              applyLatePenalty,
+              defaultMaxLateMinutes: applyLatePenalty
+                ? (t.default_max_late_minutes ?? 30)
+                : 0,
+              defaultLatePenaltyPoints: applyLatePenalty
+                ? (t.default_late_penalty_points ?? 15)
+                : 0,
               autofill: {
                 title: t.label,
                 description:
@@ -208,52 +279,72 @@ export function EventForm({
   }, [categories, initial, selectedTypeId])
 
   const [title, setTitle] = useState(initial?.title ?? "")
-  const [description, setDescription] = useState(initial?.description ?? "")
+  const [description, setDescription] = useState(
+    () =>
+      initial?.description ??
+      (!initial?.id
+        ? buildDefaultEventDescription({
+            title: initial?.title,
+            eventDate:
+              initial?.event_date ??
+              (initialDate ? `${initialDate}T19:00` : undefined),
+            location: initial?.location,
+          })
+        : "")
+  )
+  const [isDescExpanded, setIsDescExpanded] = useState(false)
   const [location, setLocation] = useState(initial?.location ?? "")
-  const [locationDropdownOpen, setLocationDropdownOpen] = useState(false)
-  const locationDropdownRef = useRef<HTMLDivElement>(null)
   const [recentVenueOptions, setRecentVenueOptions] = useState<string[]>(() =>
     deduplicateLocations(recentLocations ?? [], 3)
   )
+  const [recentTimeOptions, setRecentTimeOptions] = useState<string[]>(() =>
+    deduplicateTimes(recentTimes ?? [], 3)
+  )
 
   useEffect(() => {
-    const seeded = deduplicateLocations(recentLocations ?? [], 3)
-    if (seeded.length > 0) {
-      setRecentVenueOptions((prev) => deduplicateLocations([...seeded, ...prev], 3))
+    const seededLocations = deduplicateLocations(recentLocations ?? [], 3)
+    const seededTimes = deduplicateTimes(recentTimes ?? [], 3)
+    if (seededLocations.length > 0) {
+      setRecentVenueOptions((prev) =>
+        deduplicateLocations([...seededLocations, ...prev], 3)
+      )
     }
-    if (seeded.length >= 3) return
+    if (seededTimes.length > 0) {
+      setRecentTimeOptions((prev) =>
+        deduplicateTimes([...seededTimes, ...prev], 3)
+      )
+    }
+    if (seededLocations.length >= 3 && seededTimes.length >= 3) return
 
     let cancelled = false
-    async function loadRecentLocations() {
+    async function loadRecentHistory() {
       try {
         const res = await api.get<
           Array<{ location?: string | null; event_date?: string }>
         >("/events?page=1&limit=30")
         if (cancelled || !Array.isArray(res)) return
-        const fetched = extractRecentLocations(res, 3)
-        setRecentVenueOptions(deduplicateLocations([...seeded, ...fetched], 3))
+        const fetchedLocations = extractRecentLocations(res, 3)
+        const fetchedTimes = extractRecentTimes(res, 3)
+        if (fetchedLocations.length > 0) {
+          setRecentVenueOptions(
+            deduplicateLocations([...seededLocations, ...fetchedLocations], 3)
+          )
+        }
+        if (fetchedTimes.length > 0) {
+          setRecentTimeOptions(
+            deduplicateTimes([...seededTimes, ...fetchedTimes], 3)
+          )
+        }
       } catch {
-        // Silently ignore background recent-location lookup failure
+        // Silently ignore background recent-history lookup failure
       }
     }
-    void loadRecentLocations()
+    void loadRecentHistory()
     return () => {
       cancelled = true
     }
-  }, [recentLocations])
+  }, [recentLocations, recentTimes])
 
-  useEffect(() => {
-    function handleOutsideClick(e: MouseEvent) {
-      if (
-        locationDropdownRef.current &&
-        !locationDropdownRef.current.contains(e.target as Node)
-      ) {
-        setLocationDropdownOpen(false)
-      }
-    }
-    document.addEventListener("mousedown", handleOutsideClick)
-    return () => document.removeEventListener("mousedown", handleOutsideClick)
-  }, [])
   // Pre-fill date: prefer existing event date (edit mode), then initialDate from calendar selection
   const [eventDate, setEventDate] = useState(() => {
     if (initial?.event_date) return isoToLocal(initial.event_date)
@@ -280,7 +371,7 @@ export function EventForm({
   const [internalSubmitting, setInternalSubmitting] = useState(false)
   const submitting = isSubmitting || internalSubmitting
 
-  // Handle Category Select with Masterdata Autofill (title, description, late policy)
+  // Handle Category Select with Masterdata Autofill (title & late policy synced from category)
   function handleSelectCategory(cat: CategoryOption) {
     setErrors((prev) => {
       if (!prev.tag) return prev
@@ -296,21 +387,23 @@ export function EventForm({
     if (!title.trim() || categories.some((c) => c.autofill.title === title)) {
       setTitle(cat.autofill.title)
     }
-    if (
-      !description.trim() ||
-      categories.some((c) => c.autofill.description === description)
-    ) {
-      setDescription(cat.autofill.description)
-    }
     if (!initial?.id) {
-      if (cat.defaultMaxLateMinutes !== undefined) {
-        setMaxLateMinutes(cat.defaultMaxLateMinutes)
-      }
-      if (cat.defaultLatePenaltyPoints !== undefined) {
-        setApplyLatePenalty(cat.defaultLatePenaltyPoints > 0)
-        if (cat.defaultLatePenaltyPoints > 0) {
-          setLatePenaltyPoints(cat.defaultLatePenaltyPoints)
-        }
+      const shouldApplyLate =
+        cat.applyLatePenalty !== undefined
+          ? cat.applyLatePenalty
+          : (cat.defaultLatePenaltyPoints ?? 15) > 0
+      setApplyLatePenalty(shouldApplyLate)
+      if (shouldApplyLate) {
+        setMaxLateMinutes(
+          cat.defaultMaxLateMinutes && cat.defaultMaxLateMinutes > 0
+            ? cat.defaultMaxLateMinutes
+            : 30
+        )
+        setLatePenaltyPoints(
+          cat.defaultLatePenaltyPoints && cat.defaultLatePenaltyPoints > 0
+            ? cat.defaultLatePenaltyPoints
+            : 15
+        )
       }
     }
   }
@@ -543,13 +636,13 @@ export function EventForm({
             )}
           </div>
 
-          {/* Location Input + Last 3 Distinct Recent Locations Dropdown */}
-          <div className="flex w-full flex-col gap-1.5" ref={locationDropdownRef}>
+          {/* Location Input + Quick Recommendation Chips (Autofill disabled) */}
+          <div className="flex w-full flex-col gap-1.5">
             <label
               htmlFor="ev-loc"
               className="text-xs font-bold text-ink"
             >
-              Venue / Room{" "}
+              Location{" "}
               <span className="text-[11px] font-normal text-text-muted">
                 (Optional)
               </span>
@@ -558,79 +651,46 @@ export function EventForm({
               <MapPinIcon className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-ink" />
               <input
                 id="ev-loc"
+                name="sekkha-event-place-custom"
                 type="text"
                 value={location}
-                onFocus={() => {
-                  if (recentVenueOptions.length > 0) {
-                    setLocationDropdownOpen(true)
-                  }
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Escape") {
-                    setLocationDropdownOpen(false)
-                  }
-                }}
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="off"
+                spellCheck={false}
+                aria-autocomplete="none"
+                data-lpignore="true"
+                data-1p-ignore="true"
+                data-bwignore="true"
+                data-form-type="other"
                 onChange={(e) => setLocation(e.target.value)}
                 placeholder="e.g. Dharmasala Utama"
-                className={`h-11 w-full rounded-xl border border-hairline bg-canvas pl-10 text-xs text-ink shadow-2xs transition-all outline-none placeholder:text-text-muted/70 focus:border-ink focus:ring-1 focus:ring-ink sm:text-sm ${
-                  recentVenueOptions.length > 0 ? "pr-10" : "pr-4"
-                }`}
+                className="h-11 w-full rounded-xl border border-hairline bg-canvas pr-4 pl-10 text-xs text-ink shadow-2xs transition-all outline-none placeholder:text-text-muted/70 focus:border-ink focus:ring-1 focus:ring-ink sm:text-sm"
               />
-              {recentVenueOptions.length > 0 && (
-                <button
-                  type="button"
-                  aria-label="Recent locations"
-                  aria-expanded={locationDropdownOpen}
-                  onClick={() => setLocationDropdownOpen((prev) => !prev)}
-                  className="absolute top-1/2 right-2 flex size-7 -translate-y-1/2 cursor-pointer items-center justify-center rounded-lg text-text-muted transition-colors hover:bg-surface-card hover:text-ink"
-                >
-                  <ChevronDownIcon
-                    className={`size-4 transition-transform ${
-                      locationDropdownOpen ? "rotate-180" : ""
-                    }`}
-                  />
-                </button>
-              )}
+            </div>
 
-              {locationDropdownOpen && recentVenueOptions.length > 0 && (
-                <div
-                  role="listbox"
-                  aria-label="Recent locations"
-                  className="absolute top-full right-0 left-0 z-50 mt-1.5 space-y-0.5 rounded-xl border border-hairline bg-canvas p-1.5 shadow-lg"
-                >
-                  <p className="px-2.5 py-1 text-[10px] font-bold tracking-wider text-text-muted uppercase">
-                    Recent Locations
-                  </p>
-                  {recentVenueOptions.slice(0, 3).map((venue) => {
-                    const isSelected = location === venue
-                    return (
-                      <button
-                        key={venue}
-                        type="button"
-                        role="option"
-                        aria-selected={isSelected}
-                        onClick={() => {
-                          setLocation(venue)
-                          setLocationDropdownOpen(false)
-                        }}
-                        className={`flex w-full cursor-pointer items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold transition-colors ${
-                          isSelected
-                            ? "bg-surface-card font-bold text-ink"
-                            : "text-body hover:bg-surface-soft hover:text-ink"
-                        }`}
-                      >
-                        <span className="flex min-w-0 items-center gap-2">
-                          <MapPinIcon className="size-3.5 shrink-0 text-text-muted" />
-                          <span className="truncate">{venue}</span>
-                        </span>
-                        {isSelected && (
-                          <CheckIcon className="size-3.5 shrink-0 text-ink" />
-                        )}
-                      </button>
-                    )
-                  })}
-                </div>
-              )}
+            <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+              <span className="text-[11px] font-semibold text-text-muted">
+                {recentVenueOptions.length > 0 ? "Recent:" : "Suggested:"}
+              </span>
+              {(recentVenueOptions.length > 0
+                ? recentVenueOptions
+                : DEFAULT_LOCATION_RECOMMENDATIONS
+              )
+                .slice(0, 3)
+                .map((venue) => (
+                  <Chip
+                    key={venue}
+                    variant="assist"
+                    selected={
+                      location.trim().toLowerCase() === venue.toLowerCase()
+                    }
+                    onClick={() => setLocation(venue)}
+                    className="h-7 px-2.5 text-[11px]"
+                  >
+                    {venue}
+                  </Chip>
+                ))}
             </div>
           </div>
         </div>
@@ -647,6 +707,7 @@ export function EventForm({
             id="ev-date"
             value={eventDate}
             disablePastDates={!initial?.id}
+            recentTimes={recentTimeOptions}
             onChange={(val) => {
               setEventDate(val)
               if (errors.event_date) {
@@ -671,22 +732,44 @@ export function EventForm({
 
         {/* Description / Instructions */}
         <div className="flex w-full flex-col gap-1.5">
-          <label
-            htmlFor="ev-desc"
-            className="text-xs font-bold text-ink"
-          >
-            Description and instructions{" "}
-            <span className="text-[11px] font-normal text-text-muted">
-              (Optional)
-            </span>
-          </label>
+          <div className="flex items-center justify-between gap-2">
+            <label
+              htmlFor="ev-desc"
+              className="text-xs font-bold text-ink"
+            >
+              Description and instructions{" "}
+              <span className="text-[11px] font-normal text-text-muted">
+                (Optional)
+              </span>
+            </label>
+            <button
+              type="button"
+              onClick={() => setIsDescExpanded((prev) => !prev)}
+              aria-expanded={isDescExpanded}
+              className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-hairline bg-canvas px-2 py-1 text-[11px] font-semibold text-ink transition-colors hover:bg-surface-card"
+            >
+              {isDescExpanded ? (
+                <>
+                  <Minimize2Icon className="size-3" aria-hidden="true" />
+                  <span>Collapse</span>
+                </>
+              ) : (
+                <>
+                  <Maximize2Icon className="size-3" aria-hidden="true" />
+                  <span>Expand</span>
+                </>
+              )}
+            </button>
+          </div>
           <textarea
             id="ev-desc"
-            rows={2}
+            rows={isDescExpanded ? 12 : 7}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Write additional details, dress code, or instructions for attendees..."
-            className="scrollbar-none w-full rounded-xl border border-hairline bg-canvas px-3.5 py-2.5 text-xs text-ink shadow-2xs transition-all outline-none placeholder:text-text-muted/70 focus:border-ink focus:ring-1 focus:ring-ink sm:text-sm"
+            className={`w-full resize-y rounded-xl border border-hairline bg-canvas px-3.5 py-2.5 text-xs leading-relaxed text-ink shadow-2xs transition-all outline-none placeholder:text-text-muted/70 focus:border-ink focus:ring-1 focus:ring-ink sm:text-sm ${
+              isDescExpanded ? "min-h-[300px]" : "min-h-[176px]"
+            }`}
           />
         </div>
       </section>

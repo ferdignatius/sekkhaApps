@@ -103,10 +103,48 @@ describe("EventTypeCreatePage Component Tests", () => {
         color: "#4262FF",
         description: null,
         default_point_reward: 50,
+        apply_late_penalty: true,
+        default_max_late_minutes: 30,
+        default_late_penalty_points: 15,
         is_active: true,
       })
     })
 
     expect(mockNavigate).toHaveBeenCalledWith({ to: "/configure/master/event-type" })
+  })
+
+  it("sends apply_late_penalty: false and zeroed penalty fields when Late Penalty switch is turned off", async () => {
+    vi.mocked(eventTypesApi.create).mockResolvedValueOnce({
+      id: "evttype_2",
+      code: "dhamma-social",
+      label: "Dhamma Social",
+    })
+
+    renderComponent({ role: "admin" })
+
+    fireEvent.change(screen.getByPlaceholderText(/regular puja/i), {
+      target: { value: "Dhamma Social" },
+    })
+
+    const lateSwitch = screen.getByRole("switch", {
+      name: /apply late penalty by default/i,
+    })
+    fireEvent.click(lateSwitch)
+
+    const submitBtn = screen.getByRole("button", { name: "Save Event Type" })
+    fireEvent.submit(submitBtn.closest("form")!)
+
+    await waitFor(() => {
+      expect(eventTypesApi.create).toHaveBeenCalledWith({
+        label: "Dhamma Social",
+        color: "#4262FF",
+        description: null,
+        default_point_reward: 50,
+        apply_late_penalty: false,
+        default_max_late_minutes: 0,
+        default_late_penalty_points: 0,
+        is_active: true,
+      })
+    })
   })
 })

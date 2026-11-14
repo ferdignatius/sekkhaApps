@@ -12,6 +12,7 @@ import { eventTypesApi } from "../api/configureApi"
 import { Button } from "@/components/base/Button"
 import { Card } from "@/components/base/Card"
 import { Input } from "@/components/base/Input"
+import { Switch } from "@/components/ui/switch"
 
 function toKebabCase(str: string): string {
   return str
@@ -32,6 +33,9 @@ export function EventTypeCreatePage() {
   const [label, setLabel] = useState("")
   const [color, setColor] = useState("#4262FF")
   const [defaultPointReward, setDefaultPointReward] = useState(50)
+  const [applyLatePenalty, setApplyLatePenalty] = useState(true)
+  const [defaultMaxLateMinutes, setDefaultMaxLateMinutes] = useState(30)
+  const [defaultLatePenaltyPoints, setDefaultLatePenaltyPoints] = useState(15)
   const [isActive, setIsActive] = useState(true)
   const [description, setDescription] = useState("")
 
@@ -62,6 +66,13 @@ export function EventTypeCreatePage() {
         color: color.trim().toUpperCase(),
         description: description.trim() || null,
         default_point_reward: Number(defaultPointReward) || 0,
+        apply_late_penalty: applyLatePenalty,
+        default_max_late_minutes: applyLatePenalty
+          ? Number(defaultMaxLateMinutes) || 0
+          : 0,
+        default_late_penalty_points: applyLatePenalty
+          ? Number(defaultLatePenaltyPoints) || 0
+          : 0,
         is_active: isActive,
       })
       await navigate({ to: "/configure/master/event-type" })
@@ -203,6 +214,60 @@ export function EventTypeCreatePage() {
                 startIcon={<CoinsIcon className="size-4 text-clay-ochre" />}
                 helperText="Default points awarded for attending events of this type (0 - 10,000)."
               />
+            </div>
+
+            {/* Default Late Penalty Settings */}
+            <div className="space-y-3 rounded-[14px] border border-[#e5e5e5] bg-[#fffaf0] p-4">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <label
+                    htmlFor="et-late-penalty"
+                    className="cursor-pointer text-xs font-bold text-[#0a0a0a]"
+                  >
+                    Apply Late Penalty by Default
+                  </label>
+                  <p className="text-[11px] text-[#6a6a6a]">
+                    Automatically enable or disable late penalty when creating
+                    new events with this category.
+                  </p>
+                </div>
+                <Switch
+                  id="et-late-penalty"
+                  checked={applyLatePenalty}
+                  onCheckedChange={setApplyLatePenalty}
+                />
+              </div>
+
+              {applyLatePenalty && (
+                <div className="grid grid-cols-1 gap-3 rounded-xl border border-[#E5E0D5]/80 bg-[#FFF9F2] p-3.5 sm:grid-cols-2">
+                  <Input
+                    label="Grace Period (Minutes)"
+                    type="number"
+                    min={0}
+                    max={180}
+                    value={defaultMaxLateMinutes}
+                    onChange={(e) =>
+                      setDefaultMaxLateMinutes(
+                        Math.min(180, Math.max(0, parseInt(e.target.value) || 0))
+                      )
+                    }
+                    helperText="Allowed minutes after start before penalty (0 - 180)."
+                  />
+                  <Input
+                    label="Penalty Deduction (Points)"
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={defaultLatePenaltyPoints}
+                    onChange={(e) =>
+                      setDefaultLatePenaltyPoints(
+                        Math.min(100, Math.max(0, parseInt(e.target.value) || 0))
+                      )
+                    }
+                    helperText="Points deducted when checking in late (0 - 100)."
+                  />
+                </div>
+              )}
             </div>
 
             {/* Description Field */}

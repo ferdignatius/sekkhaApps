@@ -23,9 +23,32 @@ export interface DateTimePickerProps {
   error?: string
   disablePastDates?: boolean
   defaultOpen?: boolean
+  recentTimes?: string[]
 }
 
-const QUICK_TIMES = ["08:00", "09:00", "13:00", "17:00", "19:00"] as const
+const DEFAULT_QUICK_TIMES = ["10:30", "13:00", "19:00"] as const
+
+function normalizeQuickTimes(recentTimes?: string[]): {
+  items: string[]
+  isFromRecent: boolean
+} {
+  if (Array.isArray(recentTimes) && recentTimes.length > 0) {
+    const seen = new Set<string>()
+    const valid: string[] = []
+    for (const raw of recentTimes) {
+      const trimmed = raw?.trim()
+      if (!trimmed || !/^([01]\d|2[0-3]):[0-5]\d$/.test(trimmed)) continue
+      if (seen.has(trimmed)) continue
+      seen.add(trimmed)
+      valid.push(trimmed)
+      if (valid.length >= 3) break
+    }
+    if (valid.length > 0) {
+      return { items: valid, isFromRecent: true }
+    }
+  }
+  return { items: [...DEFAULT_QUICK_TIMES], isFromRecent: false }
+}
 
 const HOUR_OPTIONS: SelectOption[] = Array.from({ length: 24 }, (_, i) => {
   const hh = String(i).padStart(2, "0")
@@ -133,12 +156,18 @@ export function DateTimePicker({
   error,
   disablePastDates = false,
   defaultOpen = false,
+  recentTimes,
 }: DateTimePickerProps) {
   const [open, setOpen] = useState(defaultOpen)
   const { datePart, timePart, dateObj } = parseValue(value)
   const [calendarMonth, setCalendarMonth] = useState<Date>(dateObj)
 
   const [activeHour = "08", activeMinute = "00"] = timePart.split(":")
+
+  const quickTimeMeta = useMemo(
+    () => normalizeQuickTimes(recentTimes),
+    [recentTimes]
+  )
 
   const todayStr = getTodayString()
   const tomorrowStr = getTomorrowString()
@@ -148,8 +177,8 @@ export function DateTimePicker({
     const values = MINUTE_STEP_VALUES.includes(activeMinute)
       ? MINUTE_STEP_VALUES
       : [...MINUTE_STEP_VALUES, activeMinute].sort(
-          (a, b) => Number(a) - Number(b)
-        )
+        (a, b) => Number(a) - Number(b)
+      )
     return values.map((mm) => ({ value: mm, label: mm }))
   }, [activeMinute])
 
@@ -335,10 +364,10 @@ export function DateTimePicker({
                 {/* Quick Presets using Sekkha Filter Chips */}
                 <div className="space-y-1.5">
                   <span className="text-[11px] font-semibold text-text-muted">
-                    Quick presets
+                    {quickTimeMeta.isFromRecent ? "Recent times" : "Quick presets"}
                   </span>
                   <div className="flex flex-wrap gap-1.5">
-                    {QUICK_TIMES.map((preset) => (
+                    {quickTimeMeta.items.map((preset) => (
                       <Chip
                         key={preset}
                         variant="filter"

@@ -26,6 +26,9 @@ function formatEventType(t: {
   color: string
   description: string | null
   defaultPointReward: number
+  applyLatePenalty?: boolean
+  defaultMaxLateMinutes?: number
+  defaultLatePenaltyPoints?: number
   isActive: boolean
   createdAt: Date
   updatedAt: Date
@@ -37,6 +40,9 @@ function formatEventType(t: {
     color: t.color,
     description: t.description,
     default_point_reward: t.defaultPointReward,
+    apply_late_penalty: t.applyLatePenalty ?? true,
+    default_max_late_minutes: t.defaultMaxLateMinutes ?? 30,
+    default_late_penalty_points: t.defaultLatePenaltyPoints ?? 15,
     is_active: t.isActive,
     created_at: t.createdAt.toISOString(),
     updated_at: t.updatedAt.toISOString(),
@@ -130,6 +136,9 @@ export const configureServices = {
     color: string
     description?: string | null
     default_point_reward?: number
+    apply_late_penalty?: boolean
+    default_max_late_minutes?: number
+    default_late_penalty_points?: number
     is_active?: boolean
   }) {
     // Generate code from label if not manually provided
@@ -147,12 +156,19 @@ export const configureServices = {
     }
     cleanCode = candidateCode
 
+    const applyLatePenalty = data.apply_late_penalty ?? true
+    const defaultMaxLateMinutes = applyLatePenalty ? (data.default_max_late_minutes ?? 30) : 0
+    const defaultLatePenaltyPoints = applyLatePenalty ? (data.default_late_penalty_points ?? 15) : 0
+
     const type = await configureModels.createEventType({
       code: cleanCode,
       label: data.label.trim(),
       color: data.color.trim(),
       description: data.description?.trim() || null,
       defaultPointReward: data.default_point_reward ?? 0,
+      applyLatePenalty,
+      defaultMaxLateMinutes,
+      defaultLatePenaltyPoints,
       isActive: data.is_active ?? true,
     })
 
@@ -163,6 +179,9 @@ export const configureServices = {
       color: type.color,
       description: type.description,
       default_point_reward: type.defaultPointReward,
+      apply_late_penalty: type.applyLatePenalty ?? applyLatePenalty,
+      default_max_late_minutes: type.defaultMaxLateMinutes ?? defaultMaxLateMinutes,
+      default_late_penalty_points: type.defaultLatePenaltyPoints ?? defaultLatePenaltyPoints,
       is_active: type.isActive,
     }
   },
@@ -175,6 +194,9 @@ export const configureServices = {
       color?: string
       description?: string | null
       default_point_reward?: number
+      apply_late_penalty?: boolean
+      default_max_late_minutes?: number
+      default_late_penalty_points?: number
       is_active?: boolean
     }
   ) {
@@ -188,6 +210,13 @@ export const configureServices = {
     if (data.color !== undefined) updateData.color = data.color.trim()
     if (data.description !== undefined) updateData.description = data.description ? data.description.trim() : null
     if (data.default_point_reward !== undefined) updateData.defaultPointReward = data.default_point_reward
+    if (data.apply_late_penalty !== undefined) updateData.applyLatePenalty = data.apply_late_penalty
+    if (data.default_max_late_minutes !== undefined) updateData.defaultMaxLateMinutes = data.default_max_late_minutes
+    if (data.default_late_penalty_points !== undefined) updateData.defaultLatePenaltyPoints = data.default_late_penalty_points
+    if (data.apply_late_penalty === false) {
+      if (data.default_max_late_minutes === undefined) updateData.defaultMaxLateMinutes = 0
+      if (data.default_late_penalty_points === undefined) updateData.defaultLatePenaltyPoints = 0
+    }
     if (data.is_active !== undefined) updateData.isActive = data.is_active
 
     // Auto-sync code from label (or explicit code)
@@ -218,6 +247,9 @@ export const configureServices = {
       color: type.color,
       description: type.description,
       default_point_reward: type.defaultPointReward,
+      apply_late_penalty: type.applyLatePenalty ?? true,
+      default_max_late_minutes: type.defaultMaxLateMinutes ?? 30,
+      default_late_penalty_points: type.defaultLatePenaltyPoints ?? 15,
       is_active: type.isActive,
     }
   },

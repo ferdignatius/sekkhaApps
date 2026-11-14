@@ -150,6 +150,9 @@ model EventType {
   label     String
   description String?
   defaultPointReward Int @default(0) @map("default_point_reward")
+  applyLatePenalty Boolean @default(true) @map("apply_late_penalty")
+  defaultMaxLateMinutes Int @default(30) @map("default_max_late_minutes")
+  defaultLatePenaltyPoints Int @default(15) @map("default_late_penalty_points")
   isActive Boolean @default(true) @map("is_active")
   color     String
   createdAt DateTime @default(now()) @map("created_at")

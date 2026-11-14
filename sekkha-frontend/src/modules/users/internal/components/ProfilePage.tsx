@@ -11,6 +11,7 @@ import {
   CheckCircle2Icon,
 } from "lucide-react"
 import { DigitalMemberCard } from "@/components/common/DigitalMemberCard"
+import { InstallAppCard } from "@/components/common/InstallAppPrompt"
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
 import { getInitials } from "@/lib/initials"
 import {
@@ -330,31 +331,35 @@ export function ProfilePage() {
               </Tabs>
             </div>
 
-            {/* ── 3. ACCESSIBLE SIGN OUT CARD (Mobile: Very Bottom | Desktop: Left Rail Row 2 directly under Hero) ── */}
+            {/* ── 3. INSTALL APP & ACCESSIBLE SIGN OUT CARD (Mobile: Very Bottom | Desktop: Left Rail Row 2 directly under Hero) ── */}
             <section
               data-testid="profile-signout-section"
-              className="rounded-[20px] border border-hairline bg-canvas p-5 lg:col-span-5 lg:col-start-1 lg:row-start-2 xl:col-span-4"
+              className="space-y-4 lg:col-span-5 lg:col-start-1 lg:row-start-2 xl:col-span-4"
             >
-              <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center lg:flex-col lg:items-stretch">
-                <div>
-                  <h2 className="text-sm font-bold text-ink">
-                    Session &amp; Sign Out
-                  </h2>
-                  <p className="mt-0.5 text-xs leading-relaxed text-text-muted">
-                    Sign out of your active session on this device. You can sign
-                    back in any time.
-                  </p>
-                </div>
+              <InstallAppCard />
 
-                <Button
-                  type="button"
-                  variant="outlined"
-                  onClick={() => setShowLogoutConfirm(true)}
-                  className="h-11 shrink-0 gap-2 rounded-[12px] border-rose-200 bg-rose-50/70 px-5 text-xs font-bold text-rose-700 hover:border-rose-300 hover:bg-rose-100 hover:text-rose-800 lg:w-full lg:justify-center"
-                >
-                  <LogOutIcon className="size-4" />
-                  <span>Sign Out</span>
-                </Button>
+              <div className="rounded-[20px] border border-hairline bg-canvas p-5">
+                <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center lg:flex-col lg:items-stretch">
+                  <div>
+                    <h2 className="text-sm font-bold text-ink">
+                      Session &amp; Sign Out
+                    </h2>
+                    <p className="mt-0.5 text-xs leading-relaxed text-text-muted">
+                      Sign out of your active session on this device. You can sign
+                      back in any time.
+                    </p>
+                  </div>
+
+                  <Button
+                    type="button"
+                    variant="outlined"
+                    onClick={() => setShowLogoutConfirm(true)}
+                    className="h-11 shrink-0 gap-2 rounded-[12px] border-rose-200 bg-rose-50/70 px-5 text-xs font-bold text-rose-700 hover:border-rose-300 hover:bg-rose-100 hover:text-rose-800 lg:w-full lg:justify-center"
+                  >
+                    <LogOutIcon className="size-4" />
+                    <span>Sign Out</span>
+                  </Button>
+                </div>
               </div>
             </section>
           </div>

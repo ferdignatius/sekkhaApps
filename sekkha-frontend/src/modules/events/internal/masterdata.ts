@@ -116,9 +116,11 @@ export interface EventCategoryItem {
   text: string
   dot: string
   points: number
+  applyLatePenalty?: boolean
+  maxLateMinutes?: number
+  latePenaltyPoints?: number
   is_active?: boolean
   autofillTitle?: string
-  autofillLocation?: string
   autofillDesc?: string
   colorHex?: string
   target_roles?: string[] // Many-to-many allowed user roles (e.g. ["admin", "pengurus", "aktivis", "umat"])
@@ -133,10 +135,12 @@ export const DEFAULT_CATEGORIES: EventCategoryItem[] = [
     text: "text-[#4262FF]",
     dot: "bg-[#4262FF]",
     points: 50,
+    applyLatePenalty: true,
+    maxLateMinutes: 30,
+    latePenaltyPoints: 15,
     is_active: true,
     colorHex: "#4262FF",
     autofillTitle: "Regular Puja",
-    autofillLocation: "Main Dhammasala Vihara Sekkha",
     autofillDesc: "Weekly youth puja and fellowship session",
     target_roles: ["admin", "organizer", "activist", "member"],
   },
@@ -148,10 +152,12 @@ export const DEFAULT_CATEGORIES: EventCategoryItem[] = [
     text: "text-[#0D9488]",
     dot: "bg-[#0D9488]",
     points: 60,
+    applyLatePenalty: true,
+    maxLateMinutes: 30,
+    latePenaltyPoints: 15,
     is_active: true,
     colorHex: "#0D9488",
     autofillTitle: "Chanting",
-    autofillLocation: "Meditation Hall",
     autofillDesc: "Chanting and paritta recitation session",
     target_roles: ["admin", "organizer", "activist", "member"],
   },
@@ -163,10 +169,12 @@ export const DEFAULT_CATEGORIES: EventCategoryItem[] = [
     text: "text-[#EC4899]",
     dot: "bg-[#EC4899]",
     points: 80,
+    applyLatePenalty: true,
+    maxLateMinutes: 30,
+    latePenaltyPoints: 15,
     is_active: true,
     colorHex: "#EC4899",
     autofillTitle: "Volunteer",
-    autofillLocation: "Vihara Sekkha",
     autofillDesc: "Youth volunteer activity and social seva program",
     target_roles: ["admin", "organizer", "activist", "member"],
   },
@@ -220,6 +228,7 @@ const STORAGE_KEYS = {
 
 function mapEventTypeDtoToCategory(t: any): EventCategoryItem {
   const hex = t.color || "#4262FF"
+  const applyLatePenalty = t.apply_late_penalty ?? true
   return {
     id: t.id,
     tag: t.code,
@@ -229,9 +238,13 @@ function mapEventTypeDtoToCategory(t: any): EventCategoryItem {
     text: `text-[${hex}]`,
     dot: `bg-[${hex}]`,
     points: t.default_point_reward ?? 50,
+    applyLatePenalty,
+    maxLateMinutes: applyLatePenalty ? (t.default_max_late_minutes ?? 30) : 0,
+    latePenaltyPoints: applyLatePenalty
+      ? (t.default_late_penalty_points ?? 15)
+      : 0,
     is_active: t.is_active !== false,
     autofillTitle: t.label,
-    autofillLocation: "Vihara Sekkha",
     autofillDesc:
       t.description || `${t.label} session with Sekkha community members.`,
     target_roles: ["admin", "organizer", "activist", "member"],

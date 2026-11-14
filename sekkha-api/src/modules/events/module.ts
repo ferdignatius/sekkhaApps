@@ -3,10 +3,11 @@ import { eventsRouter } from "./routes"
 import { eventbus, DomainEvents } from "../../core/eventbus"
 import type { UserRegisteredPayload } from "../../core/eventbus"
 import { onUserRegistered } from "./internal/subscribers"
+import { initAutoCloseEventsCron } from "./internal/autoCloseCron"
 
 // ─── Events Module ───────────────────────────────────────────────────────────
 // Manages events, RSVPs, QR attendance, and attendance records.
-// Publishes: (none currently)
+// Publishes: event.closed, attendance.recorded
 // Subscribes: USER_REGISTERED → auto-register user to welcome event
 
 export const eventsModule: AppModule = {
@@ -14,6 +15,7 @@ export const eventsModule: AppModule = {
 
   register(app) {
     app.use("/api/events", eventsRouter)
+    initAutoCloseEventsCron()
   },
 
   subscribe() {

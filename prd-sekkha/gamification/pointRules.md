@@ -90,7 +90,7 @@ Agar evaluasi streak adil, akurat, dan tahan terhadap kendala operasional vihara
 3. **Rolling 4-Week Window (Non-Calendar-Bound)**:
    Streak dihitung berbasis kelipatan 4 minggu kehadiran berturut-turut (minggu 4, 8, 12, dst.), bukan berdasarkan tanggal 1 s/d akhir bulan kalender. Jemaat yang hadir 2 minggu di akhir bulan A dan 2 minggu di awal bulan B tetap berhak mendapatkan bonus saat mencapai minggu ke-4.
 4. **Auto-Close Event Kadaluarsa (Fallback Background Safety)**:
-   Jika pengurus lupa mengklik *"Close & Finalize Event"* lebih dari 48 jam setelah acara berakhir, background cron job secara otomatis memicu finalisasi event untuk mengkreditkan poin dan memperbarui streak jemaat.
+   Jika pengurus lupa mengklik *"Close & Finalize Event"* dan tanggal pelaksanaan acara sudah terlewat (`current date > event_date` dalam WIB), background cron job (`00:05 WIB`) serta lazy evaluation saat akses/scan secara otomatis memicu penutupan & finalisasi event untuk mengkreditkan poin dan memperbarui streak jemaat.
 
 ---
 

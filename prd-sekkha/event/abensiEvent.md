@@ -86,6 +86,7 @@ Desain ini menjamin:
 > 1. Pengurus tidak bisa langsung menutup event tanpa mengaktifkan absensi terlebih dahulu (`active`). Tombol "Tutup Sesi & Kreditkan Poin" hanya tersedia saat status `active`.
 > 2. Event yang berstatus `cancel` dapat dijadwalkan ulang (**Reschedule**) kembali menjadi `scheduled` dengan memasukkan tanggal baru (`event_date >= current date`). Sesi absensi tidak dapat dibuka pada event berstatus `cancel`.
 > 3. Tombol **"Mulai Acara" (Start Event)** untuk mengubah status ke `active` **tidak dapat dieksekusi jika tanggal saat ini sudah melewati tanggal pelaksanaan yang ditetapkan pada event (`current date > event_date`)** — dalam kasus tersebut event wajib dijadwalkan ulang (*reschedule*) atau dibatalkan (*cancel*). Aktivasi event diizinkan selama tanggal saat ini berada pada atau sebelum tanggal pelaksanaan (`current date <= event_date`), dan saat diaktifkan sistem menambatkan (*anchor*) `event_date` ke timestamp aktual acara dimulai (`now`) sehingga masa toleransi keterlambatan (`max_late_minutes`) dimulai sejak sesi presensi benar-benar dibuka.
+> 4. **Auto-Close Melewati Tanggal Start (`current date > event_date`)**: Apabila event sudah berstatus `active` dan tanggal saat ini telah melewati tanggal start (`current date > event_date` dalam WIB), sistem secara otomatis menutup dan memfinalisasi event tersebut (`active` → `closed`), mendistribusikan poin kehadiran dan memperbarui streak (via cron harian `00:05 WIB` dan lazy check saat event/scan diakses).
 
 ---
 
@@ -248,15 +249,17 @@ Halaman scanner terbuka di /events/:id/scan (kamera aktif)
 └───────────────────────────────────────────────────────────────┘
 ```
 
-### 6.3. Fase 3 — Tutup Acara & Finalisasi Poin
+### 6.3. Fase 3 — Tutup Acara & Finalisasi Poin (Manual maupun Auto-Close)
 
 ```
 Organizer/Admin klik Action Button "Close & Finalize Event"
+  ATAU tanggal WIB melewati tanggal mulai event (current date > event_date)
           │
-Dialog konfirmasi:
+Dialog konfirmasi (jika manual):
 "Tutup acara dan distribusikan poin ke seluruh peserta hadir?"
           │
 PATCH /api/events/:id/status { "status": "closed" }
+  (atau otomatis via cron 00:05 WIB / lazy check saat akses & scan)
           │
 Backend (dalam 1 Transaksi Database Prisma $transaction):
   ├── UPDATE events SET status = 'closed', updated_at = now() WHERE id = :id
@@ -586,7 +589,7 @@ model Attendance {
 | **AC-ATT-05** | Panitia memindai jemaat yang sama dua kali atau multi-gate scan berbarengan | Backend merespon `409 Conflict` (code `409`) dengan pesan "Peserta sudah tercatat hadir" berkat constraint `@@unique([userId, eventId])`. Data tidak ganda. |
 | **AC-ATT-06** | Evaluasi keterlambatan presensi terhadap `max_late_minutes` dan `late_penalty_points` | Jika `late_penalty_points > 0` dan `scanned_at > event_date (waktu start aktif) + max_late_minutes`, sistem mencatat `is_late: true` dan mengurangi perolehan poin sesuai `late_penalty_applied`. Jika `late_penalty_points === 0`, `is_late` selalu `false` dan tidak ada penalti meski scan dilakukan berjam-jam setelah acara dimulai. |
 | **AC-ATT-07** | Panitia menghapus entri salah scan saat event masih `active` | Data draft terhapus via `DELETE /api/events/:id/attendances/:userId` tanpa perlu rollback saldo poin (karena poin belum terdistribusi). |
-| **AC-ATT-08** | Organizer klik "Close & Finalize Event" | Status event berubah menjadi `closed` (code `200`), seluruh presensi ditandai `is_finalized = true`, poin dikreditkan serentak dalam 1 transaksi DB. |
+| **AC-ATT-08** | Organizer klik "Close & Finalize Event", atau hari berganti melewati tanggal start (`current date > event_date` WIB) pada event `active` | Status event berubah menjadi `closed` (code `200` / auto-close), seluruh presensi ditandai `is_finalized = true`, poin dikreditkan serentak dalam 1 transaksi DB. |
 | **AC-ATT-09** | Organizer membuka Rekap Kehadiran (`/events/:id/attendances`) | Menampilkan `total_attended`, status finalisasi, dan daftar peserta dengan nomor anggota, sekolah, dan waktu scan (tanpa photo_url, tanpa RSVP, tanpa attendance rate). |
 | **AC-ATT-10** | Organizer melakukan "Reschedule Event" pada event `cancel` | Menentukan tanggal baru (`event_date >= current date`), status berubah kembali menjadi `scheduled` (code `200`). |
 | **AC-ATT-11** | Organizer mengetik nama di Manual Attendance (`/events/scan`) atau mendaftarkan member walk-in | Pencarian asinkron ke `GET /api/people/members/similar` menampilkan info banner non-blocking + tombol **"See More"** untuk modal daftar lengkap (tersembunyi bila kosong), serta memperbolehkan check-in langsung atau registrasi member baru. |

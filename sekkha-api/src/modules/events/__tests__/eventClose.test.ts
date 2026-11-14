@@ -444,4 +444,143 @@ describe("Event Start & Late Attendance Policy", () => {
       eventModels.createAttendance = origCreateAttendance
     }
   })
+
+  it("auto-closes active events when current date > start event_date via autoCloseExpiredActiveEvents and getEventDetail", async () => {
+    const yesterdayDate = new Date(Date.now() - 26 * 60 * 60 * 1000)
+    const originalTransaction = prisma.$transaction
+    const origFindExpired = eventModels.findExpiredActiveEvents
+    const origFindById = eventModels.findEventById
+    let updatedToStatus: string | null = null
+
+    ;(prisma as any).$transaction = async (cb: any) => {
+      const txMock = {
+        event: {
+          findUnique: async () => ({
+            id: "evt_expired_active",
+            title: "Yesterday Puja",
+            eventDate: yesterdayDate,
+            status: "active",
+            pointReward: 50,
+            type: { id: "type_1", code: "regular_puja" },
+          }),
+          update: async ({ data }: any) => {
+            updatedToStatus = data.status
+            return {
+              id: "evt_expired_active",
+              title: "Yesterday Puja",
+              eventDate: yesterdayDate,
+              status: data.status,
+              type: { id: "type_1", code: "regular_puja" },
+            }
+          },
+        },
+        attendance: {
+          findMany: async () => [],
+        },
+      }
+      return cb(txMock)
+    }
+
+    try {
+      // 1) Batch auto-close helper
+      eventModels.findExpiredActiveEvents = async () => [
+        { id: "evt_expired_active", eventDate: yesterdayDate },
+      ]
+
+      const summary = await eventServices.autoCloseExpiredActiveEvents()
+      expect(summary.closedCount).toBe(1)
+      expect(summary.closedEventIds).toEqual(["evt_expired_active"])
+      expect(updatedToStatus).toBe("closed")
+
+      // 2) Lazy auto-close on getEventDetail
+      updatedToStatus = null
+      eventModels.findEventById = async () =>
+        ({
+          id: "evt_expired_active",
+          title: "Yesterday Puja",
+          description: null,
+          location: "Main Hall",
+          eventDate: yesterdayDate,
+          status: "active",
+          visibility: "all",
+          pointReward: 50,
+          maxLateMinutes: 15,
+          latePenaltyPoints: 15,
+          seasonId: null,
+          createdAt: yesterdayDate,
+          updatedAt: yesterdayDate,
+          type: null,
+          season: null,
+          _count: { attendances: 0 },
+        }) as any
+
+      const detail = await eventServices.getEventDetail("evt_expired_active", "admin", true)
+      expect(detail.status).toBe("closed")
+      expect(updatedToStatus).toBe("closed")
+    } finally {
+      prisma.$transaction = originalTransaction
+      eventModels.findExpiredActiveEvents = origFindExpired
+      eventModels.findEventById = origFindById
+    }
+  })
+
+  it("auto-closes active event and rejects attendance scan with 400 EVENT_NOT_ACTIVE when current date > start event_date", async () => {
+    const yesterdayDate = new Date(Date.now() - 26 * 60 * 60 * 1000)
+    const originalTransaction = prisma.$transaction
+    const origFindBasic = eventModels.findEventBasic
+    let closedInTx = false
+
+    ;(prisma as any).$transaction = async (cb: any) => {
+      const txMock = {
+        event: {
+          findUnique: async () => ({
+            id: "evt_expired_scan",
+            title: "Yesterday Puja",
+            eventDate: yesterdayDate,
+            status: "active",
+            pointReward: 50,
+            type: { id: "type_1", code: "regular_puja" },
+          }),
+          update: async ({ data }: any) => {
+            if (data.status === "closed") closedInTx = true
+            return {
+              id: "evt_expired_scan",
+              title: "Yesterday Puja",
+              eventDate: yesterdayDate,
+              status: data.status,
+              type: { id: "type_1", code: "regular_puja" },
+            }
+          },
+        },
+        attendance: {
+          findMany: async () => [],
+        },
+      }
+      return cb(txMock)
+    }
+
+    eventModels.findEventBasic = async () =>
+      ({
+        id: "evt_expired_scan",
+        title: "Yesterday Puja",
+        eventDate: yesterdayDate,
+        pointReward: 50,
+        maxLateMinutes: 15,
+        latePenaltyPoints: 15,
+        status: "active",
+        type: { code: "regular_puja", label: "Regular Puja", defaultPointReward: 50 },
+      }) as any
+
+    try {
+      await eventServices.recordAttendance("usr_admin", "evt_expired_scan", "2026111401", "qr")
+      expect(true).toBe(false)
+    } catch (err: any) {
+      expect(closedInTx).toBe(true)
+      expect(err.status || err.statusCode).toBe(400)
+      expect(err.code).toBe("EVENT_NOT_ACTIVE")
+    } finally {
+      prisma.$transaction = originalTransaction
+      eventModels.findEventBasic = origFindBasic
+    }
+  })
 })

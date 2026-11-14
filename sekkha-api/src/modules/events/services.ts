@@ -23,6 +23,25 @@ function toWibDateKey(date: Date): string {
   return new Date(date.getTime() + WIB_OFFSET_MS).toISOString().slice(0, 10)
 }
 
+function getStartOfCurrentWibDayUtc(now = new Date()): Date {
+  const wibNow = new Date(now.getTime() + WIB_OFFSET_MS)
+  return new Date(
+    Date.UTC(wibNow.getUTCFullYear(), wibNow.getUTCMonth(), wibNow.getUTCDate(), 0, 0, 0, 0) -
+      WIB_OFFSET_MS
+  )
+}
+
+function isActiveEventExpired(
+  status: string,
+  eventDate: Date | string,
+  now = new Date()
+): boolean {
+  if (status !== "active") return false
+  const parsed = typeof eventDate === "string" ? new Date(eventDate) : eventDate
+  if (isNaN(parsed.getTime())) return false
+  return toWibDateKey(now) > toWibDateKey(parsed)
+}
+
 type CreateEventInput = {
   title: string
   description?: string
@@ -40,6 +59,25 @@ type CreateEventInput = {
 type UpdateEventInput = Partial<CreateEventInput>
 
 export const eventServices = {
+  async autoCloseExpiredActiveEvents() {
+    const now = new Date()
+    const startOfTodayWib = getStartOfCurrentWibDayUtc(now)
+    const expiredEvents = await eventModels.findExpiredActiveEvents(startOfTodayWib)
+    const closedEventIds: string[] = []
+
+    for (const ev of expiredEvents) {
+      if (isActiveEventExpired("active", ev.eventDate, now)) {
+        await this.updateEventStatus("system", "admin", ev.id, "closed")
+        closedEventIds.push(ev.id)
+      }
+    }
+
+    return {
+      closedCount: closedEventIds.length,
+      closedEventIds,
+    }
+  },
+
   async listEvents(
     userRole: string,
     isPrivileged: boolean,
@@ -52,6 +90,8 @@ export const eventServices = {
       search?: string
     }
   ) {
+    await this.autoCloseExpiredActiveEvents().catch(() => {})
+
     const validPage = Math.max(1, page)
     const validLimit = Math.min(100, Math.max(1, limit))
     const skip = (validPage - 1) * validLimit
@@ -109,6 +149,13 @@ export const eventServices = {
       andConditions.length > 0 ? { AND: andConditions } : {}
 
     const events = await eventModels.findEvents(whereClause, skip, validLimit)
+    for (const ev of events) {
+      if (isActiveEventExpired(ev.status, ev.eventDate)) {
+        await this.updateEventStatus("system", "admin", ev.id, "closed")
+        ;(ev as any).status = "closed"
+      }
+    }
+
     return events.map((e) => ({
       id: e.id,
       title: e.title,
@@ -140,6 +187,11 @@ export const eventServices = {
     const event = await eventModels.findEventById(id)
     if (!event) {
       throw new AppError("Event not found", 404, "EVENT_NOT_FOUND")
+    }
+
+    if (isActiveEventExpired(event.status, event.eventDate)) {
+      await this.updateEventStatus("system", "admin", event.id, "closed")
+      ;(event as any).status = "closed"
     }
 
     if (!canViewEvent(userRole, event.status, event.visibility)) {
@@ -762,6 +814,11 @@ export const eventServices = {
     const event = await eventModels.findEventBasic(eventId)
     if (!event) {
       throw new AppError("Event not found.", 404, "EVENT_NOT_FOUND")
+    }
+
+    if (isActiveEventExpired(event.status, event.eventDate)) {
+      await this.updateEventStatus("system", "admin", event.id, "closed")
+      ;(event as any).status = "closed"
     }
 
     if (event.status !== "active") {

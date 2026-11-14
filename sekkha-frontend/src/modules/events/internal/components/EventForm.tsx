@@ -15,7 +15,7 @@ import {
 } from "lucide-react"
 import { useAuth } from "@/modules/auth"
 import { api } from "@/lib/api"
-import { DateTimePickerPopover } from "@/components/ui/DateTimePickerPopover"
+import { DateTimePicker } from "@/components/common/DateTimePicker"
 import { Switch } from "@/components/ui/switch"
 import type { CreateEventPayload, EventListItem } from "../types"
 import { getAccessibleCategories, getEventTag } from "../masterdata"
@@ -497,82 +497,48 @@ export function EventForm({
           </p>
         </div>
 
-        {/* Event Name */}
-        <div className="space-y-1.5">
-          <label
-            htmlFor="ev-title"
-            className="text-xs font-bold text-ink"
-          >
-            Event name <span className="text-rose-500">*</span>
-          </label>
-          <div className="relative">
-            <FileTextIcon className="absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-clay-teal" />
-            <input
-              id="ev-title"
-              type="text"
-              required
-              value={title}
-              onChange={(e) => {
-                setTitle(e.target.value)
-                if (errors.title) {
-                  setErrors((prev) => {
-                    const next = { ...prev }
-                    delete next.title
-                    return next
-                  })
-                }
-              }}
-              placeholder="e.g. Sunday Youth Fellowship"
-              aria-invalid={Boolean(errors.title)}
-              aria-describedby={errors.title ? "ev-title-error" : undefined}
-              className={`h-11 w-full rounded-xl border bg-canvas pr-4 pl-10 text-xs text-ink shadow-2xs transition-all outline-none placeholder:text-text-muted/70 sm:text-sm ${
-                errors.title
-                  ? "border-rose-400 focus:border-rose-500"
-                  : "border-hairline focus:border-ink focus:ring-1 focus:ring-ink"
-              }`}
-            />
-          </div>
-          {errors.title && (
-            <p
-              id="ev-title-error"
-              className="animate-in text-[11px] font-semibold text-rose-600 fade-in"
-            >
-              {errors.title}
-            </p>
-          )}
-        </div>
-
         <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-2">
-          {/* Date & Time Input (Mandatory) */}
-          <div className="flex w-full flex-col gap-1.5">
+          {/* Event Name */}
+          <div className="space-y-1.5">
             <label
-              htmlFor="ev-date"
+              htmlFor="ev-title"
               className="text-xs font-bold text-ink"
             >
-              Date and time <span className="text-rose-500">*</span>
+              Event name <span className="text-rose-500">*</span>
             </label>
-            <DateTimePickerPopover
-              id="ev-date"
-              value={eventDate}
-              disablePastDates={!initial?.id}
-              onChange={(val) => {
-                setEventDate(val)
-                if (errors.event_date) {
-                  setErrors((prev) => {
-                    const next = { ...prev }
-                    delete next.event_date
-                    return next
-                  })
-                }
-              }}
-              error={errors.event_date}
-            />
-            {errors.event_date && (
+            <div className="relative">
+              <FileTextIcon className="absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-clay-teal" />
+              <input
+                id="ev-title"
+                type="text"
+                required
+                value={title}
+                onChange={(e) => {
+                  setTitle(e.target.value)
+                  if (errors.title) {
+                    setErrors((prev) => {
+                      const next = { ...prev }
+                      delete next.title
+                      return next
+                    })
+                  }
+                }}
+                placeholder="e.g. Sunday Youth Fellowship"
+                aria-invalid={Boolean(errors.title)}
+                aria-describedby={errors.title ? "ev-title-error" : undefined}
+                className={`h-11 w-full rounded-xl border bg-canvas pr-4 pl-10 text-xs text-ink shadow-2xs transition-all outline-none placeholder:text-text-muted/70 sm:text-sm ${
+                  errors.title
+                    ? "border-rose-400 focus:border-rose-500"
+                    : "border-hairline focus:border-ink focus:ring-1 focus:ring-ink"
+                }`}
+              />
+            </div>
+            {errors.title && (
               <p
-                id="ev-date-error"
+                id="ev-title-error"
                 className="animate-in text-[11px] font-semibold text-rose-600 fade-in"
               >
-                {errors.event_date}
+                {errors.title}
               </p>
             )}
           </div>
@@ -667,6 +633,40 @@ export function EventForm({
               )}
             </div>
           </div>
+        </div>
+
+        {/* Date & Time Input (Full width so inline calendar + time controls expand cleanly) */}
+        <div className="flex w-full flex-col gap-1.5">
+          <label
+            htmlFor="ev-date"
+            className="text-xs font-bold text-ink"
+          >
+            Date and time <span className="text-rose-500">*</span>
+          </label>
+          <DateTimePicker
+            id="ev-date"
+            value={eventDate}
+            disablePastDates={!initial?.id}
+            onChange={(val) => {
+              setEventDate(val)
+              if (errors.event_date) {
+                setErrors((prev) => {
+                  const next = { ...prev }
+                  delete next.event_date
+                  return next
+                })
+              }
+            }}
+            error={errors.event_date}
+          />
+          {errors.event_date && (
+            <p
+              id="ev-date-error"
+              className="animate-in text-[11px] font-semibold text-rose-600 fade-in"
+            >
+              {errors.event_date}
+            </p>
+          )}
         </div>
 
         {/* Description / Instructions */}

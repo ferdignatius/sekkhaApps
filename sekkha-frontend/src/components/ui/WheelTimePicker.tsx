@@ -320,7 +320,7 @@ export function WheelTimePickerTrigger({
           <span className="text-micro font-medium text-sekkha-slate">WIB</span>
         </span>
         <span className="text-micro font-bold text-sekkha-brand-blue">
-          Ubah
+          Edit
         </span>
       </button>
 
@@ -362,7 +362,7 @@ export function WheelTimePickerTrigger({
                 onClick={() => setOpen(false)}
                 className="text-caption h-11 flex-1 rounded-2xl border border-sekkha-hairline font-bold text-sekkha-slate transition-colors hover:bg-sekkha-canvas"
               >
-                Batal
+                Cancel
               </button>
               <button
                 type="button"
@@ -370,7 +370,7 @@ export function WheelTimePickerTrigger({
                 className="text-caption flex h-11 flex-1 items-center justify-center gap-1.5 rounded-2xl bg-sekkha-brand-blue font-bold text-white transition-colors hover:bg-sekkha-brand-blue/90"
               >
                 <CheckIcon className="size-4" />
-                Simpan {draft}
+                Save {draft}
               </button>
             </div>
           </div>

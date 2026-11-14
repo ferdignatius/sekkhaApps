@@ -222,4 +222,17 @@ export const eventModels = {
   findBadgeActivityById(id: string) {
     return prisma.badgeActivity.findUnique({ where: { id } })
   },
+
+  findExpiredActiveEvents(beforeDate: Date) {
+    return prisma.event.findMany({
+      where: {
+        status: "active",
+        eventDate: { lt: beforeDate },
+      },
+      select: {
+        id: true,
+        eventDate: true,
+      },
+    })
+  },
 }

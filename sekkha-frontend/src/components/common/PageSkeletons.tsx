@@ -46,7 +46,7 @@ export function HomeSkeleton() {
     <main
       className="min-h-screen bg-[#fffaf0] antialiased"
       aria-busy="true"
-      aria-label="Memuat halaman..."
+      aria-label="Loading page..."
     >
       <div className="px-3.5 py-4 pb-32 sm:px-6 sm:py-6 md:px-8 md:pb-12 lg:px-12">
         <div className="mx-auto max-w-7xl space-y-4 sm:space-y-5">
@@ -129,7 +129,7 @@ export function EventsSkeleton() {
     <main
       className="min-h-screen bg-[#fffaf0] antialiased"
       aria-busy="true"
-      aria-label="Memuat events..."
+      aria-label="Loading events..."
     >
       <div className="px-3.5 py-4 pb-32 sm:px-6 sm:py-6 md:px-8 md:pb-12 lg:px-12">
         <div className="mx-auto max-w-7xl space-y-4 sm:space-y-5">
@@ -190,7 +190,7 @@ export function LeaderboardSkeleton() {
     <main
       className="min-h-screen bg-[#fffaf0] antialiased"
       aria-busy="true"
-      aria-label="Memuat leaderboard..."
+      aria-label="Loading leaderboard..."
     >
       <div className="px-3.5 py-4 pb-32 sm:px-6 sm:py-6 md:px-8 md:pb-12 lg:px-12">
         <div className="mx-auto max-w-7xl space-y-4 sm:space-y-5">
@@ -308,7 +308,7 @@ export function ProfileSkeleton() {
     <main
       className="min-h-screen bg-[#fffaf0] antialiased"
       aria-busy="true"
-      aria-label="Memuat profil..."
+      aria-label="Loading profile..."
     >
       <div className="px-3.5 py-4 pb-32 sm:px-6 sm:py-6 md:px-8 md:pb-12 lg:px-12">
         <div className="mx-auto max-w-7xl space-y-4 sm:space-y-5">
@@ -363,7 +363,7 @@ export function ConfigureSkeleton() {
     <main
       className="min-h-screen bg-[#fffaf0] antialiased"
       aria-busy="true"
-      aria-label="Memuat konfigurasi..."
+      aria-label="Loading configuration..."
     >
       <div className="px-3.5 py-4 pb-32 sm:px-6 sm:py-6 md:px-8 md:pb-12 lg:px-12">
         <div className="mx-auto max-w-7xl space-y-4 sm:space-y-5">
@@ -406,7 +406,7 @@ export function GenericSkeleton() {
     <main
       className="min-h-screen bg-[#fffaf0] antialiased"
       aria-busy="true"
-      aria-label="Memuat..."
+      aria-label="Loading..."
     >
       <div className="px-3.5 py-4 pb-32 sm:px-6 sm:py-6 md:px-8 md:pb-12 lg:px-12">
         <div className="mx-auto max-w-7xl space-y-4 sm:space-y-5">
@@ -435,7 +435,7 @@ export function PeopleSkeleton() {
     <main
       className="min-h-screen bg-[#fffaf0] antialiased"
       aria-busy="true"
-      aria-label="Memuat people..."
+      aria-label="Loading directory..."
     >
       <div className="px-3.5 py-4 pb-32 sm:px-6 sm:py-6 md:px-8 md:pb-12 lg:px-12">
         <div className="mx-auto max-w-7xl space-y-4 sm:space-y-5">

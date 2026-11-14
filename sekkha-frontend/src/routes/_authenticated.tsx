@@ -25,7 +25,7 @@ function AuthenticatedSkeleton() {
   return (
     <div
       aria-busy="true"
-      aria-label="Memuat..."
+      aria-label="Loading..."
       className="flex min-h-screen animate-pulse bg-sekkha-surface"
     >
       <div className="hidden w-64 shrink-0 border-r border-sekkha-hairline-soft bg-sekkha-canvas md:block" />

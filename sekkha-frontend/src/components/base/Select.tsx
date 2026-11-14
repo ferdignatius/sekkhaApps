@@ -158,7 +158,7 @@ export function Select({
           position="popper"
           sideOffset={6}
           align="start"
-          className="z-[115] w-[var(--radix-select-trigger-width)] rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] p-1 text-[#0a0a0a] shadow-lg"
+          className="pointer-events-auto z-[115] max-h-60 w-[var(--radix-select-trigger-width)] rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] p-1 text-[#0a0a0a] shadow-lg"
         >
           {isInfinite ? (
             <div

@@ -50,6 +50,7 @@ COPY --chown=bun:bun --from=builder /app/node_modules/.prisma ./node_modules/.pr
 COPY --chown=bun:bun --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 COPY --chown=bun:bun --from=builder /app/node_modules/prisma ./node_modules/prisma
 COPY --chown=bun:bun --from=builder /app/node_modules/.bin ./node_modules/.bin
+COPY --chown=bun:bun --from=builder /app/node_modules/jiti ./node_modules/jiti
 
 # Copy compiled JavaScript code directly with bun ownership
 COPY --chown=bun:bun --from=builder /app/dist ./dist

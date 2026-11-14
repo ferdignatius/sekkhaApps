@@ -127,7 +127,21 @@ export function ResponsiveFormModal({
   // Mobile (<768px): Native Bottom Drawer Sheet - Apple HIG Material Thick
   return (
     <Drawer open={isModalOpen} onOpenChange={handleOpenChange}>
-      <DrawerContent className="z-[100] flex max-h-[88vh] flex-col overflow-hidden rounded-t-[28px] border-t border-[#e5e5e5] bg-[#faf5e8] p-0 font-sans backdrop-blur-[40px]">
+      <DrawerContent
+        onPointerDownOutside={(e) => {
+          const target = e.target as HTMLElement | null
+          if (target?.closest?.('[data-slot="select-content"]')) {
+            e.preventDefault()
+          }
+        }}
+        onInteractOutside={(e) => {
+          const target = e.target as HTMLElement | null
+          if (target?.closest?.('[data-slot="select-content"]')) {
+            e.preventDefault()
+          }
+        }}
+        className="z-[100] flex max-h-[88vh] flex-col overflow-hidden rounded-t-[28px] border-t border-[#e5e5e5] bg-[#faf5e8] p-0 font-sans backdrop-blur-[40px]"
+      >
         {/* Sticky Drag Handle Header with Blur Background */}
         <div className="sticky top-0 z-20 flex shrink-0 items-center justify-center border-b border-[#e5e5e5] bg-[#faf5e8] py-3 backdrop-blur-[30px]">
           <div className="h-1.5 w-12 rounded-full bg-[#6a6a6a]/30" />

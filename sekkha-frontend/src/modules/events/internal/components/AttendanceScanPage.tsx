@@ -306,17 +306,21 @@ export function AttendanceScanPage() {
         setSessionSuccessCount(list.length)
 
         // Populate initial scan list from server
-        const initialScans: RecentScanItem[] = list.slice(0, 20).map((r) => ({
-          id: r.attendance_id || r.user_id,
-          userId: r.user_id,
-          name: r.name,
-          userNumber: r.user_number,
-          time: formatScanTime(r.scanned_at),
-          status: "success",
-          message: r.is_late
-            ? `Checked in (Late -${r.late_penalty_applied ?? 15} Pts)`
-            : "Checked in successfully",
-        }))
+        const initialScans: RecentScanItem[] = list.slice(0, 20).map((r) => {
+          const penalty = r.late_penalty_applied ?? 0
+          const isLateWithPenalty = Boolean(r.is_late) && penalty > 0
+          return {
+            id: r.attendance_id || r.user_id,
+            userId: r.user_id,
+            name: r.name,
+            userNumber: r.user_number,
+            time: formatScanTime(r.scanned_at),
+            status: "success",
+            message: isLateWithPenalty
+              ? `Checked in (Late -${penalty} Pts)`
+              : "Checked in successfully",
+          }
+        })
         setRecentScans(initialScans)
       } catch (error) {
         if (cancelled) return
@@ -438,8 +442,8 @@ export function AttendanceScanPage() {
       const returnedUserId = res.user_id || res.id
       const returnedName = res.name || parsedUserNumber
       const returnedUserNumber = res.user_number || parsedUserNumber
-      const isLate = Boolean(res.is_late)
-      const latePenalty = res.late_penalty_applied ?? 15
+      const latePenalty = res.late_penalty_applied ?? 0
+      const isLate = Boolean(res.is_late) && latePenalty > 0
 
       setSessionAttendedIds((prev) => new Set(prev).add(returnedUserId))
       setSessionSuccessCount((prev) => prev + 1)
@@ -528,8 +532,8 @@ export function AttendanceScanPage() {
       const returnedUserId = res.user_id || res.id
       const returnedName = res.name || memberName || targetNumberOrId
       const returnedUserNumber = res.user_number || targetNumberOrId
-      const isLate = Boolean(res.is_late)
-      const latePenalty = res.late_penalty_applied ?? 15
+      const latePenalty = res.late_penalty_applied ?? 0
+      const isLate = Boolean(res.is_late) && latePenalty > 0
 
       setSessionAttendedIds((prev) => new Set(prev).add(returnedUserId))
       setSessionSuccessCount((prev) => prev + 1)

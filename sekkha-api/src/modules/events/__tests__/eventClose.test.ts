@@ -1,5 +1,6 @@
 import { describe, it, expect } from "bun:test"
 import { eventServices } from "../services"
+import { eventModels } from "../models"
 import { prisma } from "../../../lib/prisma"
 
 describe("Event Closure Point Distribution & Milestone Bonuses", () => {
@@ -219,6 +220,228 @@ describe("Event Closure Point Distribution & Milestone Bonuses", () => {
       expect(streakTxs.length).toBe(0)
     } finally {
       prisma.$transaction = originalTransaction
+    }
+  })
+})
+
+describe("Event Start & Late Attendance Policy", () => {
+  it("anchors eventDate to actual start time even when started later on the same day, so immediate scans are on time", async () => {
+    const now = Date.now()
+    // Scheduled 4 hours earlier today (e.g., 09:00 when started at 13:00 in WIB, safely same WIB day or handle timezone safely)
+    // Pick a time 4 hours ago only if still same UTC/WIB calendar day, or construct 02:00 UTC (09:00 WIB) -> wait, unit test runs regardless of clock!
+    const WIB_OFFSET_MS = 7 * 60 * 60 * 1000
+    const wibNow = new Date(now + WIB_OFFSET_MS)
+    const startOfWibDayUtc =
+      Date.UTC(wibNow.getUTCFullYear(), wibNow.getUTCMonth(), wibNow.getUTCDate(), 0, 0, 0, 0) -
+      WIB_OFFSET_MS
+    const scheduledSameWibDayEarlier = new Date(
+      Math.max(startOfWibDayUtc, now - 4 * 60 * 60 * 1000)
+    )
+
+    let persistedEventDate: Date | null = null
+    const originalTransaction = prisma.$transaction
+
+    ;(prisma as any).$transaction = async (cb: any) => {
+      const txMock = {
+        event: {
+          findUnique: async () => ({
+            id: "evt_late_start",
+            title: "Morning Puja Started Afternoon",
+            eventDate: scheduledSameWibDayEarlier,
+            status: "scheduled",
+            pointReward: 50,
+            maxLateMinutes: 15,
+            latePenaltyPoints: 15,
+            type: { id: "type_1", code: "regular_puja" },
+          }),
+          update: async ({ data }: any) => {
+            persistedEventDate = data.eventDate ?? scheduledSameWibDayEarlier
+            return {
+              id: "evt_late_start",
+              title: "Morning Puja Started Afternoon",
+              eventDate: persistedEventDate,
+              status: data.status,
+              type: { id: "type_1", code: "regular_puja" },
+            }
+          },
+        },
+      }
+      return cb(txMock)
+    }
+
+    const origFindEventBasic = eventModels.findEventBasic
+    const origFindUserForAttendance = eventModels.findUserForAttendance
+    const origFindExistingAttendance = eventModels.findExistingAttendance
+    const origCreateAttendance = eventModels.createAttendance
+
+    try {
+      const started = await eventServices.updateEventStatus(
+        "usr_admin",
+        "admin",
+        "evt_late_start",
+        "active"
+      )
+
+      expect(started.status).toBe("active")
+      expect(persistedEventDate).not.toBeNull()
+      // eventDate must be anchored near actual start time (now), not left at earlier scheduled time
+      expect(Math.abs(persistedEventDate!.getTime() - Date.now())).toBeLessThan(5000)
+
+      eventModels.findEventBasic = async () =>
+        ({
+          id: "evt_late_start",
+          title: "Morning Puja Started Afternoon",
+          eventDate: persistedEventDate!,
+          pointReward: 50,
+          maxLateMinutes: 15,
+          latePenaltyPoints: 15,
+          status: "active",
+          type: { code: "regular_puja", label: "Regular Puja", defaultPointReward: 50 },
+        }) as any
+
+      eventModels.findUserForAttendance = async () =>
+        ({
+          id: "usr_member_1",
+          userNumber: 2026111401n,
+          role: "member",
+          profile: { name: "Hendra", school: { name: "Umum" } },
+        }) as any
+
+      eventModels.findExistingAttendance = async () => null
+      eventModels.createAttendance = async (data) =>
+        ({
+          id: "att_new_1",
+          ...data,
+          scannedAt: new Date(),
+          badgeActivity: null,
+        }) as any
+
+      const scanRes = await eventServices.recordAttendance(
+        "usr_admin",
+        "evt_late_start",
+        "2026111401",
+        "qr"
+      )
+
+      expect(scanRes.is_late).toBe(false)
+      expect(scanRes.late_penalty_applied).toBe(0)
+      expect(scanRes.points_earned).toBe(50)
+    } finally {
+      prisma.$transaction = originalTransaction
+      eventModels.findEventBasic = origFindEventBasic
+      eventModels.findUserForAttendance = origFindUserForAttendance
+      eventModels.findExistingAttendance = origFindExistingAttendance
+      eventModels.createAttendance = origCreateAttendance
+    }
+  })
+
+  it("never marks is_late or applies penalty when late_penalty_points is 0, even 10 hours after start", async () => {
+    const tenHoursAgo = new Date(Date.now() - 10 * 60 * 60 * 1000)
+    const origFindEventBasic = eventModels.findEventBasic
+    const origFindUserForAttendance = eventModels.findUserForAttendance
+    const origFindExistingAttendance = eventModels.findExistingAttendance
+    const origCreateAttendance = eventModels.createAttendance
+
+    try {
+      eventModels.findEventBasic = async () =>
+        ({
+          id: "evt_no_penalty",
+          title: "Open Workshop",
+          eventDate: tenHoursAgo,
+          pointReward: 50,
+          maxLateMinutes: 0,
+          latePenaltyPoints: 0,
+          status: "active",
+          type: { code: "workshop", label: "Workshop", defaultPointReward: 50 },
+        }) as any
+
+      eventModels.findUserForAttendance = async () =>
+        ({
+          id: "usr_member_2",
+          userNumber: 2026111402n,
+          role: "member",
+          profile: { name: "Sari", school: { name: "Umum" } },
+        }) as any
+
+      eventModels.findExistingAttendance = async () => null
+      eventModels.createAttendance = async (data) =>
+        ({
+          id: "att_no_penalty",
+          ...data,
+          scannedAt: new Date(),
+          badgeActivity: null,
+        }) as any
+
+      const res = await eventServices.recordAttendance(
+        "usr_admin",
+        "evt_no_penalty",
+        "2026111402",
+        "qr"
+      )
+
+      expect(res.is_late).toBe(false)
+      expect(res.late_penalty_applied).toBe(0)
+      expect(res.points_earned).toBe(50)
+    } finally {
+      eventModels.findEventBasic = origFindEventBasic
+      eventModels.findUserForAttendance = origFindUserForAttendance
+      eventModels.findExistingAttendance = origFindExistingAttendance
+      eventModels.createAttendance = origCreateAttendance
+    }
+  })
+
+  it("marks is_late and deducts late_penalty_points when late_penalty_points > 0 and grace period exceeded", async () => {
+    const fortyMinutesAgo = new Date(Date.now() - 40 * 60 * 1000)
+    const origFindEventBasic = eventModels.findEventBasic
+    const origFindUserForAttendance = eventModels.findUserForAttendance
+    const origFindExistingAttendance = eventModels.findExistingAttendance
+    const origCreateAttendance = eventModels.createAttendance
+
+    try {
+      eventModels.findEventBasic = async () =>
+        ({
+          id: "evt_with_penalty",
+          title: "Evening Puja",
+          eventDate: fortyMinutesAgo,
+          pointReward: 50,
+          maxLateMinutes: 15,
+          latePenaltyPoints: 15,
+          status: "active",
+          type: { code: "puja", label: "Puja", defaultPointReward: 50 },
+        }) as any
+
+      eventModels.findUserForAttendance = async () =>
+        ({
+          id: "usr_member_3",
+          userNumber: 2026111403n,
+          role: "member",
+          profile: { name: "Budi", school: { name: "Umum" } },
+        }) as any
+
+      eventModels.findExistingAttendance = async () => null
+      eventModels.createAttendance = async (data) =>
+        ({
+          id: "att_late_1",
+          ...data,
+          scannedAt: new Date(),
+          badgeActivity: null,
+        }) as any
+
+      const res = await eventServices.recordAttendance(
+        "usr_admin",
+        "evt_with_penalty",
+        "2026111403",
+        "qr"
+      )
+
+      expect(res.is_late).toBe(true)
+      expect(res.late_penalty_applied).toBe(15)
+      expect(res.points_earned).toBe(35)
+    } finally {
+      eventModels.findEventBasic = origFindEventBasic
+      eventModels.findUserForAttendance = origFindUserForAttendance
+      eventModels.findExistingAttendance = origFindExistingAttendance
+      eventModels.createAttendance = origCreateAttendance
     }
   })
 })

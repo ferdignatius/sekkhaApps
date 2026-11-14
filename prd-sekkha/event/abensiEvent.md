@@ -85,7 +85,7 @@ Desain ini menjamin:
 > **Aturan**:
 > 1. Pengurus tidak bisa langsung menutup event tanpa mengaktifkan absensi terlebih dahulu (`active`). Tombol "Tutup Sesi & Kreditkan Poin" hanya tersedia saat status `active`.
 > 2. Event yang berstatus `cancel` dapat dijadwalkan ulang (**Reschedule**) kembali menjadi `scheduled` dengan memasukkan tanggal baru (`event_date >= current date`). Sesi absensi tidak dapat dibuka pada event berstatus `cancel`.
-> 3. Tombol **"Mulai Acara" (Start Event)** untuk mengubah status ke `active` **tidak dapat dieksekusi jika tanggal saat ini sudah melewati tanggal pelaksanaan yang ditetapkan pada event (`current date > event_date`)** — dalam kasus tersebut event wajib dijadwalkan ulang (*reschedule*) atau dibatalkan (*cancel*). Aktivasi event diizinkan selama tanggal saat ini berada pada atau sebelum tanggal pelaksanaan (`current date <= event_date`).
+> 3. Tombol **"Mulai Acara" (Start Event)** untuk mengubah status ke `active` **tidak dapat dieksekusi jika tanggal saat ini sudah melewati tanggal pelaksanaan yang ditetapkan pada event (`current date > event_date`)** — dalam kasus tersebut event wajib dijadwalkan ulang (*reschedule*) atau dibatalkan (*cancel*). Aktivasi event diizinkan selama tanggal saat ini berada pada atau sebelum tanggal pelaksanaan (`current date <= event_date`), dan saat diaktifkan sistem menambatkan (*anchor*) `event_date` ke timestamp aktual acara dimulai (`now`) sehingga masa toleransi keterlambatan (`max_late_minutes`) dimulai sejak sesi presensi benar-benar dibuka.
 
 ---
 
@@ -188,7 +188,9 @@ Organizer/Admin di halaman detail event (/events/:id)
 PATCH /api/events/:id/status { "status": "active" }
           │
 Backend:
-  └── UPDATE events SET status = 'active', updated_at = now() WHERE id = :id
+  └── UPDATE events SET status = 'active', event_date = now(), updated_at = now() WHERE id = :id
+      -- (event_date ditambatkan ke waktu mulai aktual bila tidak ada reschedule_date eksplisit,
+      -- sehingga grace period max_late_minutes selalu dihitung sejak sesi aktif dimulai)
           │
 Response 200: { status: "success", code: 200, message: "Event started...", data: { id, status: "active" } }
           │
@@ -218,7 +220,9 @@ Halaman scanner terbuka di /events/:id/scan (kamera aktif)
 │  ├── Event berstatus 'active'?                                │
 │  ├── userNumber terdaftar di database?                        │
 │  ├── Belum pernah tercatat hadir (@@unique([userId, eventId]))│
-│  └── Evaluasi waktu scan vs (event_date + max_late_minutes)   │
+│  └── Evaluasi keterlambatan: hanya jika late_penalty_points>0 │
+│      bandingkan scanned_at > (event_date aktif + max_late_min)│
+│      (jika late_penalty_points === 0, is_late selalu false)   │
 │        │                                                      │
 │  ┌─────┴────────────────────────────────────────┐             │
 │  ▼                                              ▼             │
@@ -575,12 +579,12 @@ model Attendance {
 
 | ID | Skenario | Hasil yang Diharapkan |
 | --- | --- | --- |
-| **AC-ATT-01** | Organizer klik "Start Event" pada atau sebelum tanggal jadwalnya (`current date <= event_date`) | Status event berubah menjadi `active` via `PATCH /api/events/:id/status` (code `200`). Scanner presensi terbuka. |
+| **AC-ATT-01** | Organizer klik "Start Event" pada atau sebelum tanggal jadwalnya (`current date <= event_date`) | Status event berubah menjadi `active` via `PATCH /api/events/:id/status` (code `200`) dan `event_date` diperbarui ke timestamp aktual sesi dimulai (`now`) bila tidak ada jadwal ulang eksplisit, sehingga masa toleransi keterlambatan dihitung dari waktu sesi aktif dibuka. Scanner presensi terbuka. |
 | **AC-ATT-02** | Organizer mencoba klik "Start Event" ketika tanggal saat ini sudah melewati tanggal pelaksanaan event (`current date > event_date`) | Backend menolak dengan `400 Bad Request` dan pesan "Event cannot be activated because its scheduled date has already passed" (event harus di-reschedule atau di-cancel). |
 | **AC-ATT-03** | `activist` mencoba membuka `/events/:id/scan` atau POST absensi | Backend menolak dengan `403 Forbidden`. Akses scanner eksklusif untuk `organizer` dan `admin`. |
 | **AC-ATT-04** | Panitia memindai QR Code kartu anggota jemaat (`userNumber`) | Data masuk ke presensi draft (`is_finalized: false`), respon `201 Created` dengan code angka `201`, audio beep aktif, kamera auto-resume. |
 | **AC-ATT-05** | Panitia memindai jemaat yang sama dua kali atau multi-gate scan berbarengan | Backend merespon `409 Conflict` (code `409`) dengan pesan "Peserta sudah tercatat hadir" berkat constraint `@@unique([userId, eventId])`. Data tidak ganda. |
-| **AC-ATT-06** | Jemaat di-scan melewati batas toleransi `max_late_minutes` | Sistem otomatis mencatat `is_late: true` dan mengurangi perolehan poin sesuai `late_penalty_applied`. |
+| **AC-ATT-06** | Evaluasi keterlambatan presensi terhadap `max_late_minutes` dan `late_penalty_points` | Jika `late_penalty_points > 0` dan `scanned_at > event_date (waktu start aktif) + max_late_minutes`, sistem mencatat `is_late: true` dan mengurangi perolehan poin sesuai `late_penalty_applied`. Jika `late_penalty_points === 0`, `is_late` selalu `false` dan tidak ada penalti meski scan dilakukan berjam-jam setelah acara dimulai. |
 | **AC-ATT-07** | Panitia menghapus entri salah scan saat event masih `active` | Data draft terhapus via `DELETE /api/events/:id/attendances/:userId` tanpa perlu rollback saldo poin (karena poin belum terdistribusi). |
 | **AC-ATT-08** | Organizer klik "Close & Finalize Event" | Status event berubah menjadi `closed` (code `200`), seluruh presensi ditandai `is_finalized = true`, poin dikreditkan serentak dalam 1 transaksi DB. |
 | **AC-ATT-09** | Organizer membuka Rekap Kehadiran (`/events/:id/attendances`) | Menampilkan `total_attended`, status finalisasi, dan daftar peserta dengan nomor anggota, sekolah, dan waktu scan (tanpa photo_url, tanpa RSVP, tanpa attendance rate). |
@@ -615,8 +619,8 @@ model Attendance {
 | **TC-ATT-03** | Concurrent Multi-Gate Scan | Dua gerbang memindai QR code jemaat yang sama pada waktu bersamaan | Event `active`, dua organizer di gerbang A dan B memindai kartu yang sama | Eksekusi request scan secara konkuren (bersamaan milidetik yang sama). | Gerbang 1 sukses HTTP 201 Created, Gerbang 2 ditolak atomic DB unique constraint `@@unique([userId, eventId])` dengan HTTP 409 Conflict. Data kehadiran tidak dobel. | Security / Concurrency |
 | **TC-ATT-04** | Manual Attendance | Pencatatan absensi manual dengan 10-digit `userNumber` valid | Event berstatus `active`, role `organizer` | Masukkan `userNumber: "202610230001"` pada tab Input Manual dan klik submit. | HTTP 201 Created envelope (`method: "manual"`, `is_finalized: false`), nama dan identitas jemaat muncul di tabel presensi draft. | Positive |
 | **TC-ATT-05** | Manual Attendance | Input manual dengan nomor anggota (`userNumber`) yang tidak terdaftar | Event berstatus `active`, role `organizer` | Masukkan `userNumber: "9999999999"` (tidak ada di database). | HTTP 404 Not Found envelope ("User with specified user number not found"). Tidak ada data kehadiran yang dibuat. | Negative |
-| **TC-ATT-06** | Late Detection | Pemindaian jemaat yang hadir melewati batas toleransi keterlambatan | Event terjadwal jam 09:00, `max_late_minutes: 30`, `late_penalty_points: 15`. Scan dilakukan jam 09:40. | Pindai QR kartu jemaat pada jam 09:40 (`scanned_at > event_date + 30m`). | HTTP 201 Created envelope (`is_late: true`, `late_penalty_applied: 15`, `points_earned: 35`). Tampil badge "Late (-15 Pts)" di samping nama jemaat. | Edge Case / Positive |
-| **TC-ATT-07** | On-Time Attendance | Pemindaian jemaat tepat waktu sebelum toleransi keterlambatan habis | Event terjadwal jam 09:00, `max_late_minutes: 30`. Scan dilakukan jam 09:15. | Pindai QR kartu jemaat pada jam 09:15 (`scanned_at <= event_date + 30m`). | HTTP 201 Created envelope (`is_late: false`, `late_penalty_applied: 0`, `points_earned: 50`). Tidak ada penalti poin. | Positive |
+| **TC-ATT-06** | Late Detection | Pemindaian jemaat yang hadir melewati batas toleransi keterlambatan sejak event di-start | Event di-start (`active`) pada jam 09:00 (`event_date = 09:00`), `max_late_minutes: 30`, `late_penalty_points: 15`. Scan dilakukan jam 09:40. | Pindai QR kartu jemaat pada jam 09:40 (`scanned_at > event_date + 30m`). | HTTP 201 Created envelope (`is_late: true`, `late_penalty_applied: 15`, `points_earned: 35`). Tampil badge "Late (-15 Pts)" di samping nama jemaat. | Edge Case / Positive |
+| **TC-ATT-07** | On-Time Attendance & Delayed Start / Zero Penalty | 1) Event jadwal 09:00 baru di-start jam 13:00 lalu langsung scan jam 13:02; atau 2) Event dengan `late_penalty_points: 0` di-scan 10 jam setelah start. | Event `active` dengan `max_late_minutes: 30` (skenario 1) atau `late_penalty_points: 0` (skenario 2). | Skenario 1: klik Start Event jam 13:00 (`event_date` di-anchor ke 13:00) lalu pindai QR jam 13:02.<br>Skenario 2: pindai QR 10 jam setelah start pada event tanpa penalti (`late_penalty_points: 0`). | Keduanya mengembalikan HTTP 201 Created envelope (`is_late: false`, `late_penalty_applied: 0`, `points_earned: 50`). Tidak ada label/penalti keterlambatan. | Positive |
 | **TC-ATT-08** | Role Authorization | Role `activist` mencoba membuka scanner atau mengirim absensi | User login dengan role `activist` | Akses URL `/events/:id/scan` atau kirim request `POST /api/events/:id/attendances`. | HTTP 403 Forbidden envelope ("Forbidden: Insufficient permissions"). Navigasi diblokir dan API menolak request. | Security |
 | **TC-ATT-09** | Role Authorization | Role `member` mencoba memanggil API presensi secara mandiri | User login dengan role `member` | Kirim request `POST /api/events/:id/attendances` dengan token member. | HTTP 403 Forbidden envelope. Presensi jemaat hanya dapat dilakukan oleh organizer/admin di lokasi. | Security |
 | **TC-ATT-10** | Event Status Guard | Mencatat presensi pada acara yang belum dimulai atau sudah selesai | Event berstatus `scheduled` atau `closed` | Kirim `POST /api/events/:id/attendances` pada event non-aktif. | HTTP 400 Bad Request envelope ("Presensi hanya dapat dicatat saat acara berstatus aktif"). | Negative |

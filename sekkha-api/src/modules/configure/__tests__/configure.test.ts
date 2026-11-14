@@ -343,4 +343,90 @@ describe("Configure Services & Business Policies", () => {
       configureModels.countBadgeActivities = origCountBadges
     }
   })
+
+  it("persists and returns late penalty defaults on createEventType and updateEventType", async () => {
+    const origFindByCode = configureModels.findEventTypeByCode
+    const origFindById = configureModels.findEventTypeById
+    const origCreate = configureModels.createEventType
+    const origUpdate = configureModels.updateEventType
+
+    let capturedCreateData: any = null
+    let capturedUpdateData: any = null
+
+    configureModels.findEventTypeByCode = async () => null
+    configureModels.findEventTypeById = async (id) => ({
+      id,
+      code: "dhamma-social",
+      label: "Dhamma Social",
+      color: "#4262FF",
+      description: null,
+      defaultPointReward: 20,
+      applyLatePenalty: true,
+      defaultMaxLateMinutes: 30,
+      defaultLatePenaltyPoints: 15,
+      isActive: true,
+      createdAt: new Date("2026-11-01T00:00:00Z"),
+      updatedAt: new Date("2026-11-01T00:00:00Z"),
+    })
+    configureModels.createEventType = async (data) => {
+      capturedCreateData = data
+      return {
+        id: "et_new",
+        ...data,
+        createdAt: new Date("2026-11-01T00:00:00Z"),
+        updatedAt: new Date("2026-11-01T00:00:00Z"),
+      }
+    }
+    configureModels.updateEventType = async (id, data) => {
+      capturedUpdateData = data
+      return {
+        id,
+        code: "dhamma-social",
+        label: "Dhamma Social",
+        color: "#4262FF",
+        description: null,
+        defaultPointReward: 20,
+        applyLatePenalty: data.applyLatePenalty ?? true,
+        defaultMaxLateMinutes: data.defaultMaxLateMinutes ?? 30,
+        defaultLatePenaltyPoints: data.defaultLatePenaltyPoints ?? 15,
+        isActive: true,
+        createdAt: new Date("2026-11-01T00:00:00Z"),
+        updatedAt: new Date("2026-11-01T00:00:00Z"),
+      }
+    }
+
+    try {
+      const parsed = EventTypeSchema.parse({
+        label: "Dhamma Social",
+        color: "#4262FF",
+        default_point_reward: 20,
+        apply_late_penalty: false,
+      })
+      const created = await configureServices.createEventType(parsed)
+      expect(capturedCreateData.applyLatePenalty).toBe(false)
+      expect(capturedCreateData.defaultMaxLateMinutes).toBe(0)
+      expect(capturedCreateData.defaultLatePenaltyPoints).toBe(0)
+      expect(created.apply_late_penalty).toBe(false)
+      expect(created.default_max_late_minutes).toBe(0)
+      expect(created.default_late_penalty_points).toBe(0)
+
+      const updatedParsed = EventTypeUpdateSchema.parse({
+        apply_late_penalty: true,
+        default_max_late_minutes: 45,
+        default_late_penalty_points: 10,
+      })
+      const updated = await configureServices.updateEventType("et_new", updatedParsed)
+      expect(capturedUpdateData.applyLatePenalty).toBe(true)
+      expect(capturedUpdateData.defaultMaxLateMinutes).toBe(45)
+      expect(capturedUpdateData.defaultLatePenaltyPoints).toBe(10)
+      expect(updated.apply_late_penalty).toBe(true)
+      expect(updated.default_max_late_minutes).toBe(45)
+      expect(updated.default_late_penalty_points).toBe(10)
+    } finally {
+      configureModels.findEventTypeByCode = origFindByCode
+      configureModels.findEventTypeById = origFindById
+      configureModels.createEventType = origCreate
+      configureModels.updateEventType = origUpdate
+    }
+  })
 })

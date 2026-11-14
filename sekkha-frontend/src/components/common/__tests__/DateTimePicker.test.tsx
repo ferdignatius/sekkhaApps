@@ -81,11 +81,33 @@ describe("DateTimePicker (inline collapsible + uniform Sekkha controls)", () => 
       screen.getByRole("button", { name: /Sun, 26 Jul 2026 · 09:00 WIB/i })
     )
 
-    fireEvent.click(screen.getByRole("button", { name: "13:00" }))
-    expect(handleChange).toHaveBeenCalledWith("2026-07-26T13:00")
+    fireEvent.click(screen.getByRole("button", { name: "19:00" }))
+    expect(handleChange).toHaveBeenCalledWith("2026-07-26T19:00")
 
     fireEvent.click(screen.getByRole("button", { name: "Done" }))
     expect(screen.queryByText("Service Time")).toBeNull()
+  })
+
+  it("renders dynamic recent times when recentTimes prop is supplied and updates on click", () => {
+    const handleChange = vi.fn()
+    render(
+      <DateTimePicker
+        id="ev-date"
+        value="2026-07-26T09:00"
+        onChange={handleChange}
+        recentTimes={["18:30", "20:00", "07:30", "18:30", "11:15"]}
+        defaultOpen
+      />
+    )
+
+    expect(screen.getByText("Recent times")).toBeDefined()
+    expect(screen.getByRole("button", { name: "18:30" })).toBeDefined()
+    expect(screen.getByRole("button", { name: "20:00" })).toBeDefined()
+    expect(screen.getByRole("button", { name: "07:30" })).toBeDefined()
+    expect(screen.queryByRole("button", { name: "11:15" })).toBeNull()
+
+    fireEvent.click(screen.getByRole("button", { name: "18:30" }))
+    expect(handleChange).toHaveBeenCalledWith("2026-07-26T18:30")
   })
 
   it("allows choosing custom hour and minute via Sekkha Select dropdowns", () => {

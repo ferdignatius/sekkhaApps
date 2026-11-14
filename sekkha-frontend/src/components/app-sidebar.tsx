@@ -46,6 +46,11 @@ import {
   getRoleBadgeVariant,
 } from "@/lib/roles"
 import { Badge } from "@/components/base"
+import {
+  InstallAppGuideDialog,
+  InstallAppMenuItem,
+} from "@/components/common/InstallAppPrompt"
+import { usePwaInstall } from "@/hooks/usePwaInstall"
 
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const { logout, authState, updateUser } = useAuth()
@@ -53,6 +58,8 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const pathname = location.pathname
   const { state, toggleSidebar } = useSidebar()
   const [showProfileMenu, setShowProfileMenu] = useState(false)
+  const [installGuideOpen, setInstallGuideOpen] = useState(false)
+  const { isIos } = usePwaInstall()
   const profileMenuRef = useRef<HTMLDivElement>(null)
 
   // Synchronize fresh user profile (including updated Full Name) on mount and on update events.
@@ -421,6 +428,11 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                 <span>User Profile</span>
               </Link>
 
+              <InstallAppMenuItem
+                onSelectDone={() => setShowProfileMenu(false)}
+                onOpenGuide={() => setInstallGuideOpen(true)}
+              />
+
               <div className="my-1 border-t border-[#e5e5e5]" />
 
               <button
@@ -479,6 +491,12 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
           </button>
         )}
       </SidebarFooter>
+
+      <InstallAppGuideDialog
+        open={installGuideOpen}
+        onOpenChange={setInstallGuideOpen}
+        isIos={isIos}
+      />
 
       <SidebarRail />
     </Sidebar>

@@ -13,6 +13,9 @@ export interface EventTypeDto {
   color: string
   description?: string | null
   default_point_reward: number
+  apply_late_penalty?: boolean
+  default_max_late_minutes?: number
+  default_late_penalty_points?: number
   is_active: boolean
   created_at?: string
   updated_at?: string
@@ -66,6 +69,9 @@ export const eventTypesApi = {
     color: string
     description?: string | null
     default_point_reward?: number
+    apply_late_penalty?: boolean
+    default_max_late_minutes?: number
+    default_late_penalty_points?: number
     is_active?: boolean
   }) =>
     api.post<{ id: string; code: string; label?: string }>(
@@ -80,6 +86,9 @@ export const eventTypesApi = {
       color?: string
       description?: string | null
       default_point_reward?: number
+      apply_late_penalty?: boolean
+      default_max_late_minutes?: number
+      default_late_penalty_points?: number
       is_active?: boolean
     }
   ) =>

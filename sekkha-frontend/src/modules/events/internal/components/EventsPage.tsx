@@ -29,7 +29,7 @@ import { useDebounce } from "@/hooks/useDebounce"
 import { Skeleton } from "@/components/ui/skeleton"
 import { EventCard } from "./EventCard"
 import { EventDetailSheet } from "./EventDetailSheet"
-import { EventForm, extractRecentLocations } from "./EventForm"
+import { EventForm, extractRecentLocations, extractRecentTimes } from "./EventForm"
 import {
   getAccessibleCategories,
   getCategoryColor,
@@ -475,6 +475,11 @@ export function EventsPage() {
     return extractRecentLocations([...events, ...cachedEvents], 3)
   }, [events, eventsCache])
 
+  const recentTimes = useMemo(() => {
+    const cachedEvents = Object.values(eventsCache).flat()
+    return extractRecentTimes([...events, ...cachedEvents], 3)
+  }, [events, eventsCache])
+
   const handleMonthChange = useCallback((month: Date) => {
     const normalizedMonth = new Date(month.getFullYear(), month.getMonth(), 1)
     setActiveMonth(normalizedMonth)
@@ -822,6 +827,7 @@ export function EventsPage() {
             initial={editTarget ?? undefined}
             initialDate={!editTarget ? safeCreateInitialDate : undefined}
             recentLocations={recentLocations}
+            recentTimes={recentTimes}
             onSubmit={handleFormSubmit}
             isSubmitting={formSubmitting}
             submissionError={formError}
@@ -1443,6 +1449,7 @@ export function EventsPage() {
           initial={editTarget ?? undefined}
           initialDate={!editTarget && selectedDate ? selectedDate : undefined}
           recentLocations={recentLocations}
+          recentTimes={recentTimes}
           onSubmit={handleFormSubmit}
           isSubmitting={formSubmitting}
           submissionError={formError}

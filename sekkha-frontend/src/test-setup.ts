@@ -17,6 +17,16 @@ if (typeof globalThis.IntersectionObserver === "undefined") {
   } as unknown as typeof IntersectionObserver
 }
 
+// Mock ResizeObserver — not available in jsdom but required by Radix UI
+// primitives (e.g. Switch via @radix-ui/react-use-size).
+if (typeof globalThis.ResizeObserver === "undefined") {
+  globalThis.ResizeObserver = class MockResizeObserver {
+    observe(): void {}
+    unobserve(): void {}
+    disconnect(): void {}
+  } as unknown as typeof ResizeObserver
+}
+
 // Mock matchMedia — not available in jsdom but required by use-mobile hook.
 if (typeof window !== "undefined" && !window.matchMedia) {
   window.matchMedia = (query: string) =>

@@ -1,16 +1,31 @@
 {
   "short_name": "Sekkha",
   "name": "Sekkha Vihara Community App",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#FFFBF5",
+  "background_color": "#FFFBF5",
   "icons": [
+    {
+      "src": "/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    },
     {
       "src": "/sekkha_logo.svg",
       "type": "image/svg+xml",
       "sizes": "any",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
-  ],
-  "start_url": "/",
-  "display": "standalone",
-  "theme_color": "#0a0a0a",
-  "background_color": "#fffaf0"
+  ]
 }

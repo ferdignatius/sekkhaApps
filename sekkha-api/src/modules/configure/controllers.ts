@@ -29,6 +29,9 @@ export const EventTypeSchema = z.object({
     .max(10000, "Points cannot exceed 10,000")
     .optional()
     .default(0),
+  apply_late_penalty: z.boolean().optional().default(true),
+  default_max_late_minutes: z.number().int().min(0).max(180).optional().default(30),
+  default_late_penalty_points: z.number().int().min(0).max(100).optional().default(15),
   is_active: z.boolean().optional().default(true),
 })
 
@@ -45,6 +48,9 @@ export const EventTypeUpdateSchema = z.object({
   color: z.string().trim().regex(/^#[0-9A-Fa-f]{6}$/, "Color must be a valid 6-digit hex code").optional(),
   description: z.string().trim().max(500).optional().nullable(),
   default_point_reward: z.number().int().min(0).max(10000).optional(),
+  apply_late_penalty: z.boolean().optional(),
+  default_max_late_minutes: z.number().int().min(0).max(180).optional(),
+  default_late_penalty_points: z.number().int().min(0).max(100).optional(),
   is_active: z.boolean().optional(),
 })
 

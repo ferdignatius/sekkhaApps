@@ -31,6 +31,26 @@ export const Route = createRootRoute({
           "Sekkha Vihara Community App — Fellowship attendance, points gamification, activity streaks, and member management platform.",
       },
       {
+        name: "theme-color",
+        content: "#FFFBF5",
+      },
+      {
+        name: "mobile-web-app-capable",
+        content: "yes",
+      },
+      {
+        name: "apple-mobile-web-app-capable",
+        content: "yes",
+      },
+      {
+        name: "apple-mobile-web-app-status-bar-style",
+        content: "default",
+      },
+      {
+        name: "apple-mobile-web-app-title",
+        content: "Sekkha",
+      },
+      {
         httpEquiv: "Content-Security-Policy",
         content:
           "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' http://localhost:* ws://localhost:* https:; media-src 'self' blob:;",
@@ -57,8 +77,9 @@ export const Route = createRootRoute({
       },
       {
         rel: "apple-touch-icon",
-        type: "image/svg+xml",
-        href: "/sekkha_logo.svg?v=3",
+        sizes: "180x180",
+        type: "image/png",
+        href: "/apple-touch-icon.png",
       },
       {
         rel: "manifest",
@@ -121,6 +142,17 @@ function RouterAuthSync() {
 }
 
 function RootComponent() {
+  useEffect(() => {
+    if (
+      typeof window !== "undefined" &&
+      "serviceWorker" in navigator
+    ) {
+      void navigator.serviceWorker.register("/sw.js").catch(() => {
+        // Ignore registration issues in unsupported or insecure test contexts
+      })
+    }
+  }, [])
+
   return (
     <AuthProvider>
       <RouterAuthSync />

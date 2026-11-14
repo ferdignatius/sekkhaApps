@@ -41,6 +41,7 @@ import type {
   EventStatus,
 } from "../types"
 import { getCategoryColor, getEventTag } from "../masterdata"
+import { buildEventShareMessage } from "../utils/eventDescriptionTemplate"
 
 export interface EventDetailSheetProps {
   event: EventListItem
@@ -239,10 +240,10 @@ export function EventDetailSheet({
   }
 
   async function handleShare() {
+    const shareText = buildEventShareMessage(event, window.location.href)
     const shareData = {
       title: event.title,
-      text: `${event.title} — ${dayName}, ${dateStr} at ${timeStr} (${event.location})`,
-      url: window.location.href,
+      text: shareText,
     }
 
     if (navigator.share) {
@@ -255,7 +256,7 @@ export function EventDetailSheet({
     }
 
     if (navigator.clipboard) {
-      await navigator.clipboard.writeText(window.location.href)
+      await navigator.clipboard.writeText(shareText)
       setCopiedLink(true)
       setTimeout(() => setCopiedLink(false), 2000)
     }
@@ -334,12 +335,17 @@ export function EventDetailSheet({
               <button
                 type="button"
                 onClick={handleShare}
-                className="flex size-9 cursor-pointer items-center justify-center rounded-full border border-hairline bg-canvas text-ink shadow-xs transition-all hover:bg-surface-soft focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:outline-none active:scale-95"
-                title="Share event"
-                aria-label="Share event"
+                className="flex h-9 cursor-pointer items-center justify-center gap-1.5 rounded-full border border-hairline bg-canvas px-2.5 text-ink shadow-xs transition-all hover:bg-surface-soft focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:outline-none active:scale-95"
+                title={copiedLink ? "Event details & link copied" : "Share event details & link"}
+                aria-label={copiedLink ? "Event details & link copied" : "Share event"}
               >
                 {copiedLink ? (
-                  <CheckIcon className="size-4 text-emerald-600" />
+                  <>
+                    <CheckIcon className="size-4 text-emerald-600" />
+                    <span className="text-[11px] font-bold text-emerald-700">
+                      Copied
+                    </span>
+                  </>
                 ) : (
                   <Share2Icon className="size-4" />
                 )}

@@ -381,7 +381,6 @@ export const eventServices = {
           throw new AppError("Only scheduled events can be started.", 400, "INVALID_STATUS_TRANSITION")
         }
 
-        const scheduledTime = new Date(currentEvent.eventDate).getTime()
         const nowTime = Date.now()
 
         if (rescheduleDate) {
@@ -400,11 +399,11 @@ export const eventServices = {
           )
         }
 
-        // Allow organizer/admin to start event early.
-        // If event is started before scheduled date/time and no explicit date was passed,
-        // update eventDate to now so attendance timing and calculations are accurate.
-        if (scheduledTime > nowTime && !updatedEventDate) {
-          updatedEventDate = new Date()
+        // Anchor eventDate to the actual session start timestamp (now) when starting an event
+        // (whether started early or later on the scheduled day) so max_late_minutes
+        // grace period is always evaluated from when the event was actually started.
+        if (!updatedEventDate) {
+          updatedEventDate = new Date(nowTime)
         }
       }
 
@@ -788,12 +787,14 @@ export const eventServices = {
       throw new AppError("Participant has already attended", 409, "ALREADY_ATTENDED")
     }
 
-    // Evaluate Late Penalty
+    // Evaluate Late Penalty (if late_penalty_points <= 0, late policy is disabled and isLate is always false)
     const maxLateMinutes = event.maxLateMinutes ?? 30
     const latePenaltyPoints = event.latePenaltyPoints ?? 15
     const scheduledTime = new Date(event.eventDate).getTime()
     const nowTime = Date.now()
-    const isLate = nowTime > scheduledTime + maxLateMinutes * 60 * 1000
+    const isLate =
+      latePenaltyPoints > 0 &&
+      nowTime > scheduledTime + maxLateMinutes * 60 * 1000
     const latePenaltyApplied = isLate ? latePenaltyPoints : 0
     const basePoints = event.pointReward ?? event.type?.defaultPointReward ?? 50
     const pointsEarned = Math.max(0, basePoints - latePenaltyApplied)

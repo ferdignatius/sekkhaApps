@@ -4,6 +4,19 @@ All notable changes to Sekkha Apps. Semver (`MAJOR.MINOR.PATCH`); newest on top.
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-11-14
+
+### Added
+- Replaced legacy `DateTimePickerPopover` with unified `DateTimePicker` in `components/common/` aligned with `DESIGN.md` tokens, preset chips, and non-modal inline drawer workflow.
+- Containerized deployment ready multi-stage `Dockerfile` and release tooling for `sekkha-api`.
+- Event attendance management system with organizer QR scanning, unified attendee lookup, and draft status lifecycle.
+- Email delivery safeguards with automatic retry limits, timeout protection, and PII masking.
+
+### Changed
+- Refactored `EventForm` and `ResponsiveFormModal` to integrate with the refined date-time picker and form components.
+- Updated package configs and version alignments across monorepo workspaces.
+
+
 ## [1.1.0] - 2026-11-08
 
 ### Added

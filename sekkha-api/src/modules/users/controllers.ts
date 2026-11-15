@@ -36,7 +36,10 @@ export const ChangePasswordSchema = z.object({
 })
 
 export const DeleteAccountSchema = z.object({
-  password: z.string().min(1, "Konfirmasi kata sandi diperlukan").max(128, "Password maksimal 128 karakter"),
+  password: z
+    .string()
+    .min(1, "Password confirmation is required")
+    .max(128, "Password must be at most 128 characters"),
   confirmation: z.string().optional(),
 })
 
@@ -94,7 +97,7 @@ export const userControllers = {
         res.status(400).json({
           status: "fail",
           code: 400,
-          message: `Field [${matchedForbidden.join(", ")}] tidak dapat diubah via PATCH /api/users/me. Gunakan endpoint khusus verifikasi email atau ganti password.`,
+          message: `Field [${matchedForbidden.join(", ")}] cannot be updated via PATCH /api/users/me. Use the dedicated email verification or change-password endpoints.`,
           data: null,
         })
         return
@@ -251,7 +254,7 @@ export const userControllers = {
         res.status(404).json({
           status: "fail",
           code: 404,
-          message: "Pengguna tidak ditemukan",
+          message: "User not found",
           data: null,
         })
         return
@@ -289,7 +292,7 @@ export const userControllers = {
     res.status(404).json({
       status: "fail",
       code: 404,
-      message: "Endpoint tidak ditemukan. Sistem badge dan level telah ditiadakan.",
+      message: "Endpoint not found. The badge and level systems have been deprecated.",
       data: null,
     })
   },
@@ -298,7 +301,7 @@ export const userControllers = {
     res.status(404).json({
       status: "fail",
       code: 404,
-      message: "Endpoint tidak ditemukan. Sistem badge dan level telah ditiadakan.",
+      message: "Endpoint not found. The badge and level systems have been deprecated.",
       data: null,
     })
   },

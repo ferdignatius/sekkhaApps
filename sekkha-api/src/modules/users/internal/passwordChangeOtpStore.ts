@@ -1,4 +1,5 @@
 import crypto from "crypto"
+import { AppError } from "../../../lib/AppError"
 import { redis } from "../../../lib/redis"
 
 export interface PasswordChangeChallenge {
@@ -20,6 +21,46 @@ const OTP_TTL_SECONDS = 600 // 10 minutes
 const COOLDOWN_SECONDS = 60 // 60 seconds
 export const MAX_VERIFY_ATTEMPTS = 5
 
+const VERIFY_AND_CONSUME_SCRIPT = `
+local raw = redis.call('GET', KEYS[1])
+if not raw then return nil end
+local expected = ARGV[1]
+local marker = '"otpHashed":"' .. expected .. '"'
+if string.find(raw, marker, 1, true) then
+  redis.call('DEL', KEYS[1], KEYS[2])
+  return raw
+end
+local attempts = redis.call('INCR', KEYS[2])
+if attempts == 1 then
+  redis.call('EXPIRE', KEYS[2], tonumber(ARGV[3]))
+end
+local maxAttempts = tonumber(ARGV[2])
+if attempts >= maxAttempts then
+  redis.call('DEL', KEYS[1], KEYS[2])
+  return "__MAX_ATTEMPTS__"
+end
+return "__MISMATCH__:" .. tostring(attempts)
+`
+
+function requireSharedStore(): void {
+  if (process.env.NODE_ENV === "production" && redis.status !== "ready") {
+    throw new AppError(
+      "Shared OTP store is temporarily unavailable.",
+      503,
+      "SHARED_STORE_UNAVAILABLE"
+    )
+  }
+}
+
+function clearMemoryEntries(userId: string): void {
+  const existing = memoryStore.get(userId)
+  if (existing?.timer) {
+    clearTimeout(existing.timer)
+  }
+  memoryStore.delete(userId)
+  cooldownMemoryStore.delete(userId)
+}
+
 function hashOtp(otp: string): string {
   return crypto.createHash("sha256").update(otp.trim()).digest("hex")
 }
@@ -37,13 +78,24 @@ export const passwordChangeOtpStore = {
    * Returns remaining seconds if in cooldown, or 0 if allowed.
    */
   async getCooldownRemaining(userId: string): Promise<number> {
+    requireSharedStore()
     const key = `otp:change-password:cooldown:${userId}`
-    try {
-      if (redis.status === "ready" || redis.status === "connect") {
+
+    if (redis.status === "ready") {
+      try {
         const ttl = await redis.ttl(key)
-        if (ttl > 0) return ttl
+        return ttl > 0 ? ttl : 0
+      } catch {
+        if (process.env.NODE_ENV === "production") {
+          throw new AppError(
+            "Shared OTP store is temporarily unavailable.",
+            503,
+            "SHARED_STORE_UNAVAILABLE"
+          )
+        }
+        return 0
       }
-    } catch {}
+    }
 
     const expiresAt = cooldownMemoryStore.get(userId)
     if (expiresAt) {
@@ -58,6 +110,7 @@ export const passwordChangeOtpStore = {
    * Saves a new password change challenge.
    */
   async saveChallenge(userId: string, otp: string): Promise<void> {
+    requireSharedStore()
     const challengeKey = `otp:change-password:${userId}`
     const cooldownKey = `otp:change-password:cooldown:${userId}`
     const attemptsKey = `otp:change-password:attempts:${userId}`
@@ -69,16 +122,25 @@ export const passwordChangeOtpStore = {
       createdAt: Date.now(),
     }
 
-    try {
-      if (redis.status === "ready" || redis.status === "connect") {
+    if (redis.status === "ready") {
+      try {
         await redis.set(challengeKey, JSON.stringify(challenge), "EX", OTP_TTL_SECONDS)
         await redis.set(cooldownKey, "1", "EX", COOLDOWN_SECONDS)
         await redis.del(attemptsKey)
+        clearMemoryEntries(userId)
         return
+      } catch {
+        if (process.env.NODE_ENV === "production") {
+          throw new AppError(
+            "Shared OTP store is temporarily unavailable.",
+            503,
+            "SHARED_STORE_UNAVAILABLE"
+          )
+        }
       }
-    } catch {}
+    }
 
-    // Fallback to in-memory store
+    // Development/test fallback to in-memory store
     const existing = memoryStore.get(userId)
     if (existing?.timer) {
       clearTimeout(existing.timer)
@@ -87,9 +149,23 @@ export const passwordChangeOtpStore = {
     const timer = setTimeout(() => {
       memoryStore.delete(userId)
     }, OTP_TTL_SECONDS * 1000)
+    timer.unref?.()
 
     memoryStore.set(userId, { challenge, attempts: 0, timer })
     cooldownMemoryStore.set(userId, Date.now() + COOLDOWN_SECONDS * 1000)
+  },
+
+  /**
+   * Clears challenge, attempt counter, and cooldown state for rollback on delivery failure.
+   */
+  async clearChallenge(userId: string): Promise<void> {
+    clearMemoryEntries(userId)
+    if (redis.status === "ready") {
+      const challengeKey = `otp:change-password:${userId}`
+      const cooldownKey = `otp:change-password:cooldown:${userId}`
+      const attemptsKey = `otp:change-password:attempts:${userId}`
+      await redis.del(challengeKey, cooldownKey, attemptsKey).catch(() => {})
+    }
   },
 
   /**
@@ -100,52 +176,80 @@ export const passwordChangeOtpStore = {
     userId: string,
     inputOtp: string
   ): Promise<{ success: boolean; error?: string; remainingAttempts?: number }> {
+    requireSharedStore()
     const challengeKey = `otp:change-password:${userId}`
     const attemptsKey = `otp:change-password:attempts:${userId}`
     const inputHash = hashOtp(inputOtp)
 
-    let challenge: PasswordChangeChallenge | null = null
+    if (redis.status === "ready") {
+      try {
+        const raw = (await redis.eval(
+          VERIFY_AND_CONSUME_SCRIPT,
+          2,
+          challengeKey,
+          attemptsKey,
+          inputHash,
+          String(MAX_VERIFY_ATTEMPTS),
+          String(OTP_TTL_SECONDS)
+        )) as string | null
 
-    try {
-      if (redis.status === "ready" || redis.status === "connect") {
-        const raw = await redis.get(challengeKey)
         if (!raw) {
           return {
             success: false,
             error: "Verification code has expired or was not requested. Please request a new code.",
           }
         }
-        challenge = JSON.parse(raw) as PasswordChangeChallenge
 
-        if (!timingSafeEqualHex(challenge.otpHashed, inputHash)) {
-          const currentAttempts = await redis.incr(attemptsKey)
-          if (currentAttempts === 1) {
-            await redis.expire(attemptsKey, OTP_TTL_SECONDS)
-          }
-          if (currentAttempts >= MAX_VERIFY_ATTEMPTS) {
-            await redis.del(challengeKey, attemptsKey)
-            return {
-              success: false,
-              error:
-                "Verification code was incorrect 5 times. The password change request was canceled for security. Please request a new code.",
-              remainingAttempts: 0,
-            }
-          }
-          const remaining = MAX_VERIFY_ATTEMPTS - currentAttempts
+        if (raw === "__MAX_ATTEMPTS__") {
           return {
             success: false,
-            error: `Verification code does not match. Remaining attempts: ${remaining}.`,
-            remainingAttempts: remaining,
+            error:
+              "Verification code was incorrect 5 times. The password change request was canceled for security. Please request a new code.",
+            remainingAttempts: 0,
           }
         }
 
-        // OTP Valid: consume challenge
-        await redis.del(challengeKey, attemptsKey)
-        return { success: true }
-      }
-    } catch {}
+        if (raw === "__MISMATCH__" || raw.startsWith("__MISMATCH__:")) {
+          const attempts = raw.includes(":") ? parseInt(raw.split(":")[1] || "", 10) : NaN
+          if (!Number.isNaN(attempts) && attempts > 0) {
+            const remaining = Math.max(0, MAX_VERIFY_ATTEMPTS - attempts)
+            return {
+              success: false,
+              error: `Verification code does not match. Remaining attempts: ${remaining}.`,
+              remainingAttempts: remaining,
+            }
+          }
+          return {
+            success: false,
+            error: "Verification code does not match.",
+          }
+        }
 
-    // Fallback: Memory store
+        const challenge = JSON.parse(raw) as PasswordChangeChallenge
+        if (!challenge?.otpHashed || !timingSafeEqualHex(challenge.otpHashed, inputHash)) {
+          return {
+            success: false,
+            error: "Verification code does not match.",
+          }
+        }
+
+        return { success: true }
+      } catch {
+        if (process.env.NODE_ENV === "production") {
+          throw new AppError(
+            "Shared OTP store is temporarily unavailable.",
+            503,
+            "SHARED_STORE_UNAVAILABLE"
+          )
+        }
+        return {
+          success: false,
+          error: "Verification code has expired or was not requested. Please request a new code.",
+        }
+      }
+    }
+
+    // Synchronous atomic fallback: Memory store
     const entry = memoryStore.get(userId)
     if (!entry) {
       return {

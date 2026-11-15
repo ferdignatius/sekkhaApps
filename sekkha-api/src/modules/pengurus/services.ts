@@ -36,7 +36,13 @@ export const pengurusServices = {
     const primaryYear = Number(queryParams.primaryYear) || new Date().getFullYear()
     const primaryMonth = Number(queryParams.primaryMonth) || new Date().getMonth() + 1
     const isComparisonEnabled = queryParams.isComparisonEnabled === "true" || queryParams.isComparisonEnabled === true
-    const compareYear = Number(queryParams.compareYear) || primaryYear - 1
+    const defaultCompareYear =
+      timeUnit === "month"
+        ? primaryMonth === 1
+          ? primaryYear - 1
+          : primaryYear
+        : primaryYear - 1
+    const compareYear = Number(queryParams.compareYear) || defaultCompareYear
     const compareMonth = Number(queryParams.compareMonth) || (primaryMonth === 1 ? 12 : primaryMonth - 1)
     const segmentFilter = (queryParams.segmentFilter || queryParams.role || "all") as string
     const eventCategoryFilter = (queryParams.eventCategoryFilter as string) || "all"
@@ -83,7 +89,14 @@ export const pengurusServices = {
         .join(", ")
     }
 
-    const cacheKey = `pengurus:insight:${timeUnit}:${primaryYear}:${primaryMonth}:${isComparisonEnabled}:${compareYear}:${compareMonth}:${segmentFilter}:${eventCategoryFilter}:${selectedCategories.join(",")}:${selectedPeriods.join(",")}`
+    const normalizedCategories = Array.from(
+      new Set(selectedCategories.map((c) => c.trim().toLowerCase()).filter(Boolean))
+    ).sort()
+    const normalizedPeriods = Array.from(
+      new Set(selectedPeriods.map((p) => p.trim().toLowerCase()).filter(Boolean))
+    ).sort()
+
+    const cacheKey = `pengurus:insight:${timeUnit}:${primaryYear}:${primaryMonth}:${isComparisonEnabled}:${compareYear}:${compareMonth}:${segmentFilter.trim().toLowerCase()}:${eventCategoryFilter.trim().toLowerCase()}:${normalizedCategories.join(",")}:${normalizedPeriods.join(",")}`
 
     const insightData = await cached(cacheKey, 120, async () => {
       // 1. Fetch Users, Events & EventTypes
@@ -223,7 +236,7 @@ export const pengurusServices = {
           return row
         })
       } else {
-        const weeks = ["Minggu 1", "Minggu 2", "Minggu 3", "Minggu 4", "Minggu 5"]
+        const weeks = [1, 2, 3, 4, 5].map((w) => `Week ${w}`)
         trendChartData = weeks.map((wLabel, wIdx) => {
           const row: any = { label: wLabel }
           for (const period of selectedPeriods) {

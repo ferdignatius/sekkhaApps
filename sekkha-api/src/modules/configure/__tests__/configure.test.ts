@@ -1,4 +1,5 @@
 import { describe, it, expect } from "bun:test"
+import { EventEmitter } from "events"
 import {
   EventTypeSchema,
   EventTypeUpdateSchema,
@@ -13,6 +14,9 @@ import {
 import { configureServices } from "../services"
 import { configureModels } from "../models"
 import { AppError } from "../../../lib/AppError"
+import { redis } from "../../../lib/redis"
+import { auditLogger } from "../../../lib/auditLogger"
+import { eventbus, DomainEvents } from "../../../core/eventbus"
 
 describe("Configure Module Validation Schemas", () => {
   it("validates EventTypeSchema constraints", () => {
@@ -427,6 +431,232 @@ describe("Configure Services & Business Policies", () => {
       configureModels.findEventTypeById = origFindById
       configureModels.createEventType = origCreate
       configureModels.updateEventType = origUpdate
+    }
+  })
+
+  it("rejects activating an expired season with 400 SEASON_EXPIRED", async () => {
+    const origFindSeason = configureModels.findSeasonById
+    const origActivateSeason = configureModels.activateSeason
+    let activateCalled = false
+
+    configureModels.findSeasonById = async () =>
+      ({
+        id: "season_expired",
+        name: "Expired Season",
+        code: "EXP-2025",
+        startDate: new Date(Date.now() - 10 * 86_400_000),
+        endDate: new Date(Date.now() - 86_400_000),
+        isActive: false,
+        targetAttendance: 500,
+        description: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }) as any
+    configureModels.activateSeason = async () => {
+      activateCalled = true
+      return {} as any
+    }
+
+    try {
+      await configureServices.activateSeason("season_expired")
+      expect(true).toBe(false)
+    } catch (err: any) {
+      expect(err instanceof AppError).toBe(true)
+      expect(err.statusCode).toBe(400)
+      expect(err.code).toBe("SEASON_EXPIRED")
+      expect(activateCalled).toBe(false)
+    } finally {
+      configureModels.findSeasonById = origFindSeason
+      configureModels.activateSeason = origActivateSeason
+    }
+  })
+
+  it("caches getEventTypes/getBadgeActivities/getPointRules/getSeasons and performs no DB write on getSeasons", async () => {
+    const origStatus = (redis as any).status
+    const origGet = redis.get
+    const origSet = redis.set
+    const origFindEventTypes = configureModels.findEventTypes
+    const origFindBadges = configureModels.findBadgeActivities
+    const origFindRules = configureModels.findPointRules
+    const origFindSeasons = configureModels.findSeasons
+    const origCountSeasonAtt = configureModels.countSeasonAttendances
+    const origCreateSeason = configureModels.createSeason
+    const origActivateSeason = configureModels.activateSeason
+
+    const store = new Map<string, string>()
+    let eventTypesCalls = 0
+    let badgesCalls = 0
+    let rulesCalls = 0
+    let seasonsCalls = 0
+    let seasonMutationCalled = false
+
+    ;(redis as any).status = "ready"
+    redis.get = (async (k: string) => store.get(k) ?? null) as any
+    redis.set = (async (k: string, v: string) => {
+      store.set(k, v)
+      return "OK"
+    }) as any
+
+    configureModels.findEventTypes = async () => {
+      eventTypesCalls++
+      return [] as any
+    }
+    configureModels.findBadgeActivities = async () => {
+      badgesCalls++
+      return [] as any
+    }
+    configureModels.findPointRules = async () => {
+      rulesCalls++
+      return [] as any
+    }
+    configureModels.findSeasons = async () => {
+      seasonsCalls++
+      return [
+        {
+          id: "s_inactive",
+          name: "Inactive Season",
+          code: "INACT-1",
+          startDate: new Date("2026-01-01T00:00:00Z"),
+          endDate: new Date("2026-06-30T23:59:59Z"),
+          isActive: false,
+          targetAttendance: 500,
+          description: null,
+          createdAt: new Date("2026-01-01T00:00:00Z"),
+          updatedAt: new Date("2026-01-01T00:00:00Z"),
+        },
+      ] as any
+    }
+    configureModels.countSeasonAttendances = async () => 0
+    configureModels.createSeason = async () => {
+      seasonMutationCalled = true
+      return {} as any
+    }
+    configureModels.activateSeason = async () => {
+      seasonMutationCalled = true
+      return {} as any
+    }
+
+    try {
+      await configureServices.getEventTypes()
+      await configureServices.getEventTypes()
+      await configureServices.getBadgeActivities()
+      await configureServices.getBadgeActivities()
+      await configureServices.getPointRules()
+      await configureServices.getPointRules()
+      const seasonsFirst = await configureServices.getSeasons()
+      const seasonsSecond = await configureServices.getSeasons()
+
+      expect(eventTypesCalls).toBe(1)
+      expect(badgesCalls).toBe(1)
+      expect(rulesCalls).toBe(1)
+      expect(seasonsCalls).toBe(1)
+      expect(seasonsFirst[0].is_active).toBe(false)
+      expect(seasonsSecond).toEqual(seasonsFirst)
+      expect(seasonMutationCalled).toBe(false)
+    } finally {
+      ;(redis as any).status = origStatus
+      redis.get = origGet
+      redis.set = origSet
+      configureModels.findEventTypes = origFindEventTypes
+      configureModels.findBadgeActivities = origFindBadges
+      configureModels.findPointRules = origFindRules
+      configureModels.findSeasons = origFindSeasons
+      configureModels.countSeasonAttendances = origCountSeasonAtt
+      configureModels.createSeason = origCreateSeason
+      configureModels.activateSeason = origActivateSeason
+    }
+  })
+
+  it("invalidates configure/events/home/pengurus/leaderboard caches, logs audit, and emits CONFIG_UPDATED / SEASON_UPDATED", async () => {
+    const origStatus = (redis as any).status
+    const origScan = redis.scanStream
+    const origDel = redis.del
+    const origAuditLog = auditLogger.log
+    const origFindByCode = configureModels.findEventTypeByCode
+    const origCreateEt = configureModels.createEventType
+    const origFindSeasonById = configureModels.findSeasonById
+    const origActivateSeason = configureModels.activateSeason
+
+    const scannedPatterns: string[] = []
+    const auditEntries: any[] = []
+    const emittedEvents: Array<{ event: string; payload: any }> = []
+    const configHandler = (payload: any) => {
+      emittedEvents.push({ event: DomainEvents.CONFIG_UPDATED, payload })
+    }
+    const seasonHandler = (payload: any) => {
+      emittedEvents.push({ event: DomainEvents.SEASON_UPDATED, payload })
+    }
+
+    ;(redis as any).status = "ready"
+    redis.scanStream = ((opts: { match: string }) => {
+      scannedPatterns.push(opts.match)
+      const stream = new EventEmitter()
+      queueMicrotask(() => stream.emit("end"))
+      return stream
+    }) as any
+    redis.del = (async () => 0) as any
+    auditLogger.log = (entry) => {
+      auditEntries.push(entry)
+    }
+    eventbus.subscribe(DomainEvents.CONFIG_UPDATED, configHandler)
+    eventbus.subscribe(DomainEvents.SEASON_UPDATED, seasonHandler)
+
+    configureModels.findEventTypeByCode = async () => null
+    configureModels.createEventType = async (data) =>
+      ({
+        id: "et_emit",
+        ...data,
+        createdAt: new Date("2026-11-01T00:00:00Z"),
+        updatedAt: new Date("2026-11-01T00:00:00Z"),
+      }) as any
+    configureModels.findSeasonById = async (id) =>
+      ({
+        id,
+        name: "Future Season",
+        code: "FUT-2027",
+        startDate: new Date(Date.now() - 86_400_000),
+        endDate: new Date(Date.now() + 30 * 86_400_000),
+        isActive: false,
+        targetAttendance: 500,
+        description: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }) as any
+    configureModels.activateSeason = async (id) =>
+      ({
+        id,
+        name: "Future Season",
+        code: "FUT-2027",
+        isActive: true,
+      }) as any
+
+    try {
+      await configureServices.createEventType(
+        { label: "Meditation", color: "#10B981" },
+        { actorId: "admin_1", actorRole: "admin" }
+      )
+      await configureServices.activateSeason("s_future", { actorId: "admin_1", actorRole: "admin" })
+      await new Promise((r) => setTimeout(r, 10))
+
+      for (const pattern of ["configure:*", "events:*", "user:*:home:*", "pengurus:insight:*", "leaderboard:*"]) {
+        expect(scannedPatterns).toContain(pattern)
+      }
+      expect(auditEntries).toHaveLength(2)
+      expect(auditEntries[0].actorId).toBe("admin_1")
+      expect(auditEntries[1].targetId).toBe("s_future")
+      expect(emittedEvents.some((e) => e.event === DomainEvents.CONFIG_UPDATED && e.payload.entityId === "et_emit")).toBe(true)
+      expect(emittedEvents.some((e) => e.event === DomainEvents.SEASON_UPDATED && e.payload.seasonId === "s_future")).toBe(true)
+    } finally {
+      ;(redis as any).status = origStatus
+      redis.scanStream = origScan
+      redis.del = origDel
+      auditLogger.log = origAuditLog
+      eventbus.unsubscribe(DomainEvents.CONFIG_UPDATED, configHandler)
+      eventbus.unsubscribe(DomainEvents.SEASON_UPDATED, seasonHandler)
+      configureModels.findEventTypeByCode = origFindByCode
+      configureModels.createEventType = origCreateEt
+      configureModels.findSeasonById = origFindSeasonById
+      configureModels.activateSeason = origActivateSeason
     }
   })
 })

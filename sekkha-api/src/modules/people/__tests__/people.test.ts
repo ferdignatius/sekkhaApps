@@ -1,8 +1,16 @@
 import { describe, it, expect } from "bun:test"
-import { peopleServices } from "../services"
+import { EventEmitter } from "events"
+import { peopleServices, generateWhatsAppInviteMessage } from "../services"
 import { peopleModels } from "../models"
 import { peopleRouter } from "../routes"
-import { CreateMemberSchema, SimilarMembersQuerySchema } from "../controllers"
+import { CreateMemberSchema, ListMembersQuerySchema, SimilarMembersQuerySchema } from "../controllers"
+import { redis } from "../../../lib/redis"
+import { CacheKeys } from "../../../lib/cache"
+import { eventbus, DomainEvents } from "../../../core/eventbus"
+import {
+  saveRefreshToken,
+  verifyAndRotateRefreshTokenRecord,
+} from "../../auth"
 
 const ADMIN_ACTOR = { userId: "usr_admin_1", role: "admin" }
 const ORGANIZER_ACTOR = { userId: "usr_org_1", role: "organizer" }
@@ -659,6 +667,324 @@ describe("People Module RBAC & Self-Protection Guardrails", () => {
         expect(res.total).toBe(5)
       } finally {
         peopleModels.findSimilarNameCandidates = origFindSimilar
+      }
+    })
+  })
+
+  describe("Rule 6: Session Revocation, Duplicate Email 409, Cache & EventBus", () => {
+    function withRedisCacheCapture() {
+      const store = new Map<string, { value: string; ttl: number }>()
+      const deletedKeys: string[] = []
+      const scannedPatterns: string[] = []
+
+      const origGetDesc = Object.getOwnPropertyDescriptor(redis, "get")
+      const origSetDesc = Object.getOwnPropertyDescriptor(redis, "set")
+      const origDelDesc = Object.getOwnPropertyDescriptor(redis, "del")
+      const origScanDesc = Object.getOwnPropertyDescriptor(redis, "scanStream")
+
+      ;(redis as any).get = async (key: string) => store.get(key)?.value ?? null
+      ;(redis as any).set = async (key: string, val: string, _mode: string, ttl: number) => {
+        store.set(key, { value: val, ttl })
+        return "OK"
+      }
+      ;(redis as any).del = async (...keys: string[]) => {
+        for (const k of keys) {
+          store.delete(k)
+          deletedKeys.push(k)
+        }
+        return keys.length
+      }
+      ;(redis as any).scanStream = ({ match }: { match: string }) => {
+        scannedPatterns.push(match)
+        const emitter = new EventEmitter()
+        queueMicrotask(() => {
+          const prefix = match.replace(/\*$/, "")
+          const matched = Array.from(store.keys()).filter((k) => k.startsWith(prefix))
+          if (matched.length > 0) emitter.emit("data", matched)
+          emitter.emit("end")
+        })
+        return emitter
+      }
+
+      const restore = () => {
+        const restoreProp = (prop: string, desc: PropertyDescriptor | undefined) => {
+          if (desc) Object.defineProperty(redis, prop, desc)
+          else delete (redis as any)[prop]
+        }
+        restoreProp("get", origGetDesc)
+        restoreProp("set", origSetDesc)
+        restoreProp("del", origDelDesc)
+        restoreProp("scanStream", origScanDesc)
+      }
+
+      return { store, deletedKeys, scannedPatterns, restore }
+    }
+
+    it("revokes refresh tokens, sets passwordChangedAt, invalidates caches, and emits USER_UPDATED on role change", async () => {
+      const origFind = peopleModels.findUserWithProfile
+      const origTx = peopleModels.transaction
+      const origPublish = eventbus.publish
+      const cache = withRedisCacheCapture()
+      cache.store.set("people:list:test", { value: "{}", ttl: 30 })
+      cache.store.set("leaderboard:points:s1", { value: "{}", ttl: 60 })
+      cache.store.set("pengurus:insight:2026", { value: "{}", ttl: 120 })
+      cache.store.set("schools:stats:sma", { value: "{}", ttl: 300 })
+      cache.store.set("schools:list:all", { value: "{}", ttl: 120 })
+
+      let capturedUserUpdate: any = null
+      const publishedEvents: Array<{ event: string; payload: any }> = []
+      eventbus.publish = (event: string, payload: any) => {
+        publishedEvents.push({ event, payload })
+      }
+
+      await saveRefreshToken("usr_target_1", "refresh_tok_role_change", 120)
+
+      peopleModels.findUserWithProfile = async () => makeUserRecord({ role: "member" }) as any
+      peopleModels.transaction = async (fn: any) => {
+        const txMock = {
+          user: {
+            update: async ({ data }: any) => {
+              capturedUserUpdate = data
+              return {
+                ...makeUserRecord(),
+                role: data.role ?? "member",
+              }
+            },
+          },
+          userProfile: {
+            upsert: async ({ update }: any) => ({
+              userId: "usr_target_1",
+              name: update.name ?? "Budi Santoso",
+              schoolId: null,
+              school: null,
+            }),
+          },
+        }
+        return fn(txMock)
+      }
+
+      try {
+        await peopleServices.updateMember("usr_target_1", { role: "activist" }, ADMIN_ACTOR)
+        expect(capturedUserUpdate.role).toBe("activist")
+        expect(capturedUserUpdate.passwordChangedAt).toBeInstanceOf(Date)
+        expect(await verifyAndRotateRefreshTokenRecord("refresh_tok_role_change")).toBeNull()
+        expect(cache.scannedPatterns).toContain("people:list:*")
+        expect(cache.scannedPatterns).toContain("leaderboard:*")
+        expect(cache.scannedPatterns).toContain("pengurus:insight:*")
+        expect(cache.scannedPatterns).toContain("schools:stats:*")
+        expect(cache.scannedPatterns).toContain("schools:list:*")
+        expect(cache.deletedKeys).toContain(CacheKeys.userProfile("usr_target_1"))
+        expect(publishedEvents).toEqual([
+          { event: DomainEvents.USER_UPDATED, payload: { userId: "usr_target_1", fields: ["role"] } },
+        ])
+      } finally {
+        peopleModels.findUserWithProfile = origFind
+        peopleModels.transaction = origTx
+        eventbus.publish = origPublish
+        cache.restore()
+      }
+    })
+
+    it("revokes refresh tokens and emits USER_UPDATED on resetTemporaryPassword", async () => {
+      const origFind = peopleModels.findUserWithProfile
+      const origUpdate = peopleModels.update
+      const origPublish = eventbus.publish
+      const cache = withRedisCacheCapture()
+
+      const publishedEvents: Array<{ event: string; payload: any }> = []
+      eventbus.publish = (event: string, payload: any) => {
+        publishedEvents.push({ event, payload })
+      }
+
+      await saveRefreshToken("usr_target_1", "refresh_tok_temp_reset", 120)
+      peopleModels.findUserWithProfile = async () =>
+        makeUserRecord({ isClaimed: false, passwordChangedByUser: false, role: "member" }) as any
+      peopleModels.update = async () => ({}) as any
+
+      try {
+        await peopleServices.resetTemporaryPassword("usr_target_1", ORGANIZER_ACTOR)
+        expect(await verifyAndRotateRefreshTokenRecord("refresh_tok_temp_reset")).toBeNull()
+        expect(cache.scannedPatterns).toContain("people:list:*")
+        expect(publishedEvents).toEqual([
+          {
+            event: DomainEvents.USER_UPDATED,
+            payload: { userId: "usr_target_1", fields: ["password"] },
+          },
+        ])
+      } finally {
+        peopleModels.findUserWithProfile = origFind
+        peopleModels.update = origUpdate
+        eventbus.publish = origPublish
+        cache.restore()
+      }
+    })
+
+    it("revokes refresh tokens, invalidates downstream caches, and emits USER_DELETED on deleteMember", async () => {
+      const origFind = peopleModels.findUserById
+      const origDelete = peopleModels.delete
+      const origPublish = eventbus.publish
+      const cache = withRedisCacheCapture()
+
+      const publishedEvents: Array<{ event: string; payload: any }> = []
+      eventbus.publish = (event: string, payload: any) => {
+        publishedEvents.push({ event, payload })
+      }
+
+      await saveRefreshToken("usr_target_1", "refresh_tok_delete", 120)
+      peopleModels.findUserById = async () => makeUserRecord({ role: "member" }) as any
+      peopleModels.delete = async () => ({}) as any
+
+      try {
+        const res = await peopleServices.deleteMember("usr_target_1", ADMIN_ACTOR)
+        expect(res.success).toBe(true)
+        expect(await verifyAndRotateRefreshTokenRecord("refresh_tok_delete")).toBeNull()
+        expect(cache.scannedPatterns).toEqual(
+          expect.arrayContaining([
+            "people:list:*",
+            "leaderboard:*",
+            "pengurus:insight:*",
+            "schools:stats:*",
+            "schools:list:*",
+            "user:usr_target_1:home:*",
+          ])
+        )
+        expect(publishedEvents).toEqual([
+          {
+            event: DomainEvents.USER_DELETED,
+            payload: { userId: "usr_target_1", reason: "admin_delete" },
+          },
+        ])
+      } finally {
+        peopleModels.findUserById = origFind
+        peopleModels.delete = origDelete
+        eventbus.publish = origPublish
+        cache.restore()
+      }
+    })
+
+    it("returns 409 EMAIL_ALREADY_EXISTS on duplicate email pre-check and P2002 race", async () => {
+      const origFindByEmail = peopleModels.findUserByEmailBindex
+      const origFindByUsername = peopleModels.findUserByUsername
+      const origGenNum = peopleModels.generateUserNumber
+      const origCreate = peopleModels.create
+
+      peopleModels.findUserByUsername = async () => null
+      peopleModels.generateUserNumber = async () => 2026111501n
+
+      try {
+        // 1. Pre-check via findUserByEmailBindex
+        peopleModels.findUserByEmailBindex = async () => ({ id: "usr_dup" }) as any
+        try {
+          await peopleServices.createMember(
+            { name: "Dup User", email: "Dup@Example.com" },
+            ORGANIZER_ACTOR
+          )
+          expect(true).toBe(false)
+        } catch (err: any) {
+          expect(err.status).toBe(409)
+          expect(err.code).toBe("EMAIL_ALREADY_EXISTS")
+        }
+
+        // 2. Concurrent P2002 fallback on email_bindex
+        let createAttempts = 0
+        peopleModels.findUserByEmailBindex = async () => null
+        peopleModels.create = async () => {
+          createAttempts++
+          const p2002: any = new Error("Unique constraint failed")
+          p2002.code = "P2002"
+          p2002.meta = { target: ["email_bindex"] }
+          throw p2002
+        }
+
+        try {
+          await peopleServices.createMember(
+            { name: "Race User", email: "race@example.com" },
+            ORGANIZER_ACTOR
+          )
+          expect(true).toBe(false)
+        } catch (err: any) {
+          expect(createAttempts).toBe(1)
+          expect(err.status).toBe(409)
+          expect(err.code).toBe("EMAIL_ALREADY_EXISTS")
+        }
+      } finally {
+        peopleModels.findUserByEmailBindex = origFindByEmail
+        peopleModels.findUserByUsername = origFindByUsername
+        peopleModels.generateUserNumber = origGenNum
+        peopleModels.create = origCreate
+      }
+    })
+
+    it("returns 409 USER_NUMBER_CONFLICT after exhausting userNumber retries and uses English invite + 100 limit cap", async () => {
+      const origFindByUsername = peopleModels.findUserByUsername
+      const origGenNum = peopleModels.generateUserNumber
+      const origCreate = peopleModels.create
+
+      peopleModels.findUserByUsername = async () => null
+      peopleModels.generateUserNumber = async () => 2026111599n
+      peopleModels.create = async () => {
+        const p2002: any = new Error("Unique constraint failed")
+        p2002.code = "P2002"
+        p2002.meta = { target: ["user_number"] }
+        throw p2002
+      }
+
+      try {
+        await peopleServices.createMember({ name: "Collision Member" }, ORGANIZER_ACTOR)
+        expect(true).toBe(false)
+      } catch (err: any) {
+        expect(err.status).toBe(409)
+        expect(err.code).toBe("USER_NUMBER_CONFLICT")
+      } finally {
+        peopleModels.findUserByUsername = origFindByUsername
+        peopleModels.generateUserNumber = origGenNum
+        peopleModels.create = origCreate
+      }
+
+      const invite = generateWhatsAppInviteMessage({
+        name: "Sari",
+        userNumber: 2026111501,
+        username: "sari1234",
+        tempPassword: "sekkha12345puggala",
+      })
+      expect(invite).toContain("Your Sekkha Apps account has been created")
+      expect(invite).not.toContain("Akun Sekkha Apps Anda")
+
+      expect(ListMembersQuerySchema.safeParse({ limit: 100 }).success).toBe(true)
+      expect(ListMembersQuerySchema.safeParse({ limit: 101 }).success).toBe(false)
+    })
+
+    it("caches getMembers directory reads in Redis with 30s TTL via CacheKeys.peopleDirectory", async () => {
+      const origCount = peopleModels.count
+      const origFindMany = peopleModels.findMany
+      const origRoleCounts = peopleModels.countByRole
+      const origClaimCounts = peopleModels.countByClaimStatus
+      const cache = withRedisCacheCapture()
+
+      let dbCalls = 0
+      peopleModels.count = async () => {
+        dbCalls++
+        return 1
+      }
+      peopleModels.findMany = async () => [makeUserRecord()] as any
+      peopleModels.countByRole = async () => [] as any
+      peopleModels.countByClaimStatus = async () => [] as any
+
+      try {
+        const first = await peopleServices.getMembers({ page: 1, limit: 20 }, ORGANIZER_ACTOR)
+        const second = await peopleServices.getMembers({ page: 1, limit: 20 }, ORGANIZER_ACTOR)
+
+        expect(dbCalls).toBe(1)
+        expect(second).toEqual(first)
+        const stored = Array.from(cache.store.entries())[0]
+        expect(stored?.[0].startsWith("people:list:")).toBe(true)
+        expect(stored?.[1].ttl).toBe(30)
+      } finally {
+        peopleModels.count = origCount
+        peopleModels.findMany = origFindMany
+        peopleModels.countByRole = origRoleCounts
+        peopleModels.countByClaimStatus = origClaimCounts
+        cache.restore()
       }
     })
   })

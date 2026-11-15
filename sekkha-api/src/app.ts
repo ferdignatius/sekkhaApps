@@ -274,7 +274,6 @@ export function createApp(): Application {
     "/api/auth/login",
     "/api/auth/register",
     "/api/auth/refresh",
-    "/api/users/change-password",
     "/api/users/me/delete-account",
     "/api/people/:id/reset-temporary-password",
     "/api/people/members/:id/reset-temporary-password",
@@ -283,8 +282,11 @@ export function createApp(): Application {
   for (const path of authRateLimitPaths) {
     app.use(path, authIpLimiter, authLimiter)
   }
-  // Exact POST match prevents prefix-matching /api/auth/forgot-password/{request,verify-otp,reset}
+  // Exact POST/PUT matches prevent prefix-matching /api/auth/forgot-password/{request,verify-otp,reset}
+  // and /api/users/change-password/{request-otp,otp}
   app.post("/api/auth/forgot-password", authIpLimiter, authLimiter)
+  app.post("/api/users/change-password", authIpLimiter, authLimiter)
+  app.put("/api/users/change-password", authIpLimiter, authLimiter)
 
   // 5b. Dedicated OTP Rate Limiters (10 requests/15m per IP+account + 300 requests/15m shared-IP ceiling)
   const otpLimiter = rateLimit({

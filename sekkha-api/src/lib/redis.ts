@@ -11,8 +11,15 @@ export const redis = new Redis(process.env.REDIS_URL || "redis://localhost:6379"
   },
 })
 
+let lastRedisErrorLog = 0
+
 redis.on("connect", () => console.log("🔴 Redis connected"))
-redis.on("error", () => {
-  // Silent error handling: fallback gracefully if Redis is offline
+redis.on("error", (err) => {
+  if (process.env.NODE_ENV === "test") return
+  const now = Date.now()
+  if (now - lastRedisErrorLog > 30_000) {
+    lastRedisErrorLog = now
+    console.warn("⚠️ [Redis] Connection error (falling back gracefully):", (err as Error)?.message || err)
+  }
 })
 

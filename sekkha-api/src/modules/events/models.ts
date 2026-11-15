@@ -234,6 +234,7 @@ export const eventModels = {
         id: true,
         eventDate: true,
       },
+      take: 200,
     })
   },
 }

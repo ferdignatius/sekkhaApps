@@ -1,26 +1,32 @@
 import { userModels } from "./models"
 import type { Prisma } from "@prisma/client"
 import { cached, invalidate, invalidatePattern, CacheKeys } from "../../lib/cache"
-import { encrypt, decrypt, generateBlindIndex } from "../../lib/crypto"
+import { encrypt, safeDecrypt, generateBlindIndex } from "../../lib/crypto"
 import { hashPassword, verifyPassword, DEFAULT_BCRYPT_COST } from "../../lib/password"
 import { generateUniqueUserNumber } from "../../lib/userNumber"
 import { prisma } from "../../lib/prisma"
-import { redis } from "../../lib/redis"
 import { revokeToken, generateToken, revokeAllUserRefreshTokens } from "../auth"
 import { calculateWeeklyStreak, toWeekKey } from "./internal/utils"
 import { emailVerificationStore } from "./internal/emailVerificationStore"
 import { passwordChangeOtpStore } from "./internal/passwordChangeOtpStore"
 import { sendEmailVerificationOtpEmail, sendChangePasswordOtpEmail } from "../../lib/email"
 import { isValidGmailEmail, GMAIL_ERROR_MESSAGE } from "../../lib/emailValidation"
-import crypto, { createHash } from "crypto"
+import { AppError } from "../../lib/AppError"
+import { auditLogger } from "../../lib/auditLogger"
+import { eventbus, DomainEvents } from "../../core/eventbus"
+import crypto from "crypto"
 
-function safeDecrypt(val: string | null | undefined, fallback: string | null = null): string | null {
-  if (!val) return fallback
-  const decrypted = decrypt(val)
-  if (!decrypted || /^[0-9a-fA-F]+:[0-9a-fA-F]+:[0-9a-fA-F]+$/.test(decrypted)) {
-    return fallback
-  }
-  return decrypted
+async function invalidateUserDerivedCaches(userId: string): Promise<void> {
+  await Promise.all([
+    invalidate(CacheKeys.userProfile(userId)).catch(() => {}),
+    invalidate(CacheKeys.userStreak(userId)).catch(() => {}),
+    invalidatePattern(`user:${userId}:home:*`).catch(() => {}),
+    invalidatePattern("leaderboard:*").catch(() => {}),
+    invalidatePattern("pengurus:insight:*").catch(() => {}),
+    invalidatePattern("schools:stats:*").catch(() => {}),
+    invalidatePattern("schools:list:*").catch(() => {}),
+    invalidatePattern("people:list:*").catch(() => {}),
+  ])
 }
 
 function maskEmail(email: string): string {
@@ -42,7 +48,11 @@ export interface UpdateProfileInput {
 export const userServices = {
   async completeOnboarding(userId: string, skipped: boolean = false) {
     await userModels.completeOnboarding(userId)
-    await invalidate(CacheKeys.userProfile(userId))
+    await invalidateUserDerivedCaches(userId)
+    eventbus.publish(DomainEvents.USER_UPDATED, {
+      userId,
+      fields: ["onboardingCompleted"],
+    })
     return { onboarding_completed: true, skipped }
   },
 
@@ -54,10 +64,16 @@ export const userServices = {
       return null
     }
 
-    let uNum = user.userNumber
+    let uNum: bigint | null = user.userNumber != null ? BigInt(user.userNumber) : null
     if (!uNum) {
       uNum = await userModels.generateUserNumber(prisma, new Date(user.createdAt))
-      await userModels.updateUser(user.id, { userNumber: uNum }).catch(() => {})
+      const backfilled = await userModels
+        .updateUser(user.id, { userNumber: uNum })
+        .then(() => true)
+        .catch(() => false)
+      if (backfilled) {
+        await invalidate(CacheKeys.userProfile(userId))
+      }
     }
 
     const decryptedEmail = safeDecrypt(user.email, "") || ""
@@ -127,10 +143,7 @@ export const userServices = {
       if (cleanUsername !== existing.username) {
         const taken = await userModels.findUserByUsername(cleanUsername)
         if (taken && taken.id !== userId) {
-          const err = new Error("Username sudah digunakan") as any
-          err.statusCode = 409
-          err.status = 409
-          throw err
+          throw new AppError("Username is already taken", 409, "USERNAME_TAKEN")
         }
         userData.username = cleanUsername
       }
@@ -154,9 +167,12 @@ export const userServices = {
       profileCreateData
     )
 
-    // Invalidate caches
-    await invalidate(CacheKeys.userProfile(userId))
-    await invalidatePattern(`user:${userId}:home:*`)
+    // Invalidate caches & notify subscribers
+    await invalidateUserDerivedCaches(userId)
+    eventbus.publish(DomainEvents.USER_UPDATED, {
+      userId,
+      fields: Object.keys(body),
+    })
 
     return this.getProfile(userId)
   },
@@ -172,9 +188,11 @@ export const userServices = {
     // Check cooldown (60 seconds)
     const cooldownRemaining = await emailVerificationStore.getCooldownRemaining(userId)
     if (cooldownRemaining > 0) {
-      const err = new Error(`Silakan tunggu ${cooldownRemaining} detik sebelum meminta kode verifikasi baru.`) as any
-      err.statusCode = 429
-      throw err
+      throw new AppError(
+        `Please wait ${cooldownRemaining} seconds before requesting a new verification code.`,
+        429,
+        "OTP_COOLDOWN"
+      )
     }
 
     // O(1) Blind Index check: is email already used by another user?
@@ -197,14 +215,22 @@ export const userServices = {
 
     // Fetch user name for polite email greeting
     const user = await userModels.findUserWithProfileAndStats(userId)
-    const userName = user?.profile?.name || user?.username || "Sahabat Sekkha"
+    const userName = user?.profile?.name || user?.username || "Member"
 
-    // Dispatch email
-    await sendEmailVerificationOtpEmail({
+    // Dispatch email and roll back challenge/cooldown on delivery failure
+    const mailResult = await sendEmailVerificationOtpEmail({
       to: normalizedEmail,
       otp,
       name: userName,
     })
+    if (!mailResult.success) {
+      await emailVerificationStore.clearChallenge(userId)
+      throw new AppError(
+        "Failed to send verification code email. Please try again later.",
+        503,
+        "EMAIL_SEND_FAILED"
+      )
+    }
 
     return {
       expires_in_seconds: 600,
@@ -214,37 +240,52 @@ export const userServices = {
 
   async confirmEmailVerification(userId: string, otpCode: string) {
     if (!otpCode || otpCode.trim().length !== 6) {
-      const err = new Error("Kode verifikasi harus berupa 6 digit angka") as any
-      err.statusCode = 400
-      throw err
+      throw new AppError("Verification code must be 6 digits", 400, "INVALID_OTP_FORMAT")
     }
 
     const result = await emailVerificationStore.verifyAndConsume(userId, otpCode)
     if (!result.success || !result.newEmail) {
-      const err = new Error(result.error || "Kode verifikasi tidak valid") as any
-      err.statusCode = result.remainingAttempts === 0 ? 429 : 400
-      throw err
+      const status = result.remainingAttempts === 0 ? 429 : 400
+      throw new AppError(
+        result.error || "Invalid verification code",
+        status,
+        status === 429 ? "OTP_MAX_ATTEMPTS" : "INVALID_OTP"
+      )
     }
 
     const newEmail = result.newEmail
     const emailCipher = encrypt(newEmail)
     const bindex = generateBlindIndex(newEmail)
     if (!emailCipher || !bindex) {
-      const err = new Error("Gagal memproses enkripsi dan blind index email") as any
-      err.statusCode = 500
-      throw err
+      throw new AppError(
+        "Failed to process email encryption and blind index",
+        500,
+        "ENCRYPTION_ERROR"
+      )
     }
 
     const taken = await userModels.findUserByEmailBindex(bindex)
     if (taken && taken.id !== userId) {
-      const err = new Error("Email is already registered to another account") as any
-      err.statusCode = 409
-      throw err
+      throw new AppError("Email is already registered to another account", 409, "EMAIL_ALREADY_EXISTS")
     }
 
     const updatedUser = await userModels.updateUserEmail(userId, emailCipher, bindex)
-    await invalidate(CacheKeys.userProfile(userId))
-    await invalidatePattern(`user:${userId}:home:*`)
+    await invalidateUserDerivedCaches(userId)
+
+    auditLogger.log({
+      actorId: userId,
+      action: "SYSTEM_SECURITY_ALERT",
+      targetId: userId,
+      status: "SUCCESS",
+      details: {
+        subAction: "EMAIL_VERIFIED",
+        isClaimed: updatedUser.isClaimed,
+      },
+    })
+    eventbus.publish(DomainEvents.USER_UPDATED, {
+      userId,
+      fields: ["email", "emailVerifiedAt", "isClaimed"],
+    })
 
     return {
       email: newEmail,
@@ -286,25 +327,28 @@ export const userServices = {
   },
 
   async getStreak(userId: string) {
-    const [attendances, closedEvents] = await Promise.all([
-      userModels.findUserAttendancesForStreak(userId),
-      userModels.findClosedEventDates?.().catch(() => []) ?? Promise.resolve([]),
-    ])
-    const activeWeeks =
-      closedEvents.length > 0
-        ? closedEvents.map((e) => toWeekKey(new Date(e.eventDate)))
-        : undefined
-    const streak = calculateWeeklyStreak(attendances, new Date(), activeWeeks)
-    const lastAttended = attendances.length > 0 && attendances[0].scannedAt
-      ? new Date(attendances[0].scannedAt).toISOString()
-      : null
+    return cached(CacheKeys.userStreak(userId), 30, async () => {
+      const [attendances, closedEvents] = await Promise.all([
+        userModels.findUserAttendancesForStreak(userId),
+        userModels.findClosedEventDates?.().catch(() => []) ?? Promise.resolve([]),
+      ])
+      const activeWeeks =
+        closedEvents.length > 0
+          ? closedEvents.map((e) => toWeekKey(new Date(e.eventDate)))
+          : undefined
+      const streak = calculateWeeklyStreak(attendances, new Date(), activeWeeks)
+      const lastAttended =
+        attendances.length > 0 && attendances[0].scannedAt
+          ? new Date(attendances[0].scannedAt).toISOString()
+          : null
 
-    return {
-      current_streak: streak.current_streak,
-      longest_streak: streak.longest_streak,
-      status: streak.status,
-      last_attended: lastAttended,
-    }
+      return {
+        current_streak: streak.current_streak,
+        longest_streak: streak.longest_streak,
+        status: streak.status,
+        last_attended: lastAttended,
+      }
+    })
   },
 
   async getPointTransactions(userId: string, limit: number = 20) {
@@ -377,11 +421,19 @@ export const userServices = {
     await passwordChangeOtpStore.saveChallenge(userId, otp)
 
     const userName = user?.profile?.name || userAccount.username || "Member"
-    await sendChangePasswordOtpEmail({
+    const mailResult = await sendChangePasswordOtpEmail({
       to: targetEmail,
       otp,
       name: userName,
     })
+    if (!mailResult.success) {
+      await passwordChangeOtpStore.clearChallenge(userId)
+      throw new AppError(
+        "Failed to send verification code email. Please try again later.",
+        503,
+        "EMAIL_SEND_FAILED"
+      )
+    }
 
     return {
       expires_in_seconds: 600,
@@ -455,9 +507,20 @@ export const userServices = {
     })
     await revokeAllUserRefreshTokens(userId)
 
-    // Invalidate user caches
-    await invalidate(CacheKeys.userProfile(userId))
-    await invalidatePattern(`user:${userId}:home:*`)
+    // Invalidate caches, record audit trail, and notify subscribers
+    await invalidateUserDerivedCaches(userId)
+
+    auditLogger.log({
+      actorId: userId,
+      actorRole: userAccount.role,
+      action: "AUTH_PASSWORD_CHANGED",
+      targetId: userId,
+      status: "SUCCESS",
+    })
+    eventbus.publish(DomainEvents.USER_UPDATED, {
+      userId,
+      fields: ["passwordChangedAt", "isClaimed"],
+    })
 
     // Issue fresh access token so the active session is not prematurely rejected with 401
     const displayName = user?.profile?.name || userAccount.username || "Member"
@@ -525,31 +588,38 @@ export const userServices = {
   async deleteAccount(userId: string, passwordConfirm: string, authHeader?: string) {
     const user = await userModels.findUserById(userId)
     if (!user || !user.password) {
-      const error = new Error("Akun tidak valid atau tidak memiliki kata sandi") as any
-      error.statusCode = 400
-      throw error
+      throw new AppError(
+        "Invalid account or account does not have a password set",
+        400,
+        "INVALID_ACCOUNT"
+      )
     }
 
     const isValid = await verifyPassword(passwordConfirm, user.password)
     if (!isValid) {
-      const error = new Error("Kata sandi konfirmasi salah") as any
-      error.statusCode = 403
-      throw error
+      throw new AppError("Confirmation password is incorrect", 403, "INVALID_PASSWORD")
     }
 
     const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7).trim() : null
     if (token) {
-      const tokenHash = createHash("sha256").update(token).digest("hex")
       await revokeToken(token).catch(() => {})
-      await redis.del(`auth:token:${tokenHash}`).catch(() => {})
     }
     await revokeAllUserRefreshTokens(userId)
 
-    await invalidate(CacheKeys.userProfile(userId))
     await userModels.deleteUserById(userId)
+    await invalidateUserDerivedCaches(userId)
+
+    auditLogger.log({
+      actorId: userId,
+      actorRole: user.role,
+      action: "USER_DELETED",
+      targetId: userId,
+      status: "SUCCESS",
+    })
+    eventbus.publish(DomainEvents.USER_DELETED, { userId, reason: "self_delete" })
 
     return {
-      message: "Akun dan seluruh data pribadi Anda telah berhasil dihapus secara permanen.",
+      message: "Your account and all personal data have been permanently deleted.",
     }
   },
 }

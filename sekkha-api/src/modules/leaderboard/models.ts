@@ -50,9 +50,15 @@ export const leaderboardModels = {
   },
 
   activateSeason(id: string) {
-    return prisma.season.update({
-      where: { id },
-      data: { isActive: true },
+    return prisma.$transaction(async (tx) => {
+      await tx.season.updateMany({
+        where: { isActive: true, id: { not: id } },
+        data: { isActive: false },
+      })
+      return tx.season.update({
+        where: { id },
+        data: { isActive: true },
+      })
     })
   },
 
@@ -63,6 +69,7 @@ export const leaderboardModels = {
   findLeaderboardUsers() {
     return prisma.user.findMany({
       where: { anonymizedAt: null },
+      take: 5000,
       select: {
         id: true,
         username: true,

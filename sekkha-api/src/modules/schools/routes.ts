@@ -31,3 +31,29 @@ schoolsRouter.patch("/:id", requireAuth, requireRole("admin"), schoolControllers
 
 // DELETE /api/schools/:id — Delete school from master data (Admin only)
 schoolsRouter.delete("/:id", requireAuth, requireRole("admin"), schoolControllers.deleteSchool)
+
+/**
+ * Legacy/configure-mounted school routes (/api/configure/schools*, /api/configure/school-requests*).
+ * Mounted by schoolsModule so configure module stays decoupled from schools internals.
+ * Uses per-route auth/role guards so other /api/configure/* endpoints are never intercepted.
+ */
+export const configureSchoolsRouter: Router = Router()
+
+// School master data & user requests (All authenticated members for onboarding)
+configureSchoolsRouter.get("/schools", requireAuth, schoolControllers.getSchools)
+configureSchoolsRouter.post("/school-requests", requireAuth, schoolControllers.requestSchool)
+
+// School request review workflow (Organizer & Admin per PRD)
+configureSchoolsRouter.get("/schools/pending", requireAuth, requireRole("organizer", "admin"), schoolControllers.getPendingRequests)
+configureSchoolsRouter.get("/school-requests", requireAuth, requireRole("organizer", "admin"), schoolControllers.getPendingRequests)
+configureSchoolsRouter.get("/schools/:id", requireAuth, requireRole("organizer", "admin"), schoolControllers.getSchoolById)
+configureSchoolsRouter.post("/schools/:id/approve", requireAuth, requireRole("organizer", "admin"), schoolControllers.approveSchool)
+configureSchoolsRouter.post("/schools/:id/reject", requireAuth, requireRole("organizer", "admin"), schoolControllers.rejectSchool)
+configureSchoolsRouter.post("/school-requests/:id/accept", requireAuth, requireRole("organizer", "admin"), schoolControllers.approveSchool)
+configureSchoolsRouter.post("/school-requests/:id/reject", requireAuth, requireRole("organizer", "admin"), schoolControllers.rejectSchool)
+
+// School master data direct CRUD (Admin only)
+configureSchoolsRouter.post("/schools", requireAuth, requireRole("admin"), schoolControllers.createSchool)
+configureSchoolsRouter.put("/schools/:id", requireAuth, requireRole("admin"), schoolControllers.updateSchool)
+configureSchoolsRouter.patch("/schools/:id", requireAuth, requireRole("admin"), schoolControllers.updateSchool)
+configureSchoolsRouter.delete("/schools/:id", requireAuth, requireRole("admin"), schoolControllers.deleteSchool)

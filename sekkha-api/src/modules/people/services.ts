@@ -1,25 +1,34 @@
 import { randomInt } from "crypto"
 import { peopleModels } from "./models"
 import { hashPassword, DEFAULT_BCRYPT_COST } from "../../lib/password"
-import { invalidate, invalidatePattern, CacheKeys } from "../../lib/cache"
+import { cached, invalidate, invalidatePattern, CacheKeys } from "../../lib/cache"
 import { generateUniqueUserNumber } from "../../lib/userNumber"
-import { encrypt, decrypt, generateBlindIndex } from "../../lib/crypto"
+import { encrypt, safeDecrypt, generateBlindIndex } from "../../lib/crypto"
 import { auditLogger } from "../../lib/auditLogger"
-import { prisma } from "../../lib/prisma"
 import { AppError } from "../../lib/AppError"
+import { eventbus, DomainEvents } from "../../core/eventbus"
+import { revokeAllUserRefreshTokens } from "../auth"
 import {
   MIN_NAME_SIMILARITY,
   buildNameSearchProbes,
   computeNameSimilarityScore,
 } from "./utils/nameSimilarity"
 
-function safeDecrypt(val: string | null | undefined, fallback: string | null = null): string | null {
-  if (!val) return fallback
-  const decrypted = decrypt(val)
-  if (!decrypted || /^[0-9a-fA-F]+:[0-9a-fA-F]+:[0-9a-fA-F]+$/.test(decrypted)) {
-    return fallback
+async function invalidatePeopleCaches(userId?: string, includeHome = true): Promise<void> {
+  const ops: Array<Promise<void>> = [
+    invalidatePattern("people:list:*"),
+    invalidatePattern("leaderboard:*"),
+    invalidatePattern("pengurus:insight:*"),
+    invalidatePattern("schools:stats:*"),
+    invalidatePattern("schools:list:*"),
+  ]
+  if (userId) {
+    ops.push(invalidate(CacheKeys.userProfile(userId)))
+    if (includeHome) {
+      ops.push(invalidatePattern(`user:${userId}:home:*`))
+    }
   }
-  return decrypted
+  await Promise.all(ops)
 }
 
 export function generateTemporaryPassword(): string {
@@ -60,14 +69,14 @@ export function generateWhatsAppInviteMessage(data: {
 }): string {
   return [
     `Namaste ${data.name},`,
-    `Akun Sekkha Apps Anda telah dibuat oleh pengurus vihara.`,
+    `Your Sekkha Apps account has been created by the vihara committee.`,
     ``,
-    `Berikut kredensial login sementara Anda:`,
+    `Here are your temporary login credentials:`,
     `• Member ID: ${data.userNumber}`,
     `• Username: ${data.username}`,
-    `• Password Sementara: ${data.tempPassword}`,
+    `• Temporary Password: ${data.tempPassword}`,
     ``,
-    `Silakan login di https://sekkha.app/login untuk menyelesaikan aktivasi akun dan membuat password pribadi Anda. Terima kasih!`,
+    `Please sign in at https://sekkha.app/login to activate your account and set your personal password. Thank you!`,
   ].join("\n")
 }
 
@@ -88,105 +97,120 @@ export const peopleServices = {
     const rawSearch = (queryParams.search || "").trim()
     const claimedStatus = queryParams.claimed_status || queryParams.status || "all"
     const roleFilter = queryParams.role || "all"
-    const isPrivileged = currentUser?.role === "organizer" || currentUser?.role === "admin"
-
-    const where: any = { anonymizedAt: null }
-
-    if (claimedStatus === "claimed") {
-      where.isClaimed = true
-    } else if (claimedStatus === "unclaimed") {
-      where.isClaimed = false
-    }
-
-    if (roleFilter !== "all") {
-      if (roleFilter === "organizer" || roleFilter === "pengurus") {
-        where.role = { in: ["organizer", "admin"] }
-      } else if (roleFilter === "activist" || roleFilter === "aktivis") {
-        where.role = "activist"
-      } else if (roleFilter === "member" || roleFilter === "umat") {
-        where.role = "member"
-      } else {
-        where.role = roleFilter
-      }
-    }
-
-    if (queryParams.school_id) {
-      where.profile = { ...(where.profile || {}), schoolId: queryParams.school_id }
-    }
-
-    // Big-O Query Branching Strategy:
-    // If input is purely numeric digits, do an instant B-Tree index scan on userNumber BigInt.
-    // Otherwise, perform case-insensitive text search on profile.name or username.
-    if (rawSearch) {
-      if (/^\d{1,18}$/.test(rawSearch)) {
-        where.userNumber = BigInt(rawSearch)
-      } else {
-        where.OR = [
-          { profile: { name: { contains: rawSearch, mode: "insensitive" } } },
-          { username: { contains: rawSearch, mode: "insensitive" } },
-        ]
-      }
-    }
-
     const { page, limit } = queryParams
-    const skip = (page - 1) * limit
 
-    const [totalMatching, rawMembers, roleCounts, claimCounts] = await Promise.all([
-      peopleModels.count(where),
-      peopleModels.findMany(where, limit, skip),
-      peopleModels.countByRole(),
-      peopleModels.countByClaimStatus(),
-    ])
+    const cacheKey = CacheKeys.peopleDirectory(
+      JSON.stringify({
+        query: {
+          search: rawSearch,
+          claimed_status: claimedStatus,
+          role: roleFilter,
+          school_id: queryParams.school_id || "",
+          page,
+          limit,
+        },
+        role: currentUser?.role || "anon",
+      })
+    )
 
-    const stats = {
-      total: 0,
-      member: 0,
-      activist: 0,
-      organizer: 0,
-      claimed: 0,
-      unclaimed: 0,
-    }
+    return cached(cacheKey, 30, async () => {
+      const where: any = { anonymizedAt: null }
 
-    roleCounts.forEach((row) => {
-      stats.total += row._count._all
-      if (row.role === "member") stats.member = row._count._all
-      if (row.role === "activist") stats.activist = row._count._all
-      if (row.role === "organizer" || row.role === "admin") stats.organizer += row._count._all
-    })
-
-    claimCounts.forEach((row) => {
-      if (row.isClaimed) stats.claimed += row._count._all
-      else stats.unclaimed += row._count._all
-    })
-
-    const items = rawMembers.map((m) => {
-      return {
-        id: m.id,
-        user_number: m.userNumber ? Number(m.userNumber) : null,
-        username: m.username || null,
-        name: m.profile?.name || m.username || "Member",
-        role: m.role,
-        is_claimed: m.isClaimed ?? true,
-        created_at: new Date(m.createdAt).toISOString(),
+      if (claimedStatus === "claimed") {
+        where.isClaimed = true
+      } else if (claimedStatus === "unclaimed") {
+        where.isClaimed = false
       }
-    })
 
-    const totalPages = Math.max(1, Math.ceil(totalMatching / limit))
+      if (roleFilter !== "all") {
+        if (roleFilter === "organizer" || roleFilter === "pengurus") {
+          where.role = { in: ["organizer", "admin"] }
+        } else if (roleFilter === "activist" || roleFilter === "aktivis") {
+          where.role = "activist"
+        } else if (roleFilter === "member" || roleFilter === "umat") {
+          where.role = "member"
+        } else {
+          where.role = roleFilter
+        }
+      }
 
-    return {
-      items,
-      pagination: {
+      if (queryParams.school_id) {
+        where.profile = { ...(where.profile || {}), schoolId: queryParams.school_id }
+      }
+
+      // Big-O Query Branching Strategy:
+      // If input is purely numeric digits, do an instant B-Tree index scan on userNumber BigInt.
+      // Otherwise, perform case-insensitive text search on profile.name or username.
+      if (rawSearch) {
+        if (/^\d{1,18}$/.test(rawSearch)) {
+          where.userNumber = BigInt(rawSearch)
+        } else {
+          where.OR = [
+            { profile: { name: { contains: rawSearch, mode: "insensitive" } } },
+            { username: { contains: rawSearch, mode: "insensitive" } },
+          ]
+        }
+      }
+
+      const skip = (page - 1) * limit
+
+      const [totalMatching, rawMembers, roleCounts, claimCounts] = await Promise.all([
+        peopleModels.count(where),
+        peopleModels.findMany(where, limit, skip),
+        peopleModels.countByRole(),
+        peopleModels.countByClaimStatus(),
+      ])
+
+      const stats = {
+        total: 0,
+        member: 0,
+        activist: 0,
+        organizer: 0,
+        claimed: 0,
+        unclaimed: 0,
+      }
+
+      roleCounts.forEach((row) => {
+        stats.total += row._count._all
+        if (row.role === "member") stats.member = row._count._all
+        if (row.role === "activist") stats.activist = row._count._all
+        if (row.role === "organizer" || row.role === "admin") stats.organizer += row._count._all
+      })
+
+      claimCounts.forEach((row) => {
+        if (row.isClaimed) stats.claimed += row._count._all
+        else stats.unclaimed += row._count._all
+      })
+
+      const items = rawMembers.map((m) => {
+        return {
+          id: m.id,
+          user_number: m.userNumber ? Number(m.userNumber) : null,
+          username: m.username || null,
+          name: m.profile?.name || m.username || "Member",
+          role: m.role,
+          is_claimed: m.isClaimed ?? true,
+          created_at: new Date(m.createdAt).toISOString(),
+        }
+      })
+
+      const totalPages = Math.max(1, Math.ceil(totalMatching / limit))
+
+      return {
+        items,
+        pagination: {
+          page,
+          limit,
+          total: totalMatching,
+          total_pages: totalPages,
+        },
         page,
         limit,
         total: totalMatching,
-        total_pages: totalPages,
-      },
-      page,
-      limit,
-      total: totalMatching,
-      totalPages,
-      stats,
-    }
+        totalPages,
+        stats,
+      }
+    })
   },
 
   async findSimilarMembers(
@@ -306,6 +330,16 @@ export const peopleServices = {
       resolvedSchoolId = s.id
     }
 
+    // Check duplicate email upfront before bcrypt/userNumber generation
+    const normalizedEmail = data.email?.trim() ? data.email.toLowerCase().trim() : null
+    const emailBindex = normalizedEmail ? generateBlindIndex(normalizedEmail) : null
+    if (emailBindex && typeof peopleModels.findUserByEmailBindex === "function") {
+      const existingEmail = await peopleModels.findUserByEmailBindex(emailBindex)
+      if (existingEmail) {
+        throw new AppError("Email is already registered.", 409, "EMAIL_ALREADY_EXISTS")
+      }
+    }
+
     // Auto-generate username per PRD formula: firstName + 4 random digits
     let username = data.username ? data.username.toLowerCase().trim() : null
     if (!username) {
@@ -328,8 +362,8 @@ export const peopleServices = {
           {
             username,
             password: hashedPassword,
-            email: data.email ? encrypt(data.email.toLowerCase().trim()) : null,
-            emailBindex: data.email ? generateBlindIndex(data.email.toLowerCase().trim()) : null,
+            email: normalizedEmail ? encrypt(normalizedEmail) : null,
+            emailBindex,
             role,
             userNumber,
             isClaimed: false, // Pre-provisioned accounts start unclaimed
@@ -357,26 +391,46 @@ export const peopleServices = {
           : String(err?.meta?.target || "")
         if (
           err?.code === "P2002" &&
-          (target.includes("user_number") || target.includes("userNumber") || target.includes("username")) &&
-          attempts < maxAttempts
+          (target.includes("email_bindex") || target.includes("emailBindex"))
         ) {
-          if (!data.username) {
-            username = await generateUniqueUsername(data.name)
+          throw new AppError("Email is already registered.", 409, "EMAIL_ALREADY_EXISTS")
+        }
+        if (
+          err?.code === "P2002" &&
+          target.includes("username") &&
+          data.username
+        ) {
+          throw new AppError("Username is already used by another member.", 409, "USERNAME_ALREADY_EXISTS")
+        }
+        if (
+          err?.code === "P2002" &&
+          (target.includes("user_number") || target.includes("userNumber") || target.includes("username"))
+        ) {
+          if (attempts < maxAttempts) {
+            if (!data.username) {
+              username = await generateUniqueUsername(data.name)
+            }
+            await new Promise((r) => setTimeout(r, Math.floor(Math.random() * 25) + 5))
+            continue
           }
-          await new Promise((r) => setTimeout(r, Math.floor(Math.random() * 25) + 5))
-          continue
+          break
         }
         throw err
       }
     }
 
     if (!newMember) {
-      const error = new Error("Failed to generate unique user number after multiple attempts.") as any
-      error.statusCode = 500
-      throw error
+      throw new AppError("Failed to generate unique user number after multiple attempts.", 409, "USER_NUMBER_CONFLICT")
     }
 
-    await invalidate(CacheKeys.userProfile(newMember.id))
+    await invalidatePeopleCaches(newMember.id, false)
+
+    const memberName = (newMember.profile as any)?.name || data.name.trim()
+    eventbus.publish(DomainEvents.USER_REGISTERED, {
+      userId: newMember.id,
+      email: normalizedEmail || "",
+      name: memberName,
+    })
 
     if (actor) {
       auditLogger.log({
@@ -388,7 +442,6 @@ export const peopleServices = {
       })
     }
 
-    const memberName = (newMember.profile as any)?.name || data.name.trim()
     const userNumberInt = Number(newMember.userNumber)
 
     const whatsappInvite = generateWhatsAppInviteMessage({
@@ -433,12 +486,11 @@ export const peopleServices = {
       throw new AppError("Member not found", 404, "MEMBER_NOT_FOUND")
     }
 
-    if (data.username && data.username !== existing.username) {
-      const usernameInUse = await peopleModels.findUserByUsername(data.username.toLowerCase().trim())
+    const normalizedUsername = data.username ? data.username.toLowerCase().trim() : undefined
+    if (normalizedUsername && normalizedUsername !== (existing.username || "").toLowerCase()) {
+      const usernameInUse = await peopleModels.findUserByUsername(normalizedUsername)
       if (usernameInUse && usernameInUse.id !== id) {
-        const error = new Error("Username is already used by another member.") as any
-        error.statusCode = 400
-        throw error
+        throw new AppError("Username is already used by another member.", 409, "USERNAME_ALREADY_EXISTS")
       }
     }
 
@@ -450,12 +502,16 @@ export const peopleServices = {
       }
     }
 
+    const roleChanged = Boolean(data.role && data.role !== existing.role)
     const userData: any = {}
     if (data.username !== undefined) {
-      userData.username = data.username ? data.username.toLowerCase().trim() : null
+      userData.username = normalizedUsername || null
     }
     if (data.role) {
       userData.role = data.role
+      if (roleChanged) {
+        userData.passwordChangedAt = new Date()
+      }
     }
 
     const profileData: any = {}
@@ -477,11 +533,18 @@ export const peopleServices = {
       return { updatedUser, updatedProfile }
     })
 
-    await Promise.all([
-      invalidate(CacheKeys.userProfile(id)),
-      invalidatePattern(`user:${id}:home:*`),
-      invalidatePattern("leaderboard:*"),
-    ])
+    if (roleChanged) {
+      await revokeAllUserRefreshTokens(id)
+    }
+
+    await invalidatePeopleCaches(id, true)
+    const changedFields = ["username", "role", "name", "school_id", "school"].filter(
+      (field) => data[field] !== undefined
+    )
+    eventbus.publish(DomainEvents.USER_UPDATED, {
+      userId: id,
+      fields: changedFields,
+    })
 
     if (data.role && data.role !== existing.role) {
       auditLogger.log({
@@ -523,11 +586,12 @@ export const peopleServices = {
     }
 
     await peopleModels.delete(id)
-    await Promise.all([
-      invalidate(CacheKeys.userProfile(id)),
-      invalidatePattern(`user:${id}:home:*`),
-      invalidatePattern("leaderboard:*"),
-    ])
+    await revokeAllUserRefreshTokens(id)
+    await invalidatePeopleCaches(id, true)
+    eventbus.publish(DomainEvents.USER_DELETED, {
+      userId: id,
+      reason: "admin_delete",
+    })
 
     auditLogger.log({
       actorId: currentUser.userId,
@@ -585,6 +649,8 @@ export const peopleServices = {
       passwordChangedAt: new Date(),
     })
 
+    await revokeAllUserRefreshTokens(id)
+
     auditLogger.log({
       actorId: actor.userId,
       actorRole: actor.role,
@@ -596,8 +662,13 @@ export const peopleServices = {
     await Promise.all([
       invalidate(CacheKeys.userProfile(id)),
       invalidatePattern(`user:${id}:home:*`),
+      invalidatePattern("people:list:*"),
       invalidatePattern("leaderboard:*"),
     ])
+    eventbus.publish(DomainEvents.USER_UPDATED, {
+      userId: id,
+      fields: ["password"],
+    })
 
     const memberName = targetUser.profile?.name || targetUser.username || "Member"
     const userNumberInt = targetUser.userNumber ? Number(targetUser.userNumber) : null

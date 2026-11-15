@@ -45,6 +45,11 @@ export const schoolModels = {
   findSchoolByName(name: string) {
     return prisma.school.findFirst({
       where: { name: { equals: name, mode: "insensitive" } },
+      include: {
+        _count: {
+          select: { profiles: true },
+        },
+      },
     })
   },
 
@@ -136,6 +141,7 @@ export const schoolModels = {
   findPendingRequests() {
     return prisma.school.findMany({
       where: { status: "pending" },
+      take: 200,
       include: {
         _count: {
           select: { profiles: true },
@@ -144,7 +150,6 @@ export const schoolModels = {
           select: {
             id: true,
             username: true,
-            email: true,
             profile: { select: { name: true } },
           },
         },

@@ -2,6 +2,7 @@ import { userModels } from "../models"
 import { revokeAllUserRefreshTokens } from "../../auth"
 import { invalidate, invalidatePattern, CacheKeys } from "../../../lib/cache"
 import { auditLogger } from "../../../lib/auditLogger"
+import { eventbus, DomainEvents } from "../../../core/eventbus"
 
 export const INACTIVE_RETENTION_YEARS = 2
 export const ANONYMIZED_DISPLAY_NAME = "Former Member"
@@ -77,6 +78,7 @@ export async function runInactiveAccountRetentionCleanup(options?: {
       await Promise.all([
         revokeRefreshTokens(candidate.id).catch(() => {}),
         invalidate(CacheKeys.userProfile(candidate.id)).catch(() => {}),
+        invalidate(CacheKeys.userStreak(candidate.id)).catch(() => {}),
         invalidatePattern(`user:${candidate.id}:home:*`).catch(() => {}),
       ])
 
@@ -92,6 +94,11 @@ export async function runInactiveAccountRetentionCleanup(options?: {
           preserved_attendance_aggregates: true,
         },
       })
+
+      eventbus.publish(DomainEvents.USER_DELETED, {
+        userId: candidate.id,
+        reason: "inactive_retention",
+      })
     }
 
     if (candidates.length < batchSize || processedInBatch === 0) {
@@ -103,6 +110,9 @@ export async function runInactiveAccountRetentionCleanup(options?: {
     await Promise.all([
       invalidatePattern("leaderboard:*").catch(() => {}),
       invalidatePattern("pengurus:insight:*").catch(() => {}),
+      invalidatePattern("schools:stats:*").catch(() => {}),
+      invalidatePattern("schools:list:*").catch(() => {}),
+      invalidatePattern("people:list:*").catch(() => {}),
     ])
   }
 

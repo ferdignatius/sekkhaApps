@@ -1,7 +1,9 @@
 import { describe, it, expect } from "bun:test"
+import { EventEmitter } from "events"
 import { eventServices } from "../services"
 import { eventModels } from "../models"
 import { prisma } from "../../../lib/prisma"
+import { redis } from "../../../lib/redis"
 
 describe("Event Closure Point Distribution & Milestone Bonuses", () => {
   it("awards streak_monthly_bonus with daily cap immunity when user is near or at cap", async () => {
@@ -581,6 +583,332 @@ describe("Event Start & Late Attendance Policy", () => {
     } finally {
       prisma.$transaction = originalTransaction
       eventModels.findEventBasic = origFindBasic
+    }
+  })
+})
+
+describe("Event Lifecycle Guards, Concurrency, Cap Anchoring & Cache Invalidation", () => {
+  it("blocks closed -> cancel transition with 400 EVENT_CLOSED_IMMUTABLE", async () => {
+    const originalTransaction = prisma.$transaction
+    let updated = false
+
+    ;(prisma as any).$transaction = async (cb: any) => {
+      const txMock = {
+        event: {
+          findUnique: async () => ({
+            id: "evt_closed_immutable",
+            title: "Finalized Puja",
+            eventDate: new Date("2026-08-01T10:00:00Z"),
+            status: "closed",
+            type: null,
+          }),
+          update: async () => {
+            updated = true
+            return {}
+          },
+        },
+      }
+      return cb(txMock)
+    }
+
+    try {
+      await eventServices.updateEventStatus("usr_admin", "admin", "evt_closed_immutable", "cancel")
+      expect(true).toBe(false)
+    } catch (err: any) {
+      expect(err.status || err.statusCode).toBe(400)
+      expect(err.code).toBe("EVENT_CLOSED_IMMUTABLE")
+      expect(updated).toBe(false)
+    } finally {
+      prisma.$transaction = originalTransaction
+    }
+  })
+
+  it("aborts concurrent double-close cleanly when atomic updateMany claims 0 rows", async () => {
+    const originalTransaction = prisma.$transaction
+    let distributedPoints = false
+    let statsUpserted = false
+
+    ;(prisma as any).$transaction = async (cb: any) => {
+      const txMock = {
+        event: {
+          findUnique: async () => ({
+            id: "evt_race",
+            title: "Concurrent Puja",
+            eventDate: new Date("2026-08-10T10:00:00Z"),
+            status: "active",
+            type: null,
+          }),
+          updateMany: async () => ({ count: 0 }),
+          update: async () => ({}),
+        },
+        attendance: {
+          findMany: async () => [{ id: "att_race", userId: "usr_1", pointsEarned: 50, badgeBonusPoints: 0, scannedAt: new Date() }],
+          updateMany: async () => {
+            distributedPoints = true
+            return { count: 1 }
+          },
+        },
+        pointTransaction: {
+          createMany: async () => {
+            distributedPoints = true
+            return { count: 1 }
+          },
+        },
+        userStats: {
+          upsert: async () => {
+            statsUpserted = true
+            return {}
+          },
+        },
+      }
+      return cb(txMock)
+    }
+
+    try {
+      await eventServices.updateEventStatus("usr_admin", "admin", "evt_race", "closed")
+      expect(true).toBe(false)
+    } catch (err: any) {
+      expect(err.status || err.statusCode).toBe(400)
+      expect(err.code).toBe("INVALID_STATUS_TRANSITION")
+      expect(distributedPoints).toBe(false)
+      expect(statsUpserted).toBe(false)
+    } finally {
+      prisma.$transaction = originalTransaction
+    }
+  })
+
+  it("anchors 150-pt daily cap query to eventDate WIB day and records English transaction description", async () => {
+    const eventDate = new Date("2026-01-10T18:00:00Z") // 2026-01-11 01:00 WIB
+    let capturedGroupByWhere: any = null
+    let createdPointTxs: any[] = []
+    const originalTransaction = prisma.$transaction
+
+    ;(prisma as any).$transaction = async (cb: any) => {
+      const txMock = {
+        event: {
+          findUnique: async () => ({
+            id: "evt_anchor_cap",
+            title: "Sunday Dhamma",
+            eventDate,
+            status: "active",
+            type: { id: "type_1", code: "puja" },
+          }),
+          updateMany: async () => ({ count: 1 }),
+          update: async () => ({
+            id: "evt_anchor_cap",
+            title: "Sunday Dhamma",
+            eventDate,
+            status: "closed",
+            pointReward: 50,
+            type: { id: "type_1", code: "puja" },
+          }),
+        },
+        attendance: {
+          findMany: async ({ where }: any) => {
+            if (where.eventId) {
+              return [
+                {
+                  id: "att_anchor_1",
+                  userId: "usr_cap",
+                  pointsEarned: 50,
+                  badgeBonusPoints: 0,
+                  scannedAt: eventDate,
+                },
+              ]
+            }
+            return [{ userId: "usr_cap", scannedAt: eventDate }]
+          },
+          updateMany: async () => ({ count: 1 }),
+        },
+        pointTransaction: {
+          findMany: async () => [],
+          groupBy: async (args: any) => {
+            capturedGroupByWhere = args.where
+            return []
+          },
+          createMany: async ({ data }: any) => {
+            createdPointTxs = data
+            return { count: data.length }
+          },
+        },
+        pointRule: { findMany: async () => [] },
+        user: {
+          findMany: async () => [{ id: "usr_cap", isClaimed: true, stats: { totalAttendances: 1, currentStreak: 1 } }],
+        },
+        userStats: { upsert: async () => ({}) },
+      }
+      return cb(txMock)
+    }
+
+    try {
+      await eventServices.updateEventStatus("usr_admin", "admin", "evt_anchor_cap", "closed")
+
+      // 2026-01-11 00:00:00 WIB = 2026-01-10T17:00:00.000Z
+      expect(capturedGroupByWhere.createdAt.gte.toISOString()).toBe("2026-01-10T17:00:00.000Z")
+      expect(capturedGroupByWhere.createdAt.lte.toISOString()).toBe("2026-01-11T16:59:59.999Z")
+
+      const attTx = createdPointTxs.find((tx) => tx.type === "attendance")
+      expect(attTx.description).toBe("Event Attendance: Sunday Dhamma")
+    } finally {
+      prisma.$transaction = originalTransaction
+    }
+  })
+
+  it("blocks editing cancelled events and rejects invalid rescheduleDate or inactive badge assignment", async () => {
+    const origFindById = eventModels.findEventById
+    const origFindBasic = eventModels.findEventBasic
+    const origFindExistingAtt = eventModels.findExistingAttendance
+    const origFindBadge = eventModels.findBadgeActivityById
+    const originalTransaction = prisma.$transaction
+
+    try {
+      eventModels.findEventById = async () => ({ id: "evt_can", status: "cancel" } as any)
+      await expect(
+        eventServices.updateEvent("usr_admin", "admin", "evt_can", { title: "Edited" })
+      ).rejects.toMatchObject({ status: 400, code: "CANNOT_EDIT_CANCELLED_EVENT" })
+
+      ;(prisma as any).$transaction = async (cb: any) =>
+        cb({
+          event: {
+            findUnique: async () => ({
+              id: "evt_sched",
+              status: "scheduled",
+              eventDate: new Date(Date.now() + 86400000),
+              type: null,
+            }),
+          },
+        })
+
+      await expect(
+        eventServices.updateEventStatus("usr_admin", "admin", "evt_sched", "active", "not-a-date")
+      ).rejects.toMatchObject({ status: 400, code: "INVALID_DATE_FORMAT" })
+
+      eventModels.findEventBasic = async () => ({ id: "evt_act", status: "active" } as any)
+      eventModels.findExistingAttendance = async () => ({ id: "att_1", isFinalized: false } as any)
+      eventModels.findBadgeActivityById = async () => ({ id: "badge_off", isActive: false, bonusPoints: 30 } as any)
+
+      await expect(
+        eventServices.assignBadgeActivity("usr_admin", "evt_act", "usr_1", "badge_off")
+      ).rejects.toMatchObject({ status: 400, code: "BADGE_INACTIVE" })
+    } finally {
+      eventModels.findEventById = origFindById
+      eventModels.findEventBasic = origFindBasic
+      eventModels.findExistingAttendance = origFindExistingAtt
+      eventModels.findBadgeActivityById = origFindBadge
+      prisma.$transaction = originalTransaction
+    }
+  })
+
+  it("caches listEvents & getEventDetail in Redis and invalidates required patterns on deleteAttendance", async () => {
+    const origGet = redis.get
+    const origSet = redis.set
+    const origDel = redis.del
+    const origScan = redis.scanStream
+    const origFindExpired = eventModels.findExpiredActiveEvents
+    const origFindEvents = eventModels.findEvents
+    const origFindById = eventModels.findEventById
+    const origFindBasic = eventModels.findEventBasic
+    const origFindAtt = eventModels.findExistingAttendance
+    const origDelAtt = eventModels.deleteAttendance
+
+    const store = new Map<string, string>()
+    const scannedPatterns: string[] = []
+    let findEventsCalls = 0
+
+    redis.get = (async (key: string) => store.get(key) ?? null) as any
+    redis.set = (async (key: string, val: string) => {
+      store.set(key, val)
+      return "OK"
+    }) as any
+    redis.del = (async (...keys: string[]) => {
+      for (const k of keys) store.delete(k)
+      return keys.length
+    }) as any
+    redis.scanStream = ((opts: { match: string }) => {
+      scannedPatterns.push(opts.match)
+      const em = new EventEmitter()
+      queueMicrotask(() => {
+        const prefix = opts.match.replace(/\*$/, "")
+        const matched = Array.from(store.keys()).filter((k) => k.startsWith(prefix))
+        if (matched.length > 0) em.emit("data", matched)
+        em.emit("end")
+      })
+      return em
+    }) as any
+
+    try {
+      eventModels.findExpiredActiveEvents = async () => []
+      eventModels.findEvents = async () => {
+        findEventsCalls += 1
+        return [
+          {
+            id: "evt_cached_1",
+            title: "Weekly Chanting",
+            description: null,
+            location: "Main Hall",
+            eventDate: new Date("2027-01-10T09:00:00Z"),
+            status: "scheduled",
+            visibility: "all",
+            pointReward: 50,
+            maxLateMinutes: 30,
+            latePenaltyPoints: 15,
+            _count: { attendances: 0 },
+            type: null,
+          },
+        ] as any
+      }
+
+      const firstList = await eventServices.listEvents("member", false, 1, 50)
+      const secondList = await eventServices.listEvents("member", false, 1, 50)
+      expect(firstList.length).toBe(1)
+      expect(secondList[0].id).toBe("evt_cached_1")
+      expect(findEventsCalls).toBe(1)
+
+      eventModels.findEventById = async () =>
+        ({
+          id: "evt_cached_1",
+          title: "Weekly Chanting",
+          description: null,
+          location: "Main Hall",
+          eventDate: new Date("2027-01-10T09:00:00Z"),
+          status: "scheduled",
+          visibility: "all",
+          pointReward: 50,
+          maxLateMinutes: 30,
+          latePenaltyPoints: 15,
+          seasonId: null,
+          createdAt: new Date("2027-01-01T00:00:00Z"),
+          updatedAt: new Date("2027-01-01T00:00:00Z"),
+          _count: { attendances: 0 },
+          type: null,
+        }) as any
+
+      const detail = await eventServices.getEventDetail("evt_cached_1", "member", false)
+      expect(detail.id).toBe("evt_cached_1")
+      expect(store.has("events:detail:evt_cached_1:member")).toBe(true)
+
+      eventModels.findEventBasic = async () => ({ id: "evt_cached_1", status: "active" } as any)
+      eventModels.findExistingAttendance = async () => ({ id: "att_del", isFinalized: false } as any)
+      eventModels.deleteAttendance = async () => ({} as any)
+
+      await eventServices.deleteAttendance("usr_admin", "evt_cached_1", "usr_1")
+
+      expect(scannedPatterns).toContain("events:*")
+      expect(scannedPatterns).toContain("user:*:home:*")
+      expect(scannedPatterns).toContain("user:*:streak")
+      expect(scannedPatterns).toContain("pengurus:insight:*")
+      expect(store.has("events:detail:evt_cached_1:member")).toBe(false)
+    } finally {
+      redis.get = origGet
+      redis.set = origSet
+      redis.del = origDel
+      redis.scanStream = origScan
+      eventModels.findExpiredActiveEvents = origFindExpired
+      eventModels.findEvents = origFindEvents
+      eventModels.findEventById = origFindById
+      eventModels.findEventBasic = origFindBasic
+      eventModels.findExistingAttendance = origFindAtt
+      eventModels.deleteAttendance = origDelAtt
     }
   })
 })

@@ -1,7 +1,20 @@
 import { schoolModels } from "./models"
-import { cached } from "../../lib/cache"
+import { cached, invalidatePattern, CacheKeys } from "../../lib/cache"
+import { eventbus, DomainEvents } from "../../core/eventbus"
 
 import { AppError } from "../../lib/AppError"
+
+async function invalidateSchoolRelatedCaches(schoolId?: string, action?: string): Promise<void> {
+  await Promise.all([
+    invalidatePattern("schools:stats:*"),
+    invalidatePattern("schools:list:*"),
+    invalidatePattern("user:*:profile"),
+    invalidatePattern("user:*:home:*"),
+    invalidatePattern("people:list:*"),
+    invalidatePattern("pengurus:insight:*"),
+  ])
+  eventbus.publish(DomainEvents.SCHOOL_UPDATED, { schoolId, action })
+}
 
 export function normalizeSchoolType(type?: string): "SMP" | "SMA/SMK" | "Universitas" | "Umum" {
   if (!type) return "Umum"
@@ -22,9 +35,6 @@ export const schoolServices = {
     page?: number
     limit?: number
   }) {
-    // Non-blocking backfill for historical data where requester wasn't linked
-    void schoolModels.backfillApprovedSchoolRequesters()
-
     const search = params?.search?.trim() || ""
     const validLimit = Math.min(Math.max(Math.floor(Number(params?.limit) || 100), 1), 200)
     const validPage = Math.max(Math.floor(Number(params?.page) || 1), 1)
@@ -57,31 +67,43 @@ export const schoolServices = {
       ]
     }
 
-    const [schools, total] = await Promise.all([
-      schoolModels.findSchools(whereClause, validLimit, skip),
-      schoolModels.countSchoolsByWhere(whereClause),
-    ])
-    const result = schools.map((s) => ({
-      id: s.id,
-      name: s.name,
-      type: s.type || "Umum",
-      is_active: s.isActive,
-      status: s.status,
-      userCount: s._count.profiles,
-      created_at: s.createdAt.toISOString(),
-      updated_at: s.updatedAt.toISOString(),
-    }))
-
-    const totalPages = Math.max(1, Math.ceil(total / validLimit))
-    return {
-      total,
+    const filter = {
+      search,
+      type: params?.type || "all",
+      isActive: params?.isActive,
+      includePending: Boolean(params?.includePending),
+      status: params?.status,
       page: validPage,
       limit: validLimit,
-      total_pages: totalPages,
-      has_more: skip + result.length < total,
-      schools: result,
-      items: result,
     }
+
+    return cached(CacheKeys.schoolsList(JSON.stringify(filter)), 120, async () => {
+      const [schools, total] = await Promise.all([
+        schoolModels.findSchools(whereClause, validLimit, skip),
+        schoolModels.countSchoolsByWhere(whereClause),
+      ])
+      const result = schools.map((s) => ({
+        id: s.id,
+        name: s.name,
+        type: s.type || "Umum",
+        is_active: s.isActive,
+        status: s.status,
+        userCount: s._count.profiles,
+        created_at: s.createdAt.toISOString(),
+        updated_at: s.updatedAt.toISOString(),
+      }))
+
+      const totalPages = Math.max(1, Math.ceil(total / validLimit))
+      return {
+        total,
+        page: validPage,
+        limit: validLimit,
+        total_pages: totalPages,
+        has_more: skip + result.length < total,
+        schools: result,
+        items: result,
+      }
+    })
   },
 
   async getSchoolById(id: string) {
@@ -126,6 +148,7 @@ export const schoolServices = {
     }
 
     const updated = await schoolModels.approveSchool(id, reviewerId, existing.requestedBy)
+    await invalidateSchoolRelatedCaches(id, "approve")
     return {
       id: updated.id,
       name: updated.name,
@@ -146,6 +169,7 @@ export const schoolServices = {
     }
 
     const updated = await schoolModels.rejectSchool(id, reviewerId)
+    await invalidateSchoolRelatedCaches(id, "reject")
     return {
       id: updated.id,
       name: updated.name,
@@ -169,19 +193,23 @@ export const schoolServices = {
       }
     }
 
-    const cacheKey = `schools:stats:${trimmedSchool.toLowerCase()}:${trimmedGrade.toLowerCase()}`
-    return cached(cacheKey, 300, async () => {
+    const cacheKey = CacheKeys.schoolStats(trimmedSchool)
+    const baseStats = await cached(cacheKey, 300, async () => {
       const totalInSchool = await schoolModels.countProfilesBySchoolName(trimmedSchool)
-
-
 
       return {
         school: trimmedSchool,
-        class_grade: trimmedGrade,
         totalInSchool,
         totalInClass: 0,
       }
     })
+
+    return {
+      school: baseStats.school,
+      class_grade: trimmedGrade,
+      totalInSchool: baseStats.totalInSchool,
+      totalInClass: baseStats.totalInClass,
+    }
   },
 
   async createSchool(data: { name: string; type?: string }) {
@@ -195,6 +223,8 @@ export const schoolServices = {
       name: trimmedName,
       type: normalizeSchoolType(data.type),
     })
+
+    await invalidateSchoolRelatedCaches(school.id, "create")
 
     return {
       id: school.id,
@@ -213,6 +243,7 @@ export const schoolServices = {
       if (existing.status === "pending" || existing.status === "active") {
         // School already registered or pending review; immediately link user profile!
         await schoolModels.linkUserProfileToSchool(userId, existing.id)
+        await invalidateSchoolRelatedCaches(existing.id, "request_existing")
         return {
           id: existing.id,
           name: existing.name,
@@ -238,6 +269,7 @@ export const schoolServices = {
 
     // Automatically link requester's profile to the pending school
     await schoolModels.linkUserProfileToSchool(userId, school.id)
+    await invalidateSchoolRelatedCaches(school.id, "request")
 
     return {
       id: school.id,
@@ -269,6 +301,8 @@ export const schoolServices = {
       ...(activeVal !== undefined && { isActive: activeVal }),
     })
 
+    await invalidateSchoolRelatedCaches(id, "update")
+
     return {
       id: updated.id,
       name: updated.name,
@@ -295,6 +329,7 @@ export const schoolServices = {
     }
 
     await schoolModels.deleteSchool(id)
+    await invalidateSchoolRelatedCaches(id, "delete")
     return { success: true, message: `School "${existing.name}" deleted successfully.` }
   },
 }

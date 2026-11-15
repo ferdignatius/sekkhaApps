@@ -1,8 +1,7 @@
 import { eventModels } from "./models"
 import { prisma } from "../../lib/prisma"
-import { invalidatePattern, invalidate, CacheKeys } from "../../lib/cache"
+import { cached, invalidatePattern, invalidate, CacheKeys } from "../../lib/cache"
 import { auditLogger } from "../../lib/auditLogger"
-import crypto from "crypto"
 import { Prisma } from "@prisma/client"
 import { AppError } from "../../lib/AppError"
 import type { Prisma as PrismaTypes } from "@prisma/client"
@@ -13,11 +12,40 @@ import {
   toWeekKey,
   toMonthKey,
   evaluatePerfectMonthBonus,
-} from "../users"
+} from "../../lib/streak"
 
 const VALID_EVENT_STATUSES = ["scheduled", "active", "closed", "cancel"] as const
 const WIB_OFFSET_MS = 7 * 60 * 60 * 1000
 const DAILY_POINT_CAP = 150
+
+async function invalidateEventMutationCaches(): Promise<void> {
+  await Promise.all([
+    invalidatePattern("events:*"),
+    invalidate(CacheKeys.events()),
+    invalidatePattern("user:*:home:*"),
+  ])
+}
+
+async function invalidateAttendanceMutationCaches(): Promise<void> {
+  await Promise.all([
+    invalidatePattern("events:*"),
+    invalidatePattern("user:*:home:*"),
+    invalidatePattern("user:*:streak"),
+    invalidatePattern("pengurus:insight:*"),
+  ])
+}
+
+async function closeExpiredEventSafely(eventId: string): Promise<void> {
+  try {
+    await eventServices.updateEventStatus("system", "admin", eventId, "closed")
+  } catch (err: any) {
+    if (err?.code === "INVALID_STATUS_TRANSITION") {
+      const latest = await eventModels.findEventBasic(eventId)
+      if (latest?.status === "closed") return
+    }
+    throw err
+  }
+}
 
 function toWibDateKey(date: Date): string {
   return new Date(date.getTime() + WIB_OFFSET_MS).toISOString().slice(0, 10)
@@ -67,7 +95,7 @@ export const eventServices = {
 
     for (const ev of expiredEvents) {
       if (isActiveEventExpired("active", ev.eventDate, now)) {
-        await this.updateEventStatus("system", "admin", ev.id, "closed")
+        await closeExpiredEventSafely(ev.id)
         closedEventIds.push(ev.id)
       }
     }
@@ -148,91 +176,129 @@ export const eventServices = {
     const whereClause: PrismaTypes.EventWhereInput =
       andConditions.length > 0 ? { AND: andConditions } : {}
 
-    const events = await eventModels.findEvents(whereClause, skip, validLimit)
-    for (const ev of events) {
-      if (isActiveEventExpired(ev.status, ev.eventDate)) {
-        await this.updateEventStatus("system", "admin", ev.id, "closed")
+    const query = {
+      isPrivileged,
+      page: validPage,
+      limit: validLimit,
+      status: filters?.status || null,
+      event_type_id: filters?.event_type_id || null,
+      month: filters?.month || null,
+      search: filters?.search?.trim() || null,
+    }
+
+    const list = await cached(
+      CacheKeys.events(userRole || "anon", JSON.stringify(query)),
+      15,
+      async () => {
+        const events = await eventModels.findEvents(whereClause, skip, validLimit)
+        for (const ev of events) {
+          if (isActiveEventExpired(ev.status, ev.eventDate)) {
+            await closeExpiredEventSafely(ev.id)
+            ;(ev as any).status = "closed"
+          }
+        }
+
+        return events.map((e) => ({
+          id: e.id,
+          title: e.title,
+          description: e.description,
+          location: e.location,
+          event_date:
+            typeof e.eventDate === "string"
+              ? e.eventDate
+              : new Date(e.eventDate).toISOString(),
+          status: e.status,
+          visibility: e.visibility,
+          point_reward: e.pointReward,
+          max_late_minutes: e.maxLateMinutes ?? 30,
+          late_penalty_points: e.latePenaltyPoints ?? 15,
+          total_attendees: e._count?.attendances ?? 0,
+          event_type: e.type
+            ? {
+                id: e.type.id,
+                code: e.type.code,
+                label: e.type.label,
+                color: e.type.color,
+                default_point_reward: e.type.defaultPointReward,
+                apply_late_penalty: e.type.applyLatePenalty ?? true,
+                default_max_late_minutes: e.type.defaultMaxLateMinutes ?? 30,
+                default_late_penalty_points: e.type.defaultLatePenaltyPoints ?? 15,
+              }
+            : null,
+        }))
+      }
+    )
+
+    for (const ev of list) {
+      if (isActiveEventExpired(ev.status, ev.event_date)) {
+        await closeExpiredEventSafely(ev.id)
         ;(ev as any).status = "closed"
       }
     }
 
-    return events.map((e) => ({
-      id: e.id,
-      title: e.title,
-      description: e.description,
-      location: e.location,
-      event_date:
-        typeof e.eventDate === "string"
-          ? e.eventDate
-          : new Date(e.eventDate).toISOString(),
-      status: e.status,
-      visibility: e.visibility,
-      point_reward: e.pointReward,
-      max_late_minutes: e.maxLateMinutes ?? 30,
-      late_penalty_points: e.latePenaltyPoints ?? 15,
-      total_attendees: e._count?.attendances ?? 0,
-      event_type: e.type
-        ? {
-            id: e.type.id,
-            code: e.type.code,
-            label: e.type.label,
-            color: e.type.color,
-            default_point_reward: e.type.defaultPointReward,
-            apply_late_penalty: e.type.applyLatePenalty ?? true,
-            default_max_late_minutes: e.type.defaultMaxLateMinutes ?? 30,
-            default_late_penalty_points: e.type.defaultLatePenaltyPoints ?? 15,
-          }
-        : null,
-    }))
+    return list
   },
 
   async getEventDetail(id: string, userRole: string, isPrivileged: boolean) {
-    const event = await eventModels.findEventById(id)
-    if (!event) {
-      throw new AppError("Event not found", 404, "EVENT_NOT_FOUND")
+    const detail = await cached(
+      CacheKeys.eventDetail(id, userRole || "anon"),
+      30,
+      async () => {
+        const event = await eventModels.findEventById(id)
+        if (!event) {
+          throw new AppError("Event not found", 404, "EVENT_NOT_FOUND")
+        }
+
+        if (isActiveEventExpired(event.status, event.eventDate)) {
+          await closeExpiredEventSafely(event.id)
+          ;(event as any).status = "closed"
+        }
+
+        if (!canViewEvent(userRole, event.status, event.visibility)) {
+          // Return 404 Not Found to prevent information disclosure per PRD Section 5
+          throw new AppError("Event not found", 404, "EVENT_NOT_FOUND")
+        }
+
+        return {
+          id: event.id,
+          title: event.title,
+          description: event.description,
+          location: event.location,
+          event_date:
+            typeof event.eventDate === "string"
+              ? event.eventDate
+              : new Date(event.eventDate).toISOString(),
+          status: event.status,
+          visibility: event.visibility,
+          point_reward: event.pointReward,
+          max_late_minutes: event.maxLateMinutes ?? 30,
+          late_penalty_points: event.latePenaltyPoints ?? 15,
+          total_attendees: event._count?.attendances ?? 0,
+          event_type: event.type
+            ? {
+                id: event.type.id,
+                code: event.type.code,
+                label: event.type.label,
+                color: event.type.color,
+                default_point_reward: event.type.defaultPointReward,
+                apply_late_penalty: event.type.applyLatePenalty ?? true,
+                default_max_late_minutes: event.type.defaultMaxLateMinutes ?? 30,
+                default_late_penalty_points: event.type.defaultLatePenaltyPoints ?? 15,
+              }
+            : null,
+          season_id: event.seasonId,
+          created_at: event.createdAt.toISOString(),
+          updated_at: event.updatedAt.toISOString(),
+        }
+      }
+    )
+
+    if (detail && isActiveEventExpired(detail.status, detail.event_date)) {
+      await closeExpiredEventSafely(detail.id)
+      return { ...detail, status: "closed" as typeof detail.status }
     }
 
-    if (isActiveEventExpired(event.status, event.eventDate)) {
-      await this.updateEventStatus("system", "admin", event.id, "closed")
-      ;(event as any).status = "closed"
-    }
-
-    if (!canViewEvent(userRole, event.status, event.visibility)) {
-      // Return 404 Not Found to prevent information disclosure per PRD Section 5
-      throw new AppError("Event not found", 404, "EVENT_NOT_FOUND")
-    }
-
-    return {
-      id: event.id,
-      title: event.title,
-      description: event.description,
-      location: event.location,
-      event_date:
-        typeof event.eventDate === "string"
-          ? event.eventDate
-          : new Date(event.eventDate).toISOString(),
-      status: event.status,
-      visibility: event.visibility,
-      point_reward: event.pointReward,
-      max_late_minutes: event.maxLateMinutes ?? 30,
-      late_penalty_points: event.latePenaltyPoints ?? 15,
-      total_attendees: event._count?.attendances ?? 0,
-      event_type: event.type
-        ? {
-            id: event.type.id,
-            code: event.type.code,
-            label: event.type.label,
-            color: event.type.color,
-            default_point_reward: event.type.defaultPointReward,
-            apply_late_penalty: event.type.applyLatePenalty ?? true,
-            default_max_late_minutes: event.type.defaultMaxLateMinutes ?? 30,
-            default_late_penalty_points: event.type.defaultLatePenaltyPoints ?? 15,
-          }
-        : null,
-      season_id: event.seasonId,
-      created_at: event.createdAt.toISOString(),
-      updated_at: event.updatedAt.toISOString(),
-    }
+    return detail
   },
 
   async createEvent(actorId: string, actorRole: string, body: CreateEventInput) {
@@ -299,9 +365,7 @@ export const eventServices = {
       include: { type: true },
     })
 
-    await invalidatePattern("events:*")
-    await invalidate(CacheKeys.events())
-    await invalidatePattern("user:*:home:*")
+    await invalidateEventMutationCaches()
 
     auditLogger.log({
       actorId,
@@ -343,8 +407,14 @@ export const eventServices = {
       throw new AppError("Event not found", 404, "EVENT_NOT_FOUND")
     }
 
-    if (current.status === "closed") {
-      throw new AppError("Closed events cannot be edited.", 400, "CANNOT_EDIT_CLOSED_EVENT")
+    if (current.status === "closed" || current.status === "cancel") {
+      throw new AppError(
+        current.status === "closed"
+          ? "Closed events cannot be edited."
+          : "Cancelled events cannot be edited. Reschedule it first.",
+        400,
+        current.status === "closed" ? "CANNOT_EDIT_CLOSED_EVENT" : "CANNOT_EDIT_CANCELLED_EVENT"
+      )
     }
 
     let eventDate: Date | undefined
@@ -391,9 +461,7 @@ export const eventServices = {
       include: { type: true },
     })
 
-    await invalidatePattern("events:*")
-    await invalidate(CacheKeys.events())
-    await invalidatePattern("user:*:home:*")
+    await invalidateEventMutationCaches()
 
     auditLogger.log({
       actorId,
@@ -449,9 +517,10 @@ export const eventServices = {
 
         if (rescheduleDate) {
           const parsedDate = new Date(rescheduleDate)
-          if (!isNaN(parsedDate.getTime())) {
-            updatedEventDate = parsedDate
+          if (isNaN(parsedDate.getTime())) {
+            throw new AppError("Invalid reschedule date format.", 400, "INVALID_DATE_FORMAT")
           }
+          updatedEventDate = parsedDate
         }
 
         const effectiveEventDate = updatedEventDate ?? new Date(currentEvent.eventDate)
@@ -486,10 +555,32 @@ export const eventServices = {
         updatedEventDate = parsedDate
       }
 
-      // 3. Validation for "closed"
+      // 3. Validation for "cancel"
+      if (normalizedTarget === "cancel" && currentStatus === "closed") {
+        throw new AppError(
+          "Closed events cannot be cancelled because points have already been distributed.",
+          400,
+          "EVENT_CLOSED_IMMUTABLE"
+        )
+      }
+
+      // 4. Validation for "closed"
       if (normalizedTarget === "closed") {
         if (currentStatus !== "active") {
           throw new AppError("Only active events can be closed and finalized.", 400, "INVALID_STATUS_TRANSITION")
+        }
+        if (typeof (tx.event as any).updateMany === "function") {
+          const claimed = await (tx.event as any).updateMany({
+            where: { id, status: "active" },
+            data: { status: "closed" },
+          })
+          if (!claimed || claimed.count === 0) {
+            throw new AppError(
+              "Only active events can be closed and finalized.",
+              400,
+              "INVALID_STATUS_TRANSITION"
+            )
+          }
         }
       }
 
@@ -535,7 +626,9 @@ export const eventServices = {
 
             // Enforce 150-point daily cap (pointRules.md)
             const nowDate = new Date()
-            const startOfToday = getStartOfCurrentWibDayUtc(nowDate)
+            const startOfToday = getStartOfCurrentWibDayUtc(
+              currentEvent.eventDate ? new Date(currentEvent.eventDate) : nowDate
+            )
             const endOfToday = new Date(startOfToday.getTime() + 24 * 60 * 60 * 1000 - 1)
 
             const todayPointSums = await tx.pointTransaction.groupBy({
@@ -649,7 +742,7 @@ export const eventServices = {
                 ruleId: null, // Event attendance points are driven directly by Event & EventType
                 amount: clampedAmount,
                 type: "attendance" as const,
-                description: `Presensi Event: ${currentEvent.title}`,
+                description: `Event Attendance: ${currentEvent.title}`,
                 referenceId: att.id,
               })
 
@@ -778,13 +871,14 @@ export const eventServices = {
       return { event: updated, totalAttendees, pointsDistributed }
     })
 
-    await invalidatePattern("events:*")
-    await invalidate(CacheKeys.events())
-    await invalidatePattern("user:*:home:*")
+    await invalidateEventMutationCaches()
     if (normalizedTarget === "closed") {
-      await invalidatePattern("user:*:profile")
-      await invalidatePattern("pengurus:insight:*")
-      await invalidatePattern("leaderboard:*")
+      await Promise.all([
+        invalidatePattern("user:*:profile"),
+        invalidatePattern("user:*:streak"),
+        invalidatePattern("pengurus:insight:*"),
+        invalidatePattern("leaderboard:*"),
+      ])
     }
 
     auditLogger.log({
@@ -827,7 +921,7 @@ export const eventServices = {
     }
 
     if (isActiveEventExpired(event.status, event.eventDate)) {
-      await this.updateEventStatus("system", "admin", event.id, "closed")
+      await closeExpiredEventSafely(event.id)
       ;(event as any).status = "closed"
     }
 
@@ -884,7 +978,7 @@ export const eventServices = {
       throw error
     }
 
-    await invalidatePattern("user:*:home:*")
+    await invalidateAttendanceMutationCaches()
 
     const attendeeName = user.profile?.name ?? "Sekkha Member"
 
@@ -950,6 +1044,9 @@ export const eventServices = {
       if (!badgeActivity) {
         throw new AppError("Badge activity not found.", 404, "BADGE_ACTIVITY_NOT_FOUND")
       }
+      if (badgeActivity.isActive === false) {
+        throw new AppError("Badge activity is inactive.", 400, "BADGE_INACTIVE")
+      }
       badgeBonusPoints = badgeActivity.bonusPoints
     }
 
@@ -957,6 +1054,8 @@ export const eventServices = {
       badgeActivityId: badgeActivityId || null,
       badgeBonusPoints,
     })
+
+    await invalidateAttendanceMutationCaches()
 
     auditLogger.log({
       actorId,
@@ -1043,6 +1142,8 @@ export const eventServices = {
       throw error
     }
 
+    await invalidateAttendanceMutationCaches()
+
     auditLogger.log({
       actorId,
       actorRole: "attendance_operator",
@@ -1077,9 +1178,7 @@ export const eventServices = {
       }
       throw error
     }
-    await invalidatePattern("events:*")
-    await invalidate(CacheKeys.events())
-    await invalidatePattern("user:*:home:*")
+    await invalidateEventMutationCaches()
 
     auditLogger.log({
       actorId,

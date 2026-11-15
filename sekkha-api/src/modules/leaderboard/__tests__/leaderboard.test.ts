@@ -1,12 +1,16 @@
 import { describe, it, expect, beforeEach, afterEach } from "bun:test"
+import { EventEmitter } from "events"
 import {
   resolveLeaderboardPeriods,
   resolveActiveSeason,
   computeAndCacheLeaderboard,
   getLeaderboardSnapshot,
+  clearMemoryLeaderboardCache,
 } from "../services"
+import { leaderboardModule } from "../module"
 import { leaderboardModels } from "../models"
 import { redis } from "../../../lib/redis"
+import { eventbus, DomainEvents } from "../../../core/eventbus"
 
 describe("Leaderboard Module — Unit Tests", () => {
   const originalFindActiveSeason = leaderboardModels.findActiveSeason
@@ -25,6 +29,7 @@ describe("Leaderboard Module — Unit Tests", () => {
   const originalRedisSet = redis.set
 
   beforeEach(() => {
+    clearMemoryLeaderboardCache()
     // Default model mocks: in-memory safe
     leaderboardModels.findActiveSeason = async () => null
     leaderboardModels.findScheduledSeason = async () => null
@@ -451,6 +456,173 @@ describe("Leaderboard Module — Unit Tests", () => {
       expect(snapshot.active_period.is_archived).toBe(true)
       expect(snapshot.entries[0].name).toBe("Past Champion")
       expect(snapshot.entries[0].value).toBe(720)
+    })
+
+    it("stores 60s TTL in Redis and evicts expired in-memory cache after 60s", async () => {
+      const origStatus = (redis as any).status
+      const origDateNow = Date.now
+      let capturedExFlag: unknown
+      let capturedTtl: unknown
+      let dbCalls = 0
+
+      try {
+        leaderboardModels.findLeaderboardUsers = async () => {
+          dbCalls++
+          return [
+            {
+              id: "u_ttl",
+              username: "ttl_user",
+              role: "member",
+              profile: { name: "TTL User" },
+              stats: { points: 100, currentStreak: 1, totalAttendances: 2 },
+            },
+          ]
+        }
+        leaderboardModels.findPointTotalsByUser = async () => [
+          { userId: "u_ttl", _sum: { amount: 100 } },
+        ] as any
+
+        ;(redis as any).status = "ready"
+        redis.set = (async (_key: string, _val: string, exFlag?: string, ttl?: number) => {
+          capturedExFlag = exFlag
+          capturedTtl = ttl
+          return "OK"
+        }) as any
+
+        await computeAndCacheLeaderboard()
+        expect(capturedExFlag).toBe("EX")
+        expect(capturedTtl).toBe(60)
+        expect(dbCalls).toBe(1)
+
+        // When Redis is offline, memory cache serves within 60s and evicts after 60s
+        ;(redis as any).status = "wait"
+        const cachedSnap = await getLeaderboardSnapshot("points")
+        expect(cachedSnap.entries[0].value).toBe(100)
+        expect(dbCalls).toBe(1)
+
+        const baseNow = origDateNow()
+        Date.now = () => baseNow + 61_000
+        await getLeaderboardSnapshot("points")
+        expect(dbCalls).toBe(2)
+      } finally {
+        Date.now = origDateNow
+        ;(redis as any).status = origStatus
+      }
+    })
+
+    it("evicts stale RAM cache and recomputes on Redis null miss without mutating cached metadata", async () => {
+      const origStatus = (redis as any).status
+      let points = 120
+      let dbCalls = 0
+
+      try {
+        leaderboardModels.findLeaderboardUsers = async () => {
+          dbCalls++
+          return [
+            {
+              id: "u_evict",
+              username: "evict_user",
+              role: "member",
+              profile: { name: "Evict User" },
+              stats: { points, currentStreak: 1, totalAttendances: 2 },
+            },
+          ]
+        }
+        leaderboardModels.findPointTotalsByUser = async () => [
+          { userId: "u_evict", _sum: { amount: points } },
+        ] as any
+
+        // Warm memory cache while Redis is down
+        ;(redis as any).status = "wait"
+        const first = await getLeaderboardSnapshot("points")
+        expect(first.entries[0].value).toBe(120)
+        expect(dbCalls).toBe(1)
+
+        // Ensure returned object is a shallow copy, not mutating cached entry
+        const second = await getLeaderboardSnapshot("points")
+        expect(second).not.toBe(first)
+
+        // Now Redis is ready and returns null (invalidated in Redis): must recompute, NOT serve RAM 120
+        points = 350
+        ;(redis as any).status = "ready"
+        redis.get = (async () => null) as any
+        const fresh = await getLeaderboardSnapshot("points")
+        expect(dbCalls).toBe(2)
+        expect(fresh.entries[0].value).toBe(350)
+      } finally {
+        ;(redis as any).status = origStatus
+      }
+    })
+
+    it("subscribes to USER_UPDATED, USER_DELETED, SEASON_UPDATED, and CONFIG_UPDATED to clear RAM and Redis cache", async () => {
+      const origStatus = (redis as any).status
+      const origScanStream = redis.scanStream
+      const origDel = redis.del
+      let points = 50
+      let dbCalls = 0
+      const scannedPatterns: string[] = []
+      const deletedKeys: string[] = []
+
+      try {
+        leaderboardModels.findLeaderboardUsers = async () => {
+          dbCalls++
+          return [
+            {
+              id: "u_sub",
+              username: "sub_user",
+              role: "member",
+              profile: { name: "Sub User" },
+              stats: { points, currentStreak: 1, totalAttendances: 1 },
+            },
+          ]
+        }
+        leaderboardModels.findPointTotalsByUser = async () => [
+          { userId: "u_sub", _sum: { amount: points } },
+        ] as any
+
+        leaderboardModule.subscribe?.()
+        leaderboardModule.subscribe?.() // Verify idempotent registration
+
+        ;(redis as any).status = "wait"
+        const initial = await getLeaderboardSnapshot("points")
+        expect(initial.entries[0].value).toBe(50)
+        expect(dbCalls).toBe(1)
+
+        ;(redis as any).status = "ready"
+        redis.scanStream = ((opts: { match: string }) => {
+          scannedPatterns.push(opts.match)
+          const stream = new EventEmitter()
+          queueMicrotask(() => {
+            stream.emit("data", ["leaderboard:points:semester:sem-2026-2"])
+            stream.emit("end")
+          })
+          return stream
+        }) as any
+        redis.del = (async (...keys: string[]) => {
+          deletedKeys.push(...keys)
+          return keys.length
+        }) as any
+        redis.get = (async () => null) as any
+
+        points = 410
+        eventbus.publish(DomainEvents.USER_UPDATED, { userId: "u_sub" })
+        eventbus.publish(DomainEvents.SEASON_UPDATED, { seasonId: "s_1", action: "activated" })
+        eventbus.publish(DomainEvents.CONFIG_UPDATED, { entity: "point_rule", action: "updated" })
+        eventbus.publish(DomainEvents.USER_DELETED, { userId: "u_sub" })
+
+        await new Promise((r) => setTimeout(r, 10))
+        expect(scannedPatterns.filter((p) => p === "leaderboard:*").length).toBeGreaterThanOrEqual(4)
+        expect(deletedKeys).toContain("leaderboard:points:semester:sem-2026-2")
+
+        ;(redis as any).status = "wait"
+        const refreshed = await getLeaderboardSnapshot("points")
+        expect(dbCalls).toBe(2)
+        expect(refreshed.entries[0].value).toBe(410)
+      } finally {
+        ;(redis as any).status = origStatus
+        redis.scanStream = origScanStream
+        redis.del = origDel
+      }
     })
   })
 })

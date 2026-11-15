@@ -40,7 +40,7 @@ export async function generateUniqueUserNumber(
 
   if (nextSeq > 99n) {
     throw new AppError(
-      "Kuota pembuatan nomor anggota harian (maksimal 99/hari) telah tercapai.",
+      "Daily member number generation quota (maximum 99/day) has been reached.",
       429,
       "DAILY_USER_NUMBER_LIMIT_REACHED"
     )

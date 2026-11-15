@@ -1,5 +1,5 @@
 export { schoolsModule } from "./module"
-export { schoolsRouter } from "./routes"
+export { schoolsRouter, configureSchoolsRouter } from "./routes"
 export { schoolControllers } from "./controllers"
 export { schoolServices } from "./services"
 export { schoolModels } from "./models"

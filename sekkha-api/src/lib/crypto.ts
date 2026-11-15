@@ -101,6 +101,22 @@ export function decrypt(ciphertext: string | null | undefined): string | null {
 }
 
 /**
+ * Safely decrypts an AES-256-GCM ciphertext and rejects undecryptable values
+ * or leaked hex triplets (e.g. corrupt `iv:tag:cipher` strings), returning `fallback`.
+ */
+export function safeDecrypt(
+  val: string | null | undefined,
+  fallback: string | null = null
+): string | null {
+  if (!val) return fallback
+  const decrypted = decrypt(val)
+  if (!decrypted || /^[0-9a-fA-F]+:[0-9a-fA-F]+:[0-9a-fA-F]+$/.test(decrypted)) {
+    return fallback
+  }
+  return decrypted
+}
+
+/**
  * Generates an HMAC-SHA256 blind index for exact match search on encrypted columns.
  */
 export function generateBlindIndex(text: string | null | undefined): string | null {

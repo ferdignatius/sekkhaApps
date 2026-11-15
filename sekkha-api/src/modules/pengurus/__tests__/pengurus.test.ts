@@ -305,4 +305,68 @@ describe("Pengurus Module — Unit Tests (Insights & Analytics)", () => {
       expect(meditationCat?.eventCount).toBe(1)
     })
   })
+
+  describe("4. Monthly Default Compare Year, English Labels & Normalized Cache Keys", () => {
+    it("defaults compareYear to primaryYear for Feb-Dec and primaryYear - 1 for Jan in month mode, with English Week labels", async () => {
+      const midYear = await pengurusServices.getInsights({
+        timeUnit: "month",
+        primaryYear: 2026,
+        primaryMonth: 7,
+      })
+      expect(midYear.previousPeriodLabel).toBe("June 2026")
+      expect(midYear.trendChartData.map((row) => row.label)).toEqual([
+        "Week 1",
+        "Week 2",
+        "Week 3",
+        "Week 4",
+        "Week 5",
+      ])
+
+      const january = await pengurusServices.getInsights({
+        timeUnit: "month",
+        primaryYear: 2026,
+        primaryMonth: 1,
+      })
+      expect(january.previousPeriodLabel).toBe("December 2025")
+    })
+
+    it("normalizes selectedCategories and selectedPeriods in cacheKey regardless of case, spacing, or order", async () => {
+      const origStatus = (redis as any).status
+      const getKeys: string[] = []
+      const setKeys: string[] = []
+
+      try {
+        ;(redis as any).status = "ready"
+        redis.get = (async (key: string) => {
+          getKeys.push(key)
+          return null
+        }) as any
+        redis.set = (async (key: string) => {
+          setKeys.push(key)
+          return "OK"
+        }) as any
+
+        await pengurusServices.getInsights({
+          timeUnit: "year",
+          primaryYear: 2026,
+          selectedCategories: "meditasi, puja_bhakti",
+          selectedPeriods: "2026, 2025",
+        })
+        await pengurusServices.getInsights({
+          timeUnit: "year",
+          primaryYear: 2026,
+          selectedCategories: " PUJA_BHAKTI , meditasi ",
+          selectedPeriods: " 2025 , 2026 ",
+        })
+
+        expect(getKeys).toHaveLength(2)
+        expect(setKeys).toHaveLength(2)
+        expect(getKeys[0]).toBe(getKeys[1])
+        expect(setKeys[0]).toBe(setKeys[1])
+        expect(getKeys[0]).toContain(":meditasi,puja_bhakti:2025,2026")
+      } finally {
+        ;(redis as any).status = origStatus
+      }
+    })
+  })
 })

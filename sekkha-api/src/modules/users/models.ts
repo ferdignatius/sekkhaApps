@@ -155,13 +155,16 @@ export const userModels = {
       where: { userId },
       orderBy: { scannedAt: "desc" },
       select: { scannedAt: true },
+      take: 500,
     })
   },
 
   findClosedEventDates() {
     return prisma.event.findMany({
       where: { status: "closed" },
+      orderBy: { eventDate: "desc" },
       select: { eventDate: true },
+      take: 500,
     })
   },
 

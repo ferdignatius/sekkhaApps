@@ -239,7 +239,7 @@ describe("EventBus, UserNumber Overflow & Leaderboard Role Filtering", () => {
     } as any
 
     try {
-      errorHandler(parsed.error, req, res, (() => {}) as any)
+      errorHandler(parsed.error, req, res, (() => { }) as any)
     } finally {
       console.error = originalError
     }
@@ -254,9 +254,9 @@ describe("EventBus, UserNumber Overflow & Leaderboard Role Filtering", () => {
   it("forwards DB errors in requireAuth to next(err) (500 via errorHandler) instead of returning 401", async () => {
     const origFindUnique = prisma.user.findUnique
     const dbFailure = new Error("Database connection terminated unexpectedly")
-    ;(prisma.user as any).findUnique = async () => {
-      throw dbFailure
-    }
+      ; (prisma.user as any).findUnique = async () => {
+        throw dbFailure
+      }
 
     const validToken = jwt.sign(
       { userId: "usr_db_err_test", role: "member" },
@@ -308,10 +308,10 @@ describe("EventBus, UserNumber Overflow & Leaderboard Role Filtering", () => {
 
       // Passing forwarded DB error into errorHandler yields 500 (not 401)
       const origConsoleError = console.error
-      console.error = () => {}
+      console.error = () => { }
       const errHandlerRes = makeRes()
       try {
-        errorHandler(capturedNextErr, reqDbErr, errHandlerRes.res, (() => {}) as any)
+        errorHandler(capturedNextErr, reqDbErr, errHandlerRes.res, (() => { }) as any)
       } finally {
         console.error = origConsoleError
       }
@@ -335,7 +335,7 @@ describe("EventBus, UserNumber Overflow & Leaderboard Role Filtering", () => {
       expect(resBadWrapper.getStatus()).toBe(401)
       expect(resBadWrapper.getBody()?.code).toBe(401)
     } finally {
-      ;(prisma.user as any).findUnique = origFindUnique
+      ; (prisma.user as any).findUnique = origFindUnique
     }
   })
 })

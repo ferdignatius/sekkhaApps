@@ -207,10 +207,28 @@ export async function resolveActiveSeason(now = new Date()) {
 
 const activeComputations = new Map<string, Promise<void>>()
 
+const LEADERBOARD_CACHE_TTL_SECONDS = 60
+const LEADERBOARD_CACHE_TTL_MS = LEADERBOARD_CACHE_TTL_SECONDS * 1000
+
+interface MemoryLeaderboardEntry {
+  snapshot: LeaderboardSnapshot
+  expiresAt: number
+}
+
 /**
- * Coalesces concurrent refreshes into one database computation per period.
+ * Per-process fallback cache bounded by LEADERBOARD_CACHE_TTL_MS when Redis is unavailable.
  */
-const memoryLeaderboardCache = new Map<string, LeaderboardSnapshot>()
+const memoryLeaderboardCache = new Map<string, MemoryLeaderboardEntry>()
+
+function getValidMemorySnapshot(cacheKey: string): LeaderboardSnapshot | null {
+  const entry = memoryLeaderboardCache.get(cacheKey)
+  if (!entry) return null
+  if (Date.now() >= entry.expiresAt) {
+    memoryLeaderboardCache.delete(cacheKey)
+    return null
+  }
+  return entry.snapshot
+}
 
 export function clearMemoryLeaderboardCache(): void {
   memoryLeaderboardCache.clear()
@@ -343,10 +361,13 @@ async function computeAndCacheLeaderboardInternal(periodTarget?: LeaderboardPeri
       }
 
       const cacheKey = leaderboardCacheKey(metric, activePeriod.key, activePeriod.code || activePeriod.id)
-      memoryLeaderboardCache.set(cacheKey, snapshot)
+      memoryLeaderboardCache.set(cacheKey, {
+        snapshot,
+        expiresAt: Date.now() + LEADERBOARD_CACHE_TTL_MS,
+      })
       try {
-        if (redis.status === "ready" || redis.status === "connect") {
-          await redis.set(cacheKey, JSON.stringify(snapshot), "EX", 60 * 60 * 24 * 7)
+        if (redis.status === "ready") {
+          await redis.set(cacheKey, JSON.stringify(snapshot), "EX", LEADERBOARD_CACHE_TTL_SECONDS)
         }
       } catch {
         // Fall back cleanly to memoryLeaderboardCache
@@ -367,10 +388,12 @@ function attachArchivedMetadata(
   archivedPeriods: LeaderboardPeriod[],
   targetPeriod: LeaderboardPeriod
 ): LeaderboardSnapshot {
-  snapshot.available_periods = periods
-  snapshot.archived_periods = archivedPeriods
-  snapshot.active_period = targetPeriod
-  return snapshot
+  return {
+    ...snapshot,
+    available_periods: periods,
+    archived_periods: archivedPeriods,
+    active_period: targetPeriod,
+  }
 }
 
 export async function getLeaderboardSnapshot(
@@ -394,8 +417,9 @@ export async function getLeaderboardSnapshot(
 
   const cacheKey = leaderboardCacheKey(metric, targetPeriod.key, targetPeriod.code || targetPeriod.id)
   if (!forceRefresh) {
-    try {
-      if (redis.status === "ready" || redis.status === "connect") {
+    let consultMemoryCache = redis.status !== "ready"
+    if (redis.status === "ready") {
+      try {
         const raw = await redis.get(cacheKey)
         if (raw) {
           const parsed = JSON.parse(raw) as LeaderboardSnapshot
@@ -404,16 +428,22 @@ export async function getLeaderboardSnapshot(
             return attachArchivedMetadata(parsed, periods, archivedPeriods, targetPeriod)
           }
         }
+        // Evict RAM cache on Redis miss/invalidation so stale entries aren't served when Redis is ready
+        memoryLeaderboardCache.delete(cacheKey)
+      } catch (err) {
+        console.warn("⚠️ Redis cache read error:", err)
+        consultMemoryCache = true
       }
-    } catch (err) {
-      console.warn("⚠️ Redis cache read error:", err)
     }
 
-    const cachedMem = memoryLeaderboardCache.get(cacheKey)
-    if (cachedMem) {
-      const isStale = cachedMem.entries?.some((e) => !e.role || !e.username)
-      if (!isStale) {
-        return attachArchivedMetadata(cachedMem, periods, archivedPeriods, targetPeriod)
+    if (consultMemoryCache) {
+      const cachedMem = getValidMemorySnapshot(cacheKey)
+      if (cachedMem) {
+        const isStale = cachedMem.entries?.some((e) => !e.role || !e.username)
+        if (!isStale) {
+          return attachArchivedMetadata(cachedMem, periods, archivedPeriods, targetPeriod)
+        }
+        memoryLeaderboardCache.delete(cacheKey)
       }
     }
   }
@@ -426,7 +456,7 @@ export async function getLeaderboardSnapshot(
   }
 
   try {
-    if (redis.status === "ready" || redis.status === "connect") {
+    if (redis.status === "ready") {
       const raw = await redis.get(cacheKey).catch(() => null)
       if (raw) {
         const parsed = JSON.parse(raw) as LeaderboardSnapshot
@@ -435,7 +465,7 @@ export async function getLeaderboardSnapshot(
     }
   } catch {}
 
-  const cachedMem = memoryLeaderboardCache.get(cacheKey)
+  const cachedMem = getValidMemorySnapshot(cacheKey)
   if (cachedMem) {
     return attachArchivedMetadata(cachedMem, periods, archivedPeriods, targetPeriod)
   }

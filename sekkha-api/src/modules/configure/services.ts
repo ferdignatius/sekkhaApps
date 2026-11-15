@@ -1,12 +1,62 @@
 import { configureModels } from "./models"
-import { computeAndCacheLeaderboard, resolveActiveSeason } from "../leaderboard/services"
 import { AppError } from "../../lib/AppError"
+import { cached, invalidatePattern, CacheKeys } from "../../lib/cache"
+import { eventbus, DomainEvents } from "../../core/eventbus"
+import { auditLogger } from "../../lib/auditLogger"
+
+const CONFIG_CACHE_TTL_SECONDS = 120
+
+export interface ConfigureActor {
+  actorId?: string
+  actorRole?: string
+}
 
 let defaultThresholds = {
   warningConsecutiveMissed: 2,
   atRiskConsecutiveMissed: 3,
   lostConsecutiveMissed: 4,
   churnedDaysThreshold: 60,
+}
+
+function serializeConfigureQueryKey(filter?: Record<string, unknown>): string {
+  if (!filter) return "all"
+  const normalized = Object.entries(filter)
+    .filter(([, value]) => value !== undefined && value !== "")
+    .map(([key, value]) => [key, typeof value === "string" ? value.trim() : value] as const)
+    .sort(([a], [b]) => a.localeCompare(b))
+  return normalized.length > 0 ? JSON.stringify(Object.fromEntries(normalized)) : "all"
+}
+
+async function emitConfigureMutationEffects(params: {
+  domainEvent: typeof DomainEvents.SEASON_UPDATED | typeof DomainEvents.CONFIG_UPDATED
+  payload: Record<string, unknown>
+  configAction: string
+  targetId?: string | null
+  actor?: ConfigureActor
+  details?: Record<string, unknown>
+}): Promise<void> {
+  await Promise.all([
+    invalidatePattern("configure:*"),
+    invalidatePattern("events:*"),
+    invalidatePattern("user:*:home:*"),
+    invalidatePattern("pengurus:insight:*"),
+    invalidatePattern("leaderboard:*"),
+  ])
+
+  auditLogger.log({
+    actorId: params.actor?.actorId || "system",
+    ...(params.actor?.actorRole ? { actorRole: params.actor.actorRole } : {}),
+    action: "SYSTEM_SECURITY_ALERT",
+    targetId: params.targetId ?? null,
+    status: "SUCCESS",
+    details: {
+      auditCategory: "CONFIGURATION_CHANGE",
+      configAction: params.configAction,
+      ...params.details,
+    },
+  })
+
+  eventbus.publish(params.domainEvent, params.payload)
 }
 
 function toKebabCase(str: string): string {
@@ -90,14 +140,20 @@ export const configureServices = {
     page?: number
     limit?: number
   }) {
-    const window =
-      filter?.limit !== undefined ? resolvePaginationWindow(filter.page, filter.limit) : undefined
-    const types = await configureModels.findEventTypes({
-      isActive: filter?.isActive,
-      search: filter?.search,
-      ...(window ? { skip: window.skip, take: window.limit } : {}),
-    })
-    return types.map(formatEventType)
+    return cached(
+      CacheKeys.configureEventTypes(serializeConfigureQueryKey(filter)),
+      CONFIG_CACHE_TTL_SECONDS,
+      async () => {
+        const window =
+          filter?.limit !== undefined ? resolvePaginationWindow(filter.page, filter.limit) : undefined
+        const types = await configureModels.findEventTypes({
+          isActive: filter?.isActive,
+          search: filter?.search,
+          ...(window ? { skip: window.skip, take: window.limit } : {}),
+        })
+        return types.map(formatEventType)
+      }
+    )
   },
 
   async getEventTypesPaginated(filter: {
@@ -106,41 +162,50 @@ export const configureServices = {
     page?: number
     limit?: number
   }) {
-    const { page, limit, skip } = resolvePaginationWindow(filter.page, filter.limit)
-    const [types, total] = await Promise.all([
-      configureModels.findEventTypes({
-        isActive: filter.isActive,
-        search: filter.search,
-        skip,
-        take: limit,
-      }),
-      configureModels.countEventTypes({
-        isActive: filter.isActive,
-        search: filter.search,
-      }),
-    ])
-    const items = types.map(formatEventType)
-    return {
-      items,
-      total,
-      page,
-      limit,
-      total_pages: Math.max(1, Math.ceil(total / limit)),
-      has_more: skip + items.length < total,
-    }
+    return cached(
+      CacheKeys.configureEventTypes(serializeConfigureQueryKey({ ...filter, paginated: true })),
+      CONFIG_CACHE_TTL_SECONDS,
+      async () => {
+        const { page, limit, skip } = resolvePaginationWindow(filter.page, filter.limit)
+        const [types, total] = await Promise.all([
+          configureModels.findEventTypes({
+            isActive: filter.isActive,
+            search: filter.search,
+            skip,
+            take: limit,
+          }),
+          configureModels.countEventTypes({
+            isActive: filter.isActive,
+            search: filter.search,
+          }),
+        ])
+        const items = types.map(formatEventType)
+        return {
+          items,
+          total,
+          page,
+          limit,
+          total_pages: Math.max(1, Math.ceil(total / limit)),
+          has_more: skip + items.length < total,
+        }
+      }
+    )
   },
 
-  async createEventType(data: {
-    code?: string
-    label: string
-    color: string
-    description?: string | null
-    default_point_reward?: number
-    apply_late_penalty?: boolean
-    default_max_late_minutes?: number
-    default_late_penalty_points?: number
-    is_active?: boolean
-  }) {
+  async createEventType(
+    data: {
+      code?: string
+      label: string
+      color: string
+      description?: string | null
+      default_point_reward?: number
+      apply_late_penalty?: boolean
+      default_max_late_minutes?: number
+      default_late_penalty_points?: number
+      is_active?: boolean
+    },
+    actor?: ConfigureActor
+  ) {
     // Generate code from label if not manually provided
     const baseCode = data.code ? toKebabCase(data.code) : toKebabCase(data.label)
     let cleanCode = baseCode || `event-${Date.now().toString(36)}`
@@ -172,6 +237,15 @@ export const configureServices = {
       isActive: data.is_active ?? true,
     })
 
+    await emitConfigureMutationEffects({
+      domainEvent: DomainEvents.CONFIG_UPDATED,
+      payload: { entity: "event_type", entityId: type.id, action: "created" },
+      configAction: "CONFIG_EVENT_TYPE_CREATED",
+      targetId: type.id,
+      actor,
+      details: { code: type.code },
+    })
+
     return {
       id: type.id,
       code: type.code,
@@ -198,7 +272,8 @@ export const configureServices = {
       default_max_late_minutes?: number
       default_late_penalty_points?: number
       is_active?: boolean
-    }
+    },
+    actor?: ConfigureActor
   ) {
     const existing = await configureModels.findEventTypeById(id)
     if (!existing) {
@@ -240,6 +315,15 @@ export const configureServices = {
 
     const type = await configureModels.updateEventType(id, updateData)
 
+    await emitConfigureMutationEffects({
+      domainEvent: DomainEvents.CONFIG_UPDATED,
+      payload: { entity: "event_type", entityId: type.id, action: "updated" },
+      configAction: "CONFIG_EVENT_TYPE_UPDATED",
+      targetId: type.id,
+      actor,
+      details: { code: type.code },
+    })
+
     return {
       id: type.id,
       code: type.code,
@@ -254,7 +338,7 @@ export const configureServices = {
     }
   },
 
-  async deleteEventType(id: string) {
+  async deleteEventType(id: string, actor?: ConfigureActor) {
     const existing = await configureModels.findEventTypeById(id)
     if (!existing) {
       throw new AppError("Event type not found", 404, "EVENT_TYPE_NOT_FOUND")
@@ -270,6 +354,16 @@ export const configureServices = {
     }
 
     await configureModels.deleteEventType(id)
+
+    await emitConfigureMutationEffects({
+      domainEvent: DomainEvents.CONFIG_UPDATED,
+      payload: { entity: "event_type", entityId: id, action: "deleted" },
+      configAction: "CONFIG_EVENT_TYPE_DELETED",
+      targetId: id,
+      actor,
+      details: { code: existing.code },
+    })
+
     return { success: true, message: "Event type deleted successfully" }
   },
 
@@ -279,55 +373,64 @@ export const configureServices = {
     return defaultThresholds
   },
 
-  updateThresholds(data: any) {
+  updateThresholds(data: any, actor?: ConfigureActor) {
     defaultThresholds = { ...defaultThresholds, ...data }
+    void emitConfigureMutationEffects({
+      domainEvent: DomainEvents.CONFIG_UPDATED,
+      payload: { entity: "thresholds", action: "updated" },
+      configAction: "CONFIG_THRESHOLDS_UPDATED",
+      targetId: null,
+      actor,
+      details: { keys: Object.keys(data || {}) },
+    }).catch(() => {})
     return defaultThresholds
   },
 
   // ─── Seasons ───────────────────────────────────────────────────────────────
   async getSeasons() {
-    let seasons = await configureModels.findSeasons()
-    if (!seasons.some((s) => s.isActive)) {
-      await resolveActiveSeason().catch(() => {})
-      seasons = await configureModels.findSeasons()
-    }
-    const now = new Date()
+    return cached(CacheKeys.configureSeasons(), CONFIG_CACHE_TTL_SECONDS, async () => {
+      const seasons = await configureModels.findSeasons()
+      const now = new Date()
 
-    return Promise.all(
-      seasons.map(async (s) => {
-        const count = await configureModels.countSeasonAttendances(s.startDate, s.endDate)
-        const daysLeft = Math.max(
-          0,
-          Math.ceil((s.endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
-        )
+      return Promise.all(
+        seasons.map(async (s) => {
+          const count = await configureModels.countSeasonAttendances(s.startDate, s.endDate)
+          const daysLeft = Math.max(
+            0,
+            Math.ceil((s.endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+          )
 
-        return {
-          id: s.id,
-          name: s.name,
-          code: s.code,
-          start_date: s.startDate.toISOString(),
-          end_date: s.endDate.toISOString(),
-          is_active: s.isActive,
-          target_attendance: s.targetAttendance,
-          description: s.description,
-          total_attendances: count,
-          days_left: daysLeft,
-          created_at: s.createdAt.toISOString(),
-          updated_at: s.updatedAt.toISOString(),
-        }
-      })
-    )
+          return {
+            id: s.id,
+            name: s.name,
+            code: s.code,
+            start_date: s.startDate.toISOString(),
+            end_date: s.endDate.toISOString(),
+            is_active: s.isActive,
+            target_attendance: s.targetAttendance,
+            description: s.description,
+            total_attendances: count,
+            days_left: daysLeft,
+            created_at: s.createdAt.toISOString(),
+            updated_at: s.updatedAt.toISOString(),
+          }
+        })
+      )
+    })
   },
 
-  async createSeason(data: {
-    name: string
-    code?: string
-    start_date: string
-    end_date: string
-    is_active?: boolean
-    target_attendance?: number
-    description?: string | null
-  }) {
+  async createSeason(
+    data: {
+      name: string
+      code?: string
+      start_date: string
+      end_date: string
+      is_active?: boolean
+      target_attendance?: number
+      description?: string | null
+    },
+    actor?: ConfigureActor
+  ) {
     const startDate = new Date(data.start_date)
     const endDate = new Date(data.end_date)
 
@@ -367,7 +470,15 @@ export const configureServices = {
       description: data.description?.trim() || null,
     })
 
-    computeAndCacheLeaderboard().catch(() => {})
+    await emitConfigureMutationEffects({
+      domainEvent: DomainEvents.SEASON_UPDATED,
+      payload: { seasonId: season.id, action: "created" },
+      configAction: "CONFIG_SEASON_CREATED",
+      targetId: season.id,
+      actor,
+      details: { code: season.code, isActive: season.isActive },
+    })
+
     return {
       id: season.id,
       name: season.name,
@@ -392,7 +503,8 @@ export const configureServices = {
       is_active?: boolean
       target_attendance?: number
       description?: string | null
-    }
+    },
+    actor?: ConfigureActor
   ) {
     const existing = await configureModels.findSeasonById(id)
     if (!existing) {
@@ -442,7 +554,15 @@ export const configureServices = {
 
     // Transactional deactivation + update when is_active is true
     const season = await configureModels.updateSeason(id, updatePayload)
-    computeAndCacheLeaderboard().catch(() => {})
+
+    await emitConfigureMutationEffects({
+      domainEvent: DomainEvents.SEASON_UPDATED,
+      payload: { seasonId: season.id, action: "updated" },
+      configAction: "CONFIG_SEASON_UPDATED",
+      targetId: season.id,
+      actor,
+      details: { code: season.code, isActive: season.isActive },
+    })
 
     return {
       id: season.id,
@@ -458,7 +578,7 @@ export const configureServices = {
     }
   },
 
-  async deleteSeason(id: string) {
+  async deleteSeason(id: string, actor?: ConfigureActor) {
     const existing = await configureModels.findSeasonById(id)
     if (!existing) {
       throw new AppError("Season not found", 404, "SEASON_NOT_FOUND")
@@ -475,35 +595,67 @@ export const configureServices = {
     }
 
     await configureModels.deleteSeason(id)
-    computeAndCacheLeaderboard().catch(() => {})
+
+    await emitConfigureMutationEffects({
+      domainEvent: DomainEvents.SEASON_UPDATED,
+      payload: { seasonId: id, action: "deleted" },
+      configAction: "CONFIG_SEASON_DELETED",
+      targetId: id,
+      actor,
+      details: { code: existing.code },
+    })
+
     return { success: true, message: "Season deleted successfully" }
   },
 
-  async activateSeason(id: string) {
+  async activateSeason(id: string, actor?: ConfigureActor) {
     const existing = await configureModels.findSeasonById(id)
     if (!existing) {
       throw new AppError("Season not found", 404, "SEASON_NOT_FOUND")
     }
 
+    if (existing.endDate < new Date()) {
+      throw new AppError(
+        "Cannot activate a season whose end date has already passed.",
+        400,
+        "SEASON_EXPIRED"
+      )
+    }
+
     const season = await configureModels.activateSeason(id)
-    await computeAndCacheLeaderboard()
+
+    await emitConfigureMutationEffects({
+      domainEvent: DomainEvents.SEASON_UPDATED,
+      payload: { seasonId: season.id, action: "activated" },
+      configAction: "CONFIG_SEASON_ACTIVATED",
+      targetId: season.id,
+      actor,
+      details: { code: season.code },
+    })
+
     return { success: true, season }
   },
 
   // ─── Point Rules ───────────────────────────────────────────────────────────
   async getPointRules(filter?: { isActive?: boolean; category?: string; search?: string }) {
-    const list = await configureModels.findPointRules(filter)
-    return list.map((r) => ({
-      id: r.id,
-      code: r.code,
-      label: r.label,
-      points: r.points,
-      description: r.description,
-      category: r.category,
-      is_active: r.isActive,
-      created_at: r.createdAt.toISOString(),
-      updated_at: r.updatedAt.toISOString(),
-    }))
+    return cached(
+      CacheKeys.configurePointRules(serializeConfigureQueryKey(filter)),
+      CONFIG_CACHE_TTL_SECONDS,
+      async () => {
+        const list = await configureModels.findPointRules(filter)
+        return list.map((r) => ({
+          id: r.id,
+          code: r.code,
+          label: r.label,
+          points: r.points,
+          description: r.description,
+          category: r.category,
+          is_active: r.isActive,
+          created_at: r.createdAt.toISOString(),
+          updated_at: r.updatedAt.toISOString(),
+        }))
+      }
+    )
   },
 
   async getPointRuleById(identifier: string) {
@@ -533,7 +685,8 @@ export const configureServices = {
       points?: number
       description?: string | null
       is_active?: boolean
-    }
+    },
+    actor?: ConfigureActor
   ) {
     if (data.points !== undefined && (data.points < 0 || data.points > 100)) {
       throw new AppError(
@@ -553,6 +706,15 @@ export const configureServices = {
     if (!updated) {
       throw new AppError("Point rule not found", 404, "POINT_RULE_NOT_FOUND")
     }
+
+    await emitConfigureMutationEffects({
+      domainEvent: DomainEvents.CONFIG_UPDATED,
+      payload: { entity: "point_rule", entityId: updated.id, action: "updated" },
+      configAction: "CONFIG_POINT_RULE_UPDATED",
+      targetId: updated.id,
+      actor,
+      details: { code: updated.code, points: updated.points },
+    })
 
     return {
       id: updated.id,
@@ -574,14 +736,20 @@ export const configureServices = {
     page?: number
     limit?: number
   }) {
-    const window =
-      filter?.limit !== undefined ? resolvePaginationWindow(filter.page, filter.limit) : undefined
-    const list = await configureModels.findBadgeActivities({
-      isActive: filter?.isActive,
-      search: filter?.search,
-      ...(window ? { skip: window.skip, take: window.limit } : {}),
-    })
-    return list.map(formatBadgeActivity)
+    return cached(
+      CacheKeys.configureBadgeActivities(serializeConfigureQueryKey(filter)),
+      CONFIG_CACHE_TTL_SECONDS,
+      async () => {
+        const window =
+          filter?.limit !== undefined ? resolvePaginationWindow(filter.page, filter.limit) : undefined
+        const list = await configureModels.findBadgeActivities({
+          isActive: filter?.isActive,
+          search: filter?.search,
+          ...(window ? { skip: window.skip, take: window.limit } : {}),
+        })
+        return list.map(formatBadgeActivity)
+      }
+    )
   },
 
   async getBadgeActivitiesPaginated(filter: {
@@ -590,28 +758,34 @@ export const configureServices = {
     page?: number
     limit?: number
   }) {
-    const { page, limit, skip } = resolvePaginationWindow(filter.page, filter.limit)
-    const [list, total] = await Promise.all([
-      configureModels.findBadgeActivities({
-        isActive: filter.isActive,
-        search: filter.search,
-        skip,
-        take: limit,
-      }),
-      configureModels.countBadgeActivities({
-        isActive: filter.isActive,
-        search: filter.search,
-      }),
-    ])
-    const items = list.map(formatBadgeActivity)
-    return {
-      items,
-      total,
-      page,
-      limit,
-      total_pages: Math.max(1, Math.ceil(total / limit)),
-      has_more: skip + items.length < total,
-    }
+    return cached(
+      CacheKeys.configureBadgeActivities(serializeConfigureQueryKey({ ...filter, paginated: true })),
+      CONFIG_CACHE_TTL_SECONDS,
+      async () => {
+        const { page, limit, skip } = resolvePaginationWindow(filter.page, filter.limit)
+        const [list, total] = await Promise.all([
+          configureModels.findBadgeActivities({
+            isActive: filter.isActive,
+            search: filter.search,
+            skip,
+            take: limit,
+          }),
+          configureModels.countBadgeActivities({
+            isActive: filter.isActive,
+            search: filter.search,
+          }),
+        ])
+        const items = list.map(formatBadgeActivity)
+        return {
+          items,
+          total,
+          page,
+          limit,
+          total_pages: Math.max(1, Math.ceil(total / limit)),
+          has_more: skip + items.length < total,
+        }
+      }
+    )
   },
 
   async getBadgeActivityById(id: string) {
@@ -632,13 +806,16 @@ export const configureServices = {
     }
   },
 
-  async createBadgeActivity(data: {
-    code?: string
-    label: string
-    description?: string | null
-    bonus_points?: number
-    is_active?: boolean
-  }) {
+  async createBadgeActivity(
+    data: {
+      code?: string
+      label: string
+      description?: string | null
+      bonus_points?: number
+      is_active?: boolean
+    },
+    actor?: ConfigureActor
+  ) {
     // Generate clean kebab-case code from label if not provided
     const baseCode = data.code ? toKebabCase(data.code) : toKebabCase(data.label)
     let cleanCode = baseCode || `duty-${Date.now().toString(36)}`
@@ -663,6 +840,15 @@ export const configureServices = {
       isActive: data.is_active ?? true,
     })
 
+    await emitConfigureMutationEffects({
+      domainEvent: DomainEvents.CONFIG_UPDATED,
+      payload: { entity: "badge_activity", entityId: created.id, action: "created" },
+      configAction: "CONFIG_BADGE_ACTIVITY_CREATED",
+      targetId: created.id,
+      actor,
+      details: { code: created.code },
+    })
+
     return {
       id: created.id,
       code: created.code,
@@ -683,7 +869,8 @@ export const configureServices = {
       description?: string | null
       bonus_points?: number
       is_active?: boolean
-    }
+    },
+    actor?: ConfigureActor
   ) {
     const existing = await configureModels.findBadgeActivityById(id)
     if (!existing) {
@@ -724,6 +911,15 @@ export const configureServices = {
 
     const updated = await configureModels.updateBadgeActivity(id, updatePayload)
 
+    await emitConfigureMutationEffects({
+      domainEvent: DomainEvents.CONFIG_UPDATED,
+      payload: { entity: "badge_activity", entityId: updated.id, action: "updated" },
+      configAction: "CONFIG_BADGE_ACTIVITY_UPDATED",
+      targetId: updated.id,
+      actor,
+      details: { code: updated.code },
+    })
+
     return {
       id: updated.id,
       code: updated.code,
@@ -736,7 +932,7 @@ export const configureServices = {
     }
   },
 
-  async deleteBadgeActivity(id: string) {
+  async deleteBadgeActivity(id: string, actor?: ConfigureActor) {
     const existing = await configureModels.findBadgeActivityById(id)
     if (!existing) {
       throw new AppError("Badge activity not found", 404, "BADGE_ACTIVITY_NOT_FOUND")
@@ -753,6 +949,16 @@ export const configureServices = {
     }
 
     await configureModels.deleteBadgeActivity(id)
+
+    await emitConfigureMutationEffects({
+      domainEvent: DomainEvents.CONFIG_UPDATED,
+      payload: { entity: "badge_activity", entityId: id, action: "deleted" },
+      configAction: "CONFIG_BADGE_ACTIVITY_DELETED",
+      targetId: id,
+      actor,
+      details: { code: existing.code },
+    })
+
     return { success: true, message: "Badge activity deleted successfully" }
   },
 }

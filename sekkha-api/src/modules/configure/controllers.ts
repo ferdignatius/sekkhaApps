@@ -175,20 +175,35 @@ export const configureControllers = {
   async createEventType(req: Request, res: Response, next: NextFunction) {
     try {
       const body = EventTypeSchema.parse(req.body)
-      res.status(201).json(await configureServices.createEventType(body))
+      res.status(201).json(
+        await configureServices.createEventType(body, {
+          actorId: req.user?.userId,
+          actorRole: req.user?.role,
+        })
+      )
     } catch (err) { next(err) }
   },
   async updateEventType(req: Request, res: Response, next: NextFunction) {
     try {
       const id = req.params.id as string
       const body = EventTypeUpdateSchema.parse(req.body)
-      res.json(await configureServices.updateEventType(id, body))
+      res.json(
+        await configureServices.updateEventType(id, body, {
+          actorId: req.user?.userId,
+          actorRole: req.user?.role,
+        })
+      )
     } catch (err) { next(err) }
   },
   async deleteEventType(req: Request, res: Response, next: NextFunction) {
     try {
       const id = req.params.id as string
-      res.json(await configureServices.deleteEventType(id))
+      res.json(
+        await configureServices.deleteEventType(id, {
+          actorId: req.user?.userId,
+          actorRole: req.user?.role,
+        })
+      )
     } catch (err) { next(err) }
   },
 
@@ -200,7 +215,10 @@ export const configureControllers = {
   updateThresholds(req: Request, res: Response, next: NextFunction) {
     try {
       const validated = ThresholdSchema.parse(req.body)
-      const updated = configureServices.updateThresholds(validated)
+      const updated = configureServices.updateThresholds(validated, {
+        actorId: req.user?.userId,
+        actorRole: req.user?.role,
+      })
       res.json({ success: true, thresholds: updated })
     } catch (err) { next(err) }
   },
@@ -214,26 +232,46 @@ export const configureControllers = {
   async createSeason(req: Request, res: Response, next: NextFunction) {
     try {
       const body = SeasonSchema.parse(req.body)
-      res.status(201).json(await configureServices.createSeason(body))
+      res.status(201).json(
+        await configureServices.createSeason(body, {
+          actorId: req.user?.userId,
+          actorRole: req.user?.role,
+        })
+      )
     } catch (err) { next(err) }
   },
   async updateSeason(req: Request, res: Response, next: NextFunction) {
     try {
       const id = req.params.id as string
       const body = SeasonUpdateSchema.parse(req.body)
-      res.json(await configureServices.updateSeason(id, body))
+      res.json(
+        await configureServices.updateSeason(id, body, {
+          actorId: req.user?.userId,
+          actorRole: req.user?.role,
+        })
+      )
     } catch (err) { next(err) }
   },
   async deleteSeason(req: Request, res: Response, next: NextFunction) {
     try {
       const id = req.params.id as string
-      res.json(await configureServices.deleteSeason(id))
+      res.json(
+        await configureServices.deleteSeason(id, {
+          actorId: req.user?.userId,
+          actorRole: req.user?.role,
+        })
+      )
     } catch (err) { next(err) }
   },
   async activateSeason(req: Request, res: Response, next: NextFunction) {
     try {
       const id = req.params.id as string
-      res.json(await configureServices.activateSeason(id))
+      res.json(
+        await configureServices.activateSeason(id, {
+          actorId: req.user?.userId,
+          actorRole: req.user?.role,
+        })
+      )
     } catch (err) { next(err) }
   },
 
@@ -256,7 +294,12 @@ export const configureControllers = {
     try {
       const id = req.params.id as string
       const body = PointRuleUpdateSchema.parse(req.body)
-      res.json(await configureServices.updatePointRule(id, body))
+      res.json(
+        await configureServices.updatePointRule(id, body, {
+          actorId: req.user?.userId,
+          actorRole: req.user?.role,
+        })
+      )
     } catch (err) { next(err) }
   },
 
@@ -294,20 +337,35 @@ export const configureControllers = {
   async createBadgeActivity(req: Request, res: Response, next: NextFunction) {
     try {
       const body = BadgeActivitySchema.parse(req.body)
-      res.status(201).json(await configureServices.createBadgeActivity(body))
+      res.status(201).json(
+        await configureServices.createBadgeActivity(body, {
+          actorId: req.user?.userId,
+          actorRole: req.user?.role,
+        })
+      )
     } catch (err) { next(err) }
   },
   async updateBadgeActivity(req: Request, res: Response, next: NextFunction) {
     try {
       const id = req.params.id as string
       const body = BadgeActivityUpdateSchema.parse(req.body)
-      res.json(await configureServices.updateBadgeActivity(id, body))
+      res.json(
+        await configureServices.updateBadgeActivity(id, body, {
+          actorId: req.user?.userId,
+          actorRole: req.user?.role,
+        })
+      )
     } catch (err) { next(err) }
   },
   async deleteBadgeActivity(req: Request, res: Response, next: NextFunction) {
     try {
       const id = req.params.id as string
-      res.json(await configureServices.deleteBadgeActivity(id))
+      res.json(
+        await configureServices.deleteBadgeActivity(id, {
+          actorId: req.user?.userId,
+          actorRole: req.user?.role,
+        })
+      )
     } catch (err) { next(err) }
   },
 }

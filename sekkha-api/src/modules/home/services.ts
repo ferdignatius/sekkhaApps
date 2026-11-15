@@ -1,5 +1,5 @@
 import { cached, CacheKeys } from "../../lib/cache"
-import { calculateWeeklyStreak } from "../users"
+import { calculateWeeklyStreak } from "../../lib/streak"
 import { homeModels } from "./models"
 import type { EventVisibility } from "@prisma/client"
 
@@ -11,7 +11,7 @@ function eventVisibility(role: string): EventVisibility[] {
 
 export const homeServices = {
   async getDashboard(userId: string, role: string) {
-    return cached(CacheKeys.home(userId, role), 5, async () => {
+    const result = await cached(CacheKeys.home(userId, role), 5, async () => {
       const now = new Date()
       const [profile, events, activity, attendanceWeeks, activeSeason] = await Promise.all([
         homeModels.findProfile(userId),
@@ -69,7 +69,10 @@ export const homeServices = {
           name: profile.profile?.name || profile.username || "Member",
           avatar_url: null,
           role: profile.role,
-          user_number: profile.userNumber,
+          user_number:
+            profile.userNumber !== null && profile.userNumber !== undefined
+              ? (String(profile.userNumber) as unknown as bigint)
+              : profile.userNumber,
           points: profile.stats?.points ?? 0,
         },
         streak: {
@@ -93,5 +96,15 @@ export const homeServices = {
         })),
       }
     })
+
+    if (
+      result?.profile &&
+      result.profile.user_number !== null &&
+      result.profile.user_number !== undefined
+    ) {
+      result.profile.user_number = BigInt(result.profile.user_number)
+    }
+
+    return result
   },
 }

@@ -2,19 +2,46 @@
 // Simple get/set with TTL and cache invalidation helpers.
 // F-17 Remediation: Redis failures never crash API requests
 
+import Redis from "ioredis"
 import { redis } from "./redis"
 
-let isRedisFailing = false
 let lastFailureLog = 0
 
 function logRedisError(action: string, err: unknown) {
   const now = Date.now()
-  isRedisFailing = true
   // Throttle warning log to once every 30 seconds to prevent log flood
   if (now - lastFailureLog > 30_000) {
-    console.warn(`⚠️ [Cache] Redis operation failed during ${action} (falling back to direct DB fetcher):`, (err as Error)?.message || err)
+    console.warn(
+      `⚠️ [Cache] Redis operation failed during ${action} (falling back to direct DB fetcher):`,
+      (err as Error)?.message || err
+    )
     lastFailureLog = now
   }
+}
+
+function canReadRedis(): boolean {
+  return redis.status === "ready" || redis.get !== Redis.prototype.get
+}
+
+function canWriteRedis(): boolean {
+  return redis.status === "ready" || redis.set !== Redis.prototype.set
+}
+
+function canDeleteRedis(): boolean {
+  return redis.status === "ready" || redis.del !== Redis.prototype.del
+}
+
+function canScanRedis(): boolean {
+  return redis.status === "ready" || redis.scanStream !== Redis.prototype.scanStream
+}
+
+function serializeCacheValue(data: unknown): string | undefined {
+  return JSON.stringify(data, (_key, value) => {
+    if (typeof value === "bigint") {
+      return Number(value) <= Number.MAX_SAFE_INTEGER ? Number(value) : value.toString()
+    }
+    return value
+  })
 }
 
 /**
@@ -26,28 +53,33 @@ function logRedisError(action: string, err: unknown) {
 export async function cached<T>(
   key: string,
   ttlSeconds: number,
-  fetcher: () => Promise<T>,
+  fetcher: () => Promise<T>
 ): Promise<T> {
-  // 1. Try cache first if Redis is healthy
-  try {
-    const cachedData = await redis.get(key)
-    if (cachedData) {
-      isRedisFailing = false
-      return JSON.parse(cachedData) as T
+  // 1. Try cache first if Redis is ready (or monkey-patched in tests)
+  if (canReadRedis()) {
+    try {
+      const cachedData = await redis.get(key)
+      if (cachedData) {
+        return JSON.parse(cachedData) as T
+      }
+    } catch (err) {
+      logRedisError(`get("${key}")`, err)
     }
-  } catch (err) {
-    logRedisError(`get("${key}")`, err)
   }
 
-  // 2. Cache miss or Redis error — fetch fresh data directly
+  // 2. Cache miss or Redis unavailable — fetch fresh data directly
   const data = await fetcher()
 
-  // 3. Best-effort async write to cache
-  try {
-    await redis.set(key, JSON.stringify(data), "EX", ttlSeconds)
-    isRedisFailing = false
-  } catch (err) {
-    logRedisError(`set("${key}")`, err)
+  // 3. Best-effort write to cache (never cache null or undefined)
+  if (canWriteRedis() && data !== undefined && data !== null) {
+    try {
+      const serialized = serializeCacheValue(data)
+      if (serialized !== undefined) {
+        await redis.set(key, serialized, "EX", ttlSeconds)
+      }
+    } catch (err) {
+      logRedisError(`set("${key}")`, err)
+    }
   }
 
   return data
@@ -57,6 +89,7 @@ export async function cached<T>(
  * Invalidate a single cache key safely
  */
 export async function invalidate(key: string): Promise<void> {
+  if (!canDeleteRedis()) return
   try {
     await redis.del(key)
   } catch (err) {
@@ -68,6 +101,7 @@ export async function invalidate(key: string): Promise<void> {
  * Invalidate all keys matching a pattern (e.g., "events:*") using non-blocking SCAN
  */
 export async function invalidatePattern(pattern: string): Promise<void> {
+  if (!canScanRedis()) return
   try {
     const stream = redis.scanStream({
       match: pattern,
@@ -85,7 +119,7 @@ export async function invalidatePattern(pattern: string): Promise<void> {
     await new Promise<void>((resolve) => {
       stream.on("end", async () => {
         try {
-          if (keysToDelete.length > 0) {
+          if (keysToDelete.length > 0 && canDeleteRedis()) {
             for (let i = 0; i < keysToDelete.length; i += 100) {
               const batch = keysToDelete.slice(i, i + 100)
               await redis.del(...batch)
@@ -109,11 +143,20 @@ export async function invalidatePattern(pattern: string): Promise<void> {
 // ─── Common cache key builders ───────────────────────────────────────────────
 
 export const CacheKeys = {
-  events: (roleScope = "all") => `events:list:${roleScope}`,
-  eventDetail: (id: string) => `events:${id}`,
+  events: (roleScope = "all", queryKey = "") =>
+    queryKey ? `events:list:${roleScope}:${queryKey}` : `events:list:${roleScope}`,
+  eventDetail: (id: string, role = "all") => `events:detail:${id}:${role}`,
   leaderboard: (metric: string, season: string) => `leaderboard:${metric}:${season}`,
   userProfile: (userId: string) => `user:${userId}:profile`,
   userAttendances: (userId: string) => `user:${userId}:attendances`,
+  userStreak: (userId: string) => `user:${userId}:streak`,
   home: (userId: string, role: string) => `user:${userId}:home:${role}`,
   communityGoal: () => "community:goal",
+  configureEventTypes: (queryKey = "all") => `configure:event-types:${queryKey}`,
+  configureBadgeActivities: (queryKey = "all") => `configure:badge-activities:${queryKey}`,
+  configurePointRules: (queryKey = "all") => `configure:point-rules:${queryKey}`,
+  configureSeasons: () => "configure:seasons",
+  schoolsList: (queryKey = "all") => `schools:list:${queryKey}`,
+  schoolStats: (school: string) => `schools:stats:${school.toLowerCase()}`,
+  peopleDirectory: (queryKey = "all") => `people:list:${queryKey}`,
 } as const

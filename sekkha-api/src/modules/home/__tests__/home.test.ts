@@ -166,5 +166,41 @@ describe("Home Module — Unit Tests (Dashboard, Events & Stats)", () => {
       expect(data?.season.code).toMatch(/^S\d{4}-SEM[12]$/)
       expect(data?.season.target_attendance).toBe(500)
     })
+
+    it("coerces user_number back to BigInt when served from Redis cache", async () => {
+      let dbProfileCalls = 0
+      homeModels.findProfile = async () => {
+        dbProfileCalls += 1
+        return null
+      }
+      redis.get = (async () =>
+        JSON.stringify({
+          profile: {
+            id: "usr_cached",
+            name: "Cached Member",
+            avatar_url: null,
+            role: "member",
+            user_number: "2026071501",
+            points: 180,
+          },
+          streak: { current_streak: 2, longest_streak: 2, status: "active", last_attended: null },
+          season: {
+            id: "sem-2026-2",
+            name: "Semester 2 · 2026",
+            code: "S2026-SEM2",
+            start_date: "2026-07-01T00:00:00.000Z",
+            end_date: "2026-12-31T23:59:59.999Z",
+            target_attendance: 500,
+            days_left: 46,
+          },
+          events: [],
+          activities: [],
+        })) as any
+
+      const data = await homeServices.getDashboard("usr_cached", "member")
+      expect(dbProfileCalls).toBe(0)
+      expect(typeof data?.profile.user_number).toBe("bigint")
+      expect(data?.profile.user_number).toBe(BigInt(2026071501))
+    })
   })
 })

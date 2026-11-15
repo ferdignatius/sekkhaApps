@@ -178,6 +178,9 @@ export const eventServices = {
             label: e.type.label,
             color: e.type.color,
             default_point_reward: e.type.defaultPointReward,
+            apply_late_penalty: e.type.applyLatePenalty ?? true,
+            default_max_late_minutes: e.type.defaultMaxLateMinutes ?? 30,
+            default_late_penalty_points: e.type.defaultLatePenaltyPoints ?? 15,
           }
         : null,
     }))
@@ -221,6 +224,9 @@ export const eventServices = {
             label: event.type.label,
             color: event.type.color,
             default_point_reward: event.type.defaultPointReward,
+            apply_late_penalty: event.type.applyLatePenalty ?? true,
+            default_max_late_minutes: event.type.defaultMaxLateMinutes ?? 30,
+            default_late_penalty_points: event.type.defaultLatePenaltyPoints ?? 15,
           }
         : null,
       season_id: event.seasonId,
@@ -269,9 +275,12 @@ export const eventServices = {
       seasonId = activeSeason?.id
     }
 
+    const applyLatePenalty = eventType.applyLatePenalty ?? true
     const pointReward = body.point_reward ?? eventType.defaultPointReward ?? 50
-    const maxLateMinutes = body.max_late_minutes ?? 30
-    const latePenaltyPoints = body.late_penalty_points ?? 15
+    const maxLateMinutes = body.max_late_minutes ?? eventType.defaultMaxLateMinutes ?? 30
+    const latePenaltyPoints =
+      body.late_penalty_points ??
+      (applyLatePenalty ? (eventType.defaultLatePenaltyPoints ?? 15) : 0)
 
     const event = await prisma.event.create({
       data: {
@@ -320,6 +329,9 @@ export const eventServices = {
             code: event.type.code,
             label: event.type.label,
             color: event.type.color,
+            apply_late_penalty: event.type.applyLatePenalty ?? true,
+            default_max_late_minutes: event.type.defaultMaxLateMinutes ?? 30,
+            default_late_penalty_points: event.type.defaultLatePenaltyPoints ?? 15,
           }
         : null,
     }
@@ -523,10 +535,8 @@ export const eventServices = {
 
             // Enforce 150-point daily cap (pointRules.md)
             const nowDate = new Date()
-            const startOfToday = new Date(nowDate)
-            startOfToday.setHours(0, 0, 0, 0)
-            const endOfToday = new Date(nowDate)
-            endOfToday.setHours(23, 59, 59, 999)
+            const startOfToday = getStartOfCurrentWibDayUtc(nowDate)
+            const endOfToday = new Date(startOfToday.getTime() + 24 * 60 * 60 * 1000 - 1)
 
             const todayPointSums = await tx.pointTransaction.groupBy({
               by: ["userId"],

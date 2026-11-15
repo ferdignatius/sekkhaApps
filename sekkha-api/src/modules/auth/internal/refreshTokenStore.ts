@@ -13,14 +13,16 @@ const localRefreshTokens = new Map<string, RefreshTokenRecord>()
 
 export function parseDurationToSeconds(raw: string | undefined, fallbackSeconds: number): number {
   if (!raw) return fallbackSeconds
-  const match = raw.trim().match(/^(\d+)\s*([smhd])?$/i)
+  const match = raw.trim().match(/^(\d+)\s*(ms|[smhdw])?$/i)
   if (!match) return fallbackSeconds
   const val = parseInt(match[1], 10)
   if (isNaN(val) || val <= 0) return fallbackSeconds
   const unit = (match[2] || "s").toLowerCase()
+  if (unit === "w") return val * 7 * 24 * 60 * 60
   if (unit === "d") return val * 24 * 60 * 60
   if (unit === "h") return val * 60 * 60
   if (unit === "m") return val * 60
+  if (unit === "ms") return Math.max(1, Math.floor(val / 1000))
   return val
 }
 
@@ -60,12 +62,17 @@ export async function saveRefreshToken(
 
   // 1. In-memory map fallback
   if (!requireSharedStore()) {
+    for (const [key, item] of localRefreshTokens.entries()) {
+      if (item.expiresAt <= createdAt) {
+        localRefreshTokens.delete(key)
+      }
+    }
     localRefreshTokens.set(tokenHash, record)
   }
 
   // 2. Redis store
   try {
-    if (redis.status === "ready" || redis.status === "connect") {
+    if (redis.status === "ready") {
       await Promise.all([
         redis.set(`auth:refresh:${tokenHash}`, JSON.stringify(record), "EX", ttlSeconds),
         redis.sadd(`auth:user_refresh:${userId}`, tokenHash),
@@ -90,7 +97,7 @@ export async function verifyAndRotateRefreshTokenRecord(
 
   // 1. Check Redis first
   try {
-    if (redis.status === "ready" || redis.status === "connect") {
+    if (redis.status === "ready") {
       const raw = (await redis.eval(
         REFRESH_CONSUME_SCRIPT,
         1,
@@ -98,6 +105,9 @@ export async function verifyAndRotateRefreshTokenRecord(
       )) as string | null
       if (raw) {
         const parsed = JSON.parse(raw) as { userId: string; createdAt?: number; expiresAt: number }
+        if (parsed.userId) {
+          await redis.srem(`auth:user_refresh:${parsed.userId}`, tokenHash)
+        }
         if (parsed.expiresAt > Date.now()) {
           record = {
             userId: parsed.userId,
@@ -149,7 +159,7 @@ export async function revokeAllUserRefreshTokens(userId: string): Promise<void> 
   }
 
   try {
-    if (redis.status === "ready" || redis.status === "connect") {
+    if (redis.status === "ready") {
       const userSetKey = `auth:user_refresh:${userId}`
       const tokenHashes = await redis.smembers(userSetKey)
       if (tokenHashes && tokenHashes.length > 0) {
@@ -167,15 +177,24 @@ export async function revokeAllUserRefreshTokens(userId: string): Promise<void> 
 /**
  * Revokes a refresh token immediately (used on logout).
  */
-export async function revokeRefreshToken(refreshToken: string): Promise<void> {
+export async function revokeRefreshToken(refreshToken: string, userId?: string): Promise<void> {
   if (!refreshToken) return
   const tokenHash = hashToken(refreshToken)
 
+  const item = localRefreshTokens.get(tokenHash)
+  const resolvedUserId = userId || item?.userId
   localRefreshTokens.delete(tokenHash)
 
   try {
-    if (redis.status === "ready" || redis.status === "connect") {
-      await redis.del(`auth:refresh:${tokenHash}`)
+    if (redis.status === "ready") {
+      if (resolvedUserId) {
+        await Promise.all([
+          redis.del(`auth:refresh:${tokenHash}`),
+          redis.srem(`auth:user_refresh:${resolvedUserId}`, tokenHash),
+        ])
+      } else {
+        await redis.del(`auth:refresh:${tokenHash}`)
+      }
     }
   } catch {
     // Ignore

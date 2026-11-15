@@ -48,9 +48,10 @@ export const eventModels = {
   },
 
   findUserForAttendance(identifier: string) {
-    const isNum = /^\d+$/.test(identifier)
+    const isNum = /^\d{1,18}$/.test(identifier)
     return prisma.user.findFirst({
       where: {
+        anonymizedAt: null,
         OR: [
           { id: identifier },
           ...(isNum ? [{ userNumber: BigInt(identifier) }] : []),

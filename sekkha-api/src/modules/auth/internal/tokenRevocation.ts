@@ -42,6 +42,8 @@ export async function revokeToken(token: string): Promise<void> {
   try {
     // Only revoke if the token has a valid signature
     const verified = jwt.verify(cleanToken, secret, { algorithms: ["HS256"] }) as { exp?: number }
+    if ((verified as any)?.iss && (verified as any).iss !== "sekkha-api") return
+    if ((verified as any)?.aud && (verified as any).aud !== "sekkha-app") return
     if (verified?.exp) {
       const remaining = verified.exp - Math.floor(Date.now() / 1000)
       if (remaining > 0) {
@@ -60,8 +62,10 @@ export async function revokeToken(token: string): Promise<void> {
 
   // 2. Store in Redis blacklist if available & remove any cached session
   try {
-    await redis.set(`auth:revoked:${tokenHash}`, "1", "EX", ttlSeconds)
-    await redis.del(`auth:token:${tokenHash}`)
+    if (redis.status === "ready") {
+      await redis.set(`auth:revoked:${tokenHash}`, "1", "EX", ttlSeconds)
+      await redis.del(`auth:token:${tokenHash}`, `auth:session:${tokenHash}`)
+    }
   } catch {
     // Graceful fallback if Redis is offline
   }
@@ -86,9 +90,11 @@ export async function isTokenRevoked(token: string): Promise<boolean> {
 
   // 2. Check Redis blacklist
   try {
-    const exists = await redis.get(`auth:revoked:${tokenHash}`)
-    if (exists) {
-      return true
+    if (redis.status === "ready") {
+      const exists = await redis.get(`auth:revoked:${tokenHash}`)
+      if (exists) {
+        return true
+      }
     }
   } catch {
     // Fallback on Redis error

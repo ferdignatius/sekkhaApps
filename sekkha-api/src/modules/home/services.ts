@@ -5,7 +5,7 @@ import type { EventVisibility } from "@prisma/client"
 
 function eventVisibility(role: string): EventVisibility[] {
   if (role === "organizer" || role === "admin") return ["all", "member", "activist", "organizer"]
-  if (role === "activist") return ["all", "member", "activist"]
+  if (role === "activist") return ["all", "activist"]
   return ["all", "member"]
 }
 

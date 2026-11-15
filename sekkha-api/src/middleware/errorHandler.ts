@@ -7,17 +7,6 @@ import { AppError } from "../lib/AppError"
 export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
   const isDev = process.env.NODE_ENV === "development"
   const requestId = req.header("x-request-id") || crypto.randomUUID()
-  const resolvedStatus =
-    err instanceof AppError
-      ? err.status
-      : typeof err.status === "number"
-        ? err.status
-        : typeof err.statusCode === "number"
-          ? err.statusCode
-          : err.message === "Refresh token store unavailable"
-            ? 503
-            : 500
-  console.error(JSON.stringify({ requestId, path: req.path, status: resolvedStatus, error: err.code || "INTERNAL_ERROR" }))
 
   if (err instanceof ZodError) {
     const message = err.issues.map((i) => i.message).join(", ")
@@ -29,6 +18,18 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
     })
     return
   }
+
+  const resolvedStatus =
+    err instanceof AppError
+      ? err.status
+      : typeof err.status === "number"
+        ? err.status
+        : typeof err.statusCode === "number"
+          ? err.statusCode
+          : err.message === "Refresh token store unavailable"
+            ? 503
+            : 500
+  console.error(JSON.stringify({ requestId, path: req.path, status: resolvedStatus, error: err.code || "INTERNAL_ERROR" }))
 
   const status = resolvedStatus
   // In staging/production, 500 errors always return safe generic error message

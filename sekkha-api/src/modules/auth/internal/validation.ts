@@ -4,18 +4,24 @@ import { gmailEmailSchema } from "../../../lib/emailValidation"
 // ─── Validation Schemas ──────────────────────────────────────────────────────
 // F-15 Remediation: Meaningful max length bounds on all fields
 
+const usernameSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .min(3, "Username must be at least 3 characters")
+  .max(30, "Username maximum 30 characters")
+  .regex(/^[a-zA-Z0-9_.]+$/, "Username may only contain letters, numbers, dots, or underscores")
+  .refine((val) => !/^\d+$/.test(val), {
+    message: "Username cannot contain only numbers",
+  })
+
+const otpCodeSchema = z.string().trim().regex(/^\d{6}$/, "OTP must be 6 digits")
+
 export const RegisterSchema = z.object({
   email: gmailEmailSchema,
   password: z.string().min(8, "Password must be at least 8 characters").max(128, "Password maximum 128 characters"),
-  name: z.string().trim().min(1, "Name is required").max(100, "Name maximum 100 characters"),
-  username: z
-    .string()
-    .trim()
-    .toLowerCase()
-    .min(3, "Username must be at least 3 characters")
-    .max(30, "Username maximum 30 characters")
-    .regex(/^[a-zA-Z0-9_.]+$/, "Username may only contain letters, numbers, dots, or underscores")
-    .optional(),
+  name: z.string().trim().min(2, "Name must be at least 2 characters").max(100, "Name maximum 100 characters"),
+  username: usernameSchema.optional(),
 })
 
 export const LoginSchema = z.object({
@@ -31,19 +37,12 @@ export const RequestRegisterOtpSchema = z.object({
   email: gmailEmailSchema,
   password: z.string().min(8, "Password must be at least 8 characters").max(128, "Password maximum 128 characters"),
   name: z.string().trim().min(2, "Name must be at least 2 characters").max(100, "Name maximum 100 characters"),
-  username: z
-    .string()
-    .trim()
-    .toLowerCase()
-    .min(3, "Username must be at least 3 characters")
-    .max(30, "Username maximum 30 characters")
-    .regex(/^[a-zA-Z0-9_.]+$/, "Username may only contain letters, numbers, dots, or underscores")
-    .optional(),
+  username: usernameSchema.optional(),
 })
 
 export const VerifyRegisterOtpSchema = z.object({
   email: gmailEmailSchema,
-  otp: z.string().trim().regex(/^\d{6}$/, "OTP must be 6 digits"),
+  otp: otpCodeSchema,
 })
 
 export const ResendOtpSchema = z.object({
@@ -56,13 +55,13 @@ export const ForgotPasswordRequestSchema = z.object({
 
 export const ForgotPasswordVerifyOtpSchema = z.object({
   email: gmailEmailSchema,
-  otp: z.string().trim().length(6, "OTP must be 6 digits"),
+  otp: otpCodeSchema,
 })
 
 export const ResetPasswordSchema = z.object({
   email: gmailEmailSchema,
   reset_token: z.string().trim().min(10).max(200).optional(),
-  otp: z.string().trim().length(6, "OTP must be 6 digits").optional(),
+  otp: otpCodeSchema.optional(),
   newPassword: z.string().min(8, "New password must be at least 8 characters").max(128, "New password maximum 128 characters"),
 }).refine((data) => Boolean(data.reset_token || data.otp), {
   message: "Reset token or OTP is required",

@@ -83,7 +83,7 @@ export const userServices = {
     }
   },
 
-  async updateProfile(userId: string, body: UpdateProfileInput, authHeader?: string) {
+  async updateProfile(userId: string, body: UpdateProfileInput, _authHeader?: string) {
     const existing = await userModels.findUserWithProfileAndStats(userId)
     if (!existing) {
       const err = new Error("User not found") as any
@@ -147,7 +147,7 @@ export const userServices = {
       schoolId: resolvedSchoolId || null,
     }
 
-    const { user, profile } = await userModels.updateUserAndProfile(
+    await userModels.updateUserAndProfile(
       userId,
       userData,
       profileUpdateData,
@@ -157,21 +157,6 @@ export const userServices = {
     // Invalidate caches
     await invalidate(CacheKeys.userProfile(userId))
     await invalidatePattern(`user:${userId}:home:*`)
-
-    // Update Redis session cache if active
-    const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7).trim() : null
-    const decryptedEmail = safeDecrypt(user.email, "") || ""
-    if (token) {
-      const updatedSession = {
-        id: user.id,
-        email: decryptedEmail,
-        username: user.username,
-        name: profile.name,
-        role: user.role,
-      }
-      const tokenHash = createHash("sha256").update(token).digest("hex")
-      await redis.set(`auth:token:${tokenHash}`, JSON.stringify(updatedSession), "EX", 30 * 24 * 60 * 60).catch(() => {})
-    }
 
     return this.getProfile(userId)
   },
@@ -247,6 +232,13 @@ export const userServices = {
     if (!emailCipher || !bindex) {
       const err = new Error("Gagal memproses enkripsi dan blind index email") as any
       err.statusCode = 500
+      throw err
+    }
+
+    const taken = await userModels.findUserByEmailBindex(bindex)
+    if (taken && taken.id !== userId) {
+      const err = new Error("Email is already registered to another account") as any
+      err.statusCode = 409
       throw err
     }
 

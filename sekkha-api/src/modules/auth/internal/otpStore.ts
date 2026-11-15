@@ -25,6 +25,7 @@ const resetTokenStore = new Map<string, { userId: string; tokenHashed: string; t
 const OTP_TTL_SECONDS = 600 // 10 minutes
 const RESET_TOKEN_TTL_SECONDS = 600 // 10 minutes
 export const MAX_OTP_ATTEMPTS = 5
+export const OTP_RESEND_COOLDOWN_MS = 60_000
 
 const CONSUME_OTP_SCRIPT = `
 local raw = redis.call('GET', KEYS[1])
@@ -35,7 +36,7 @@ if string.find(raw, marker, 1, true) then
   redis.call('DEL', KEYS[1])
   return raw
 end
-return false
+return "__MISMATCH__"
 `
 
 const CONSUME_RESET_TOKEN_SCRIPT = `
@@ -47,8 +48,19 @@ if string.find(raw, marker, 1, true) then
   redis.call('DEL', KEYS[1])
   return raw
 end
-return false
+return "__MISMATCH__"
 `
+
+function clearMemoryEntry<T extends { timer: NodeJS.Timeout }>(
+  store: Map<string, T>,
+  key: string
+): void {
+  const existing = store.get(key)
+  if (existing?.timer) {
+    clearTimeout(existing.timer)
+  }
+  store.delete(key)
+}
 
 export function hashOtp(otp: string): string {
   return crypto.createHash("sha256").update(otp.trim()).digest("hex")
@@ -66,9 +78,33 @@ export function timingSafeEqualOtpHash(expectedHash: string, inputOtp: string): 
 }
 
 async function consumeOtp<T>(key: string, otp: string): Promise<T | false | null> {
-  if (redis.status !== "ready" && redis.status !== "connect") return null
-  const raw = (await redis.eval(CONSUME_OTP_SCRIPT, 1, key, hashOtp(otp))) as string | boolean | null
-  return typeof raw === "string" ? (JSON.parse(raw) as T) : raw === false ? false : null
+  if (redis.status === "ready") {
+    try {
+      const raw = (await redis.eval(CONSUME_OTP_SCRIPT, 1, key, hashOtp(otp))) as string | null
+      if (raw === "__MISMATCH__") return false
+      if (typeof raw === "string") return JSON.parse(raw) as T
+      return null
+    } catch {
+      return null
+    }
+  }
+
+  const isRegister = key.startsWith("otp:register:")
+  const email = key.replace(/^otp:(register|forgot):/, "")
+  const item = isRegister ? memoryStore.get(email) : forgotMemoryStore.get(email)
+  if (!item) return null
+
+  if (timingSafeEqualOtpHash(item.payload.otpHashed, otp)) {
+    clearTimeout(item.timer)
+    if (isRegister) {
+      memoryStore.delete(email)
+    } else {
+      forgotMemoryStore.delete(email)
+    }
+    return item.payload as T
+  }
+
+  return false
 }
 
 export function consumeRegistrationOtp(email: string, otp: string) {
@@ -101,9 +137,10 @@ export async function saveRegistrationOtp(
 
   // 1. Try Redis
   try {
-    if (redis.status === "ready" || redis.status === "connect") {
+    if (redis.status === "ready") {
       await redis.set(key, JSON.stringify(securePayload), "EX", OTP_TTL_SECONDS)
       await redis.del(attemptsKey)
+      clearMemoryEntry(memoryStore, normalizedEmail)
       return
     }
   } catch {
@@ -111,10 +148,7 @@ export async function saveRegistrationOtp(
   }
 
   // 2. Memory Store fallback
-  const existing = memoryStore.get(normalizedEmail)
-  if (existing?.timer) {
-    clearTimeout(existing.timer)
-  }
+  clearMemoryEntry(memoryStore, normalizedEmail)
 
   const timer = setTimeout(() => {
     memoryStore.delete(normalizedEmail)
@@ -128,11 +162,9 @@ export async function getRegistrationOtp(email: string): Promise<RegistrationOtp
   const key = `otp:register:${normalizedEmail}`
 
   try {
-    if (redis.status === "ready" || redis.status === "connect") {
+    if (redis.status === "ready") {
       const raw = await redis.get(key)
-      if (raw) {
-        return JSON.parse(raw) as RegistrationOtpPayload
-      }
+      return raw ? (JSON.parse(raw) as RegistrationOtpPayload) : null
     }
   } catch {
     // Fallback to memory store
@@ -147,7 +179,7 @@ export async function incrementRegistrationOtpAttempts(email: string): Promise<n
   const attemptsKey = `otp:attempts:register:${normalizedEmail}`
 
   try {
-    if (redis.status === "ready" || redis.status === "connect") {
+    if (redis.status === "ready") {
       const attempts = await redis.incr(attemptsKey)
       if (attempts === 1) {
         await redis.expire(attemptsKey, OTP_TTL_SECONDS)
@@ -176,7 +208,7 @@ export async function deleteRegistrationOtp(email: string): Promise<void> {
   const attemptsKey = `otp:attempts:register:${normalizedEmail}`
 
   try {
-    if (redis.status === "ready" || redis.status === "connect") {
+    if (redis.status === "ready") {
       await redis.del(key, attemptsKey)
     }
   } catch {
@@ -210,19 +242,17 @@ export async function saveForgotPasswordOtp(
   }
 
   try {
-    if (redis.status === "ready" || redis.status === "connect") {
+    if (redis.status === "ready") {
       await redis.set(key, JSON.stringify(securePayload), "EX", OTP_TTL_SECONDS)
       await redis.del(attemptsKey)
+      clearMemoryEntry(forgotMemoryStore, normalizedEmail)
       return
     }
   } catch {
     // Non-blocking fallback
   }
 
-  const existing = forgotMemoryStore.get(normalizedEmail)
-  if (existing?.timer) {
-    clearTimeout(existing.timer)
-  }
+  clearMemoryEntry(forgotMemoryStore, normalizedEmail)
 
   const timer = setTimeout(() => {
     forgotMemoryStore.delete(normalizedEmail)
@@ -236,11 +266,9 @@ export async function getForgotPasswordOtp(email: string): Promise<ForgotPasswor
   const key = `otp:forgot:${normalizedEmail}`
 
   try {
-    if (redis.status === "ready" || redis.status === "connect") {
+    if (redis.status === "ready") {
       const raw = await redis.get(key)
-      if (raw) {
-        return JSON.parse(raw) as ForgotPasswordOtpPayload
-      }
+      return raw ? (JSON.parse(raw) as ForgotPasswordOtpPayload) : null
     }
   } catch {
     // Fallback
@@ -255,7 +283,7 @@ export async function incrementForgotPasswordOtpAttempts(email: string): Promise
   const attemptsKey = `otp:attempts:forgot:${normalizedEmail}`
 
   try {
-    if (redis.status === "ready" || redis.status === "connect") {
+    if (redis.status === "ready") {
       const attempts = await redis.incr(attemptsKey)
       if (attempts === 1) {
         await redis.expire(attemptsKey, OTP_TTL_SECONDS)
@@ -284,7 +312,7 @@ export async function deleteForgotPasswordOtp(email: string): Promise<void> {
   const attemptsKey = `otp:attempts:forgot:${normalizedEmail}`
 
   try {
-    if (redis.status === "ready" || redis.status === "connect") {
+    if (redis.status === "ready") {
       await redis.del(key, attemptsKey)
     }
   } catch {
@@ -306,18 +334,16 @@ export async function savePasswordResetToken(email: string, userId: string, toke
   const key = `auth:reset-token:${normalizedEmail}`
 
   try {
-    if (redis.status === "ready" || redis.status === "connect") {
+    if (redis.status === "ready") {
       await redis.set(key, JSON.stringify({ userId, tokenHashed }), "EX", RESET_TOKEN_TTL_SECONDS)
+      clearMemoryEntry(resetTokenStore, normalizedEmail)
       return
     }
   } catch {
     // Fallback
   }
 
-  const existing = resetTokenStore.get(normalizedEmail)
-  if (existing?.timer) {
-    clearTimeout(existing.timer)
-  }
+  clearMemoryEntry(resetTokenStore, normalizedEmail)
   const timer = setTimeout(() => {
     resetTokenStore.delete(normalizedEmail)
   }, RESET_TOKEN_TTL_SECONDS * 1000)
@@ -331,21 +357,21 @@ export async function verifyAndConsumePasswordResetToken(email: string, token: s
   const key = `auth:reset-token:${normalizedEmail}`
 
   try {
-    if (redis.status === "ready" || redis.status === "connect") {
+    if (redis.status === "ready") {
       const raw = (await redis.eval(
         CONSUME_RESET_TOKEN_SCRIPT,
         1,
         key,
         tokenHashed
-      )) as string | boolean | null
-      if (typeof raw === "string") {
-        const parsed = JSON.parse(raw) as { userId: string; tokenHashed: string }
-        if (timingSafeEqualHex(parsed.tokenHashed, tokenHashed)) {
-          return parsed.userId
-        }
-      } else if (raw === false) {
+      )) as string | null
+      if (raw === "__MISMATCH__" || !raw) {
         return null
       }
+      const parsed = JSON.parse(raw) as { userId: string; tokenHashed: string }
+      if (timingSafeEqualHex(parsed.tokenHashed, tokenHashed)) {
+        return parsed.userId
+      }
+      return null
     }
   } catch {
     // Fallback

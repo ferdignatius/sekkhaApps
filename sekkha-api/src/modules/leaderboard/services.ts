@@ -212,6 +212,10 @@ const activeComputations = new Map<string, Promise<void>>()
  */
 const memoryLeaderboardCache = new Map<string, LeaderboardSnapshot>()
 
+export function clearMemoryLeaderboardCache(): void {
+  memoryLeaderboardCache.clear()
+}
+
 export function computeAndCacheLeaderboard(periodTarget?: LeaderboardPeriod): Promise<void> {
   const periodKey = periodTarget ? `${periodTarget.key}:${periodTarget.code || periodTarget.id}` : "default"
   const existing = activeComputations.get(periodKey)

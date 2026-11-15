@@ -115,7 +115,7 @@ describe("Home Module — Unit Tests (Dashboard, Events & Stats)", () => {
       }
 
       await homeServices.getDashboard("usr_act", "activist")
-      expect(passedWhere.visibility.in).toEqual(["all", "member", "activist"])
+      expect(passedWhere.visibility.in).toEqual(["all", "activist"])
     })
 
     it("queries events with all visibility tiers for organizer and admin roles", async () => {

@@ -9,6 +9,13 @@ export interface AuthPayload {
   role: string
 }
 
+interface VerifiedJwtPayload {
+  userId: string
+  role: string
+  passwordChangedAt?: number
+  passwordChangedAtMs?: number
+}
+
 declare global {
   namespace Express {
     interface Request {
@@ -54,14 +61,20 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
     }
 
     // 2. Verify JWT signature, algorithm & expiration
-    const payload = jwt.verify(token, secret, {
-      algorithms: ["HS256"],
-      issuer: "sekkha-api",
-      audience: "sekkha-app",
-    }) as {
-      userId: string
-      role: string
-      passwordChangedAt?: number
+    let payload: VerifiedJwtPayload
+    try {
+      payload = jwt.verify(token, secret, {
+        algorithms: ["HS256"],
+        issuer: "sekkha-api",
+        audience: "sekkha-app",
+      }) as VerifiedJwtPayload
+      if (!payload?.userId || typeof payload.userId !== "string") {
+        apiFailure(res, 401, "Token is invalid or has expired", null)
+        return
+      }
+    } catch {
+      apiFailure(res, 401, "Token is invalid or has expired", null)
+      return
     }
 
     // 3. Fetch fresh user role & status directly from database
@@ -82,8 +95,13 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
 
     // 4. Invalidate session if password was changed/reset after token issuance
     if (user.passwordChangedAt) {
-      const dbTimeSeconds = Math.floor(user.passwordChangedAt.getTime() / 1000)
-      if (!payload.passwordChangedAt || dbTimeSeconds > payload.passwordChangedAt) {
+      const dbTimeMs = user.passwordChangedAt.getTime()
+      const dbTimeSeconds = Math.floor(dbTimeMs / 1000)
+      const isStale =
+        typeof payload.passwordChangedAtMs === "number"
+          ? dbTimeMs > payload.passwordChangedAtMs
+          : !payload.passwordChangedAt || dbTimeSeconds > payload.passwordChangedAt
+      if (isStale) {
         apiFailure(res, 401, "Password was changed. Please log in again.", null)
         return
       }
@@ -96,8 +114,16 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
     }
 
     next()
-  } catch {
-    apiFailure(res, 401, "Token is invalid or has expired", null)
+  } catch (err: any) {
+    if (
+      err?.name === "JsonWebTokenError" ||
+      err?.name === "TokenExpiredError" ||
+      err?.name === "NotBeforeError"
+    ) {
+      apiFailure(res, 401, "Token is invalid or has expired", null)
+      return
+    }
+    next(err)
   }
 }
 
@@ -140,11 +166,7 @@ export async function optionalAuth(req: Request, _res: Response, next: NextFunct
       algorithms: ["HS256"],
       issuer: "sekkha-api",
       audience: "sekkha-app",
-    }) as {
-      userId: string
-      role: string
-      passwordChangedAt?: number
-    }
+    }) as VerifiedJwtPayload
 
     const user = await prisma.user.findUnique({
       where: { id: payload.userId },
@@ -152,14 +174,20 @@ export async function optionalAuth(req: Request, _res: Response, next: NextFunct
         id: true,
         role: true,
         passwordChangedAt: true,
+        anonymizedAt: true,
       },
     })
 
-    if (!user) return next()
+    if (!user || user.anonymizedAt) return next()
 
     if (user.passwordChangedAt) {
-      const dbTimeSeconds = Math.floor(user.passwordChangedAt.getTime() / 1000)
-      if (!payload.passwordChangedAt || dbTimeSeconds > payload.passwordChangedAt) {
+      const dbTimeMs = user.passwordChangedAt.getTime()
+      const dbTimeSeconds = Math.floor(dbTimeMs / 1000)
+      const isStale =
+        typeof payload.passwordChangedAtMs === "number"
+          ? dbTimeMs > payload.passwordChangedAtMs
+          : !payload.passwordChangedAt || dbTimeSeconds > payload.passwordChangedAt
+      if (isStale) {
         return next()
       }
     }

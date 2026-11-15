@@ -1,6 +1,7 @@
 import { prisma } from "../../lib/prisma"
 import { generateUniqueUserNumber } from "../../lib/userNumber"
 import { encrypt, decrypt, generateBlindIndex } from "../../lib/crypto"
+import { AppError } from "../../lib/AppError"
 
 function safeDecrypt(val: string | null | undefined): string | null {
   if (!val) return null
@@ -18,9 +19,10 @@ export const authModels = {
   async findUserByEmail(email: string) {
     const clean = email.toLowerCase().trim()
     const bindex = generateBlindIndex(clean)
+    if (!bindex) return null
     const user = await prisma.user.findFirst({
       where: {
-        emailBindex: bindex || undefined,
+        emailBindex: bindex,
         anonymizedAt: null,
       },
       include: { profile: true, stats: true },
@@ -51,6 +53,7 @@ export const authModels = {
 
   async findUserByIdentifier(identifier: string) {
     const clean = identifier.trim().toLowerCase()
+    if (!clean) return null
     const isNumericId = /^\d{8,12}$/.test(clean)
     const bindex = generateBlindIndex(clean)
     const user = await prisma.user.findFirst({
@@ -84,6 +87,9 @@ export const authModels = {
         username: true,
         email: true,
         role: true,
+        isClaimed: true,
+        passwordChangedByUser: true,
+        emailVerifiedAt: true,
         passwordChangedAt: true,
         onboardingCompleted: true,
         anonymizedAt: true,
@@ -100,6 +106,9 @@ export const authModels = {
       email: safeDecrypt(user.email),
       name: user.profile?.name ?? "",
       role: user.role,
+      isClaimed: user.isClaimed,
+      passwordChangedByUser: user.passwordChangedByUser,
+      emailVerifiedAt: user.emailVerifiedAt,
       passwordChangedAt: user.passwordChangedAt,
       onboardingCompleted: user.onboardingCompleted,
       anonymizedAt: user.anonymizedAt,
@@ -107,11 +116,14 @@ export const authModels = {
   },
 
   async generateUniqueUsername(baseName: string): Promise<string> {
+    const rawClean = baseName
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, "")
+      .slice(0, 15)
     const clean =
-      baseName
-        .toLowerCase()
-        .replace(/[^a-z0-9]/g, "")
-        .slice(0, 15) || "member"
+      !rawClean || rawClean.length < 3 || /^\d+$/.test(rawClean)
+        ? `member${rawClean}`.slice(0, 15)
+        : rawClean
 
     const existingUsers = await prisma.user.findMany({
       where: {
@@ -150,7 +162,8 @@ export const authModels = {
   }) {
     let username = data.username || (await this.generateUniqueUsername(data.name))
     let attempts = 0
-    while (attempts < 5) {
+    const maxAttempts = 15
+    while (attempts < maxAttempts) {
       attempts++
       const userNumber = await this.generateUserNumber(prisma)
       const cleanEmail = data.email ? data.email.toLowerCase().trim() : null
@@ -167,6 +180,7 @@ export const authModels = {
             passwordChangedAt: new Date(),
             userNumber,
             isClaimed: true,
+            claimedAt: new Date(),
             emailVerifiedAt: new Date(),
             onboardingCompleted: false,
             lastActiveAt: new Date(),
@@ -196,22 +210,36 @@ export const authModels = {
         const target = Array.isArray(err?.meta?.target)
           ? err.meta.target.join(",")
           : String(err?.meta?.target || "")
-        if (
-          err?.code === "P2002" &&
-          (target.includes("user_number") || target.includes("userNumber") || target.includes("username")) &&
-          attempts < 5
-        ) {
-          if (!data.username) {
-            const candidate = await this.generateUniqueUsername(data.name)
-            username = candidate === username ? `${candidate}${attempts}` : candidate
+        if (err?.code === "P2002") {
+          if (target.includes("email")) {
+            throw new AppError("Email already registered", 409, "EMAIL_ALREADY_REGISTERED")
           }
-          continue
+          if (target.includes("username") && data.username) {
+            throw new AppError("Username already taken", 409, "USERNAME_ALREADY_TAKEN")
+          }
+          if (
+            (target.includes("user_number") ||
+              target.includes("userNumber") ||
+              (target.includes("username") && !data.username)) &&
+            attempts < maxAttempts
+          ) {
+            if (!data.username && target.includes("username")) {
+              const candidate = await this.generateUniqueUsername(data.name)
+              username = candidate === username ? `${candidate}${attempts}` : candidate
+            }
+            await new Promise((r) => setTimeout(r, Math.floor(Math.random() * 25) + 5))
+            continue
+          }
         }
         throw err
       }
     }
 
-    throw new Error("Failed to create account due to registration concurrency, please try again.")
+    throw new AppError(
+      "Failed to create account due to registration concurrency, please try again.",
+      409,
+      "REGISTRATION_CONFLICT"
+    )
   },
 
   async updateUserPassword(userId: string, passwordHash: string) {
@@ -221,6 +249,15 @@ export const authModels = {
         password: passwordHash,
         passwordChangedByUser: true,
         passwordChangedAt: new Date(),
+      },
+    })
+  },
+
+  async upgradePasswordHash(userId: string, passwordHash: string) {
+    return prisma.user.update({
+      where: { id: userId },
+      data: {
+        password: passwordHash,
       },
     })
   },
@@ -241,4 +278,5 @@ export const findUserById = (...args: Parameters<typeof authModels.findUserById>
 export const generateUniqueUsername = (...args: Parameters<typeof authModels.generateUniqueUsername>) => authModels.generateUniqueUsername(...args)
 export const createUser = (...args: Parameters<typeof authModels.createUser>) => authModels.createUser(...args)
 export const updateUserPassword = (...args: Parameters<typeof authModels.updateUserPassword>) => authModels.updateUserPassword(...args)
+export const upgradePasswordHash = (...args: Parameters<typeof authModels.upgradePasswordHash>) => authModels.upgradePasswordHash(...args)
 export const touchLastActiveAt = (...args: Parameters<typeof authModels.touchLastActiveAt>) => authModels.touchLastActiveAt(...args)

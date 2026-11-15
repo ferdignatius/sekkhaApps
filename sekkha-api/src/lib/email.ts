@@ -43,8 +43,11 @@ function defaultSleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
+let cachedTransporterKey: string | null = null
+let cachedTransporter: ReturnType<typeof nodemailer.createTransport> | null = null
+
 /**
- * Creates Nodemailer Gmail transporter if SMTP credentials are configured.
+ * Creates (or reuses) a pooled Nodemailer Gmail transporter if SMTP credentials are configured.
  */
 function getMailTransporter() {
   const user = process.env.SMTP_USER
@@ -54,11 +57,24 @@ function getMailTransporter() {
     return null
   }
 
-  return nodemailer.createTransport({
+  const host = process.env.SMTP_HOST || "smtp.gmail.com"
+  const port = Number(process.env.SMTP_PORT) || 465
+  const cacheKey = `${user}:${host}:${port}`
+
+  if (cachedTransporter && cachedTransporterKey === cacheKey) {
+    return cachedTransporter
+  }
+
+  cachedTransporter?.close()
+  cachedTransporterKey = cacheKey
+  cachedTransporter = nodemailer.createTransport({
     service: "gmail",
-    host: process.env.SMTP_HOST || "smtp.gmail.com",
-    port: Number(process.env.SMTP_PORT) || 465,
+    host,
+    port,
     secure: process.env.SMTP_SECURE !== "false",
+    pool: true,
+    maxConnections: 3,
+    maxMessages: 100,
     connectionTimeout: 10_000,
     greetingTimeout: 10_000,
     socketTimeout: 15_000,
@@ -67,6 +83,8 @@ function getMailTransporter() {
       pass,
     },
   })
+
+  return cachedTransporter
 }
 
 /**
@@ -273,6 +291,7 @@ async function dispatchOtpEmail(
 
   if (process.env.NODE_ENV === "production") {
     console.warn(`⚠️ [Mail Warning] SMTP credentials not configured in production.`)
+    return { success: false, error: "SMTP credentials not configured in production" }
   } else {
     params.fallbackDevLog?.()
   }

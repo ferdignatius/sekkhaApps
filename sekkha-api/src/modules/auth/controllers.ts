@@ -1,7 +1,5 @@
 import type { Request, Response, NextFunction } from "express"
-import jwt from "jsonwebtoken"
 import {
-  RegisterSchema,
   LoginSchema,
   ForgotPasswordSchema,
   RequestRegisterOtpSchema,
@@ -13,6 +11,7 @@ import {
 } from "./internal/validation"
 import * as service from "./services"
 import { apiSuccess, apiFailure } from "../../lib/apiResponse"
+import { AppError } from "../../lib/AppError"
 
 function publicAuthResult(result: service.AuthResult) {
   const { refreshToken: _refreshToken, ...publicResult } = result
@@ -22,25 +21,27 @@ function publicAuthResult(result: service.AuthResult) {
 // ─── Handlers ────────────────────────────────────────────────────────────────
 // Thin request handlers. Parse input → delegate to service → send response.
 
-function setRefreshCookie(res: Response, refreshToken?: string) {
-  if (!refreshToken) return
+function getRefreshCookieOptions() {
   const isProduction = process.env.NODE_ENV === "production"
-  res.cookie("sekkha_refresh_token", refreshToken, {
+  const sameSite = (process.env.COOKIE_SAME_SITE as "lax" | "strict" | "none") || "lax"
+  return {
     httpOnly: true,
     secure: isProduction,
-    sameSite: isProduction ? "strict" : "lax",
+    sameSite,
     path: "/api/auth",
+  }
+}
+
+function setRefreshCookie(res: Response, refreshToken?: string) {
+  if (!refreshToken) return
+  res.cookie("sekkha_refresh_token", refreshToken, {
+    ...getRefreshCookieOptions(),
     maxAge: service.getRefreshTokenTtlSeconds() * 1000,
   })
 }
 
 function clearRefreshCookie(res: Response) {
-  res.clearCookie("sekkha_refresh_token", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
-    path: "/api/auth",
-  })
+  res.clearCookie("sekkha_refresh_token", getRefreshCookieOptions())
 }
 
 /** POST /api/auth/register-request (Step 1: sends 6-digit OTP to user email) */
@@ -77,16 +78,15 @@ export async function handleResendOtp(req: Request, res: Response, next: NextFun
   }
 }
 
-/** POST /api/auth/register (Direct register) */
-export async function handleRegister(req: Request, res: Response, next: NextFunction) {
-  try {
-    const body = RegisterSchema.parse(req.body)
-    const result = await service.registerUser(body)
-    setRefreshCookie(res, result.refreshToken)
-    apiSuccess(res, 201, "Registration successful", publicAuthResult(result))
-  } catch (err) {
-    next(err)
-  }
+/** POST /api/auth/register (Disabled: direct registration without OTP violates email verification) */
+export async function handleRegister(_req: Request, _res: Response, next: NextFunction) {
+  next(
+    new AppError(
+      "Direct registration without email OTP verification is disabled. Please use /api/auth/register-request.",
+      403,
+      "OTP_VERIFICATION_REQUIRED"
+    )
+  )
 }
 
 /** POST /api/auth/login */
@@ -115,7 +115,9 @@ export async function handleRefreshSession(req: Request, res: Response, next: Ne
     setRefreshCookie(res, result.refreshToken)
     apiSuccess(res, 200, "Session refreshed", publicAuthResult(result))
   } catch (err) {
-    clearRefreshCookie(res)
+    if (err instanceof AppError && (err.status === 401 || err.status === 403)) {
+      clearRefreshCookie(res)
+    }
     next(err)
   }
 }
@@ -165,7 +167,7 @@ export async function handleForgotPassword(req: Request, res: Response, next: Ne
 }
 
 /** GET /api/auth/verify */
-export async function handleVerify(req: Request, res: Response) {
+export async function handleVerify(req: Request, res: Response, next: NextFunction) {
   const header = req.headers.authorization
   if (!header?.startsWith("Bearer ")) {
     apiFailure(res, 401, "Token not found", null)
@@ -176,8 +178,17 @@ export async function handleVerify(req: Request, res: Response) {
     const token = header.slice(7)
     const user = await service.verifyToken(token)
     apiSuccess(res, 200, "Token valid", user)
-  } catch {
-    apiFailure(res, 401, "Invalid token", null)
+  } catch (err: any) {
+    if (
+      (err instanceof AppError && err.status === 401) ||
+      err?.name === "JsonWebTokenError" ||
+      err?.name === "TokenExpiredError" ||
+      err?.name === "NotBeforeError"
+    ) {
+      apiFailure(res, 401, "Invalid token", null)
+      return
+    }
+    next(err)
   }
 }
 
@@ -188,16 +199,8 @@ export async function handleLogout(req: Request, res: Response, next: NextFuncti
     const token = header?.startsWith("Bearer ") ? header.slice(7) : undefined
     const refreshToken = req.cookies?.sekkha_refresh_token
 
-    let userId = req.user?.userId
-    if (!userId && token) {
-      try {
-        const decoded = jwt.decode(token) as { userId?: string } | null
-        if (decoded?.userId) userId = decoded.userId
-      } catch {}
-    }
-
     if (token || refreshToken) {
-      await service.logoutUser(token, userId, refreshToken)
+      await service.logoutUser(token, req.user?.userId, refreshToken)
     }
     clearRefreshCookie(res)
     apiSuccess(res, 200, "Logout successful", null)

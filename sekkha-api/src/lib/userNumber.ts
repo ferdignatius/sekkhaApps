@@ -9,13 +9,16 @@ import { AppError } from "./AppError"
  * - DD: 2-digit day (01-31)
  * - nn: 2-digit sequence for that date (01-99)
  */
+const WIB_OFFSET_MS = 7 * 60 * 60 * 1000
+
 export async function generateUniqueUserNumber(
   client: PrismaClient | any = defaultPrisma,
   date: Date = new Date()
 ): Promise<bigint> {
-  const yyyy = date.getFullYear()
-  const mm = String(date.getMonth() + 1).padStart(2, "0")
-  const dd = String(date.getDate()).padStart(2, "0")
+  const wibDate = new Date(date.getTime() + WIB_OFFSET_MS)
+  const yyyy = wibDate.getUTCFullYear()
+  const mm = String(wibDate.getUTCMonth() + 1).padStart(2, "0")
+  const dd = String(wibDate.getUTCDate()).padStart(2, "0")
   const basePrefix = BigInt(`${yyyy}${mm}${dd}`)
   const startOfDay = basePrefix * 100n + 1n
   const endOfDay = basePrefix * 100n + 99n

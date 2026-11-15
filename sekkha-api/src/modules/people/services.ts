@@ -1,7 +1,7 @@
 import { randomInt } from "crypto"
 import { peopleModels } from "./models"
 import { hashPassword, DEFAULT_BCRYPT_COST } from "../../lib/password"
-import { invalidate, CacheKeys } from "../../lib/cache"
+import { invalidate, invalidatePattern, CacheKeys } from "../../lib/cache"
 import { generateUniqueUserNumber } from "../../lib/userNumber"
 import { encrypt, decrypt, generateBlindIndex } from "../../lib/crypto"
 import { auditLogger } from "../../lib/auditLogger"
@@ -118,7 +118,7 @@ export const peopleServices = {
     // If input is purely numeric digits, do an instant B-Tree index scan on userNumber BigInt.
     // Otherwise, perform case-insensitive text search on profile.name or username.
     if (rawSearch) {
-      if (/^\d+$/.test(rawSearch)) {
+      if (/^\d{1,18}$/.test(rawSearch)) {
         where.userNumber = BigInt(rawSearch)
       } else {
         where.OR = [
@@ -319,7 +319,8 @@ export const peopleServices = {
     let newMember: any = null
     let attempts = 0
 
-    while (attempts < 5) {
+    const maxAttempts = 15
+    while (attempts < maxAttempts) {
       attempts++
       const userNumber = await peopleModels.generateUserNumber()
       try {
@@ -357,11 +358,12 @@ export const peopleServices = {
         if (
           err?.code === "P2002" &&
           (target.includes("user_number") || target.includes("userNumber") || target.includes("username")) &&
-          attempts < 5
+          attempts < maxAttempts
         ) {
           if (!data.username) {
             username = await generateUniqueUsername(data.name)
           }
+          await new Promise((r) => setTimeout(r, Math.floor(Math.random() * 25) + 5))
           continue
         }
         throw err
@@ -475,7 +477,11 @@ export const peopleServices = {
       return { updatedUser, updatedProfile }
     })
 
-    await invalidate(CacheKeys.userProfile(id))
+    await Promise.all([
+      invalidate(CacheKeys.userProfile(id)),
+      invalidatePattern(`user:${id}:home:*`),
+      invalidatePattern("leaderboard:*"),
+    ])
 
     if (data.role && data.role !== existing.role) {
       auditLogger.log({
@@ -517,7 +523,11 @@ export const peopleServices = {
     }
 
     await peopleModels.delete(id)
-    await invalidate(CacheKeys.userProfile(id))
+    await Promise.all([
+      invalidate(CacheKeys.userProfile(id)),
+      invalidatePattern(`user:${id}:home:*`),
+      invalidatePattern("leaderboard:*"),
+    ])
 
     auditLogger.log({
       actorId: currentUser.userId,
@@ -583,7 +593,11 @@ export const peopleServices = {
       status: "SUCCESS",
     })
 
-    await invalidate(CacheKeys.userProfile(id))
+    await Promise.all([
+      invalidate(CacheKeys.userProfile(id)),
+      invalidatePattern(`user:${id}:home:*`),
+      invalidatePattern("leaderboard:*"),
+    ])
 
     const memberName = targetUser.profile?.name || targetUser.username || "Member"
     const userNumberInt = targetUser.userNumber ? Number(targetUser.userNumber) : null

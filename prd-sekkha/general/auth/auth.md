@@ -33,12 +33,12 @@ New accounts always receive `member`. Only authorized administration may change 
 
 ## 3. Authentication rules
 
-- Sign-up requires email OTP.
-- Sign-in requires identifier and password only. Sign-in must not send or request OTP.
+- Sign-up requires email OTP. Direct registration (`POST /api/auth/register`) without OTP verification is disabled (`403 OTP_VERIFICATION_REQUIRED`).
+- Sign-in requires identifier and password only. Sign-in must not send or request OTP. Transparent legacy bcrypt cost upgrades preserve `passwordChangedAt` and `passwordChangedByUser` so newly issued sessions remain valid.
 - Forgot password requires email OTP before password reset.
-- OTP is six digits, expires after 10 minutes, and allows at most 5 failed attempts.
-- OTP request endpoints are rate-limited to 5 requests per 15 minutes per IP.
-- Login endpoints are rate-limited to 30 requests per 15 minutes per IP.
+- OTP is six digits, expires after 10 minutes, and allows at most 5 failed attempts (enforced on `/register-verify-otp`, `/forgot-password/verify-otp`, and the OTP fallback in `/forgot-password/reset`, returning `OTP_MAX_ATTEMPTS_EXCEEDED`).
+- OTP endpoints are rate-limited to 10 requests per 15 minutes per IP+account (`300 requests / 15m per IP` shared-network ceiling), with a strict 60-second resend cooldown on `/api/auth/resend-otp` (`429 OTP_RESEND_COOLDOWN`).
+- Login/auth endpoints are rate-limited to 20 requests per 15 minutes per IP+account (`500 requests / 15m per IP` shared-network ceiling).
 - Password minimum length is 8 characters. Store passwords using Argon2id or bcrypt.
 - Access token uses JWT. Refresh token uses an HttpOnly cookie with rotation.
 - Never reveal whether an email exists during forgot-password request.
@@ -88,10 +88,11 @@ Existing users with `onboarding_completed: true` go directly to `/home` after si
 
 - `name`: required, at least 2 characters.
 - `email`: required, valid `@gmail.com` email format on Sign Up and Forgot Password (no consecutive or leading/trailing dots, normalized trimmed & lowercased; Sign In `identifier` continues accepting existing legacy/system emails such as `@sekkha.com`).
+- `username`: optional on sign-up, 3–30 characters (`[a-zA-Z0-9_.]`, lowercased), cannot consist solely of digits (all-digit strings are reserved for 10-digit `userNumber`).
 - `password`: required, at least 8 characters.
 - `confirm_password`: required, equal to password, never sent to API.
-- `identifier`: required; accepts registered email or username.
-- `otp`: exactly 6 numeric digits.
+- `identifier`: required; accepts registered email, username, or 10-digit `userNumber`.
+- `otp`: exactly 6 numeric digits (`/^\d{6}$/`) across all registration and forgot-password OTP endpoints. Both `/forgot-password/verify-otp` and `/forgot-password/reset` (OTP fallback) enforce the 5-attempt lockout (`OTP_MAX_ATTEMPTS_EXCEEDED`).
 - `redirectTo`: allow only internal application paths. Reject external URLs.
 
 ## 7. API response contract

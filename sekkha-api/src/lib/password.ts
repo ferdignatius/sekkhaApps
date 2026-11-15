@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs"
 
 export const DEFAULT_BCRYPT_COST = 10
+export const VALID_DUMMY_BCRYPT_HASH = "$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy"
 
 /**
  * Hash a plain text password using native Bun.password when available,
@@ -22,8 +23,7 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
   if (!password || !hash) return false
   try {
     if (typeof Bun !== "undefined" && Bun.password?.verify) {
-      const ok = await Bun.password.verify(password, hash)
-      if (ok) return true
+      return await Bun.password.verify(password, hash)
     }
   } catch {
     // Ignore native error and fall through to bcryptjs compare

@@ -13,9 +13,13 @@ import {
   timingSafeEqualOtpHash,
   hashOtp,
 } from "../modules/auth"
+import { z } from "zod"
 import { eventbus } from "../core/eventbus"
 import { generateUniqueUserNumber } from "../lib/userNumber"
 import { filterAndRankLeaderboardEntries } from "../modules/leaderboard/services"
+import { errorHandler } from "../middleware/errorHandler"
+import { requireAuth } from "../middleware/auth"
+import { prisma } from "../lib/prisma"
 
 const TEST_SECRET = "test-super-secret-key-that-is-at-least-32-chars-long"
 process.env.JWT_SECRET = TEST_SECRET
@@ -196,5 +200,142 @@ describe("EventBus, UserNumber Overflow & Leaderboard Role Filtering", () => {
 
     const adminExplicit = filterAndRankLeaderboardEntries(sampleEntries, "admin", 10)
     expect(adminExplicit.visibleEntries.map((e) => e.user_id)).toEqual(["u1"])
+  })
+
+  it("uses WIB (UTC+7) date boundary when generating userNumber", async () => {
+    const wibNextDayUtc = new Date("2026-10-27T18:30:00.000Z") // 01:30 WIB on 2026-10-28
+    const mockEmptyClient = {
+      user: {
+        findFirst: async () => null,
+      },
+    }
+    const generated = await generateUniqueUserNumber(mockEmptyClient, wibNextDayUtc)
+    expect(generated).toBe(2026102801n)
+  })
+
+  it("returns 400 on ZodError in errorHandler without logging 500 INTERNAL_ERROR", () => {
+    const parsed = z.object({ title: z.string() }).safeParse({ title: 123 })
+    expect(parsed.success).toBe(false)
+    if (parsed.success) return
+
+    const logged: string[] = []
+    const originalError = console.error
+    console.error = (...args: any[]) => {
+      logged.push(args.map((a) => String(a)).join(" "))
+    }
+
+    let statusCode = 0
+    let jsonBody: any = null
+    const req = { header: () => "req-zod-test", path: "/api/test" } as any
+    const res = {
+      status(code: number) {
+        statusCode = code
+        return this
+      },
+      json(body: any) {
+        jsonBody = body
+        return this
+      },
+    } as any
+
+    try {
+      errorHandler(parsed.error, req, res, (() => {}) as any)
+    } finally {
+      console.error = originalError
+    }
+
+    expect(statusCode).toBe(400)
+    expect(jsonBody?.status).toBe("fail")
+    expect(jsonBody?.code).toBe(400)
+    expect(logged.join("\n")).not.toContain("INTERNAL_ERROR")
+    expect(logged.join("\n")).not.toContain('"status":500')
+  })
+
+  it("forwards DB errors in requireAuth to next(err) (500 via errorHandler) instead of returning 401", async () => {
+    const origFindUnique = prisma.user.findUnique
+    const dbFailure = new Error("Database connection terminated unexpectedly")
+    ;(prisma.user as any).findUnique = async () => {
+      throw dbFailure
+    }
+
+    const validToken = jwt.sign(
+      { userId: "usr_db_err_test", role: "member" },
+      TEST_SECRET,
+      {
+        algorithm: "HS256",
+        issuer: "sekkha-api",
+        audience: "sekkha-app",
+        expiresIn: "15m",
+      }
+    )
+
+    const makeRes = () => {
+      let code = 0
+      let body: any = null
+      return {
+        getStatus: () => code,
+        getBody: () => body,
+        res: {
+          status(c: number) {
+            code = c
+            return this
+          },
+          json(b: any) {
+            body = b
+            return this
+          },
+        } as any,
+      }
+    }
+
+    try {
+      // 1. Valid JWT + Prisma failure -> passes DB error to next(err) without returning 401
+      const reqDbErr = {
+        headers: { authorization: `Bearer ${validToken}` },
+        path: "/api/users/me",
+        originalUrl: "/api/users/me",
+        query: {},
+        header: () => "req-db-err",
+      } as any
+      const resDbWrapper = makeRes()
+      let capturedNextErr: any = undefined
+      await requireAuth(reqDbErr, resDbWrapper.res, ((err?: any) => {
+        capturedNextErr = err
+      }) as any)
+
+      expect(resDbWrapper.getStatus()).toBe(0)
+      expect(capturedNextErr).toBe(dbFailure)
+
+      // Passing forwarded DB error into errorHandler yields 500 (not 401)
+      const origConsoleError = console.error
+      console.error = () => {}
+      const errHandlerRes = makeRes()
+      try {
+        errorHandler(capturedNextErr, reqDbErr, errHandlerRes.res, (() => {}) as any)
+      } finally {
+        console.error = origConsoleError
+      }
+      expect(errHandlerRes.getStatus()).toBe(500)
+      expect(errHandlerRes.getBody()?.code).toBe(500)
+
+      // 2. Invalid JWT -> returns 401 directly and does NOT call next
+      const reqBadJwt = {
+        headers: { authorization: "Bearer invalid.jwt.token" },
+        path: "/api/users/me",
+        originalUrl: "/api/users/me",
+        query: {},
+      } as any
+      const resBadWrapper = makeRes()
+      let badNextCalled = false
+      await requireAuth(reqBadJwt, resBadWrapper.res, (() => {
+        badNextCalled = true
+      }) as any)
+
+      expect(badNextCalled).toBe(false)
+      expect(resBadWrapper.getStatus()).toBe(401)
+      expect(resBadWrapper.getBody()?.code).toBe(401)
+    } finally {
+      ;(prisma.user as any).findUnique = origFindUnique
+    }
   })
 })

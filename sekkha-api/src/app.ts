@@ -1,3 +1,4 @@
+import crypto from "crypto"
 import express, { type Application } from "express"
 import cors from "cors"
 import helmet from "helmet"
@@ -133,6 +134,44 @@ export function isOriginAllowed(origin: string, rawOrigins: string[] = []): bool
   })
 }
 
+/**
+ * Extracts a stable per-user/account identifier for rate-limiting (email, identifier,
+ * refresh token digest, or bearer token digest) so shared-IP networks (e.g., Vihara Wi-Fi)
+ * do not exhaust a single 5-request bucket across 50+ concurrent attendees.
+ */
+export function extractRateLimitSubject(req: express.Request): string {
+  const body = req.body as Record<string, unknown> | undefined
+  for (const field of ["email", "identifier", "new_email", "newEmail"] as const) {
+    const raw = body?.[field]
+    if (typeof raw === "string" && raw.trim().length > 0) {
+      return raw.trim().toLowerCase()
+    }
+  }
+
+  const cookies = req.cookies as Record<string, unknown> | undefined
+  const cookieRefresh = cookies?.sekkha_refresh_token ?? cookies?.refresh_token
+  const bodyRefresh = body?.sekkha_refresh_token ?? body?.refresh_token
+  const refreshToken =
+    typeof cookieRefresh === "string" && cookieRefresh.trim().length > 0
+      ? cookieRefresh.trim()
+      : typeof bodyRefresh === "string" && bodyRefresh.trim().length > 0
+        ? bodyRefresh.trim()
+        : ""
+  if (refreshToken) {
+    return `rt:${crypto.createHash("sha256").update(refreshToken).digest("hex").slice(0, 16)}`
+  }
+
+  const authHeader = req.headers.authorization
+  if (typeof authHeader === "string" && authHeader.startsWith("Bearer ")) {
+    const token = authHeader.slice(7).trim()
+    if (token.length > 0) {
+      return `bearer:${crypto.createHash("sha256").update(token).digest("hex").slice(0, 16)}`
+    }
+  }
+
+  return ""
+}
+
 export function createApp(): Application {
   const app = express()
 
@@ -182,11 +221,16 @@ export function createApp(): Application {
   const rateLimitHandler = (message: string) => (_req: express.Request, res: express.Response) => {
     apiFailure(res, 429, message, null)
   }
+  const subjectOrIpKeyGenerator = (req: express.Request) => {
+    const subject = extractRateLimitSubject(req)
+    const ip = ipKeyGenerator(req.ip || req.socket.remoteAddress || "unknown")
+    return subject ? `${ip}:${subject}` : ip
+  }
 
-  // 4. Global Rate Limiter (300 requests per minute per IP)
+  // 4. Global Rate Limiter (1500 requests per minute per IP to support shared event Wi-Fi)
   const globalLimiter = rateLimit({
     windowMs: 60 * 1000,
-    max: 300,
+    max: 1500,
     standardHeaders: true,
     legacyHeaders: false,
     store: createRateLimitStore("global"),
@@ -197,54 +241,89 @@ export function createApp(): Application {
   })
   app.use(globalLimiter)
 
-  // 4a. Sensitive Auth Rate Limiter (30 requests per 15 minutes per IP for login/register/reset)
+  // 5. Body & cookie parsers MUST run before auth/OTP rate limiters so keyGenerator can inspect req.body/req.cookies
+  app.use(express.json({ limit: "1mb" }))
+  app.use(express.urlencoded({ extended: true, limit: "1mb" }))
+  app.use(cookieParser())
+
+  // 5a. Sensitive Auth Rate Limiters (20 requests/15m per IP+account + 500 requests/15m shared-IP ceiling)
   const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 30,
+    max: 20,
     standardHeaders: true,
     legacyHeaders: false,
+    keyGenerator: subjectOrIpKeyGenerator,
     store: createRateLimitStore("auth"),
     passOnStoreError: true,
     skip: skipPreflight,
     validate: { singleCount: false },
     handler: rateLimitHandler("Too many authentication attempts. Please try again after 15 minutes."),
   })
-  app.use("/api/auth/login", authLimiter)
-  app.use("/api/auth/register", authLimiter)
-  app.use("/api/auth/refresh", authLimiter)
-  app.use("/api/auth/forgot-password", authLimiter)
-  app.use("/api/users/change-password", authLimiter)
-  app.use("/api/users/me/delete-account", authLimiter)
-  app.use("/api/people/:id/reset-temporary-password", authLimiter)
-  app.use("/api/people/members/:id/reset-temporary-password", authLimiter)
-  app.use("/api/people/members/:id/reset-password", authLimiter)
-
-  // 4b. Dedicated OTP Rate Limiter (5 requests per 15 minutes per IP to prevent brute-force attacks)
-  const otpLimiter = rateLimit({
+  const authIpLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 5,
+    max: 500,
     standardHeaders: true,
     legacyHeaders: false,
-    keyGenerator: (req) => {
-      const email = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : ""
-      const ip = ipKeyGenerator(req.ip || req.socket.remoteAddress || "unknown")
-      return email ? `${ip}:${email}` : ip
-    },
+    store: createRateLimitStore("auth_ip"),
+    passOnStoreError: true,
+    skip: skipPreflight,
+    validate: { singleCount: false },
+    handler: rateLimitHandler("Too many authentication attempts from this network. Please try again after 15 minutes."),
+  })
+  const authRateLimitPaths = [
+    "/api/auth/login",
+    "/api/auth/register",
+    "/api/auth/refresh",
+    "/api/users/change-password",
+    "/api/users/me/delete-account",
+    "/api/people/:id/reset-temporary-password",
+    "/api/people/members/:id/reset-temporary-password",
+    "/api/people/members/:id/reset-password",
+  ]
+  for (const path of authRateLimitPaths) {
+    app.use(path, authIpLimiter, authLimiter)
+  }
+  // Exact POST match prevents prefix-matching /api/auth/forgot-password/{request,verify-otp,reset}
+  app.post("/api/auth/forgot-password", authIpLimiter, authLimiter)
+
+  // 5b. Dedicated OTP Rate Limiters (10 requests/15m per IP+account + 300 requests/15m shared-IP ceiling)
+  const otpLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator: subjectOrIpKeyGenerator,
     store: createRateLimitStore("otp"),
+    passOnStoreError: true,
+    skip: skipPreflight,
+    validate: { singleCount: false },
+    handler: rateLimitHandler("Too many OTP requests for this account. Please try again after 15 minutes."),
+  })
+  const otpIpLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 300,
+    standardHeaders: true,
+    legacyHeaders: false,
+    store: createRateLimitStore("otp_ip"),
     passOnStoreError: true,
     skip: skipPreflight,
     validate: { singleCount: false },
     handler: rateLimitHandler("Too many OTP requests from this IP. Please try again after 15 minutes."),
   })
-  app.use("/api/auth/register-request", otpLimiter)
-  app.use("/api/auth/register-verify-otp", otpLimiter)
-  app.use("/api/auth/resend-otp", otpLimiter)
-  app.use("/api/auth/forgot-password/request", otpLimiter)
-  app.use("/api/auth/forgot-password/verify-otp", otpLimiter)
-  app.use("/api/auth/forgot-password/reset", otpLimiter)
-  app.use("/api/users/email-verification", otpLimiter)
+  const otpRateLimitPaths = [
+    "/api/auth/register-request",
+    "/api/auth/register-verify-otp",
+    "/api/auth/resend-otp",
+    "/api/auth/forgot-password/request",
+    "/api/auth/forgot-password/verify-otp",
+    "/api/auth/forgot-password/reset",
+    "/api/users/email-verification",
+  ]
+  for (const path of otpRateLimitPaths) {
+    app.use(path, otpIpLimiter, otpLimiter)
+  }
 
-  // 4c. Schools Stats Rate Limiter (F-12: prevent cheap decryption DoS)
+  // 5c. Schools Stats Rate Limiter (F-12: prevent cheap decryption DoS)
   const schoolStatsLimiter = rateLimit({
     windowMs: 60 * 1000,
     max: 30,
@@ -257,11 +336,6 @@ export function createApp(): Application {
     handler: rateLimitHandler("Too many requests for school statistics. Please try again in a moment."),
   })
   app.use("/api/schools/stats", schoolStatsLimiter)
-
-  // 5. Body parser with strict payload size limit
-  app.use(express.json({ limit: "1mb" }))
-  app.use(express.urlencoded({ extended: true, limit: "1mb" }))
-  app.use(cookieParser())
 
   // ─── Health Check ────────────────────────────────────────────────────────────
   app.get("/health", (_req, res) => {

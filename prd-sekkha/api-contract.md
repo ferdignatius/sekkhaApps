@@ -131,6 +131,7 @@ Mengirim ulang OTP registrasi jika kode kedaluwarsa atau belum diterima.
   ```json
   { "email": "budi@example.com" }
   ```
+- **Aturan**: Wajib menunggu cooldown 60 detik antar permintaan resend (`429 OTP_RESEND_COOLDOWN`) dan memiliki sesi OTP registrasi yang aktif (jika sudah terdaftar atau tidak ada sesi aktif, mengembalikan `400 REGISTRATION_SESSION_EXPIRED`).
 - **Response (200 OK)**: Sama seperti `POST /register-request`.
 
 ### 4. `POST /api/auth/login`
@@ -181,7 +182,16 @@ Memperbarui Access Token menggunakan token dari HttpOnly cookie.
     "message": "Sesi token berhasil diperbarui",
     "data": {
       "accessToken": "eyJhbGciOiJIUzI1NiIsIn...",
-      "expiresInSeconds": 900
+      "expiresInSeconds": 900,
+      "user": {
+        "id": "usr_abc123",
+        "user_number": 2026102301,
+        "email": "budi@example.com",
+        "username": "budi48291",
+        "name": "Budi Santoso",
+        "role": "member",
+        "onboarding_completed": true
+      }
     }
   }
   ```

@@ -16,15 +16,18 @@ import { MemberDetailPage } from "../components/MemberDetailPage"
 import { peopleApi } from "../api/peopleApi"
 import type { MemberDetailDto } from "../api/peopleApi"
 
+const mockNavigate = vi.fn()
+
 vi.mock("@tanstack/react-router", () => ({
   Link: ({ children, to }: any) => <a href={to}>{children}</a>,
-  useNavigate: () => vi.fn(),
+  useNavigate: () => mockNavigate,
   useParams: () => ({ memberId: "usr_target" }),
 }))
 
 afterEach(() => {
   cleanup()
   vi.restoreAllMocks()
+  mockNavigate.mockReset()
 })
 
 function makeMemberDetail(
@@ -398,6 +401,37 @@ describe("MemberDetailPage Clay + HIG UI/UX Improvements", () => {
     await waitFor(() => {
       expect(screen.getByRole("alertdialog")).toBeTruthy()
       expect(screen.getByText("Delete Member?")).toBeTruthy()
+    })
+  })
+
+  it("navigates immediately to /people upon confirming member deletion without artificial delay", async () => {
+    const deleteSpy = vi
+      .spyOn(peopleApi, "deleteMember")
+      .mockResolvedValue({ success: true, message: "Member deleted successfully." })
+    const targetMember = makeMemberDetail({
+      id: "usr_target_del",
+      name: "Delete Target",
+      role: "member",
+    })
+
+    renderWithAuth("admin", "usr_admin_1", targetMember)
+
+    await waitFor(() => {
+      expect(screen.getByText("Administrative Actions")).toBeTruthy()
+    })
+
+    fireEvent.click(screen.getByRole("button", { name: /Delete/i }))
+    await screen.findByRole("alertdialog")
+    const confirmDeleteBtn = screen.getByRole("button", {
+      name: /Delete Member/i,
+    })
+
+    fireEvent.click(confirmDeleteBtn)
+
+    await waitFor(() => {
+      expect(deleteSpy).toHaveBeenCalledWith("usr_target_del")
+      expect(mockNavigate).toHaveBeenCalledWith({ to: "/people" })
+      expect(screen.getByText("Member deleted successfully.")).toBeTruthy()
     })
   })
 

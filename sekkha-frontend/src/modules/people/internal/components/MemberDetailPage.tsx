@@ -21,6 +21,7 @@ import {
   TabsTrigger,
 } from "@/components/base"
 import { Skeleton } from "@/components/ui/skeleton"
+import { safeStorage } from "@/lib/storage"
 import { peopleApi } from "../api/peopleApi"
 import type {
   MemberDetailDto,
@@ -235,11 +236,12 @@ export function MemberDetailPage({
     }
     setDeleting(true)
     try {
-      await peopleApi.deleteMember(member.id)
-      showToast("Member deleted successfully!")
-      setTimeout(() => {
-        navigate({ to: "/people" })
-      }, 1000)
+      const res = await peopleApi.deleteMember(member.id)
+      const toastText =
+        res?.message || `Member "${member.name}" successfully deleted`
+      safeStorage.setItem("people_toast", toastText)
+      showToast(toastText)
+      navigate({ to: "/people" })
     } catch (err: unknown) {
       const msg =
         err instanceof Error ? err.message : "Failed to delete member"

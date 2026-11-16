@@ -12,6 +12,7 @@ import {
   ShieldCheckIcon,
 } from "lucide-react"
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
+import { safeStorage } from "@/lib/storage"
 import { useAuth } from "@/modules/auth"
 import { useDebounce } from "@/hooks/useDebounce"
 import { Field, FieldLabel } from "@/components/ui/field"
@@ -379,15 +380,27 @@ export function PeoplePage() {
     claimStatusFilter,
   ])
 
+  // Flash toast from redirected actions (e.g. member deleted from MemberDetailPage)
+  useEffect(() => {
+    const flashToast = safeStorage.getItem("people_toast")
+    if (flashToast) {
+      safeStorage.removeItem("people_toast")
+      showToast(flashToast)
+    }
+  }, [])
+
   function showToast(text: string, type: "success" | "error" = "success") {
     setToastMessage({ text, type })
     setTimeout(() => setToastMessage(null), 3500)
   }
 
-  async function loadData() {
+  async function loadData(options: { silent?: boolean } = {}) {
     if (!isOrganizerOrAdmin) return
+    const { silent = false } = options
     try {
-      setLoading(true)
+      if (!silent) {
+        setLoading(true)
+      }
       const res = (await peopleApi.listMembers({
         search: debouncedSearchQuery.trim() || undefined,
         role: roleFilter,
@@ -411,9 +424,13 @@ export function PeoplePage() {
       }
     } catch (err) {
       console.error("Failed to load People data:", err)
-      showToast("Failed to load member data", "error")
+      if (!silent) {
+        showToast("Failed to load member data", "error")
+      }
     } finally {
-      setLoading(false)
+      if (!silent) {
+        setLoading(false)
+      }
     }
   }
 
@@ -454,12 +471,16 @@ export function PeoplePage() {
       return
     }
 
+    const targetMember = deletingMember
     try {
       setSubmitting(true)
-      await peopleApi.deleteMember(deletingMember.id)
-      showToast(`Member "${deletingMember.name}" successfully deleted`)
+      await peopleApi.deleteMember(targetMember.id)
+      // Optimistically remove deleted member & close modal immediately; reconcile counts silently in background
+      setMembers((prev) => prev.filter((m) => m.id !== targetMember.id))
+      setTotalItems((prev) => Math.max(0, prev - 1))
       setDeletingMember(null)
-      await loadData()
+      showToast(`Member "${targetMember.name}" successfully deleted`)
+      void loadData({ silent: true })
     } catch (err: any) {
       showToast(err.message || "Failed to delete member", "error")
     } finally {

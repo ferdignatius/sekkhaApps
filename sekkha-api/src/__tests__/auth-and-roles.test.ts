@@ -175,7 +175,7 @@ describe("EventBus, UserNumber Overflow & Leaderboard Role Filtering", () => {
       },
     }
     await expect(generateUniqueUserNumber(mockClient99, testDate)).rejects.toThrow(
-      "Kuota pembuatan nomor anggota harian"
+      "Daily member number generation quota (maximum 99/day) has been reached."
     )
   })
 

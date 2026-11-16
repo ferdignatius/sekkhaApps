@@ -279,6 +279,16 @@ export function EventForm({
   }, [categories, initial, selectedTypeId])
 
   const [title, setTitle] = useState(initial?.title ?? "")
+  const [location, setLocation] = useState(initial?.location ?? "")
+  // Pre-fill date: prefer existing event date (edit mode), then initialDate from calendar selection
+  const [eventDate, setEventDate] = useState(() => {
+    if (initial?.event_date) return isoToLocal(initial.event_date)
+    if (initialDate) return `${initialDate}T09:00`
+    return ""
+  })
+  const [isDescriptionEdited, setIsDescriptionEdited] = useState(() =>
+    Boolean(initial?.id || initial?.description)
+  )
   const [description, setDescription] = useState(
     () =>
       initial?.description ??
@@ -287,13 +297,24 @@ export function EventForm({
             title: initial?.title,
             eventDate:
               initial?.event_date ??
-              (initialDate ? `${initialDate}T19:00` : undefined),
+              (initialDate ? `${initialDate}T09:00` : undefined),
             location: initial?.location,
           })
         : "")
   )
   const [isDescExpanded, setIsDescExpanded] = useState(false)
-  const [location, setLocation] = useState(initial?.location ?? "")
+
+  // Keep default create template synced with title, date/time, and location until user edits manually
+  useEffect(() => {
+    if (initial?.id || isDescriptionEdited) return
+    setDescription(
+      buildDefaultEventDescription({
+        title,
+        eventDate: eventDate || undefined,
+        location,
+      })
+    )
+  }, [initial?.id, isDescriptionEdited, title, eventDate, location])
   const [recentVenueOptions, setRecentVenueOptions] = useState<string[]>(() =>
     deduplicateLocations(recentLocations ?? [], 3)
   )
@@ -345,12 +366,6 @@ export function EventForm({
     }
   }, [recentLocations, recentTimes])
 
-  // Pre-fill date: prefer existing event date (edit mode), then initialDate from calendar selection
-  const [eventDate, setEventDate] = useState(() => {
-    if (initial?.event_date) return isoToLocal(initial.event_date)
-    if (initialDate) return `${initialDate}T09:00`
-    return ""
-  })
   const [applyLatePenalty, setApplyLatePenalty] = useState<boolean>(() => {
     if (initial?.late_penalty_points !== undefined) {
       return (initial.late_penalty_points ?? 0) > 0
@@ -742,30 +757,53 @@ export function EventForm({
                 (Optional)
               </span>
             </label>
-            <button
-              type="button"
-              onClick={() => setIsDescExpanded((prev) => !prev)}
-              aria-expanded={isDescExpanded}
-              className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-hairline bg-canvas px-2 py-1 text-[11px] font-semibold text-ink transition-colors hover:bg-surface-card"
-            >
-              {isDescExpanded ? (
-                <>
-                  <Minimize2Icon className="size-3" aria-hidden="true" />
-                  <span>Collapse</span>
-                </>
-              ) : (
-                <>
-                  <Maximize2Icon className="size-3" aria-hidden="true" />
-                  <span>Expand</span>
-                </>
+            <div className="flex items-center gap-1.5">
+              {!initial?.id && isDescriptionEdited && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsDescriptionEdited(false)
+                    setDescription(
+                      buildDefaultEventDescription({
+                        title,
+                        eventDate: eventDate || undefined,
+                        location,
+                      })
+                    )
+                  }}
+                  className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-hairline bg-canvas px-2 py-1 text-[11px] font-semibold text-text-muted transition-colors hover:bg-surface-card hover:text-ink"
+                >
+                  Sync template
+                </button>
               )}
-            </button>
+              <button
+                type="button"
+                onClick={() => setIsDescExpanded((prev) => !prev)}
+                aria-expanded={isDescExpanded}
+                className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-hairline bg-canvas px-2 py-1 text-[11px] font-semibold text-ink transition-colors hover:bg-surface-card"
+              >
+                {isDescExpanded ? (
+                  <>
+                    <Minimize2Icon className="size-3" aria-hidden="true" />
+                    <span>Collapse</span>
+                  </>
+                ) : (
+                  <>
+                    <Maximize2Icon className="size-3" aria-hidden="true" />
+                    <span>Expand</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
           <textarea
             id="ev-desc"
             rows={isDescExpanded ? 12 : 7}
             value={description}
-            onChange={(e) => setDescription(e.target.value)}
+            onChange={(e) => {
+              setIsDescriptionEdited(true)
+              setDescription(e.target.value)
+            }}
             placeholder="Write additional details, dress code, or instructions for attendees..."
             className={`w-full resize-y rounded-xl border border-hairline bg-canvas px-3.5 py-2.5 text-xs leading-relaxed text-ink shadow-2xs transition-all outline-none placeholder:text-text-muted/70 focus:border-ink focus:ring-1 focus:ring-ink sm:text-sm ${
               isDescExpanded ? "min-h-[300px]" : "min-h-[176px]"

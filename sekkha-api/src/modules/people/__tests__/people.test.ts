@@ -838,6 +838,9 @@ describe("People Module RBAC & Self-Protection Guardrails", () => {
         const res = await peopleServices.deleteMember("usr_target_1", ADMIN_ACTOR)
         expect(res.success).toBe(true)
         expect(await verifyAndRotateRefreshTokenRecord("refresh_tok_delete")).toBeNull()
+        // Directory cache invalidation completes before resolving; secondary caches finish asynchronously
+        expect(cache.scannedPatterns).toContain("people:list:*")
+        await new Promise((resolve) => setTimeout(resolve, 0))
         expect(cache.scannedPatterns).toEqual(
           expect.arrayContaining([
             "people:list:*",

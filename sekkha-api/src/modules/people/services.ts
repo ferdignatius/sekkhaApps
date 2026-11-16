@@ -14,21 +14,36 @@ import {
   computeNameSimilarityScore,
 } from "./utils/nameSimilarity"
 
-async function invalidatePeopleCaches(userId?: string, includeHome = true): Promise<void> {
-  const ops: Array<Promise<void>> = [
-    invalidatePattern("people:list:*"),
+async function invalidatePeopleCaches(
+  userId?: string,
+  includeHome = true,
+  options: { backgroundSecondary?: boolean } = {}
+): Promise<void> {
+  const primaryOps: Array<Promise<void>> = [invalidatePattern("people:list:*")]
+  const secondaryOps: Array<Promise<void>> = [
     invalidatePattern("leaderboard:*"),
     invalidatePattern("pengurus:insight:*"),
     invalidatePattern("schools:stats:*"),
     invalidatePattern("schools:list:*"),
   ]
   if (userId) {
-    ops.push(invalidate(CacheKeys.userProfile(userId)))
+    secondaryOps.push(invalidate(CacheKeys.userProfile(userId)))
     if (includeHome) {
-      ops.push(invalidatePattern(`user:${userId}:home:*`))
+      secondaryOps.push(invalidatePattern(`user:${userId}:home:*`))
     }
   }
-  await Promise.all(ops)
+
+  if (options.backgroundSecondary) {
+    // Wait only for directory list cache invalidation so an immediate list refetch sees fresh data;
+    // downstream analytics/leaderboard/profile invalidations run asynchronously without blocking HTTP 200.
+    await Promise.all(primaryOps)
+    void Promise.all(secondaryOps).catch((err) => {
+      console.warn("⚠️ [People] Secondary cache invalidation failed:", err)
+    })
+    return
+  }
+
+  await Promise.all([...primaryOps, ...secondaryOps])
 }
 
 export function generateTemporaryPassword(): string {
@@ -587,7 +602,7 @@ export const peopleServices = {
 
     await peopleModels.delete(id)
     await revokeAllUserRefreshTokens(id)
-    await invalidatePeopleCaches(id, true)
+    await invalidatePeopleCaches(id, true, { backgroundSecondary: true })
     eventbus.publish(DomainEvents.USER_DELETED, {
       userId: id,
       reason: "admin_delete",

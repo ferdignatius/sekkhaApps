@@ -10,6 +10,7 @@ import { AuthContext } from "@/modules/auth/internal/context/AuthContext"
 import { initialAuthState } from "@/modules/auth/internal/context/authReducer"
 import type { AuthState } from "@/modules/auth/internal/context/authReducer"
 import { api } from "@/lib/api"
+import { safeStorage } from "@/lib/storage"
 import { PeoplePage } from "../components/PeoplePage"
 import { peopleApi } from "../api/peopleApi"
 import type { PaginatedMembersResponse } from "../api/peopleApi"
@@ -566,5 +567,20 @@ describe("peopleApi.getVerifiedSchools master data unwrapping", () => {
         ],
       })
     )
+  })
+
+  it("displays flash toast on mount when people_toast exists in safeStorage", async () => {
+    safeStorage.setItem(
+      "people_toast",
+      'Member "Delete Target" successfully deleted'
+    )
+    renderPeoplePage({ items: [], total: 0, page: 1, limit: 12, totalPages: 1 })
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('Member "Delete Target" successfully deleted')
+      ).toBeTruthy()
+    })
+    expect(safeStorage.getItem("people_toast")).toBeNull()
   })
 })

@@ -112,11 +112,11 @@ describe("EventForm & EventDetailSheet Enhancements", () => {
       />
     )
 
-    // 1. Pre-filled description template (without removed opening greeting)
+    // 1. Pre-filled description template aligned with initialDate default (09:00 WIB)
     const descArea = screen.getByLabelText(/description and instructions/i) as HTMLTextAreaElement
     expect(descArea.value).toContain("✨ Acara: Chanting")
     expect(descArea.value).toContain("📅 Tanggal: Sabtu, 14 November 2026")
-    expect(descArea.value).toContain("🕖 Waktu: 19.00 WIB – selesai")
+    expect(descArea.value).toContain("🕖 Waktu: 09.00 WIB – selesai")
     expect(descArea.value).toContain("📍 Tempat: Vihara Tri Maha Dharma")
     expect(descArea.value).not.toContain("Halo, selamat siang")
 
@@ -127,7 +127,7 @@ describe("EventForm & EventDetailSheet Enhancements", () => {
     expect(descArea.rows).toBe(12)
     expect(descArea.className).toContain("min-h-[300px]")
 
-    // 3. Location field label, disabled native autofill, & recommendation chips (no floating dropdown)
+    // 3. Location field label, disabled native autofill, recommendation chips & dynamic description sync
     const locInput = screen.getByLabelText(/^Location/i) as HTMLInputElement
     expect(screen.queryByText(/Venue \/ Room/i)).toBeNull()
     expect(locInput.getAttribute("autocomplete")).toBe("off")
@@ -139,8 +139,17 @@ describe("EventForm & EventDetailSheet Enhancements", () => {
     const venueChip = screen.getByRole("button", { name: "Dharmasala Utama" })
     fireEvent.click(venueChip)
     expect(locInput.value).toBe("Dharmasala Utama")
+    await waitFor(() => {
+      expect(descArea.value).toContain("📍 Tempat: Dharmasala Utama")
+    })
 
-    // 4. Category selection updates Apply Late Penalty without overwriting edited description
+    const titleInput = screen.getByLabelText(/Event name/i) as HTMLInputElement
+    fireEvent.change(titleInput, { target: { value: "Weekly Dhamma Class" } })
+    await waitFor(() => {
+      expect(descArea.value).toContain("✨ Acara: Weekly Dhamma Class")
+    })
+
+    // 4. Manual edit preserves custom description, while Sync template re-enables live sync
     fireEvent.change(descArea, { target: { value: "Custom user notes" } })
 
     const socialCatBtn = await screen.findByRole("radio", {
@@ -154,6 +163,9 @@ describe("EventForm & EventDetailSheet Enhancements", () => {
     expect(lateSwitch.getAttribute("data-state")).toBe("unchecked")
     expect(descArea.value).toBe("Custom user notes")
 
+    fireEvent.change(titleInput, { target: { value: "Social Meetup" } })
+    expect(descArea.value).toBe("Custom user notes")
+
     const chantingCatBtn = screen.getByRole("radio", {
       name: /Evening Chanting/i,
     })
@@ -163,6 +175,13 @@ describe("EventForm & EventDetailSheet Enhancements", () => {
     expect((screen.getByLabelText(/Grace Period/i) as HTMLInputElement).value).toBe("45")
     expect((screen.getByLabelText(/Penalty Deduction/i) as HTMLInputElement).value).toBe("20")
     expect(descArea.value).toBe("Custom user notes")
+
+    // Clicking Sync template restores dynamic tracking of title & location
+    fireEvent.click(screen.getByRole("button", { name: /sync template/i }))
+    await waitFor(() => {
+      expect(descArea.value).toContain("✨ Acara: Social Meetup")
+      expect(descArea.value).toContain("📍 Tempat: Dharmasala Utama")
+    })
   })
 
   it("shares both event details and URL via navigator.share and clipboard fallback in EventDetailSheet", async () => {

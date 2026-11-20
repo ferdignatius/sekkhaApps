@@ -4,6 +4,24 @@ All notable changes to Sekkha Apps. Semver (`MAJOR.MINOR.PATCH`); newest on top.
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-11-20
+
+### Added
+- **Weekly Activity Heatmap (`ProfilePage` & `sekkha-api`)**: Added `GET /api/users/me/activity-heatmap` endpoint and `WeeklyActivityHeatmap` component (`1 box = 1 week` event check-ins with Clay Teal intensity scale), defaulting to a full-width strip for the active month and expanding into a compact borderless 2-column inline matrix for the full year.
+- **Admin Reset Closed Event to Draft (`sekkha-api` & `EventDetailSheet`)**: Added admin-only `Reset to Draft` action for closed events, reverting finalized event points and returning the event to `scheduled` status while preserving attendance drafts.
+- **Past Seasons Responsive Browser (`LeaderboardHeader`)**: Moved `Past Seasons` trigger to the top-right header action bar and upgraded the selector to a `ResponsiveFormModal` (Bottom Sheet on mobile, Dialog on desktop) with search, UTC-safe year filter pills, and a `Back to Current Season` shortcut.
+
+### Changed
+- **Event Form & Date-Time Picker UX**:
+  - Replaced `Location` recommendation chips with an on-focus recent-locations dropdown (up to 3 last used venues; hidden when history is empty so typed text acts directly as a new location).
+  - Decoupled `Category` selection from `Event name` so choosing a category sets late-penalty defaults without overwriting the event title.
+  - Refined `DateTimePicker` with a mobile `Date | Time` segmented toggle, automatic advance to `Time` after date selection, single `Today` button (`hideTodayButton`), and Sekkha `Select` controls for custom hour/minute.
+  - Updated `buildDefaultEventDescription` greeting (`"Hallo Sobat Teenagers! 👋"`), universal clock emoji (`⏰`), and QR Pass check-in reminder.
+- **Responsive UI/UX Refinements (`Home`, `Events`, `Leaderboard`, `Profile`)**:
+  - Aligned desktop (`lg+`) 2-column layout in `EventsPage` (scoping search & create toolbar to the left event list column and adding a month/selected-date header to the right calendar card) and placed `EventCard` status badges inline with the title.
+  - Dynamic calendar dot filtering in `EventsPage` when filtering by category or search query.
+  - Streamlined mobile layouts, touch targets, and progressive disclosure across `HomePage`, `ProfilePage`, `LeaderboardPage`, `EventDetailSheet`, and `AttendanceListSheet`.
+
 ## [1.2.0] - 2026-11-14
 
 ### Added

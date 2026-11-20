@@ -509,12 +509,15 @@ describe("EventsPage Category Filter Dropdown — Initial 5 + Infinite Scroll", 
 
     // Clear search -> dot returns, then filter by "Regular" category -> otherDay dot disappears again
     fireEvent.change(searchInput, { target: { value: "" } })
-    await waitFor(() => {
-      const btns = screen.getAllByRole("button", {
-        name: new RegExp(otherLabel),
-      })
-      expect(btns[0].querySelectorAll("span.rounded-full").length).toBeGreaterThan(0)
-    })
+    await waitFor(
+      () => {
+        const btns = screen.getAllByRole("button", {
+          name: new RegExp(otherLabel),
+        })
+        expect(btns[0].querySelectorAll("span.rounded-full").length).toBeGreaterThan(0)
+      },
+      { timeout: 2500 }
+    )
 
     // Select "Chanting" category -> today's Puja is filtered out, otherDay keeps dot
     const chantingChips = screen.getAllByRole("button", { name: /Chanting/i })

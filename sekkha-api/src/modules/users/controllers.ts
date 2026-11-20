@@ -229,6 +229,20 @@ export const userControllers = {
     }
   },
 
+  async getActivityHeatmap(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const userId = req.user!.userId
+      const rawYear = req.query.year ? parseInt(String(req.query.year), 10) : undefined
+      const heatmap = await userServices.getWeeklyActivityHeatmap(
+        userId,
+        rawYear && !Number.isNaN(rawYear) ? rawYear : undefined
+      )
+      successEnvelope(res, 200, "Request completed successfully", heatmap)
+    } catch (err) {
+      next(err)
+    }
+  },
+
   async getPointTransactions(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const userId = req.user!.userId

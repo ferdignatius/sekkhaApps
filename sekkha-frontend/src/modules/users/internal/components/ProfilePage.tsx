@@ -13,6 +13,7 @@ import {
 import { DigitalMemberCard } from "@/components/common/DigitalMemberCard"
 import { InstallAppCard } from "@/components/common/InstallAppPrompt"
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
+import { WeeklyActivityHeatmap } from "@/components/common/WeeklyActivityHeatmap"
 import { getInitials } from "@/lib/initials"
 import {
   formatRoleLabel,
@@ -32,7 +33,7 @@ import {
 } from "@/components/base"
 import { useAuth } from "@/modules/auth"
 import { userApi } from "../api/userApi"
-import type { UserProfileDto } from "../api/userApi"
+import type { ActivityHeatmapDto, UserProfileDto } from "../api/userApi"
 import { PointsLedger } from "./PointsLedger"
 import { PersonalProfileSection } from "./PersonalProfileSection"
 import { SecuritySettingsSection } from "./SecuritySettingsSection"
@@ -42,6 +43,8 @@ type ProfileTab = "card" | "profile" | "security"
 export function ProfilePage() {
   const { authState, logout } = useAuth()
   const [profile, setProfile] = useState<UserProfileDto | null>(null)
+  const [heatmap, setHeatmap] = useState<ActivityHeatmapDto | null>(null)
+  const [heatmapLoading, setHeatmapLoading] = useState(true)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<ProfileTab>("card")
@@ -79,6 +82,25 @@ export function ProfilePage() {
   useEffect(() => {
     void loadProfile()
   }, [loadProfile])
+
+  useEffect(() => {
+    let active = true
+    setHeatmapLoading(true)
+    userApi
+      .getActivityHeatmap()
+      .then((res) => {
+        if (active) setHeatmap(res)
+      })
+      .catch(() => {
+        // Non-blocking: keep profile usable even if heatmap fails to load
+      })
+      .finally(() => {
+        if (active) setHeatmapLoading(false)
+      })
+    return () => {
+      active = false
+    }
+  }, [])
 
   async function handleConfirmLogout() {
     setSigningOut(true)
@@ -246,6 +268,14 @@ export function ProfilePage() {
                   </div>
                 </div>
               </Card>
+
+              <WeeklyActivityHeatmap
+                year={heatmap?.year ?? new Date().getFullYear()}
+                activeMonth={heatmap?.active_month ?? new Date().getMonth()}
+                weeks={heatmap?.weeks ?? []}
+                isLoading={heatmapLoading}
+                className="mt-3 sm:mt-4"
+              />
             </aside>
 
             {/* ── 2. SEGMENTED TABS & ACTIVE VIEW (Mobile: Middle | Desktop: Right Column Span) ── */}

@@ -78,9 +78,9 @@ export function EventCard({ event, onClick }: EventCardProps) {
 
           {/* Main Info: 3-Element HIG Hierarchy (Title + Status -> Time & Venue -> Category + Points) */}
           <div className="min-w-0 flex-1 space-y-1.5">
-            {/* Row 1: Primary Title + Status Badge */}
-            <div className="flex items-center justify-between gap-2">
-              <h3 className="min-w-0 flex-1 truncate text-sm font-bold text-[#0a0a0a] transition-colors group-hover:text-[#1a3a3a] sm:text-base">
+            {/* Row 1: Primary Title + Inline Status Badge (never collides with right-side Details CTA) */}
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="truncate text-sm font-bold text-[#0a0a0a] transition-colors group-hover:text-[#1a3a3a] sm:text-base">
                 {event.title}
               </h3>
 

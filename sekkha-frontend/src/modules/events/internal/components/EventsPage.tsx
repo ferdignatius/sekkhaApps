@@ -1314,56 +1314,56 @@ export function EventsPage() {
             </Card>
           </div>
 
-          {/* ── Search Bar + Create Button Controls Row ── */}
-          <div className="relative z-20 flex w-full flex-row items-center gap-2 sm:gap-2.5">
-            {/* Search Input */}
-            <div className="relative min-w-0 flex-1">
-              <SearchIcon
-                className="pointer-events-none absolute top-1/2 left-3.5 z-10 size-4 -translate-y-1/2 text-[#7a776a]"
-                aria-hidden="true"
-              />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search events..."
-                className="h-12 w-full rounded-[18px] border border-[#e5dec9] bg-[#faf5e8]/90 pr-10 pl-11 text-xs text-[#0a0a0a] shadow-xs ring-1 ring-black/[0.03] backdrop-blur-md transition-all outline-none placeholder:text-[#8a8678] focus:border-[#0a0a0a] focus:bg-[#fffaf0] focus:ring-1 focus:ring-[#0a0a0a] sm:text-sm"
-              />
-              {searchQuery && (
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery("")}
-                  className="absolute top-1/2 right-3.5 flex size-5 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-black/[0.08] text-[#6a6a6a] transition-colors hover:bg-[#0a0a0a] hover:text-white"
-                  title="Clear search"
-                >
-                  <XIcon className="size-3" />
-                </button>
-              )}
-            </div>
-
-            {/* Create button for Pengurus */}
-            {isPengurus && (
-              <Button
-                variant="filled"
-                onClick={() => {
-                  setEditTarget(null)
-                  setFormError(null)
-                  setFormOpen(true)
-                }}
-                className="h-12 shrink-0 rounded-full px-5 font-bold shadow-xs active:scale-[0.98]"
-                title="Create New Event"
-                aria-label="Create New Event"
-              >
-                <PlusIcon className="size-4" aria-hidden="true" />
-                <span className="hidden sm:inline">Create Event</span>
-              </Button>
-            )}
-          </div>
-
-          {/* ── Two-column layout: Integrated Event List (2/3) | Calendar Mini (1/3 Desktop) ── */}
+          {/* ── Two-column layout: Integrated Search + Event List (Left) | Calendar Card (Right on lg+) ── */}
           <div className="flex flex-col items-start gap-4 sm:gap-5 lg:flex-row">
-            {/* ── Left: Event List Container ── */}
-            <div className="w-full flex-1 lg:min-w-0">
+            {/* ── Left Column: Search/Create Toolbar + Event List Container ── */}
+            <div className="w-full flex-1 space-y-3.5 sm:space-y-4 lg:min-w-0">
+              {/* Search Bar + Create Button Controls Row (scoped to left column width on desktop) */}
+              <div className="relative z-20 flex w-full flex-row items-center gap-2 sm:gap-2.5">
+                {/* Search Input */}
+                <div className="relative min-w-0 flex-1">
+                  <SearchIcon
+                    className="pointer-events-none absolute top-1/2 left-3.5 z-10 size-4 -translate-y-1/2 text-[#7a776a]"
+                    aria-hidden="true"
+                  />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search events..."
+                    className="h-11 w-full rounded-[16px] border border-[#e5dec9] bg-[#faf5e8]/90 pr-10 pl-10 text-xs text-[#0a0a0a] shadow-xs ring-1 ring-black/[0.03] backdrop-blur-md transition-all outline-none placeholder:text-[#8a8678] focus:border-[#0a0a0a] focus:bg-[#fffaf0] focus:ring-1 focus:ring-[#0a0a0a] sm:h-12 sm:rounded-[18px] sm:pl-11 sm:text-sm"
+                  />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery("")}
+                      className="absolute top-1/2 right-3.5 flex size-5 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-black/[0.08] text-[#6a6a6a] transition-colors hover:bg-[#0a0a0a] hover:text-white"
+                      title="Clear search"
+                    >
+                      <XIcon className="size-3" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Create button for Pengurus */}
+                {isPengurus && (
+                  <Button
+                    variant="filled"
+                    onClick={() => {
+                      setEditTarget(null)
+                      setFormError(null)
+                      setFormOpen(true)
+                    }}
+                    className="h-11 shrink-0 rounded-full px-4 font-bold shadow-xs active:scale-[0.98] sm:h-12 sm:px-5"
+                    title="Create New Event"
+                    aria-label="Create New Event"
+                  >
+                    <PlusIcon className="size-4" aria-hidden="true" />
+                    <span className="hidden sm:inline">Create Event</span>
+                  </Button>
+                )}
+              </div>
+
               <Card
                 variant="soft"
                 glass
@@ -1462,12 +1462,24 @@ export function EventsPage() {
             </div>
 
             {/* ── Right: Mini Calendar Card (Desktop Only lg+) ── */}
-            <aside className="hidden w-full shrink-0 lg:block lg:w-80 xl:w-96">
+            <aside className="hidden w-full shrink-0 lg:block lg:w-84 xl:w-92">
               <Card
                 variant="soft"
                 glass
-                className="relative sticky top-16 space-y-3.5 rounded-[26px] border border-[#e6decb]/80 bg-[#faf5e8]/80 p-4 shadow-xs ring-1 ring-black/[0.04] backdrop-blur-xl sm:rounded-[28px] sm:p-5"
+                className="relative sticky top-16 space-y-3 rounded-[26px] border border-[#e6decb]/80 bg-[#faf5e8]/80 p-4 shadow-xs ring-1 ring-black/[0.04] backdrop-blur-xl sm:rounded-[28px] sm:p-5"
               >
+                <div className="flex items-center justify-between border-b border-black/[0.06] pb-2.5">
+                  <span className="text-xs font-bold tracking-tight text-[#0a0a0a] sm:text-sm">
+                    {activeMonth.toLocaleDateString("en-US", {
+                      month: "long",
+                      year: "numeric",
+                    })}
+                  </span>
+                  <span className="rounded-full bg-black/[0.05] px-2.5 py-0.5 font-mono text-[11px] font-semibold text-[#6a6a6a]">
+                    {formatSelectedDate(selectedDate, "short")}
+                  </span>
+                </div>
+
                 <EventCalendar
                   dots={dotMap}
                   selected={selectedDate}

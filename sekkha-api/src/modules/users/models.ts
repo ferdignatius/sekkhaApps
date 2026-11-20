@@ -159,6 +159,20 @@ export const userModels = {
     })
   },
 
+  findUserAttendancesByDateRange(userId: string, start: Date, end: Date) {
+    return prisma.attendance.findMany({
+      where: {
+        userId,
+        scannedAt: { gte: start, lte: end },
+      },
+      select: {
+        scannedAt: true,
+        event: { select: { eventDate: true } },
+      },
+      orderBy: { scannedAt: "asc" },
+    })
+  },
+
   findClosedEventDates() {
     return prisma.event.findMany({
       where: { status: "closed" },

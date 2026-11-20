@@ -351,6 +351,99 @@ export const userServices = {
     })
   },
 
+  async getWeeklyActivityHeatmap(userId: string, requestedYear?: number) {
+    const now = new Date()
+    const targetYear =
+      requestedYear && Number.isInteger(requestedYear) && requestedYear >= 2020 && requestedYear <= 2100
+        ? requestedYear
+        : now.getUTCFullYear()
+
+    const DAY_MS = 86_400_000
+    const pad2 = (n: number) => String(n).padStart(2, "0")
+    const toIsoDate = (d: Date) =>
+      `${d.getUTCFullYear()}-${pad2(d.getUTCMonth() + 1)}-${pad2(d.getUTCDate())}`
+
+    // Query slightly wider than Jan 1 .. Dec 31 to include boundary weeks
+    const queryStart = new Date(Date.UTC(targetYear, 0, 1) - 7 * DAY_MS)
+    const queryEnd = new Date(Date.UTC(targetYear, 11, 31, 23, 59, 59, 999) + 7 * DAY_MS)
+    const records = await userModels.findUserAttendancesByDateRange(
+      userId,
+      queryStart,
+      queryEnd
+    )
+
+    // Count check-ins per Monday-start week key ("YYYY-MM-DD" of week's Monday in WIB/UTC+7 or UTC)
+    const getWeekStartIso = (d: Date) => {
+      // Shift by +7h (WIB) so late-night/early-morning check-ins land on local Indonesian calendar date
+      const wib = new Date(d.getTime() + 7 * 3600_000)
+      const day = wib.getUTCDay() // 0=Sun..6=Sat
+      const diffToMonday = day === 0 ? -6 : 1 - day
+      const monday = new Date(
+        Date.UTC(wib.getUTCFullYear(), wib.getUTCMonth(), wib.getUTCDate() + diffToMonday)
+      )
+      return toIsoDate(monday)
+    }
+
+    const countsByWeekStart = new Map<string, number>()
+    for (const rec of records) {
+      const refDate = rec.event?.eventDate ? new Date(rec.event.eventDate) : new Date(rec.scannedAt)
+      if (Number.isNaN(refDate.getTime())) continue
+      const wkKey = getWeekStartIso(refDate)
+      countsByWeekStart.set(wkKey, (countsByWeekStart.get(wkKey) ?? 0) + 1)
+    }
+
+    // Build all Monday-start weeks whose Thursday falls in targetYear (ISO week-to-month rule)
+    const jan1 = new Date(Date.UTC(targetYear, 0, 1))
+    const jan1Day = jan1.getUTCDay()
+    const firstMonday = new Date(
+      Date.UTC(targetYear, 0, 1 + (jan1Day === 0 ? -6 : 1 - jan1Day))
+    )
+
+    const weeks: Array<{
+      week_start: string
+      week_end: string
+      month: number
+      week_of_month: number
+      count: number
+    }> = []
+    const monthWeekCounter = new Array<number>(12).fill(0)
+    let totalCheckins = 0
+
+    for (let i = 0; i < 55; i++) {
+      const mon = new Date(firstMonday.getTime() + i * 7 * DAY_MS)
+      const thu = new Date(mon.getTime() + 3 * DAY_MS)
+      const sun = new Date(mon.getTime() + 6 * DAY_MS)
+      const thuYear = thu.getUTCFullYear()
+      if (thuYear < targetYear) continue
+      if (thuYear > targetYear) break
+
+      const month = thu.getUTCMonth()
+      monthWeekCounter[month] += 1
+      const weekStart = toIsoDate(mon)
+      const count = countsByWeekStart.get(weekStart) ?? 0
+      totalCheckins += count
+
+      weeks.push({
+        week_start: weekStart,
+        week_end: toIsoDate(sun),
+        month,
+        week_of_month: monthWeekCounter[month],
+        count,
+      })
+    }
+
+    const wibNow = new Date(now.getTime() + 7 * 3600_000)
+    const activeMonth =
+      wibNow.getUTCFullYear() === targetYear ? wibNow.getUTCMonth() : 0
+
+    return {
+      year: targetYear,
+      active_month: activeMonth,
+      total_checkins: totalCheckins,
+      weeks,
+    }
+  },
+
   async getPointTransactions(userId: string, limit: number = 20) {
     const raw = await userModels.findUserPointTransactions(userId, limit)
     const stats = await prisma.userStats.findUnique({ where: { userId } })

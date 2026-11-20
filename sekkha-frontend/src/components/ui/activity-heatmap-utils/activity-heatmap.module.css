@@ -1,0 +1,380 @@
+.root {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-family: inherit;
+  color: #0a0a0a;
+}
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.summary {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: #525252;
+}
+
+.total {
+  font-weight: 700;
+  color: #0a0a0a;
+}
+
+.period {
+  font-weight: 500;
+  color: #6a6a6a;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.rollingFrame {
+  display: inline-flex;
+  vertical-align: bottom;
+  overflow: hidden;
+}
+
+.rolling {
+  display: inline-flex;
+  align-items: baseline;
+  font-variant-numeric: tabular-nums;
+}
+
+.place {
+  position: relative;
+  display: inline-flex;
+  justify-content: center;
+}
+
+.placeChar {
+  display: inline-block;
+}
+
+.rise {
+  position: relative;
+  display: inline-flex;
+  align-items: baseline;
+}
+
+.riseLine {
+  display: inline-flex;
+  align-items: baseline;
+}
+
+.scroller {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+
+.scroller::-webkit-scrollbar {
+  display: none;
+}
+
+.canvas {
+  display: grid;
+  grid-template-columns: 28px auto;
+  grid-template-rows: auto auto;
+  gap: 4px 6px;
+  width: max-content;
+}
+
+.months {
+  grid-column: 2;
+  grid-row: 1;
+  position: relative;
+  height: 16px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #6a6a6a;
+}
+
+.month {
+  position: absolute;
+  left: calc(var(--col, 0) * 14px);
+  white-space: nowrap;
+}
+
+.weekdays {
+  grid-column: 1;
+  grid-row: 2;
+  display: grid;
+  grid-template-rows: repeat(7, 11px);
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #737373;
+  align-items: center;
+}
+
+.weekday {
+  line-height: 1;
+}
+
+.plot {
+  grid-column: 2;
+  grid-row: 2;
+  position: relative;
+}
+
+.grid {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.row {
+  display: flex;
+  gap: 3px;
+}
+
+.cell {
+  width: 11px;
+  height: 11px;
+  border-radius: 3px;
+  background: #f2ede0;
+  border: 1px solid rgba(10, 10, 10, 0.06);
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease,
+    opacity 160ms ease,
+    transform 150ms ease;
+  cursor: pointer;
+}
+
+.cell[data-empty] {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.cell[data-level="0"],
+.swatch[data-level="0"] {
+  background: #f2ede0;
+}
+
+.cell[data-level="1"],
+.swatch[data-level="1"] {
+  background: #b8eae0;
+  border-color: rgba(15, 118, 110, 0.14);
+}
+
+.cell[data-level="2"],
+.swatch[data-level="2"] {
+  background: #6fd6c4;
+  border-color: rgba(15, 118, 110, 0.22);
+}
+
+.cell[data-level="3"],
+.swatch[data-level="3"] {
+  background: #1ea896;
+  border-color: rgba(15, 118, 110, 0.28);
+}
+
+.cell[data-level="4"],
+.swatch[data-level="4"] {
+  background: #0f766e;
+  border-color: rgba(15, 118, 110, 0.4);
+}
+
+.grid[data-reveal="hidden"] .cell {
+  opacity: 0;
+  transform: scale(0.75);
+}
+
+.grid[data-reveal="revealing"] .cell:not([data-empty]) {
+  animation: cellWave 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--wave, 0ms);
+}
+
+.grid[data-reveal="revealing"][data-direction="back"] .cell:not([data-empty]) {
+  animation-delay: var(--wave-back, 0ms);
+}
+
+.grid[data-highlight="0"] .cell:not([data-level="0"]),
+.grid[data-highlight="1"] .cell:not([data-level="1"]),
+.grid[data-highlight="2"] .cell:not([data-level="2"]),
+.grid[data-highlight="3"] .cell:not([data-level="3"]),
+.grid[data-highlight="4"] .cell:not([data-level="4"]) {
+  opacity: 0.25;
+}
+
+.cell:hover,
+.cell:focus-visible {
+  outline: none;
+  border-color: #0a0a0a;
+  transform: scale(1.12);
+}
+
+.ring {
+  position: absolute;
+  top: calc(var(--row, 0) * 14px - 2px);
+  left: calc(var(--col, 0) * 14px - 2px);
+  width: 15px;
+  height: 15px;
+  border-radius: 5px;
+  border: 2px solid #0a0a0a;
+  pointer-events: none;
+  opacity: 0;
+  transition:
+    top 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    left 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 150ms ease;
+}
+
+.ring[data-shown] {
+  opacity: 1;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11px;
+  color: #6a6a6a;
+}
+
+.caption {
+  min-height: 16px;
+  font-weight: 500;
+}
+
+.captionLong {
+  display: inline;
+}
+
+.captionShort {
+  display: none;
+}
+
+@media (max-width: 480px) {
+  .captionLong {
+    display: none;
+  }
+  .captionShort {
+    display: inline;
+  }
+}
+
+.scale {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legendText {
+  font-size: 10px;
+  font-weight: 600;
+  color: #737373;
+}
+
+.swatches {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.swatch {
+  width: 11px;
+  height: 11px;
+  border-radius: 3px;
+  border: 1px solid rgba(10, 10, 10, 0.08);
+  padding: 0;
+  cursor: pointer;
+  transition: transform 140ms ease, border-color 140ms ease;
+}
+
+.swatch:hover,
+.swatch:focus-visible,
+.swatch[aria-pressed="true"] {
+  outline: none;
+  border-color: #0a0a0a;
+  transform: scale(1.15);
+}
+
+.tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 40;
+  pointer-events: none;
+}
+
+.bubble {
+  transform: translateY(calc(-100% - 8px));
+  border-radius: 10px;
+  background: #0a0a0a;
+  color: #fffaf0;
+  padding: 6px 10px;
+  box-shadow: 0 8px 20px rgba(10, 10, 10, 0.22);
+  white-space: nowrap;
+}
+
+.tipBody {
+  position: relative;
+  display: block;
+  overflow: hidden;
+}
+
+.tipMeasure {
+  position: absolute;
+  visibility: hidden;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.tipLines {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.tipPrimary {
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.tipSecondary {
+  font-size: 10px;
+  font-weight: 500;
+  color: rgba(255, 250, 240, 0.72);
+  line-height: 1.2;
+}
+
+@keyframes cellWave {
+  from {
+    opacity: 0;
+    transform: scale(0.72);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

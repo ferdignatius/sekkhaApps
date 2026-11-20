@@ -411,4 +411,123 @@ describe("LeaderboardPage Top 10, Bottom Self-Rank (>10) & Visual Role/Self Sepa
       expect(screen.getByText("@vassa_champ")).toBeTruthy()
     })
   })
+
+  it("filters many past seasons by year and search query inside the Past Seasons browser", async () => {
+    vi.spyOn(api, "get").mockResolvedValue({
+      active_period: {
+        id: "sem2_2026",
+        key: "semester",
+        name: "Semester 2 · 2026",
+        start_date: "2026-07-01T00:00:00.000Z",
+        end_date: "2026-12-31T23:59:59.000Z",
+        days_left: 42,
+        target_attendance: 12,
+        is_active: true,
+        is_custom: false,
+      },
+      available_periods: [
+        {
+          id: "sem2_2026",
+          key: "semester",
+          name: "Semester 2 · 2026",
+          start_date: "2026-07-01T00:00:00.000Z",
+          end_date: "2026-12-31T23:59:59.000Z",
+          days_left: 42,
+          target_attendance: 12,
+          is_active: true,
+          is_custom: false,
+        },
+      ],
+      archived_periods: [
+        {
+          id: "season_sem1_2026",
+          key: "semester",
+          name: "Semester 1 · 2026",
+          code: "2026-SEM1",
+          start_date: "2026-01-01T00:00:00.000Z",
+          end_date: "2026-06-30T23:59:59.000Z",
+          days_left: 0,
+          target_attendance: 12,
+          is_active: false,
+          is_custom: false,
+          is_archived: true,
+        },
+        {
+          id: "season_vassa_2025",
+          key: "custom",
+          name: "Vassa Retreat 2025",
+          code: "VASSA-2025",
+          start_date: "2025-07-01T00:00:00.000Z",
+          end_date: "2025-10-15T23:59:59.000Z",
+          days_left: 0,
+          target_attendance: 10,
+          is_active: false,
+          is_custom: true,
+          is_archived: true,
+        },
+        {
+          id: "season_annual_2024",
+          key: "annual",
+          name: "Annual · 2024",
+          code: "2024-ANNUAL",
+          start_date: "2024-01-01T00:00:00.000Z",
+          end_date: "2024-12-31T23:59:59.000Z",
+          days_left: 0,
+          target_attendance: 24,
+          is_active: false,
+          is_custom: false,
+          is_archived: true,
+        },
+      ],
+      season: {
+        name: "Semester 2 · 2026",
+        start_date: "2026-07-01T00:00:00.000Z",
+        end_date: "2026-12-31T23:59:59.000Z",
+        days_left: 42,
+        target_attendance: 12,
+      },
+      community: {
+        total_checkins: 2,
+        total_points: 85,
+        target_checkins: 500,
+        active_members: 1,
+      },
+      leaderboard: [],
+    } as any)
+
+    const authState: AuthState = {
+      ...initialAuthState,
+      status: "authenticated",
+      userId: "usr_me",
+      role: "member",
+      username: "member1",
+      name: "Member One",
+    }
+
+    render(
+      <AuthContext.Provider value={{ authState } as any}>
+        <LeaderboardPage />
+      </AuthContext.Provider>
+    )
+
+    fireEvent.click(await screen.findByRole("button", { name: /Past Seasons/i }))
+
+    expect(await screen.findByText("Semester 1 · 2026")).toBeTruthy()
+    expect(screen.getByText("Vassa Retreat 2025")).toBeTruthy()
+    expect(screen.getByText("Annual · 2024")).toBeTruthy()
+
+    // Filter by year 2025
+    fireEvent.click(screen.getByRole("button", { name: "2025" }))
+    expect(screen.queryByText("Semester 1 · 2026")).toBeNull()
+    expect(screen.getByText("Vassa Retreat 2025")).toBeTruthy()
+    expect(screen.queryByText("Annual · 2024")).toBeNull()
+
+    // Reset to All and search "Annual"
+    fireEvent.click(screen.getByRole("button", { name: "All (3)" }))
+    fireEvent.change(screen.getByLabelText(/Search past seasons/i), {
+      target: { value: "Annual" },
+    })
+    expect(screen.queryByText("Vassa Retreat 2025")).toBeNull()
+    expect(screen.getByText("Annual · 2024")).toBeTruthy()
+  })
 })

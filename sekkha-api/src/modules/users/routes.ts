@@ -38,6 +38,9 @@ usersRouter.get("/me/attendances", requireAuth, userControllers.getAttendances)
 // GET /api/users/me/streak — Current & longest weekly streak
 usersRouter.get("/me/streak", requireAuth, userControllers.getStreak)
 
+// GET /api/users/me/activity-heatmap — Weekly event check-in counts for a year
+usersRouter.get("/me/activity-heatmap", requireAuth, userControllers.getActivityHeatmap)
+
 // GET /api/users/me/point-transactions & /api/users/me/points-history — Point mutation history
 usersRouter.get("/me/point-transactions", requireAuth, userControllers.getPointTransactions)
 usersRouter.get("/me/points-history", requireAuth, userControllers.getPointTransactions)

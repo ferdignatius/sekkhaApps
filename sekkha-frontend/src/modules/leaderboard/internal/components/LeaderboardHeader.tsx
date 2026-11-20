@@ -1,17 +1,15 @@
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import {
   ArchiveIcon,
-  ChevronDownIcon,
+  CheckIcon,
   RefreshCwIcon,
+  RotateCcwIcon,
+  SearchIcon,
   SparklesIcon,
   TimerIcon,
   TrophyIcon,
 } from "lucide-react"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
+import { ResponsiveFormModal } from "@/components/common/ResponsiveFormModal"
 
 export interface SeasonPeriodOption {
   id: string
@@ -77,6 +75,8 @@ export function LeaderboardHeader({
   onRefresh,
 }: LeaderboardHeaderProps) {
   const [pastMenuOpen, setPastMenuOpen] = useState(false)
+  const [pastSearch, setPastSearch] = useState("")
+  const [selectedYear, setSelectedYear] = useState<string>("all")
 
   const dateRangeLabel = formatShortRange(
     seasonData?.start_date,
@@ -91,6 +91,38 @@ export function LeaderboardHeader({
   const isArchivedView = Boolean(activePeriod?.is_archived || selectedArchived)
   const effectiveArchived =
     selectedArchived || (activePeriod?.is_archived ? activePeriod : null)
+
+  const archivedYears = useMemo(() => {
+    const years = new Set<string>()
+    for (const p of archivedPeriods) {
+      const endYear = new Date(p.end_date).getUTCFullYear()
+      if (!Number.isNaN(endYear)) years.add(String(endYear))
+    }
+    return Array.from(years).sort((a, b) => Number(b) - Number(a))
+  }, [archivedPeriods])
+
+  const filteredArchivedPeriods = useMemo(() => {
+    const q = pastSearch.trim().toLowerCase()
+    return archivedPeriods.filter((p) => {
+      if (selectedYear !== "all") {
+        const endYear = String(new Date(p.end_date).getUTCFullYear())
+        if (endYear !== selectedYear) return false
+      }
+      if (!q) return true
+      return (
+        p.name.toLowerCase().includes(q) ||
+        (p.code?.toLowerCase().includes(q) ?? false)
+      )
+    })
+  }, [archivedPeriods, pastSearch, selectedYear])
+
+  function handleOpenPastModal(nextOpen: boolean) {
+    if (nextOpen) {
+      setPastSearch("")
+      setSelectedYear("all")
+    }
+    setPastMenuOpen(nextOpen)
+  }
 
   return (
     <header className="relative overflow-hidden rounded-2xl bg-ink p-4 text-white shadow-md sm:p-5">
@@ -134,132 +166,211 @@ export function LeaderboardHeader({
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={onRefresh}
-            disabled={isLoading}
-            aria-label="Refresh leaderboard"
-            title="Refresh leaderboard"
-            className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition-colors hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-clay-ochre focus-visible:outline-none disabled:cursor-wait disabled:opacity-60"
-          >
-            <RefreshCwIcon
-              className={`size-4 ${isLoading ? "animate-spin" : ""}`}
-              aria-hidden="true"
-            />
-          </button>
+          <div className="flex shrink-0 items-center gap-2">
+            {archivedPeriods.length > 0 && (
+              <button
+                type="button"
+                onClick={() => handleOpenPastModal(true)}
+                aria-label={
+                  selectedArchived
+                    ? `Past Seasons: ${selectedArchived.name}`
+                    : "Past Seasons"
+                }
+                aria-expanded={pastMenuOpen}
+                className={`inline-flex min-h-10 max-w-[140px] cursor-pointer items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition-colors sm:max-w-[200px] sm:px-3.5 ${isArchivedView
+                  ? "bg-clay-ochre text-ink shadow-xs"
+                  : "border border-white/15 bg-white/10 text-white/90 hover:bg-white/20"
+                  }`}
+              >
+                <ArchiveIcon className="size-3.5 shrink-0" aria-hidden="true" />
+                <span className="truncate sm:hidden">
+                  {selectedArchived ? selectedArchived.name : "Past"}
+                </span>
+                <span className="hidden truncate sm:inline">
+                  {selectedArchived ? selectedArchived.name : "Past Seasons"}
+                </span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={onRefresh}
+              disabled={isLoading}
+              aria-label="Refresh leaderboard"
+              title="Refresh leaderboard"
+              className="flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition-colors hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-clay-ochre focus-visible:outline-none disabled:cursor-wait disabled:opacity-60 sm:size-11"
+            >
+              <RefreshCwIcon
+                className={`size-4 ${isLoading ? "animate-spin" : ""}`}
+                aria-hidden="true"
+              />
+            </button>
+          </div>
         </div>
 
-        {/* Integrated Season Period Switcher + Past Seasons Selector (1-row horizontal scroll on mobile) */}
-        {(availablePeriods.length > 0 || archivedPeriods.length > 0) && (
-          <div className="scrollbar-none -mx-1 flex flex-nowrap items-center gap-1.5 overflow-x-auto border-t border-white/10 px-1 pt-3 sm:mx-0 sm:flex-wrap sm:justify-between sm:overflow-visible sm:px-0">
-            <div
-              role="group"
-              aria-label="Season period filter"
-              className="flex shrink-0 items-center gap-1.5"
-            >
-              {availablePeriods.map((period, idx) => {
-                const isSelected =
-                  !isArchivedView &&
-                  (selectedPeriodKey === period.key ||
-                    selectedPeriodKey === period.id ||
-                    (selectedPeriodKey === "default" && idx === 0))
+        {/* Active Season Period Switcher (cleanly wraps on mobile without clipping) */}
+        {availablePeriods.length > 0 && (
+          <div
+            role="group"
+            aria-label="Season period filter"
+            className="flex flex-wrap items-center gap-1.5 border-t border-white/10 pt-3"
+          >
+            {availablePeriods.map((period, idx) => {
+              const isSelected =
+                !isArchivedView &&
+                (selectedPeriodKey === period.key ||
+                  selectedPeriodKey === period.id ||
+                  (selectedPeriodKey === "default" && idx === 0))
 
-                return (
-                  <button
-                    key={period.id}
-                    type="button"
-                    onClick={() => onSelectPeriod(period.key)}
-                    aria-pressed={isSelected}
-                    className={`inline-flex min-h-10 shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold transition-colors sm:min-h-[38px] ${
-                      isSelected
-                        ? "bg-white text-ink shadow-xs"
-                        : "bg-white/10 text-white/80 hover:bg-white/20 hover:text-white"
+              return (
+                <button
+                  key={period.id}
+                  type="button"
+                  onClick={() => onSelectPeriod(period.key)}
+                  aria-pressed={isSelected}
+                  className={`inline-flex min-h-10 shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold transition-colors sm:min-h-[38px] ${isSelected
+                    ? "bg-white text-ink shadow-xs"
+                    : "bg-white/10 text-white/80 hover:bg-white/20 hover:text-white"
                     }`}
-                  >
-                    {period.is_custom && (
-                      <SparklesIcon
-                        className="size-3.5 text-clay-ochre"
-                        aria-hidden="true"
-                      />
-                    )}
-                    <span>{period.name}</span>
-                  </button>
-                )
-              })}
-            </div>
-
-            {archivedPeriods.length > 0 && (
-              <Popover open={pastMenuOpen} onOpenChange={setPastMenuOpen}>
-                <PopoverTrigger asChild>
-                  <button
-                    type="button"
-                    aria-expanded={pastMenuOpen}
-                    className={`inline-flex min-h-10 shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold transition-colors sm:min-h-[38px] ${
-                      isArchivedView
-                        ? "bg-clay-ochre text-ink shadow-xs"
-                        : "border border-white/15 bg-white/10 text-white/90 hover:bg-white/20"
-                    }`}
-                  >
-                    <ArchiveIcon className="size-3.5" aria-hidden="true" />
-                    <span>
-                      {selectedArchived
-                        ? selectedArchived.name
-                        : "Past Seasons"}
-                    </span>
-                    <ChevronDownIcon className="size-3.5 opacity-80" aria-hidden="true" />
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent
-                  align="end"
-                  className="z-50 w-72 rounded-xl border border-hairline bg-canvas p-2 text-ink shadow-xl"
                 >
-                  <p className="px-2 py-1 text-[11px] font-bold tracking-wider text-text-muted uppercase">
-                    Archived Seasons
-                  </p>
-                  <div className="mt-1 max-h-60 space-y-1 overflow-y-auto">
-                    {archivedPeriods.map((arch) => {
-                      const active =
-                        selectedPeriodKey === arch.id ||
-                        (arch.code &&
-                          selectedPeriodKey.toLowerCase() ===
-                            arch.code.toLowerCase())
-                      const range = formatShortRange(arch.start_date, arch.end_date)
-                      return (
-                        <button
-                          key={arch.id}
-                          type="button"
-                          onClick={() => {
-                            onSelectPeriod(arch.id)
-                            setPastMenuOpen(false)
-                          }}
-                          className={`flex w-full cursor-pointer items-start justify-between gap-2 rounded-lg px-2.5 py-2 text-left text-xs transition-colors ${
-                            active
-                              ? "bg-ink text-canvas"
-                              : "hover:bg-surface-soft text-ink"
-                          }`}
-                        >
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate font-bold">{arch.name}</p>
-                            {range && (
-                              <p
-                                className={`mt-0.5 text-[11px] ${
-                                  active ? "text-canvas/75" : "text-text-muted"
-                                }`}
-                              >
-                                {range}
-                              </p>
-                            )}
-                          </div>
-                        </button>
-                      )
-                    })}
-                  </div>
-                </PopoverContent>
-              </Popover>
-            )}
+                  {period.is_custom && (
+                    <SparklesIcon
+                      className="size-3.5 text-clay-ochre"
+                      aria-hidden="true"
+                    />
+                  )}
+                  <span>{period.name}</span>
+                </button>
+              )
+            })}
           </div>
         )}
       </div>
+
+      {/* Responsive Past Seasons Browser (Bottom Sheet on mobile, Dialog on desktop) */}
+      {archivedPeriods.length > 0 && (
+        <ResponsiveFormModal
+          open={pastMenuOpen}
+          onOpenChange={handleOpenPastModal}
+          title="Past Seasons"
+          description="Browse archived seasons by year or name to view final standings."
+          maxWidth="max-w-md"
+        >
+          <div className="space-y-3 text-left font-sans">
+            {isArchivedView && availablePeriods.length > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  onSelectPeriod(availablePeriods[0].key)
+                  setPastMenuOpen(false)
+                }}
+                className="flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-hairline bg-surface-soft px-3 py-2 text-xs font-bold text-ink transition-colors hover:bg-surface-card"
+              >
+                <RotateCcwIcon className="size-3.5 text-clay-teal" aria-hidden="true" />
+                <span>Back to Current Season ({availablePeriods[0].name})</span>
+              </button>
+            )}
+
+            {/* Search Input */}
+            <div className="relative">
+              <SearchIcon
+                className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-text-muted"
+                aria-hidden="true"
+              />
+              <input
+                type="search"
+                value={pastSearch}
+                onChange={(e) => setPastSearch(e.target.value)}
+                placeholder="Search past seasons..."
+                aria-label="Search past seasons"
+                className="h-10 w-full rounded-xl border border-hairline bg-canvas pr-3 pl-9 text-xs text-ink outline-none placeholder:text-text-muted/70 focus:border-ink focus:ring-1 focus:ring-ink sm:text-sm"
+              />
+            </div>
+
+            {/* Year Filter Pills */}
+            {archivedYears.length > 1 && (
+              <div
+                role="group"
+                aria-label="Filter past seasons by year"
+                className="scrollbar-none flex flex-nowrap gap-1.5 overflow-x-auto pb-0.5"
+              >
+                <button
+                  type="button"
+                  aria-pressed={selectedYear === "all"}
+                  onClick={() => setSelectedYear("all")}
+                  className={`shrink-0 cursor-pointer rounded-full px-3 py-1 text-xs font-bold transition-colors ${selectedYear === "all"
+                    ? "bg-ink text-canvas"
+                    : "border border-hairline bg-canvas text-text-muted hover:text-ink"
+                    }`}
+                >
+                  All ({archivedPeriods.length})
+                </button>
+                {archivedYears.map((yr) => (
+                  <button
+                    key={yr}
+                    type="button"
+                    aria-pressed={selectedYear === yr}
+                    onClick={() => setSelectedYear(yr)}
+                    className={`shrink-0 cursor-pointer rounded-full px-3 py-1 font-mono text-xs font-bold transition-colors ${selectedYear === yr
+                      ? "bg-ink text-canvas"
+                      : "border border-hairline bg-canvas text-text-muted hover:text-ink"
+                      }`}
+                  >
+                    {yr}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Filtered Seasons List */}
+            <div className="max-h-[50vh] space-y-1.5 overflow-y-auto pr-0.5">
+              {filteredArchivedPeriods.length === 0 ? (
+                <p className="rounded-xl border border-dashed border-hairline py-6 text-center text-xs text-text-muted">
+                  No archived seasons match &ldquo;{pastSearch}&rdquo;.
+                </p>
+              ) : (
+                filteredArchivedPeriods.map((arch) => {
+                  const active =
+                    selectedPeriodKey === arch.id ||
+                    (arch.code &&
+                      selectedPeriodKey.toLowerCase() ===
+                      arch.code.toLowerCase())
+                  const range = formatShortRange(arch.start_date, arch.end_date)
+                  return (
+                    <button
+                      key={arch.id}
+                      type="button"
+                      onClick={() => {
+                        onSelectPeriod(arch.id)
+                        setPastMenuOpen(false)
+                      }}
+                      className={`flex w-full cursor-pointer items-center justify-between gap-3 rounded-xl border px-3 py-2.5 text-left text-xs transition-colors ${active
+                        ? "border-ink bg-ink text-canvas"
+                        : "border-hairline bg-canvas text-ink hover:bg-surface-soft"
+                        }`}
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-bold">{arch.name}</p>
+                        {range && (
+                          <p
+                            className={`mt-0.5 text-[11px] ${active ? "text-canvas/75" : "text-text-muted"
+                              }`}
+                          >
+                            {range}
+                          </p>
+                        )}
+                      </div>
+                      {active && (
+                        <CheckIcon className="size-4 shrink-0 text-clay-ochre" aria-hidden="true" />
+                      )}
+                    </button>
+                  )
+                })
+              )}
+            </div>
+          </div>
+        </ResponsiveFormModal>
+      )}
     </header>
   )
 }

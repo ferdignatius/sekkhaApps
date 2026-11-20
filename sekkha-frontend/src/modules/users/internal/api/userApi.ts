@@ -45,6 +45,21 @@ export interface PointTransactionDto {
   created_at: string
 }
 
+export interface WeeklyActivityBucketDto {
+  week_start: string
+  week_end: string
+  month: number
+  week_of_month: number
+  count: number
+}
+
+export interface ActivityHeatmapDto {
+  year: number
+  active_month: number
+  total_checkins: number
+  weeks: WeeklyActivityBucketDto[]
+}
+
 export interface ChangePasswordPayload {
   current_password: string
   new_password: string
@@ -110,6 +125,18 @@ export const userApi = {
       if (fallback && Array.isArray(fallback.data)) return fallback.data
       if (fallback && Array.isArray(fallback.items)) return fallback.items
       return []
+    }
+  },
+
+  getActivityHeatmap: async (year?: number): Promise<ActivityHeatmapDto> => {
+    const query = year ? `?year=${year}` : ""
+    const res = await api.get<any>(`/users/me/activity-heatmap${query}`)
+    const payload = res?.data ?? res
+    return {
+      year: payload?.year ?? year ?? new Date().getFullYear(),
+      active_month: payload?.active_month ?? new Date().getMonth(),
+      total_checkins: payload?.total_checkins ?? 0,
+      weeks: Array.isArray(payload?.weeks) ? payload.weeks : [],
     }
   },
 

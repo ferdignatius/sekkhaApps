@@ -29,6 +29,7 @@ vi.mock("../api/userApi", () => ({
     getProfile: vi.fn(),
     updateProfile: vi.fn(),
     getPointsHistory: vi.fn(),
+    getActivityHeatmap: vi.fn(),
     getVerifiedSchools: vi.fn(),
     requestChangePasswordOtp: vi.fn(),
     changePassword: vi.fn(),
@@ -115,6 +116,48 @@ describe("ProfilePage UI/UX, Layout & Behavioral Improvements", () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(userApi.getVerifiedSchools).mockResolvedValue(mockSchools)
+    vi.mocked(userApi.getActivityHeatmap).mockResolvedValue({
+      year: 2026,
+      active_month: 10,
+      total_checkins: 3,
+      weeks: [
+        {
+          week_start: "2026-10-05",
+          week_end: "2026-10-11",
+          month: 9,
+          week_of_month: 2,
+          count: 1,
+        },
+        {
+          week_start: "2026-11-02",
+          week_end: "2026-11-08",
+          month: 10,
+          week_of_month: 1,
+          count: 1,
+        },
+        {
+          week_start: "2026-11-09",
+          week_end: "2026-11-15",
+          month: 10,
+          week_of_month: 2,
+          count: 0,
+        },
+        {
+          week_start: "2026-11-16",
+          week_end: "2026-11-22",
+          month: 10,
+          week_of_month: 3,
+          count: 1,
+        },
+        {
+          week_start: "2026-11-23",
+          week_end: "2026-11-29",
+          month: 10,
+          week_of_month: 4,
+          count: 0,
+        },
+      ],
+    })
   })
 
   afterEach(() => {
@@ -381,5 +424,31 @@ describe("ProfilePage UI/UX, Layout & Behavioral Improvements", () => {
     await waitFor(() => {
       expect(logout).toHaveBeenCalledTimes(1)
     })
+  })
+
+  it("renders WeeklyActivityHeatmap at top focused on active month (1 box = 1 week) and expands/collapses full year", async () => {
+    vi.mocked(userApi.getProfile).mockResolvedValueOnce(mockProfile)
+    vi.mocked(userApi.getPointsHistory).mockResolvedValueOnce([])
+
+    renderProfilePage()
+
+    const heatmapCard = await screen.findByTestId("weekly-activity-heatmap")
+    expect(within(heatmapCard).getByText("Weekly Activity")).toBeDefined()
+    expect(within(heatmapCard).getByText("Nov 2026")).toBeDefined()
+    expect(within(heatmapCard).getByText("2 check-ins")).toBeDefined()
+
+    // Collapsed by default: only active month weekly boxes (W1..W4), not Oct
+    expect(within(heatmapCard).getByText("W1")).toBeDefined()
+    expect(within(heatmapCard).queryByText("Oct")).toBeNull()
+
+    // Expand to Full Year
+    fireEvent.click(within(heatmapCard).getByRole("button", { name: /Full Year/i }))
+    expect(within(heatmapCard).getByText("2026")).toBeDefined()
+    expect(within(heatmapCard).getByText("3 check-ins")).toBeDefined()
+    expect(within(heatmapCard).getByText("Oct")).toBeDefined()
+
+    // Collapse back to Active Month
+    fireEvent.click(within(heatmapCard).getByRole("button", { name: /Active Month/i }))
+    expect(within(heatmapCard).getByText("Nov 2026")).toBeDefined()
   })
 })

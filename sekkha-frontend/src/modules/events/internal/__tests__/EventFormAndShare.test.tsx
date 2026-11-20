@@ -144,7 +144,7 @@ describe("EventForm & EventDetailSheet Enhancements", () => {
     // 1. Pre-filled description template aligned with initialDate default (09:00 WIB)
     const descArea = screen.getByLabelText(/^Description/i) as HTMLTextAreaElement
     expect(descArea.value).toContain("Hallo Sobat Teenagers! 👋")
-    expect(descArea.value).toContain("✨ Acara: Chanting")
+    expect(descArea.value).toContain("📢 Acara: ")
     expect(descArea.value).toContain("📅 Tanggal: Sabtu, 14 November 2026")
     expect(descArea.value).toContain("⏰ Waktu: 09.00 WIB – selesai")
     expect(descArea.value).toContain("📍 Tempat: Vihara Tri Maha Dharma")
@@ -184,7 +184,7 @@ describe("EventForm & EventDetailSheet Enhancements", () => {
     const titleInput = screen.getByLabelText(/Event name/i) as HTMLInputElement
     fireEvent.change(titleInput, { target: { value: "Weekly Dhamma Class" } })
     await waitFor(() => {
-      expect(descArea.value).toContain("✨ Acara: Weekly Dhamma Class")
+      expect(descArea.value).toContain("📢 Acara: Weekly Dhamma Class")
     })
 
     // 4. Manual edit preserves custom description, while Sync template re-enables live sync
@@ -194,6 +194,9 @@ describe("EventForm & EventDetailSheet Enhancements", () => {
       name: /Social Gathering/i,
     })
     fireEvent.click(socialCatBtn)
+
+    // Selecting a category must NOT overwrite or auto-fill Event name
+    expect(titleInput.value).toBe("Weekly Dhamma Class")
 
     const lateSwitch = screen.getByRole("switch", {
       name: /apply late penalty/i,
@@ -217,7 +220,7 @@ describe("EventForm & EventDetailSheet Enhancements", () => {
     // Clicking Sync template restores dynamic tracking of title & location
     fireEvent.click(screen.getByRole("button", { name: /sync template/i }))
     await waitFor(() => {
-      expect(descArea.value).toContain("✨ Acara: Social Meetup")
+      expect(descArea.value).toContain("📢 Acara: Social Meetup")
       expect(descArea.value).toContain("📍 Tempat: Dharmasala Utama")
     })
   })

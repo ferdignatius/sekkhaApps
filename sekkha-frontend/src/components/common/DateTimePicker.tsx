@@ -185,8 +185,8 @@ export function DateTimePicker({
     const values = MINUTE_STEP_VALUES.includes(activeMinute)
       ? MINUTE_STEP_VALUES
       : [...MINUTE_STEP_VALUES, activeMinute].sort(
-          (a, b) => Number(a) - Number(b)
-        )
+        (a, b) => Number(a) - Number(b)
+      )
     return values.map((mm) => ({ value: mm, label: mm }))
   }, [activeMinute])
 

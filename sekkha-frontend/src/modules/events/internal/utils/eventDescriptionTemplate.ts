@@ -66,7 +66,7 @@ export function buildDefaultEventDescription(
   params?: EventTemplateInput
 ): string {
   const { dateLabel, timeLabel } = parseTemplateDate(params?.eventDate)
-  const acara = params?.title?.trim() || "Chanting"
+  const acara = params?.title?.trim()
   const tempat = params?.location?.trim() || "Vihara Tri Maha Dharma"
 
   return [

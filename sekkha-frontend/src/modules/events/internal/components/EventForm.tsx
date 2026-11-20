@@ -405,7 +405,7 @@ export function EventForm({
   const [internalSubmitting, setInternalSubmitting] = useState(false)
   const submitting = isSubmitting || internalSubmitting
 
-  // Handle Category Select with Masterdata Autofill (title & late policy synced from category)
+  // Handle Category Select (syncs late penalty defaults without overwriting Event name)
   function handleSelectCategory(cat: CategoryOption) {
     setErrors((prev) => {
       if (!prev.tag) return prev
@@ -418,9 +418,6 @@ export function EventForm({
       return
     }
     setSelectedTypeId(cat.id)
-    if (!title.trim() || categories.some((c) => c.autofill.title === title)) {
-      setTitle(cat.autofill.title)
-    }
     if (!initial?.id) {
       const shouldApplyLate =
         cat.applyLatePenalty !== undefined
@@ -536,11 +533,11 @@ export function EventForm({
           >
             <TagIcon className="size-3.5 text-ink" />
             <span>
-              1. Category &amp; Template <span className="text-rose-500">*</span>
+              1. Category <span className="text-rose-500">*</span>
             </span>
           </label>
           <span className="text-[11px] font-medium text-text-muted">
-            Auto-fills defaults
+            Sets late policy defaults
           </span>
         </div>
 
@@ -578,8 +575,8 @@ export function EventForm({
                       : undefined
                 }
                 className={`flex min-h-[38px] shrink-0 cursor-pointer items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold transition-all focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:outline-none sm:min-h-[42px] sm:px-3.5 ${isSelected
-                    ? "border-ink bg-ink text-white shadow-xs"
-                    : "border-hairline bg-canvas text-text-muted hover:bg-surface-card hover:text-ink"
+                  ? "border-ink bg-ink text-white shadow-xs"
+                  : "border-hairline bg-canvas text-text-muted hover:bg-surface-card hover:text-ink"
                   }`}
               >
                 {isSelected ? (
@@ -642,6 +639,8 @@ export function EventForm({
                 type="text"
                 required
                 value={title}
+                autoCapitalize="words"
+                autoComplete="off"
                 onChange={(e) => {
                   setTitle(e.target.value)
                   if (errors.title) {
@@ -656,8 +655,8 @@ export function EventForm({
                 aria-invalid={Boolean(errors.title)}
                 aria-describedby={errors.title ? "ev-title-error" : undefined}
                 className={`h-11 w-full rounded-xl border bg-canvas pr-4 pl-10 text-xs text-ink shadow-2xs transition-all outline-none placeholder:text-text-muted/70 sm:text-sm ${errors.title
-                    ? "border-rose-400 focus:border-rose-500"
-                    : "border-hairline focus:border-ink focus:ring-1 focus:ring-ink"
+                  ? "border-rose-400 focus:border-rose-500"
+                  : "border-hairline focus:border-ink focus:ring-1 focus:ring-ink"
                   }`}
               />
             </div>
@@ -714,9 +713,8 @@ export function EventForm({
                   if (recentVenueOptions.length > 0) setLocationMenuOpen(true)
                 }}
                 placeholder="e.g. Dharmasala Utama"
-                className={`h-11 w-full rounded-xl border border-hairline bg-canvas pl-10 text-xs text-ink shadow-2xs transition-all outline-none placeholder:text-text-muted/70 focus:border-ink focus:ring-1 focus:ring-ink sm:text-sm ${
-                  recentVenueOptions.length > 0 ? "pr-10" : "pr-4"
-                }`}
+                className={`h-11 w-full rounded-xl border border-hairline bg-canvas pl-10 text-xs text-ink shadow-2xs transition-all outline-none placeholder:text-text-muted/70 focus:border-ink focus:ring-1 focus:ring-ink sm:text-sm ${recentVenueOptions.length > 0 ? "pr-10" : "pr-4"
+                  }`}
               />
               {recentVenueOptions.length > 0 && (
                 <button
@@ -727,9 +725,8 @@ export function EventForm({
                   className="absolute top-1/2 right-2 flex size-7 -translate-y-1/2 cursor-pointer items-center justify-center rounded-lg text-text-muted transition-colors hover:bg-surface-soft hover:text-ink"
                 >
                   <ChevronDownIcon
-                    className={`size-4 transition-transform duration-150 ${
-                      locationMenuOpen ? "rotate-180 text-ink" : ""
-                    }`}
+                    className={`size-4 transition-transform duration-150 ${locationMenuOpen ? "rotate-180 text-ink" : ""
+                      }`}
                   />
                 </button>
               )}
@@ -759,11 +756,10 @@ export function EventForm({
                         setLocation(venue)
                         setLocationMenuOpen(false)
                       }}
-                      className={`flex w-full cursor-pointer items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-left text-xs transition-colors sm:text-sm ${
-                        isSelected
-                          ? "bg-surface-soft font-semibold text-ink"
-                          : "text-ink hover:bg-surface-soft"
-                      }`}
+                      className={`flex w-full cursor-pointer items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-left text-xs transition-colors sm:text-sm ${isSelected
+                        ? "bg-surface-soft font-semibold text-ink"
+                        : "text-ink hover:bg-surface-soft"
+                        }`}
                     >
                       <span className="truncate">{venue}</span>
                       {isSelected && (

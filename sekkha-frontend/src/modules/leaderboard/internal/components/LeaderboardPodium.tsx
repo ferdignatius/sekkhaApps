@@ -86,35 +86,35 @@ function PodiumColumn({
         )}
       </div>
 
-      {/* Unclipped Avatar */}
-      <div
-        className={`flex shrink-0 items-center justify-center rounded-md uppercase ${avatarSize} ${
-          isMe
-            ? "bg-ink font-black text-clay-ochre ring-2 ring-clay-ochre shadow-sm"
-            : cfg.avatarStyle
-        }`}
-      >
-        {entry.initials}
+      {/* Unclipped Avatar with overlapping YOU badge so username keeps full column width */}
+      <div className="relative flex shrink-0 items-center justify-center">
+        <div
+          className={`flex shrink-0 items-center justify-center rounded-2xl uppercase ${avatarSize} ${
+            isMe
+              ? "bg-ink font-black text-clay-ochre ring-2 ring-clay-ochre shadow-sm"
+              : cfg.avatarStyle
+          }`}
+        >
+          {entry.initials}
+        </div>
+        {isMe && (
+          <span
+            data-testid="self-you-badge"
+            className="absolute -bottom-2 left-1/2 -translate-x-1/2 rounded-full border border-canvas bg-clay-ochre px-1.5 py-px text-[9px] leading-tight font-extrabold text-ink uppercase shadow-2xs"
+          >
+            You
+          </span>
+        )}
       </div>
 
       {/* Handle & Score */}
-      <div className="w-full min-w-0 px-0.5 text-center">
-        <div className="flex items-center justify-center gap-1">
-          <p
-            title={displayName}
-            className="truncate text-[11px] font-bold text-ink sm:text-sm"
-          >
-            {displayName}
-          </p>
-          {isMe && (
-            <span
-              data-testid="self-you-badge"
-              className="shrink-0 rounded-full bg-clay-ochre px-1.5 py-0.5 text-[9px] font-extrabold text-ink uppercase"
-            >
-              You
-            </span>
-          )}
-        </div>
+      <div className={`w-full min-w-0 px-0.5 text-center ${isMe ? "pt-1" : ""}`}>
+        <p
+          title={displayName}
+          className="truncate text-[11px] font-bold text-ink sm:text-sm"
+        >
+          {displayName}
+        </p>
         <p className="mt-0.5 flex items-center justify-center gap-0.5 text-[11px] font-extrabold text-ink sm:text-xs">
           <ZapIcon
             className="size-3 shrink-0 fill-clay-ochre text-clay-ochre"
@@ -126,9 +126,9 @@ function PodiumColumn({
         </p>
       </div>
 
-      {/* Clay Podium Pillar */}
+      {/* Clay Podium Pillar (Flush to bottom of podium card) */}
       <div
-        className={`${cfg.height} flex w-full items-center justify-center rounded-t-md sm:rounded-t-lg ${cfg.border} ${cfg.barBg} shadow-xs`}
+        className={`${cfg.height} flex w-full items-center justify-center rounded-t-xl sm:rounded-t-2xl ${cfg.border} ${cfg.barBg} shadow-xs`}
       >
         <span
           className={`text-xl select-none sm:text-3xl ${cfg.rankText}`}
@@ -152,7 +152,7 @@ export function LeaderboardPodium({ podium, myId }: LeaderboardPodiumProps) {
   if (!podium || podium.length === 0) return null
 
   return (
-    <div className="rounded-lg border border-hairline bg-surface-soft px-3 pt-3 pb-1 shadow-2xs sm:px-5 sm:pt-4">
+    <div className="overflow-hidden rounded-2xl border border-hairline bg-surface-soft px-3 pt-4 pb-0 shadow-2xs sm:px-5 sm:pt-5">
       <div
         role="list"
         aria-label="Top three leaderboard positions"

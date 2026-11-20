@@ -412,7 +412,9 @@ export function LeaderboardPage() {
               <div
                 role="group"
                 aria-label="Role visibility filter"
-                className="flex w-full scrollbar-none flex-nowrap items-center gap-1.5 overflow-x-auto pb-0.5 md:w-auto md:flex-wrap md:overflow-visible md:pb-0"
+                className={`grid w-full gap-1.5 md:flex md:w-auto md:flex-wrap md:items-center ${
+                  roleFilterList.length === 2 ? "grid-cols-2" : "grid-cols-3"
+                }`}
               >
                 <span className="hidden px-1 text-[10px] font-bold tracking-wider text-text-muted uppercase sm:inline">
                   Show:
@@ -426,7 +428,7 @@ export function LeaderboardPage() {
                       onClick={() => toggleRole(r.id)}
                       aria-pressed={isChecked}
                       aria-label={`${isChecked ? "Hide" : "Show"} ${r.label}`}
-                      className={`inline-flex min-h-[38px] shrink-0 cursor-pointer items-center gap-1.5 rounded-sm border px-3 py-1.5 text-xs transition-colors focus-visible:ring-2 focus-visible:ring-ink focus-visible:outline-none ${
+                      className={`inline-flex min-h-11 w-full cursor-pointer items-center justify-center gap-1.5 rounded-full border px-2.5 py-1.5 text-xs transition-colors focus-visible:ring-2 focus-visible:ring-ink focus-visible:outline-none md:min-h-[38px] md:w-auto md:px-3.5 ${
                         isChecked
                           ? "border-ink/40 bg-surface-card font-bold text-ink shadow-2xs"
                           : "border-hairline bg-canvas font-medium text-text-muted hover:text-ink"
@@ -434,13 +436,13 @@ export function LeaderboardPage() {
                     >
                       {isChecked ? (
                         <CheckIcon
-                          className="size-3.5 stroke-[2.5] text-clay-teal"
+                          className="size-3.5 shrink-0 stroke-[2.5] text-clay-teal"
                           aria-hidden="true"
                         />
                       ) : (
                         r.icon
                       )}
-                      <span>{r.label}</span>
+                      <span className="truncate">{r.label}</span>
                     </button>
                   )
                 })}

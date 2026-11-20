@@ -93,7 +93,7 @@ export function LeaderboardHeader({
     selectedArchived || (activePeriod?.is_archived ? activePeriod : null)
 
   return (
-    <header className="relative overflow-hidden rounded-xl bg-ink p-4 text-white shadow-md sm:p-5">
+    <header className="relative overflow-hidden rounded-2xl bg-ink p-4 text-white shadow-md sm:p-5">
       <div className="pointer-events-none absolute -top-8 -right-8 size-36 rounded-full bg-clay-ochre/20 blur-2xl" />
 
       <div className="relative space-y-3">
@@ -149,13 +149,13 @@ export function LeaderboardHeader({
           </button>
         </div>
 
-        {/* Integrated Season Period Switcher + Past Seasons Selector */}
+        {/* Integrated Season Period Switcher + Past Seasons Selector (1-row horizontal scroll on mobile) */}
         {(availablePeriods.length > 0 || archivedPeriods.length > 0) && (
-          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 pt-3">
+          <div className="scrollbar-none -mx-1 flex flex-nowrap items-center gap-1.5 overflow-x-auto border-t border-white/10 px-1 pt-3 sm:mx-0 sm:flex-wrap sm:justify-between sm:overflow-visible sm:px-0">
             <div
               role="group"
               aria-label="Season period filter"
-              className="flex scrollbar-none items-center gap-1.5 overflow-x-auto"
+              className="flex shrink-0 items-center gap-1.5"
             >
               {availablePeriods.map((period, idx) => {
                 const isSelected =
@@ -170,7 +170,7 @@ export function LeaderboardHeader({
                     type="button"
                     onClick={() => onSelectPeriod(period.key)}
                     aria-pressed={isSelected}
-                    className={`inline-flex min-h-[36px] shrink-0 cursor-pointer items-center gap-1.5 rounded-sm px-3 py-1.5 text-xs font-bold transition-colors ${
+                    className={`inline-flex min-h-10 shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold transition-colors sm:min-h-[38px] ${
                       isSelected
                         ? "bg-white text-ink shadow-xs"
                         : "bg-white/10 text-white/80 hover:bg-white/20 hover:text-white"
@@ -194,7 +194,7 @@ export function LeaderboardHeader({
                   <button
                     type="button"
                     aria-expanded={pastMenuOpen}
-                    className={`inline-flex min-h-[36px] shrink-0 cursor-pointer items-center gap-1.5 rounded-sm px-3 py-1.5 text-xs font-bold transition-colors ${
+                    className={`inline-flex min-h-10 shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold transition-colors sm:min-h-[38px] ${
                       isArchivedView
                         ? "bg-clay-ochre text-ink shadow-xs"
                         : "border border-white/15 bg-white/10 text-white/90 hover:bg-white/20"

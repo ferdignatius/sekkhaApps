@@ -12,7 +12,6 @@ import {
   StarIcon,
   SearchIcon,
   SettingsIcon,
-  TicketIcon,
   TrophyIcon,
   UsersIcon,
   UserIcon,
@@ -419,27 +418,12 @@ export function HomePage() {
     [filteredModalSections]
   )
 
-  const topBarActions = (
-    <div className="flex items-center gap-2">
-      <button
-        disabled
-        type="button"
-        onClick={() => setShowQrModal(true)}
-        aria-label="Attendance QR Code"
-        className="flex size-11 cursor-pointer items-center justify-center rounded-full border border-[#e5e5e5] bg-[#faf5e8]/90 text-[#0a0a0a] shadow-xs backdrop-blur-md transition-all hover:bg-[#f5f0e0] active:scale-[0.95] active:opacity-75"
-        title="Show Attendance QR Code"
-      >
-        <TicketIcon className="size-5" />
-      </button>
-    </div>
-  )
-
   return (
     <main className="min-h-screen bg-[#fffaf0] pb-28 text-left font-sans md:pb-12">
-      <PageBreadcrumb items={[{ label: "Home" }]} actions={topBarActions} />
+      <PageBreadcrumb items={[{ label: "Home" }]} />
 
-      <div className="px-3.5 py-4 sm:px-6 sm:py-6 md:px-8 lg:px-12">
-        <div className="mx-auto max-w-7xl space-y-6 sm:space-y-8">
+      <div className="px-3.5 py-3 sm:px-6 sm:py-6 md:px-8 lg:px-12">
+        <div className="mx-auto max-w-7xl space-y-4 sm:space-y-6 lg:space-y-8">
           {/* ── 1. Profile Section (Clay Warm Surface with Apple HIG Depth) ── */}
           <section aria-labelledby="section-profile">
             <h2 id="section-profile" className="sr-only">
@@ -462,16 +446,31 @@ export function HomePage() {
                 </button>
               </div>
             )}
-            {loading && !dashboard && (
+            {loading && !dashboard ? (
               <div
                 role="status"
                 aria-live="polite"
-                className="mb-3 rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] px-4 py-3 text-xs text-[#6a6a6a]"
+                className="relative overflow-hidden rounded-[24px] border border-[#e5e5e5] bg-[#faf5e8]/85 p-4 shadow-xs sm:rounded-[28px] sm:p-5 lg:p-6"
               >
-                Loading dashboard...
+                <span className="sr-only">Loading dashboard...</span>
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3.5">
+                    <div className="size-14 animate-pulse rounded-[18px] bg-[#ebe6d6] sm:size-16" />
+                    <div className="space-y-2">
+                      <div className="h-3 w-20 animate-pulse rounded bg-[#ebe6d6]" />
+                      <div className="h-5 w-36 animate-pulse rounded bg-[#ebe6d6]" />
+                      <div className="h-3.5 w-24 animate-pulse rounded bg-[#ebe6d6]" />
+                    </div>
+                  </div>
+                  <div className="size-11 animate-pulse rounded-full bg-[#ebe6d6] sm:w-28" />
+                </div>
+                <div className="mt-4 grid grid-cols-2 gap-2.5 border-t border-[#e5e5e5]/80 pt-3 sm:gap-3">
+                  <div className="h-14 animate-pulse rounded-[16px] bg-[#fffaf0]" />
+                  <div className="h-14 animate-pulse rounded-[16px] bg-[#fffaf0]" />
+                </div>
               </div>
-            )}
-            <div className="relative overflow-hidden rounded-[28px] border border-[#e5e5e5] bg-[#faf5e8]/85 p-4 shadow-xs backdrop-blur-md sm:p-5 lg:p-6">
+            ) : (
+            <div className="relative overflow-hidden rounded-[24px] border border-[#e5e5e5] bg-[#faf5e8]/85 p-4 shadow-xs backdrop-blur-md sm:rounded-[28px] sm:p-5 lg:p-6">
               {/* Subtle Ambient Radial Glows */}
               <div className="pointer-events-none absolute -top-12 -right-12 size-44 rounded-full bg-[#ffb084]/20 blur-3xl" />
               <div className="pointer-events-none absolute -bottom-12 -left-12 size-44 rounded-full bg-[#0a0a0a]/5 blur-3xl" />
@@ -565,6 +564,7 @@ export function HomePage() {
                 </div>
               </div>
             </div>
+            )}
           </section>
 
           {/* ── 2. Quick Access Section ── */}
@@ -577,14 +577,16 @@ export function HomePage() {
                 Quick Access
               </h2>
             </div>
-            <div className="rounded-[28px] border border-[#e5e5e5] bg-[#faf5e8]/85 p-4 shadow-xs backdrop-blur-md sm:p-6">
+            <div className="rounded-[24px] border border-[#e5e5e5] bg-[#faf5e8]/85 p-3.5 shadow-xs backdrop-blur-md sm:rounded-[28px] sm:p-6">
               <div
                 className={
-                  primaryQuickAccessItems.length <= 4
-                    ? "grid grid-cols-4 gap-x-2 gap-y-4 sm:gap-6"
-                    : primaryQuickAccessItems.length === 5
-                      ? "grid grid-cols-4 gap-x-2 gap-y-4 sm:grid-cols-5 sm:gap-6"
-                      : "grid grid-cols-3 gap-x-2 gap-y-4 sm:grid-cols-6 sm:gap-6"
+                  primaryQuickAccessItems.length <= 3
+                    ? "grid grid-cols-3 gap-x-2 gap-y-3 sm:gap-6"
+                    : primaryQuickAccessItems.length === 4
+                      ? "grid grid-cols-4 gap-x-2 gap-y-3 sm:gap-6"
+                      : primaryQuickAccessItems.length === 5
+                        ? "grid grid-cols-5 gap-x-1.5 gap-y-3 sm:gap-6"
+                        : "grid grid-cols-3 gap-x-2 gap-y-4 sm:grid-cols-6 sm:gap-6"
                 }
               >
                 {primaryQuickAccessItems.map((item) => {
@@ -592,11 +594,11 @@ export function HomePage() {
                   const content = (
                     <div className="group flex cursor-pointer flex-col items-center text-center">
                       <div
-                        className={`flex size-13 items-center justify-center rounded-[18px] sm:size-14 ${item.bg} ${item.iconColor} shadow-2xs transition-transform duration-150 group-hover:scale-105 group-active:scale-90 group-active:opacity-85`}
+                        className={`flex size-12 items-center justify-center rounded-[16px] sm:size-14 sm:rounded-[18px] ${item.bg} ${item.iconColor} shadow-2xs transition-transform duration-150 group-hover:scale-105 group-active:scale-90 group-active:opacity-85`}
                       >
-                        <Icon className="size-6" />
+                        <Icon className="size-5 sm:size-6" />
                       </div>
-                      <span className="mt-2 line-clamp-2 flex min-h-[2.4em] items-center justify-center text-center text-[11px] leading-tight font-medium text-[#0a0a0a] sm:text-xs">
+                      <span className="mt-1.5 line-clamp-2 flex min-h-[2.4em] items-center justify-center text-center text-[10px] leading-tight font-medium text-[#0a0a0a] sm:mt-2 sm:text-xs">
                         {item.label}
                       </span>
                     </div>
@@ -636,18 +638,18 @@ export function HomePage() {
               </h2>
             </div>
             <div className="grid grid-cols-1 items-stretch gap-4 sm:gap-6 md:grid-cols-2">
-              {/* Upcoming Event Widget */}
+              {/* Upcoming Event Widget (Single clean card, 1 clear CTA) */}
               <div
                 aria-labelledby="upcoming-event-heading"
-                className="relative flex h-full flex-col justify-between overflow-hidden rounded-[28px] border border-[#e5e5e5] bg-[#faf5e8]/85 p-5 shadow-xs backdrop-blur-md sm:p-6"
+                className="relative flex h-full flex-col justify-between overflow-hidden rounded-[24px] border border-[#e5e5e5] bg-[#faf5e8]/85 p-4 shadow-xs backdrop-blur-md sm:rounded-[28px] sm:p-6"
               >
                 {/* Decorative background watermark */}
                 <CalendarIcon className="pointer-events-none absolute -right-3 -bottom-3 size-24 rotate-12 text-[#e8b94a]/10" />
 
-                <div className="relative z-10 flex flex-1 flex-col">
-                  {/* Header: Title + Action */}
-                  <div className="mb-4 flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2.5">
+                <div className="relative z-10 flex flex-1 flex-col justify-between gap-4">
+                  {/* Header: Title + Status */}
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex min-w-0 items-center gap-2.5">
                       <span className="flex size-9 shrink-0 items-center justify-center rounded-[12px] bg-[#0a0a0a] text-[#e8b94a] shadow-xs">
                         <CalendarIcon className="size-4.5" />
                       </span>
@@ -664,94 +666,74 @@ export function HomePage() {
                       </div>
                     </div>
 
-                    <Link
-                      to={
-                        `/events${nextEvent ? `?eventId=${nextEvent.id}` : ""}` as "/"
-                      }
-                      aria-label={
-                        nextEvent
-                          ? `View ${nextEvent.title}`
-                          : "View full schedule"
-                      }
-                      title={
-                        nextEvent
-                          ? `View ${nextEvent.title}`
-                          : "View full schedule"
-                      }
-                      className="group flex size-9 items-center justify-center rounded-full border border-[#e5e5e5] bg-[#fffaf0]/80 text-[#6a6a6a] transition-all hover:border-[#0a0a0a]/20 hover:bg-[#fffaf0] hover:text-[#0a0a0a] active:scale-90"
-                    >
-                      <ChevronRightIcon className="size-4.5 transition-transform group-hover:translate-x-0.5" />
-                    </Link>
-                  </div>
-
-                  {/* Inner Status Card */}
-                  <div className="flex min-h-[130px] flex-1 flex-col justify-center rounded-[20px] border border-[#e5e5e5]/80 bg-[#fffaf0]/90 p-4.5 shadow-2xs backdrop-blur-sm sm:min-h-[145px]">
-                    {nextEvent ? (
-                      <Link
-                        to={`/events?eventId=${nextEvent.id}` as "/"}
-                        className="group flex flex-col justify-between gap-3 text-left transition-opacity hover:opacity-90 sm:flex-row sm:items-center"
+                    {nextEvent && (
+                      <Badge
+                        variant="emerald"
+                        size="sm"
+                        className="shrink-0 gap-1.5 rounded-full px-2.5 py-0.5 font-semibold"
                       >
-                        <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <Badge
-                              variant="emerald"
-                              size="sm"
-                              className="gap-1.5 rounded-full px-2.5 py-0.5 font-semibold"
-                            >
-                              <span className="size-1.5 animate-ping rounded-full bg-emerald-500" />
-                              Next Event
-                            </Badge>
-                          </div>
-                          <h4 className="mt-2 text-base font-bold text-[#0a0a0a] transition-colors group-hover:text-black sm:text-lg">
-                            {nextEvent.title}
-                          </h4>
-                          <div className="mt-1.5 flex flex-wrap items-center gap-3 text-xs text-[#6a6a6a]">
-                            <span className="flex items-center gap-1">
-                              <CalendarIcon className="size-3.5 text-[#0a0a0a]" />
-                              {formatEventDate(nextEvent.event_date)}
-                            </span>
-                            {nextEvent.location && (
-                              <span className="flex items-center gap-1">
-                                <MapPinIcon className="size-3.5 text-rose-600" />
-                                {nextEvent.location}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* View Event Button Indicator */}
-                        <div className="flex shrink-0 items-center gap-1 self-end sm:self-center">
-                          <span className="text-xs font-semibold text-[#0a0a0a] transition-all group-hover:underline">
-                            View Event
-                          </span>
-                          <span className="flex size-7 items-center justify-center rounded-full border border-[#e5e5e5] bg-[#faf5e8] text-[#0a0a0a] transition-all group-hover:translate-x-0.5 group-hover:border-[#0a0a0a]/20">
-                            <ChevronRightIcon className="size-3.5 text-[#0a0a0a]" />
-                          </span>
-                        </div>
-                      </Link>
-                    ) : (
-                      <div className="flex flex-1 flex-col items-center justify-center py-6 text-center sm:py-8">
-                        <p className="text-xs font-medium text-[#6a6a6a] sm:text-sm">
-                          No upcoming events at the moment.
-                        </p>
-                      </div>
+                        <span className="relative flex size-1.5 shrink-0" aria-hidden="true">
+                          <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                          <span className="relative inline-flex size-1.5 rounded-full bg-emerald-500" />
+                        </span>
+                        Next Event
+                      </Badge>
                     )}
                   </div>
+
+                  {/* Body */}
+                  {nextEvent ? (
+                    <Link
+                      to={`/events?eventId=${nextEvent.id}` as "/"}
+                      className="group flex flex-1 flex-col justify-between gap-3 text-left transition-opacity hover:opacity-90"
+                    >
+                      <div className="min-w-0 space-y-1.5">
+                        <h4 className="truncate text-base font-bold text-[#0a0a0a] transition-colors group-hover:text-black sm:text-lg">
+                          {nextEvent.title}
+                        </h4>
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[#6a6a6a]">
+                          <span className="flex items-center gap-1">
+                            <CalendarIcon className="size-3.5 text-[#0a0a0a]" />
+                            {formatEventDate(nextEvent.event_date)}
+                          </span>
+                          {nextEvent.location && (
+                            <span className="flex items-center gap-1">
+                              <MapPinIcon className="size-3.5 text-rose-600" />
+                              <span className="truncate">{nextEvent.location}</span>
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between border-t border-[#e5e5e5]/80 pt-3 text-xs font-semibold text-[#0a0a0a]">
+                        <span>View Event</span>
+                        <span className="flex size-7 items-center justify-center rounded-full border border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] transition-transform group-hover:translate-x-0.5">
+                          <ChevronRightIcon className="size-3.5" />
+                        </span>
+                      </div>
+                    </Link>
+                  ) : (
+                    <div className="flex flex-1 flex-col items-center justify-center py-6 text-center">
+                      <p className="text-xs font-medium text-[#6a6a6a] sm:text-sm">
+                        No upcoming events at the moment.
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {/* Active Season Progress Card */}
+              {/* Active Season Progress Card (Single clean card, 1 clear CTA) */}
               <div
                 aria-labelledby="active-season-heading"
-                className="relative flex h-full flex-col justify-between overflow-hidden rounded-[28px] border border-[#e5e5e5] bg-[#faf5e8]/85 p-5 shadow-xs backdrop-blur-md sm:p-6"
+                className="relative flex h-full flex-col justify-between overflow-hidden rounded-[24px] border border-[#e5e5e5] bg-[#faf5e8]/85 p-4 shadow-xs backdrop-blur-md sm:rounded-[28px] sm:p-6"
               >
                 {/* Decorative background watermark */}
                 <TrophyIcon className="pointer-events-none absolute -right-3 -bottom-3 size-24 rotate-12 text-[#ff4d8b]/10" />
 
-                <div className="relative z-10 flex flex-1 flex-col">
-                  {/* Header: Title + Action */}
-                  <div className="mb-4 flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2.5">
+                <div className="relative z-10 flex flex-1 flex-col justify-between gap-4">
+                  {/* Header: Title + Countdown Badge */}
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex min-w-0 items-center gap-2.5">
                       <span className="flex size-9 shrink-0 items-center justify-center rounded-[12px] bg-[#0a0a0a] text-[#e8b94a] shadow-xs">
                         <TrophyIcon className="size-4.5" />
                       </span>
@@ -768,71 +750,54 @@ export function HomePage() {
                       </div>
                     </div>
 
-                    <Link
-                      to="/leaderboard"
-                      aria-label="View Leaderboard"
-                      title="View Leaderboard"
-                      className="group flex size-9 items-center justify-center rounded-full border border-[#e5e5e5] bg-[#fffaf0]/80 text-[#6a6a6a] transition-all hover:border-[#0a0a0a]/20 hover:bg-[#fffaf0] hover:text-[#0a0a0a] active:scale-90"
+                    <Badge
+                      variant="ochre"
+                      size="sm"
+                      className="shrink-0 gap-1 rounded-full px-2.5 py-0.5 font-semibold"
                     >
-                      <ChevronRightIcon className="size-4.5 transition-transform group-hover:translate-x-0.5" />
-                    </Link>
+                      <SparklesIcon className="size-3 text-[#0a0a0a]" />
+                      {activeSeason
+                        ? `${activeSeason.days_left}d left`
+                        : "Ongoing"}
+                    </Badge>
                   </div>
 
-                  {/* Inner Status Card */}
-                  <div className="flex min-h-[130px] flex-1 flex-col justify-between rounded-[20px] border border-[#e5e5e5]/80 bg-[#fffaf0]/90 p-4.5 shadow-2xs backdrop-blur-sm sm:min-h-[145px]">
-                    <div className="flex flex-col gap-2">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <Badge
-                          variant="ochre"
-                          size="sm"
-                          className="gap-1.5 rounded-full px-2.5 py-0.5 font-semibold"
-                        >
-                          <SparklesIcon className="size-3 text-[#0a0a0a]" />
-                          {activeSeason
-                            ? `${activeSeason.days_left} Days Remaining`
-                            : "Season Ongoing"}
-                        </Badge>
-                        <span className="text-xs font-semibold text-[#6a6a6a]">
-                          {totalPoints.toLocaleString("en-US")} Season Pts
-                        </span>
-                      </div>
-
-                      <div className="mt-1">
-                        <div className="flex items-center justify-between text-xs font-semibold text-[#0a0a0a]">
-                          <span>
-                            Attendance: {totalAttendances} / {targetAttendance}{" "}
-                            Check-ins
-                          </span>
-                          <span className="font-bold text-[#e8b94a]">
-                            {currentStreak}w Streak
-                          </span>
-                        </div>
-                        <div
-                          role="progressbar"
-                          aria-label="Season activity progress"
-                          aria-valuemin={0}
-                          aria-valuemax={100}
-                          aria-valuenow={seasonProgressPercent}
-                          className="mt-2 h-2.5 w-full overflow-hidden rounded-full border border-[#e5e5e5] bg-[#f5f0e0]"
-                        >
-                          <div
-                            className="h-full rounded-full bg-gradient-to-r from-[#e8b94a] to-[#ff4d8b] transition-all duration-500"
-                            style={{
-                              width: `${Math.max(5, seasonProgressPercent)}%`,
-                            }}
-                          />
-                        </div>
-                      </div>
+                  {/* Body: Progress + Action */}
+                  <div className="space-y-2.5">
+                    <div className="flex items-center justify-between text-xs font-semibold text-[#0a0a0a]">
+                      <span>
+                        Attendance: {totalAttendances} / {targetAttendance}
+                      </span>
+                      <span className="font-bold text-[#e8b94a]">
+                        {currentStreak}w Streak
+                      </span>
                     </div>
-
-                    <Link
-                      to="/leaderboard"
-                      className="group mt-3 flex items-center justify-between border-t border-[#e5e5e5]/80 pt-2.5 text-xs font-semibold text-[#0a0a0a] transition-all hover:text-black"
+                    <div
+                      role="progressbar"
+                      aria-label="Season activity progress"
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      aria-valuenow={seasonProgressPercent}
+                      className="h-2.5 w-full overflow-hidden rounded-full border border-[#e5e5e5] bg-[#fffaf0]"
                     >
-                      <span>Check Your Rank on Leaderboard</span>
-                      <ChevronRightIcon className="size-4 text-[#0a0a0a] transition-transform group-hover:translate-x-0.5" />
-                    </Link>
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-[#e8b94a] to-[#ff4d8b] transition-all duration-500"
+                        style={{
+                          width: `${Math.max(5, seasonProgressPercent)}%`,
+                        }}
+                      />
+                    </div>
                   </div>
+
+                  <Link
+                    to="/leaderboard"
+                    className="group flex items-center justify-between border-t border-[#e5e5e5]/80 pt-3 text-xs font-semibold text-[#0a0a0a] transition-all hover:text-black"
+                  >
+                    <span>Check Your Rank on Leaderboard</span>
+                    <span className="flex size-7 items-center justify-center rounded-full border border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] transition-transform group-hover:translate-x-0.5">
+                      <ChevronRightIcon className="size-3.5" />
+                    </span>
+                  </Link>
                 </div>
               </div>
             </div>
@@ -894,9 +859,6 @@ export function HomePage() {
         maxWidth="max-w-4xl"
       >
         <div className="space-y-4 pt-0 font-sans">
-          {/* Sheet Grabber Handle */}
-          <div className="mx-auto -mt-1 mb-2 h-1.5 w-12 rounded-full bg-[#e5e5e5]" />
-
           {/* Search bar inside modal / drawer */}
           <Input
             value={menuSearchQuery}
@@ -920,8 +882,8 @@ export function HomePage() {
             }
           />
 
-          {/* Categorized and filtered items container */}
-          <div className="max-h-[65vh] space-y-5 overflow-y-auto pr-1">
+          {/* Categorized and filtered items container (delegates scroll to ResponsiveFormModal) */}
+          <div className="space-y-5">
             {totalFilteredItems === 0 ? (
               <div className="space-y-1.5 py-8 text-center">
                 <p className="text-sm font-semibold text-[#0a0a0a]">

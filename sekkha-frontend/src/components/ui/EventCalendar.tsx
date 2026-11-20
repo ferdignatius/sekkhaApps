@@ -22,6 +22,8 @@ export interface EventCalendarProps {
   compact?: boolean
   /** Whether to hide the built-in month navigation header */
   hideHeader?: boolean
+  /** Whether to hide the built-in Today reset button in the header */
+  hideTodayButton?: boolean
   /** Whether clicking the already-selected day deselects it (default true) */
   allowDeselect?: boolean
   /** Visually dim and disable dates strictly before today (default false) */
@@ -88,6 +90,7 @@ export function EventCalendar({
   onMonthChange,
   compact = false,
   hideHeader = false,
+  hideTodayButton = false,
   allowDeselect = true,
   disablePastDates = false,
 }: EventCalendarProps) {
@@ -135,14 +138,16 @@ export function EventCalendar({
             <span className="text-sm font-bold tracking-tight text-[#0a0a0a]">
               {monthLabel(month)}
             </span>
-            <button
-              type="button"
-              onClick={resetToToday}
-              className="cursor-pointer rounded-[8px] border border-[#e5e5e5] bg-[#faf5e8] px-2 py-0.5 text-xs font-semibold text-[#0a0a0a] transition-colors hover:bg-[#f5f0e0]"
-              title="Reset to current month"
-            >
-              Today
-            </button>
+            {!hideTodayButton && (
+              <button
+                type="button"
+                onClick={resetToToday}
+                className="cursor-pointer rounded-[8px] border border-[#e5e5e5] bg-[#faf5e8] px-2 py-0.5 text-xs font-semibold text-[#0a0a0a] transition-colors hover:bg-[#f5f0e0]"
+                title="Reset to current month"
+              >
+                Today
+              </button>
+            )}
           </div>
 
           <div className="flex items-center gap-1.5">

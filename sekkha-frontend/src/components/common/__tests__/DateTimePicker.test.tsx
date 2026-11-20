@@ -35,7 +35,7 @@ describe("DateTimePicker (inline collapsible + uniform Sekkha controls)", () => 
     expect(screen.getByText("Change")).toBeDefined()
   })
 
-  it("expands inline (no popover portal) and exposes Sekkha chips and hour/minute selects without native time input", () => {
+  it("expands inline with Date/Time segmented toggle, single Today button, and Sekkha Hour/Minute selects", () => {
     const handleChange = vi.fn()
     const { container } = render(
       <DateTimePicker
@@ -51,23 +51,18 @@ describe("DateTimePicker (inline collapsible + uniform Sekkha controls)", () => 
     fireEvent.click(trigger)
 
     expect(trigger.getAttribute("aria-expanded")).toBe("true")
-    expect(screen.getByText("Date")).toBeDefined()
-    expect(screen.getByText("Service Time")).toBeDefined()
-    expect(
-      screen.getAllByRole("button", { name: "Today" }).length
-    ).toBeGreaterThanOrEqual(1)
+    expect(screen.getByRole("button", { name: /Date · 26 Jul/i }).getAttribute("aria-pressed")).toBe("true")
+    expect(screen.getByRole("button", { name: /Time · 09:00/i }).getAttribute("aria-pressed")).toBe("false")
+    expect(screen.getAllByRole("button", { name: "Today" })).toHaveLength(1)
     expect(screen.getByRole("button", { name: "Tomorrow" })).toBeDefined()
     expect(screen.getByRole("button", { name: "Next Sun" })).toBeDefined()
 
-    // No raw <input type="time">
     expect(container.querySelector('input[type="time"]')).toBeNull()
-
-    // Hour and Minute Sekkha Select comboboxes are rendered inside the collapsible region
     expect(screen.getByRole("combobox", { name: "Hour" })).toBeDefined()
     expect(screen.getByRole("combobox", { name: "Minute" })).toBeDefined()
   })
 
-  it("commits time immediately when clicking a quick preset chip and collapses on Done", () => {
+  it("auto-switches to Time tab after selecting a date, commits quick preset, and collapses on Done", () => {
     const handleChange = vi.fn()
     render(
       <DateTimePicker
@@ -81,11 +76,15 @@ describe("DateTimePicker (inline collapsible + uniform Sekkha controls)", () => 
       screen.getByRole("button", { name: /Sun, 26 Jul 2026 · 09:00 WIB/i })
     )
 
+    fireEvent.click(screen.getByRole("button", { name: "Tomorrow" }))
+    expect(handleChange).toHaveBeenCalledTimes(1)
+    expect(screen.getByRole("button", { name: /Time · 09:00/i }).getAttribute("aria-pressed")).toBe("true")
+
     fireEvent.click(screen.getByRole("button", { name: "19:00" }))
     expect(handleChange).toHaveBeenCalledWith("2026-07-26T19:00")
 
     fireEvent.click(screen.getByRole("button", { name: "Done" }))
-    expect(screen.queryByText("Service Time")).toBeNull()
+    expect(screen.queryByRole("combobox", { name: "Hour" })).toBeNull()
   })
 
   it("renders dynamic recent times when recentTimes prop is supplied and updates on click", () => {
@@ -121,17 +120,14 @@ describe("DateTimePicker (inline collapsible + uniform Sekkha controls)", () => 
       />
     )
 
-    // Preserves non-5-minute value (17) in Minute select
     const minuteTrigger = screen.getByRole("combobox", { name: "Minute" })
     expect(minuteTrigger.textContent).toContain("17")
 
-    // Change Hour to 15
     const hourTrigger = screen.getByRole("combobox", { name: "Hour" })
     fireEvent.click(hourTrigger)
     fireEvent.click(screen.getByRole("option", { name: "15" }))
     expect(handleChange).toHaveBeenCalledWith("2026-07-26T15:17")
 
-    // Change Minute to 30
     fireEvent.click(minuteTrigger)
     fireEvent.click(screen.getByRole("option", { name: "30" }))
     expect(handleChange).toHaveBeenCalledWith("2026-07-26T09:30")

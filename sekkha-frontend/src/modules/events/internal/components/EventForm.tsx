@@ -1,10 +1,11 @@
 // feature/events/components/EventForm
 // Create / edit event form for pengurus+ with unified categories, masterdata autofill, & optional location.
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import {
   AlertCircleIcon,
   CalendarIcon,
+  ChevronDownIcon,
   FileTextIcon,
   LoaderCircleIcon,
   MapPinIcon,
@@ -16,7 +17,6 @@ import {
 } from "lucide-react"
 import { useAuth } from "@/modules/auth"
 import { api } from "@/lib/api"
-import { Chip } from "@/components/base"
 import { DateTimePicker } from "@/components/common/DateTimePicker"
 import { Switch } from "@/components/ui/switch"
 import type { CreateEventPayload, EventListItem } from "../types"
@@ -105,12 +105,6 @@ export function extractRecentLocations(
   }
   return result
 }
-
-const DEFAULT_LOCATION_RECOMMENDATIONS = [
-  "Vihara Tri Maha Dharma",
-  "Dharmasala Utama",
-  "Vihara Sekkha",
-] as const
 
 function deduplicateTimes(items: string[], maxItems = 3): string[] {
   const cap = Math.min(3, Math.max(0, maxItems))
@@ -276,9 +270,9 @@ export function EventForm({
       const match = categories.find(
         (c) =>
           c.id ===
-            (initial.event_type && typeof initial.event_type === "object"
-              ? initial.event_type.id
-              : undefined) ||
+          (initial.event_type && typeof initial.event_type === "object"
+            ? initial.event_type.id
+            : undefined) ||
           c.code.toLowerCase() === getEventTag(initial).toLowerCase() ||
           c.label.toLowerCase() === getEventTag(initial).toLowerCase()
       )
@@ -304,12 +298,12 @@ export function EventForm({
       initial?.description ??
       (!initial?.id
         ? buildDefaultEventDescription({
-            title: initial?.title,
-            eventDate:
-              initial?.event_date ??
-              (initialDate ? `${initialDate}T09:00` : undefined),
-            location: initial?.location,
-          })
+          title: initial?.title,
+          eventDate:
+            initial?.event_date ??
+            (initialDate ? `${initialDate}T09:00` : undefined),
+          location: initial?.location,
+        })
         : "")
   )
   const [isDescExpanded, setIsDescExpanded] = useState(false)
@@ -331,6 +325,21 @@ export function EventForm({
   const [recentTimeOptions, setRecentTimeOptions] = useState<string[]>(() =>
     deduplicateTimes(recentTimes ?? [], 3)
   )
+  const [locationMenuOpen, setLocationMenuOpen] = useState(false)
+  const locationWrapperRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function handleOutsideClick(e: MouseEvent) {
+      if (
+        locationWrapperRef.current &&
+        !locationWrapperRef.current.contains(e.target as Node)
+      ) {
+        setLocationMenuOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", handleOutsideClick)
+    return () => document.removeEventListener("mousedown", handleOutsideClick)
+  }, [])
 
   useEffect(() => {
     const seededLocations = deduplicateLocations(recentLocations ?? [], 3)
@@ -517,9 +526,8 @@ export function EventForm({
       {/* 1. Category & Template Selection */}
       <section
         aria-labelledby="event-category-heading"
-        className={`space-y-2.5 border-b pb-4 sm:space-y-3 sm:rounded-2xl sm:border sm:bg-surface-soft sm:p-4 ${
-          errors.tag ? "border-rose-400" : "border-hairline"
-        }`}
+        className={`space-y-2.5 border-b pb-4 sm:space-y-3 sm:rounded-2xl sm:border sm:bg-surface-soft sm:p-4 ${errors.tag ? "border-rose-400" : "border-hairline"
+          }`}
       >
         <div className="flex items-center justify-between gap-2">
           <label
@@ -557,23 +565,22 @@ export function EventForm({
                 style={
                   isSelected && cat.colorHex
                     ? {
-                        backgroundColor: cat.colorHex,
-                        borderColor: cat.colorHex,
-                        color: "#ffffff",
-                      }
+                      backgroundColor: cat.colorHex,
+                      borderColor: cat.colorHex,
+                      color: "#ffffff",
+                    }
                     : !isSelected && cat.colorHex
                       ? {
-                          borderColor: `${cat.colorHex}40`,
-                          backgroundColor: `${cat.colorHex}0d`,
-                          color: "#1a1a1a",
-                        }
+                        borderColor: `${cat.colorHex}40`,
+                        backgroundColor: `${cat.colorHex}0d`,
+                        color: "#1a1a1a",
+                      }
                       : undefined
                 }
-                className={`flex min-h-[38px] shrink-0 cursor-pointer items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold transition-all focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:outline-none sm:min-h-[42px] sm:px-3.5 ${
-                  isSelected
+                className={`flex min-h-[38px] shrink-0 cursor-pointer items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold transition-all focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:outline-none sm:min-h-[42px] sm:px-3.5 ${isSelected
                     ? "border-ink bg-ink text-white shadow-xs"
                     : "border-hairline bg-canvas text-text-muted hover:bg-surface-card hover:text-ink"
-                }`}
+                  }`}
               >
                 {isSelected ? (
                   <CheckIcon className="size-3.5 text-white" />
@@ -648,11 +655,10 @@ export function EventForm({
                 placeholder="e.g. Sunday Youth Fellowship"
                 aria-invalid={Boolean(errors.title)}
                 aria-describedby={errors.title ? "ev-title-error" : undefined}
-                className={`h-11 w-full rounded-xl border bg-canvas pr-4 pl-10 text-xs text-ink shadow-2xs transition-all outline-none placeholder:text-text-muted/70 sm:text-sm ${
-                  errors.title
+                className={`h-11 w-full rounded-xl border bg-canvas pr-4 pl-10 text-xs text-ink shadow-2xs transition-all outline-none placeholder:text-text-muted/70 sm:text-sm ${errors.title
                     ? "border-rose-400 focus:border-rose-500"
                     : "border-hairline focus:border-ink focus:ring-1 focus:ring-ink"
-                }`}
+                  }`}
               />
             </div>
             {errors.title && (
@@ -665,8 +671,8 @@ export function EventForm({
             )}
           </div>
 
-          {/* Location Input + Quick Recommendation Chips (Autofill disabled) */}
-          <div className="flex w-full flex-col gap-1.5">
+          {/* Location Input + Recent Dropdown (up to 3 last used; hidden when empty so typed text is treated as new) */}
+          <div ref={locationWrapperRef} className="relative flex w-full flex-col gap-1.5">
             <label
               htmlFor="ev-loc"
               className="text-xs font-bold text-ink"
@@ -688,39 +694,103 @@ export function EventForm({
                 autoCapitalize="off"
                 spellCheck={false}
                 aria-autocomplete="none"
+                aria-expanded={locationMenuOpen && recentVenueOptions.length > 0}
+                aria-controls="ev-loc-listbox"
                 data-lpignore="true"
                 data-1p-ignore="true"
                 data-bwignore="true"
                 data-form-type="other"
-                onChange={(e) => setLocation(e.target.value)}
+                onFocus={() => {
+                  if (recentVenueOptions.length > 0) setLocationMenuOpen(true)
+                }}
+                onClick={() => {
+                  if (recentVenueOptions.length > 0) setLocationMenuOpen(true)
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") setLocationMenuOpen(false)
+                }}
+                onChange={(e) => {
+                  setLocation(e.target.value)
+                  if (recentVenueOptions.length > 0) setLocationMenuOpen(true)
+                }}
                 placeholder="e.g. Dharmasala Utama"
-                className="h-11 w-full rounded-xl border border-hairline bg-canvas pr-4 pl-10 text-xs text-ink shadow-2xs transition-all outline-none placeholder:text-text-muted/70 focus:border-ink focus:ring-1 focus:ring-ink sm:text-sm"
+                className={`h-11 w-full rounded-xl border border-hairline bg-canvas pl-10 text-xs text-ink shadow-2xs transition-all outline-none placeholder:text-text-muted/70 focus:border-ink focus:ring-1 focus:ring-ink sm:text-sm ${
+                  recentVenueOptions.length > 0 ? "pr-10" : "pr-4"
+                }`}
               />
+              {recentVenueOptions.length > 0 && (
+                <button
+                  type="button"
+                  aria-label="Toggle recent locations"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => setLocationMenuOpen((prev) => !prev)}
+                  className="absolute top-1/2 right-2 flex size-7 -translate-y-1/2 cursor-pointer items-center justify-center rounded-lg text-text-muted transition-colors hover:bg-surface-soft hover:text-ink"
+                >
+                  <ChevronDownIcon
+                    className={`size-4 transition-transform duration-150 ${
+                      locationMenuOpen ? "rotate-180 text-ink" : ""
+                    }`}
+                  />
+                </button>
+              )}
             </div>
 
-            <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-              <span className="text-[11px] font-semibold text-text-muted">
-                {recentVenueOptions.length > 0 ? "Recent:" : "Suggested:"}
-              </span>
-              {(recentVenueOptions.length > 0
-                ? recentVenueOptions
-                : DEFAULT_LOCATION_RECOMMENDATIONS
-              )
-                .slice(0, 3)
-                .map((venue) => (
-                  <Chip
-                    key={venue}
-                    variant="assist"
-                    selected={
-                      location.trim().toLowerCase() === venue.toLowerCase()
-                    }
-                    onClick={() => setLocation(venue)}
-                    className="h-7 px-2.5 text-[11px]"
-                  >
-                    {venue}
-                  </Chip>
-                ))}
-            </div>
+            {locationMenuOpen && recentVenueOptions.length > 0 && (
+              <div
+                id="ev-loc-listbox"
+                role="listbox"
+                aria-label="Recent locations"
+                className="absolute top-full right-0 left-0 z-30 mt-1.5 overflow-hidden rounded-xl border border-hairline bg-canvas p-1 shadow-lg"
+              >
+                <p className="px-2.5 py-1 text-[10px] font-bold tracking-wider text-text-muted uppercase">
+                  Recent locations
+                </p>
+                {recentVenueOptions.slice(0, 3).map((venue) => {
+                  const isSelected =
+                    location.trim().toLowerCase() === venue.toLowerCase()
+                  return (
+                    <button
+                      key={venue}
+                      type="button"
+                      role="option"
+                      aria-selected={isSelected}
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => {
+                        setLocation(venue)
+                        setLocationMenuOpen(false)
+                      }}
+                      className={`flex w-full cursor-pointer items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-left text-xs transition-colors sm:text-sm ${
+                        isSelected
+                          ? "bg-surface-soft font-semibold text-ink"
+                          : "text-ink hover:bg-surface-soft"
+                      }`}
+                    >
+                      <span className="truncate">{venue}</span>
+                      {isSelected && (
+                        <CheckIcon className="size-3.5 shrink-0 text-clay-teal" />
+                      )}
+                    </button>
+                  )
+                })}
+                {location.trim().length > 0 &&
+                  !recentVenueOptions.some(
+                    (v) => v.toLowerCase() === location.trim().toLowerCase()
+                  ) && (
+                    <button
+                      type="button"
+                      role="option"
+                      aria-selected={false}
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => setLocationMenuOpen(false)}
+                      className="mt-0.5 flex w-full cursor-pointer items-center gap-1.5 border-t border-hairline px-2.5 py-2 text-left text-xs font-medium text-clay-teal transition-colors hover:bg-surface-soft"
+                    >
+                      <span className="truncate">
+                        Use &ldquo;{location.trim()}&rdquo; as new location
+                      </span>
+                    </button>
+                  )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -766,7 +836,7 @@ export function EventForm({
               htmlFor="ev-desc"
               className="text-xs font-bold text-ink"
             >
-              Description and instructions{" "}
+              Description {" "}
               <span className="text-[11px] font-normal text-text-muted">
                 (Optional)
               </span>
@@ -819,9 +889,8 @@ export function EventForm({
               setDescription(e.target.value)
             }}
             placeholder="Write additional details, dress code, or instructions for attendees..."
-            className={`w-full resize-y rounded-xl border border-hairline bg-canvas px-3.5 py-2.5 text-xs leading-relaxed text-ink shadow-2xs transition-all outline-none placeholder:text-text-muted/70 focus:border-ink focus:ring-1 focus:ring-ink sm:text-sm ${
-              isDescExpanded ? "min-h-[300px]" : "min-h-[104px] sm:min-h-[132px]"
-            }`}
+            className={`w-full resize-y rounded-xl border border-hairline bg-canvas px-3.5 py-2.5 text-xs leading-relaxed text-ink shadow-2xs transition-all outline-none placeholder:text-text-muted/70 focus:border-ink focus:ring-1 focus:ring-ink sm:text-sm ${isDescExpanded ? "min-h-[300px]" : "min-h-[104px] sm:min-h-[132px]"
+              }`}
           />
         </div>
       </section>

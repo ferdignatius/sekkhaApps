@@ -142,11 +142,13 @@ describe("EventForm & EventDetailSheet Enhancements", () => {
     )
 
     // 1. Pre-filled description template aligned with initialDate default (09:00 WIB)
-    const descArea = screen.getByLabelText(/description and instructions/i) as HTMLTextAreaElement
+    const descArea = screen.getByLabelText(/^Description/i) as HTMLTextAreaElement
+    expect(descArea.value).toContain("Hallo Sobat Teenagers! 👋")
     expect(descArea.value).toContain("✨ Acara: Chanting")
     expect(descArea.value).toContain("📅 Tanggal: Sabtu, 14 November 2026")
-    expect(descArea.value).toContain("🕖 Waktu: 09.00 WIB – selesai")
+    expect(descArea.value).toContain("⏰ Waktu: 09.00 WIB – selesai")
     expect(descArea.value).toContain("📍 Tempat: Vihara Tri Maha Dharma")
+    expect(descArea.value).toContain("Jangan lupa siapkan QR Pass untuk check-in ya!")
     expect(descArea.value).not.toContain("Halo, selamat siang")
 
     // 2. Description Expand / Collapse button toggles size
@@ -156,7 +158,7 @@ describe("EventForm & EventDetailSheet Enhancements", () => {
     expect(descArea.rows).toBe(12)
     expect(descArea.className).toContain("min-h-[300px]")
 
-    // 3. Location field label, disabled native autofill, recommendation chips & dynamic description sync
+    // 3. Location field label, disabled native autofill, recent-locations dropdown & dynamic description sync
     const locInput = screen.getByLabelText(/^Location/i) as HTMLInputElement
     expect(screen.queryByText(/Venue \/ Room/i)).toBeNull()
     expect(locInput.getAttribute("autocomplete")).toBe("off")
@@ -165,9 +167,16 @@ describe("EventForm & EventDetailSheet Enhancements", () => {
     expect(locInput.getAttribute("data-form-type")).toBe("other")
     expect(screen.queryByRole("listbox", { name: /recent locations/i })).toBeNull()
 
-    const venueChip = screen.getByRole("button", { name: "Dharmasala Utama" })
-    fireEvent.click(venueChip)
+    // Focus/click opens recent locations dropdown (max 3 recent locations, no chips below input)
+    fireEvent.focus(locInput)
+    const locListbox = await screen.findByRole("listbox", {
+      name: /recent locations/i,
+    })
+    expect(locListbox).toBeTruthy()
+    const venueOption = screen.getByRole("option", { name: "Dharmasala Utama" })
+    fireEvent.click(venueOption)
     expect(locInput.value).toBe("Dharmasala Utama")
+    expect(screen.queryByRole("listbox", { name: /recent locations/i })).toBeNull()
     await waitFor(() => {
       expect(descArea.value).toContain("📍 Tempat: Dharmasala Utama")
     })
@@ -440,5 +449,26 @@ describe("EventForm & EventDetailSheet Enhancements", () => {
         undefined
       )
     })
+  })
+
+  it("hides recent locations dropdown when history is empty and accepts typing a new location", () => {
+    vi.spyOn(api, "get").mockResolvedValue([] as any)
+
+    renderWithAuth(
+      <EventForm
+        initialDate="2026-11-20"
+        recentLocations={[]}
+        onSubmit={vi.fn()}
+        onCancel={vi.fn()}
+      />
+    )
+
+    const locInput = screen.getByLabelText(/^Location/i) as HTMLInputElement
+    fireEvent.focus(locInput)
+    expect(screen.queryByRole("listbox", { name: /recent locations/i })).toBeNull()
+
+    fireEvent.change(locInput, { target: { value: "Aula Lantai 2" } })
+    expect(locInput.value).toBe("Aula Lantai 2")
+    expect(screen.queryByRole("listbox", { name: /recent locations/i })).toBeNull()
   })
 })

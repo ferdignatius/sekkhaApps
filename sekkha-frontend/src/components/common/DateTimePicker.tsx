@@ -59,6 +59,13 @@ const MINUTE_STEP_VALUES = Array.from({ length: 12 }, (_, i) =>
   String(i * 5).padStart(2, "0")
 )
 
+function formatCompactDate(datePart: string): string {
+  const [y, m, d] = datePart.split("-").map(Number)
+  if (!y || !m || !d) return datePart
+  const monthName = MONTHS_SHORT[m - 1] ?? ""
+  return `${d} ${monthName}`
+}
+
 const DAYS_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const
 const MONTHS_SHORT = [
   "Jan",
@@ -146,8 +153,8 @@ function formatDisplayDateTime(datePart: string, timePart: string): string {
 
 /**
  * Inline collapsible Date & Time picker built with Sekkha base components
- * (Card, Chip, Select, Button, Badge) so it never clips or traps focus
- * inside modals or mobile drawers.
+ * (Card, Chip, Button, Badge) and a native time input so it stays compact on
+ * mobile without clipping or trapping focus inside modals or drawers.
  */
 export function DateTimePicker({
   id,
@@ -159,6 +166,7 @@ export function DateTimePicker({
   recentTimes,
 }: DateTimePickerProps) {
   const [open, setOpen] = useState(defaultOpen)
+  const [activeTab, setActiveTab] = useState<"date" | "time">("date")
   const { datePart, timePart, dateObj } = parseValue(value)
   const [calendarMonth, setCalendarMonth] = useState<Date>(dateObj)
 
@@ -177,8 +185,8 @@ export function DateTimePicker({
     const values = MINUTE_STEP_VALUES.includes(activeMinute)
       ? MINUTE_STEP_VALUES
       : [...MINUTE_STEP_VALUES, activeMinute].sort(
-        (a, b) => Number(a) - Number(b)
-      )
+          (a, b) => Number(a) - Number(b)
+        )
     return values.map((mm) => ({ value: mm, label: mm }))
   }, [activeMinute])
 
@@ -189,6 +197,7 @@ export function DateTimePicker({
   function handleOpenChange(nextOpen: boolean) {
     if (nextOpen) {
       setCalendarMonth(parseDateObj(datePart))
+      setActiveTab("date")
     }
     setOpen(nextOpen)
   }
@@ -196,11 +205,13 @@ export function DateTimePicker({
   function handleSelectDate(selectedDate: string | null) {
     if (!selectedDate) return
     commitSchedule(selectedDate, timePart)
+    setActiveTab("time")
   }
 
   function handleQuickDate(targetDate: string) {
     setCalendarMonth(parseDateObj(targetDate))
     commitSchedule(targetDate, timePart)
+    setActiveTab("time")
   }
 
   function handleQuickTime(presetTime: string) {
@@ -271,39 +282,56 @@ export function DateTimePicker({
       </CollapsibleTrigger>
 
       {/* ── Inline Collapsible Schedule Panel ─────────────────────────────── */}
-      <CollapsibleContent className="mt-2.5">
+      <CollapsibleContent className="mt-2">
         <Card
           variant="soft"
-          className="space-y-3.5 border-hairline p-3.5 shadow-xs sm:p-4"
+          className="space-y-3 border-hairline p-3 shadow-xs sm:p-4"
         >
-          {/* Panel Header */}
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-hairline pb-2.5">
-            <div className="flex items-center gap-2">
-              <CalendarIcon className="size-4 text-clay-teal" />
-              <span className="text-xs font-bold text-ink sm:text-sm">
-                Set Date &amp; Time
-              </span>
-            </div>
-            <Badge
-              variant="default"
-              size="sm"
-              className="font-mono font-semibold tabular-nums"
+          {/* Mobile Segmented Toggle: Date | Time (hidden on md+ where both panes show side-by-side) */}
+          <div
+            role="group"
+            aria-label="Schedule step"
+            className="grid grid-cols-2 gap-1 rounded-[12px] border border-hairline bg-canvas p-1 md:hidden"
+          >
+            <button
+              type="button"
+              aria-pressed={activeTab === "date"}
+              onClick={() => setActiveTab("date")}
+              className={cn(
+                "flex min-h-9 cursor-pointer items-center justify-center gap-1.5 rounded-[9px] px-2.5 py-1.5 text-xs font-bold transition-all",
+                activeTab === "date"
+                  ? "bg-ink text-canvas shadow-2xs"
+                  : "text-text-muted hover:text-ink"
+              )}
             >
-              {formatReadableDate(datePart)} · {timePart} WIB
-            </Badge>
+              <CalendarIcon className="size-3.5 shrink-0" aria-hidden="true" />
+              <span>Date · {formatCompactDate(datePart)}</span>
+            </button>
+            <button
+              type="button"
+              aria-pressed={activeTab === "time"}
+              onClick={() => setActiveTab("time")}
+              className={cn(
+                "flex min-h-9 cursor-pointer items-center justify-center gap-1.5 rounded-[9px] px-2.5 py-1.5 text-xs font-bold transition-all",
+                activeTab === "time"
+                  ? "bg-ink text-canvas shadow-2xs"
+                  : "text-text-muted hover:text-ink"
+              )}
+            >
+              <ClockIcon className="size-3.5 shrink-0" aria-hidden="true" />
+              <span className="font-mono tabular-nums">Time · {timePart}</span>
+            </button>
           </div>
 
           {/* 2-Column Responsive Grid: Calendar (Left) + Time Controls (Right) */}
           <div className="grid grid-cols-1 gap-4 md:grid-cols-[1.15fr_1fr] md:items-start">
             {/* ── Date Pane ── */}
-            <div className="space-y-2.5">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-ink">Date</span>
-                <span className="font-mono text-[11px] font-semibold text-text-muted">
-                  {datePart}
-                </span>
-              </div>
-
+            <div
+              className={cn(
+                "space-y-2.5",
+                activeTab !== "date" && "hidden md:block"
+              )}
+            >
               <div className="flex flex-wrap gap-1.5">
                 <Chip
                   variant="assist"
@@ -329,13 +357,14 @@ export function DateTimePicker({
                 </Chip>
               </div>
 
-              <Card variant="canvas" className="p-1.5 shadow-2xs">
+              <Card variant="canvas" className="p-1 shadow-2xs">
                 <EventCalendar
                   month={calendarMonth}
                   onMonthChange={setCalendarMonth}
                   selected={datePart}
                   onSelect={handleSelectDate}
                   compact={true}
+                  hideTodayButton={true}
                   allowDeselect={false}
                   disablePastDates={disablePastDates}
                 />
@@ -343,22 +372,18 @@ export function DateTimePicker({
             </div>
 
             {/* ── Time Pane ── */}
-            <div className="flex h-full flex-col justify-between gap-3">
+            <div
+              className={cn(
+                "flex h-full flex-col justify-between gap-3",
+                activeTab !== "time" && "hidden md:flex"
+              )}
+            >
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <ClockIcon className="size-3.5 text-clay-teal" />
-                    <span className="text-xs font-bold text-ink">
-                      Service Time
-                    </span>
-                  </div>
-                  <Badge
-                    variant="outline"
-                    size="sm"
-                    className="bg-canvas font-mono font-bold tabular-nums"
-                  >
-                    {timePart} WIB
-                  </Badge>
+                <div className="hidden items-center gap-1.5 md:flex">
+                  <ClockIcon className="size-3.5 text-clay-teal" aria-hidden="true" />
+                  <span className="text-xs font-bold text-ink">
+                    Service Time
+                  </span>
                 </div>
 
                 {/* Quick Presets using Sekkha Filter Chips */}
@@ -381,8 +406,8 @@ export function DateTimePicker({
                   </div>
                 </div>
 
-                {/* Uniform Sekkha Hour / Minute Selects */}
-                <Card variant="canvas" className="space-y-2.5 p-3 shadow-2xs">
+                {/* Sekkha Hour / Minute Selects (no native OS time popup) */}
+                <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-ink">
                       Custom time
@@ -391,7 +416,6 @@ export function DateTimePicker({
                       24-hour · WIB
                     </span>
                   </div>
-
                   <div className="grid grid-cols-[1fr_auto_1fr] items-end gap-2">
                     <Select
                       id={id ? `${id}-hour` : undefined}
@@ -416,23 +440,23 @@ export function DateTimePicker({
                       className="font-mono font-bold tabular-nums"
                     />
                   </div>
-                </Card>
-              </div>
-
-              {/* Collapse / Confirm Bar */}
-              <div className="flex justify-end border-t border-hairline pt-2.5">
-                <Button
-                  type="button"
-                  variant="primary"
-                  size="sm"
-                  onClick={() => setOpen(false)}
-                  className="w-full gap-1.5 rounded-[12px] md:w-auto"
-                >
-                  <CheckIcon className="size-3.5" aria-hidden="true" />
-                  <span>Done</span>
-                </Button>
+                </div>
               </div>
             </div>
+          </div>
+
+          {/* Compact Confirm Footer */}
+          <div className="flex justify-end border-t border-hairline pt-2.5">
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
+              onClick={() => setOpen(false)}
+              className="w-full gap-1.5 rounded-[12px] md:w-auto"
+            >
+              <CheckIcon className="size-3.5" aria-hidden="true" />
+              <span>Done</span>
+            </Button>
           </div>
         </Card>
       </CollapsibleContent>

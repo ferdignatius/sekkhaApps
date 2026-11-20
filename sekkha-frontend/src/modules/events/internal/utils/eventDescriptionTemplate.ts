@@ -70,13 +70,16 @@ export function buildDefaultEventDescription(
   const tempat = params?.location?.trim() || "Vihara Tri Maha Dharma"
 
   return [
-    `✨ Acara: ${acara}`,
+    "Hallo Sobat Teenagers! 👋",
+    "",
+    `📢 Acara: ${acara}`,
     `📅 Tanggal: ${dateLabel}`,
-    `🕖 Waktu: ${timeLabel} WIB – selesai`,
+    `⏰ Waktu: ${timeLabel} WIB – selesai`,
     `📍 Tempat: ${tempat}`,
     "",
-    "Ditunggu kehadirannya ",
-    "Terima Kasih",
+    "Jangan lupa siapkan QR Pass untuk check-in ya!",
+    "Ditunggu kehadirannya ✨",
+    "Terima Kasih 🙏",
   ].join("\n")
 }
 
@@ -93,10 +96,10 @@ export function buildEventShareMessage(
     event.description && event.description.trim().length > 0
       ? event.description.trim()
       : buildDefaultEventDescription({
-          title: event.title,
-          eventDate: event.event_date,
-          location: event.location,
-        })
+        title: event.title,
+        eventDate: event.event_date,
+        location: event.location,
+      })
 
   const trimmedUrl = eventUrl.trim()
   return trimmedUrl ? `${body}\n\n${trimmedUrl}` : body

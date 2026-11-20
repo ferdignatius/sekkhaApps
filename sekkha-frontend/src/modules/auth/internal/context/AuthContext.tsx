@@ -9,7 +9,7 @@ import React, {
   useMemo,
   useReducer,
 } from "react"
-import { authReducer, initialAuthState } from "./authReducer"
+import { AuthError, authReducer, initialAuthState } from "./authReducer"
 import type { AuthState, UserRole } from "./authReducer"
 import { createAuthService, STORAGE_KEY } from "../api/authService"
 import { api } from "@/lib/api"
@@ -88,41 +88,63 @@ export function AuthProvider({ children }: AuthProviderProps) {
         return
       }
 
-      // Token exists → verify with backend
+      // Token exists → verify with backend, falling back to refresh cookie if access token expired (401)
+      let activeToken = token
+      let verifiedUser: Awaited<ReturnType<typeof authService.verifyToken>> = null
+
       try {
         // authService.verifyToken handles the 3000ms timeout internally
-        const verifiedUser = await authService.verifyToken(token)
-
+        verifiedUser = await authService.verifyToken(token)
+      } catch (err) {
         if (cancelled) return
 
-        const onboardingCompleted =
-          verifiedUser?.onboarding_completed ?? verifiedUser?.onboardingCompleted
-
-        // Set authenticated session directly from verified backend response
-        dispatch({
-          type: "AUTH_SUCCESS",
-          payload: {
-            accessToken: token,
-            userId: verifiedUser?.id ?? verifiedUser?.userId ?? null,
-            role: (verifiedUser?.role as UserRole) || null,
-            name: verifiedUser?.name ?? null,
-            email: verifiedUser?.email ?? null,
-            ...(verifiedUser?.username !== undefined && {
-              username: verifiedUser.username,
-            }),
-            ...(onboardingCompleted !== undefined && {
-              onboardingCompleted: Boolean(onboardingCompleted),
-            }),
-          },
-        })
-      } catch {
-        if (cancelled) return
-
-        // verifyToken threw (NETWORK_TIMEOUT, INVALID_CREDENTIALS, or UNKNOWN_ERROR)
-        // In all cases: remove stale token and set unauthenticated (requirements 4.5, 4.7)
-        safeStorage.removeItem(STORAGE_KEY)
-        dispatch({ type: "AUTH_VERIFY_FAILED" })
+        // If the short-lived access token expired (401/403), silently exchange the
+        // HttpOnly refresh cookie (REFRESH_TOKEN_EXPIRES_IN) before logging out.
+        if (
+          err instanceof AuthError &&
+          err.code === "INVALID_CREDENTIALS" &&
+          typeof authService.refreshSession === "function"
+        ) {
+          const refreshed = await authService.refreshSession()
+          if (cancelled) return
+          if (refreshed?.accessToken) {
+            activeToken = refreshed.accessToken
+            verifiedUser = refreshed.user
+          } else {
+            safeStorage.removeItem(STORAGE_KEY)
+            dispatch({ type: "AUTH_VERIFY_FAILED" })
+            return
+          }
+        } else {
+          // NETWORK_TIMEOUT or UNKNOWN_ERROR → remove stale token and set unauthenticated (requirements 4.5, 4.7)
+          safeStorage.removeItem(STORAGE_KEY)
+          dispatch({ type: "AUTH_VERIFY_FAILED" })
+          return
+        }
       }
+
+      if (cancelled) return
+
+      const onboardingCompleted =
+        verifiedUser?.onboarding_completed ?? verifiedUser?.onboardingCompleted
+
+      // Set authenticated session directly from verified (or refreshed) backend response
+      dispatch({
+        type: "AUTH_SUCCESS",
+        payload: {
+          accessToken: activeToken,
+          userId: verifiedUser?.id ?? verifiedUser?.userId ?? null,
+          role: (verifiedUser?.role as UserRole) || null,
+          name: verifiedUser?.name ?? null,
+          email: verifiedUser?.email ?? null,
+          ...(verifiedUser?.username !== undefined && {
+            username: verifiedUser.username,
+          }),
+          ...(onboardingCompleted !== undefined && {
+            onboardingCompleted: Boolean(onboardingCompleted),
+          }),
+        },
+      })
     }
 
     void initAuth()
@@ -268,7 +290,7 @@ export function useAuthContext(): AuthContextValue {
   if (ctx === null) {
     throw new Error(
       "useAuthContext must be used inside an <AuthProvider>. " +
-        "Make sure <AuthProvider> wraps your component tree (see src/routes/__root.tsx)."
+      "Make sure <AuthProvider> wraps your component tree (see src/routes/__root.tsx)."
     )
   }
   return ctx

@@ -343,7 +343,9 @@ export const eventServices = {
 
     const applyLatePenalty = eventType.applyLatePenalty ?? true
     const pointReward = body.point_reward ?? eventType.defaultPointReward ?? 50
-    const maxLateMinutes = body.max_late_minutes ?? eventType.defaultMaxLateMinutes ?? 30
+    const maxLateMinutes =
+      body.max_late_minutes ??
+      (applyLatePenalty ? (eventType.defaultMaxLateMinutes ?? 30) : 0)
     const latePenaltyPoints =
       body.late_penalty_points ??
       (applyLatePenalty ? (eventType.defaultLatePenaltyPoints ?? 15) : 0)

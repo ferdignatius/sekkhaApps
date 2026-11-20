@@ -71,16 +71,31 @@ export async function saveRefreshToken(
   }
 
   // 2. Redis store
+  const canQueueRedis =
+    redis.status === "ready" ||
+    (requireSharedStore() &&
+      (redis.status === "connecting" || redis.status === "reconnecting"))
+
+  if (requireSharedStore() && !canQueueRedis) {
+    console.error(
+      `⚠️ [Auth] Cannot store refresh token in production: Redis status is "${redis.status}"`
+    )
+    throw new Error("Refresh token store unavailable")
+  }
+
   try {
-    if (redis.status === "ready") {
+    if (canQueueRedis) {
       await Promise.all([
         redis.set(`auth:refresh:${tokenHash}`, JSON.stringify(record), "EX", ttlSeconds),
         redis.sadd(`auth:user_refresh:${userId}`, tokenHash),
         redis.expire(`auth:user_refresh:${userId}`, ttlSeconds),
       ])
     }
-  } catch {
-    if (requireSharedStore()) throw new Error("Refresh token store unavailable")
+  } catch (err) {
+    if (requireSharedStore()) {
+      console.error("⚠️ [Auth] Failed to save refresh token in Redis:", (err as Error)?.message || err)
+      throw new Error("Refresh token store unavailable")
+    }
   }
 }
 
@@ -95,9 +110,21 @@ export async function verifyAndRotateRefreshTokenRecord(
   const tokenHash = hashToken(oldRefreshToken)
   let record: RefreshTokenRecord | null = null
 
+  const canQueryRedis =
+    redis.status === "ready" ||
+    (requireSharedStore() &&
+      (redis.status === "connecting" || redis.status === "reconnecting"))
+
+  if (requireSharedStore() && !canQueryRedis) {
+    console.error(
+      `⚠️ [Auth] Cannot verify refresh token in production: Redis status is "${redis.status}"`
+    )
+    throw new Error("Refresh token store unavailable")
+  }
+
   // 1. Check Redis first
   try {
-    if (redis.status === "ready") {
+    if (canQueryRedis) {
       const raw = (await redis.eval(
         REFRESH_CONSUME_SCRIPT,
         1,

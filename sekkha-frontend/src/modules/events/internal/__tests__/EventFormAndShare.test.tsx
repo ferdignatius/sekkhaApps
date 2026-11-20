@@ -474,4 +474,96 @@ describe("EventForm & EventDetailSheet Enhancements", () => {
     expect(locInput.value).toBe("Aula Lantai 2")
     expect(screen.queryByRole("listbox", { name: /recent locations/i })).toBeNull()
   })
+
+  it("allows clearing Grace Period and Penalty Deduction to empty string without auto-0 snap and validates on submit", async () => {
+    vi.spyOn(api, "get").mockResolvedValue([] as any)
+    const handleSubmit = vi.fn().mockResolvedValue(undefined)
+
+    renderWithAuth(
+      <EventForm
+        initialDate="2026-11-22"
+        recentLocations={[]}
+        onSubmit={handleSubmit}
+        onCancel={vi.fn()}
+      />
+    )
+
+    fireEvent.change(screen.getByLabelText(/Event name/i), {
+      target: { value: "Sunday Puja" },
+    })
+    fireEvent.click(screen.getByRole("radio", { name: /Regular Puja/i }))
+
+    const graceInput = screen.getByLabelText(/Grace Period/i) as HTMLInputElement
+    const penaltyInput = screen.getByLabelText(/Penalty Deduction/i) as HTMLInputElement
+
+    // Clearing fields leaves them "" instead of forcing 0 or 1
+    fireEvent.change(graceInput, { target: { value: "" } })
+    fireEvent.change(penaltyInput, { target: { value: "" } })
+    expect(graceInput.value).toBe("")
+    expect(penaltyInput.value).toBe("")
+
+    // Submitting while empty triggers inline submit validation and blocks submit
+    fireEvent.click(screen.getByRole("button", { name: /Create Event/i }))
+    expect(
+      (await screen.findAllByText(/Grace period must be between 0 and 180 minutes/i)).length
+    ).toBeGreaterThan(0)
+    expect(
+      screen.getAllByText(/Penalty deduction must be between 1 and 100 points/i).length
+    ).toBeGreaterThan(0)
+    expect(handleSubmit).not.toHaveBeenCalled()
+
+    // Entering valid values submits cleanly as numbers
+    fireEvent.change(graceInput, { target: { value: "15" } })
+    fireEvent.change(penaltyInput, { target: { value: "25" } })
+    fireEvent.click(screen.getByRole("button", { name: /Create Event/i }))
+
+    await waitFor(() => {
+      expect(handleSubmit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          max_late_minutes: 15,
+          late_penalty_points: 25,
+        })
+      )
+    })
+  })
+
+  it("fetches categories with noCache and preserves 0-minute grace period configured on category", async () => {
+    const getSpy = vi.spyOn(api, "get").mockImplementation((url: string) => {
+      if (url.includes("/configure/event-types")) {
+        return Promise.resolve([
+          {
+            id: "et_strict",
+            code: "strict-puja",
+            label: "Strict Puja",
+            color: "#4262FF",
+            default_point_reward: 50,
+            apply_late_penalty: true,
+            default_max_late_minutes: 0,
+            default_late_penalty_points: 20,
+            is_active: true,
+          },
+        ] as any)
+      }
+      return Promise.resolve([] as any)
+    })
+
+    renderWithAuth(
+      <EventForm
+        initialDate="2026-11-22"
+        recentLocations={[]}
+        onSubmit={vi.fn()}
+        onCancel={vi.fn()}
+      />
+    )
+
+    const strictBtn = await screen.findByRole("radio", { name: /Strict Puja/i })
+    expect(getSpy).toHaveBeenCalledWith(
+      "/configure/event-types?is_active=true",
+      { noCache: true }
+    )
+
+    fireEvent.click(strictBtn)
+    expect((screen.getByLabelText(/Grace Period/i) as HTMLInputElement).value).toBe("0")
+    expect((screen.getByLabelText(/Penalty Deduction/i) as HTMLInputElement).value).toBe("20")
+  })
 })

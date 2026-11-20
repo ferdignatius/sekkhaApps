@@ -463,6 +463,40 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
     )
   }
 
+  // ── refreshSession ─────────────────────────────────────────────────────────
+  /**
+   * POST /auth/refresh — Exchanges the HttpOnly refresh cookie for a fresh
+   * short-lived access token + user summary without logging the user out.
+   */
+  async function refreshSession(): Promise<{
+    accessToken: string
+    user: VerifyUserResponse | null
+  } | null> {
+    try {
+      const response = await fetchWithTimeout(
+        `${API_BASE_URL}/auth/refresh`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        },
+        5_000
+      )
+      if (!response.ok) return null
+      const body = (await response.json()) as any
+      const data =
+        body && typeof body === "object" && "data" in body ? body.data : body
+      const accessToken = data?.accessToken
+      if (typeof accessToken !== "string" || !accessToken) return null
+      safeStorage.setItem(STORAGE_KEY, accessToken)
+      return {
+        accessToken,
+        user: (data?.user as VerifyUserResponse | undefined) ?? null,
+      }
+    } catch {
+      return null
+    }
+  }
+
   // ── logout ─────────────────────────────────────────────────────────────────
   /**
    * Clears the stored token and dispatches AUTH_LOGOUT.
@@ -495,6 +529,7 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
     verifyRegisterOtp,
     resendRegisterOtp,
     verifyToken,
+    refreshSession,
     logout,
   }
 }

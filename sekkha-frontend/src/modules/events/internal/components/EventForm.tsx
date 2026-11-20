@@ -17,6 +17,10 @@ import {
 } from "lucide-react"
 import { useAuth } from "@/modules/auth"
 import { api } from "@/lib/api"
+import {
+  parseBoundedInteger,
+  sanitizeIntegerInput,
+} from "@/lib/numericInput"
 import { DateTimePicker } from "@/components/common/DateTimePicker"
 import { Switch } from "@/components/ui/switch"
 import type { CreateEventPayload, EventListItem } from "../types"
@@ -207,13 +211,14 @@ export function EventForm({
     }))
   })
 
-  // Load latest event types from backend API
+  // Load latest event types from backend API (noCache so Configure changes reflect immediately)
   useEffect(() => {
     let cancelled = false
     async function loadDynamicCategories() {
       try {
         const types = await api.get<any[]>(
-          "/configure/event-types?is_active=true"
+          "/configure/event-types?is_active=true",
+          { noCache: true }
         )
         if (cancelled) return
         if (Array.isArray(types) && types.length > 0) {
@@ -244,6 +249,12 @@ export function EventForm({
             }
           })
           setCategories(mapped)
+          if (!initial?.id && selectedTypeIdRef.current && !isLatePolicyEditedRef.current) {
+            const matched = mapped.find((c) => c.id === selectedTypeIdRef.current)
+            if (matched) {
+              syncCategoryLatePolicy(matched)
+            }
+          }
         }
       } catch (err) {
         console.warn("Could not load dynamic event types in EventForm:", err)
@@ -253,7 +264,7 @@ export function EventForm({
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [initial?.id])
 
   const [selectedTypeId, setSelectedTypeId] = useState<string | undefined>(
     () => {
@@ -391,19 +402,42 @@ export function EventForm({
     }
     return true
   })
-  const [maxLateMinutes, setMaxLateMinutes] = useState<number>(
+  const [maxLateMinutes, setMaxLateMinutes] = useState<string>(
     initial?.max_late_minutes && initial.max_late_minutes > 0
-      ? initial.max_late_minutes
-      : 30
+      ? String(initial.max_late_minutes)
+      : "30"
   )
-  const [latePenaltyPoints, setLatePenaltyPoints] = useState<number>(
+  const [latePenaltyPoints, setLatePenaltyPoints] = useState<string>(
     initial?.late_penalty_points && initial.late_penalty_points > 0
-      ? initial.late_penalty_points
-      : 15
+      ? String(initial.late_penalty_points)
+      : "15"
   )
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [internalSubmitting, setInternalSubmitting] = useState(false)
   const submitting = isSubmitting || internalSubmitting
+  const selectedTypeIdRef = useRef(selectedTypeId)
+  selectedTypeIdRef.current = selectedTypeId
+  const isLatePolicyEditedRef = useRef(false)
+
+  function syncCategoryLatePolicy(cat: CategoryOption) {
+    const shouldApplyLate =
+      cat.applyLatePenalty !== undefined
+        ? cat.applyLatePenalty
+        : (cat.defaultLatePenaltyPoints ?? 15) > 0
+    setApplyLatePenalty(shouldApplyLate)
+    if (shouldApplyLate) {
+      setMaxLateMinutes(
+        cat.defaultMaxLateMinutes !== undefined && cat.defaultMaxLateMinutes >= 0
+          ? String(cat.defaultMaxLateMinutes)
+          : "30"
+      )
+      setLatePenaltyPoints(
+        cat.defaultLatePenaltyPoints !== undefined && cat.defaultLatePenaltyPoints >= 0
+          ? String(cat.defaultLatePenaltyPoints)
+          : "15"
+      )
+    }
+  }
 
   // Handle Category Select (syncs late penalty defaults without overwriting Event name)
   function handleSelectCategory(cat: CategoryOption) {
@@ -419,23 +453,8 @@ export function EventForm({
     }
     setSelectedTypeId(cat.id)
     if (!initial?.id) {
-      const shouldApplyLate =
-        cat.applyLatePenalty !== undefined
-          ? cat.applyLatePenalty
-          : (cat.defaultLatePenaltyPoints ?? 15) > 0
-      setApplyLatePenalty(shouldApplyLate)
-      if (shouldApplyLate) {
-        setMaxLateMinutes(
-          cat.defaultMaxLateMinutes && cat.defaultMaxLateMinutes > 0
-            ? cat.defaultMaxLateMinutes
-            : 30
-        )
-        setLatePenaltyPoints(
-          cat.defaultLatePenaltyPoints && cat.defaultLatePenaltyPoints > 0
-            ? cat.defaultLatePenaltyPoints
-            : 15
-        )
-      }
+      isLatePolicyEditedRef.current = false
+      syncCategoryLatePolicy(cat)
     }
   }
 
@@ -460,6 +479,23 @@ export function EventForm({
       errs.event_date = "Event date cannot be in the past"
     }
 
+    const parsedGrace = applyLatePenalty
+      ? parseBoundedInteger(maxLateMinutes, 0, 180)
+      : 0
+    const parsedPenalty = applyLatePenalty
+      ? parseBoundedInteger(latePenaltyPoints, 1, 100)
+      : 0
+
+    if (applyLatePenalty) {
+      if (parsedGrace === null) {
+        errs.maxLateMinutes = "Grace period must be between 0 and 180 minutes"
+      }
+      if (parsedPenalty === null) {
+        errs.latePenaltyPoints =
+          "Penalty deduction must be between 1 and 100 points"
+      }
+    }
+
     if (Object.keys(errs).length > 0) {
       setErrors(errs)
       return
@@ -481,8 +517,8 @@ export function EventForm({
           chosenType?.visibility ??
           deriveVisibilityFromRoles(chosenType?.target_roles) ??
           "all",
-        max_late_minutes: applyLatePenalty ? maxLateMinutes : 0,
-        late_penalty_points: applyLatePenalty ? latePenaltyPoints : 0,
+        max_late_minutes: parsedGrace ?? 0,
+        late_penalty_points: parsedPenalty ?? 0,
       })
     } finally {
       setInternalSubmitting(false)
@@ -913,7 +949,10 @@ export function EventForm({
           <Switch
             id="ev-late-penalty-toggle"
             checked={applyLatePenalty}
-            onCheckedChange={setApplyLatePenalty}
+            onCheckedChange={(checked) => {
+              isLatePolicyEditedRef.current = true
+              setApplyLatePenalty(checked)
+            }}
             aria-label="Apply Late Penalty"
           />
         </div>
@@ -929,15 +968,34 @@ export function EventForm({
               </label>
               <input
                 id="ev-grace-minutes"
-                type="number"
-                min={0}
-                max={180}
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 value={maxLateMinutes}
-                onChange={(e) =>
-                  setMaxLateMinutes(Math.max(0, Math.min(180, Number(e.target.value) || 0)))
-                }
-                className="h-10 w-full rounded-xl border border-hairline bg-canvas px-3 font-mono text-xs font-bold text-ink outline-none focus:border-ink focus:ring-1 focus:ring-ink sm:text-sm"
+                onChange={(e) => {
+                  isLatePolicyEditedRef.current = true
+                  setMaxLateMinutes(sanitizeIntegerInput(e.target.value))
+                  if (errors.maxLateMinutes) {
+                    setErrors((prev) => {
+                      const next = { ...prev }
+                      delete next.maxLateMinutes
+                      return next
+                    })
+                  }
+                }}
+                placeholder="0 – 180"
+                aria-invalid={Boolean(errors.maxLateMinutes)}
+                className={`h-10 w-full rounded-xl border bg-canvas px-3 font-mono text-base font-bold text-ink outline-none focus:ring-1 sm:text-sm ${
+                  errors.maxLateMinutes
+                    ? "border-rose-400 focus:border-rose-500 focus:ring-rose-400"
+                    : "border-hairline focus:border-ink focus:ring-ink"
+                }`}
               />
+              {errors.maxLateMinutes && (
+                <p className="text-[11px] font-medium text-rose-600">
+                  {errors.maxLateMinutes}
+                </p>
+              )}
             </div>
             <div className="space-y-1">
               <label
@@ -948,15 +1006,34 @@ export function EventForm({
               </label>
               <input
                 id="ev-penalty-points"
-                type="number"
-                min={1}
-                max={100}
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 value={latePenaltyPoints}
-                onChange={(e) =>
-                  setLatePenaltyPoints(Math.max(1, Math.min(100, Number(e.target.value) || 1)))
-                }
-                className="h-10 w-full rounded-xl border border-hairline bg-canvas px-3 font-mono text-xs font-bold text-ink outline-none focus:border-ink focus:ring-1 focus:ring-ink sm:text-sm"
+                onChange={(e) => {
+                  isLatePolicyEditedRef.current = true
+                  setLatePenaltyPoints(sanitizeIntegerInput(e.target.value))
+                  if (errors.latePenaltyPoints) {
+                    setErrors((prev) => {
+                      const next = { ...prev }
+                      delete next.latePenaltyPoints
+                      return next
+                    })
+                  }
+                }}
+                placeholder="1 – 100"
+                aria-invalid={Boolean(errors.latePenaltyPoints)}
+                className={`h-10 w-full rounded-xl border bg-canvas px-3 font-mono text-base font-bold text-ink outline-none focus:ring-1 sm:text-sm ${
+                  errors.latePenaltyPoints
+                    ? "border-rose-400 focus:border-rose-500 focus:ring-rose-400"
+                    : "border-hairline focus:border-ink focus:ring-ink"
+                }`}
               />
+              {errors.latePenaltyPoints && (
+                <p className="text-[11px] font-medium text-rose-600">
+                  {errors.latePenaltyPoints}
+                </p>
+              )}
             </div>
           </div>
         )}

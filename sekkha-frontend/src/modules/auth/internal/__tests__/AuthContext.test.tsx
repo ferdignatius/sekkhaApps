@@ -472,4 +472,49 @@ describe("Property 6: Auth_State Terinisialisasi Benar Berdasarkan Kondisi local
       { numRuns: 100 }
     )
   }, 30000) // 30 s timeout for 100 property runs with fake timers
+
+  it("expired access token (401 on /auth/verify) + 200 on /auth/refresh → stays authenticated and updates localStorage", async () => {
+    localStorage.clear()
+    localStorage.setItem(STORAGE_KEY, "expired-access-token")
+
+    const fetchMock = vi.fn().mockImplementation((url: string) => {
+      if (url.endsWith("/auth/verify")) {
+        return Promise.resolve({
+          ok: false,
+          status: 401,
+          json: () => Promise.resolve({ status: "fail", code: 401 }),
+        } as Response)
+      }
+      if (url.endsWith("/auth/refresh")) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve({
+              status: "success",
+              data: {
+                accessToken: "fresh-access-token",
+                user: { id: "user-1", role: "member", name: "Refreshed Member" },
+              },
+            }),
+        } as Response)
+      }
+      return Promise.resolve({ ok: false, status: 404 } as Response)
+    })
+    vi.stubGlobal("fetch", fetchMock)
+
+    const { unmount } = renderAuthProvider()
+
+    await waitFor(() => {
+      expect(screen.getByTestId("status").textContent).toBe("authenticated")
+    })
+    expect(localStorage.getItem(STORAGE_KEY)).toBe("fresh-access-token")
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringMatching(/\/auth\/refresh$/),
+      expect.objectContaining({ method: "POST", credentials: "include" })
+    )
+
+    unmount()
+    vi.restoreAllMocks()
+  })
 })

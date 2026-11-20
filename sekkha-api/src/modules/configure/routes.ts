@@ -12,8 +12,14 @@ configureRouter.use(requireAuth)
 configureRouter.get("/event-types", configureControllers.getEventTypes)
 configureRouter.get("/badge-activities", configureControllers.getBadgeActivities)
 
-// Other configure routes require organizer/admin role
-configureRouter.use(requireRole("organizer", "admin"))
+// Delegate /schools* and /school-requests* to configureSchoolsRouter (mounted by schoolsModule with per-route guards)
+configureRouter.use((req, res, next) => {
+  if (req.path === "/schools" || req.path.startsWith("/schools/") || req.path === "/school-requests" || req.path.startsWith("/school-requests/")) {
+    next("router")
+    return
+  }
+  requireRole("organizer", "admin")(req, res, next)
+})
 
 // Read-only for organizer: all other mutating methods (POST, PUT, PATCH, DELETE) require admin role
 configureRouter.use((req, res, next) => {

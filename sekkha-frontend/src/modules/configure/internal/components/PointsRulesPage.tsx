@@ -15,6 +15,10 @@ import { Link } from "@tanstack/react-router"
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
 import { ResponsiveFormModal } from "@/components/common/ResponsiveFormModal"
 import { useAuth } from "@/modules/auth"
+import {
+  parseBoundedInteger,
+  sanitizeIntegerInput,
+} from "@/lib/numericInput"
 import { pointRulesApi } from "../api/configureApi"
 import type { PointRuleDto } from "../api/configureApi"
 
@@ -52,7 +56,7 @@ export function PointsRulesPage() {
   const [editingRule, setEditingRule] = useState<PointRuleDto | null>(null)
   const [formData, setFormData] = useState({
     label: "",
-    points: 50,
+    points: "50",
     description: "",
     is_active: true,
   })
@@ -81,7 +85,7 @@ export function PointsRulesPage() {
     setEditingRule(r)
     setFormData({
       label: r.label,
-      points: r.points,
+      points: String(r.points),
       description: r.description || "",
       is_active: r.is_active !== false,
     })
@@ -92,8 +96,8 @@ export function PointsRulesPage() {
     e.preventDefault()
     if (!isAdmin || !editingRule) return
 
-    const pointsNum = Number(formData.points)
-    if (isNaN(pointsNum) || pointsNum < 0 || pointsNum > 100) {
+    const pointsNum = parseBoundedInteger(formData.points, 0, 100)
+    if (pointsNum === null) {
       setFormError(
         "Point value must be between 0 and 100 to protect point economy from inflation."
       )
@@ -411,15 +415,19 @@ export function PointsRulesPage() {
               </span>
             </div>
             <input
-              type="number"
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
               required
-              min={0}
-              max={100}
               value={formData.points}
               onChange={(e) =>
-                setFormData({ ...formData, points: Number(e.target.value) })
+                setFormData({
+                  ...formData,
+                  points: sanitizeIntegerInput(e.target.value),
+                })
               }
-              className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-xs font-bold text-[#0a0a0a] shadow-xs transition-all outline-none focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] sm:text-sm"
+              placeholder="0 – 100"
+              className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-base font-bold text-[#0a0a0a] shadow-xs transition-all outline-none focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] sm:text-sm"
             />
             <p className="text-[10px] text-[#6a6a6a]">
               Values are capped at 100 to prevent point inflation and maintain

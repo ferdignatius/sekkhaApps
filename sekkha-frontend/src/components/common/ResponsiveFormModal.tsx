@@ -142,8 +142,14 @@ export function ResponsiveFormModal({
   }
 
   // Mobile (<768px): Native Bottom Drawer Sheet - Apple HIG Material Thick
+  // Disable Vaul's repositionInputs (which breaks on iOS PWA keyboards and hides lower fields)
+  // and scroll the focused field smoothly into view instead.
   return (
-    <Drawer open={isModalOpen} onOpenChange={handleOpenChange}>
+    <Drawer
+      open={isModalOpen}
+      onOpenChange={handleOpenChange}
+      repositionInputs={false}
+    >
       <DrawerContent
         onPointerDownOutside={(e) => {
           const target = e.target as HTMLElement | null
@@ -186,7 +192,24 @@ export function ResponsiveFormModal({
               setIsExpanded(true)
             }
           }}
-          className="scrollbar-none flex-1 overflow-y-auto px-5 pt-3 pb-8"
+          onFocusCapture={(e) => {
+            const target = e.target as HTMLElement | null
+            if (
+              target &&
+              (target.tagName === "INPUT" ||
+                target.tagName === "TEXTAREA" ||
+                target.tagName === "SELECT")
+            ) {
+              setIsExpanded(true)
+              setTimeout(() => {
+                target.scrollIntoView?.({
+                  block: "center",
+                  behavior: "smooth",
+                })
+              }, 160)
+            }
+          }}
+          className="scrollbar-none flex-1 overscroll-contain overflow-y-auto px-5 pt-3 pb-10"
         >
           <DrawerHeader className="mb-3 border-b border-white/30 px-0 pt-0 pb-3 text-left">
             <DrawerTitle className="text-sm font-bold text-[#0a0a0a]">

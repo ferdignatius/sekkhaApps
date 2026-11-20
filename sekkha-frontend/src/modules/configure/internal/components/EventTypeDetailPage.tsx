@@ -17,6 +17,10 @@ import { Card } from "@/components/base/Card"
 import { Input } from "@/components/base/Input"
 import { Switch } from "@/components/ui/switch"
 import {
+  parseBoundedInteger,
+  sanitizeIntegerInput,
+} from "@/lib/numericInput"
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -48,10 +52,10 @@ export function EventTypeDetailPage() {
   // Form states
   const [label, setLabel] = useState("")
   const [color, setColor] = useState("#4262FF")
-  const [defaultPointReward, setDefaultPointReward] = useState(50)
+  const [defaultPointReward, setDefaultPointReward] = useState("50")
   const [applyLatePenalty, setApplyLatePenalty] = useState(true)
-  const [defaultMaxLateMinutes, setDefaultMaxLateMinutes] = useState(30)
-  const [defaultLatePenaltyPoints, setDefaultLatePenaltyPoints] = useState(15)
+  const [defaultMaxLateMinutes, setDefaultMaxLateMinutes] = useState("30")
+  const [defaultLatePenaltyPoints, setDefaultLatePenaltyPoints] = useState("15")
   const [isActive, setIsActive] = useState(true)
   const [description, setDescription] = useState("")
 
@@ -79,14 +83,14 @@ export function EventTypeDetailPage() {
           setItem(found)
           setLabel(found.label)
           setColor(found.color)
-          setDefaultPointReward(found.default_point_reward)
+          setDefaultPointReward(String(found.default_point_reward))
           const lateEnabled = found.apply_late_penalty ?? true
           setApplyLatePenalty(lateEnabled)
           setDefaultMaxLateMinutes(
-            lateEnabled ? (found.default_max_late_minutes ?? 30) : 0
+            String(lateEnabled ? (found.default_max_late_minutes ?? 30) : 0)
           )
           setDefaultLatePenaltyPoints(
-            lateEnabled ? (found.default_late_penalty_points ?? 15) : 0
+            String(lateEnabled ? (found.default_late_penalty_points ?? 15) : 0)
           )
           setIsActive(found.is_active)
           setDescription(found.description || "")
@@ -123,6 +127,28 @@ export function EventTypeDetailPage() {
       return
     }
 
+    const parsedPoints = parseBoundedInteger(defaultPointReward, 0, 10000)
+    if (parsedPoints === null) {
+      setErrorMessage("Default points reward must be between 0 and 10,000.")
+      return
+    }
+
+    const parsedGrace = applyLatePenalty
+      ? parseBoundedInteger(defaultMaxLateMinutes, 0, 180)
+      : 0
+    if (applyLatePenalty && parsedGrace === null) {
+      setErrorMessage("Grace period must be between 0 and 180 minutes.")
+      return
+    }
+
+    const parsedPenalty = applyLatePenalty
+      ? parseBoundedInteger(defaultLatePenaltyPoints, 0, 100)
+      : 0
+    if (applyLatePenalty && parsedPenalty === null) {
+      setErrorMessage("Penalty deduction must be between 0 and 100 points.")
+      return
+    }
+
     setSaving(true)
     try {
       await eventTypesApi.update(item.id, {
@@ -130,14 +156,10 @@ export function EventTypeDetailPage() {
         label: label.trim(),
         color: color.trim().toUpperCase(),
         description: description.trim() || null,
-        default_point_reward: Number(defaultPointReward) || 0,
+        default_point_reward: parsedPoints,
         apply_late_penalty: applyLatePenalty,
-        default_max_late_minutes: applyLatePenalty
-          ? Number(defaultMaxLateMinutes) || 0
-          : 0,
-        default_late_penalty_points: applyLatePenalty
-          ? Number(defaultLatePenaltyPoints) || 0
-          : 0,
+        default_max_late_minutes: parsedGrace ?? 0,
+        default_late_penalty_points: parsedPenalty ?? 0,
         is_active: isActive,
       })
       setSuccessNotice(true)
@@ -165,7 +187,7 @@ export function EventTypeDetailPage() {
       ) {
         setConflictMessage(
           msg ||
-            "This event type is already associated with existing events in the system and cannot be permanently deleted. You can deactivate it instead so it no longer appears when creating new events."
+          "This event type is already associated with existing events in the system and cannot be permanently deleted. You can deactivate it instead so it no longer appears when creating new events."
         )
         setShowDeleteModal(false)
       } else {
@@ -344,16 +366,14 @@ export function EventTypeDetailPage() {
             <div className="space-y-1.5">
               <Input
                 label="Default Points Reward"
-                type="number"
-                min={0}
-                max={10000}
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 required
                 disabled={!isAdmin}
                 value={defaultPointReward}
                 onChange={(e) =>
-                  setDefaultPointReward(
-                    Math.max(0, parseInt(e.target.value) || 0)
-                  )
+                  setDefaultPointReward(sanitizeIntegerInput(e.target.value))
                 }
                 startIcon={<CoinsIcon className="size-4 text-clay-ochre" />}
                 helperText="Default reward points for events of this type (0 - 10,000)."
@@ -372,7 +392,7 @@ export function EventTypeDetailPage() {
                   </label>
                   <p className="text-[11px] text-[#6a6a6a]">
                     {applyLatePenalty
-                      ? `Enabled (${defaultMaxLateMinutes}m grace, -${defaultLatePenaltyPoints} pts)`
+                      ? `Enabled (${defaultMaxLateMinutes || "0"}m grace, -${defaultLatePenaltyPoints || "0"} pts)`
                       : "Disabled (No late penalty when creating events with this category)"}
                   </p>
                 </div>
@@ -382,9 +402,13 @@ export function EventTypeDetailPage() {
                   checked={applyLatePenalty}
                   onCheckedChange={(checked) => {
                     setApplyLatePenalty(checked)
-                    if (checked && defaultMaxLateMinutes === 0 && defaultLatePenaltyPoints === 0) {
-                      setDefaultMaxLateMinutes(30)
-                      setDefaultLatePenaltyPoints(15)
+                    if (
+                      checked &&
+                      (defaultMaxLateMinutes === "0" || !defaultMaxLateMinutes) &&
+                      (defaultLatePenaltyPoints === "0" || !defaultLatePenaltyPoints)
+                    ) {
+                      setDefaultMaxLateMinutes("30")
+                      setDefaultLatePenaltyPoints("15")
                     }
                   }}
                 />
@@ -394,29 +418,25 @@ export function EventTypeDetailPage() {
                 <div className="grid grid-cols-1 gap-3 rounded-xl border border-[#E5E0D5]/80 bg-[#FFF9F2] p-3.5 sm:grid-cols-2">
                   <Input
                     label="Grace Period (Minutes)"
-                    type="number"
-                    min={0}
-                    max={180}
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     disabled={!isAdmin}
                     value={defaultMaxLateMinutes}
                     onChange={(e) =>
-                      setDefaultMaxLateMinutes(
-                        Math.min(180, Math.max(0, parseInt(e.target.value) || 0))
-                      )
+                      setDefaultMaxLateMinutes(sanitizeIntegerInput(e.target.value))
                     }
                     helperText="Allowed minutes after start before penalty (0 - 180)."
                   />
                   <Input
                     label="Penalty Deduction (Points)"
-                    type="number"
-                    min={0}
-                    max={100}
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     disabled={!isAdmin}
                     value={defaultLatePenaltyPoints}
                     onChange={(e) =>
-                      setDefaultLatePenaltyPoints(
-                        Math.min(100, Math.max(0, parseInt(e.target.value) || 0))
-                      )
+                      setDefaultLatePenaltyPoints(sanitizeIntegerInput(e.target.value))
                     }
                     helperText="Points deducted when checking in late (0 - 100)."
                   />

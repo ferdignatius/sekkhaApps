@@ -12,6 +12,10 @@ import { badgeActivitiesApi } from "../api/configureApi"
 import { Button } from "@/components/base/Button"
 import { Card } from "@/components/base/Card"
 import { Input } from "@/components/base/Input"
+import {
+  parseBoundedInteger,
+  sanitizeIntegerInput,
+} from "@/lib/numericInput"
 
 function toKebabCase(str: string): string {
   return str
@@ -30,7 +34,7 @@ export function BadgeActivityCreatePage() {
     authState.status === "authenticated" && authState.role === "admin"
 
   const [label, setLabel] = useState("")
-  const [bonusPoints, setBonusPoints] = useState(30)
+  const [bonusPoints, setBonusPoints] = useState("30")
   const [isActive, setIsActive] = useState(true)
   const [description, setDescription] = useState("")
 
@@ -48,7 +52,8 @@ export function BadgeActivityCreatePage() {
       return
     }
 
-    if (bonusPoints < 0 || bonusPoints > 100) {
+    const parsedBonusPoints = parseBoundedInteger(bonusPoints, 0, 100)
+    if (parsedBonusPoints === null) {
       setErrorMessage("Bonus points must be between 0 and 100.")
       return
     }
@@ -58,7 +63,7 @@ export function BadgeActivityCreatePage() {
       await badgeActivitiesApi.create({
         label: label.trim(),
         description: description.trim() || null,
-        bonus_points: Number(bonusPoints) || 0,
+        bonus_points: parsedBonusPoints,
         is_active: isActive,
       })
       await navigate({ to: "/configure/master/badge-activity" })
@@ -186,13 +191,16 @@ export function BadgeActivityCreatePage() {
               <div className="relative mt-1.5">
                 <Input
                   id="bonusPoints"
-                  type="number"
-                  min={0}
-                  max={100}
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   required
                   value={bonusPoints}
-                  onChange={(e) => setBonusPoints(Number(e.target.value))}
-                  className="h-10 w-full rounded-[10px] border border-[#e5e5e5] bg-[#fffaf0] pr-12 pl-3 text-xs font-bold text-[#0a0a0a] placeholder:text-[#8a8a8a] focus:border-[#0a0a0a] focus:bg-[#fffaf0] focus:outline-none"
+                  onChange={(e) =>
+                    setBonusPoints(sanitizeIntegerInput(e.target.value))
+                  }
+                  placeholder="0 – 100"
+                  className="h-10 w-full rounded-[10px] border border-[#e5e5e5] bg-[#fffaf0] pr-12 pl-3 text-base font-bold text-[#0a0a0a] placeholder:text-[#8a8a8a] focus:border-[#0a0a0a] focus:bg-[#fffaf0] focus:outline-none sm:text-xs"
                 />
                 <span className="absolute top-1/2 right-3 -translate-y-1/2 text-xs font-bold text-[#6a6a6a]">
                   Pts

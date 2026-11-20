@@ -17,6 +17,10 @@ import {
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
 import { ResponsiveFormModal } from "@/components/common/ResponsiveFormModal"
 import { useAuth } from "@/modules/auth"
+import {
+  parseBoundedInteger,
+  sanitizeIntegerInput,
+} from "@/lib/numericInput"
 import { seasonsApi } from "../api/configureApi"
 import type { SeasonDto } from "../api/configureApi"
 
@@ -58,7 +62,7 @@ export function SeasonPage() {
     code: "",
     start_date: "",
     end_date: "",
-    target_attendance: 500,
+    target_attendance: "500",
     is_active: false,
     description: "",
   })
@@ -104,7 +108,7 @@ export function SeasonPage() {
       code: "",
       start_date: startDateStr,
       end_date: endDateStr,
-      target_attendance: 500,
+      target_attendance: "500",
       is_active: false,
       description: "",
     })
@@ -119,7 +123,7 @@ export function SeasonPage() {
       code: s.code || toUpperKebabCase(s.name),
       start_date: s.start_date.slice(0, 10),
       end_date: s.end_date.slice(0, 10),
-      target_attendance: s.target_attendance,
+      target_attendance: String(s.target_attendance),
       is_active: s.is_active,
       description: s.description || "",
     })
@@ -149,6 +153,12 @@ export function SeasonPage() {
       return
     }
 
+    const parsedGoal = parseBoundedInteger(formData.target_attendance, 1, 100000)
+    if (parsedGoal === null) {
+      setFormError("Community attendance goal must be at least 1.")
+      return
+    }
+
     try {
       setSubmitting(true)
       setFormError(null)
@@ -160,7 +170,7 @@ export function SeasonPage() {
           end_date: new Date(
             formData.end_date + "T23:59:59.999Z"
           ).toISOString(),
-          target_attendance: Number(formData.target_attendance) || 500,
+          target_attendance: parsedGoal,
           is_active: formData.is_active,
           description: formData.description.trim() || null,
         })
@@ -172,7 +182,7 @@ export function SeasonPage() {
           end_date: new Date(
             formData.end_date + "T23:59:59.999Z"
           ).toISOString(),
-          target_attendance: Number(formData.target_attendance) || 500,
+          target_attendance: parsedGoal,
           is_active: formData.is_active,
           description: formData.description.trim() || null,
         })
@@ -733,16 +743,19 @@ export function SeasonPage() {
               Community Attendance Goal
             </label>
             <input
-              type="number"
-              min={1}
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              required
               value={formData.target_attendance}
               onChange={(e) =>
                 setFormData({
                   ...formData,
-                  target_attendance: Number(e.target.value),
+                  target_attendance: sanitizeIntegerInput(e.target.value),
                 })
               }
-              className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-xs text-[#0a0a0a] shadow-xs transition-all outline-none focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] sm:text-sm"
+              placeholder="e.g. 500"
+              className="h-11 w-full rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-3.5 text-base text-[#0a0a0a] shadow-xs transition-all outline-none focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a] sm:text-sm"
             />
             <p className="text-[10px] text-[#6a6a6a]">
               Collective community milestone goal for all members combined (e.g.

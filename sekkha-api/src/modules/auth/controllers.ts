@@ -23,10 +23,21 @@ function publicAuthResult(result: service.AuthResult) {
 
 function getRefreshCookieOptions() {
   const isProduction = process.env.NODE_ENV === "production"
-  const sameSite = (process.env.COOKIE_SAME_SITE as "lax" | "strict" | "none") || "lax"
+  const rawSameSite = process.env.COOKIE_SAME_SITE?.trim().toLowerCase()
+  const sameSite: "lax" | "strict" | "none" =
+    rawSameSite === "none" || rawSameSite === "strict" || rawSameSite === "lax"
+      ? rawSameSite
+      : "lax"
+  const secureEnv = process.env.COOKIE_SECURE?.trim().toLowerCase()
+  const secure =
+    secureEnv === "true"
+      ? true
+      : secureEnv === "false"
+        ? false
+        : sameSite === "none" || isProduction
   return {
     httpOnly: true,
-    secure: isProduction,
+    secure,
     sameSite,
     path: "/api/auth",
   }

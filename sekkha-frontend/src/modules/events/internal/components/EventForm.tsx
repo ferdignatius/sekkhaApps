@@ -20,7 +20,11 @@ import { Chip } from "@/components/base"
 import { DateTimePicker } from "@/components/common/DateTimePicker"
 import { Switch } from "@/components/ui/switch"
 import type { CreateEventPayload, EventListItem } from "../types"
-import { getAccessibleCategories, getEventTag } from "../masterdata"
+import {
+  deriveVisibilityFromRoles,
+  getAccessibleCategories,
+  getEventTag,
+} from "../masterdata"
 import { buildDefaultEventDescription } from "../utils/eventDescriptionTemplate"
 
 export { buildDefaultEventDescription }
@@ -164,6 +168,8 @@ export interface CategoryOption {
   applyLatePenalty?: boolean
   defaultMaxLateMinutes?: number
   defaultLatePenaltyPoints?: number
+  target_roles?: string[]
+  visibility?: "all" | "member" | "activist" | "organizer"
   autofill: {
     title: string
     description: string
@@ -196,6 +202,8 @@ export function EventForm({
       applyLatePenalty: cat.applyLatePenalty ?? true,
       defaultMaxLateMinutes: cat.maxLateMinutes ?? 30,
       defaultLatePenaltyPoints: cat.latePenaltyPoints ?? 15,
+      target_roles: cat.target_roles,
+      visibility: deriveVisibilityFromRoles(cat.target_roles),
       autofill: {
         title: cat.autofillTitle ?? `${cat.name} Activity`,
         description:
@@ -231,6 +239,8 @@ export function EventForm({
               defaultLatePenaltyPoints: applyLatePenalty
                 ? (t.default_late_penalty_points ?? 15)
                 : 0,
+              target_roles: t.target_roles,
+              visibility: t.visibility ?? deriveVisibilityFromRoles(t.target_roles),
               autofill: {
                 title: t.label,
                 description:
@@ -461,6 +471,10 @@ export function EventForm({
         event_type_id: selectedTypeId,
         event_type: chosenType?.code,
         tag: chosenType?.code,
+        visibility:
+          chosenType?.visibility ??
+          deriveVisibilityFromRoles(chosenType?.target_roles) ??
+          "all",
         max_late_minutes: applyLatePenalty ? maxLateMinutes : 0,
         late_penalty_points: applyLatePenalty ? latePenaltyPoints : 0,
       })
@@ -470,7 +484,7 @@ export function EventForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="scrollbar-none space-y-3.5 text-left font-sans">
+    <form onSubmit={handleSubmit} className="scrollbar-none space-y-4 text-left font-sans sm:space-y-3.5">
       {(Object.keys(errors).length > 0 || submissionError) && (
         <div
           role="alert"
@@ -503,7 +517,7 @@ export function EventForm({
       {/* 1. Category & Template Selection */}
       <section
         aria-labelledby="event-category-heading"
-        className={`space-y-3 rounded-2xl border bg-surface-soft p-3.5 sm:p-4 ${
+        className={`space-y-2.5 border-b pb-4 sm:space-y-3 sm:rounded-2xl sm:border sm:bg-surface-soft sm:p-4 ${
           errors.tag ? "border-rose-400" : "border-hairline"
         }`}
       >
@@ -528,7 +542,7 @@ export function EventForm({
           aria-required="true"
           aria-invalid={Boolean(errors.tag)}
           aria-describedby={errors.tag ? "ev-category-error" : undefined}
-          className="flex flex-wrap gap-2"
+          className="scrollbar-none -mx-1 flex flex-nowrap gap-2 overflow-x-auto px-1 pb-0.5 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0"
         >
           {categories.map((cat) => {
             const isSelected = selectedTypeId === cat.id
@@ -555,7 +569,7 @@ export function EventForm({
                         }
                       : undefined
                 }
-                className={`flex min-h-[42px] cursor-pointer items-center gap-1.5 rounded-xl border px-3.5 py-1.5 text-xs font-bold transition-all focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:outline-none ${
+                className={`flex min-h-[38px] shrink-0 cursor-pointer items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold transition-all focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:outline-none sm:min-h-[42px] sm:px-3.5 ${
                   isSelected
                     ? "border-ink bg-ink text-white shadow-xs"
                     : "border-hairline bg-canvas text-text-muted hover:bg-surface-card hover:text-ink"
@@ -590,17 +604,17 @@ export function EventForm({
       {/* 2. Event Basics, Schedule & Location */}
       <section
         aria-labelledby="event-basics-heading"
-        className="space-y-4 rounded-2xl border border-hairline bg-surface-soft p-3.5 sm:p-4"
+        className="space-y-3.5 border-b border-hairline pb-4 sm:space-y-4 sm:rounded-2xl sm:border sm:bg-surface-soft sm:p-4"
       >
         <div>
           <h2
             id="event-basics-heading"
-            className="flex items-center gap-2 text-sm font-bold text-ink"
+            className="flex items-center gap-2 text-xs font-bold text-ink sm:text-sm"
           >
             <CalendarIcon className="size-4 text-clay-teal" />
             2. Event Details &amp; Schedule
           </h2>
-          <p className="mt-0.5 text-xs leading-relaxed text-text-muted">
+          <p className="mt-0.5 hidden text-xs leading-relaxed text-text-muted sm:block">
             Name the event, pick its date &amp; service time, and set the temple venue.
           </p>
         </div>
@@ -798,7 +812,7 @@ export function EventForm({
           </div>
           <textarea
             id="ev-desc"
-            rows={isDescExpanded ? 12 : 7}
+            rows={isDescExpanded ? 12 : 4}
             value={description}
             onChange={(e) => {
               setIsDescriptionEdited(true)
@@ -806,7 +820,7 @@ export function EventForm({
             }}
             placeholder="Write additional details, dress code, or instructions for attendees..."
             className={`w-full resize-y rounded-xl border border-hairline bg-canvas px-3.5 py-2.5 text-xs leading-relaxed text-ink shadow-2xs transition-all outline-none placeholder:text-text-muted/70 focus:border-ink focus:ring-1 focus:ring-ink sm:text-sm ${
-              isDescExpanded ? "min-h-[300px]" : "min-h-[176px]"
+              isDescExpanded ? "min-h-[300px]" : "min-h-[104px] sm:min-h-[132px]"
             }`}
           />
         </div>
@@ -815,7 +829,7 @@ export function EventForm({
       {/* 3. Attendance & Late Arrival Policy */}
       <section
         aria-labelledby="event-policy-heading"
-        className="space-y-3 rounded-2xl border border-hairline bg-surface-soft p-3.5 sm:p-4"
+        className="space-y-3 pb-1 sm:rounded-2xl sm:border sm:border-hairline sm:bg-surface-soft sm:p-4"
       >
         <div className="flex items-center justify-between gap-3">
           <div className="space-y-0.5">
@@ -840,7 +854,7 @@ export function EventForm({
         </div>
 
         {applyLatePenalty && (
-          <div className="grid grid-cols-1 gap-3 border-t border-hairline pt-3 sm:grid-cols-2">
+          <div className="grid grid-cols-2 gap-2.5 border-t border-hairline pt-3 sm:gap-3">
             <div className="space-y-1">
               <label
                 htmlFor="ev-grace-minutes"
@@ -884,7 +898,7 @@ export function EventForm({
       </section>
 
       {/* 4. Actions */}
-      <div className="flex flex-col-reverse gap-2.5 border-t border-hairline pt-4 sm:flex-row sm:justify-end">
+      <div className="flex flex-row gap-2.5 border-t border-hairline pt-4 sm:justify-end">
         <button
           type="button"
           onClick={onCancel}
@@ -896,7 +910,7 @@ export function EventForm({
         <button
           type="submit"
           disabled={submitting}
-          className="inline-flex min-h-11 flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl bg-ink px-5 text-xs font-bold text-white shadow-xs transition-all hover:bg-ink/90 focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-wait disabled:opacity-50 sm:flex-none sm:text-sm"
+          className="inline-flex min-h-11 flex-[2] cursor-pointer items-center justify-center gap-2 rounded-xl bg-ink px-5 text-xs font-bold text-white shadow-xs transition-all hover:bg-ink/90 focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-wait disabled:opacity-50 sm:flex-none sm:text-sm"
         >
           {submitting && (
             <LoaderCircleIcon

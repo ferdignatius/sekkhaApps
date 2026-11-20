@@ -201,111 +201,61 @@ export function AttendanceListSheet({
 
   return (
     <div className="space-y-4 text-left font-sans">
-      {/* ── 1. Top Glanceable Summary Cards (Harmonized Clay Tokens) ── */}
-      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-        {/* Total Attendees (Filter: All) */}
-        <button
-          type="button"
-          onClick={() => setFilterMethod("all")}
-          className={`flex min-h-[64px] cursor-pointer items-center gap-3 rounded-[18px] p-3 text-left transition-all ${
-            filterMethod === "all"
-              ? "border-2 border-[#0a0a0a] bg-[#faf5e8] shadow-xs"
-              : "border border-[#e5e5e5] bg-[#fffaf0] hover:border-[#0a0a0a]/30 hover:bg-[#faf5e8]"
-          }`}
-          title="Show all attendees"
-        >
-          <div className="flex size-9 shrink-0 items-center justify-center rounded-[12px] bg-[#0a0a0a] text-white shadow-xs">
-            <UsersIcon className="size-4" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center justify-between">
-              <p className="text-[10px] font-bold tracking-wider text-[#6a6a6a] uppercase">
-                Total Present
-              </p>
-              {filterMethod === "all" && (
-                <span className="size-1.5 rounded-full bg-[#0a0a0a]" />
-              )}
-            </div>
-            <p className="text-sm font-bold text-[#0a0a0a] sm:text-base">
-              {metrics.total} Members
-            </p>
-          </div>
-        </button>
+      {/* ── 1. Compact Single-Row Filter & Total Points Bar ── */}
+      <div className="flex items-center justify-between gap-2">
+        <div className="scrollbar-none flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto pb-0.5">
+          <button
+            type="button"
+            onClick={() => setFilterMethod("all")}
+            className={`inline-flex min-h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold transition-all ${
+              filterMethod === "all"
+                ? "border-[#0a0a0a] bg-[#0a0a0a] text-white shadow-2xs"
+                : "border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] hover:bg-[#faf5e8]"
+            }`}
+            title="Show all attendees"
+          >
+            <UsersIcon className="size-3.5" />
+            <span>All · {metrics.total}</span>
+          </button>
 
-        {/* QR Scan Method (Filter: QR) */}
-        <button
-          type="button"
-          onClick={() => setFilterMethod(filterMethod === "qr" ? "all" : "qr")}
-          className={`flex min-h-[64px] cursor-pointer items-center gap-3 rounded-[18px] p-3 text-left transition-all ${
-            filterMethod === "qr"
-              ? "border-2 border-[#0a0a0a] bg-[#faf5e8] shadow-xs"
-              : "border border-[#e5e5e5] bg-[#fffaf0] hover:border-[#0a0a0a]/30 hover:bg-[#faf5e8]"
-          }`}
-          title="Filter only QR Code check-ins"
-        >
-          <div className="flex size-9 shrink-0 items-center justify-center rounded-[12px] bg-[#0a0a0a] text-white shadow-xs">
-            <QrCodeIcon className="size-4" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center justify-between">
-              <p className="text-[10px] font-bold tracking-wider text-[#6a6a6a] uppercase">
-                QR Scan
-              </p>
-              {filterMethod === "qr" && (
-                <span className="size-1.5 rounded-full bg-[#0a0a0a]" />
-              )}
-            </div>
-            <p className="text-sm font-bold text-[#0a0a0a] sm:text-base">
-              {metrics.qr} Check-ins
-            </p>
-          </div>
-        </button>
+          <button
+            type="button"
+            onClick={() => setFilterMethod(filterMethod === "qr" ? "all" : "qr")}
+            className={`inline-flex min-h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold transition-all ${
+              filterMethod === "qr"
+                ? "border-[#0a0a0a] bg-[#0a0a0a] text-white shadow-2xs"
+                : "border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] hover:bg-[#faf5e8]"
+            }`}
+            title="Filter only QR Code check-ins"
+          >
+            <QrCodeIcon className="size-3.5" />
+            <span>QR · {metrics.qr}</span>
+          </button>
 
-        {/* Manual Check-in (Filter: Manual) */}
-        <button
-          type="button"
-          onClick={() =>
-            setFilterMethod(filterMethod === "manual" ? "all" : "manual")
-          }
-          className={`flex min-h-[64px] cursor-pointer items-center gap-3 rounded-[18px] p-3 text-left transition-all ${
-            filterMethod === "manual"
-              ? "border-2 border-[#0a0a0a] bg-[#faf5e8] shadow-xs"
-              : "border border-[#e5e5e5] bg-[#fffaf0] hover:border-[#0a0a0a]/30 hover:bg-[#faf5e8]"
-          }`}
-          title="Filter only manual check-ins"
-        >
-          <div className="flex size-9 shrink-0 items-center justify-center rounded-[12px] bg-[#0a0a0a] text-white shadow-xs">
-            <ClipboardListIcon className="size-4" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center justify-between">
-              <p className="text-[10px] font-bold tracking-wider text-[#6a6a6a] uppercase">
-                Manual
-              </p>
-              {filterMethod === "manual" && (
-                <span className="size-1.5 rounded-full bg-[#0a0a0a]" />
-              )}
-            </div>
-            <p className="text-sm font-bold text-[#0a0a0a] sm:text-base">
-              {metrics.manual} Entries
-            </p>
-          </div>
-        </button>
-
-        {/* Total Points / Late indicator */}
-        <div className="flex min-h-[64px] items-center gap-3 rounded-[18px] border border-[#e5e5e5] bg-[#fffaf0] p-3 shadow-2xs">
-          <div className="flex size-9 shrink-0 items-center justify-center rounded-[12px] bg-[#0a0a0a] text-white shadow-xs">
-            <SparklesIcon className="size-4" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-[10px] font-bold tracking-wider text-[#6a6a6a] uppercase">
-              Total Points
-            </p>
-            <p className="text-sm font-bold text-[#0a0a0a] sm:text-base">
-              +{metrics.points} Pts
-            </p>
-          </div>
+          <button
+            type="button"
+            onClick={() =>
+              setFilterMethod(filterMethod === "manual" ? "all" : "manual")
+            }
+            className={`inline-flex min-h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold transition-all ${
+              filterMethod === "manual"
+                ? "border-[#0a0a0a] bg-[#0a0a0a] text-white shadow-2xs"
+                : "border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] hover:bg-[#faf5e8]"
+            }`}
+            title="Filter only manual check-ins"
+          >
+            <ClipboardListIcon className="size-3.5" />
+            <span>Manual · {metrics.manual}</span>
+          </button>
         </div>
+
+        <span
+          className="inline-flex min-h-9 shrink-0 items-center gap-1 rounded-full border border-[#e5e5e5] bg-[#fffaf0] px-3 py-1 text-xs font-bold text-[#0a0a0a] shadow-2xs"
+          title="Total points distributed"
+        >
+          <SparklesIcon className="size-3.5 text-[#0a0a0a]" />
+          <span>+{metrics.points} Pts</span>
+        </span>
       </div>
 
       {/* ── 2. Search Toolbar ── */}
@@ -373,69 +323,40 @@ export function AttendanceListSheet({
                 key={`${rec.user_id}-${idx}`}
                 className="flex flex-col gap-2.5 p-3.5 transition-colors hover:bg-[#faf5e8]/60 sm:p-4"
               >
-                {/* Upper Row: Avatar, Identity, Method & Points */}
-                <div className="flex items-start justify-between gap-3">
-                  {/* Left: Avatar squircle + Name & Metadata */}
-                  <div className="flex min-w-0 items-center gap-3">
+                {/* Upper Row: Avatar, Full-Width Identity & Points */}
+                <div className="flex items-start justify-between gap-2.5">
+                  <div className="flex min-w-0 flex-1 items-center gap-3">
                     <div className="flex size-10 shrink-0 items-center justify-center rounded-[14px] border border-[#e5e5e5] bg-[#faf5e8] text-xs font-bold text-[#0a0a0a] shadow-2xs">
                       {getInitials(rec.name)}
                     </div>
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="truncate text-sm font-bold text-[#0a0a0a]">
-                          {rec.name}
-                        </p>
-                        {rec.role && (
-                          <span className="rounded-full border border-[#e5e5e5] bg-[#faf5e8] px-2 py-0.5 text-[10px] font-semibold text-[#0a0a0a] uppercase">
-                            {rec.role}
-                          </span>
-                        )}
-                      </div>
-                      <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-[#6a6a6a]">
-                        {rec.user_number && (
-                          <span className="font-mono font-medium text-[#0a0a0a]">
-                            {rec.user_number}
-                          </span>
-                        )}
-                        {rec.school && (
-                          <>
-                            <span>•</span>
-                            <span className="truncate">{rec.school}</span>
-                          </>
-                        )}
-                        <span>•</span>
-                        <span>{formatTime(rec.scanned_at)}</span>
-                      </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-bold text-[#0a0a0a]">
+                        {rec.name}
+                      </p>
+                      <p className="mt-0.5 truncate text-xs text-[#6a6a6a]">
+                        {[
+                          rec.role ? rec.role.toUpperCase() : null,
+                          rec.user_number,
+                          rec.school,
+                          formatTime(rec.scanned_at),
+                          rec.method === "qr" ? "QR" : "Manual",
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </p>
                     </div>
                   </div>
 
-                  {/* Right: Method Pill + Total Points (Standardized Tokens) */}
-                  <div className="flex shrink-0 items-center gap-2">
-                    <span className="inline-flex items-center gap-1 rounded-full border border-[#e5e5e5] bg-[#faf5e8] px-2.5 py-0.5 text-[11px] font-medium text-[#0a0a0a]">
-                      {rec.method === "qr" ? (
-                        <>
-                          <QrCodeIcon className="size-3 text-[#0a0a0a]" />
-                          <span className="hidden sm:inline">QR Scan</span>
-                          <span className="sm:hidden">QR</span>
-                        </>
-                      ) : (
-                        <>
-                          <ClipboardListIcon className="size-3 text-[#0a0a0a]" />
-                          <span>Manual</span>
-                        </>
-                      )}
-                    </span>
-
-                    <span className="inline-flex items-center gap-1 rounded-full border border-[#e5e5e5] bg-[#faf5e8] px-2.5 py-0.5 text-xs font-bold text-[#0a0a0a] shadow-2xs">
-                      <SparklesIcon className="size-3 text-[#0a0a0a]" />
-                      <span>+{totalPoints} Pts</span>
-                    </span>
-                  </div>
+                  {/* Right: Total Points Pill */}
+                  <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[#e5e5e5] bg-[#faf5e8] px-2.5 py-1 text-xs font-bold text-[#0a0a0a] shadow-2xs">
+                    <SparklesIcon className="size-3 text-[#0a0a0a]" />
+                    <span>+{totalPoints} Pts</span>
+                  </span>
                 </div>
 
-                {/* Lower Row: Late Status, Service Role Badge Activity, Actions */}
-                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[#e5e5e5] pt-2">
-                  <div className="flex flex-wrap items-center gap-2">
+                {/* Lower Row: Late Status, Service Role Badge Activity, 44pt Actions */}
+                <div className="flex items-center justify-between gap-2 border-t border-[#e5e5e5] pt-2">
+                  <div className="flex min-w-0 flex-wrap items-center gap-1.5">
                     {/* Late Arrival Badge */}
                     {rec.is_late ? (
                       <Badge
@@ -461,11 +382,11 @@ export function AttendanceListSheet({
 
                     {/* Service Role Badge Activity */}
                     {rec.badge_activity ? (
-                      <span className="inline-flex items-center gap-1.5 rounded-full border border-[#e5e5e5] bg-[#faf5e8] px-2.5 py-0.5 text-[11px] font-semibold text-[#0a0a0a] shadow-2xs">
-                        <AwardIcon className="size-3 text-[#0a0a0a]" />
-                        <span>{rec.badge_activity}</span>
-                        <span className="font-bold text-[#0a0a0a]">
-                          (+{rec.badge_bonus_points ?? 30} Pts)
+                      <span className="inline-flex max-w-full items-center gap-1 rounded-full border border-[#e5e5e5] bg-[#faf5e8] px-2.5 py-1 text-[11px] font-semibold text-[#0a0a0a] shadow-2xs">
+                        <AwardIcon className="size-3 shrink-0 text-[#0a0a0a]" />
+                        <span className="truncate">{rec.badge_activity}</span>
+                        <span className="shrink-0 font-bold text-[#0a0a0a]">
+                          (+{rec.badge_bonus_points ?? 30})
                         </span>
                         {isEditable && (
                           <button
@@ -473,8 +394,9 @@ export function AttendanceListSheet({
                             onClick={() =>
                               handleAssignBadgeActivity(rec.user_id, null)
                             }
-                            className="ml-1 text-[#6a6a6a] hover:text-[#0a0a0a]"
+                            className="ml-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full text-[#6a6a6a] hover:bg-[#e5e5e5] hover:text-[#0a0a0a]"
                             title="Remove role"
+                            aria-label="Remove role"
                           >
                             <XIcon className="size-3" />
                           </button>
@@ -485,7 +407,7 @@ export function AttendanceListSheet({
                         <button
                           type="button"
                           onClick={() => setBadgePickerTarget(rec)}
-                          className="inline-flex min-h-[30px] cursor-pointer items-center gap-1 rounded-full border border-[#e5e5e5] bg-[#faf5e8] px-2.5 py-0.5 text-[11px] font-medium text-[#6a6a6a] shadow-2xs hover:border-[#0a0a0a] hover:bg-[#ebe6d6] hover:text-[#0a0a0a]"
+                          className="inline-flex min-h-9 cursor-pointer items-center gap-1 rounded-full border border-[#e5e5e5] bg-[#faf5e8] px-3 py-1 text-[11px] font-medium text-[#6a6a6a] shadow-2xs hover:border-[#0a0a0a] hover:bg-[#ebe6d6] hover:text-[#0a0a0a]"
                         >
                           <AwardIcon className="size-3 text-[#0a0a0a]" />
                           <span>+ Assign Service Role</span>
@@ -494,18 +416,21 @@ export function AttendanceListSheet({
                     )}
                   </div>
 
-                  {/* Organizer Management Actions */}
+                  {/* Organizer Management Actions (44pt HIG mobile touch target) */}
                   {isPengurus && (
-                    <div className="flex shrink-0 items-center gap-2">
+                    <div className="flex shrink-0 items-center">
                       {isEditable ? (
                         <button
                           type="button"
                           onClick={() => setDeleteTarget(rec)}
-                          className="inline-flex min-h-[32px] cursor-pointer items-center justify-center rounded-full border border-[#e5e5e5] bg-[#faf5e8] px-2.5 py-1 text-xs text-[#6a6a6a] shadow-2xs transition-all hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700 active:scale-95"
+                          className="inline-flex size-11 cursor-pointer items-center justify-center rounded-full border border-[#e5e5e5] bg-[#faf5e8] text-[#6a6a6a] shadow-2xs transition-all hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700 active:scale-95 sm:h-9 sm:w-auto sm:px-3"
                           title="Remove draft check-in"
+                          aria-label="Remove draft check-in"
                         >
-                          <Trash2Icon className="size-3.5" />
-                          <span className="ml-1 hidden sm:inline">Delete</span>
+                          <Trash2Icon className="size-4 sm:size-3.5" />
+                          <span className="ml-1 hidden text-xs font-medium sm:inline">
+                            Delete
+                          </span>
                         </button>
                       ) : (
                         <span className="inline-flex items-center gap-1 text-xs font-medium text-[#6a6a6a]">

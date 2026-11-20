@@ -63,29 +63,26 @@ export function MobileDock() {
               key={item.label}
               to={item.to}
               aria-current={item.isActive ? "page" : undefined}
-              className={`relative flex min-h-[48px] min-w-[52px] flex-1 flex-col items-center justify-center gap-0.5 rounded-[20px] px-2 py-2 transition-all duration-200 active:scale-90 ${
-                item.isActive
-                  ? "bg-[#faf5e8] shadow-[0_1px_4px_rgba(0,0,0,0.10)] ring-1 ring-[#e8b94a]/30"
-                  : "hover:bg-[#faf5e8]/60"
-              }`}
+              className={`relative flex min-h-[48px] min-w-[52px] flex-1 flex-col items-center justify-center gap-0.5 rounded-[20px] px-2 py-2 transition-all duration-200 active:scale-90 ${item.isActive
+                ? "bg-[#faf5e8] shadow-[0_1px_4px_rgba(0,0,0,0.10)] ring-1 ring-[#e8b94a]/30"
+                : "hover:bg-[#faf5e8]/60"
+                }`}
             >
               {/* Active indicator dot */}
-              {item.isActive && (
+              {/* {item.isActive && (
                 <span className="absolute top-1.5 left-1/2 size-1 -translate-x-1/2 rounded-full bg-[#e8b94a]" />
-              )}
+              )} */}
 
               <Icon
-                className={`size-[22px] transition-all duration-200 ${
-                  item.isActive ? "scale-105 text-[#0a0a0a]" : "text-[#8a8a8a]"
-                }`}
+                className={`size-[22px] transition-all duration-200 ${item.isActive ? "scale-105 text-[#0a0a0a]" : "text-[#8a8a8a]"
+                  }`}
                 strokeWidth={item.isActive ? 2.25 : 1.75}
               />
               <span
-                className={`text-[10px] tracking-tight transition-colors duration-200 ${
-                  item.isActive
-                    ? "font-bold text-[#0a0a0a]"
-                    : "font-medium text-[#8a8a8a]"
-                }`}
+                className={`text-[10px] tracking-tight transition-colors duration-200 ${item.isActive
+                  ? "font-bold text-[#0a0a0a]"
+                  : "font-medium text-[#8a8a8a]"
+                  }`}
               >
                 {item.label}
               </span>

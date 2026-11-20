@@ -244,4 +244,113 @@ describe("Event Services & State Transitions", () => {
       prisma.$transaction = originalTransaction
     }
   })
+
+  it("listAttendances returns only own record for regular member and all records for organizer", async () => {
+    const origFindBasic = eventModels.findEventBasic
+    const origFindExisting = eventModels.findExistingAttendance
+    const origFindUser = eventModels.findUserForAttendance
+    const origCount = eventModels.countEventAttendances
+    const origFindMany = eventModels.findEventAttendances
+
+    eventModels.findEventBasic = async () => ({
+      id: "evt_test",
+      title: "Puja",
+      eventDate: new Date(),
+      status: "active",
+      pointReward: 50,
+      maxLateMinutes: 30,
+      latePenaltyPoints: 15,
+      type: null,
+    } as any)
+
+    eventModels.findExistingAttendance = async (eventId, userId) => {
+      if (userId === "usr_member_1") {
+        return {
+          id: "att_1",
+          userId: "usr_member_1",
+          eventId: "evt_test",
+          method: "qr",
+          pointsEarned: 50,
+          isLate: false,
+          latePenaltyApplied: 0,
+          badgeActivityId: null,
+          badgeBonusPoints: 0,
+          isFinalized: false,
+          scannedAt: new Date("2026-11-20T10:00:00Z"),
+          badgeActivity: null,
+        } as any
+      }
+      return null
+    }
+
+    eventModels.findUserForAttendance = async (id) => ({
+      id,
+      userNumber: BigInt("2026112001"),
+      role: "member",
+      profile: { name: "Budi", school: { name: "SMA 1" } },
+    } as any)
+
+    // Member with attendance
+    const memberRes = await eventServices.listAttendances("evt_test", "usr_member_1", false)
+    expect(memberRes.attendances.length).toBe(1)
+    expect(memberRes.attendances[0].user_id).toBe("usr_member_1")
+    expect(memberRes.attendances[0].name).toBe("Budi")
+    expect(memberRes.my_attendance?.attendance_id).toBe("att_1")
+
+    // Member without attendance
+    const nonAttendedRes = await eventServices.listAttendances("evt_test", "usr_member_2", false)
+    expect(nonAttendedRes.attendances.length).toBe(0)
+    expect(nonAttendedRes.my_attendance).toBeNull()
+
+    // Organizer gets all records
+    eventModels.countEventAttendances = async () => 2
+    eventModels.findEventAttendances = async () => [
+      {
+        id: "att_1",
+        userId: "usr_member_1",
+        method: "qr",
+        pointsEarned: 50,
+        isLate: false,
+        latePenaltyApplied: 0,
+        badgeActivityId: null,
+        badgeActivity: null,
+        badgeBonusPoints: 0,
+        isFinalized: false,
+        scannedAt: new Date("2026-11-20T10:00:00Z"),
+        user: {
+          role: "member",
+          userNumber: BigInt("2026112001"),
+          profile: { name: "Budi", school: { name: "SMA 1" } },
+        },
+      },
+      {
+        id: "att_2",
+        userId: "usr_member_2",
+        method: "manual",
+        pointsEarned: 50,
+        isLate: false,
+        latePenaltyApplied: 0,
+        badgeActivityId: null,
+        badgeActivity: null,
+        badgeBonusPoints: 0,
+        isFinalized: false,
+        scannedAt: new Date("2026-11-20T10:05:00Z"),
+        user: {
+          role: "member",
+          userNumber: BigInt("2026112002"),
+          profile: { name: "Siti", school: null },
+        },
+      },
+    ] as any
+
+    const organizerRes = await eventServices.listAttendances("evt_test", "usr_admin", true)
+    expect(organizerRes.attendances.length).toBe(2)
+    expect(organizerRes.total_attended).toBe(2)
+
+    eventModels.findEventBasic = origFindBasic
+    eventModels.findExistingAttendance = origFindExisting
+    eventModels.findUserForAttendance = origFindUser
+    eventModels.countEventAttendances = origCount
+    eventModels.findEventAttendances = origFindMany
+  })
 })

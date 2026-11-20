@@ -316,6 +316,31 @@ export function getMasterCategories(activeOnly = false): EventCategoryItem[] {
   return res
 }
 
+export function deriveVisibilityFromRoles(
+  roles?: string[]
+): "all" | "member" | "activist" | "organizer" {
+  if (!roles || roles.length === 0) return "all"
+  const normalized = roles.map((r) => r.toLowerCase())
+  if (
+    normalized.includes("member") ||
+    normalized.includes("umat") ||
+    normalized.includes("all")
+  ) {
+    return "all"
+  }
+  if (normalized.includes("activist") || normalized.includes("aktivis")) {
+    return "activist"
+  }
+  if (
+    normalized.includes("organizer") ||
+    normalized.includes("pengurus") ||
+    normalized.includes("admin")
+  ) {
+    return "organizer"
+  }
+  return "all"
+}
+
 export function getAccessibleCategories(
   userRole?: string | null,
   activeOnly = true

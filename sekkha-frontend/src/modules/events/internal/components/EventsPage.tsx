@@ -128,6 +128,9 @@ export function EventsPage() {
   const debouncedSearchQuery = useDebounce(searchQuery, 250)
   const [selectedCategoryTag, setSelectedCategoryTag] = useState<string>("all")
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false)
+  const [mobileCalendarMode, setMobileCalendarMode] = useState<"month" | "week">(
+    "month"
+  )
   const categoryDropdownRef = useRef<HTMLDivElement>(null)
   const [monthPickerOpen, setMonthPickerOpen] = useState(false)
   const [pickerYear, setPickerYear] = useState<number>(new Date().getFullYear())
@@ -322,6 +325,7 @@ export function EventsPage() {
   function handleSelectEvent(ev: EventListItem) {
     setSelected(ev)
     setView("detail")
+    loadEventAttendances(ev.id)
     if (typeof window !== "undefined") {
       const url = new URL(window.location.href)
       url.searchParams.set("eventId", ev.id)
@@ -367,9 +371,7 @@ export function EventsPage() {
             if (directEvent) {
               setSelected(directEvent)
               setView("detail")
-              if (isPengurus) {
-                loadEventAttendances(directEvent.id)
-              }
+              loadEventAttendances(directEvent.id)
             }
           })
           .catch((err) => {
@@ -401,38 +403,17 @@ export function EventsPage() {
     loadEventAttendances(eventId)
   }
 
-  // ── Build dot map for calendar ──
-  const dotMap = useMemo<Record<string, EventDotItem[]>>(() => {
-    const map: Record<string, EventDotItem[]> = {}
-    events.forEach((ev) => {
+  // Events matching role access, active category filter, and search query (shared by dotMap & listedEvents)
+  const matchingEvents = useMemo(() => {
+    const q = debouncedSearchQuery.toLowerCase().trim()
+    const targetTag = selectedCategoryTag.toLowerCase()
+
+    return events.filter((ev) => {
       const tag = getEventTag(ev).toLowerCase()
-      if (!accessibleTagsSet.has(tag)) return
+      if (!accessibleTagsSet.has(tag)) return false
+      if (selectedCategoryTag !== "all" && tag !== targetTag) return false
 
-      const key = toDateKey(ev.event_date)
-      if (!key) return
-      if (!map[key]) map[key] = []
-
-      const colorInfo = getCategoryColor(ev)
-      map[key].push({
-        colorHex: colorInfo.hex,
-      })
-    })
-    return map
-  }, [events, accessibleTagsSet])
-
-  // Filtered Events
-  const listedEvents = useMemo(() => {
-    let base = events.filter((ev) => {
-      const tag = getEventTag(ev).toLowerCase()
-      return accessibleTagsSet.has(tag)
-    })
-
-    const isSearching = Boolean(debouncedSearchQuery.trim())
-
-    // If searching, search across all events globally (don't restrict to current month/selected date)
-    if (isSearching) {
-      const q = debouncedSearchQuery.toLowerCase().trim()
-      base = base.filter((ev) => {
+      if (q) {
         const titleMatch = (ev.title ?? "").toLowerCase().includes(q)
         const locMatch = (ev.location ?? "").toLowerCase().includes(q)
         const descMatch = (ev.description ?? "").toLowerCase().includes(q)
@@ -444,27 +425,40 @@ export function EventsPage() {
         )
           .toLowerCase()
           .includes(q)
-        return titleMatch || locMatch || descMatch || tagMatch || typeMatch
+        if (!(titleMatch || locMatch || descMatch || tagMatch || typeMatch)) {
+          return false
+        }
+      }
+
+      return true
+    })
+  }, [events, accessibleTagsSet, selectedCategoryTag, debouncedSearchQuery])
+
+  // ── Build dot map for calendar ──
+  const dotMap = useMemo<Record<string, EventDotItem[]>>(() => {
+    const map: Record<string, EventDotItem[]> = {}
+    matchingEvents.forEach((ev) => {
+      const key = toDateKey(ev.event_date)
+      if (!key) return
+      if (!map[key]) map[key] = []
+
+      const colorInfo = getCategoryColor(ev)
+      map[key].push({
+        colorHex: colorInfo.hex,
       })
-    } else {
-      base = base.filter((ev) => toDateKey(ev.event_date) === selectedDate)
-    }
+    })
+    return map
+  }, [matchingEvents])
 
-    if (selectedCategoryTag !== "all") {
-      base = base.filter(
-        (ev) =>
-          getEventTag(ev).toLowerCase() === selectedCategoryTag.toLowerCase()
-      )
-    }
+  // Filtered Events
+  const listedEvents = useMemo(() => {
+    const isSearching = Boolean(debouncedSearchQuery.trim())
+    const scoped = isSearching
+      ? matchingEvents
+      : matchingEvents.filter((ev) => toDateKey(ev.event_date) === selectedDate)
 
-    return sortEventsForDisplay(base)
-  }, [
-    events,
-    accessibleTagsSet,
-    selectedDate,
-    debouncedSearchQuery,
-    selectedCategoryTag,
-  ])
+    return sortEventsForDisplay(scoped)
+  }, [matchingEvents, selectedDate, debouncedSearchQuery])
 
   const todayKey = toDateKey(new Date().toISOString())
   const safeCreateInitialDate =
@@ -564,11 +558,10 @@ export function EventsPage() {
       role="status"
       aria-live="polite"
       data-testid="events-toast-banner"
-      className={`fixed right-4 bottom-24 z-[130] flex max-w-sm animate-in items-center gap-2.5 rounded-2xl border px-4 py-3 text-xs font-bold shadow-xl backdrop-blur-md duration-200 fade-in slide-in-from-bottom-4 md:bottom-6 ${
-        toast.type === "error"
-          ? "border-rose-300 bg-rose-50/95 text-rose-900"
-          : "border-clay-teal/30 bg-surface-soft/95 text-ink"
-      }`}
+      className={`fixed right-4 bottom-24 z-[130] flex max-w-sm animate-in items-center gap-2.5 rounded-2xl border px-4 py-3 text-xs font-bold shadow-xl backdrop-blur-md duration-200 fade-in slide-in-from-bottom-4 md:bottom-6 ${toast.type === "error"
+        ? "border-rose-300 bg-rose-50/95 text-rose-900"
+        : "border-clay-teal/30 bg-surface-soft/95 text-ink"
+        }`}
     >
       {toast.type === "error" ? (
         <AlertTriangleIcon className="size-4 shrink-0 text-rose-600" aria-hidden="true" />
@@ -755,11 +748,12 @@ export function EventsPage() {
                         active: "Event activated and open for check-in!",
                         closed: "Event closed successfully!",
                         cancelled: "Event cancelled.",
+                        scheduled: "Event reset to draft.",
                         planned: "Event moved back to planned.",
                       }
                       showToast(
                         statusMessages[newStatus] ??
-                          `Event status updated to ${newStatus}.`
+                        `Event status updated to ${newStatus}.`
                       )
                     } catch (err: any) {
                       console.error("Failed to update event status:", err)
@@ -975,8 +969,8 @@ export function EventsPage() {
                                 setMonthPickerOpen(false)
                               }}
                               className={`cursor-pointer rounded-[14px] py-2 text-center transition-all ${isSelected
-                                  ? "bg-[#0a0a0a] font-bold text-white shadow-xs"
-                                  : "text-[#3a3a3a] hover:bg-[#f0e8d5] hover:text-[#0a0a0a]"
+                                ? "bg-[#0a0a0a] font-bold text-white shadow-xs"
+                                : "text-[#3a3a3a] hover:bg-[#f0e8d5] hover:text-[#0a0a0a]"
                                 }`}
                             >
                               {m}
@@ -1027,8 +1021,8 @@ export function EventsPage() {
                           setCategoryDropdownOpen(false)
                         }}
                         className={`flex w-full cursor-pointer items-center justify-between rounded-[12px] px-3 py-2 text-xs font-semibold transition-colors ${selectedCategoryTag === "all"
-                            ? "bg-[#fffaf0] font-bold text-[#0a0a0a] shadow-2xs"
-                            : "text-[#6a6a6a] hover:bg-[#fffaf0]/80 hover:text-[#0a0a0a]"
+                          ? "bg-[#fffaf0] font-bold text-[#0a0a0a] shadow-2xs"
+                          : "text-[#6a6a6a] hover:bg-[#fffaf0]/80 hover:text-[#0a0a0a]"
                           }`}
                       >
                         <span>All Categories</span>
@@ -1058,8 +1052,8 @@ export function EventsPage() {
                                 setCategoryDropdownOpen(false)
                               }}
                               className={`flex w-full cursor-pointer items-center justify-between rounded-[12px] px-3 py-2 text-xs font-semibold transition-colors ${isSelected
-                                  ? "bg-[#fffaf0] font-bold text-[#0a0a0a] shadow-2xs"
-                                  : "text-[#6a6a6a] hover:bg-[#fffaf0]/80 hover:text-[#0a0a0a]"
+                                ? "bg-[#fffaf0] font-bold text-[#0a0a0a] shadow-2xs"
+                                : "text-[#6a6a6a] hover:bg-[#fffaf0]/80 hover:text-[#0a0a0a]"
                                 }`}
                             >
                               <div className="flex items-center gap-2">
@@ -1089,13 +1083,13 @@ export function EventsPage() {
                 </div>
               </div>
 
-              {/* Mobile-Only Action: Today + Prev/Next month */}
+              {/* Mobile-Only Action: Today + Prev/Next month (44pt HIG touch targets) */}
               <div className="flex shrink-0 items-center gap-1 sm:hidden">
                 <Button
                   variant="outlined"
                   size="sm"
                   onClick={handleGoToday}
-                  className="h-9 rounded-full border-[#ded6c2] bg-[#faf5e8] px-3 text-xs font-semibold shadow-2xs backdrop-blur-md hover:bg-[#f5efe0]"
+                  className="h-11 rounded-full border-[#ded6c2] bg-[#faf5e8] px-3 text-xs font-semibold shadow-2xs backdrop-blur-md hover:bg-[#f5efe0]"
                   title="Go to Today"
                 >
                   Today
@@ -1113,7 +1107,7 @@ export function EventsPage() {
                         )
                       )
                     }
-                    className="flex size-9 cursor-pointer items-center justify-center rounded-full border border-[#ded6c2] bg-[#faf5e8] text-[#0a0a0a] shadow-2xs backdrop-blur-md transition-all hover:bg-[#f5efe0] active:scale-95"
+                    className="flex size-11 cursor-pointer items-center justify-center rounded-full border border-[#ded6c2] bg-[#faf5e8] text-[#0a0a0a] shadow-2xs backdrop-blur-md transition-all hover:bg-[#f5efe0] active:scale-95"
                     title="Previous month"
                     aria-label="Previous month"
                   >
@@ -1131,7 +1125,7 @@ export function EventsPage() {
                         )
                       )
                     }
-                    className="flex size-9 cursor-pointer items-center justify-center rounded-full border border-[#ded6c2] bg-[#faf5e8] text-[#0a0a0a] shadow-2xs backdrop-blur-md transition-all hover:bg-[#f5efe0] active:scale-95"
+                    className="flex size-11 cursor-pointer items-center justify-center rounded-full border border-[#ded6c2] bg-[#faf5e8] text-[#0a0a0a] shadow-2xs backdrop-blur-md transition-all hover:bg-[#f5efe0] active:scale-95"
                     title="Next month"
                     aria-label="Next month"
                   >
@@ -1225,22 +1219,98 @@ export function EventsPage() {
             </div>
           </div>
 
-          {/* ── Mobile-Only: Calendar Mini Top Section ── */}
+          {/* ── Mobile-Only: Single Clean Calendar Card with Week/Month Toggle ── */}
           <div className="w-full lg:hidden">
             <Card
               variant="soft"
               glass
-              className="rounded-[22px] border border-[#e6decb]/80 bg-[#faf5e8]/80 p-3.5 shadow-xs ring-1 ring-black/[0.04] backdrop-blur-xl"
+              className="rounded-[22px] border border-[#e6decb]/80 bg-[#faf5e8]/90 p-2.5 shadow-xs ring-1 ring-black/[0.04] backdrop-blur-xl"
             >
-              <EventCalendar
-                dots={dotMap}
-                selected={selectedDate}
-                allowDeselect={false}
-                onSelect={handleCalendarSelect}
-                month={activeMonth}
-                onMonthChange={handleMonthChange}
-                hideHeader={true}
-              />
+              {mobileCalendarMode === "month" ? (
+                <EventCalendar
+                  dots={dotMap}
+                  selected={selectedDate}
+                  allowDeselect={false}
+                  onSelect={handleCalendarSelect}
+                  month={activeMonth}
+                  onMonthChange={handleMonthChange}
+                  compact={true}
+                  hideHeader={true}
+                />
+              ) : (
+                <div className="grid grid-cols-7 gap-1 px-1 py-1">
+                  {(() => {
+                    const base = new Date(`${selectedDate}T00:00:00`)
+                    const weekStart = new Date(base)
+                    weekStart.setDate(base.getDate() - base.getDay())
+                    const dayLabels = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"]
+                    return Array.from({ length: 7 }).map((_, idx) => {
+                      const d = new Date(weekStart)
+                      d.setDate(weekStart.getDate() + idx)
+                      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+                      const isSel = key === selectedDate
+                      const isTod = key === todayKey
+                      const cellDots = dotMap[key] ?? []
+                      return (
+                        <button
+                          key={key}
+                          type="button"
+                          onClick={() => handleCalendarSelect(key)}
+                          className={`flex min-h-12 cursor-pointer flex-col items-center justify-center gap-0.5 rounded-xl py-1 text-center transition-all ${isSel
+                            ? "bg-[#0a0a0a] text-white shadow-xs"
+                            : isTod
+                              ? "bg-[#e8b94a]/25 font-bold text-[#0a0a0a]"
+                              : "text-[#0a0a0a] hover:bg-[#f0e8d5]"
+                            }`}
+                        >
+                          <span
+                            className={`text-[9px] font-bold ${isSel ? "text-white/70" : "text-[#6a6a6a]"
+                              }`}
+                          >
+                            {dayLabels[idx]}
+                          </span>
+                          <span className="text-xs font-bold">{d.getDate()}</span>
+                          <span className="flex h-1.5 items-center gap-0.5">
+                            {cellDots.slice(0, 3).map((dot, dotIdx) => (
+                              <span
+                                key={dotIdx}
+                                className="size-1 rounded-full"
+                                style={{
+                                  backgroundColor: isSel
+                                    ? "#ffffff"
+                                    : typeof dot === "string"
+                                      ? "#1a3a3a"
+                                      : dot.colorHex || "#1a3a3a",
+                                }}
+                              />
+                            ))}
+                          </span>
+                        </button>
+                      )
+                    })
+                  })()}
+                </div>
+              )}
+
+              <div className="mt-1 flex items-center justify-center border-t border-black/[0.05] pt-1.5">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setMobileCalendarMode((prev) =>
+                      prev === "month" ? "week" : "month"
+                    )
+                  }
+                  className="inline-flex min-h-8 cursor-pointer items-center gap-1 rounded-full px-3 py-0.5 text-[11px] font-semibold text-[#6a6a6a] transition-colors hover:bg-black/[0.04] hover:text-[#0a0a0a]"
+                >
+                  <span>
+                    {mobileCalendarMode === "month" ? "Compact Week" : "Full Month"}
+                  </span>
+                  <ChevronDownIcon
+                    className={`size-3.5 transition-transform duration-200 ${mobileCalendarMode === "month" ? "rotate-180" : ""
+                      }`}
+                  />
+                </button>
+              </div>
             </Card>
           </div>
 
@@ -1378,7 +1448,7 @@ export function EventsPage() {
                     )}
                   </div>
                 ) : (
-                  <div className="divide-y divide-black/[0.04]">
+                  <div className="space-y-2.5">
                     {listedEvents.map((ev) => (
                       <EventCard
                         key={ev.id}

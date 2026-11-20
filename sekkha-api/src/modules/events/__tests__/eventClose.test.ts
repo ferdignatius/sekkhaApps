@@ -1,4 +1,4 @@
-import { describe, it, expect } from "bun:test"
+import { describe, it, expect, setSystemTime, afterEach } from "bun:test"
 import { EventEmitter } from "events"
 import { eventServices } from "../services"
 import { eventModels } from "../models"
@@ -227,6 +227,9 @@ describe("Event Closure Point Distribution & Milestone Bonuses", () => {
 })
 
 describe("Event Start & Late Attendance Policy", () => {
+  afterEach(() => {
+    setSystemTime()
+  })
   it("anchors eventDate to actual start time even when started later on the same day, so immediate scans are on time", async () => {
     const now = Date.now()
     // Scheduled 4 hours earlier today (e.g., 09:00 when started at 13:00 in WIB, safely same WIB day or handle timezone safely)
@@ -338,6 +341,7 @@ describe("Event Start & Late Attendance Policy", () => {
   })
 
   it("never marks is_late or applies penalty when late_penalty_points is 0, even 10 hours after start", async () => {
+    setSystemTime(new Date("2026-11-20T18:00:00+07:00"))
     const tenHoursAgo = new Date(Date.now() - 10 * 60 * 60 * 1000)
     const origFindEventBasic = eventModels.findEventBasic
     const origFindUserForAttendance = eventModels.findUserForAttendance
@@ -909,6 +913,192 @@ describe("Event Lifecycle Guards, Concurrency, Cap Anchoring & Cache Invalidatio
       eventModels.findEventBasic = origFindBasic
       eventModels.findExistingAttendance = origFindAtt
       eventModels.deleteAttendance = origDelAtt
+    }
+  })
+})
+
+
+describe("Admin-Only Reset Closed Event to Draft (Scheduled)", () => {
+  it("blocks organizer from resetting a closed event to scheduled with 403 FORBIDDEN", async () => {
+    const origTx = prisma.$transaction
+    ;(prisma as any).$transaction = async (cb: any) => {
+      const txMock = {
+        event: {
+          findUnique: async () => ({
+            id: "evt_closed_1",
+            title: "Regular Puja",
+            eventDate: new Date("2026-11-20T03:00:00Z"),
+            status: "closed",
+            type: null,
+          }),
+        },
+      }
+      return cb(txMock)
+    }
+
+    try {
+      await expect(
+        eventServices.updateEventStatus("usr_org", "organizer", "evt_closed_1", "scheduled")
+      ).rejects.toMatchObject({ statusCode: 403, code: "FORBIDDEN" })
+    } finally {
+      ;(prisma as any).$transaction = origTx
+    }
+  })
+
+  it("allows admin to reset closed -> scheduled, rolls back points & unfinalizes without altering late/badge, and preserves first-start eventDate on restart", async () => {
+    const origTx = prisma.$transaction
+    const firstStartDate = new Date("2026-11-20T03:55:00Z")
+    let updatedAttData: any = null
+    let deletedTxIds: string[] = []
+    let updatedUserStats: any = null
+    let restartEventUpdateData: any = null
+
+    ;(prisma as any).$transaction = async (cb: any) => {
+      const txMock = {
+        event: {
+          findUnique: async () => ({
+            id: "evt_closed_2",
+            title: "Regular Puja",
+            eventDate: firstStartDate,
+            status: "closed",
+            pointReward: 50,
+            type: null,
+          }),
+          updateMany: async () => ({ count: 1 }),
+          update: async ({ data }: any) => ({
+            id: "evt_closed_2",
+            title: "Regular Puja",
+            eventDate: firstStartDate,
+            status: data.status,
+            pointReward: 50,
+            type: null,
+          }),
+          findMany: async () => [],
+        },
+        attendance: {
+          findMany: async ({ where }: any) => {
+            if (where.eventId) {
+              return [
+                {
+                  id: "att_1",
+                  userId: "usr_1",
+                  isLate: true,
+                  badgeActivityId: "ba_mc",
+                  badgeBonusPoints: 30,
+                  scannedAt: new Date("2026-11-20T04:10:00Z"),
+                },
+              ]
+            }
+            return []
+          },
+          updateMany: async ({ data }: any) => {
+            updatedAttData = data
+            return { count: 1 }
+          },
+        },
+        pointTransaction: {
+          findMany: async ({ where }: any) => {
+            if (where?.referenceId?.in?.includes("att_1")) {
+              return [{ id: "ptx_att_1", userId: "usr_1", amount: 65, referenceId: "att_1" }]
+            }
+            if (where?.referenceId?.in?.includes("first_attendance:usr_1")) {
+              return [
+                {
+                  id: "ptx_first_1",
+                  userId: "usr_1",
+                  amount: 20,
+                  referenceId: "first_attendance:usr_1",
+                },
+              ]
+            }
+            return []
+          },
+          deleteMany: async ({ where }: any) => {
+            deletedTxIds = where.id.in
+            return { count: deletedTxIds.length }
+          },
+        },
+        userStats: {
+          findUnique: async () => ({
+            userId: "usr_1",
+            points: 100,
+            totalAttendances: 1,
+            currentStreak: 1,
+          }),
+          update: async ({ data }: any) => {
+            updatedUserStats = data
+            return data
+          },
+        },
+      }
+      return cb(txMock)
+    }
+
+    try {
+      const res = await eventServices.updateEventStatus(
+        "usr_admin",
+        "admin",
+        "evt_closed_2",
+        "scheduled"
+      )
+      expect(res.status).toBe("scheduled")
+      expect(res.event_date).toBe(firstStartDate.toISOString())
+      expect(updatedAttData).toEqual({ isFinalized: false })
+      expect(deletedTxIds).toEqual(["ptx_att_1", "ptx_first_1"])
+      expect(updatedUserStats).toEqual({
+        points: 15,
+        totalAttendances: 0,
+        currentStreak: 0,
+        lastActivityAt: null,
+      })
+
+      const origNow = Date.now
+      Date.now = () => new Date("2026-11-20T08:00:00Z").getTime()
+      try {
+        ;(prisma as any).$transaction = async (cb: any) => {
+          const txRestart = {
+            event: {
+              findUnique: async () => ({
+                id: "evt_closed_2",
+                title: "Regular Puja",
+                eventDate: firstStartDate,
+                status: "scheduled",
+                pointReward: 50,
+                type: null,
+              }),
+              update: async ({ data }: any) => {
+                restartEventUpdateData = data
+                return {
+                  id: "evt_closed_2",
+                  title: "Regular Puja",
+                  eventDate: data.eventDate ?? firstStartDate,
+                  status: data.status,
+                  pointReward: 50,
+                  type: null,
+                }
+              },
+            },
+            attendance: {
+              count: async () => 1,
+            },
+          }
+          return cb(txRestart)
+        }
+
+        const restarted = await eventServices.updateEventStatus(
+          "usr_admin",
+          "admin",
+          "evt_closed_2",
+          "active"
+        )
+        expect(restarted.status).toBe("active")
+        expect(restartEventUpdateData.eventDate).toBeUndefined()
+        expect(restarted.event_date).toBe(firstStartDate.toISOString())
+      } finally {
+        Date.now = origNow
+      }
+    } finally {
+      ;(prisma as any).$transaction = origTx
     }
   })
 })

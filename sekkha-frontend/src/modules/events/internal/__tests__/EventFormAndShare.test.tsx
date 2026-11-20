@@ -19,6 +19,35 @@ vi.mock("@tanstack/react-router", () => ({
   Link: ({ children, to }: any) => <a href={to}>{children}</a>,
 }))
 
+function renderWithRole(
+  ui: React.ReactElement,
+  role: "member" | "activist" | "organizer" | "admin" = "member",
+  userId = "usr_mem"
+) {
+  const authState: AuthState = {
+    ...initialAuthState,
+    status: "authenticated",
+    userId,
+    role,
+  }
+
+  const contextValue: any = {
+    authState,
+    login: vi.fn(),
+    register: vi.fn(),
+    requestRegisterOtp: vi.fn(),
+    verifyRegisterOtp: vi.fn(),
+    resendRegisterOtp: vi.fn(),
+    logout: vi.fn(),
+    updateUser: vi.fn(),
+    refreshUser: vi.fn(),
+  }
+
+  return render(
+    <AuthContext.Provider value={contextValue}>{ui}</AuthContext.Provider>
+  )
+}
+
 function renderWithAuth(ui: React.ReactElement) {
   const authState: AuthState = {
     ...initialAuthState,
@@ -121,7 +150,7 @@ describe("EventForm & EventDetailSheet Enhancements", () => {
     expect(descArea.value).not.toContain("Halo, selamat siang")
 
     // 2. Description Expand / Collapse button toggles size
-    expect(descArea.rows).toBe(7)
+    expect(descArea.rows).toBe(4)
     const expandBtn = screen.getByRole("button", { name: /expand/i })
     fireEvent.click(expandBtn)
     expect(descArea.rows).toBe(12)
@@ -254,5 +283,162 @@ describe("EventForm & EventDetailSheet Enhancements", () => {
     const copiedText = writeTextMock.mock.calls[0][0]
     expect(copiedText).toContain("✨ Acara: Chanting")
     expect(copiedText).toContain(window.location.href)
+  })
+
+  it("renders member personal attendance view for member role and restricts CRUD", () => {
+    const sampleEvent: EventListItem = {
+      id: "evt_mem_1",
+      title: "Kebaktian Minggu",
+      location: "Dharmasala",
+      event_date: new Date(Date.now() + 86400000).toISOString(),
+      point_reward: 50,
+      status: "active",
+      event_type: "regular-puja",
+      tag: "regular-puja",
+    }
+
+    const attendances = [
+      {
+        attendance_id: "att_mem_1",
+        user_id: "usr_mem",
+        name: "Test Member",
+        user_number: "2026112001",
+        role: "member",
+        school: "SMA 1",
+        method: "qr" as const,
+        points_earned: 50,
+        is_late: false,
+        late_penalty_applied: 0,
+        badge_activity_id: null,
+        badge_activity: null,
+        badge_bonus_points: 0,
+        is_finalized: false,
+        scanned_at: new Date().toISOString(),
+      },
+    ]
+
+    renderWithRole(
+      <EventDetailSheet
+        event={sampleEvent}
+        role="member"
+        attendances={attendances}
+        onClose={vi.fn()}
+      />,
+      "member",
+      "usr_mem"
+    )
+
+    // Should render tabs with "My Attendance" instead of "Attendance"
+    const attendanceTab = screen.getByRole("tab", { name: /my attendance/i })
+    expect(attendanceTab).toBeTruthy()
+
+    // Switch to My Attendance tab
+    fireEvent.click(attendanceTab)
+
+    // Should show personal attendance card
+    expect(screen.getByText("Attendance Recorded")).toBeTruthy()
+    expect(screen.getByText("Present")).toBeTruthy()
+    expect(screen.getByText("+50 Pts")).toBeTruthy()
+    expect(screen.getByText("Member QR Scan")).toBeTruthy()
+
+    // Should NOT show organizer action buttons (Launch Scanner, Delete, Finalize)
+    expect(screen.queryByRole("button", { name: /launch scanner/i })).toBeNull()
+    expect(screen.queryByRole("button", { name: /start event/i })).toBeNull()
+    expect(screen.queryByRole("button", { name: /end & finalize/i })).toBeNull()
+  })
+
+  it("shows not checked in message and QR button for unrecorded member", () => {
+    const sampleEvent: EventListItem = {
+      id: "evt_mem_2",
+      title: "Kebaktian Minggu",
+      location: "Dharmasala",
+      event_date: new Date(Date.now() + 86400000).toISOString(),
+      point_reward: 50,
+      status: "active",
+      event_type: "regular-puja",
+      tag: "regular-puja",
+    }
+
+    renderWithRole(
+      <EventDetailSheet
+        event={sampleEvent}
+        role="member"
+        attendances={[]}
+        onClose={vi.fn()}
+      />,
+      "member",
+      "usr_mem"
+    )
+
+    const attendanceTab = screen.getByRole("tab", { name: /my attendance/i })
+    fireEvent.click(attendanceTab)
+
+    expect(screen.getByText("Not Checked In Yet")).toBeTruthy()
+    expect(
+      screen.getByRole("button", { name: /show my member qr/i })
+    ).toBeTruthy()
+  })
+
+  it("shows Reset to Draft option in More actions only for admin when event status is closed", async () => {
+    const closedEvent: EventListItem = {
+      id: "evt_closed_admin",
+      title: "Closed Puja",
+      event_type: "regular_puja",
+      event_date: "2026-11-20T03:00:00Z",
+      location: "Vihara Sekkha",
+      point_reward: 50,
+      status: "closed",
+      tag: "regular_puja",
+    }
+
+    // 1. Organizer should NOT see Reset to Draft inside More actions
+    renderWithRole(
+      <EventDetailSheet
+        event={closedEvent}
+        role="organizer"
+        attendances={[]}
+        onClose={vi.fn()}
+        onStatusChange={vi.fn()}
+      />,
+      "organizer",
+      "usr_org_1"
+    )
+
+    fireEvent.pointerDown(screen.getByRole("button", { name: /more actions/i }))
+    expect(await screen.findByText("Duplicate Event")).toBeTruthy()
+    expect(screen.queryByText("Reset to Draft")).toBeNull()
+    cleanup()
+
+    // 2. Admin SHOULD see Reset to Draft and trigger status "scheduled" on confirmation
+    const onStatusChange = vi.fn().mockResolvedValue(undefined)
+    renderWithRole(
+      <EventDetailSheet
+        event={closedEvent}
+        role="admin"
+        attendances={[]}
+        onClose={vi.fn()}
+        onStatusChange={onStatusChange}
+      />,
+      "admin",
+      "usr_admin_1"
+    )
+
+    fireEvent.pointerDown(screen.getByRole("button", { name: /more actions/i }))
+
+    const resetMenuItem = await screen.findByText("Reset to Draft")
+    fireEvent.click(resetMenuItem)
+
+    await waitFor(() => {
+      expect(screen.getByText("Reset Event to Draft?")).toBeTruthy()
+    })
+    fireEvent.click(screen.getByRole("button", { name: /^Reset to Draft$/i }))
+
+    await waitFor(() => {
+      expect(onStatusChange).toHaveBeenCalledWith(
+        "evt_closed_admin",
+        "scheduled",
+        undefined
+      )
+    })
   })
 })

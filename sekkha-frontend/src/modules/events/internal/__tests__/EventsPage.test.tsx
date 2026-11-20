@@ -457,4 +457,75 @@ describe("EventsPage Category Filter Dropdown — Initial 5 + Infinite Scroll", 
       expect(within(listEl).getByText("Retreat")).toBeTruthy()
     })
   })
+
+  it("updates calendar dots dynamically when filtering by category and search query", async () => {
+    const now = new Date()
+    const todayKey = toWibKey(now)
+    const [year, month, day] = todayKey.split("-").map(Number)
+    const monthKey = `${year}-${String(month).padStart(2, "0")}`
+    const otherDay = day === 15 ? 16 : 15
+    const otherDayKey = `${monthKey}-${String(otherDay).padStart(2, "0")}`
+    const otherLabel = new Date(year, month - 1, otherDay).toLocaleDateString("en-US", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    })
+
+    const monthEvents: EventListItem[] = [
+      {
+        ...makeEvent("evt_chanting", "Morning Chanting", otherDayKey, "09:00", "scheduled"),
+        tag: "chanting",
+        event_type: "chanting",
+      },
+      {
+        ...makeEvent("evt_puja", "Evening Puja", todayKey, "19:00", "scheduled"),
+        tag: "regular",
+        event_type: "regular",
+      },
+    ]
+
+    renderEventsPage({ [monthKey]: monthEvents })
+
+    await waitFor(() => {
+      expect(screen.getByText("Evening Puja")).toBeTruthy()
+    })
+
+    // Initially, otherDay has 1 calendar dot (Morning Chanting)
+    const otherDayBtnsBefore = screen.getAllByRole("button", {
+      name: new RegExp(otherLabel),
+    })
+    expect(otherDayBtnsBefore[0].querySelectorAll("span.rounded-full").length).toBeGreaterThan(0)
+
+    // Filter by search query matching only Evening Puja -> otherDay dot disappears
+    const searchInput = screen.getByPlaceholderText(/Search events/i)
+    fireEvent.change(searchInput, { target: { value: "Evening Puja" } })
+
+    await waitFor(() => {
+      const otherDayBtnsAfterSearch = screen.getAllByRole("button", {
+        name: new RegExp(otherLabel),
+      })
+      expect(otherDayBtnsAfterSearch[0].querySelectorAll("span.rounded-full").length).toBe(0)
+    })
+
+    // Clear search -> dot returns, then filter by "Regular" category -> otherDay dot disappears again
+    fireEvent.change(searchInput, { target: { value: "" } })
+    await waitFor(() => {
+      const btns = screen.getAllByRole("button", {
+        name: new RegExp(otherLabel),
+      })
+      expect(btns[0].querySelectorAll("span.rounded-full").length).toBeGreaterThan(0)
+    })
+
+    // Select "Chanting" category -> today's Puja is filtered out, otherDay keeps dot
+    const chantingChips = screen.getAllByRole("button", { name: /Chanting/i })
+    fireEvent.click(chantingChips[0])
+
+    await waitFor(() => {
+      expect(screen.queryByText("Evening Puja")).toBeNull()
+      const btns = screen.getAllByRole("button", {
+        name: new RegExp(otherLabel),
+      })
+      expect(btns[0].querySelectorAll("span.rounded-full").length).toBeGreaterThan(0)
+    })
+  })
 })

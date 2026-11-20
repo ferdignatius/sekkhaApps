@@ -39,10 +39,10 @@ Desain ini menjamin:
 | Hapus / Koreksi presensi draft | v | v | x | x |
 | Tutup Sesi & Finalisasi Poin (`closed`) | v | v | x | x |
 | Batalkan Event (`cancel`) | v | v | x | x |
-| Lihat QR Code Sendiri (`/profile/qr`) | v | v | v | v |
-| Lihat rekap kehadiran | v | v | x | x |
+| Lihat QR Code Sendiri (`/profile` / `/people`) | v | v | v | v |
+| Lihat rekap kehadiran | v (semua) | v (semua) | v (khusus miliknya sendiri) | v (khusus miliknya sendiri) |
 
-> **Catatan Ketat**: Role `activist` **TIDAK MEMILIKI AKSES** ke fitur absensi. Seluruh proses scan, koreksi draft, dan penutupan sesi dilakukan eksklusif oleh `organizer` atau `admin`.
+> **Catatan Hak Akses**: Operasional pencatatan absensi (scan kamera, input manual, hapus/koreksi presensi, penetapan badge activity pelayanan, dan finalisasi sesi) dilakukan secara eksklusif oleh `organizer` atau `admin`. Anggota biasa (`member` & `activist`) memiliki hak akses baca (*read-only*) terhadap status dan rekap absensi miliknya sendiri pada Detail Event Sheet.
 
 ---
 
@@ -316,17 +316,15 @@ Pada halaman `/events/:id` untuk organizer dan admin, tombol aksi berubah secara
 
 ## 9. UI: Halaman Scanner (`/events/:id/scan`)
 
-### 9.1. Layout & Top Mode Toggle (`QR Scanner` vs `Manual Entry`)
+### 9.1. Layout Terpadu: Full-Screen Live Viewfinder & iOS-Style Floating Bottom Search Dock
 
 ```
 ┌─────────────────────────────────────┐
 │  ←  Kebaktian Remaja   [Finalize]   │
 │  🔴 Live Session (38 Present)       │
 ├─────────────────────────────────────┤
-│    ( [📷 QR Scanner] [👤 Manual Entry] )
-├─────────────────────────────────────┤
 │                                     │
-│     [ LIVE CAMERA / MANUAL FORM ]   │
+│     [ LIVE CAMERA FULL SCREEN ]     │
 │   ┌──────────────────┐              │
 │   │   [ SCAN FRAME ] │              │
 │   └──────────────────┘              │
@@ -334,12 +332,20 @@ Pada halaman `/events/:id` untuk organizer dan admin, tombol aksi berubah secara
 │      ╭───────────────────────╮      │
 │      │ ✓ Hendra Santoso +50  │  <- Floating Random Bubble Toast
 │      ╰───────────────────────╯      │
+│                                     │
 ├─────────────────────────────────────┤
-│          [ History (38) ]           │
+│  🔍 Search ID or Member Name...   ▲ │  <- Floating Frosted Search Bar
+│  ┌────────────────────────────────┐ │
+│  │  Swipe-up Drawer: History (38) │ │  <- Draggable History Sheet
+│  └────────────────────────────────┘ │
 └─────────────────────────────────────┘
 ```
 
-* **Top Segmented Mode Toggle (`QR Scanner` vs `Manual Entry`)**: Pengurus (`organizer`/`admin`) selalu melihat kontrol segmen mode aktif di bagian atas layar scanner (`aria-pressed`), tanpa duplikasi tombol toggle di dock bawah atau di dalam kartu form manual, sehingga status kamera vs input manual selalu eksplisit.
+* **Integrated Viewfinder & Search Dock**: Kamera aktif secara kontinu di layar penuh latar belakang. Pengurus (`organizer`/`admin`) tidak memerlukan toggle segmented button di bagian atas untuk berganti mode; seluruh alur absensi terintegrasi dalam satu layar live.
+* **Dual-Mode Instant Search**: Input dock di bagian bawah mendukung:
+  1. **Input Numerik (`userNumber`)**: Mengetik nomor anggota (10-digit) langsung melakukan instant check-in secara instan tanpa mematikan stream kamera.
+  2. **Pencarian Nama Anggota (*Fuzzy Search*)**: Mengetik teks alfabet menampilkan daftar dropdown hasil pencarian anggota lengkap dengan tombol **"+ Check In"**.
+* **Swipe-up Draggable History Drawer**: Riwayat presensi sesi saat ini dapat ditarik ke atas (*draggable bottom sheet*) dari handle dock bawah kapan saja tanpa menutup fungsionalitas pemindaian kamera secara permanen.
 
 ### 9.2. State Feedback Scan & Floating Random Bubble Toasts
 
@@ -632,7 +638,7 @@ model Attendance {
 | **TC-ATT-13** | Badge Activity Assignment | Menugaskan peran pelayanan (*Badge Activity*) kepada jemaat hadir | Peserta sudah tercatat hadir di draft, master data `badge_activities` tersedia | Kirim `PATCH /api/events/:id/attendances/:userId/badge-activity` dengan `{ "badge_activity_id": "bdg_mc" }`. | HTTP 200 envelope. Data kehadiran diperbarui dengan `badge_bonus_points: 30`, UI menampilkan tag "Badge Activity: +30 Pts". | Positive |
 | **TC-ATT-14** | Batch Point Finalization | Penutupan acara secara serentak memfinalisasi seluruh kehadiran jemaat | 50 jemaat tercatat draft di acara `active` | Organizer klik "Close & Finalize Event" (`PATCH /status` target `closed`). | Transaksi atomik database: semua baris kehadiran berubah menjadi `isFinalized: true`, saldo `UserStats.points` bertambah, record `PointTransaction` terbit, streak bertambah, status event menjadi `closed`. | Positive |
 | **TC-ATT-15** | Daily Point Cap | Finalisasi poin jemaat yang melebihi batas maksimal harian (150 poin) | Jemaat telah memperoleh 120 poin hari ini, kehadiran acara baru bernilai 50 poin | Organizer menutup acara yang dihadiri jemaat tersebut. | Sistem melakukan clamp perolehan poin acara kedua menjadi +30 poin (sehingga akumulasi harian genap 150 poin). Poin tidak melebihi daily cap. | Edge Case / Rule |
-| **TC-ATT-16** | Recap Access Security | Role `activist` atau `member` mencoba melihat lembar rekap presensi | User login dengan role `activist` atau `member` | Kirim `GET /api/events/:id/attendances`. | HTTP 403 Forbidden envelope ("Forbidden: Insufficient permissions"). Menu dan data rekapitulasi kehadiran tidak dapat diakses. | Security |
+| **TC-ATT-16** | Member Own-Attendance Scoping & Recap Security | Role `activist` atau `member` mengakses data presensi acara | User login dengan role `activist` atau `member` | Kirim `GET /api/events/:id/attendances`. | HTTP 200 OK dengan envelope data hanya berisi presensi milik user sendiri (jika sudah hadir) atau array kosong (jika belum hadir). Akses mutasi (`POST`, `PATCH`, `DELETE`) tetap diblokir HTTP 403. | Security / Scoping |
 | **TC-ATT-17** | Manual Entry Similar Name & Walk-In Pre-Provision | Pencarian nama mirip asinkron + modal See More dan registrasi walk-in di Manual Attendance | Event `active`, organizer membuka tab **Manual Entry** di `/events/scan` | 1. Ketik nama mirip `"Budi Santosa"` (>= 3 huruf) di pencarian nama.<br>2. Klik **"See More"** untuk melihat modal daftar mirip atau klik **"+ Register New Member"** untuk mendaftarkan peserta baru. | Info banner non-blocking + modal **See More** muncul hanya ketika ada kecocokan mirip (hilang jika 0 hasil); organizer dapat langsung `+ Check In` dari modal/list atau mendaftarkan peserta baru terhubung Master Data School (role default `member`). | Positive / UX |
-| **TC-ATT-18** | Mode Toggle & Floating Bubble Toasts | Perpindahan mode QR Scanner / Manual Entry dan munculnya floating random bubble toast saat scan | Event `active`, role `organizer` berada di `/events/scan` | 1. Periksa posisi segmented toggle `QR Scanner` & `Manual Entry` di bagian atas.<br>2. Lakukan check-in sukses dan check-in duplikat/error. | Toggle `Manual Entry` muncul unik di bar atas; setiap respons check-in memicu munculnya *floating bubble toast* di atas dock bawah dengan posisi horizontal acak dan auto-dismiss setelah 2.6 detik. | Positive / UX |
+| **TC-ATT-18** | Integrated Viewfinder & Floating Search Dock | Pemindaian kamera penuh dengan floating dock pencarian (numeric / fuzzy search) dan floating random bubble toast | Event `active`, role `organizer` berada di `/events/scan` | 1. Periksa kamera live penuh di latar belakang dengan floating search dock di bawah.<br>2. Lakukan check-in via QR scan, input numerik userNumber, atau fuzzy search nama.<br>3. Buka drawer riwayat dengan swipe-up. | Viewfinder aktif kontinu; dock pencarian terpadu di bagian bawah; drawer riwayat dapat di-swipe ke atas; setiap respons check-in memicu *floating bubble toast* di atas dock bawah dengan posisi horizontal acak dan auto-dismiss setelah 2.6 detik. | Positive / UX |
 

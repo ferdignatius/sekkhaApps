@@ -33,14 +33,12 @@ eventsRouter.post(
   eventControllers.recordAttendance
 )
 
-// GET /api/events/:id/attendances — List attendances summary (Organizer & Admin only per PRD AC-EVT-02)
+// GET /api/events/:id/attendances — List attendances (all for organizer/admin, own record for member/activist per PRD)
 eventsRouter.get(
   "/:id/attendances",
   requireAuth,
-  requireRole("organizer", "admin"),
   eventControllers.listAttendances
 )
-
 
 // PATCH & POST /api/events/:id/attendances/:userId/badge-activity — Assign service role to attendee (Organizer & Admin only)
 eventsRouter.patch(

@@ -55,7 +55,7 @@ export function EventCard({ event, onClick }: EventCardProps) {
     50
 
   return (
-    <div className="py-2 text-left font-sans first:pt-0 last:pb-0">
+    <div className="text-left font-sans">
       <button
         type="button"
         onClick={onClick}
@@ -72,16 +72,91 @@ export function EventCard({ event, onClick }: EventCardProps) {
         <div className="flex items-center gap-3 sm:gap-3.5">
           {/* Dynamic Color Accent Bar */}
           <div
-            className="h-11 w-1.5 shrink-0 rounded-full shadow-2xs transition-all"
+            className="h-12 w-1.5 shrink-0 rounded-full shadow-2xs transition-all"
             style={colorInfo.dotStyle}
           />
 
-          {/* Main Info */}
-          <div className="min-w-0 flex-1">
-            {/* Top row: Category + Points + Status Badges */}
-            <div className="flex flex-wrap items-center gap-1.5">
+          {/* Main Info: 3-Element HIG Hierarchy (Title + Status -> Time & Venue -> Category + Points) */}
+          <div className="min-w-0 flex-1 space-y-1.5">
+            {/* Row 1: Primary Title + Status Badge */}
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="min-w-0 flex-1 truncate text-sm font-bold text-[#0a0a0a] transition-colors group-hover:text-[#1a3a3a] sm:text-base">
+                {event.title}
+              </h3>
+
+              <div className="shrink-0">
+                {status === "active" && (
+                  <Badge
+                    variant="emerald"
+                    glass
+                    className="gap-1.5 font-semibold"
+                  >
+                    <span className="relative flex size-1.5 shrink-0">
+                      <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-500 opacity-75" />
+                      <span className="relative inline-flex size-1.5 rounded-full bg-emerald-600" />
+                    </span>
+                    Live Attendance
+                  </Badge>
+                )}
+
+                {status === "closed" && (
+                  <Badge variant="slate" glass>
+                    Closed
+                  </Badge>
+                )}
+
+                {status === "cancel" && (
+                  <Badge variant="destructive" glass>
+                    Cancelled
+                  </Badge>
+                )}
+
+                {status === "scheduled" && !isLive && (
+                  <Badge
+                    variant="secondary"
+                    glass
+                    className="font-semibold text-[#0a0a0a]"
+                  >
+                    Scheduled
+                  </Badge>
+                )}
+
+                {status === "scheduled" && isLive && (
+                  <Badge variant="ochre" glass className="font-bold">
+                    <span className="mr-1 h-1.5 w-1.5 rounded-full bg-[#e8b94a]" />
+                    Today
+                  </Badge>
+                )}
+              </div>
+            </div>
+
+            {/* Row 2: Time & Location */}
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-[#6a6a6a]">
+              <div className="flex items-center gap-1 font-medium">
+                <CalendarIcon
+                  className="size-3.5 shrink-0 text-[#1a3a3a]"
+                  aria-hidden="true"
+                />
+                <span>
+                  {day} · {time}
+                </span>
+              </div>
+              {event.location && (
+                <div className="flex min-w-0 items-center gap-1 font-medium">
+                  <MapPinIcon
+                    className="size-3.5 shrink-0 text-[#6a6a6a]"
+                    aria-hidden="true"
+                  />
+                  <span className="truncate">{event.location}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Row 3: Category + Karma Points */}
+            <div className="flex items-center gap-1.5">
               <Badge
                 variant="outline"
+                size="sm"
                 className="gap-1.5 font-medium"
                 style={colorInfo.bgStyle}
               >
@@ -92,90 +167,20 @@ export function EventCard({ event, onClick }: EventCardProps) {
                 {colorInfo.name}
               </Badge>
 
-              {/* Karma Points Reward Badge */}
               <Badge
                 variant="outline"
                 glass
+                size="sm"
                 className="border-black/[0.08] text-[10px] font-bold text-[#0a0a0a] sm:text-[11px]"
                 title="Karma points rewarded for attendance"
               >
                 +{pointsReward} Pts
               </Badge>
-
-              {/* Status: Active / Live */}
-              {status === "active" && (
-                <Badge
-                  variant="emerald"
-                  glass
-                  className="animate-pulse font-semibold"
-                >
-                  <span className="mr-1 h-1.5 w-1.5 rounded-full bg-emerald-600" />
-                  Live Attendance
-                </Badge>
-              )}
-
-              {/* Status: Closed */}
-              {status === "closed" && (
-                <Badge variant="slate" glass>
-                  Closed
-                </Badge>
-              )}
-
-              {/* Status: Cancelled */}
-              {status === "cancel" && (
-                <Badge variant="destructive" glass>
-                  Cancelled
-                </Badge>
-              )}
-
-              {/* Status: Scheduled / Upcoming */}
-              {status === "scheduled" && !isLive && (
-                <Badge
-                  variant="secondary"
-                  glass
-                  className="font-semibold text-[#0a0a0a]"
-                >
-                  Scheduled
-                </Badge>
-              )}
-
-              {/* Live today indicator */}
-              {status === "scheduled" && isLive && (
-                <Badge variant="ochre" glass className="font-bold">
-                  <span className="mr-1 h-1.5 w-1.5 rounded-full bg-[#e8b94a]" />
-                  Today
-                </Badge>
-              )}
-            </div>
-
-            {/* Title */}
-            <h3 className="mt-1 truncate text-sm font-bold text-[#0a0a0a] transition-colors group-hover:text-[#1a3a3a] sm:text-base">
-              {event.title}
-            </h3>
-
-            {/* Meta row */}
-            <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[#6a6a6a]">
-              <div className="flex items-center gap-1.5 font-medium">
-                <CalendarIcon
-                  className="size-3.5 shrink-0 text-[#1a3a3a]"
-                  aria-hidden="true"
-                />
-                <span>
-                  {day} · {time}
-                </span>
-              </div>
-              <div className="flex items-center gap-1.5 font-medium">
-                <MapPinIcon
-                  className="size-3.5 shrink-0 text-[#6a6a6a]"
-                  aria-hidden="true"
-                />
-                <span className="truncate">{event.location}</span>
-              </div>
             </div>
           </div>
 
           {/* Action — right (Slim on mobile, full pill on desktop) */}
-          <div className="flex size-8 shrink-0 items-center justify-center rounded-full border border-[#ded6c2] bg-[#faf5e8] text-xs font-semibold text-[#1a3a3a] shadow-2xs transition-all group-hover:border-[#0a0a0a] group-hover:bg-[#0a0a0a] group-hover:text-white sm:h-9 sm:w-auto sm:px-3">
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-full border border-[#ded6c2] bg-[#faf5e8] text-xs font-semibold text-[#1a3a3a] shadow-2xs transition-all group-hover:border-[#0a0a0a] group-hover:bg-[#0a0a0a] group-hover:text-white sm:h-9 sm:w-auto sm:px-3">
             <span className="hidden font-bold group-hover:text-white sm:inline sm:mr-1">
               Details
             </span>

@@ -284,21 +284,13 @@ export const eventControllers = {
   async listAttendances(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const id = req.params.id as string
-      const callerRole = req.user?.role || ""
-
-      // Role check: Only organizer and admin per PRD AC-EVT-02
-      if (!canRecordAttendance(callerRole)) {
-        res.status(403).json({
-          status: "error",
-          code: 403,
-          message: "Only organizers and admins are allowed to view attendance records.",
-        })
-        return
-      }
+      const callerRole = req.user?.role || "member"
+      const callerId = req.user?.userId || ""
+      const isPrivileged = callerRole === "organizer" || callerRole === "admin"
 
       const page = Math.max(1, parseInt(req.query.page as string, 10) || 1)
       const limit = Math.min(200, Math.max(1, parseInt(req.query.limit as string, 10) || 100))
-      const result = await eventServices.listAttendances(id, page, limit)
+      const result = await eventServices.listAttendances(id, callerId, isPrivileged, page, limit)
 
       res.json({
         status: "success",

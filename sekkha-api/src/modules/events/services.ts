@@ -488,6 +488,7 @@ export const eventServices = {
     rescheduleDate?: string
   ) {
     const normalizedTarget = targetStatus
+    let wasResetFromClosed = false
 
     const result = await prisma.$transaction(async (tx) => {
       const currentEvent = await tx.event.findUnique({
@@ -532,27 +533,61 @@ export const eventServices = {
           )
         }
 
-        // Anchor eventDate to the actual session start timestamp (now) when starting an event
-        // (whether started early or later on the scheduled day) so max_late_minutes
-        // grace period is always evaluated from when the event was actually started.
+        // Anchor eventDate to the actual session start timestamp (now) on initial start,
+        // but preserve the original start timestamp if the event already has recorded attendances
+        // (e.g., after an Admin resets a closed event to draft and restarts it) so existing
+        // late statuses / point calculations remain anchored to when the event first started.
         if (!updatedEventDate) {
-          updatedEventDate = new Date(nowTime)
+          const existingAttendanceCount =
+            typeof (tx.attendance as any)?.count === "function"
+              ? await (tx.attendance as any).count({ where: { eventId: id } })
+              : 0
+          if (existingAttendanceCount === 0) {
+            updatedEventDate = new Date(nowTime)
+          }
         }
       }
 
-      // 2. Validation for "scheduled" (Reschedule from cancel)
+      // 2. Validation for "scheduled" (Reschedule from cancel OR Admin reset from closed)
       if (normalizedTarget === "scheduled") {
-        if (currentStatus !== "cancel") {
-          throw new AppError("Only cancelled events can be rescheduled.", 400, "INVALID_STATUS_TRANSITION")
+        if (currentStatus === "closed") {
+          if (actorRole !== "admin") {
+            throw new AppError(
+              "Only administrators can reset a closed event back to draft.",
+              403,
+              "FORBIDDEN"
+            )
+          }
+          if (typeof (tx.event as any).updateMany === "function") {
+            const claimed = await (tx.event as any).updateMany({
+              where: { id, status: "closed" },
+              data: { status: "scheduled" },
+            })
+            if (!claimed || claimed.count === 0) {
+              throw new AppError(
+                "Only closed events can be reset to draft.",
+                400,
+                "INVALID_STATUS_TRANSITION"
+              )
+            }
+          }
+          wasResetFromClosed = true
+        } else if (currentStatus === "cancel") {
+          if (!rescheduleDate) {
+            throw new AppError("Reschedule date is required.", 400, "RESCHEDULE_DATE_REQUIRED")
+          }
+          const parsedDate = new Date(rescheduleDate)
+          if (isNaN(parsedDate.getTime()) || parsedDate.getTime() < Date.now() - 60000) {
+            throw new AppError("Rescheduled event date cannot be in the past.", 400, "EVENT_DATE_PAST")
+          }
+          updatedEventDate = parsedDate
+        } else {
+          throw new AppError(
+            "Only cancelled or closed events can be transitioned to scheduled.",
+            400,
+            "INVALID_STATUS_TRANSITION"
+          )
         }
-        if (!rescheduleDate) {
-          throw new AppError("Reschedule date is required.", 400, "RESCHEDULE_DATE_REQUIRED")
-        }
-        const parsedDate = new Date(rescheduleDate)
-        if (isNaN(parsedDate.getTime()) || parsedDate.getTime() < Date.now() - 60000) {
-          throw new AppError("Rescheduled event date cannot be in the past.", 400, "EVENT_DATE_PAST")
-        }
-        updatedEventDate = parsedDate
       }
 
       // 3. Validation for "cancel"
@@ -868,11 +903,136 @@ export const eventServices = {
         }
       }
 
+      // 5. Rollback distributed points & unfinalize attendances when Admin resets closed -> scheduled
+      if (wasResetFromClosed) {
+        const attendees = await tx.attendance.findMany({ where: { eventId: id } })
+        totalAttendees = attendees.length
+
+        if (attendees.length > 0) {
+          // Unfinalize attendances while preserving isLate, pointsEarned, badgeActivityId, badgeBonusPoints, and scannedAt
+          await tx.attendance.updateMany({
+            where: { eventId: id },
+            data: { isFinalized: false },
+          })
+
+          const attendeeIds = attendees.map((a) => a.id)
+          const attendeeUserIds = Array.from(new Set(attendees.map((a) => a.userId)))
+          const eventDt = new Date(currentEvent.eventDate)
+          const currentMonthKey = toMonthKey(eventDt)
+
+          const [attendanceTxs, remainingFinalized] = await Promise.all([
+            tx.pointTransaction.findMany({
+              where: { referenceId: { in: attendeeIds } },
+              select: { id: true, userId: true, amount: true, referenceId: true },
+            }),
+            tx.attendance.findMany({
+              where: { userId: { in: attendeeUserIds }, isFinalized: true },
+              select: { userId: true, scannedAt: true },
+            }),
+          ])
+
+          const remainingByUser = new Map<string, { scannedAt: Date }[]>()
+          for (const rf of remainingFinalized) {
+            const list = remainingByUser.get(rf.userId) ?? []
+            list.push({ scannedAt: rf.scannedAt })
+            remainingByUser.set(rf.userId, list)
+          }
+
+          const bonusCandidateRefs: string[] = []
+          for (const userId of attendeeUserIds) {
+            const remaining = remainingByUser.get(userId) ?? []
+            if (remaining.length === 0) {
+              bonusCandidateRefs.push(`first_attendance:${userId}`)
+            }
+            bonusCandidateRefs.push(`streak_monthly_bonus:${userId}:${currentMonthKey}`)
+          }
+
+          const bonusTxs =
+            bonusCandidateRefs.length > 0
+              ? await tx.pointTransaction.findMany({
+                  where: { referenceId: { in: bonusCandidateRefs } },
+                  select: { id: true, userId: true, amount: true, referenceId: true },
+                })
+              : []
+
+          const allTxsToRollback = [...attendanceTxs, ...bonusTxs]
+          const txIdsToDelete = allTxsToRollback.map((t) => t.id)
+
+          if (txIdsToDelete.length > 0 && typeof (tx.pointTransaction as any).deleteMany === "function") {
+            await (tx.pointTransaction as any).deleteMany({
+              where: { id: { in: txIdsToDelete } },
+            })
+          }
+
+          const pointsToDeductByUser = new Map<string, number>()
+          for (const t of allTxsToRollback) {
+            pointsToDeductByUser.set(t.userId, (pointsToDeductByUser.get(t.userId) ?? 0) + t.amount)
+          }
+
+          const attendanceCountByUser = new Map<string, number>()
+          for (const att of attendees) {
+            attendanceCountByUser.set(att.userId, (attendanceCountByUser.get(att.userId) ?? 0) + 1)
+          }
+
+          // Recompute remaining community active weeks for accurate streak rollback
+          const activeCommunityWeeks = new Set<string>()
+          if (typeof (tx.event as any).findMany === "function") {
+            const closedEvents = await tx.event.findMany({
+              where: { status: "closed" },
+              select: { eventDate: true },
+            })
+            for (const ce of closedEvents) {
+              activeCommunityWeeks.add(toWeekKey(new Date(ce.eventDate)))
+            }
+          }
+
+          await Promise.all(
+            attendeeUserIds.map(async (userId) => {
+              const existingStats =
+                typeof (tx.userStats as any).findUnique === "function"
+                  ? await (tx.userStats as any).findUnique({ where: { userId } })
+                  : null
+              if (!existingStats || typeof (tx.userStats as any).update !== "function") return
+
+              const deductPoints = pointsToDeductByUser.get(userId) ?? 0
+              const deductAtts = attendanceCountByUser.get(userId) ?? 0
+              const remainingUserAtts = remainingByUser.get(userId) ?? []
+
+              let recomputedStreak = 0
+              let latestRemainingScan: Date | null = null
+              if (remainingUserAtts.length > 0) {
+                for (const r of remainingUserAtts) {
+                  if (!latestRemainingScan || r.scannedAt > latestRemainingScan) {
+                    latestRemainingScan = r.scannedAt
+                  }
+                }
+                const { current_streak } = calculateWeeklyStreak(
+                  remainingUserAtts,
+                  latestRemainingScan ?? new Date(),
+                  activeCommunityWeeks
+                )
+                recomputedStreak = current_streak
+              }
+
+              await (tx.userStats as any).update({
+                where: { userId },
+                data: {
+                  points: Math.max(0, (existingStats.points ?? 0) - deductPoints),
+                  totalAttendances: Math.max(0, (existingStats.totalAttendances ?? 0) - deductAtts),
+                  currentStreak: recomputedStreak,
+                  lastActivityAt: latestRemainingScan,
+                },
+              })
+            })
+          )
+        }
+      }
+
       return { event: updated, totalAttendees, pointsDistributed }
     })
 
     await invalidateEventMutationCaches()
-    if (normalizedTarget === "closed") {
+    if (normalizedTarget === "closed" || wasResetFromClosed) {
       await Promise.all([
         invalidatePattern("user:*:profile"),
         invalidatePattern("user:*:streak"),
@@ -1075,12 +1235,58 @@ export const eventServices = {
     }
   },
 
-  async listAttendances(eventId: string, page = 1, limit = 100) {
+  async listAttendances(
+    eventId: string,
+    callerId: string,
+    isPrivileged: boolean,
+    page = 1,
+    limit = 100
+  ) {
     const safePage = Math.max(1, page)
     const safeLimit = Math.min(200, Math.max(1, limit))
     const event = await eventModels.findEventBasic(eventId)
     if (!event) {
       throw new AppError("Event not found.", 404, "EVENT_NOT_FOUND")
+    }
+
+    if (!isPrivileged) {
+      const ownAttendance = await eventModels.findExistingAttendance(eventId, callerId)
+      if (!ownAttendance) {
+        return {
+          event_id: eventId,
+          total_attended: 0,
+          is_finalized: event.status === "closed",
+          attendances: [],
+          my_attendance: null,
+        }
+      }
+
+      const user = await eventModels.findUserForAttendance(callerId)
+      const mapped = {
+        attendance_id: ownAttendance.id,
+        user_id: ownAttendance.userId,
+        name: user?.profile?.name ?? "Sekkha Member",
+        user_number: user?.userNumber ? String(user.userNumber) : "",
+        role: user?.role ?? "member",
+        school: user?.profile?.school?.name ?? "Umum",
+        method: (ownAttendance as any).method ?? "qr",
+        points_earned: ownAttendance.pointsEarned,
+        is_late: ownAttendance.isLate,
+        late_penalty_applied: ownAttendance.latePenaltyApplied,
+        badge_activity_id: (ownAttendance as any).badgeActivityId ?? null,
+        badge_activity: ownAttendance.badgeActivity?.label ?? null,
+        badge_bonus_points: ownAttendance.badgeBonusPoints,
+        is_finalized: ownAttendance.isFinalized,
+        scanned_at: ownAttendance.scannedAt.toISOString(),
+      }
+
+      return {
+        event_id: eventId,
+        total_attended: 1,
+        is_finalized: event.status === "closed",
+        attendances: [mapped],
+        my_attendance: mapped,
+      }
     }
 
     const totalCount = await eventModels.countEventAttendances(eventId)

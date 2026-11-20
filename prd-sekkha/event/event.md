@@ -126,6 +126,15 @@ Visibilitas menentukan siapa yang dapat melihat jadwal event:
 | `activist` | Aktivis | `activist`, `organizer`, `admin` |
 | `organizer` | Internal Pengurus | Khusus `organizer` & `admin` |
 
+### 5.1. Visibilitas Terpadu Berbasis Kategori (*Derived Visibility*)
+Pada antarmuka pembuatan dan penyuntingan event (`EventForm`), kolom `visibility` **tidak diinputkan secara manual sebagai kontrol input tersendiri**. Visibilitas diturunkan (*derived*) secara otomatis dari konfigurasi `target_roles` pada Kategori / Jenis Event (`event_type_id`) yang dipilih:
+* Jika `target_roles` kategori hanya berisi `['organizer']` atau `['organizer', 'admin']` $\rightarrow$ `visibility: "organizer"`.
+* Jika `target_roles` kategori hanya mencakup `['activist']` (atau `['activist', 'organizer']` tanpa `member`) $\rightarrow$ `visibility: "activist"`.
+* Jika `target_roles` kategori hanya mencakup `['member']` (atau `['member', 'organizer']` tanpa `activist`) $\rightarrow$ `visibility: "member"`.
+* Jika `target_roles` kategori kosong, terbuka umum, atau mencakup seluruh role $\rightarrow$ `visibility: "all"`.
+
+Dengan pendekatan ini, form event lebih ramping (*streamlined*) dan terhindar dari ketidaksinkronan antara peran sasaran kategori dengan visibilitas event.
+
 > **Keamanan Server-Side**:
 > Event dengan visibilitas yang tidak sesuai dengan role user otomatis difilter di query level database. Jika user mencoba mengakses langsung URL detail `/api/events/:id` yang tidak berhak dilihatnya, server mengembalikan respon `404 Not Found` (bukan `403`) untuk mencegah kebocoran informasi (*information disclosure*).
 
@@ -161,6 +170,11 @@ Visibilitas menentukan siapa yang dapat melihat jadwal event:
 ### 6.2. Detail Event (`GET /api/events/:id`)
 * **Route**: `/events/:id`
 * **Desain & Token Visual (`DESIGN.md`)**: Seluruh kontainer kartu, tab segment, dialog konfirmasi, dan modal reschedule menggunakan semantic design tokens (`bg-canvas`, `bg-surface-soft`, `bg-surface-card`, `text-ink`, `text-text-muted`, `border-hairline`) serta radius standar (`rounded-xl`, `rounded-2xl`) tanpa nilai hex mentah.
+* **Struktur Tab Berbasis Peran (*Role-Adaptive Tabs*)**:
+  * **Role Pengurus (`organizer` & `admin`)**: Menampilkan tab **"Overview"** (informasi detail kegiatan, smart venue/location, dan action buttons siklus event) dan tab **"Attendance"** (rekapitulasi seluruh jemaat hadir, input manual presensi, penetapan badge activity, serta hapus koreksi draft).
+  * **Role Jemaat (`member` & `activist`)**: Menampilkan tab **"Overview"** dan tab **"My Attendance"**.
+    * Jika jemaat sudah tercatat hadir: menampilkan kartu status kehadiran pribadi dengan badge status **"Present"**, jam presensi, metode pencatatan (`qr` / `manual`), perolehan poin kehadiran beserta bonus badge activity (jika ditugaskan), dan label penalti keterlambatan jika ada.
+    * Jika jemaat belum tercatat hadir: menampilkan kartu kosong informatif **"Not Checked In Yet"** dilengkapi tombol tindakan **"Show My Member QR"** yang mengarahkan jemaat ke QR code profilnya di `/people` untuk ditunjukkan kepada petugas di lokasi.
 * **Komponen Tampilan**:
   * Header: Judul, tanggal squircle, badge tipe kegiatan (warna dinamis), status badge (`scheduled`, `active`, `closed`, `cancel`), dan tombol Share. *(Tombol **Export / Add to Google Calendar** telah dihapus sepenuhnya dari dropdown header, kartu tanggal, dan baris non-pengurus).*
   * **Overview Bento Grid**:
@@ -190,8 +204,8 @@ Visibilitas menentukan siapa yang dapat melihat jadwal event:
 * **Field Form & Validasi Inti**:
   * `title`: Nama Acara (wajib, min 3 karakter).
   * `description`: Deskripsi lengkap kegiatan (opsional).
-  * `event_type_id`: Dropdown pilihan dari Master Data Event Type (wajib). Saat dipilih, otomatis mengisi nilai `point_reward`, serta default `max_late_minutes` dan `late_penalty_points` apabila toggle penalti aktif.
-  * `visibility`: Radio pilihan `all`, `member`, `activist`, `organizer` (wajib, default: `all`).
+  * `event_type_id`: Dropdown pilihan dari Master Data Event Type (wajib). Saat dipilih, otomatis mengisi nilai `point_reward`, default `max_late_minutes` dan `late_penalty_points` apabila toggle penalti aktif, serta menurunkan field `visibility` secara otomatis dari `target_roles` kategori tersebut.
+  * `visibility`: Diturunkan secara otomatis (*derived*) dari `target_roles` kategori/tipe acara yang dipilih (`all`, `member`, `activist`, atau `organizer`). Tidak memerlukan input manual terpisah di form.
   * `event_date`: Tanggal dan jam pelaksanaan (wajib, DateTime ISO).
     * **Validasi Pembuatan Event Baru**: **`event_date >= current date`** (waktu saat request dibuat). Form menolak tanggal di masa lampau dan menampilkan pesan error validasi.
   * `location`: Lokasi kegiatan (wajib, teks).
@@ -613,6 +627,8 @@ Menghapus event permanen.
 | **TC-EVT-23** | CRUD Action Toasts | Organizer membuat, menduplikasi, mengubah status, dan menghapus event | Role `organizer` di halaman `/events` | Jalankan Create, Update, Duplicate, Start/Close Event, dan Delete Event. | Setiap aksi menampilkan toast feedback English yang sesuai (`Event created successfully!`, `Event duplicated successfully!`, `Event deleted successfully.`, dll.) dan tidak memanggil `window.alert()`. | Positive / UX |
 | **TC-EVT-24** | Smart Location & No Calendar Export | Pengguna membuka Detail Event fisik maupun virtual | Tersedia event berlokasi `"Main Hall"` dan event berlokasi `"Online (Zoom)"` | Buka tab Overview kedua event. | Tidak ada tombol Google Calendar export; lokasi `"Online (Zoom)"` menampilkan subjudul `"Online Virtual Session"` tanpa query Maps palsu, sedangkan `"Main Hall"` menampilkan `"Vihara Sekkha Community Center"` + tautan Maps `"Vihara Sekkha Main Hall"`. | Positive / UX |
 | **TC-EVT-25** | Design Tokens & Zero Penalty Label | Memverifikasi token warna dan penalti 0 di Detail Event | Event memiliki `late_penalty_points: 0` | Buka Detail Event tab Overview. | Komponen memakai semantic tokens `DESIGN.md` (`bg-canvas`, `bg-surface-soft`, `border-hairline`, `text-ink`) dan baris Late Penalty menampilkan `"No Penalty (0 Pts)"`. | Positive / UI |
+| **TC-EVT-26** | Derived Visibility from Event Category | Organizer membuat event dan memilih kategori acara dengan target role tertentu | Tersedia kategori dengan `target_roles: ["member"]` dan kategori dengan `target_roles: ["organizer"]` | 1. Buka form Create Event.<br>2. Pilih kategori member.<br>3. Submit form. | Tidak ada input manual field visibility di form; payload otomatis mengirim `visibility: "member"`. Saat kategori diganti ke kategori organizer, visibilitas otomatis diturunkan menjadi `visibility: "organizer"`. | Positive / UX |
+| **TC-EVT-27** | Member Self-Attendance in Event Detail Sheet | Member membuka Detail Event untuk acara yang diikutinya dan acara yang belum dihadirinya | Akun ber-role `member` login aktif | 1. Buka event A (sudah hadir).<br>2. Buka event B (belum hadir). | Pada event A, tab "My Attendance" menampilkan badge "Present", metode check-in, dan total poin. Pada event B, tab "My Attendance" menampilkan status "Not Checked In Yet" dengan tombol "Show My Member QR". Aksi scanner, manual check-in, edit, dan hapus event tidak dapat diakses member. | Positive / Scoping |
 
 
 

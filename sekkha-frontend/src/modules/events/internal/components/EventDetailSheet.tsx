@@ -23,7 +23,10 @@ import {
   AwardIcon,
   ChevronRightIcon,
   MoreHorizontalIcon,
+  QrCodeIcon,
+  RotateCcwIcon,
 } from "lucide-react"
+import { useAuth } from "@/modules/auth"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -176,7 +179,15 @@ export function EventDetailSheet({
   onRefreshAttendances,
 }: EventDetailSheetProps) {
   const navigate = useNavigate()
+  const { authState } = useAuth()
+  const currentUserId =
+    authState.status === "authenticated" ? authState.userId : null
   const isPengurus = role === "organizer" || role === "admin"
+  const isAdmin = role === "admin"
+  const myRecord =
+    attendances.find((a) => a.user_id === currentUserId) ??
+    attendances[0] ??
+    null
   const [activeTab, setActiveTab] = useState<"overview" | "attendance">(
     "overview"
   )
@@ -184,7 +195,7 @@ export function EventDetailSheet({
 
   // Lifecycle actions
   type LifecycleAction =
-    "activate" | "activate-premature" | "close" | "cancel" | null
+    "activate" | "activate-premature" | "close" | "cancel" | "reset-draft" | null
   const [pendingAction, setPendingAction] = useState<LifecycleAction>(null)
   const [rescheduleModalOpen, setRescheduleModalOpen] = useState(false)
   const [rescheduleDate, setRescheduleDate] = useState("")
@@ -263,7 +274,7 @@ export function EventDetailSheet({
   }
 
   return (
-    <div className="space-y-6 text-left font-sans">
+    <div className="space-y-4 pb-24 text-left font-sans sm:space-y-6 sm:pb-6">
       {/* ── 1. Hero Header Container ── */}
       <section
         aria-labelledby="event-hero-heading"
@@ -271,10 +282,10 @@ export function EventDetailSheet({
       >
         <div className="relative z-10 space-y-4 sm:space-y-5">
           {/* Top Status & Category Badges Row */}
-          <div className="flex items-center justify-between gap-2.5">
-            <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center justify-between gap-2">
+            <div className="scrollbar-none flex min-w-0 flex-wrap items-center gap-1.5 sm:gap-2">
               <span
-                className="inline-flex items-center gap-1.5 rounded-full border border-hairline px-2.5 py-0.5 text-xs font-semibold text-ink capitalize shadow-2xs backdrop-blur-md"
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-hairline px-2.5 py-0.5 text-[11px] font-semibold text-ink capitalize shadow-2xs backdrop-blur-md sm:text-xs"
                 style={colorInfo.bgStyle}
               >
                 <span
@@ -289,9 +300,12 @@ export function EventDetailSheet({
                 <Badge
                   variant="emerald"
                   glass
-                  className="gap-1.5 rounded-full font-semibold text-emerald-700"
+                  className="shrink-0 gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700 sm:text-xs"
                 >
-                  <span className="size-1.5 animate-ping rounded-full bg-emerald-600" />
+                  <span className="relative flex size-2 shrink-0" aria-hidden="true">
+                    <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-500 opacity-75" />
+                    <span className="relative inline-flex size-2 rounded-full bg-emerald-600" />
+                  </span>
                   Active Check-In Open
                 </Badge>
               )}
@@ -330,12 +344,12 @@ export function EventDetailSheet({
               )}
             </div>
 
-            {/* Top-Right Action Group: Share + More Options */}
-            <div className="flex items-center gap-1.5 shrink-0">
+            {/* Top-Right Action Group: Share + More Options (44pt HIG touch targets) */}
+            <div className="flex shrink-0 items-center gap-1.5">
               <button
                 type="button"
                 onClick={handleShare}
-                className="flex h-9 cursor-pointer items-center justify-center gap-1.5 rounded-full border border-hairline bg-canvas px-2.5 text-ink shadow-xs transition-all hover:bg-surface-soft focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:outline-none active:scale-95"
+                className="flex min-h-11 min-w-11 cursor-pointer items-center justify-center gap-1.5 rounded-full border border-hairline bg-canvas px-3 text-ink shadow-xs transition-all hover:bg-surface-soft focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:outline-none active:scale-95"
                 title={copiedLink ? "Event details & link copied" : "Share event details & link"}
                 aria-label={copiedLink ? "Event details & link copied" : "Share event"}
               >
@@ -356,7 +370,7 @@ export function EventDetailSheet({
                   <DropdownMenuTrigger asChild>
                     <button
                       type="button"
-                      className="flex size-9 cursor-pointer items-center justify-center rounded-full border border-hairline bg-canvas text-ink shadow-xs transition-all hover:bg-surface-soft focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:outline-none active:scale-95"
+                      className="flex size-11 cursor-pointer items-center justify-center rounded-full border border-hairline bg-canvas text-ink shadow-xs transition-all hover:bg-surface-soft focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:outline-none active:scale-95"
                       title="More actions"
                       aria-label="More actions"
                     >
@@ -392,6 +406,18 @@ export function EventDetailSheet({
                         >
                           <AlertTriangleIcon className="size-3.5 text-rose-600" />
                           <span>Cancel Event</span>
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                    {isClosed && isAdmin && (
+                      <>
+                        <DropdownMenuSeparator className="my-1 border-t border-hairline" />
+                        <DropdownMenuItem
+                          onClick={() => setPendingAction("reset-draft")}
+                          className="flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-amber-800 hover:bg-amber-50"
+                        >
+                          <RotateCcwIcon className="size-3.5 text-amber-600" />
+                          <span>Reset to Draft</span>
                         </DropdownMenuItem>
                       </>
                     )}
@@ -572,60 +598,63 @@ export function EventDetailSheet({
         </div>
       </section>
 
-      {/* ── 2. Segmented Control Tabs (Attendance tab restricted to organizer & admin per PRD AC-EVT-01) ── */}
-      {isPengurus && (
-        <div className="flex w-full justify-center sm:w-auto sm:justify-start">
-          <div
-            role="tablist"
-            aria-label="Event detail sections"
-            className="grid w-full grid-cols-2 rounded-full border border-hairline bg-surface-soft p-1 shadow-2xs sm:inline-flex sm:w-auto"
+      {/* ── 2. Segmented Control Tabs (Overview & Attendance available to all roles) ── */}
+      <div className="flex w-full justify-center sm:w-auto sm:justify-start">
+        <div
+          role="tablist"
+          aria-label="Event detail sections"
+          className="grid w-full grid-cols-2 rounded-full border border-hairline bg-surface-soft p-1 shadow-2xs sm:inline-flex sm:w-auto"
+        >
+          <button
+            id="event-overview-tab"
+            type="button"
+            role="tab"
+            aria-selected={activeTab === "overview"}
+            aria-controls="event-overview-panel"
+            tabIndex={activeTab === "overview" ? 0 : -1}
+            onClick={() => setActiveTab("overview")}
+            className={`flex min-h-[44px] items-center justify-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition-all focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:outline-none sm:min-w-32 sm:px-5 sm:text-sm ${
+              activeTab === "overview"
+                ? "bg-ink text-canvas shadow-xs"
+                : "text-text-muted hover:text-ink"
+            }`}
           >
-            <button
-              id="event-overview-tab"
-              type="button"
-              role="tab"
-              aria-selected={activeTab === "overview"}
-              aria-controls="event-overview-panel"
-              tabIndex={activeTab === "overview" ? 0 : -1}
-              onClick={() => setActiveTab("overview")}
-              className={`flex min-h-[44px] items-center justify-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition-all focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:outline-none sm:min-w-32 sm:px-5 sm:text-sm ${activeTab === "overview"
-                ? "bg-ink text-canvas shadow-xs"
-                : "text-text-muted hover:text-ink"
-                }`}
-            >
-              <InfoIcon className="size-4" />
-              <span>Overview</span>
-            </button>
+            <InfoIcon className="size-4" />
+            <span>Overview</span>
+          </button>
 
-            <button
-              id="event-attendance-tab"
-              type="button"
-              role="tab"
-              aria-selected={activeTab === "attendance"}
-              aria-controls="event-attendance-panel"
-              tabIndex={activeTab === "attendance" ? 0 : -1}
-              onClick={() => setActiveTab("attendance")}
-              className={`flex min-h-[44px] items-center justify-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition-all focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:outline-none sm:min-w-32 sm:px-5 sm:text-sm ${activeTab === "attendance"
+          <button
+            id="event-attendance-tab"
+            type="button"
+            role="tab"
+            aria-selected={activeTab === "attendance"}
+            aria-controls="event-attendance-panel"
+            tabIndex={activeTab === "attendance" ? 0 : -1}
+            onClick={() => setActiveTab("attendance")}
+            className={`flex min-h-[44px] items-center justify-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition-all focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:outline-none sm:min-w-32 sm:px-5 sm:text-sm ${
+              activeTab === "attendance"
                 ? "bg-ink text-canvas shadow-xs"
                 : "text-text-muted hover:text-ink"
-                }`}
-            >
-              <UsersIcon className="size-4" />
-              <span>Attendance</span>
+            }`}
+          >
+            <UsersIcon className="size-4" />
+            <span>{isPengurus ? "Attendance" : "My Attendance"}</span>
+            {isPengurus && (
               <span
-                className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${activeTab === "attendance"
-                  ? "bg-canvas/20 text-canvas"
-                  : "bg-ink/[0.08] text-ink"
-                  }`}
+                className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${
+                  activeTab === "attendance"
+                    ? "bg-canvas/20 text-canvas"
+                    : "bg-ink/[0.08] text-ink"
+                }`}
               >
                 {attendances.length > 0
                   ? attendances.length
                   : (event.total_attendees ?? 0)}
               </span>
-            </button>
-          </div>
+            )}
+          </button>
         </div>
-      )}
+      </div>
 
       {/* ── 3. Tab Contents ── */}
       {activeTab === "overview" && (
@@ -636,8 +665,87 @@ export function EventDetailSheet({
           tabIndex={0}
           className="space-y-5 outline-none sm:space-y-6"
         >
-          {/* Key Details Bento Grid: 3 balanced cards across tablet & desktop */}
-          <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-3">
+          {/* Mobile Apple HIG Inset Grouped List (compact so Description sits above the fold) */}
+          <div
+            data-testid="event-overview-grouped-list"
+            className="divide-y divide-hairline overflow-hidden rounded-2xl border border-hairline bg-surface-soft shadow-xs sm:hidden"
+          >
+            {/* Schedule Row */}
+            <div className="flex items-center gap-3 px-4 py-3">
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-ink text-canvas">
+                <CalendarIcon className="size-4" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-bold tracking-wider text-text-muted uppercase">
+                  Schedule
+                </p>
+                <p className="truncate text-xs font-bold text-ink">
+                  {dayName}, {dateStr} · {timeStr} WIB
+                </p>
+              </div>
+            </div>
+
+            {/* Venue Row */}
+            {locationContext.mapsUrl ? (
+              <a
+                href={locationContext.mapsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex min-h-11 items-center gap-3 px-4 py-3 transition-colors active:bg-surface-card"
+              >
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-ink text-canvas">
+                  <MapPinIcon className="size-4" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] font-bold tracking-wider text-text-muted uppercase">
+                    Venue &amp; Maps
+                  </p>
+                  <p className="truncate text-xs font-bold text-ink">
+                    {locationContext.displayLocation}
+                  </p>
+                </div>
+                <span className="inline-flex shrink-0 items-center gap-1 text-[11px] font-semibold text-text-muted">
+                  <span>{locationContext.isExternalUrl ? "Join" : "Maps"}</span>
+                  <ExternalLinkIcon className="size-3.5" />
+                </span>
+              </a>
+            ) : (
+              <div className="flex items-center gap-3 px-4 py-3">
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-ink text-canvas">
+                  <MapPinIcon className="size-4" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] font-bold tracking-wider text-text-muted uppercase">
+                    Venue
+                  </p>
+                  <p className="truncate text-xs font-bold text-ink">
+                    {locationContext.displayLocation}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Seva Reward Row */}
+            <div className="flex items-center gap-3 px-4 py-3">
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-ink text-canvas">
+                <AwardIcon className="size-4" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-bold tracking-wider text-text-muted uppercase">
+                  Seva Reward
+                </p>
+                <p className="text-xs font-bold text-ink">
+                  +{pointsReward} Activity Points
+                </p>
+              </div>
+              <span className="shrink-0 rounded-full bg-ink/[0.06] px-2.5 py-1 text-[10px] font-semibold text-text-muted">
+                Streak Eligible
+              </span>
+            </div>
+          </div>
+
+          {/* Desktop/Tablet Key Details Bento Grid */}
+          <div className="hidden gap-3.5 sm:grid sm:grid-cols-3">
             {/* Schedule Bento Card */}
             <div className="flex flex-col justify-between rounded-2xl border border-hairline bg-surface-soft p-4 shadow-xs">
               <div className="flex items-start gap-3">
@@ -740,23 +848,11 @@ export function EventDetailSheet({
             {/* Left Column: Event Description + Guidelines */}
             <div className="space-y-5 lg:col-span-7">
               {/* About this Event */}
-              <div className="space-y-3 rounded-2xl border border-hairline bg-surface-soft p-4 shadow-xs sm:p-6">
-                <div className="flex items-center justify-between">
-                  <h3 className="flex items-center gap-2 text-sm font-bold text-ink sm:text-base">
-                    <SparklesIcon className="size-4 text-ink" />
-                    <span>About this Event</span>
-                  </h3>
-                  <span
-                    className="inline-flex items-center gap-1.5 rounded-full border border-hairline px-2.5 py-0.5 text-[11px] font-semibold text-ink"
-                    style={colorInfo.bgStyle}
-                  >
-                    <span
-                      className="size-1.5 rounded-full"
-                      style={colorInfo.dotStyle}
-                    />
-                    {colorInfo.name}
-                  </span>
-                </div>
+              <div className="space-y-2.5 rounded-2xl border border-hairline bg-surface-soft p-4 shadow-xs sm:space-y-3 sm:p-6">
+                <h3 className="flex items-center gap-2 text-sm font-bold text-ink sm:text-base">
+                  <SparklesIcon className="size-4 text-ink" />
+                  <span>About this Event</span>
+                </h3>
                 {event.description ? (
                   <p className="text-xs leading-relaxed whitespace-pre-line text-body sm:text-sm">
                     {event.description}
@@ -863,9 +959,14 @@ export function EventDetailSheet({
                     <ChevronRightIcon className="size-4 text-ink" />
                   </button>
                 ) : (
-                  <p className="text-center text-xs text-text-muted">
-                    Check-in is managed by event organizers.
-                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("attendance")}
+                    className="flex min-h-[42px] w-full cursor-pointer items-center justify-center gap-1.5 rounded-full border border-ink bg-surface-card px-4 py-2 text-xs font-bold text-ink shadow-xs transition-all hover:bg-surface-soft active:scale-95"
+                  >
+                    <span>View My Attendance</span>
+                    <ChevronRightIcon className="size-4 text-ink" />
+                  </button>
                 )}
               </div>
             </div>
@@ -882,38 +983,10 @@ export function EventDetailSheet({
           tabIndex={0}
           className="space-y-6 outline-none"
         >
-          {/* Active Session Status Bar (Pengurus & Aktivis) */}
-          {isPengurus && (
+          {/* Session Status Notice (Organizer & Admin Only — when idle or locked) */}
+          {isPengurus && !isActive && (
             <div>
-              {isActive && (
-                <div className="flex items-center justify-between gap-3 rounded-[20px] border border-emerald-200 bg-emerald-50/80 px-4 py-2.5 text-xs text-emerald-900 shadow-2xs">
-                  <div className="flex min-w-0 items-center gap-2.5">
-                    <span className="relative flex size-2.5 shrink-0">
-                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                      <span className="relative inline-flex size-2.5 rounded-full bg-emerald-600" />
-                    </span>
-                    <span className="truncate font-semibold text-emerald-900">
-                      Live Check-In Active
-                    </span>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      navigate({
-                        to: "/events/scan",
-                        search: { eventId: event.id },
-                      })
-                    }
-                    className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full bg-ink px-3.5 py-1.5 text-xs font-bold text-canvas shadow-2xs transition-all hover:bg-ink/90 active:scale-95"
-                  >
-                    <CameraIcon className="size-3.5 text-canvas" />
-                    <span>Launch Scanner</span>
-                  </button>
-                </div>
-              )}
-
-              {!isActive && !isClosed && (
+              {!isClosed && (
                 <div className="flex items-center gap-3 rounded-2xl border border-hairline bg-canvas p-3.5 text-xs text-text-muted shadow-2xs">
                   <AlertTriangleIcon className="size-4 shrink-0 text-amber-600" />
                   <span>
@@ -938,26 +1011,144 @@ export function EventDetailSheet({
             </div>
           )}
 
-          {/* Attendance Table Container */}
-          <div className="rounded-2xl border border-hairline bg-surface-soft p-3.5 shadow-xs sm:p-6">
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-hairline pb-3">
-              <div className="flex items-center gap-2">
-                <ClipboardListIcon className="size-4.5 text-ink" />
-                <h3 className="text-sm font-bold text-ink sm:text-base">
-                  Recorded Attendees ({attendances.length})
-                </h3>
+          {/* Organizer / Admin Full Attendance Table */}
+          {isPengurus && (
+            <div className="rounded-2xl border border-hairline bg-surface-soft p-3.5 shadow-xs sm:p-6">
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-hairline pb-3">
+                <div className="flex items-center gap-2">
+                  <ClipboardListIcon className="size-4.5 text-ink" />
+                  <h3 className="text-sm font-bold text-ink sm:text-base">
+                    Recorded Attendees ({attendances.length})
+                  </h3>
+                </div>
               </div>
-            </div>
 
-            <AttendanceListSheet
-              eventId={event.id}
-              records={attendances}
-              role={role}
-              isClosed={isClosed}
-              onDeleteRecord={onDeleteAttendance}
-              onRefresh={onRefreshAttendances}
-            />
-          </div>
+              <AttendanceListSheet
+                eventId={event.id}
+                records={attendances}
+                role={role}
+                isClosed={isClosed}
+                onDeleteRecord={onDeleteAttendance}
+                onRefresh={onRefreshAttendances}
+              />
+            </div>
+          )}
+
+          {/* Member / Activist Personal Attendance Record View */}
+          {!isPengurus && (
+            <div className="space-y-4">
+              {myRecord ? (
+                <div className="rounded-2xl border border-hairline bg-surface-card p-5 shadow-xs sm:p-6">
+                  <div className="flex flex-wrap items-center justify-between gap-3 border-b border-hairline pb-4">
+                    <div className="flex items-center gap-2.5">
+                      <div className="flex size-9 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600">
+                        <CheckCircle2Icon className="size-5" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-bold text-ink sm:text-base">
+                          Attendance Recorded
+                        </h3>
+                        <p className="text-xs text-text-muted">
+                          Logged at{" "}
+                          {new Date(myRecord.scanned_at).toLocaleTimeString(
+                            "en-US",
+                            {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            }
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300/80 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800">
+                      <CheckCircle2Icon className="size-3.5" />
+                      <span>Present</span>
+                    </span>
+                  </div>
+
+                  <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div className="rounded-xl border border-hairline bg-surface-soft p-3.5">
+                      <span className="text-[11px] font-semibold tracking-wider text-text-muted uppercase">
+                        Check-In Method
+                      </span>
+                      <p className="mt-1 flex items-center gap-1.5 text-xs font-bold text-ink sm:text-sm">
+                        <QrCodeIcon className="size-4 text-text-muted" />
+                        <span>
+                          {myRecord.method === "manual"
+                            ? "Manual Registration"
+                            : "Member QR Scan"}
+                        </span>
+                      </p>
+                    </div>
+
+                    <div className="rounded-xl border border-hairline bg-surface-soft p-3.5">
+                      <span className="text-[11px] font-semibold tracking-wider text-text-muted uppercase">
+                        Karma Points Earned
+                      </span>
+                      <p className="mt-1 flex items-center gap-1.5 text-xs font-bold text-emerald-700 sm:text-sm">
+                        <SparklesIcon className="size-4 text-emerald-600" />
+                        <span>+{myRecord.points_earned} Pts</span>
+                        {myRecord.is_late && (
+                          <span className="rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">
+                            Late (-{myRecord.late_penalty_applied} Pts)
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+
+                  {myRecord.badge_activity && (
+                    <div className="mt-3 flex items-center gap-2.5 rounded-xl border border-indigo-200/80 bg-indigo-50/70 p-3 text-xs text-indigo-900">
+                      <AwardIcon className="size-4 shrink-0 text-indigo-600" />
+                      <span>
+                        <strong>Service Duty:</strong> {myRecord.badge_activity} (+{myRecord.badge_bonus_points} bonus points)
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-hairline bg-canvas p-3.5 text-xs text-text-muted">
+                    <InfoIcon className="mt-0.5 size-4 shrink-0 text-text-muted" />
+                    <span>
+                      {myRecord.is_finalized || isClosed
+                        ? "This event has concluded. Your karma points and attendance streak have been credited to your profile."
+                        : "Check-in recorded in draft. Official karma points and streaks will be credited once organizers conclude the event."}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="rounded-2xl border border-hairline bg-surface-card p-6 text-center shadow-xs">
+                  <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-surface-soft text-text-muted">
+                    <ClockIcon className="size-6 text-text-muted" />
+                  </div>
+                  <h3 className="mt-3 text-base font-bold text-ink">
+                    Not Checked In Yet
+                  </h3>
+                  <p className="mx-auto mt-1.5 max-w-sm text-xs text-text-muted">
+                    {isActive
+                      ? "Check-in is currently open at the venue! Please show your personal Member QR code to an organizer at the registration desk."
+                      : isClosed
+                        ? "You were not recorded as present for this concluded event."
+                        : isCancelled
+                          ? "This event was cancelled."
+                          : "Check-in will open when the event begins. Prepare your Member QR code beforehand from your Profile."}
+                  </p>
+
+                  {!isClosed && !isCancelled && (
+                    <div className="mt-5 flex justify-center">
+                      <button
+                        type="button"
+                        onClick={() => navigate({ to: "/people" })}
+                        className="inline-flex min-h-[42px] cursor-pointer items-center justify-center gap-2 rounded-full bg-ink px-5 py-2 text-xs font-bold text-canvas shadow-xs transition-all hover:bg-ink/90 active:scale-95"
+                      >
+                        <QrCodeIcon className="size-4" />
+                        <span>Show My Member QR</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -971,12 +1162,11 @@ export function EventDetailSheet({
         title="Start Event & Open Check-In?"
         description={
           <>
-            Members will be able to self check-in via QR for{" "}
+            Attendance check-in will be opened for organizers to scan members for{" "}
             <strong className="font-semibold text-ink">
               {event.title}
-            </strong>{" "}
-            once activated. You can close check-in and finalize points when the
-            event ends.
+            </strong>
+            . You can close check-in and finalize points when the event ends.
           </>
         }
         confirmLabel="Start Event"
@@ -1058,6 +1248,29 @@ export function EventDetailSheet({
         confirmLabel="Close & Finalize Points"
         cancelLabel="Keep Open"
         onConfirm={() => executeStatusChange("closed")}
+      />
+
+      {/* Reset closed event to draft (Admin only) */}
+      <ConfirmDialog
+        open={pendingAction === "reset-draft"}
+        onOpenChange={(open) => !open && setPendingAction(null)}
+        variant="warning"
+        icon={<RotateCcwIcon className="size-6" />}
+        title="Reset Event to Draft?"
+        description={
+          <>
+            Resetting{" "}
+            <strong className="font-semibold text-ink">
+              {event.title}
+            </strong>{" "}
+            to draft (scheduled) will unlock attendance editing and roll back
+            points distributed from this closure. Existing attendance records,
+            late statuses, and service roles will be preserved.
+          </>
+        }
+        confirmLabel="Reset to Draft"
+        cancelLabel="Keep Closed"
+        onConfirm={() => executeStatusChange("scheduled")}
       />
 
       {/* Reschedule Event Modal */}

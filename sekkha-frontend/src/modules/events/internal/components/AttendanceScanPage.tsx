@@ -221,29 +221,17 @@ export function AttendanceScanPage() {
   const [recentScans, setRecentScans] = useState<RecentScanItem[]>([])
   const [sessionSuccessCount, setSessionSuccessCount] = useState(0)
 
-  // Feedback banner & floating random bubble toasts
+  // Top feedback banner
   const [lastFeedback, setLastFeedback] = useState<{
     type: "success" | "duplicate" | "error"
     title: string
     subtitle: string
   } | null>(null)
-  const [floatingBubbles, setFloatingBubbles] = useState<
-    Array<{
-      id: string
-      type: "success" | "duplicate" | "error"
-      title: string
-      subtitle: string
-      offsetX: number
-    }>
-  >([])
   const feedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const bubbleTimersRef = useRef<Array<ReturnType<typeof setTimeout>>>([])
 
   useEffect(() => {
     return () => {
       if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current)
-      bubbleTimersRef.current.forEach(clearTimeout)
-      bubbleTimersRef.current = []
     }
   }, [])
 
@@ -363,17 +351,6 @@ export function AttendanceScanPage() {
     feedbackTimerRef.current = setTimeout(() => {
       setLastFeedback(null)
     }, 3500)
-
-    const id = `bubble-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
-    const offsetX = Math.round((Math.random() - 0.5) * 56)
-    setFloatingBubbles((prev) => [
-      ...prev.slice(-3),
-      { id, type, title, subtitle, offsetX },
-    ])
-    const timer = setTimeout(() => {
-      setFloatingBubbles((prev) => prev.filter((b) => b.id !== id))
-    }, 2600)
-    bubbleTimersRef.current.push(timer)
   }
 
   const handleCamerasDetected = useCallback(
@@ -830,37 +807,6 @@ export function AttendanceScanPage() {
           </div>
         )}
       </div>
-
-      {/* ── Floating Random Bubble Toasts ── */}
-      {floatingBubbles.length > 0 && (
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-x-4 bottom-24 z-40 flex flex-col items-center gap-2"
-        >
-          {floatingBubbles.map((bubble) => (
-            <div
-              key={bubble.id}
-              style={{ transform: `translateX(${bubble.offsetX}px)` }}
-              className={`inline-flex max-w-xs animate-in items-center gap-2 rounded-full border px-3.5 py-2 text-xs font-bold shadow-2xl backdrop-blur-xl duration-300 fade-in slide-in-from-bottom-4 zoom-in-95 ${bubble.type === "success"
-                ? "border-emerald-300/70 bg-emerald-900/90 text-emerald-50"
-                : bubble.type === "duplicate"
-                  ? "border-amber-300/70 bg-amber-900/90 text-amber-50"
-                  : "border-rose-300/70 bg-rose-900/90 text-rose-50"
-                }`}
-            >
-              {bubble.type === "success" ? (
-                <CheckCircle2Icon className="size-4 shrink-0 text-emerald-300" />
-              ) : (
-                <AlertTriangleIcon className="size-4 shrink-0 text-amber-300" />
-              )}
-              <span className="truncate">{bubble.title}</span>
-              <span className="max-w-[140px] truncate text-[11px] font-medium opacity-80">
-                {bubble.subtitle}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
 
       {/* ── 4. iOS-style Bottom Frosted Search Bar + Draggable History Sheet ── */}
       {isPengurus && !eventError && (

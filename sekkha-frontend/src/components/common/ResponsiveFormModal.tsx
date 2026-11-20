@@ -64,6 +64,24 @@ export function ResponsiveFormModal({
 }: ResponsiveFormModalProps) {
   const isDesktop = useIsDesktop()
   const isModalOpen = open ?? isOpen ?? false
+  const [isExpanded, setIsExpanded] = useState(false)
+  const prevOpenRef = React.useRef(isModalOpen)
+
+  useEffect(() => {
+    const wasOpen = prevOpenRef.current
+    prevOpenRef.current = isModalOpen
+
+    // Reset immediately on open so reopened drawers always start at 88dvh
+    if (!wasOpen && isModalOpen) {
+      setIsExpanded(false)
+      return
+    }
+    // Wait for Vaul's slide-down close animation before resetting expanded height
+    if (!isModalOpen) {
+      const timer = setTimeout(() => setIsExpanded(false), 500)
+      return () => clearTimeout(timer)
+    }
+  }, [isModalOpen])
 
   const handleClose = () => {
     onClose?.()
@@ -78,9 +96,8 @@ export function ResponsiveFormModal({
     }
   }
 
-  if (!isModalOpen) return null
-
   if (isDesktop) {
+    if (!isModalOpen) return null
     // Desktop (≥768px): Centered Modal with DESIGN.md tokens, rendered via portal to prevent stacking context clipping
     const desktopModal = (
       <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 font-sans">
@@ -140,15 +157,37 @@ export function ResponsiveFormModal({
             e.preventDefault()
           }
         }}
-        className="z-[100] flex max-h-[88vh] flex-col overflow-hidden rounded-t-[28px] border-t border-[#e5e5e5] bg-[#faf5e8] p-0 font-sans backdrop-blur-[40px]"
+        data-expanded={isExpanded ? "true" : "false"}
+        className={cn(
+          "z-[100] flex flex-col overflow-hidden rounded-t-[28px] border-t border-[#e5e5e5] bg-[#faf5e8] p-0 font-sans backdrop-blur-[40px] transition-[transform,max-height,box-shadow] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]",
+          isExpanded ? "max-h-[100dvh] shadow-2xl" : "max-h-[88dvh]"
+        )}
       >
         {/* Sticky Drag Handle Header with Blur Background */}
-        <div className="sticky top-0 z-20 flex shrink-0 items-center justify-center border-b border-[#e5e5e5] bg-[#faf5e8] py-3 backdrop-blur-[30px]">
-          <div className="h-1.5 w-12 rounded-full bg-[#6a6a6a]/30" />
+        <div
+          className={cn(
+            "sticky top-0 z-20 flex shrink-0 items-center justify-center border-b border-[#e5e5e5] bg-[#faf5e8] py-3 backdrop-blur-[30px] transition-shadow duration-300",
+            isExpanded && "shadow-2xs"
+          )}
+        >
+          <div
+            className={cn(
+              "h-1.5 rounded-full transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]",
+              isExpanded ? "w-14 bg-[#6a6a6a]/45" : "w-12 bg-[#6a6a6a]/30"
+            )}
+          />
         </div>
 
         {/* Scrollable Container */}
-        <div className="scrollbar-none flex-1 overflow-y-auto px-5 pt-3 pb-8">
+        <div
+          data-testid="drawer-scroll-container"
+          onScroll={(e) => {
+            if (!isExpanded && e.currentTarget.scrollTop > 0) {
+              setIsExpanded(true)
+            }
+          }}
+          className="scrollbar-none flex-1 overflow-y-auto px-5 pt-3 pb-8"
+        >
           <DrawerHeader className="mb-3 border-b border-white/30 px-0 pt-0 pb-3 text-left">
             <DrawerTitle className="text-sm font-bold text-[#0a0a0a]">
               {title}

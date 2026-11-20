@@ -121,7 +121,7 @@ export function ProfilePage() {
         </div>
       )}
 
-      <div className="mx-auto max-w-7xl px-3.5 py-4 pb-36 sm:px-6 sm:py-6 md:px-8 md:pb-12 lg:px-12">
+      <div className="mx-auto max-w-7xl px-3.5 py-3 pb-32 sm:px-6 sm:py-6 md:px-8 md:pb-12 lg:px-12">
         {loading ? (
           <div
             data-testid="profile-loading-skeleton"
@@ -177,23 +177,23 @@ export function ProfilePage() {
         ) : (
           <div
             data-testid="profile-layout-grid"
-            className="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:grid-rows-[auto_1fr] lg:items-start"
+            className="grid grid-cols-1 gap-3.5 sm:gap-5 lg:grid-cols-12 lg:grid-rows-[auto_1fr] lg:items-start lg:gap-6"
           >
-            {/* ── 1. HERO IDENTITY CARD (Mobile: Top | Desktop: Left Rail Row 1) ── */}
+            {/* ── 1. HERO IDENTITY CARD (Mobile: Compact | Desktop: Left Rail Row 1) ── */}
             <aside className="lg:col-span-5 lg:col-start-1 lg:row-start-1 xl:col-span-4">
               <Card
                 data-testid="profile-hero-card"
-                className="space-y-5 border-hairline bg-canvas p-5 shadow-none sm:p-6"
+                className="space-y-3 border-hairline bg-canvas p-3.5 shadow-none sm:space-y-5 sm:p-6"
               >
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3 sm:gap-4">
                   <div
-                    className={`flex size-16 shrink-0 items-center justify-center rounded-[18px] border text-xl font-bold tracking-tight shadow-xs ${getRoleAvatarClass(role)}`}
+                    className={`flex size-12 shrink-0 items-center justify-center rounded-[14px] border text-base font-bold tracking-tight shadow-xs sm:size-16 sm:rounded-[18px] sm:text-xl ${getRoleAvatarClass(role)}`}
                   >
                     {getInitials(displayName, "M")}
                   </div>
 
-                  <div className="min-w-0 flex-1 space-y-1.5">
-                    <h1 className="truncate text-lg font-bold tracking-tight text-ink sm:text-xl">
+                  <div className="min-w-0 flex-1 space-y-1 sm:space-y-1.5">
+                    <h1 className="truncate text-base font-bold tracking-tight text-ink sm:text-xl">
                       {displayName}
                     </h1>
 
@@ -222,23 +222,23 @@ export function ProfilePage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 border-t border-hairline pt-4">
-                  <div className="flex flex-col justify-between rounded-[16px] border border-hairline bg-surface-soft px-3.5 py-3">
+                <div className="grid grid-cols-2 gap-2 border-t border-hairline pt-3 sm:gap-3 sm:pt-4">
+                  <div className="flex flex-col justify-between rounded-[14px] border border-hairline bg-surface-soft px-3 py-2 sm:rounded-[16px] sm:px-3.5 sm:py-3">
                     <p className="text-[10px] font-bold tracking-wider whitespace-nowrap text-text-muted uppercase">
                       Karma Points
                     </p>
-                    <p className="mt-1.5 font-mono text-base font-extrabold whitespace-nowrap text-ink tabular-nums sm:text-lg">
+                    <p className="mt-0.5 font-mono text-sm font-extrabold whitespace-nowrap text-ink tabular-nums sm:mt-1.5 sm:text-lg">
                       {totalPoints} Pts
                     </p>
                   </div>
 
-                  <div className="flex flex-col justify-between rounded-[16px] border border-amber-200/80 bg-amber-50/70 px-3.5 py-3">
+                  <div className="flex flex-col justify-between rounded-[14px] border border-amber-200/80 bg-amber-50/70 px-3 py-2 sm:rounded-[16px] sm:px-3.5 sm:py-3">
                     <p className="text-[10px] font-bold tracking-wider whitespace-nowrap text-amber-800 uppercase">
                       Weekly Streak
                     </p>
-                    <div className="mt-1.5 flex items-center gap-1.5">
-                      <FlameIcon className="size-4 shrink-0 text-amber-600" />
-                      <span className="text-base font-extrabold whitespace-nowrap text-amber-950 tabular-nums sm:text-lg">
+                    <div className="mt-0.5 flex items-center gap-1 sm:mt-1.5 sm:gap-1.5">
+                      <FlameIcon className="size-3.5 shrink-0 text-amber-600 sm:size-4" />
+                      <span className="text-sm font-extrabold whitespace-nowrap text-amber-950 tabular-nums sm:text-lg">
                         {currentStreak}{" "}
                         {currentStreak === 1 ? "Week" : "Weeks"}
                       </span>
@@ -256,7 +256,7 @@ export function ProfilePage() {
                 onValueChange={(val) => setActiveTab(val as ProfileTab)}
                 className="w-full"
               >
-                <TabsList className="grid w-full grid-cols-3 rounded-[16px] border border-hairline bg-canvas p-1.5 shadow-none">
+                <TabsList className="grid w-full grid-cols-3 rounded-[14px] border border-hairline bg-canvas p-1 shadow-none sm:rounded-[16px] sm:p-1.5">
                   <TabsTrigger
                     value="card"
                     className="min-h-[44px] w-full rounded-[12px] px-2 text-xs font-bold sm:px-3 sm:text-sm"
@@ -287,7 +287,7 @@ export function ProfilePage() {
                   </TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="card" className="mt-4 space-y-6">
+                <TabsContent value="card" className="mt-3 space-y-5 sm:mt-4 sm:space-y-6">
                   <DigitalMemberCard
                     name={displayName}
                     userNumber={profile.user_number}
@@ -313,7 +313,7 @@ export function ProfilePage() {
                   />
                 </TabsContent>
 
-                <TabsContent value="security" className="mt-4">
+                <TabsContent value="security" className="mt-3 space-y-4 sm:mt-4">
                   <SecuritySettingsSection
                     currentEmail={profile.email || authState.email}
                     emailVerified={profile.email_verified ?? true}
@@ -327,24 +327,23 @@ export function ProfilePage() {
                     onLogout={logout}
                     onToast={showToast}
                   />
+                  <InstallAppCard />
                 </TabsContent>
               </Tabs>
             </div>
 
-            {/* ── 3. INSTALL APP & ACCESSIBLE SIGN OUT CARD (Mobile: Very Bottom | Desktop: Left Rail Row 2 directly under Hero) ── */}
+            {/* ── 3. ACCESSIBLE SIGN OUT BAR (Mobile: Compact Bottom Row | Desktop: Left Rail Row 2 directly under Hero) ── */}
             <section
               data-testid="profile-signout-section"
-              className="space-y-4 lg:col-span-5 lg:col-start-1 lg:row-start-2 xl:col-span-4"
+              className="lg:col-span-5 lg:col-start-1 lg:row-start-2 xl:col-span-4"
             >
-              <InstallAppCard />
-
-              <div className="rounded-[20px] border border-hairline bg-canvas p-5">
-                <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center lg:flex-col lg:items-stretch">
-                  <div>
-                    <h2 className="text-sm font-bold text-ink">
+              <div className="rounded-[18px] border border-hairline bg-canvas px-4 py-3 sm:rounded-[20px] sm:p-5">
+                <div className="flex items-center justify-between gap-3 lg:flex-col lg:items-stretch lg:gap-4">
+                  <div className="min-w-0">
+                    <h2 className="text-xs font-bold text-ink sm:text-sm">
                       Session &amp; Sign Out
                     </h2>
-                    <p className="mt-0.5 text-xs leading-relaxed text-text-muted">
+                    <p className="mt-0.5 hidden text-xs leading-relaxed text-text-muted sm:block">
                       Sign out of your active session on this device. You can sign
                       back in any time.
                     </p>
@@ -354,7 +353,7 @@ export function ProfilePage() {
                     type="button"
                     variant="outlined"
                     onClick={() => setShowLogoutConfirm(true)}
-                    className="h-11 shrink-0 gap-2 rounded-[12px] border-rose-200 bg-rose-50/70 px-5 text-xs font-bold text-rose-700 hover:border-rose-300 hover:bg-rose-100 hover:text-rose-800 lg:w-full lg:justify-center"
+                    className="h-11 shrink-0 gap-2 rounded-[12px] border-rose-200 bg-rose-50/70 px-4 text-xs font-bold text-rose-700 hover:border-rose-300 hover:bg-rose-100 hover:text-rose-800 sm:px-5 lg:w-full lg:justify-center"
                   >
                     <LogOutIcon className="size-4" />
                     <span>Sign Out</span>

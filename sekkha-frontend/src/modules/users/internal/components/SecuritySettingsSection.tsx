@@ -357,9 +357,9 @@ export function SecuritySettingsSection({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* ── CARD 1: CHANGE PASSWORD ── */}
-      <div className="space-y-4 rounded-[20px] border border-[#e5e5e5] bg-[#fffaf0] p-5 shadow-xs sm:p-6">
+      <div className="space-y-4 rounded-[20px] border border-[#e5e5e5] bg-[#fffaf0] p-4 shadow-xs sm:p-6">
         <div className="flex items-center gap-2.5 border-b border-[#e5e5e5] pb-3.5">
           <div className="flex size-9 items-center justify-center rounded-[10px] bg-[#0a0a0a] text-white shadow-xs">
             <KeyRoundIcon className="size-4.5 text-[#e8b94a]" />

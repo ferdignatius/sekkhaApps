@@ -218,9 +218,14 @@ describe("ProfilePage UI/UX, Layout & Behavioral Improvements", () => {
     // No redundant Current Balance box
     expect(screen.queryByText("Current Balance")).toBeNull()
 
-    // Progressive display: 10 shown initially, remaining 5 hidden behind Show More
-    expect(screen.getByText("Transaction 10")).toBeDefined()
-    expect(screen.queryByText("Transaction 11")).toBeNull()
+    // Progressive display: 3 shown initially, remaining 12 hidden behind Show More
+    expect(screen.getByText("Transaction 3")).toBeDefined()
+    expect(screen.queryByText("Transaction 4")).toBeNull()
+
+    fireEvent.click(screen.getByRole("button", { name: /Show More/i }))
+
+    expect(screen.getByText("Transaction 13")).toBeDefined()
+    expect(screen.queryByText("Transaction 14")).toBeNull()
 
     fireEvent.click(screen.getByRole("button", { name: /Show More/i }))
 

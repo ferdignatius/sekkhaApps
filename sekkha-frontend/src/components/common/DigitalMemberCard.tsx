@@ -140,19 +140,18 @@ export function DigitalMemberCard({
     <div className="space-y-4">
       {/* ── HIG PHYSICAL/DIGITAL MEMBER CARD (1.586 : 1 Standard Ratio) ── */}
       <div
-        className={`relative overflow-hidden rounded-[22px] border p-5 transition-all duration-300 sm:p-6 ${roleCardStyles.cardBg}`}
-        style={{ minHeight: "220px" }}
+        className={`relative overflow-hidden rounded-[22px] border p-4 transition-all duration-300 sm:min-h-[220px] sm:p-6 ${roleCardStyles.cardBg}`}
       >
         {/* Subtle Specular Top Highlight */}
         <div
           className={`pointer-events-none absolute inset-0 bg-gradient-to-b ${roleCardStyles.accentGlow}`}
         />
 
-        <div className="relative z-10 flex h-full flex-col justify-between gap-5">
+        <div className="relative z-10 flex h-full flex-col justify-between gap-3.5 sm:gap-5">
           {/* Card Top: Logo, Subtitle & Role Chip */}
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex items-center gap-2.5">
-              <div className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-white/90 p-1.5 shadow-xs">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex min-w-0 items-center gap-2 sm:gap-2.5">
+              <div className="flex size-8 shrink-0 items-center justify-center rounded-[10px] bg-white/90 p-1.5 shadow-xs sm:size-9">
                 <img
                   src="/sekkha_logo.svg"
                   alt="Sekkha"
@@ -162,28 +161,28 @@ export function DigitalMemberCard({
                   }}
                 />
               </div>
-              <div>
+              <div className="min-w-0">
                 <p
-                  className={`text-[10px] font-bold tracking-widest uppercase sm:text-[11px] ${roleCardStyles.headerSub}`}
+                  className={`truncate text-[9px] font-bold tracking-wider uppercase sm:text-[11px] sm:tracking-widest ${roleCardStyles.headerSub}`}
                 >
                   Sekkha Dhamma Community
                 </p>
-                <h4 className="text-xs font-black tracking-tight uppercase sm:text-sm">
+                <h4 className="truncate text-[11px] font-black tracking-tight uppercase sm:text-sm">
                   Official Identity Pass
                 </h4>
               </div>
             </div>
 
             <span
-              className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-bold capitalize sm:text-xs ${roleCardStyles.badge}`}
+              className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold capitalize sm:px-2.5 sm:text-xs ${roleCardStyles.badge}`}
             >
               <ShieldCheckIcon className="size-3" />
               <span>{ROLE_DISPLAY_NAMES[normalizedRole] || normalizedRole}</span>
             </span>
           </div>
 
-          {/* Card Middle: Member Name & High-Contrast QR Code */}
-          <div className="flex items-center justify-between gap-4 py-1">
+          {/* Card Middle: Member Name & Tap-to-Enlarge High-Contrast QR Code */}
+          <div className="flex items-center justify-between gap-3 py-0.5 sm:gap-4 sm:py-1">
             <div className="min-w-0 flex-1 space-y-1">
               <p
                 className={`text-[11px] font-medium tracking-wider uppercase ${roleCardStyles.subtext}`}
@@ -254,30 +253,34 @@ export function DigitalMemberCard({
               )}
             </div>
 
-            {/* High-Contrast QR Code Container */}
-            <div className="flex shrink-0 flex-col items-center">
-              <div className="rounded-[14px] border border-black/10 bg-white p-2.5 shadow-sm transition-transform hover:scale-105">
+            {/* Interactive Tap-to-Enlarge QR Code Container */}
+            <button
+              type="button"
+              onClick={() => memberIdStr && setShowEnlargeQr(true)}
+              disabled={!memberIdStr}
+              aria-label="Tap QR code to enlarge"
+              title="Tap to enlarge QR code"
+              className="group flex shrink-0 cursor-pointer flex-col items-center rounded-[14px] focus-visible:ring-2 focus-visible:ring-clay-ochre focus-visible:outline-none disabled:cursor-default"
+            >
+              <div className="rounded-[12px] border border-black/10 bg-white p-1.5 shadow-sm transition-transform group-hover:scale-105 group-active:scale-95 sm:rounded-[14px] sm:p-2.5">
                 {memberIdStr ? (
                   <QRCode
                     value={memberIdStr}
                     size={96}
-                    style={{
-                      height: "auto",
-                      maxWidth: "100%",
-                      width: "96px",
-                    }}
+                    className="size-[76px] sm:size-[96px]"
                     viewBox="0 0 256 256"
                   />
                 ) : (
-                  <div className="flex size-24 items-center justify-center text-[10px] font-semibold text-neutral-400">
+                  <div className="flex size-[76px] items-center justify-center text-[10px] font-semibold text-neutral-400 sm:size-24">
                     No QR
                   </div>
                 )}
               </div>
               <p className="mt-1 text-[9px] font-bold tracking-widest text-neutral-400 uppercase">
-                Scan Code
+                <span className="sm:hidden">Tap QR</span>
+                <span className="hidden sm:inline">Scan Code</span>
               </p>
-            </div>
+            </button>
           </div>
 
           {/* Card Footer: Joined Date & Account Status */}

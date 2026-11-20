@@ -17,7 +17,7 @@ interface PointsLedgerProps {
   totalPoints?: number
 }
 
-const INITIAL_VISIBLE_COUNT = 10
+const INITIAL_VISIBLE_COUNT = 3
 const LOAD_MORE_STEP = 10
 
 function formatTxDate(dateStr?: string) {
@@ -84,11 +84,13 @@ export function PointsLedger(_props: PointsLedgerProps) {
   const remainingCount = Math.max(0, transactions.length - visibleCount)
 
   return (
-    <div data-testid="points-ledger-section" className="space-y-4">
+    <div data-testid="points-ledger-section" className="space-y-3 sm:space-y-4">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h3 className="text-base font-bold text-ink">Karma Points History</h3>
-          <p className="text-xs text-text-muted">
+          <h3 className="text-sm font-bold text-ink sm:text-base">
+            Karma Points History
+          </h3>
+          <p className="hidden text-xs text-text-muted sm:block">
             Track points earned from attendance, duties, and community events.
           </p>
         </div>

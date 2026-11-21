@@ -1,6 +1,6 @@
 {
   "name": "sekkha-api",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "Sekkha Community App - Backend API",
   "main": "dist/server.js",
   "scripts": {

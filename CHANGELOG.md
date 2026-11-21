@@ -4,6 +4,23 @@ All notable changes to Sekkha Apps. Semver (`MAJOR.MINOR.PATCH`); newest on top.
 
 ## [Unreleased]
 
+## [1.2.2] - 2026-11-21
+
+### Added
+- **Global Toast Notification (`Toast` & `sonner`)**: Added `Toast` wrapper in `components/base/Toast.tsx` backed by `sonner` (`components/ui/sonner.tsx`) and replaced inline banner/toast states across `EventsPage`, `Configure`, and `ProfilePage`.
+- **Collapsible Bottom Sheet (`CollapsibleBottomSheet` & `Drawer`)**: Added `Drawer` base primitive and `CollapsibleBottomSheet` for mobile event list drag/scroll-to-expand over the calendar.
+- **Home Hero Illustration (`/home-background.svg`)**: Added vector sunrise/vihara hero wallpaper with soft cream readability scrim and transparent `PageBreadcrumb` top bar on `HomePage`.
+- **Event Deep-Link Skeleton & Fallback (`PageSkeletons` & `EventsPage`)**: Added `EventDetailSkeleton` / `EventDetailSkeletonBody` for instant deep-link loading on `/events?eventId=...` and an `"Event not found"` fallback state with `"Back to Events"`.
+
+### Changed
+- **Home & Navigation UI**: Streamlined `HomePage` hero to greeting, date, Streak, Karma Points text, and top-bar Attendance QR action; standardized `"Karma Points"` terminology across UI modules.
+- **Skeleton Loading Alignment (`PageSkeletons` & `_authenticated.tsx`)**: Synchronized `HomeSkeleton`, `EventsSkeleton`, `LeaderboardSkeleton`, `ProfileSkeleton`, `PeopleSkeleton`, `ConfigureSkeleton`, `GenericSkeleton`, and `AuthenticatedSkeleton` with the latest `PageBreadcrumb` and responsive layouts, and added inline loading skeletons for `HomePage` highlight cards.
+- **Debounced Search & Numeric Input (`useDebounce` & `numericInput`)**: Standardized search debounce to `1000ms` with Enter-key flush support (`EventsPage`, `PeoplePage`) and added `numericInput.ts` helper for `EventForm` and `Configure` numeric fields.
+- **Auth & PWA Cache Resilience**: Hardened refresh-token rotation and auth state verification (`AuthContext`, `authService`, `refreshTokenStore`) and updated `sw.js` caching strategy.
+
+### Fixed
+- **First-Paint Black Screen & `?eventId=` Waterfall**: Set explicit light-mode warm cream `#fffaf0` background on `<html>` and `<body>` in `__root.tsx`, moved `syncFromUrl` out of `setSelected` updater in `EventsPage.tsx`, parallelized `GET /events/:id` and `GET /events/:id/attendances` via `Promise.all`, and deferred monthly calendar/category fetches until returning from detail view.
+
 ## [1.2.1] - 2026-11-20
 
 ### Added

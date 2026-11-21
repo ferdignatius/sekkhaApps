@@ -5,7 +5,7 @@
 import { useState } from "react"
 import { useNavigate, useSearch } from "@tanstack/react-router"
 import { validateLoginForm } from "../utils/validator"
-import { isValidRedirectTo } from "../utils/routeGuards"
+import { isValidRedirectTo, navigateToSafeRedirect } from "../utils/routeGuards"
 import { useAuth } from "./useAuth"
 import { AuthError } from "../context/authReducer"
 import { api } from "@/lib/api"
@@ -130,12 +130,7 @@ export function useLoginForm(): UseLoginFormReturn {
       }
 
       // Determine redirect target after successful login (req 5.4, 5.5, 6.2, 6.3, 6.5)
-      const redirectTo = search.redirectTo
-      if (isValidRedirectTo(redirectTo)) {
-        void navigate({ to: redirectTo })
-      } else {
-        void navigate({ to: "/home" })
-      }
+      navigateToSafeRedirect(navigate, search.redirectTo, "/home")
     } catch (error) {
       if (error instanceof AuthError) {
         switch (error.code) {

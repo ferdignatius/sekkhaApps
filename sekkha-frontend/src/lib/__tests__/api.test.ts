@@ -174,4 +174,48 @@ describe("api client deduplication and caching", () => {
       "fresh-access-token"
     )
   })
+
+  it("proactively refreshes an expired JWT before sending API request (zero wasted 401)", async () => {
+    const expiredPayload = btoa(
+      JSON.stringify({ sub: "user-1", exp: Math.floor(Date.now() / 1000) - 60 })
+    )
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_")
+      .replace(/=+$/, "")
+    const expiredJwt = `eyJhbGciOiJIUzI1NiJ9.${expiredPayload}.sig`
+    safeStorage.setItem("sekkha_access_token", expiredJwt)
+
+    const calledUrls: string[] = []
+    const fetchMock = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+      calledUrls.push(url)
+      if (url.endsWith("/auth/refresh")) {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              status: "success",
+              data: { accessToken: "proactive-fresh-token" },
+            }),
+            { status: 200, headers: { "Content-Type": "application/json" } }
+          )
+        )
+      }
+      expect((init?.headers as Record<string, string>)?.Authorization).toBe(
+        "Bearer proactive-fresh-token"
+      )
+      return Promise.resolve(
+        new Response(JSON.stringify({ ok: true }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        })
+      )
+    })
+    vi.stubGlobal("fetch", fetchMock)
+
+    const res = await api.get<{ ok: boolean }>("/users/me", { noCache: true })
+    expect(res).toEqual({ ok: true })
+    expect(calledUrls).toEqual([
+      expect.stringMatching(/\/auth\/refresh$/),
+      expect.stringMatching(/\/users\/me$/),
+    ])
+  })
 })

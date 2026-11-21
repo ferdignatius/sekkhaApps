@@ -13,7 +13,13 @@ import { AuthError, authReducer, initialAuthState } from "./authReducer"
 import type { AuthState, UserRole } from "./authReducer"
 import { createAuthService, STORAGE_KEY } from "../api/authService"
 import { api } from "@/lib/api"
+import { isJwtExpired } from "@/lib/jwt"
 import { safeStorage } from "@/lib/storage"
+import {
+  AUTH_CHANNEL_NAME,
+  SESSION_INVALIDATED_EVENT,
+  TOKEN_SYNCED_EVENT,
+} from "@/lib/authRefresh"
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
@@ -88,38 +94,61 @@ export function AuthProvider({ children }: AuthProviderProps) {
         return
       }
 
-      // Token exists → verify with backend, falling back to refresh cookie if access token expired (401)
+      // Token exists → if JWT is already expired client-side, skip /auth/verify and refresh directly
       let activeToken = token
       let verifiedUser: Awaited<ReturnType<typeof authService.verifyToken>> = null
 
-      try {
-        // authService.verifyToken handles the 3000ms timeout internally
-        verifiedUser = await authService.verifyToken(token)
-      } catch (err) {
+      if (
+        isJwtExpired(token) &&
+        typeof authService.refreshSession === "function"
+      ) {
+        const refreshed = await authService.refreshSession()
         if (cancelled) return
-
-        // If the short-lived access token expired (401/403), silently exchange the
-        // HttpOnly refresh cookie (REFRESH_TOKEN_EXPIRES_IN) before logging out.
-        if (
-          err instanceof AuthError &&
-          err.code === "INVALID_CREDENTIALS" &&
-          typeof authService.refreshSession === "function"
-        ) {
-          const refreshed = await authService.refreshSession()
+        if (refreshed?.accessToken) {
+          activeToken = refreshed.accessToken
+          verifiedUser = refreshed.user
+          if (refreshed.reusedExisting && !verifiedUser) {
+            try {
+              verifiedUser = await authService.verifyToken(activeToken)
+            } catch {
+              // Keep token if sibling just rotated it; non-blocking metadata hydration
+            }
+          }
+        } else {
+          safeStorage.removeItem(STORAGE_KEY)
+          dispatch({ type: "AUTH_VERIFY_FAILED" })
+          return
+        }
+      } else {
+        try {
+          // authService.verifyToken handles the 3000ms timeout internally
+          verifiedUser = await authService.verifyToken(token)
+        } catch (err) {
           if (cancelled) return
-          if (refreshed?.accessToken) {
-            activeToken = refreshed.accessToken
-            verifiedUser = refreshed.user
+
+          // If the short-lived access token expired (401/403), silently exchange the
+          // HttpOnly refresh cookie (REFRESH_TOKEN_EXPIRES_IN) before logging out.
+          if (
+            err instanceof AuthError &&
+            err.code === "INVALID_CREDENTIALS" &&
+            typeof authService.refreshSession === "function"
+          ) {
+            const refreshed = await authService.refreshSession()
+            if (cancelled) return
+            if (refreshed?.accessToken) {
+              activeToken = refreshed.accessToken
+              verifiedUser = refreshed.user
+            } else {
+              safeStorage.removeItem(STORAGE_KEY)
+              dispatch({ type: "AUTH_VERIFY_FAILED" })
+              return
+            }
           } else {
+            // NETWORK_TIMEOUT or UNKNOWN_ERROR → remove stale token and set unauthenticated (requirements 4.5, 4.7)
             safeStorage.removeItem(STORAGE_KEY)
             dispatch({ type: "AUTH_VERIFY_FAILED" })
             return
           }
-        } else {
-          // NETWORK_TIMEOUT or UNKNOWN_ERROR → remove stale token and set unauthenticated (requirements 4.5, 4.7)
-          safeStorage.removeItem(STORAGE_KEY)
-          dispatch({ type: "AUTH_VERIFY_FAILED" })
-          return
         }
       }
 
@@ -153,6 +182,117 @@ export function AuthProvider({ children }: AuthProviderProps) {
       cancelled = true
     }
   }, [authService])
+
+  // ── Cross-tab & in-tab session sync (prevents zombie authenticated UI) ────
+  useEffect(() => {
+    if (typeof window === "undefined") return
+
+    function handleSessionInvalidated() {
+      dispatch({ type: "AUTH_VERIFY_FAILED" })
+    }
+
+    function handleTokenSynced(event: Event) {
+      const detail = (event as CustomEvent<{ accessToken?: string }>).detail
+      if (detail?.accessToken && authState.status === "authenticated") {
+        dispatch({
+          type: "AUTH_SUCCESS",
+          payload: {
+            accessToken: detail.accessToken,
+            userId: authState.userId,
+            role: authState.role,
+            name: authState.name,
+            email: authState.email,
+            ...(authState.username !== undefined && {
+              username: authState.username,
+            }),
+            ...(authState.onboardingCompleted !== undefined && {
+              onboardingCompleted: authState.onboardingCompleted,
+            }),
+          },
+        })
+      }
+    }
+
+    function handleStorage(event: StorageEvent) {
+      if (event.key !== STORAGE_KEY) return
+      if (!event.newValue) {
+        dispatch({ type: "AUTH_LOGOUT" })
+      } else if (authState.status === "authenticated") {
+        dispatch({
+          type: "AUTH_SUCCESS",
+          payload: {
+            accessToken: event.newValue,
+            userId: authState.userId,
+            role: authState.role,
+            name: authState.name,
+            email: authState.email,
+            ...(authState.username !== undefined && {
+              username: authState.username,
+            }),
+            ...(authState.onboardingCompleted !== undefined && {
+              onboardingCompleted: authState.onboardingCompleted,
+            }),
+          },
+        })
+      }
+    }
+
+    window.addEventListener(SESSION_INVALIDATED_EVENT, handleSessionInvalidated)
+    window.addEventListener(TOKEN_SYNCED_EVENT, handleTokenSynced)
+    window.addEventListener("storage", handleStorage)
+
+    let channel: BroadcastChannel | null = null
+    if (typeof BroadcastChannel !== "undefined") {
+      try {
+        channel = new BroadcastChannel(AUTH_CHANNEL_NAME)
+        channel.onmessage = (ev: MessageEvent<{ type?: string; accessToken?: string }>) => {
+          const msg = ev.data
+          if (!msg?.type) return
+          if (msg.type === "LOGOUT" || msg.type === "SESSION_INVALIDATED") {
+            dispatch({ type: "AUTH_LOGOUT" })
+          } else if (
+            msg.type === "TOKEN_REFRESHED" &&
+            msg.accessToken &&
+            authState.status === "authenticated"
+          ) {
+            dispatch({
+              type: "AUTH_SUCCESS",
+              payload: {
+                accessToken: msg.accessToken,
+                userId: authState.userId,
+                role: authState.role,
+                name: authState.name,
+                email: authState.email,
+                ...(authState.username !== undefined && {
+                  username: authState.username,
+                }),
+                ...(authState.onboardingCompleted !== undefined && {
+                  onboardingCompleted: authState.onboardingCompleted,
+                }),
+              },
+            })
+          }
+        }
+      } catch {
+        channel = null
+      }
+    }
+
+    return () => {
+      window.removeEventListener(SESSION_INVALIDATED_EVENT, handleSessionInvalidated)
+      window.removeEventListener(TOKEN_SYNCED_EVENT, handleTokenSynced)
+      window.removeEventListener("storage", handleStorage)
+      channel?.close()
+    }
+  }, [
+    authState.status,
+    authState.userId,
+    authState.role,
+    authState.name,
+    authState.email,
+    authState.username,
+    authState.onboardingCompleted,
+  ])
 
   // ── Auth actions — wired to authService ─────────────────────────────────────
 

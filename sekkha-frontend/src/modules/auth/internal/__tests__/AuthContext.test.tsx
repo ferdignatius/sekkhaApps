@@ -517,4 +517,87 @@ describe("Property 6: Auth_State Terinisialisasi Benar Berdasarkan Kondisi local
     unmount()
     vi.restoreAllMocks()
   })
+
+  it("skips GET /auth/verify when stored JWT exp is already expired and calls /auth/refresh directly", async () => {
+    const expiredPayload = btoa(
+      JSON.stringify({ sub: "user-1", exp: Math.floor(Date.now() / 1000) - 60 })
+    )
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_")
+      .replace(/=+$/, "")
+    const expiredJwt = `eyJhbGciOiJIUzI1NiJ9.${expiredPayload}.sig`
+
+    localStorage.clear()
+    localStorage.setItem(STORAGE_KEY, expiredJwt)
+
+    const fetchMock = vi.fn().mockImplementation((url: string) => {
+      if (url.endsWith("/auth/refresh")) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve({
+              status: "success",
+              data: {
+                accessToken: "fresh-jwt-token",
+                user: { id: "user-1", role: "member", name: "Direct Refresh" },
+              },
+            }),
+        } as Response)
+      }
+      return Promise.resolve({ ok: false, status: 500 } as Response)
+    })
+    vi.stubGlobal("fetch", fetchMock)
+
+    const { unmount } = renderAuthProvider()
+
+    await waitFor(() => {
+      expect(screen.getByTestId("status").textContent).toBe("authenticated")
+    })
+
+    expect(localStorage.getItem(STORAGE_KEY)).toBe("fresh-jwt-token")
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringMatching(/\/auth\/refresh$/),
+      expect.objectContaining({ method: "POST", credentials: "include" })
+    )
+
+    unmount()
+    vi.restoreAllMocks()
+  })
+
+  it("logs out authenticated AuthProvider immediately on session-invalidated event and cross-tab storage removal", async () => {
+    localStorage.clear()
+    localStorage.setItem(STORAGE_KEY, "active-valid-token")
+
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () =>
+        Promise.resolve({
+          status: "success",
+          data: { id: "user-1", role: "member", name: "Active User" },
+        }),
+    } as Response)
+    vi.stubGlobal("fetch", fetchMock)
+
+    const { unmount } = renderAuthProvider()
+
+    await waitFor(() => {
+      expect(screen.getByTestId("status").textContent).toBe("authenticated")
+    })
+
+    // 1. Simulate background apiFetch receiving 401 on refresh and broadcasting invalidation
+    act(() => {
+      localStorage.removeItem(STORAGE_KEY)
+      window.dispatchEvent(new CustomEvent("sekkha:session-invalidated"))
+    })
+
+    await waitFor(() => {
+      expect(screen.getByTestId("status").textContent).toBe("unauthenticated")
+    })
+
+    unmount()
+    vi.restoreAllMocks()
+  })
 })

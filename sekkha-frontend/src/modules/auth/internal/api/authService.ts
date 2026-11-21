@@ -7,6 +7,7 @@ import { AuthError } from "../context/authReducer"
 import type { AuthAction, UserRole } from "../context/authReducer"
 import { API_BASE_URL, clearApiCache } from "@/lib/api"
 import { safeStorage } from "@/lib/storage"
+import { broadcastLogout, coordinatedRefreshSession } from "@/lib/authRefresh"
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
@@ -465,60 +466,46 @@ export function createAuthService(dispatch: Dispatch<AuthAction>) {
 
   // ── refreshSession ─────────────────────────────────────────────────────────
   /**
-   * POST /auth/refresh — Exchanges the HttpOnly refresh cookie for a fresh
-   * short-lived access token + user summary without logging the user out.
+   * POST /auth/refresh — Delegates to the unified cross-tab refresh coordinator.
    */
   async function refreshSession(): Promise<{
     accessToken: string
     user: VerifyUserResponse | null
+    reusedExisting?: boolean
   } | null> {
-    try {
-      const response = await fetchWithTimeout(
-        `${API_BASE_URL}/auth/refresh`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-        },
-        5_000
-      )
-      if (!response.ok) return null
-      const body = (await response.json()) as any
-      const data =
-        body && typeof body === "object" && "data" in body ? body.data : body
-      const accessToken = data?.accessToken
-      if (typeof accessToken !== "string" || !accessToken) return null
-      safeStorage.setItem(STORAGE_KEY, accessToken)
-      return {
-        accessToken,
-        user: (data?.user as VerifyUserResponse | undefined) ?? null,
-      }
-    } catch {
-      return null
+    const res = await coordinatedRefreshSession({
+      observedToken: safeStorage.getItem(STORAGE_KEY),
+    })
+    if (!res.ok) return null
+    return {
+      accessToken: res.accessToken,
+      user: res.user,
+      reusedExisting: res.reusedExisting,
     }
   }
 
   // ── logout ─────────────────────────────────────────────────────────────────
   /**
-   * Clears the stored token and dispatches AUTH_LOGOUT.
+   * Clears the stored token, notifies backend & sibling tabs, and dispatches AUTH_LOGOUT.
    *
    * Requirements: 4.6
    */
   function logout(): void {
     const token = safeStorage.getItem(STORAGE_KEY)
-    if (token) {
-      try {
-        fetch(`${API_BASE_URL}/auth/logout`, {
-          method: "POST",
-          credentials: "include",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }).catch(() => {})
-      } catch {}
-    }
+    try {
+      fetch(`${API_BASE_URL}/auth/logout`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          "Content-Type": "application/json",
+          "X-Requested-With": "fetch",
+        },
+      }).catch(() => {})
+    } catch {}
     clearApiCache()
     safeStorage.removeItem(STORAGE_KEY)
+    broadcastLogout()
     dispatch({ type: "AUTH_LOGOUT" })
   }
 

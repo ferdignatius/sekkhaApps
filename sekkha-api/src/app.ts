@@ -172,6 +172,74 @@ export function extractRateLimitSubject(req: express.Request): string {
   return ""
 }
 
+export function getAllowedOrigins(): string[] {
+  if (process.env.CORS_ORIGIN) {
+    return process.env.CORS_ORIGIN.split(",").map((origin) => origin.trim().replace(/\/$/, ""))
+  }
+  if (process.env.NODE_ENV === "production") {
+    return []
+  }
+  return ["http://localhost:3000", "http://localhost:5173", "http://localhost:4173"]
+}
+
+export function validateCookieCsrfMiddleware(rawOrigins: string[]) {
+  return (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    if (req.method === "OPTIONS" || req.method === "GET" || req.method === "HEAD") {
+      next()
+      return
+    }
+
+    const originHeader = req.get("origin")
+    const refererHeader = req.get("referer")
+    const secFetchSite = req.get("sec-fetch-site")?.toLowerCase()
+    const contentType = (req.get("content-type") || "").toLowerCase().split(";")[0].trim()
+    const hasCustomHeader = Boolean(req.get("x-requested-with") || req.get("x-sekkha-csrf"))
+
+    if (originHeader) {
+      if (!isOriginAllowed(originHeader, rawOrigins)) {
+        apiFailure(res, 403, "Cross-site request blocked: untrusted Origin", {
+          error_code: "CSRF_ORIGIN_DENIED",
+        })
+        return
+      }
+    } else if (refererHeader) {
+      try {
+        const refererOrigin = new URL(refererHeader).origin
+        if (!isOriginAllowed(refererOrigin, rawOrigins)) {
+          apiFailure(res, 403, "Cross-site request blocked: untrusted Referer", {
+            error_code: "CSRF_ORIGIN_DENIED",
+          })
+          return
+        }
+      } catch {
+        apiFailure(res, 403, "Cross-site request blocked: invalid Referer", {
+          error_code: "CSRF_ORIGIN_DENIED",
+        })
+        return
+      }
+    } else if (secFetchSite === "cross-site") {
+      apiFailure(res, 403, "Cross-site request blocked: missing Origin header", {
+        error_code: "CSRF_ORIGIN_REQUIRED",
+      })
+      return
+    }
+
+    const isSimpleFormContentType =
+      contentType === "application/x-www-form-urlencoded" ||
+      contentType === "multipart/form-data" ||
+      contentType === "text/plain"
+
+    if (isSimpleFormContentType && !hasCustomHeader) {
+      apiFailure(res, 403, "Cross-site form submissions are not permitted on cookie endpoints", {
+        error_code: "CSRF_HEADER_REQUIRED",
+      })
+      return
+    }
+
+    next()
+  }
+}
+
 export function createApp(): Application {
   const app = express()
 
@@ -181,9 +249,7 @@ export function createApp(): Application {
   // ─── Security & Core Middleware ──────────────────────────────────────────────
 
   // 1. CORS Configuration (Must run BEFORE rate limiters & route handlers so OPTIONS preflight is never blocked)
-  const rawOrigins = process.env.CORS_ORIGIN
-    ? process.env.CORS_ORIGIN.split(",").map((origin) => origin.trim().replace(/\/$/, ""))
-    : ["http://localhost:3000", "http://localhost:5173", "http://localhost:4173"]
+  const rawOrigins = getAllowedOrigins()
 
   const corsOptions: cors.CorsOptions = {
     origin: (origin, callback) => {
@@ -246,6 +312,10 @@ export function createApp(): Application {
   app.use(express.urlencoded({ extended: true, limit: "1mb" }))
   app.use(cookieParser())
 
+  const csrfGuard = validateCookieCsrfMiddleware(rawOrigins)
+  app.use("/api/auth/refresh", csrfGuard)
+  app.use("/api/auth/logout", csrfGuard)
+
   // 5a. Sensitive Auth Rate Limiters (20 requests/15m per IP+account + 500 requests/15m shared-IP ceiling)
   const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -273,7 +343,6 @@ export function createApp(): Application {
   const authRateLimitPaths = [
     "/api/auth/login",
     "/api/auth/register",
-    "/api/auth/refresh",
     "/api/users/me/delete-account",
     "/api/people/:id/reset-temporary-password",
     "/api/people/members/:id/reset-temporary-password",
@@ -282,6 +351,32 @@ export function createApp(): Application {
   for (const path of authRateLimitPaths) {
     app.use(path, authIpLimiter, authLimiter)
   }
+
+  // Dedicated Refresh Session Rate Limiter (isolated from login/register buckets)
+  const refreshLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 60,
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator: subjectOrIpKeyGenerator,
+    store: createRateLimitStore("auth_refresh"),
+    passOnStoreError: true,
+    skip: skipPreflight,
+    validate: { singleCount: false },
+    handler: rateLimitHandler("Too many session refresh requests. Please try again shortly."),
+  })
+  const refreshIpLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 500,
+    standardHeaders: true,
+    legacyHeaders: false,
+    store: createRateLimitStore("auth_refresh_ip"),
+    passOnStoreError: true,
+    skip: skipPreflight,
+    validate: { singleCount: false },
+    handler: rateLimitHandler("Too many session refresh requests from this network. Please try again shortly."),
+  })
+  app.use("/api/auth/refresh", refreshIpLimiter, refreshLimiter)
   // Exact POST/PUT matches prevent prefix-matching /api/auth/forgot-password/{request,verify-otp,reset}
   // and /api/users/change-password/{request-otp,otp}
   app.post("/api/auth/forgot-password", authIpLimiter, authLimiter)

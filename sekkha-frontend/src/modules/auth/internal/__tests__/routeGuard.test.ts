@@ -12,7 +12,7 @@ import type { AuthState } from "../context/authReducer"
 // ─── Import the functions under test ───────────────────────────────────────────
 
 import type * as ReactRouter from "@tanstack/react-router"
-import { routeGuardBeforeLoad } from "../utils/routeGuards"
+import { routeGuardBeforeLoad, navigateToSafeRedirect } from "../utils/routeGuards"
 import { LoginPage } from "../components/LoginPage"
 
 // ─── Module-level mocks ────────────────────────────────────────────────────────
@@ -201,6 +201,19 @@ describe("LoginPage — authenticated user accessing /login", () => {
     await waitFor(() => {
       expect(navigateMock).toHaveBeenCalledWith({ to: "/home" })
     })
+  })
+
+  it("navigateToSafeRedirect preserves pathname and query params like ?eventId=...", () => {
+    const nav = vi.fn()
+    navigateToSafeRedirect(nav, "/events?eventId=cmwoyjgi60005mg01lh7z5osc")
+    expect(nav).toHaveBeenCalledWith({
+      to: "/events",
+      search: { eventId: "cmwoyjgi60005mg01lh7z5osc" },
+    })
+
+    nav.mockClear()
+    navigateToSafeRedirect(nav, "https://evil.com/phish")
+    expect(nav).toHaveBeenCalledWith({ to: "/home" })
   })
 })
 

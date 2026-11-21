@@ -15,6 +15,7 @@ export {
   verifyAndRotateRefreshToken,
   verifyAndRotateRefreshTokenRecord,
   revokeRefreshToken,
+  revokeTokenFamily,
   revokeAllUserRefreshTokens,
   type RefreshTokenRecord,
 } from "./internal/refreshTokenStore"

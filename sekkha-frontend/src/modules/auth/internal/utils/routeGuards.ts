@@ -21,6 +21,27 @@ export function isValidRedirectTo(value: string | undefined): value is string {
   return true
 }
 
+export function navigateToSafeRedirect(
+  navigate: (opts: any) => unknown,
+  redirectTo: string | undefined,
+  fallbackTo = "/home"
+): void {
+  if (!isValidRedirectTo(redirectTo)) {
+    void navigate({ to: fallbackTo })
+    return
+  }
+
+  const url = new URL(redirectTo, "http://localhost")
+  const searchParams = Object.fromEntries(url.searchParams.entries())
+  const hasSearch = Object.keys(searchParams).length > 0
+
+  void navigate({
+    to: url.pathname,
+    ...(hasSearch ? { search: searchParams } : {}),
+    ...(url.hash ? { hash: url.hash.slice(1) } : {}),
+  })
+}
+
 export async function waitForAuthResolution(
   context: RouterContext,
   timeoutMs: number
@@ -48,6 +69,12 @@ export async function routeGuardBeforeLoad(
   context: RouterContext,
   locationHref: string
 ): Promise<void> {
+  // On SSR (no localStorage), defer auth check to client hydration instead of
+  // waiting 1000ms and falsely redirecting already-logged-in users to /login.
+  if (typeof window === "undefined") {
+    return
+  }
+
   const token = safeStorage.getItem("sekkha_access_token")
   if (!token && context.authState?.status === "loading") {
     await waitForAuthResolution(context, 1000)

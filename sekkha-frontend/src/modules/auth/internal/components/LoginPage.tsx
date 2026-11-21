@@ -3,9 +3,10 @@
 // Requirements: 2.1, 2.8–2.13
 
 import { useEffect } from "react"
-import { useNavigate } from "@tanstack/react-router"
+import { useNavigate, useSearch } from "@tanstack/react-router"
 import { useAuth } from "../hooks/useAuth"
 import { useLoginForm } from "../hooks/useLoginForm"
+import { navigateToSafeRedirect } from "../utils/routeGuards"
 import { AuthLayout } from "./AuthLayout"
 import { AuthForm } from "./AuthForm"
 
@@ -20,6 +21,7 @@ import { AuthForm } from "./AuthForm"
 export function LoginPage() {
   const { authState } = useAuth()
   const navigate = useNavigate()
+  const search = useSearch({ from: "/login" })
 
   const {
     fields,
@@ -32,16 +34,16 @@ export function LoginPage() {
     dismissApiError,
   } = useLoginForm()
 
-  // Redirect authenticated users away (req 2.8)
+  // Redirect authenticated users away while preserving valid ?redirectTo= (req 2.8)
   useEffect(() => {
     if (authState.status === "authenticated") {
       if (authState.onboardingCompleted === false) {
         void navigate({ to: "/onboarding" })
       } else {
-        void navigate({ to: "/home" })
+        navigateToSafeRedirect(navigate, search.redirectTo, "/home")
       }
     }
-  }, [authState.status, authState.onboardingCompleted, navigate])
+  }, [authState.status, authState.onboardingCompleted, navigate, search.redirectTo])
 
   if (authState.status === "authenticated") {
     return null

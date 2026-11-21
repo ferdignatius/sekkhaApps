@@ -725,7 +725,8 @@ export function HomePage() {
                     </div>
                   ) : nextEvent ? (
                     <Link
-                      to={`/events?eventId=${nextEvent.id}` as "/"}
+                      to="/events"
+                      search={{ eventId: nextEvent.id }}
                       className="group flex flex-1 flex-col justify-between gap-3 text-left transition-opacity hover:opacity-90"
                     >
                       <div className="min-w-0 space-y-1.5">

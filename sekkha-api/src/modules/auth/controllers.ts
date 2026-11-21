@@ -118,7 +118,7 @@ export async function handleRefreshSession(req: Request, res: Response, next: Ne
     const refreshToken = req.cookies?.sekkha_refresh_token
 
     if (!refreshToken) {
-      apiFailure(res, 401, "Refresh token not found", null)
+      apiFailure(res, 401, "Refresh token not found", { error_code: "INVALID_REFRESH_TOKEN" })
       return
     }
 
@@ -126,8 +126,17 @@ export async function handleRefreshSession(req: Request, res: Response, next: Ne
     setRefreshCookie(res, result.refreshToken)
     apiSuccess(res, 200, "Session refreshed", publicAuthResult(result))
   } catch (err) {
-    if (err instanceof AppError && (err.status === 401 || err.status === 403)) {
-      clearRefreshCookie(res)
+    if (err instanceof AppError) {
+      if (err.code === "REFRESH_CONCURRENT" || err.status === 409) {
+        // Never clear the browser's refresh cookie on concurrent contention: Tab 1's fresh cookie must survive.
+        apiFailure(res, 409, err.message, { error_code: "REFRESH_CONCURRENT" })
+        return
+      }
+      if (err.status === 401 || err.status === 403) {
+        clearRefreshCookie(res)
+        apiFailure(res, err.status, err.message, { error_code: err.code })
+        return
+      }
     }
     next(err)
   }
@@ -205,6 +214,9 @@ export async function handleVerify(req: Request, res: Response, next: NextFuncti
 
 /** POST /api/auth/logout */
 export async function handleLogout(req: Request, res: Response, next: NextFunction) {
+  // Always clear browser refresh cookie even if Redis revocation fails downstream.
+  clearRefreshCookie(res)
+
   try {
     const header = req.headers.authorization
     const token = header?.startsWith("Bearer ") ? header.slice(7) : undefined
@@ -213,7 +225,6 @@ export async function handleLogout(req: Request, res: Response, next: NextFuncti
     if (token || refreshToken) {
       await service.logoutUser(token, req.user?.userId, refreshToken)
     }
-    clearRefreshCookie(res)
     apiSuccess(res, 200, "Logout successful", null)
   } catch (err) {
     next(err)

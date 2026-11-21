@@ -3,6 +3,8 @@
 
 import type { ZodType } from "zod"
 import { safeStorage } from "./storage"
+import { isJwtExpired } from "./jwt"
+import { coordinatedRefreshSession, type UnifiedRefreshResult } from "./authRefresh"
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:4000/api"
 
@@ -35,44 +37,9 @@ function authHeaders(): Record<string, string> {
   return headers
 }
 
-// Concurrency control for transparent token refresh (XF-02 Remediation)
-let isRefreshing = false
-let refreshPromise: Promise<string | null> | null = null
-
-async function requestTokenRefresh(): Promise<string | null> {
-  if (isRefreshing && refreshPromise) {
-    return refreshPromise
-  }
-  isRefreshing = true
-  refreshPromise = (async () => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-          ...authHeaders(),
-        },
-      })
-      if (!res.ok) {
-        safeStorage.removeItem("sekkha_access_token")
-        return null
-      }
-      const data = await res.json()
-      const accessToken = data?.data?.accessToken ?? data?.accessToken
-      if (accessToken) {
-        safeStorage.setItem("sekkha_access_token", accessToken)
-        return accessToken as string
-      }
-      return null
-    } catch {
-      return null
-    } finally {
-      isRefreshing = false
-      refreshPromise = null
-    }
-  })()
-  return refreshPromise
+// Shared cross-tab refresh coordinator (XF-02 / Multi-Tab Lock Remediation)
+async function requestTokenRefresh(observedToken: string | null): Promise<UnifiedRefreshResult> {
+  return coordinatedRefreshSession({ observedToken })
 }
 
 // ── In-Flight Request Deduplication & Memory Cache for GET ───────────────────
@@ -140,6 +107,24 @@ export async function apiFetch<T = unknown>(
   }
 
   const executeFetch = async (): Promise<T> => {
+    const isAuthEndpoint =
+      path.startsWith("/auth/login") ||
+      path.startsWith("/auth/register") ||
+      path.startsWith("/auth/refresh")
+
+    // Proactively refresh an expired JWT before sending API traffic to avoid a wasted 401 round-trip
+    const initialToken = getToken()
+    if (!isAuthEndpoint && initialToken && isJwtExpired(initialToken)) {
+      const preRefresh = await requestTokenRefresh(initialToken)
+      if (!preRefresh.ok && preRefresh.kind === "rate_limited") {
+        const rateErr = new Error(preRefresh.message)
+        ;(rateErr as any).status = 429
+        ;(rateErr as any).retryAfterMs = preRefresh.retryAfterMs
+        throw rateErr
+      }
+    }
+
+    const tokenSentOnFirstAttempt = getToken()
     const url = `${API_BASE_URL}${path}`
     let response = await fetch(url, {
       credentials: "include",
@@ -151,14 +136,9 @@ export async function apiFetch<T = unknown>(
     })
 
     // Auto-refresh token on 401 if session is active and not on an auth endpoint
-    const isAuthEndpoint =
-      path.startsWith("/auth/login") ||
-      path.startsWith("/auth/register") ||
-      path.startsWith("/auth/refresh")
-
-    if (response.status === 401 && !isAuthEndpoint && getToken()) {
-      const newToken = await requestTokenRefresh()
-      if (newToken) {
+    if (response.status === 401 && !isAuthEndpoint && tokenSentOnFirstAttempt) {
+      const refreshResult = await requestTokenRefresh(tokenSentOnFirstAttempt)
+      if (refreshResult.ok) {
         // Retry original request with fresh access token
         response = await fetch(url, {
           credentials: "include",
@@ -166,9 +146,14 @@ export async function apiFetch<T = unknown>(
           headers: {
             ...authHeaders(),
             ...(options.headers || {}),
-            Authorization: `Bearer ${newToken}`,
+            Authorization: `Bearer ${refreshResult.accessToken}`,
           },
         })
+      } else if (refreshResult.kind === "rate_limited") {
+        const rateErr = new Error(refreshResult.message)
+        ;(rateErr as any).status = 429
+        ;(rateErr as any).retryAfterMs = refreshResult.retryAfterMs
+        throw rateErr
       }
     }
 

@@ -42,9 +42,15 @@ import {
   saveRefreshToken,
   verifyAndRotateRefreshTokenRecord,
   revokeRefreshToken,
+  revokeTokenFamily,
   revokeAllUserRefreshTokens,
   getRefreshTokenTtlSeconds,
   parseDurationToSeconds,
+  hashRefreshToken,
+  acquireRefreshTokenLock,
+  releaseRefreshTokenLock,
+  peekRefreshTokenStatus,
+  commitRefreshTokenRotation,
 } from "./internal/refreshTokenStore"
 import { sendRegisterOtpEmail, sendForgotPasswordOtpEmail } from "./internal/email"
 import { revokeToken, isTokenRevoked } from "./internal/tokenRevocation"
@@ -532,30 +538,73 @@ export async function verifyToken(token: string) {
 }
 
 /**
- * Refreshes an existing session via refresh token rotation (F-23 & FE-01 Remediation).
+ * Refreshes an existing session via distributed-locked single-use refresh token rotation.
+ * Persists the new token before consuming the old token to prevent irrecoverable session loss,
+ * returns 409 REFRESH_CONCURRENT on lock contention, and revokes the token family on confirmed reuse.
  */
 export async function refreshSession(refreshToken: string): Promise<AuthResult> {
-  const record = await verifyAndRotateRefreshTokenRecord(refreshToken)
-  if (!record) {
+  const cleanRefreshToken = refreshToken?.trim()
+  if (!cleanRefreshToken) {
     throw new AppError("Invalid or expired refresh token", 401, "INVALID_REFRESH_TOKEN")
   }
 
-  const user = await repo.findUserById(record.userId)
-  if (!user || (user as any).anonymizedAt) {
-    throw new AppError("User not found", 401, "USER_NOT_FOUND")
+  const tokenHash = hashRefreshToken(cleanRefreshToken)
+  const lockOwner = randomBytes(16).toString("hex")
+  const acquired = await acquireRefreshTokenLock(tokenHash, lockOwner)
+  if (!acquired) {
+    throw new AppError("Concurrent refresh already in progress", 409, "REFRESH_CONCURRENT")
   }
 
-  if (user.passwordChangedAt && record.createdAt < user.passwordChangedAt.getTime()) {
-    throw new AppError("Password has been updated. Please sign in again.", 401, "PASSWORD_UPDATED")
+  try {
+    const status = await peekRefreshTokenStatus(cleanRefreshToken)
+
+    if (status.status === "reused") {
+      await revokeTokenFamily(status.used.familyId, status.used.userId)
+      auditLogger.log({
+        actorId: status.used.userId,
+        action: "AUTH_REFRESH_REUSE_DETECTED",
+        status: "FAILURE",
+        details: { familyId: status.used.familyId },
+      })
+      throw new AppError("Invalid or expired refresh token", 401, "INVALID_REFRESH_TOKEN")
+    }
+
+    if (status.status !== "active") {
+      throw new AppError("Invalid or expired refresh token", 401, "INVALID_REFRESH_TOKEN")
+    }
+
+    const record = status.record
+    const user = await repo.findUserById(record.userId)
+    if (!user || (user as any).anonymizedAt) {
+      await revokeRefreshToken(cleanRefreshToken, record.userId)
+      throw new AppError("User not found", 401, "USER_NOT_FOUND")
+    }
+
+    if (user.passwordChangedAt && record.createdAt < user.passwordChangedAt.getTime()) {
+      await revokeTokenFamily(record.familyId, user.id)
+      throw new AppError("Password has been updated. Please sign in again.", 401, "PASSWORD_UPDATED")
+    }
+
+    const newAccessToken = generateToken(user.id, user.role, user.name, user.passwordChangedAt)
+    const newRefreshToken = randomBytes(32).toString("hex")
+    const ttlSeconds = getRefreshTokenTtlSeconds()
+
+    const committed = await commitRefreshTokenRotation(
+      cleanRefreshToken,
+      newRefreshToken,
+      record,
+      ttlSeconds
+    )
+    if (!committed) {
+      throw new AppError("Concurrent refresh already in progress", 409, "REFRESH_CONCURRENT")
+    }
+
+    repo.touchLastActiveAt(user.id).catch(() => {})
+
+    return buildAuthResult(user, newAccessToken, newRefreshToken)
+  } finally {
+    await releaseRefreshTokenLock(tokenHash, lockOwner).catch(() => {})
   }
-
-  const newAccessToken = generateToken(user.id, user.role, user.name, user.passwordChangedAt)
-  const newRefreshToken = randomBytes(32).toString("hex")
-  await saveRefreshToken(user.id, newRefreshToken, getRefreshTokenTtlSeconds())
-
-  repo.touchLastActiveAt(user.id).catch(() => {})
-
-  return buildAuthResult(user, newAccessToken, newRefreshToken)
 }
 
 /**

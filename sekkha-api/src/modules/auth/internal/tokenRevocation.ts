@@ -1,9 +1,10 @@
 import crypto from "crypto"
 import jwt from "jsonwebtoken"
-import { redis } from "../../../lib/redis"
+import { canUseRedisStore } from "../../../lib/redis"
+import { AppError } from "../../../lib/AppError"
 
 /**
- * In-memory fallback map for revoked tokens when Redis is offline or unavailable.
+ * In-memory fallback map for revoked tokens when Redis is offline or unavailable (non-production).
  * Key: sha256(token), Value: expiry timestamp in milliseconds
  */
 const localRevokedTokens = new Map<string, number>()
@@ -26,10 +27,14 @@ function hashToken(token: string): string {
   return crypto.createHash("sha256").update(token.trim()).digest("hex")
 }
 
+function isProductionStoreRequired(): boolean {
+  return process.env.NODE_ENV === "production"
+}
+
 /**
  * Revokes a verified token by marking its SHA-256 hash as terminated in Redis and in-memory fallback.
  * Uses the remaining JWT TTL (or default 24h) for key expiration.
- * F-03 Remediation: Hashes token, prevents raw bearer token leakage, validates signature.
+ * In production, propagates Redis failures instead of silently succeeding.
  */
 export async function revokeToken(token: string): Promise<void> {
   if (!token) return
@@ -40,7 +45,7 @@ export async function revokeToken(token: string): Promise<void> {
   let ttlSeconds = 86400 // Default 24 hours
 
   try {
-    // Only revoke if the token has a valid signature
+    // Only revoke if the token has a valid signature & unexpired claims
     const verified = jwt.verify(cleanToken, secret, { algorithms: ["HS256"] }) as { exp?: number }
     if ((verified as any)?.iss && (verified as any).iss !== "sekkha-api") return
     if ((verified as any)?.aud && (verified as any).aud !== "sekkha-app") return
@@ -51,53 +56,71 @@ export async function revokeToken(token: string): Promise<void> {
       }
     }
   } catch {
-    // If token signature is invalid, reject revocation to prevent garbage injection
+    // Expired or invalid signature: expired JWTs already fail signature/exp verification
     return
   }
 
   const tokenHash = hashToken(cleanToken)
 
-  // 1. Store in memory map
-  localRevokedTokens.set(tokenHash, Date.now() + ttlSeconds * 1000)
+  if (!isProductionStoreRequired()) {
+    localRevokedTokens.set(tokenHash, Date.now() + ttlSeconds * 1000)
+  }
 
-  // 2. Store in Redis blacklist if available & remove any cached session
-  try {
-    if (redis.status === "ready") {
-      await redis.set(`auth:revoked:${tokenHash}`, "1", "EX", ttlSeconds)
-      await redis.del(`auth:token:${tokenHash}`, `auth:session:${tokenHash}`)
+  const useRedis = canUseRedisStore()
+  if (isProductionStoreRequired() && !useRedis) {
+    throw new AppError("Revocation store unavailable", 503, "REVOCATION_STORE_UNAVAILABLE")
+  }
+
+  if (useRedis) {
+    try {
+      await Promise.all([
+        (await import("../../../lib/redis")).redis.set(`auth:revoked:${tokenHash}`, "1", "EX", ttlSeconds),
+        (await import("../../../lib/redis")).redis.del(`auth:token:${tokenHash}`, `auth:session:${tokenHash}`),
+      ])
+    } catch (err) {
+      if (isProductionStoreRequired()) {
+        throw new AppError("Revocation store unavailable", 503, "REVOCATION_STORE_UNAVAILABLE")
+      }
     }
-  } catch {
-    // Graceful fallback if Redis is offline
   }
 }
 
 /**
  * Checks if a token has been revoked (e.g. user logged out or session terminated).
+ * In production, fails closed (throws 503) if Redis cannot be queried.
  */
 export async function isTokenRevoked(token: string): Promise<boolean> {
   if (!token) return true
   const cleanToken = token.trim()
   const tokenHash = hashToken(cleanToken)
 
-  // 1. Check in-memory map
-  const localExpiry = localRevokedTokens.get(tokenHash)
-  if (localExpiry) {
-    if (localExpiry > Date.now()) {
-      return true
+  if (!isProductionStoreRequired()) {
+    const localExpiry = localRevokedTokens.get(tokenHash)
+    if (localExpiry) {
+      if (localExpiry > Date.now()) {
+        return true
+      }
+      localRevokedTokens.delete(tokenHash)
     }
-    localRevokedTokens.delete(tokenHash)
   }
 
-  // 2. Check Redis blacklist
-  try {
-    if (redis.status === "ready") {
+  const useRedis = canUseRedisStore()
+  if (isProductionStoreRequired() && !useRedis) {
+    throw new AppError("Revocation store unavailable", 503, "REVOCATION_STORE_UNAVAILABLE")
+  }
+
+  if (useRedis) {
+    try {
+      const { redis } = await import("../../../lib/redis")
       const exists = await redis.get(`auth:revoked:${tokenHash}`)
       if (exists) {
         return true
       }
+    } catch {
+      if (isProductionStoreRequired()) {
+        throw new AppError("Revocation store unavailable", 503, "REVOCATION_STORE_UNAVAILABLE")
+      }
     }
-  } catch {
-    // Fallback on Redis error
   }
 
   return false

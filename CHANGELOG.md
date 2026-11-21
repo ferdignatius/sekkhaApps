@@ -4,6 +4,19 @@ All notable changes to Sekkha Apps. Semver (`MAJOR.MINOR.PATCH`); newest on top.
 
 ## [Unreleased]
 
+## [1.2.3] - 2026-11-21
+
+### Added
+- **Unified Cross-Tab Refresh Coordinator (`authRefresh.ts`)**: Added `coordinatedRefreshSession` using Web Locks API with a `localStorage` lease mutex fallback, `observedToken` vs `latestToken` comparison, `BroadcastChannel`/`storage` cross-tab sync, bounded retry on `409 REFRESH_CONCURRENT`, and `Retry-After` cooldown handling on `429`.
+- **Client-Side JWT Expiry Pre-Check (`jwt.ts`)**: Added `isJwtExpired` to skip redundant `401 GET /api/auth/verify` calls in `AuthContext` and proactively refresh expired JWTs before `apiFetch` calls.
+- **Refresh Token Family Tracking & Reuse Detection (`refreshTokenStore.ts`)**: Added `familyId` tracking, distributed per-token atomic Redis locks, hash-tagged keys (`{auth:refresh:...}`) for Redis Cluster slot compatibility, and `revokeTokenFamily` so confirmed reuse revokes only the compromised session lineage while preserving other healthy devices.
+- **CSRF Protection & Isolated Refresh Limiter (`app.ts`)**: Added `validateCookieCsrfMiddleware` on `/api/auth/refresh` and `/api/auth/logout`, plus dedicated `refreshLimiter` (`60 req / 15m`) isolated from `/login` and `/register`.
+- **Security & Auth Integration Tests**: Added comprehensive test suites in `authSecurityRemediation.test.ts`, `authRefresh.test.ts`, `AuthContext.test.tsx`, `api.test.ts`, and `routeGuard.test.ts`.
+
+### Changed
+- **Recoverable Token Rotation & Logout Reliability (`services.ts`, `controllers.ts`, `redis.ts`, `tokenRevocation.ts`)**: Persisted new refresh tokens before consuming old ones (preserving sessions on transient DB/Redis failures), returned `409 REFRESH_CONCURRENT` without clearing the browser cookie on lock contention, centralized `isRedisReady()` / `canUseRedisStore()`, propagated production Redis outages (`503`), and ensured `handleLogout` always clears the refresh cookie.
+- **Zombie Session & Deep-Link Redirect Preservation (`AuthContext.tsx`, `LoginPage.tsx`, `useLoginForm.ts`, `routeGuards.ts`)**: Prevented SSR false redirects on `_authenticated` routes, preserved `?redirectTo=` query parameters (e.g. `/events?eventId=...`) across `/login` via `navigateToSafeRedirect`, added `validateSearch` on `/events`, and synced `AuthContext` immediately on `sekkha:session-invalidated` and cross-tab logouts.
+
 ## [1.2.2] - 2026-11-21
 
 ### Added

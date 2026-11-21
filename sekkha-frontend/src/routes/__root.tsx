@@ -165,11 +165,11 @@ function RootComponent() {
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="id">
+    <html lang="id" style={{ backgroundColor: "#fffaf0", colorScheme: "light" }}>
       <head>
         <HeadContent />
       </head>
-      <body>
+      <body style={{ backgroundColor: "#fffaf0", color: "#0a0a0a" }}>
         {children}
         {import.meta.env.DEV && (
           <TanStackDevtools

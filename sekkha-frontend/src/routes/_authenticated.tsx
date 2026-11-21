@@ -26,13 +26,34 @@ function AuthenticatedSkeleton() {
     <div
       aria-busy="true"
       aria-label="Loading..."
-      className="flex min-h-screen animate-pulse bg-sekkha-surface"
+      className="flex min-h-screen bg-[#fffaf0] antialiased"
     >
-      <div className="hidden w-64 shrink-0 border-r border-sekkha-hairline-soft bg-sekkha-canvas md:block" />
-      <div className="flex-1 space-y-4 p-6">
-        <div className="h-8 w-48 rounded-lg bg-sekkha-hairline-strong" />
-        <div className="h-32 rounded-xl border border-sekkha-hairline-soft bg-sekkha-canvas" />
-        <div className="h-32 rounded-xl border border-sekkha-hairline-soft bg-sekkha-canvas" />
+      <div className="hidden w-64 shrink-0 flex-col gap-3 border-r border-[#e6decb]/80 bg-[#faf5e8] p-4 md:flex">
+        <div className="h-9 w-36 animate-pulse rounded-xl bg-[#ebe6d6]/70" />
+        <div className="mt-4 space-y-2">
+          {[1, 2, 3, 4].map((i) => (
+            <div
+              key={i}
+              className="h-9 w-full animate-pulse rounded-xl bg-[#ebe6d6]/60"
+            />
+          ))}
+        </div>
+      </div>
+      <div className="flex-1">
+        {/* Transparent top bar matching PageBreadcrumb */}
+        <div className="px-4 py-1.5 sm:px-6 md:px-8 md:py-2 lg:px-12">
+          <div className="mx-auto flex min-h-[48px] max-w-7xl items-center justify-between gap-3 sm:min-h-[52px]">
+            <div className="h-5 w-28 animate-pulse rounded-lg bg-[#ebe6d6]/70" />
+            <div className="size-9 animate-pulse rounded-full bg-[#ebe6d6]/70" />
+          </div>
+        </div>
+        <div className="mx-auto max-w-7xl space-y-4 px-4 py-3 sm:px-6 md:px-8 lg:px-12">
+          <div className="h-36 animate-pulse rounded-[28px] border border-[#e6decb]/80 bg-[#faf5e8]/80" />
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="h-32 animate-pulse rounded-[24px] border border-[#e6decb]/80 bg-[#faf5e8]/70" />
+            <div className="h-32 animate-pulse rounded-[24px] border border-[#e6decb]/80 bg-[#faf5e8]/70" />
+          </div>
+        </div>
       </div>
     </div>
   )

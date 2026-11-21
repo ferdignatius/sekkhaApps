@@ -738,7 +738,7 @@ export function EventDetailSheet({
                   Seva Reward
                 </p>
                 <p className="text-xs font-bold text-ink">
-                  +{pointsReward} Activity Points
+                  +{pointsReward} Karma Points
                 </p>
               </div>
               <span className="shrink-0 rounded-full bg-ink/[0.06] px-2.5 py-1 text-[10px] font-semibold text-text-muted">
@@ -829,7 +829,7 @@ export function EventDetailSheet({
                     Seva Reward
                   </p>
                   <p className="mt-0.5 text-xs font-bold text-ink sm:text-sm">
-                    +{pointsReward} Activity Points
+                    +{pointsReward} Karma Points
                   </p>
                   <p className="mt-0.5 text-xs font-medium text-text-muted">
                     Auto-credited upon check-in
@@ -1248,7 +1248,7 @@ export function EventDetailSheet({
             .
           </>
         }
-        confirmLabel="Close & Finalize Points"
+        confirmLabel="Close & Finalize Karma Points"
         cancelLabel="Keep Open"
         onConfirm={() => executeStatusChange("closed")}
       />

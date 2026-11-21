@@ -1039,7 +1039,7 @@ export function EventForm({
                       htmlFor="ev-penalty-points"
                       className="text-[11px] font-bold text-text-muted"
                     >
-                      Penalty Deduction (Points)
+                      Penalty Deduction (Karma Points)
                     </label>
                     <input
                       id="ev-penalty-points"

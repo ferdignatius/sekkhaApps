@@ -568,4 +568,103 @@ describe("EventsPage Category Filter Dropdown — Initial 5 + Infinite Scroll", 
     fireEvent.click(within(drawer).getByRole("button", { name: /^Show calendar$/i }))
     expect(drawer.getAttribute("data-expanded")).toBe("false")
   })
+
+  it("shows EventDetailSkeleton immediately for ?eventId=, fetches detail & attendances in parallel, and defers calendar fetch until Back", async () => {
+    window.history.replaceState({}, "", "/events?eventId=evt_deep")
+
+    let resolveDetail!: (value: EventListItem) => void
+    const detailPromise = new Promise<EventListItem>((res) => {
+      resolveDetail = res
+    })
+
+    const getSpy = vi.spyOn(api, "get").mockImplementation((url: string) => {
+      if (url === "/events/evt_deep") {
+        return detailPromise as any
+      }
+      if (url === "/events/evt_deep/attendances") {
+        return Promise.resolve({ attendances: [] }) as any
+      }
+      return Promise.resolve([]) as any
+    })
+
+    const authState: AuthState = {
+      ...initialAuthState,
+      status: "authenticated",
+      userId: "usr_org_1",
+      role: "organizer",
+      name: "Organizer Sekkha",
+    }
+
+    render(
+      <AuthContext.Provider value={{ authState } as any}>
+        <EventsPage />
+      </AuthContext.Provider>
+    )
+
+    // Detail skeleton shows right away without flashing calendar sheet
+    expect(screen.getByTestId("event-detail-loading-skeleton")).toBeTruthy()
+    expect(screen.queryByTestId("events-list-drawer")).toBeNull()
+
+    // Both detail and attendances start in parallel, while monthly & master category fetches are deferred
+    expect(getSpy).toHaveBeenCalledWith("/events/evt_deep", { noCache: true })
+    expect(getSpy).toHaveBeenCalledWith("/events/evt_deep/attendances")
+    expect(getSpy).not.toHaveBeenCalledWith(expect.stringContaining("month="))
+
+    const todayKey = toWibKey(new Date())
+    resolveDetail(makeEvent("evt_deep", "Deep Linked Puja", todayKey, "18:00", "scheduled"))
+
+    await waitFor(() => {
+      expect(screen.getAllByText("Deep Linked Puja").length).toBeGreaterThan(0)
+    })
+
+    // Going back switches to calendar and loads monthly events
+    fireEvent.click(screen.getByRole("button", { name: "Back" }))
+    await waitFor(() => {
+      expect(getSpy).toHaveBeenCalledWith(
+        expect.stringContaining("/events?month="),
+        expect.anything()
+      )
+    })
+
+    window.history.replaceState({}, "", "/events")
+  })
+
+  it("shows an Event not found state and lets the user return to calendar when ?eventId= fails", async () => {
+    window.history.replaceState({}, "", "/events?eventId=evt_missing")
+
+    const getSpy = vi.spyOn(api, "get").mockImplementation((url: string) => {
+      if (url === "/events/evt_missing") {
+        return Promise.reject(new Error("Not found")) as any
+      }
+      return Promise.resolve([]) as any
+    })
+
+    const authState: AuthState = {
+      ...initialAuthState,
+      status: "authenticated",
+      userId: "usr_org_1",
+      role: "organizer",
+      name: "Organizer Sekkha",
+    }
+
+    render(
+      <AuthContext.Provider value={{ authState } as any}>
+        <EventsPage />
+      </AuthContext.Provider>
+    )
+
+    await waitFor(() => {
+      expect(screen.getByText("Event not found")).toBeTruthy()
+    })
+
+    fireEvent.click(screen.getByRole("button", { name: "Back to Events" }))
+    await waitFor(() => {
+      expect(getSpy).toHaveBeenCalledWith(
+        expect.stringContaining("/events?month="),
+        expect.anything()
+      )
+    })
+
+    window.history.replaceState({}, "", "/events")
+  })
 })

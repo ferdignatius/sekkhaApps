@@ -613,7 +613,7 @@ export function AttendanceListSheet({
         title="Remove Draft Attendance Record?"
         description={
           deleteTarget
-            ? `Are you sure you want to remove ${deleteTarget.name} from the attendance list? Points have not been distributed yet and this entry will simply be dropped.`
+            ? `Are you sure you want to remove ${deleteTarget.name} from the attendance list? Karma Points have not been distributed yet and this entry will simply be dropped.`
             : ""
         }
         confirmLabel="Yes, Remove Record"

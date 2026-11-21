@@ -118,11 +118,14 @@ describe("HomePage Component Tests", () => {
     cleanup()
   })
 
-  it("renders loading message while dashboard data is fetching", () => {
+  it("renders loading skeletons in Hero and highlights without flashing empty states while fetching", () => {
     vi.mocked(api.get).mockImplementation(() => new Promise(() => {}))
     renderHomePage()
 
     expect(screen.getByRole("status").textContent).toContain("Loading dashboard...")
+    expect(screen.queryByText("No upcoming events at the moment.")).toBeNull()
+    expect(screen.queryByText("No recent activity yet.")).toBeNull()
+    expect(screen.queryByText(/Attendance: 0 \/ 12/)).toBeNull()
   })
 
   it("renders dashboard greeting, karma points, streak count and upcoming events upon success", async () => {
@@ -130,11 +133,12 @@ describe("HomePage Component Tests", () => {
     renderHomePage()
 
     await waitFor(() => {
-      expect(screen.getByText("Siddhartha Gautama")).toBeDefined()
+      expect(screen.getByText(/Good (morning|afternoon|evening)\./i)).toBeDefined()
     })
 
     expect(screen.getByText("420 Pts")).toBeDefined()
-    expect(screen.getByText("5x Active")).toBeDefined()
+    expect(screen.getByText("Streak")).toBeDefined()
+    expect(screen.getByText("5")).toBeDefined()
     expect(screen.getByText("Sunday Puja & Meditation")).toBeDefined()
     expect(screen.getByText("Season Dhamma 2026")).toBeDefined()
   })
@@ -154,7 +158,7 @@ describe("HomePage Component Tests", () => {
     fireEvent.click(retryButton)
 
     await waitFor(() => {
-      expect(screen.getByText("Siddhartha Gautama")).toBeDefined()
+      expect(screen.getByText(/Good (morning|afternoon|evening)\./i)).toBeDefined()
     })
   })
 
@@ -163,7 +167,7 @@ describe("HomePage Component Tests", () => {
     renderHomePage()
 
     await waitFor(() => {
-      expect(screen.getByText("Siddhartha Gautama")).toBeDefined()
+      expect(screen.getByText(/Good (morning|afternoon|evening)\./i)).toBeDefined()
     })
 
     const qrButtons = screen.getAllByRole("button", { name: "Attendance QR Code" })

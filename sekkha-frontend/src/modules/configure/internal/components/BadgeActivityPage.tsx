@@ -190,7 +190,7 @@ export function BadgeActivityCreatePage() {
                 htmlFor="bonusPoints"
                 className="block text-xs font-bold tracking-wider text-[#0a0a0a] uppercase"
               >
-                Bonus Points Reward <span className="text-destructive">*</span>
+                Bonus Karma Points Reward <span className="text-destructive">*</span>
               </label>
               <div className="relative mt-1.5">
                 <Input

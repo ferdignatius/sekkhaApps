@@ -50,7 +50,7 @@ export function PageBreadcrumb({
   }
 
   return (
-    <div className="sticky top-0 z-40 border-b border-black/[0.05] bg-[#fffaf0]/80 font-sans shadow-2xs backdrop-blur-xl backdrop-saturate-150 transition-all">
+    <div className="relative z-40 font-sans">
       <div className="px-4 py-1.5 sm:px-6 md:px-8 md:py-2 lg:px-12">
         <div className="mx-auto flex min-h-[48px] max-w-7xl items-center justify-between gap-3 sm:min-h-[52px]">
           {/* ── Left: Back Button ── */}
@@ -115,7 +115,9 @@ export function PageBreadcrumb({
 
           {/* ── Right: Custom Actions ── */}
           {actions ? (
-            <div className="flex shrink-0 items-center gap-2">{actions}</div>
+            <div className="flex shrink-0 items-center gap-2">
+              {actions}
+            </div>
           ) : null}
         </div>
       </div>

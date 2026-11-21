@@ -22,16 +22,10 @@ import {
   ChevronRightIcon,
 } from "lucide-react"
 import { api } from "@/lib/api"
-import { getInitials } from "@/lib/initials"
-import {
-  formatRoleLabel,
-  getRoleAvatarClass,
-  getRoleBadgeVariant,
-} from "@/lib/roles"
 import { DhammaWidget } from "./DhammaWidget"
 import { Link } from "@tanstack/react-router"
 import { ResponsiveFormModal } from "@/components/common/ResponsiveFormModal"
-import { Button, Badge, Input } from "@/components/base"
+import { Badge, Input } from "@/components/base"
 
 function formatEventDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-US", {
@@ -53,6 +47,14 @@ function getTimeGreeting(): string {
   if (hour >= 4 && hour < 12) return "Good morning"
   if (hour >= 12 && hour < 17) return "Good afternoon"
   return "Good evening"
+}
+
+function formatTodayHeader(): string {
+  return new Date().toLocaleDateString("en-US", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  })
 }
 
 type HomeEvent = {
@@ -149,14 +151,12 @@ export function HomePage() {
     authState.status === "authenticated"
       ? (dashboard?.profile.role ?? authState.role ?? "umat")
       : "umat"
-  const roleLabel = formatRoleLabel(role)
-  const displayName = dashboard?.profile.name || authState.name || roleLabel
+  const displayName = dashboard?.profile.name || authState.name || "Member"
   const memberId =
     dashboard?.profile.user_number ||
     (authState.userId ? `SKH-${authState.userId.slice(-4)}` : "SKH-8821")
   const totalPoints = dashboard?.profile.points ?? 0
   const currentStreak = dashboard?.streak.current_streak ?? 0
-  const streakStatus = dashboard?.streak.status ?? "active"
   const events = dashboard?.events ?? []
   const activities = dashboard?.activities ?? []
 
@@ -200,27 +200,27 @@ export function HomePage() {
     },
     ...(canAccessPeople
       ? [
-          {
-            id: "people",
-            label: "People",
-            icon: UsersIcon,
-            bg: "bg-[#ffb084]",
-            iconColor: "text-[#0a0a0a]",
-            href: "/people",
-          },
-        ]
+        {
+          id: "people",
+          label: "People",
+          icon: UsersIcon,
+          bg: "bg-[#ffb084]",
+          iconColor: "text-[#0a0a0a]",
+          href: "/people",
+        },
+      ]
       : []),
     ...(isPengurus
       ? [
-          {
-            id: "insight",
-            label: "Community Insights",
-            icon: BarChart3Icon,
-            bg: "bg-[#0a0a0a]",
-            iconColor: "text-white",
-            href: "/insight",
-          },
-        ]
+        {
+          id: "insight",
+          label: "Community Insights",
+          icon: BarChart3Icon,
+          bg: "bg-[#0a0a0a]",
+          iconColor: "text-white",
+          href: "/insight",
+        },
+      ]
       : []),
     {
       id: "see-more",
@@ -267,20 +267,20 @@ export function HomePage() {
         },
         ...(canAccessPeople
           ? [
-              {
-                id: "people",
-                label: "People",
-                description:
-                  "Temple member database, service teams, and community roles",
-                icon: UsersIcon,
-                bg: "bg-[#ffb084]",
-                iconColor: "text-[#0a0a0a]",
-                href: "/people",
-                badge: "Directory",
-                keywords:
-                  "people teams ministry fellowship community committees members direktori tim kepengurusan umat",
-              },
-            ]
+            {
+              id: "people",
+              label: "People",
+              description:
+                "Temple member database, service teams, and community roles",
+              icon: UsersIcon,
+              bg: "bg-[#ffb084]",
+              iconColor: "text-[#0a0a0a]",
+              href: "/people",
+              badge: "Directory",
+              keywords:
+                "people teams ministry fellowship community committees members direktori tim kepengurusan umat",
+            },
+          ]
           : []),
       ],
     },
@@ -304,92 +304,92 @@ export function HomePage() {
     },
     ...(isPengurus
       ? [
-          {
-            category: "Organizer & Analytics",
-            items: [
-              {
-                id: "insight",
-                label: "Community & Contributor Insights",
-                description:
-                  "Attendance trends, community demographics, and Seva contributor records",
-                icon: BarChart3Icon,
-                bg: "bg-[#ffb084]",
-                iconColor: "text-[#0a0a0a]",
-                href: "/insight",
-                badge: "Analytics",
-                keywords:
-                  "insight community analytics reports stats charts data trends seva contributor board analitik grafik data",
-              },
-            ],
-          },
-          {
-            category: "Master Data & Configuration",
-            items: [
-              {
-                id: "schools",
-                label: "Schools Directory",
-                description:
-                  "Manage student Buddhist fellowships (KMB) and school databases",
-                icon: SettingsIcon,
-                bg: "bg-[#faf5e8] border border-[#e5e5e5]",
-                iconColor: "text-[#0a0a0a]",
-                href: "/configure/master/school",
-                badge: "Master",
-                keywords: "schools kmb kampus sekolah universitas master data",
-              },
-              {
-                id: "event-types",
-                label: "Event Categories",
-                description:
-                  "Manage activity types, service categories, and liturgical tags",
-                icon: CalendarIcon,
-                bg: "bg-[#ffb084]",
-                iconColor: "text-[#0a0a0a]",
-                href: "/configure/master/event-type",
-                badge: "Master",
-                keywords: "event types categories jenis kegiatan puja kategori",
-              },
-              {
-                id: "points-rules",
-                label: "Point Rules",
-                description:
-                  "Define attendance merit multipliers and points scoring logic",
-                icon: SparklesIcon,
-                bg: "bg-[#0a0a0a]",
-                iconColor: "text-white",
-                href: "/configure/rules/points",
-                badge: "Rules",
-                keywords: "points rules aturan poin penilaian merit bobot",
-              },
-              {
-                id: "seasons",
-                label: "Seasons & Periods",
-                description:
-                  "Manage competition periods, calendar seasons, and target metrics",
-                icon: TrophyIcon,
-                bg: "bg-[#e8b94a]",
-                iconColor: "text-[#0a0a0a]",
-                href: "/configure/rules/season",
-                badge: "Rules",
-                keywords:
-                  "seasons periods semester annual vassa musim kompetisi target",
-              },
-              {
-                id: "badge-activities",
-                label: "Service Activities",
-                description:
-                  "Configure Seva duty roles, MC, liturgical chanting, and bonus points",
-                icon: SparklesIcon,
-                bg: "bg-[#ff4d8b]",
-                iconColor: "text-white",
-                href: "/configure/master/badge-activity",
-                badge: "Master",
-                keywords:
-                  "service activities seva tugas kebaktian mc puja bonus merit",
-              },
-            ],
-          },
-        ]
+        {
+          category: "Organizer & Analytics",
+          items: [
+            {
+              id: "insight",
+              label: "Community & Contributor Insights",
+              description:
+                "Attendance trends, community demographics, and Seva contributor records",
+              icon: BarChart3Icon,
+              bg: "bg-[#ffb084]",
+              iconColor: "text-[#0a0a0a]",
+              href: "/insight",
+              badge: "Analytics",
+              keywords:
+                "insight community analytics reports stats charts data trends seva contributor board analitik grafik data",
+            },
+          ],
+        },
+        {
+          category: "Master Data & Configuration",
+          items: [
+            {
+              id: "schools",
+              label: "Schools Directory",
+              description:
+                "Manage student Buddhist fellowships (KMB) and school databases",
+              icon: SettingsIcon,
+              bg: "bg-[#faf5e8] border border-[#e5e5e5]",
+              iconColor: "text-[#0a0a0a]",
+              href: "/configure/master/school",
+              badge: "Master",
+              keywords: "schools kmb kampus sekolah universitas master data",
+            },
+            {
+              id: "event-types",
+              label: "Event Categories",
+              description:
+                "Manage activity types, service categories, and liturgical tags",
+              icon: CalendarIcon,
+              bg: "bg-[#ffb084]",
+              iconColor: "text-[#0a0a0a]",
+              href: "/configure/master/event-type",
+              badge: "Master",
+              keywords: "event types categories jenis kegiatan puja kategori",
+            },
+            {
+              id: "points-rules",
+              label: "Point Rules",
+              description:
+                "Define attendance merit multipliers and points scoring logic",
+              icon: SparklesIcon,
+              bg: "bg-[#0a0a0a]",
+              iconColor: "text-white",
+              href: "/configure/rules/points",
+              badge: "Rules",
+              keywords: "points rules aturan poin penilaian merit bobot",
+            },
+            {
+              id: "seasons",
+              label: "Seasons & Periods",
+              description:
+                "Manage competition periods, calendar seasons, and target metrics",
+              icon: TrophyIcon,
+              bg: "bg-[#e8b94a]",
+              iconColor: "text-[#0a0a0a]",
+              href: "/configure/rules/season",
+              badge: "Rules",
+              keywords:
+                "seasons periods semester annual vassa musim kompetisi target",
+            },
+            {
+              id: "badge-activities",
+              label: "Service Activities",
+              description:
+                "Configure Seva duty roles, MC, liturgical chanting, and bonus points",
+              icon: SparklesIcon,
+              bg: "bg-[#ff4d8b]",
+              iconColor: "text-white",
+              href: "/configure/master/badge-activity",
+              badge: "Master",
+              keywords:
+                "service activities seva tugas kebaktian mc puja bonus merit",
+            },
+          ],
+        },
+      ]
       : []),
   ]
 
@@ -420,153 +420,183 @@ export function HomePage() {
 
   return (
     <main className="min-h-screen bg-[#fffaf0] pb-28 text-left font-sans md:pb-12">
-      <PageBreadcrumb items={[{ label: "Home" }]} />
+      {/* On mobile, extend the Warm Sunrise backdrop + ambient glows behind the transparent top bar so there is zero seam */}
+      <div className="relative overflow-hidden bg-gradient-to-b from-[#f6e8c8] via-[#faf2dd] to-[#f4e7c6] md:overflow-visible md:bg-none">
+        {/* Mobile Hero Wallpaper spanning seamlessly behind top bar & hero */}
+        <img
+          src="/home-background.svg"
+          alt=""
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 h-full w-full object-cover object-right-bottom select-none md:hidden"
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#faf2dd]/85 via-[#faf2dd]/45 to-transparent md:hidden"
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#faf2dd]/55 to-transparent md:hidden"
+        />
 
-      <div className="px-3.5 py-3 sm:px-6 sm:py-6 md:px-8 lg:px-12">
-        <div className="mx-auto max-w-7xl space-y-4 sm:space-y-6 lg:space-y-8">
-          {/* ── 1. Profile Section (Clay Warm Surface with Apple HIG Depth) ── */}
-          <section aria-labelledby="section-profile">
+        <PageBreadcrumb
+          items={[{ label: "Home" }]}
+          actions={
+            <button
+              type="button"
+              onClick={() => setShowQrModal(true)}
+              title="Attendance QR Code"
+              aria-label="Attendance QR Code"
+              className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full border border-[#ded6c2] bg-[#faf5e8]/90 text-[#0a0a0a] shadow-2xs backdrop-blur-md transition-all hover:bg-[#f5efe0] active:scale-95 sm:size-10"
+            >
+              <QrCodeIcon className="size-4" aria-hidden="true" />
+            </button>
+          }
+        />
+
+        {/* ── 1. Warm Sekkha Sunrise Hero (Curved Sheet Anchor on Mobile, Banner Card on md+) ── */}
+        <div className="md:px-6 md:pt-2 lg:px-8 xl:px-12">
+          <section
+            aria-labelledby="section-profile"
+            className="relative mx-auto max-w-7xl px-4 pt-3 pb-16 sm:px-6 md:overflow-hidden md:rounded-[32px] md:border md:border-[#e6decb] md:bg-gradient-to-b md:from-[#f6e8c8] md:via-[#faf2dd] md:to-[#f4e7c6] md:px-7 md:py-7 md:shadow-xs lg:px-8 lg:py-8"
+          >
             <h2 id="section-profile" className="sr-only">
-              Member Profile
+              Member Summary
             </h2>
-            {error && (
-              <div
-                role="alert"
-                className="mb-3 flex items-center justify-between gap-3 rounded-[16px] border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-800"
-              >
-                <span>
-                  {dashboard ? `Showing cached data. ${error}` : error}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setRetryKey((value) => value + 1)}
-                  className="min-h-11 shrink-0 rounded-full bg-rose-800 px-4 font-semibold text-white"
+
+            {/* Desktop Hero Wallpaper + Soft Readability Scrim */}
+            <img
+              src="/home-background.svg"
+              alt=""
+              aria-hidden="true"
+              className="pointer-events-none hidden h-full w-full object-cover object-right select-none md:absolute md:inset-0 md:block"
+            />
+            <div
+              aria-hidden="true"
+              className="pointer-events-none hidden bg-gradient-to-r from-[#faf2dd]/85 via-[#faf2dd]/45 to-transparent md:absolute md:inset-0 md:block"
+            />
+            <div
+              aria-hidden="true"
+              className="pointer-events-none hidden right-1/3 -bottom-12 size-44 rounded-full bg-[#ff4d8b]/10 blur-3xl md:absolute md:block"
+            />
+
+            <div className="relative z-10 space-y-5">
+              {error && (
+                <div
+                  role="alert"
+                  className="flex items-center justify-between gap-3 rounded-[16px] border border-rose-200 bg-rose-50/95 px-4 py-3 text-xs text-rose-800 shadow-2xs"
                 >
-                  Retry
-                </button>
-              </div>
-            )}
-            {loading && !dashboard ? (
-              <div
-                role="status"
-                aria-live="polite"
-                className="relative overflow-hidden rounded-[24px] border border-[#e5e5e5] bg-[#faf5e8]/85 p-4 shadow-xs sm:rounded-[28px] sm:p-5 lg:p-6"
-              >
-                <span className="sr-only">Loading dashboard...</span>
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3.5">
-                    <div className="size-14 animate-pulse rounded-[18px] bg-[#ebe6d6] sm:size-16" />
-                    <div className="space-y-2">
-                      <div className="h-3 w-20 animate-pulse rounded bg-[#ebe6d6]" />
-                      <div className="h-5 w-36 animate-pulse rounded bg-[#ebe6d6]" />
-                      <div className="h-3.5 w-24 animate-pulse rounded bg-[#ebe6d6]" />
+                  <span>
+                    {dashboard ? `Showing cached data. ${error}` : error}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setRetryKey((value) => value + 1)}
+                    className="min-h-11 shrink-0 rounded-full bg-rose-800 px-4 font-semibold text-white"
+                  >
+                    Retry
+                  </button>
+                </div>
+              )}
+
+              {loading && !dashboard ? (
+                <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+                  <div
+                    role="status"
+                    aria-live="polite"
+                    className="space-y-3"
+                  >
+                    <span className="sr-only">Loading dashboard...</span>
+                    <div className="h-7 w-44 animate-pulse rounded-xl bg-[#ebe1c7]" />
+                    <div className="h-3.5 w-40 animate-pulse rounded bg-[#ebe1c7]" />
+                    <div className="h-12 w-36 animate-pulse rounded-2xl bg-[#ebe1c7]" />
+                    <div className="h-4 w-32 animate-pulse rounded bg-[#ebe1c7]" />
+                  </div>
+                  <div
+                    aria-hidden="true"
+                    className="hidden min-w-[230px] flex-col gap-2 rounded-[20px] border border-[#ded3b8] bg-[#fffaf0]/80 px-4 py-3 md:flex"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="h-3.5 w-20 animate-pulse rounded bg-[#ebe1c7]" />
+                      <div className="h-3.5 w-14 animate-pulse rounded bg-[#ebe1c7]" />
+                    </div>
+                    <div className="h-1.5 w-full animate-pulse rounded-full bg-[#ebe1c7]" />
+                    <div className="h-3 w-28 animate-pulse rounded bg-[#ebe1c7]" />
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+                  <div className="space-y-2.5">
+                    <div className="space-y-1">
+                      <h1 className="text-2xl leading-tight font-bold tracking-tight text-[#0a0a0a] sm:text-3xl">
+                        {getTimeGreeting()}.
+                      </h1>
+                      <p className="text-xs font-medium text-[#5f5849] sm:text-sm">
+                        Today · {formatTodayHeader()}
+                      </p>
+                    </div>
+
+                    {/* Highlight Utama: Streak */}
+                    <div className="flex items-baseline gap-2 pt-1">
+                      <span className="inline-flex size-10 items-center justify-center self-center rounded-[14px] bg-[#ff4d8b]/15 shadow-2xs sm:size-11">
+                        <FlameIcon className="size-6 text-[#ff4d8b] sm:size-7" />
+                      </span>
+                      <span className="text-5xl leading-none font-black tracking-tight text-[#0a0a0a] tabular-nums sm:text-6xl">
+                        {currentStreak}
+                      </span>
+                      <span className="text-sm text-[#3a352b] sm:text-lg">
+                        Streak
+                      </span>
+                    </div>
+
+                    {/* Points tepat di bawah Streak (Clean Text) */}
+                    <div className="flex flex-wrap items-center gap-1.5 pt-0.5 text-sm">
+                      <StarIcon className="size-4 shrink-0 fill-[#e8b94a] text-[#c28e20]" />
+                      <span className="font-extrabold text-[#0a0a0a] tabular-nums">
+                        {totalPoints.toLocaleString("en-US")} Pts
+                      </span>
+                      <span className="text-xs font-medium text-[#6a6252]">
+                        Karma Points
+                      </span>
                     </div>
                   </div>
-                  <div className="size-11 animate-pulse rounded-full bg-[#ebe6d6] sm:w-28" />
-                </div>
-                <div className="mt-4 grid grid-cols-2 gap-2.5 border-t border-[#e5e5e5]/80 pt-3 sm:gap-3">
-                  <div className="h-14 animate-pulse rounded-[16px] bg-[#fffaf0]" />
-                  <div className="h-14 animate-pulse rounded-[16px] bg-[#fffaf0]" />
-                </div>
-              </div>
-            ) : (
-            <div className="relative overflow-hidden rounded-[24px] border border-[#e5e5e5] bg-[#faf5e8]/85 p-4 shadow-xs backdrop-blur-md sm:rounded-[28px] sm:p-5 lg:p-6">
-              {/* Subtle Ambient Radial Glows */}
-              <div className="pointer-events-none absolute -top-12 -right-12 size-44 rounded-full bg-[#ffb084]/20 blur-3xl" />
-              <div className="pointer-events-none absolute -bottom-12 -left-12 size-44 rounded-full bg-[#0a0a0a]/5 blur-3xl" />
 
-              <div className="relative z-10 flex flex-col gap-4">
-                {/* Top Row: Profile Info (Left) + Quick QR Action (Right) */}
-                <div className="flex min-w-0 items-center justify-between gap-3">
-                  {/* Avatar & Details */}
-                  <div className="flex min-w-0 flex-1 items-center gap-3.5 sm:gap-4">
-                    {/* Avatar Squircle */}
-                    <div
-                      className={`flex size-14 shrink-0 items-center justify-center rounded-[18px] border text-lg font-black shadow-xs ring-2 ring-[#e5e5e5] sm:size-16 sm:text-xl md:size-[68px] ${getRoleAvatarClass(role)}`}
+                  {/* Desktop/Tablet Compact Season Pill inside Hero */}
+                  {activeSeason && (
+                    <Link
+                      to="/leaderboard"
+                      className="hidden min-w-[230px] flex-col gap-1.5 rounded-[20px] border border-[#ded3b8] bg-[#fffaf0]/85 px-4 py-3 shadow-2xs backdrop-blur-sm transition-all hover:bg-[#fffaf0] md:flex"
                     >
-                      {getInitials(displayName, "M")}
-                    </div>
-
-                    {/* Typographic Hierarchy */}
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs font-semibold tracking-tight text-[#6a6a6a]">
-                        {getTimeGreeting()}
-                      </p>
-                      <h1
-                        className="mt-0.5 truncate text-xl leading-tight font-bold tracking-tight text-[#0a0a0a] sm:text-2xl"
-                        title={displayName}
-                      >
-                        {displayName}
-                      </h1>
-                      <div className="mt-1.5 flex flex-wrap items-center gap-1.5 sm:gap-2">
-                        <Badge
-                          variant={getRoleBadgeVariant(role)}
-                          size="sm"
-                          className="rounded-full px-2.5 py-0.5 font-semibold"
-                        >
-                          {roleLabel}
-                        </Badge>
-                        <span className="shrink-0 font-mono text-[11px] text-[#6a6a6a] sm:text-xs">
-                          ID: {memberId}
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="truncate text-xs font-bold text-[#0a0a0a]">
+                          Season Goal
+                        </span>
+                        <span className="shrink-0 text-[11px] font-bold text-[#c28e20]">
+                          {activeSeason.days_left}d left
                         </span>
                       </div>
-                    </div>
-                  </div>
-
-                  {/* Quick QR Action (Adaptive icon-only on compact mobile, text on sm+) */}
-                  <Button
-                    type="button"
-                    variant="primary"
-                    size="sm"
-                    onClick={() => setShowQrModal(true)}
-                    className="flex min-h-[44px] shrink-0 items-center justify-center gap-2 rounded-full px-3 py-2 font-semibold shadow-xs active:scale-[0.98] active:opacity-85 sm:px-4"
-                    title="Attendance QR Code"
-                    aria-label="Attendance QR Code"
-                  >
-                    <QrCodeIcon className="size-4 shrink-0 text-white sm:size-4.5" />
-                    <span className="hidden text-xs font-semibold whitespace-nowrap sm:inline sm:text-sm">
-                      QR Code
-                    </span>
-                  </Button>
+                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#ebe2cc]">
+                        <div
+                          className="h-full rounded-full bg-gradient-to-r from-[#e8b94a] to-[#ff4d8b]"
+                          style={{
+                            width: `${Math.max(5, seasonProgressPercent)}%`,
+                          }}
+                        />
+                      </div>
+                      <span className="text-[11px] font-medium text-[#6a6252]">
+                        {totalAttendances} / {targetAttendance} attendances
+                      </span>
+                    </Link>
+                  )}
                 </div>
-
-                {/* Bottom Row: Activity Summary Tiles */}
-                <div className="grid grid-cols-2 gap-2.5 border-t border-[#e5e5e5]/80 pt-3 sm:gap-3">
-                  <div className="flex items-center gap-2.5 rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0]/90 px-3.5 py-2 shadow-2xs backdrop-blur-sm sm:px-4 sm:py-2.5">
-                    <div className="flex size-9 shrink-0 items-center justify-center rounded-[12px] bg-[#ff4d8b]/15">
-                      <FlameIcon className="size-5 text-[#ff4d8b]" />
-                    </div>
-                    <div className="min-w-0 text-left">
-                      <p className="text-[10px] font-bold tracking-wider text-[#6a6a6a] uppercase sm:text-[11px]">
-                        Streak
-                      </p>
-                      <p className="mt-0.5 truncate text-xs leading-tight font-bold whitespace-nowrap text-[#0a0a0a] sm:text-sm">
-                        {streakStatus === "paused" && currentStreak > 0
-                          ? `${currentStreak}x Paused`
-                          : `${currentStreak}x Active`}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2.5 rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0]/90 px-3.5 py-2 shadow-2xs backdrop-blur-sm sm:px-4 sm:py-2.5">
-                    <div className="flex size-9 shrink-0 items-center justify-center rounded-[12px] bg-[#e8b94a]/20">
-                      <StarIcon className="size-5 text-[#0a0a0a]" />
-                    </div>
-                    <div className="min-w-0 text-left">
-                      <p className="text-[10px] font-bold tracking-wider text-[#6a6a6a] uppercase sm:text-[11px]">
-                        Points
-                      </p>
-                      <p className="mt-0.5 truncate text-xs leading-tight font-bold whitespace-nowrap text-[#0a0a0a] sm:text-sm">
-                        {totalPoints.toLocaleString("en-US")} Pts
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              )}
             </div>
-            )}
           </section>
+        </div>
+      </div>
 
+      {/* ── Curved Sheet Body (Overlaps Hero on Mobile, Spacious Bento on Tablet/Desktop) ── */}
+      <div className="relative z-10 -mt-6 rounded-t-[32px] border-t border-[#e5dec9]/80 bg-[#fffaf0] px-4 pt-5 shadow-[0_-10px_28px_-6px_rgba(10,10,10,0.07)] sm:px-6 md:mt-0 md:rounded-none md:border-t-0 md:bg-transparent md:px-6 md:pt-6 md:shadow-none lg:px-8 xl:px-12">
+        <div className="mx-auto max-w-7xl space-y-5 sm:space-y-6 lg:space-y-7">
           {/* ── 2. Quick Access Section ── */}
           <section aria-labelledby="section-quick-access" className="space-y-2">
             <div className="flex items-center justify-between px-1">
@@ -577,16 +607,16 @@ export function HomePage() {
                 Quick Access
               </h2>
             </div>
-            <div className="rounded-[24px] border border-[#e5e5e5] bg-[#faf5e8]/85 p-3.5 shadow-xs backdrop-blur-md sm:rounded-[28px] sm:p-6">
+            <div className="rounded-[24px] border border-[#e5e5e5] bg-[#faf5e8]/90 p-3.5 shadow-xs backdrop-blur-md sm:rounded-[28px] sm:p-5">
               <div
                 className={
                   primaryQuickAccessItems.length <= 3
-                    ? "grid grid-cols-3 gap-x-2 gap-y-3 sm:gap-6"
+                    ? "grid grid-cols-3 gap-x-2 gap-y-3 sm:gap-5"
                     : primaryQuickAccessItems.length === 4
-                      ? "grid grid-cols-4 gap-x-2 gap-y-3 sm:gap-6"
+                      ? "grid grid-cols-4 gap-x-2 gap-y-3 sm:gap-5"
                       : primaryQuickAccessItems.length === 5
-                        ? "grid grid-cols-5 gap-x-1.5 gap-y-3 sm:gap-6"
-                        : "grid grid-cols-3 gap-x-2 gap-y-4 sm:grid-cols-6 sm:gap-6"
+                        ? "grid grid-cols-5 gap-x-1.5 gap-y-3 sm:gap-5"
+                        : "grid grid-cols-3 gap-x-2 gap-y-4 sm:grid-cols-6 sm:gap-5"
                 }
               >
                 {primaryQuickAccessItems.map((item) => {
@@ -627,7 +657,7 @@ export function HomePage() {
             </div>
           </section>
 
-          {/* ── 3. Highlights & Reflections ── */}
+          {/* ── 3. Highlights & Reflections (Responsive 1-col / 2-col / 3-col Bento) ── */}
           <section aria-labelledby="section-highlights" className="space-y-2">
             <div className="flex items-center justify-between px-1">
               <h2
@@ -637,7 +667,7 @@ export function HomePage() {
                 Today&apos;s Highlights
               </h2>
             </div>
-            <div className="grid grid-cols-1 items-stretch gap-4 sm:gap-6 md:grid-cols-2">
+            <div className="grid grid-cols-1 items-stretch gap-4 sm:gap-5 md:grid-cols-2 xl:grid-cols-3">
               {/* Upcoming Event Widget (Single clean card, 1 clear CTA) */}
               <div
                 aria-labelledby="upcoming-event-heading"
@@ -682,7 +712,18 @@ export function HomePage() {
                   </div>
 
                   {/* Body */}
-                  {nextEvent ? (
+                  {loading && !dashboard ? (
+                    <div aria-hidden="true" className="flex flex-1 flex-col justify-between gap-4">
+                      <div className="space-y-2">
+                        <div className="h-5 w-4/5 animate-pulse rounded-lg bg-[#ebe1c7]" />
+                        <div className="h-3.5 w-2/3 animate-pulse rounded bg-[#ebe1c7]" />
+                      </div>
+                      <div className="flex items-center justify-between border-t border-[#e5e5e5]/80 pt-3">
+                        <div className="h-3.5 w-20 animate-pulse rounded bg-[#ebe1c7]" />
+                        <div className="size-7 animate-pulse rounded-full bg-[#ebe1c7]" />
+                      </div>
+                    </div>
+                  ) : nextEvent ? (
                     <Link
                       to={`/events?eventId=${nextEvent.id}` as "/"}
                       className="group flex flex-1 flex-col justify-between gap-3 text-left transition-opacity hover:opacity-90"
@@ -763,48 +804,64 @@ export function HomePage() {
                   </div>
 
                   {/* Body: Progress + Action */}
-                  <div className="space-y-2.5">
-                    <div className="flex items-center justify-between text-xs font-semibold text-[#0a0a0a]">
-                      <span>
-                        Attendance: {totalAttendances} / {targetAttendance}
-                      </span>
-                      <span className="font-bold text-[#e8b94a]">
-                        {currentStreak}w Streak
-                      </span>
+                  {loading && !dashboard ? (
+                    <div aria-hidden="true" className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="h-3.5 w-32 animate-pulse rounded bg-[#ebe1c7]" />
+                        <div className="h-3.5 w-16 animate-pulse rounded bg-[#ebe1c7]" />
+                      </div>
+                      <div className="h-2.5 w-full animate-pulse rounded-full bg-[#ebe1c7]" />
+                      <div className="flex items-center justify-between border-t border-[#e5e5e5]/80 pt-3">
+                        <div className="h-3.5 w-40 animate-pulse rounded bg-[#ebe1c7]" />
+                        <div className="size-7 animate-pulse rounded-full bg-[#ebe1c7]" />
+                      </div>
                     </div>
-                    <div
-                      role="progressbar"
-                      aria-label="Season activity progress"
-                      aria-valuemin={0}
-                      aria-valuemax={100}
-                      aria-valuenow={seasonProgressPercent}
-                      className="h-2.5 w-full overflow-hidden rounded-full border border-[#e5e5e5] bg-[#fffaf0]"
-                    >
-                      <div
-                        className="h-full rounded-full bg-gradient-to-r from-[#e8b94a] to-[#ff4d8b] transition-all duration-500"
-                        style={{
-                          width: `${Math.max(5, seasonProgressPercent)}%`,
-                        }}
-                      />
-                    </div>
-                  </div>
+                  ) : (
+                    <>
+                      <div className="space-y-2.5">
+                        <div className="flex items-center justify-between text-xs font-semibold text-[#0a0a0a]">
+                          <span>
+                            Attendance: {totalAttendances} / {targetAttendance}
+                          </span>
+                          <span className="font-bold text-[#c28e20]">
+                            {currentStreak}w Streak
+                          </span>
+                        </div>
+                        <div
+                          role="progressbar"
+                          aria-label="Season activity progress"
+                          aria-valuemin={0}
+                          aria-valuemax={100}
+                          aria-valuenow={seasonProgressPercent}
+                          className="h-2.5 w-full overflow-hidden rounded-full border border-[#e5e5e5] bg-[#fffaf0]"
+                        >
+                          <div
+                            className="h-full rounded-full bg-gradient-to-r from-[#e8b94a] to-[#ff4d8b] transition-all duration-500"
+                            style={{
+                              width: `${Math.max(5, seasonProgressPercent)}%`,
+                            }}
+                          />
+                        </div>
+                      </div>
 
-                  <Link
-                    to="/leaderboard"
-                    className="group flex items-center justify-between border-t border-[#e5e5e5]/80 pt-3 text-xs font-semibold text-[#0a0a0a] transition-all hover:text-black"
-                  >
-                    <span>Check Your Rank on Leaderboard</span>
-                    <span className="flex size-7 items-center justify-center rounded-full border border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] transition-transform group-hover:translate-x-0.5">
-                      <ChevronRightIcon className="size-3.5" />
-                    </span>
-                  </Link>
+                      <Link
+                        to="/leaderboard"
+                        className="group flex items-center justify-between border-t border-[#e5e5e5]/80 pt-3 text-xs font-semibold text-[#0a0a0a] transition-all hover:text-black"
+                      >
+                        <span>Check Your Rank on Leaderboard</span>
+                        <span className="flex size-7 items-center justify-center rounded-full border border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] transition-transform group-hover:translate-x-0.5">
+                          <ChevronRightIcon className="size-3.5" />
+                        </span>
+                      </Link>
+                    </>
+                  )}
                 </div>
               </div>
-            </div>
 
-            {/* Dhamma Wisdom Widget */}
-            <div id="dhamma-wisdom-card">
-              <DhammaWidget />
+              {/* Dhamma Wisdom Widget (Full width on tablet 2-col, 3rd col on xl desktop) */}
+              <div id="dhamma-wisdom-card" className="md:col-span-2 xl:col-span-1">
+                <DhammaWidget />
+              </div>
             </div>
           </section>
 
@@ -815,13 +872,31 @@ export function HomePage() {
             >
               Latest Activity
             </h2>
-            <div className="rounded-[28px] border border-[#e5e5e5] bg-[#faf5e8]/85 p-4 shadow-xs sm:p-5">
-              {activities.length > 0 ? (
-                <ul className="divide-y divide-[#e5e5e5]">
+            <div className="rounded-[24px] border border-[#e5e5e5] bg-[#faf5e8]/85 p-4 shadow-xs sm:rounded-[28px] sm:p-5">
+              {loading && !dashboard ? (
+                <div
+                  aria-hidden="true"
+                  className="divide-y divide-[#e5e5e5] lg:grid lg:grid-cols-2 lg:gap-x-8 lg:divide-y-0"
+                >
+                  {[1, 2].map((idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0 lg:py-2"
+                    >
+                      <div className="min-w-0 flex-1 space-y-1.5">
+                        <div className="h-4 w-44 animate-pulse rounded bg-[#ebe1c7]" />
+                        <div className="h-3 w-28 animate-pulse rounded bg-[#ebe1c7]" />
+                      </div>
+                      <div className="h-6 w-16 shrink-0 animate-pulse rounded-full bg-[#ebe1c7]" />
+                    </div>
+                  ))}
+                </div>
+              ) : activities.length > 0 ? (
+                <ul className="divide-y divide-[#e5e5e5] lg:grid lg:grid-cols-2 lg:gap-x-8 lg:divide-y-0">
                   {activities.map((activity) => (
                     <li
                       key={`${activity.event_id}-${activity.scanned_at}`}
-                      className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
+                      className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0 lg:border-b lg:border-[#e5e5e5]/70 lg:py-3"
                     >
                       <div className="min-w-0">
                         <p className="truncate text-sm font-semibold text-[#0a0a0a]">
@@ -928,7 +1003,7 @@ export function HomePage() {
                             type="button"
                             onClick={() => {
                               setShowAllMenusModal(false)
-                              ;(item as any).onClick()
+                                ; (item as any).onClick()
                             }}
                             className="group flex w-full cursor-pointer items-center gap-3 rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] px-3.5 py-3 text-left transition-all hover:border-[#0a0a0a]/20 hover:bg-[#f5f0e0] active:scale-[0.98]"
                           >

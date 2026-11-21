@@ -158,7 +158,7 @@ export function PointsRulesPage() {
             </div>
             <div className="min-w-0">
               <h1 className="text-base font-bold text-[#0a0a0a] sm:text-xl">
-                Point Rules & Economy Policy
+                Karma Points Rules & Economy Policy
               </h1>
               <p className="text-xs text-[#6a6a6a]">
                 Fixed system gamification engine rules with anti-inflation
@@ -180,7 +180,7 @@ export function PointsRulesPage() {
           <InfoIcon className="mt-0.5 size-5 shrink-0 text-[#e8b94a]" />
           <div className="space-y-1">
             <p className="text-xs font-bold text-[#0a0a0a]">
-              Point Scarcity & Anti-Inflation Guardrail
+              Karma Points Scarcity & Anti-Inflation Guardrail
             </p>
             <p className="text-xs leading-relaxed text-[#6a6a6a]">
               Points represent genuine effort and dedication. To prevent points
@@ -340,7 +340,7 @@ export function PointsRulesPage() {
                       className="inline-flex items-center gap-1 rounded-[10px] border border-[#e5e5e5] bg-[#fffaf0] px-3 py-1.5 font-bold text-[#0a0a0a] shadow-xs hover:bg-[#f0ebd8]"
                     >
                       <CalendarDaysIcon className="size-3.5 text-[#0a0a0a]" />
-                      <span>Configure Event Types (Attendance Points)</span>
+                      <span>Configure Event Types (Attendance Karma Points)</span>
                     </Link>
                     <Link
                       to="/configure/master/badge-activity"
@@ -361,7 +361,7 @@ export function PointsRulesPage() {
       <ResponsiveFormModal
         isOpen={Boolean(editingRule) && isAdmin}
         onClose={() => setEditingRule(null)}
-        title="Tune Engine Point Policy"
+        title="Tune Engine Karma Points Policy"
         description={
           editingRule
             ? `Adjust policy parameters and anti-inflation weight for "${editingRule.label}".`
@@ -411,7 +411,7 @@ export function PointsRulesPage() {
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <label className="text-xs font-bold text-[#0a0a0a]">
-                Awarded Points (+Points){" "}
+                Awarded Karma Points (+Pts){" "}
                 <span className="text-rose-500">*</span>
               </label>
               <span className="text-[10px] font-bold text-[#6a6a6a]">

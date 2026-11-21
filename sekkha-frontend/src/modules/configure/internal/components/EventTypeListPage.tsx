@@ -251,7 +251,7 @@ export function EventTypePage() {
           </Card>
           <Card className="rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] p-4 shadow-2xs">
             <p className="flex items-center gap-1 text-xs text-[#6a6a6a]">
-              <CoinsIcon className="size-3 text-clay-ochre" /> Average Points
+              <CoinsIcon className="size-3 text-clay-ochre" /> Average Karma Points
             </p>
             <p className="mt-1 text-2xl font-black text-[#0a0a0a]">
               {stats.avgPoints}{" "}

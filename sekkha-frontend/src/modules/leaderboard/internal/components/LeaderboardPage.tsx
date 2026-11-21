@@ -34,8 +34,8 @@ const METRIC_OPTIONS: {
 }[] = [
   {
     value: "points",
-    label: "Total Points",
-    shortLabel: "Points",
+    label: "Karma Points",
+    shortLabel: "Karma Points",
     icon: <StarIcon className="size-4" aria-hidden="true" />,
   },
   {

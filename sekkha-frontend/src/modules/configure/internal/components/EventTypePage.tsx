@@ -226,7 +226,7 @@ export function EventTypeCreatePage() {
             {/* Default Point Reward */}
             <div className="space-y-1.5">
               <Input
-                label="Default Points Reward"
+                label="Default Karma Points Reward"
                 type="text"
                 inputMode="numeric"
                 pattern="[0-9]*"
@@ -276,7 +276,7 @@ export function EventTypeCreatePage() {
                     helperText="Allowed minutes after start before penalty (0 - 180)."
                   />
                   <Input
-                    label="Penalty Deduction (Points)"
+                    label="Penalty Deduction (Karma Points)"
                     type="text"
                     inputMode="numeric"
                     pattern="[0-9]*"

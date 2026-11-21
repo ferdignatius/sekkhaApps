@@ -21,6 +21,7 @@ import { z } from "zod"
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
 import { CollapsibleBottomSheet } from "@/components/common/CollapsibleBottomSheet"
 import { ResponsiveFormModal } from "@/components/common/ResponsiveFormModal"
+import { EventDetailSkeletonBody } from "@/components/common/PageSkeletons"
 import { Button, Card, Badge, ConfirmDialog, toast } from "@/components/base"
 import { EventCalendar } from "@/components/ui/EventCalendar"
 import type { EventDotItem } from "@/components/ui/EventCalendar"
@@ -106,6 +107,11 @@ const MONTH_NAMES_SHORT = [
 
 type View = "calendar" | "detail"
 
+function getEventIdFromSearch(): string | null {
+  if (typeof window === "undefined") return null
+  return new URLSearchParams(window.location.search).get("eventId")
+}
+
 export function EventsPage() {
   const { authState } = useAuth()
   const role = authState.status === "authenticated" ? authState.role : null
@@ -113,8 +119,17 @@ export function EventsPage() {
 
   const [events, setEvents] = useState<EventListItem[]>([])
   const [loadingEvents, setLoadingEvents] = useState(true)
-  const [view, setView] = useState<View>("calendar")
+  const [view, setView] = useState<View>(() =>
+    getEventIdFromSearch() ? "detail" : "calendar"
+  )
   const [selected, setSelected] = useState<EventListItem | null>(null)
+  const [detailLoading, setDetailLoading] = useState<boolean>(() =>
+    Boolean(getEventIdFromSearch())
+  )
+  const [detailError, setDetailError] = useState<string | null>(null)
+  const selectedRef = useRef<EventListItem | null>(null)
+  selectedRef.current = selected
+  const detailReqSeqRef = useRef(0)
   const [editTarget, setEditTarget] = useState<EventListItem | null>(null)
   const [formOpen, setFormOpen] = useState(false)
   const [formSubmitting, setFormSubmitting] = useState(false)
@@ -160,7 +175,7 @@ export function EventsPage() {
       fetchMasterCategoriesPage({ page, limit, isActive: true, role }),
     getKey: (cat) => cat.id || cat.tag,
     pageSize: DROPDOWN_PAGE_SIZE,
-    enabled: true,
+    enabled: view !== "detail" || formOpen,
     initialItems: [],
   })
 
@@ -270,17 +285,19 @@ export function EventsPage() {
     }
   }, [searchQuery])
 
-  // Load events for active month
+  // Load events for active month (deferred when opening directly in ?eventId= detail view)
   useEffect(() => {
+    if (view === "detail") return
     if (!debouncedSearchQuery.trim()) {
       loadEvents(activeMonth)
     }
-  }, [activeMonthParam, debouncedSearchQuery])
+  }, [activeMonthParam, debouncedSearchQuery, view])
 
   const activeYear = activeMonth.getFullYear()
 
   // Search events scoped to the active calendar year when user types in search query
   useEffect(() => {
+    if (view === "detail") return
     const q = debouncedSearchQuery.trim()
     if (!q) {
       const monthParam = formatMonthParam(activeMonth)
@@ -313,7 +330,7 @@ export function EventsPage() {
     return () => {
       cancelled = true
     }
-  }, [debouncedSearchQuery, activeYear])
+  }, [debouncedSearchQuery, activeYear, view])
 
   // Attendance records keyed by event id (only fetched on demand for pengurus/admin)
   const [attendances, setAttendances] = useState<
@@ -321,7 +338,10 @@ export function EventsPage() {
   >({})
 
   function handleSelectEvent(ev: EventListItem) {
+    const reqSeq = ++detailReqSeqRef.current
     setSelected(ev)
+    setDetailError(null)
+    setDetailLoading(false)
     setView("detail")
     loadEventAttendances(ev.id)
     if (typeof window !== "undefined") {
@@ -334,7 +354,7 @@ export function EventsPage() {
     api
       .get<EventListItem>(`/events/${ev.id}`)
       .then((fullDetail) => {
-        if (fullDetail) {
+        if (fullDetail && detailReqSeqRef.current === reqSeq) {
           setSelected(fullDetail)
         }
       })
@@ -346,43 +366,65 @@ export function EventsPage() {
   // Auto-open event detail if URL contains ?eventId=... and support browser Back/Forward
   useEffect(() => {
     if (typeof window === "undefined") return
+    let cancelled = false
 
-    function syncFromUrl() {
-      const searchParams = new URLSearchParams(window.location.search)
-      const eventIdParam = searchParams.get("eventId")
+    async function syncFromUrl() {
+      const eventIdParam = getEventIdFromSearch()
       if (!eventIdParam) {
+        detailReqSeqRef.current += 1
         setSelected(null)
+        setDetailLoading(false)
+        setDetailError(null)
         setView("calendar")
         return
       }
 
-      // Check if current selected is already this event — don't overwrite if already open!
-      setSelected((curr) => {
-        if (curr && curr.id === eventIdParam) {
-          return curr
+      if (selectedRef.current?.id === eventIdParam) {
+        setView("detail")
+        setDetailLoading(false)
+        setDetailError(null)
+        return
+      }
+
+      const reqSeq = ++detailReqSeqRef.current
+      setSelected(null)
+      setDetailError(null)
+      setDetailLoading(true)
+      setView("detail")
+
+      try {
+        const [directEvent] = await Promise.all([
+          api.get<EventListItem>(`/events/${eventIdParam}`, { noCache: true }),
+          loadEventAttendances(eventIdParam),
+        ])
+
+        if (cancelled || detailReqSeqRef.current !== reqSeq) return
+
+        if (directEvent) {
+          setSelected(directEvent)
+          setDetailError(null)
+        } else {
+          setDetailError(
+            "This event could not be found or is no longer available."
+          )
         }
-
-        // Fetch detail on demand with noCache to avoid stale memory cache
-        api
-          .get<EventListItem>(`/events/${eventIdParam}`, { noCache: true })
-          .then((directEvent) => {
-            if (directEvent) {
-              setSelected(directEvent)
-              setView("detail")
-              loadEventAttendances(directEvent.id)
-            }
-          })
-          .catch((err) => {
-            console.warn("Event from eventId param not found:", err)
-          })
-
-        return curr
-      })
+      } catch (err) {
+        if (cancelled || detailReqSeqRef.current !== reqSeq) return
+        console.warn("Event from eventId param not found:", err)
+        setDetailError("This event could not be found or could not be loaded.")
+      } finally {
+        if (!cancelled && detailReqSeqRef.current === reqSeq) {
+          setDetailLoading(false)
+        }
+      }
     }
 
-    syncFromUrl()
+    void syncFromUrl()
     window.addEventListener("popstate", syncFromUrl)
-    return () => window.removeEventListener("popstate", syncFromUrl)
+    return () => {
+      cancelled = true
+      window.removeEventListener("popstate", syncFromUrl)
+    }
   }, [isPengurus])
 
   async function loadEventAttendances(eventId: string) {
@@ -552,7 +594,10 @@ export function EventsPage() {
   }
 
   function handleCloseDetail() {
+    detailReqSeqRef.current += 1
     setSelected(null)
+    setDetailLoading(false)
+    setDetailError(null)
     setView("calendar")
     if (typeof window !== "undefined") {
       const url = new URL(window.location.href)
@@ -567,8 +612,87 @@ export function EventsPage() {
     }
   }
 
-  // ── Detail View ──
-  if (view === "detail" && selected) {
+  // ── Detail View (loading skeleton, error fallback, or full EventDetailSheet) ──
+  if (view === "detail") {
+    if (detailLoading && !selected) {
+      return (
+        <main className="relative min-h-screen bg-[#fffaf0] text-left font-sans">
+          <div
+            className="pointer-events-none fixed inset-0 -z-10 overflow-hidden"
+            aria-hidden="true"
+          >
+            <div className="absolute -top-32 right-1/4 size-96 rounded-full bg-[#e8b94a]/12 blur-3xl" />
+            <div className="absolute top-1/3 -left-24 size-96 rounded-full bg-[#ffb084]/12 blur-3xl" />
+            <div className="absolute right-12 -bottom-24 size-96 rounded-full bg-[#ff4d8b]/8 blur-3xl" />
+          </div>
+
+          <PageBreadcrumb
+            items={[
+              {
+                label: "Events",
+                href: "/events",
+                onClick: handleCloseDetail,
+              },
+              { label: "Event Details" },
+            ]}
+            onBack={handleCloseDetail}
+          />
+          <EventDetailSkeletonBody />
+        </main>
+      )
+    }
+
+    if (!selected) {
+      return (
+        <main className="relative min-h-screen bg-[#fffaf0] text-left font-sans">
+          <div
+            className="pointer-events-none fixed inset-0 -z-10 overflow-hidden"
+            aria-hidden="true"
+          >
+            <div className="absolute -top-32 right-1/4 size-96 rounded-full bg-[#e8b94a]/12 blur-3xl" />
+            <div className="absolute top-1/3 -left-24 size-96 rounded-full bg-[#ffb084]/12 blur-3xl" />
+            <div className="absolute right-12 -bottom-24 size-96 rounded-full bg-[#ff4d8b]/8 blur-3xl" />
+          </div>
+
+          <PageBreadcrumb
+            items={[
+              {
+                label: "Events",
+                href: "/events",
+                onClick: handleCloseDetail,
+              },
+              { label: "Event Not Found" },
+            ]}
+            onBack={handleCloseDetail}
+          />
+
+          <div className="px-3.5 py-10 pb-28 sm:px-6 md:px-8 lg:px-12">
+            <Card className="mx-auto max-w-md space-y-4 rounded-[28px] border border-[#e6decb] bg-[#faf5e8]/90 p-6 text-center shadow-xs backdrop-blur-md sm:p-8">
+              <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-[#ebe1c7] text-[#0a0a0a]">
+                <CalendarDaysIcon className="size-6" aria-hidden="true" />
+              </div>
+              <div className="space-y-1.5">
+                <h1 className="text-base font-bold text-[#0a0a0a]">
+                  Event not found
+                </h1>
+                <p className="text-xs leading-relaxed text-[#6a6a6a]">
+                  {detailError ||
+                    "This event could not be found or is no longer available."}
+                </p>
+              </div>
+              <Button
+                variant="filled"
+                onClick={handleCloseDetail}
+                className="w-full rounded-full sm:w-auto sm:px-6"
+              >
+                Back to Events
+              </Button>
+            </Card>
+          </div>
+        </main>
+      )
+    }
+
     return (
       <main className="relative min-h-screen bg-[#fffaf0] text-left font-sans">
         {/* Apple HIG Ambient Vibrancy Backdrop Mesh */}

@@ -21,6 +21,7 @@ import {
 import type { AttendanceRecord, UserRole } from "../types"
 import { ConfirmDialog } from "@/components/base/AlertDialog"
 import { Badge } from "@/components/base/Badge"
+import { toast } from "@/components/base"
 import { InfiniteScrollFooter } from "@/components/common/InfiniteScrollFooter"
 import { usePaginatedDropdown } from "@/hooks/usePaginatedDropdown"
 import { DROPDOWN_PAGE_SIZE, normalizePaginatedResult } from "@/lib/pagination"
@@ -156,10 +157,15 @@ export function AttendanceListSheet({
         )
       )
       setBadgePickerTarget(null)
+      toast.success(
+        selectedBadge
+          ? `Service role "${selectedBadge.label}" assigned.`
+          : "Service role cleared."
+      )
       onRefresh?.()
     } catch (err: any) {
       console.error("Failed to assign service role:", err)
-      alert(err?.message || "Failed to assign service role.")
+      toast.error(err?.message || "Failed to assign service role.")
     }
   }
 

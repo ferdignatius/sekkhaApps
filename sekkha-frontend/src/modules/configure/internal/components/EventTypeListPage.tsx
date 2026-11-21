@@ -19,6 +19,7 @@ import type { EventTypeDto } from "../api/configureApi"
 import { Button } from "@/components/base/Button"
 import { Card } from "@/components/base/Card"
 import { Input } from "@/components/base/Input"
+import { toast } from "@/components/base"
 import {
   Dialog,
   DialogContent,
@@ -103,14 +104,20 @@ export function EventTypePage() {
   const handleToggleStatus = async (item: EventTypeDto) => {
     if (!isAdmin) return
     try {
-      await eventTypesApi.update(item.id, { is_active: !item.is_active })
+      const nextActive = !item.is_active
+      await eventTypesApi.update(item.id, { is_active: nextActive })
       setEventTypes((prev) =>
         prev.map((t) =>
-          t.id === item.id ? { ...t, is_active: !t.is_active } : t
+          t.id === item.id ? { ...t, is_active: nextActive } : t
         )
       )
+      toast.success(
+        `Category "${item.label}" ${nextActive ? "activated" : "deactivated"}.`
+      )
     } catch (err: any) {
-      setActionError(err?.message || "Failed to update event type status")
+      const msg = err?.message || "Failed to update event type status"
+      setActionError(msg)
+      toast.error(msg)
     }
   }
 
@@ -118,9 +125,11 @@ export function EventTypePage() {
     if (!itemToDelete) return
     setDeleting(true)
     try {
+      const deletedLabel = itemToDelete.label
       await eventTypesApi.remove(itemToDelete.id)
       setEventTypes((prev) => prev.filter((t) => t.id !== itemToDelete.id))
       setItemToDelete(null)
+      toast.success(`Category "${deletedLabel}" deleted.`)
     } catch (err: any) {
       const msg = err?.message || ""
       if (
@@ -136,7 +145,9 @@ export function EventTypePage() {
         })
         setItemToDelete(null)
       } else {
-        setActionError(msg || "Failed to delete event type")
+        const errText = msg || "Failed to delete event type"
+        setActionError(errText)
+        toast.error(errText)
       }
     } finally {
       setDeleting(false)
@@ -146,6 +157,7 @@ export function EventTypePage() {
   const handleDeactivateInstead = async () => {
     if (!conflictItem) return
     try {
+      const targetLabel = conflictItem.item.label
       await eventTypesApi.update(conflictItem.item.id, { is_active: false })
       setEventTypes((prev) =>
         prev.map((t) =>
@@ -153,8 +165,11 @@ export function EventTypePage() {
         )
       )
       setConflictItem(null)
+      toast.success(`Category "${targetLabel}" deactivated.`)
     } catch (err: any) {
-      setActionError(err?.message || "Failed to deactivate event type")
+      const msg = err?.message || "Failed to deactivate event type"
+      setActionError(msg)
+      toast.error(msg)
     }
   }
 

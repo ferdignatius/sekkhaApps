@@ -12,6 +12,7 @@ import {
   Maximize2Icon,
   Minimize2Icon,
   ShieldCheckIcon,
+  SlidersHorizontalIcon,
   TagIcon,
   CheckIcon,
 } from "lucide-react"
@@ -412,6 +413,7 @@ export function EventForm({
       ? String(initial.late_penalty_points)
       : "15"
   )
+  const [showOptionalSettings, setShowOptionalSettings] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [internalSubmitting, setInternalSubmitting] = useState(false)
   const submitting = isSubmitting || internalSubmitting
@@ -497,6 +499,9 @@ export function EventForm({
     }
 
     if (Object.keys(errs).length > 0) {
+      if (errs.maxLateMinutes || errs.latePenaltyPoints) {
+        setShowOptionalSettings(true)
+      }
       setErrors(errs)
       return
     }
@@ -559,13 +564,13 @@ export function EventForm({
       {/* 1. Category & Template Selection */}
       <section
         aria-labelledby="event-category-heading"
-        className={`space-y-2.5 border-b pb-4 sm:space-y-3 sm:rounded-2xl sm:border sm:bg-surface-soft sm:p-4 ${errors.tag ? "border-rose-400" : "border-hairline"
+        className={`space-y-2.5 rounded-2xl border bg-surface-soft p-3.5 sm:space-y-3 sm:p-4 ${errors.tag ? "border-rose-400" : "border-hairline"
           }`}
       >
         <div className="flex items-center justify-between gap-2">
           <label
             id="event-category-heading"
-            className="flex items-center gap-1.5 text-xs font-bold text-ink"
+            className="flex items-center gap-1.5 text-xs font-bold text-ink sm:text-sm"
           >
             <TagIcon className="size-3.5 text-ink" />
             <span>
@@ -583,7 +588,7 @@ export function EventForm({
           aria-required="true"
           aria-invalid={Boolean(errors.tag)}
           aria-describedby={errors.tag ? "ev-category-error" : undefined}
-          className="scrollbar-none -mx-1 flex flex-nowrap gap-2 overflow-x-auto px-1 pb-0.5 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0"
+          className="scrollbar-none -mx-1 flex flex-nowrap gap-2 overflow-x-auto px-1 pb-0.5"
         >
           {categories.map((cat) => {
             const isSelected = selectedTypeId === cat.id
@@ -644,7 +649,7 @@ export function EventForm({
       {/* 2. Event Basics, Schedule & Location */}
       <section
         aria-labelledby="event-basics-heading"
-        className="space-y-3.5 border-b border-hairline pb-4 sm:space-y-4 sm:rounded-2xl sm:border sm:bg-surface-soft sm:p-4"
+        className="space-y-3.5 rounded-2xl border border-hairline bg-surface-soft p-3.5 sm:space-y-4 sm:p-4"
       >
         <div>
           <h2
@@ -687,7 +692,7 @@ export function EventForm({
                     })
                   }
                 }}
-                placeholder="e.g. Sunday Youth Fellowship"
+                placeholder="Event Name"
                 aria-invalid={Boolean(errors.title)}
                 aria-describedby={errors.title ? "ev-title-error" : undefined}
                 className={`h-11 w-full rounded-xl border bg-canvas pr-4 pl-10 text-xs text-ink shadow-2xs transition-all outline-none placeholder:text-text-muted/70 sm:text-sm ${errors.title
@@ -726,7 +731,7 @@ export function EventForm({
                 value={location}
                 autoComplete="off"
                 autoCorrect="off"
-                autoCapitalize="off"
+                autoCapitalize="words"
                 spellCheck={false}
                 aria-autocomplete="none"
                 aria-expanded={locationMenuOpen && recentVenueOptions.length > 0}
@@ -735,6 +740,7 @@ export function EventForm({
                 data-1p-ignore="true"
                 data-bwignore="true"
                 data-form-type="other"
+                placeholder="Location"
                 onFocus={() => {
                   if (recentVenueOptions.length > 0) setLocationMenuOpen(true)
                 }}
@@ -748,7 +754,6 @@ export function EventForm({
                   setLocation(e.target.value)
                   if (recentVenueOptions.length > 0) setLocationMenuOpen(true)
                 }}
-                placeholder="e.g. Dharmasala Utama"
                 className={`h-11 w-full rounded-xl border border-hairline bg-canvas pl-10 text-xs text-ink shadow-2xs transition-all outline-none placeholder:text-text-muted/70 focus:border-ink focus:ring-1 focus:ring-ink sm:text-sm ${recentVenueOptions.length > 0 ? "pr-10" : "pr-4"
                   }`}
               />
@@ -860,179 +865,213 @@ export function EventForm({
             </p>
           )}
         </div>
-
-        {/* Description / Instructions */}
-        <div className="flex w-full flex-col gap-1.5">
-          <div className="flex items-center justify-between gap-2">
-            <label
-              htmlFor="ev-desc"
-              className="text-xs font-bold text-ink"
-            >
-              Description {" "}
-              <span className="text-[11px] font-normal text-text-muted">
-                (Optional)
-              </span>
-            </label>
-            <div className="flex items-center gap-1.5">
-              {!initial?.id && isDescriptionEdited && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsDescriptionEdited(false)
-                    setDescription(
-                      buildDefaultEventDescription({
-                        title,
-                        eventDate: eventDate || undefined,
-                        location,
-                      })
-                    )
-                  }}
-                  className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-hairline bg-canvas px-2 py-1 text-[11px] font-semibold text-text-muted transition-colors hover:bg-surface-card hover:text-ink"
-                >
-                  Sync template
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={() => setIsDescExpanded((prev) => !prev)}
-                aria-expanded={isDescExpanded}
-                className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-hairline bg-canvas px-2 py-1 text-[11px] font-semibold text-ink transition-colors hover:bg-surface-card"
-              >
-                {isDescExpanded ? (
-                  <>
-                    <Minimize2Icon className="size-3" aria-hidden="true" />
-                    <span>Collapse</span>
-                  </>
-                ) : (
-                  <>
-                    <Maximize2Icon className="size-3" aria-hidden="true" />
-                    <span>Expand</span>
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-          <textarea
-            id="ev-desc"
-            rows={isDescExpanded ? 12 : 4}
-            value={description}
-            onChange={(e) => {
-              setIsDescriptionEdited(true)
-              setDescription(e.target.value)
-            }}
-            placeholder="Write additional details, dress code, or instructions for attendees..."
-            className={`w-full resize-y rounded-xl border border-hairline bg-canvas px-3.5 py-2.5 text-xs leading-relaxed text-ink shadow-2xs transition-all outline-none placeholder:text-text-muted/70 focus:border-ink focus:ring-1 focus:ring-ink sm:text-sm ${isDescExpanded ? "min-h-[300px]" : "min-h-[104px] sm:min-h-[132px]"
-              }`}
-          />
-        </div>
       </section>
 
-      {/* 3. Attendance & Late Arrival Policy */}
+      {/* 3. Optional Settings (Progressive Disclosure: Description & Late Penalty) */}
       <section
-        aria-labelledby="event-policy-heading"
-        className="space-y-3 pb-1 sm:rounded-2xl sm:border sm:border-hairline sm:bg-surface-soft sm:p-4"
+        aria-labelledby="event-optional-heading"
+        className="rounded-2xl border border-hairline bg-surface-soft p-3.5 sm:p-4"
       >
-        <div className="flex items-center justify-between gap-3">
-          <div className="space-y-0.5">
-            <label
-              htmlFor="ev-late-penalty-toggle"
-              id="event-policy-heading"
-              className="flex cursor-pointer items-center gap-2 text-xs font-bold text-ink sm:text-sm"
-            >
-              <ShieldCheckIcon className="size-4 text-clay-teal" />
-              <span>Apply Late Penalty</span>
-            </label>
-            <p className="text-[11px] leading-relaxed text-text-muted">
-              Deduct karma points if members check in past the arrival grace period.
+        <button
+          type="button"
+          id="event-optional-heading"
+          onClick={() => setShowOptionalSettings((prev) => !prev)}
+          aria-expanded={showOptionalSettings}
+          className="flex w-full cursor-pointer items-center justify-between gap-3 text-left"
+        >
+          <div className="min-w-0 space-y-0.5">
+            <div className="flex items-center gap-2 text-xs font-bold text-ink sm:text-sm">
+              <SlidersHorizontalIcon className="size-4 shrink-0 text-clay-teal" />
+              <span>3. Optional Settings</span>
+            </div>
+            <p className="truncate text-[11px] font-medium text-text-muted">
+              {isDescriptionEdited
+                ? "Custom description"
+                : "Description template ready"}{" "}
+              ·{" "}
+              {applyLatePenalty
+                ? `Late penalty: -${latePenaltyPoints || "0"} pts after ${maxLateMinutes || "0"}m`
+                : "No late penalty"}
             </p>
           </div>
-          <Switch
-            id="ev-late-penalty-toggle"
-            checked={applyLatePenalty}
-            onCheckedChange={(checked) => {
-              isLatePolicyEditedRef.current = true
-              setApplyLatePenalty(checked)
-            }}
-            aria-label="Apply Late Penalty"
+          <ChevronDownIcon
+            className={`size-4 shrink-0 text-text-muted transition-transform duration-200 ${showOptionalSettings ? "rotate-180 text-ink" : ""
+              }`}
+            aria-hidden="true"
           />
-        </div>
+        </button>
 
-        {applyLatePenalty && (
-          <div className="grid grid-cols-2 gap-2.5 border-t border-hairline pt-3 sm:gap-3">
-            <div className="space-y-1">
-              <label
-                htmlFor="ev-grace-minutes"
-                className="text-[11px] font-bold text-text-muted"
-              >
-                Grace Period (Minutes)
-              </label>
-              <input
-                id="ev-grace-minutes"
-                type="text"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                value={maxLateMinutes}
+        {showOptionalSettings && (
+          <div className="mt-3.5 space-y-4 border-t border-hairline pt-3.5">
+            {/* Description / Instructions */}
+            <div className="flex w-full flex-col gap-1.5">
+              <div className="flex items-center justify-between gap-2">
+                <label
+                  htmlFor="ev-desc"
+                  className="text-xs font-bold text-ink"
+                >
+                  Description{" "}
+                  <span className="text-[11px] font-normal text-text-muted">
+                    (Optional)
+                  </span>
+                </label>
+                <div className="flex items-center gap-1.5">
+                  {!initial?.id && isDescriptionEdited && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsDescriptionEdited(false)
+                        setDescription(
+                          buildDefaultEventDescription({
+                            title,
+                            eventDate: eventDate || undefined,
+                            location,
+                          })
+                        )
+                      }}
+                      className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-hairline bg-canvas px-2 py-1 text-[11px] font-semibold text-text-muted transition-colors hover:bg-surface-card hover:text-ink"
+                    >
+                      Sync template
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setIsDescExpanded((prev) => !prev)}
+                    aria-expanded={isDescExpanded}
+                    className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-hairline bg-canvas px-2 py-1 text-[11px] font-semibold text-ink transition-colors hover:bg-surface-card"
+                  >
+                    {isDescExpanded ? (
+                      <>
+                        <Minimize2Icon className="size-3" aria-hidden="true" />
+                        <span>Collapse</span>
+                      </>
+                    ) : (
+                      <>
+                        <Maximize2Icon className="size-3" aria-hidden="true" />
+                        <span>Expand</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+              <textarea
+                id="ev-desc"
+                rows={isDescExpanded ? 12 : 4}
+                value={description}
                 onChange={(e) => {
-                  isLatePolicyEditedRef.current = true
-                  setMaxLateMinutes(sanitizeIntegerInput(e.target.value))
-                  if (errors.maxLateMinutes) {
-                    setErrors((prev) => {
-                      const next = { ...prev }
-                      delete next.maxLateMinutes
-                      return next
-                    })
-                  }
+                  setIsDescriptionEdited(true)
+                  setDescription(e.target.value)
                 }}
-                placeholder="0 – 180"
-                aria-invalid={Boolean(errors.maxLateMinutes)}
-                className={`h-10 w-full rounded-xl border bg-canvas px-3 font-mono text-base font-bold text-ink outline-none focus:ring-1 sm:text-sm ${
-                  errors.maxLateMinutes
-                    ? "border-rose-400 focus:border-rose-500 focus:ring-rose-400"
-                    : "border-hairline focus:border-ink focus:ring-ink"
-                }`}
+                placeholder="Write additional details, dress code, or instructions for attendees..."
+                className={`w-full resize-y rounded-xl border border-hairline bg-canvas px-3.5 py-2.5 text-xs leading-relaxed text-ink shadow-2xs transition-all outline-none placeholder:text-text-muted/70 focus:border-ink focus:ring-1 focus:ring-ink sm:text-sm ${isDescExpanded ? "min-h-[300px]" : "min-h-[104px] sm:min-h-[132px]"
+                  }`}
               />
-              {errors.maxLateMinutes && (
-                <p className="text-[11px] font-medium text-rose-600">
-                  {errors.maxLateMinutes}
-                </p>
-              )}
             </div>
-            <div className="space-y-1">
-              <label
-                htmlFor="ev-penalty-points"
-                className="text-[11px] font-bold text-text-muted"
-              >
-                Penalty Deduction (Points)
-              </label>
-              <input
-                id="ev-penalty-points"
-                type="text"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                value={latePenaltyPoints}
-                onChange={(e) => {
-                  isLatePolicyEditedRef.current = true
-                  setLatePenaltyPoints(sanitizeIntegerInput(e.target.value))
-                  if (errors.latePenaltyPoints) {
-                    setErrors((prev) => {
-                      const next = { ...prev }
-                      delete next.latePenaltyPoints
-                      return next
-                    })
-                  }
-                }}
-                placeholder="1 – 100"
-                aria-invalid={Boolean(errors.latePenaltyPoints)}
-                className={`h-10 w-full rounded-xl border bg-canvas px-3 font-mono text-base font-bold text-ink outline-none focus:ring-1 sm:text-sm ${
-                  errors.latePenaltyPoints
-                    ? "border-rose-400 focus:border-rose-500 focus:ring-rose-400"
-                    : "border-hairline focus:border-ink focus:ring-ink"
-                }`}
-              />
-              {errors.latePenaltyPoints && (
-                <p className="text-[11px] font-medium text-rose-600">
-                  {errors.latePenaltyPoints}
-                </p>
+
+            {/* Attendance & Late Arrival Policy */}
+            <div className="space-y-3 border-t border-hairline pt-3.5">
+              <div className="flex items-center justify-between gap-3">
+                <div className="space-y-0.5">
+                  <label
+                    htmlFor="ev-late-penalty-toggle"
+                    id="event-policy-heading"
+                    className="flex cursor-pointer items-center gap-2 text-xs font-bold text-ink sm:text-sm"
+                  >
+                    <ShieldCheckIcon className="size-4 text-clay-teal" />
+                    <span>Apply Late Penalty</span>
+                  </label>
+                  <p className="text-[11px] leading-relaxed text-text-muted">
+                    Deduct karma points if members check in past the arrival grace period.
+                  </p>
+                </div>
+                <Switch
+                  id="ev-late-penalty-toggle"
+                  checked={applyLatePenalty}
+                  onCheckedChange={(checked) => {
+                    isLatePolicyEditedRef.current = true
+                    setApplyLatePenalty(checked)
+                  }}
+                  aria-label="Apply Late Penalty"
+                />
+              </div>
+
+              {applyLatePenalty && (
+                <div className="grid grid-cols-2 gap-2.5 border-t border-hairline pt-3 sm:gap-3">
+                  <div className="space-y-1">
+                    <label
+                      htmlFor="ev-grace-minutes"
+                      className="text-[11px] font-bold text-text-muted"
+                    >
+                      Grace Period (Minutes)
+                    </label>
+                    <input
+                      id="ev-grace-minutes"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      value={maxLateMinutes}
+                      onChange={(e) => {
+                        isLatePolicyEditedRef.current = true
+                        setMaxLateMinutes(sanitizeIntegerInput(e.target.value))
+                        if (errors.maxLateMinutes) {
+                          setErrors((prev) => {
+                            const next = { ...prev }
+                            delete next.maxLateMinutes
+                            return next
+                          })
+                        }
+                      }}
+                      placeholder="0 – 180"
+                      aria-invalid={Boolean(errors.maxLateMinutes)}
+                      className={`h-10 w-full rounded-xl border bg-canvas px-3 font-mono text-base font-bold text-ink outline-none focus:ring-1 sm:text-sm ${errors.maxLateMinutes
+                        ? "border-rose-400 focus:border-rose-500 focus:ring-rose-400"
+                        : "border-hairline focus:border-ink focus:ring-ink"
+                        }`}
+                    />
+                    {errors.maxLateMinutes && (
+                      <p className="text-[11px] font-medium text-rose-600">
+                        {errors.maxLateMinutes}
+                      </p>
+                    )}
+                  </div>
+                  <div className="space-y-1">
+                    <label
+                      htmlFor="ev-penalty-points"
+                      className="text-[11px] font-bold text-text-muted"
+                    >
+                      Penalty Deduction (Points)
+                    </label>
+                    <input
+                      id="ev-penalty-points"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      value={latePenaltyPoints}
+                      onChange={(e) => {
+                        isLatePolicyEditedRef.current = true
+                        setLatePenaltyPoints(sanitizeIntegerInput(e.target.value))
+                        if (errors.latePenaltyPoints) {
+                          setErrors((prev) => {
+                            const next = { ...prev }
+                            delete next.latePenaltyPoints
+                            return next
+                          })
+                        }
+                      }}
+                      placeholder="1 – 100"
+                      aria-invalid={Boolean(errors.latePenaltyPoints)}
+                      className={`h-10 w-full rounded-xl border bg-canvas px-3 font-mono text-base font-bold text-ink outline-none focus:ring-1 sm:text-sm ${errors.latePenaltyPoints
+                        ? "border-rose-400 focus:border-rose-500 focus:ring-rose-400"
+                        : "border-hairline focus:border-ink focus:ring-ink"
+                        }`}
+                    />
+                    {errors.latePenaltyPoints && (
+                      <p className="text-[11px] font-medium text-rose-600">
+                        {errors.latePenaltyPoints}
+                      </p>
+                    )}
+                  </div>
+                </div>
               )}
             </div>
           </div>

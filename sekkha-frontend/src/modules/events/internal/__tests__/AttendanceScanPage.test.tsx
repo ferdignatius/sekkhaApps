@@ -129,14 +129,17 @@ describe("AttendanceScanPage Manual Entry — Unified Search, Clickable Rows, ID
       target: { value: "Budi Santosa" },
     })
 
-    await waitFor(() => {
-      expect(similarSpy).toHaveBeenCalledWith(
-        "Budi Santosa",
-        5,
-        expect.objectContaining({ signal: expect.any(AbortSignal) })
-      )
-      expect(screen.getByText("Budi Santoso")).toBeTruthy()
-    })
+    await waitFor(
+      () => {
+        expect(similarSpy).toHaveBeenCalledWith(
+          "Budi Santosa",
+          5,
+          expect.objectContaining({ signal: expect.any(AbortSignal) })
+        )
+        expect(screen.getByText("Budi Santoso")).toBeTruthy()
+      },
+      { timeout: 2500 }
+    )
     expect(screen.queryByText(/Similar existing members? found/i)).toBeNull()
 
     // Clicking the member row itself triggers manual check-in directly
@@ -156,9 +159,12 @@ describe("AttendanceScanPage Manual Entry — Unified Search, Clickable Rows, ID
     fireEvent.change(screen.getByPlaceholderText(/Search member name or ID/i), {
       target: { value: "Zyxwvu Unique" },
     })
-    await waitFor(() => {
-      expect(screen.getByText(/No registered member matches/i)).toBeTruthy()
-    })
+    await waitFor(
+      () => {
+        expect(screen.getByText(/No registered member matches/i)).toBeTruthy()
+      },
+      { timeout: 2500 }
+    )
 
     // Create New Member button at bottom of dropdown opens Pre-Provision modal pre-filled with typed name
     fireEvent.click(screen.getByRole("button", { name: /Create New Member/i }))

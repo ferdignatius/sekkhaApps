@@ -141,7 +141,8 @@ describe("EventForm & EventDetailSheet Enhancements", () => {
       />
     )
 
-    // 1. Pre-filled description template aligned with initialDate default (09:00 WIB)
+    // 1. Open Optional Settings and verify pre-filled description template aligned with initialDate default (09:00 WIB)
+    fireEvent.click(screen.getByRole("button", { name: /3\. Optional Settings/i }))
     const descArea = screen.getByLabelText(/^Description/i) as HTMLTextAreaElement
     expect(descArea.value).toContain("Hallo Sobat Teenagers! 👋")
     expect(descArea.value).toContain("📢 Acara: ")
@@ -492,6 +493,7 @@ describe("EventForm & EventDetailSheet Enhancements", () => {
       target: { value: "Sunday Puja" },
     })
     fireEvent.click(screen.getByRole("radio", { name: /Regular Puja/i }))
+    fireEvent.click(screen.getByRole("button", { name: /3\. Optional Settings/i }))
 
     const graceInput = screen.getByLabelText(/Grace Period/i) as HTMLInputElement
     const penaltyInput = screen.getByLabelText(/Penalty Deduction/i) as HTMLInputElement
@@ -563,6 +565,7 @@ describe("EventForm & EventDetailSheet Enhancements", () => {
     )
 
     fireEvent.click(strictBtn)
+    fireEvent.click(screen.getByRole("button", { name: /3\. Optional Settings/i }))
     expect((screen.getByLabelText(/Grace Period/i) as HTMLInputElement).value).toBe("0")
     expect((screen.getByLabelText(/Penalty Deduction/i) as HTMLInputElement).value).toBe("20")
   })

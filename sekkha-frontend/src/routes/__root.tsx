@@ -9,6 +9,7 @@ import {
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools"
 import { TanStackDevtools } from "@tanstack/react-devtools"
 import { AuthProvider, useAuth } from "@/modules/auth"
+import { Toaster } from "@/components/base"
 
 import appCss from "../styles.css?url"
 
@@ -20,7 +21,7 @@ export const Route = createRootRoute({
       },
       {
         name: "viewport",
-        content: "width=device-width, initial-scale=1",
+        content: "width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover",
       },
       {
         title: "Sekkha Vihara Community App",
@@ -157,6 +158,7 @@ function RootComponent() {
     <AuthProvider>
       <RouterAuthSync />
       <Outlet />
+      <Toaster />
     </AuthProvider>
   )
 }

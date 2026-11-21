@@ -14,7 +14,7 @@ import {
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
 import { safeStorage } from "@/lib/storage"
 import { useAuth } from "@/modules/auth"
-import { useDebounce } from "@/hooks/useDebounce"
+import { useDebouncedSearch } from "@/hooks/useDebounce"
 import { Field, FieldLabel } from "@/components/ui/field"
 import {
   Pagination,
@@ -318,7 +318,7 @@ export function PeoplePage() {
 
   // Filters & Pagination
   const [searchQuery, setSearchQuery] = useState("")
-  const debouncedSearchQuery = useDebounce(searchQuery, 250)
+  const [debouncedSearchQuery, flushPeopleSearch] = useDebouncedSearch(searchQuery)
   const [roleFilter, setRoleFilter] = useState<string>("all")
   const [claimStatusFilter, setClaimStatusFilter] = useState<string>("all")
   const [currentPage, setCurrentPage] = useState(1)
@@ -545,7 +545,7 @@ export function PeoplePage() {
               <input
                 type="text"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => setSearchQuery(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") flushPeopleSearch() }}
                 placeholder="Search name, @username, Member ID..."
                 className="h-11 w-full rounded-md border border-hairline bg-canvas pr-9 pl-10 text-sm text-ink shadow-2xs transition-all outline-none placeholder:text-text-muted focus:border-ink focus:ring-1 focus:ring-ink"
               />

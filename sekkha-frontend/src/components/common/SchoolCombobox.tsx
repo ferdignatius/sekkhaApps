@@ -44,7 +44,7 @@ export function SchoolCombobox({
 }: SchoolComboboxProps) {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState("")
-  const debouncedSearch = useDebounce(search, 250)
+  const debouncedSearch = useDebounce(search)
   const [highlightedIndex, setHighlightedIndex] = useState(0)
 
   const containerRef = useRef<HTMLDivElement>(null)

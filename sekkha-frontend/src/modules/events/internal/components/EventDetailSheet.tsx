@@ -35,6 +35,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { AttendanceListSheet } from "./AttendanceListSheet"
+import { ResponsiveFormModal } from "@/components/common/ResponsiveFormModal"
+import { DateTimePicker } from "@/components/common/DateTimePicker"
+import { Button } from "@/components/base"
 import { Badge } from "@/components/base/Badge"
 import { ConfirmDialog } from "@/components/base/AlertDialog"
 import type {
@@ -1273,95 +1276,80 @@ export function EventDetailSheet({
         onConfirm={() => executeStatusChange("scheduled")}
       />
 
-      {/* Reschedule Event Modal */}
-      {rescheduleModalOpen && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="reschedule-modal-title"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs"
-        >
-          <div className="w-full max-w-md rounded-2xl border border-hairline bg-canvas p-6 text-left shadow-xl">
-            <div className="flex items-center justify-between border-b border-hairline pb-3">
-              <h3
-                id="reschedule-modal-title"
-                className="text-base font-bold text-ink"
+      {/* Reschedule Event Modal (ResponsiveFormModal + DateTimePicker + Sekkha Button) */}
+      <ResponsiveFormModal
+        open={rescheduleModalOpen}
+        onOpenChange={(open) => {
+          setRescheduleModalOpen(open)
+          if (!open) setRescheduleError(null)
+        }}
+        title="Reschedule Event"
+        description={`Choose a new future date and time for ${event.title}. Status will return to Scheduled.`}
+        maxWidth="max-w-lg"
+      >
+        <div className="space-y-4 text-left">
+          <div className="space-y-1.5">
+            <label
+              htmlFor="reschedule-event-datetime"
+              className="block text-xs font-bold text-ink"
+            >
+              New Event Date &amp; Time (WIB)
+            </label>
+            <DateTimePicker
+              id="reschedule-event-datetime"
+              value={rescheduleDate}
+              onChange={(val) => {
+                setRescheduleDate(val)
+                setRescheduleError(null)
+              }}
+              error={rescheduleError ?? undefined}
+              disablePastDates={true}
+            />
+            {rescheduleError && (
+              <p
+                id="reschedule-event-datetime-error"
+                className="text-[11px] font-medium text-rose-600"
               >
-                Reschedule Event
-              </h3>
-              <button
-                type="button"
-                onClick={() => {
-                  setRescheduleModalOpen(false)
-                  setRescheduleError(null)
-                }}
-                className="cursor-pointer rounded-full p-1 text-text-muted hover:bg-surface-soft"
-              >
-                ✕
-              </button>
-            </div>
+                {rescheduleError}
+              </p>
+            )}
+          </div>
 
-            <p className="mt-3 text-xs text-text-muted">
-              Choose a new future date and time for{" "}
-              <strong className="text-ink">{event.title}</strong>. The
-              status will return to Scheduled.
-            </p>
-
-            <div className="mt-4 space-y-2">
-              <label className="block text-xs font-semibold text-ink">
-                New Event Date & Time (WIB)
-              </label>
-              <input
-                type="datetime-local"
-                value={rescheduleDate}
-                min={new Date().toISOString().slice(0, 16)}
-                onChange={(e) => {
-                  setRescheduleDate(e.target.value)
-                  setRescheduleError(null)
-                }}
-                className="w-full rounded-xl border border-hairline bg-surface-card px-3.5 py-2.5 text-xs text-ink outline-none focus:border-ink focus:ring-2 focus:ring-ink/10"
-              />
-              {rescheduleError && (
-                <p className="text-[11px] font-medium text-red-600">
-                  {rescheduleError}
-                </p>
-              )}
-            </div>
-
-            <div className="mt-6 flex justify-end gap-2.5">
-              <button
-                type="button"
-                onClick={() => {
-                  setRescheduleModalOpen(false)
-                  setRescheduleError(null)
-                }}
-                className="cursor-pointer rounded-full border border-hairline bg-surface-card px-4 py-2 text-xs font-semibold text-ink transition-colors hover:bg-surface-soft"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  if (!rescheduleDate) {
-                    setRescheduleError("Please select a new date and time.")
-                    return
-                  }
-                  const chosenTime = new Date(rescheduleDate).getTime()
-                  if (isNaN(chosenTime) || chosenTime < Date.now()) {
-                    setRescheduleError("New date must be in the future.")
-                    return
-                  }
-                  executeStatusChange("scheduled", rescheduleDate)
-                  setRescheduleModalOpen(false)
-                }}
-                className="cursor-pointer rounded-full bg-ink px-5 py-2 text-xs font-bold text-canvas shadow-xs transition-colors hover:bg-ink/90"
-              >
-                Confirm Reschedule
-              </button>
-            </div>
+          <div className="flex flex-row gap-2.5 border-t border-hairline pt-4 sm:justify-end">
+            <Button
+              type="button"
+              variant="outlined"
+              onClick={() => {
+                setRescheduleModalOpen(false)
+                setRescheduleError(null)
+              }}
+              className="flex-1 rounded-xl sm:flex-none"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              onClick={() => {
+                if (!rescheduleDate) {
+                  setRescheduleError("Please select a new date and time.")
+                  return
+                }
+                const chosenTime = new Date(rescheduleDate).getTime()
+                if (isNaN(chosenTime) || chosenTime < Date.now()) {
+                  setRescheduleError("New date must be in the future.")
+                  return
+                }
+                executeStatusChange("scheduled", rescheduleDate)
+                setRescheduleModalOpen(false)
+              }}
+              className="flex-[2] rounded-xl sm:flex-none"
+            >
+              Confirm Reschedule
+            </Button>
           </div>
         </div>
-      )}
+      </ResponsiveFormModal>
     </div>
   )
 }

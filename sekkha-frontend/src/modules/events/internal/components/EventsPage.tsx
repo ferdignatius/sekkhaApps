@@ -11,8 +11,6 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   CheckIcon,
-  CheckCircle2Icon,
-  AlertTriangleIcon,
   FilterIcon,
   XIcon,
 } from "lucide-react"
@@ -23,10 +21,10 @@ import { z } from "zod"
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
 import { CollapsibleBottomSheet } from "@/components/common/CollapsibleBottomSheet"
 import { ResponsiveFormModal } from "@/components/common/ResponsiveFormModal"
-import { Button, Card, Badge, ConfirmDialog } from "@/components/base"
+import { Button, Card, Badge, ConfirmDialog, toast } from "@/components/base"
 import { EventCalendar } from "@/components/ui/EventCalendar"
 import type { EventDotItem } from "@/components/ui/EventCalendar"
-import { useDebounce } from "@/hooks/useDebounce"
+import { useDebouncedSearch } from "@/hooks/useDebounce"
 import { Skeleton } from "@/components/ui/skeleton"
 import { EventCard } from "./EventCard"
 import { EventDetailSheet } from "./EventDetailSheet"
@@ -127,7 +125,7 @@ export function EventsPage() {
   )
   const [searchQuery, setSearchQuery] = useState("")
   const [searchOpen, setSearchOpen] = useState(false)
-  const debouncedSearchQuery = useDebounce(searchQuery, 250)
+  const [debouncedSearchQuery, flushEventSearch] = useDebouncedSearch(searchQuery)
   const [selectedCategoryTag, setSelectedCategoryTag] = useState<string>("all")
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false)
   const [mobileSheetExpanded, setMobileSheetExpanded] = useState(false)
@@ -137,27 +135,18 @@ export function EventsPage() {
   const [deleteEventTarget, setDeleteEventTarget] =
     useState<EventListItem | null>(null)
   const [deletingEvent, setDeletingEvent] = useState(false)
-  const [toast, setToast] = useState<{
-    text: string
-    type: "success" | "error"
-  } | null>(null)
-  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const monthPickerRef = useRef<HTMLDivElement>(null)
 
   const showToast = useCallback(
     (text: string, type: "success" | "error" = "success") => {
-      if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
-      setToast({ text, type })
-      toastTimerRef.current = setTimeout(() => setToast(null), 3500)
+      if (type === "error") {
+        toast.error(text)
+      } else {
+        toast.success(text)
+      }
     },
     []
   )
-
-  useEffect(() => {
-    return () => {
-      if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
-    }
-  }, [])
 
   const {
     items: masterCategories,
@@ -562,33 +551,6 @@ export function EventsPage() {
     }
   }
 
-  const toastBanner = toast ? (
-    <div
-      role="status"
-      aria-live="polite"
-      data-testid="events-toast-banner"
-      className={`fixed right-4 bottom-24 z-[130] flex max-w-sm animate-in items-center gap-2.5 rounded-2xl border px-4 py-3 text-xs font-bold shadow-xl backdrop-blur-md duration-200 fade-in slide-in-from-bottom-4 md:bottom-6 ${toast.type === "error"
-        ? "border-rose-300 bg-rose-50/95 text-rose-900"
-        : "border-clay-teal/30 bg-surface-soft/95 text-ink"
-        }`}
-    >
-      {toast.type === "error" ? (
-        <AlertTriangleIcon className="size-4 shrink-0 text-rose-600" aria-hidden="true" />
-      ) : (
-        <CheckCircle2Icon className="size-4 shrink-0 text-clay-teal" aria-hidden="true" />
-      )}
-      <span className="flex-1">{toast.text}</span>
-      <button
-        type="button"
-        onClick={() => setToast(null)}
-        aria-label="Dismiss notification"
-        className="cursor-pointer rounded-full p-1 text-text-muted transition-colors hover:bg-surface-card hover:text-ink"
-      >
-        <XIcon className="size-3.5" />
-      </button>
-    </div>
-  ) : null
-
   function handleCloseDetail() {
     setSelected(null)
     setView("calendar")
@@ -874,7 +836,6 @@ export function EventsPage() {
             }
           }}
         />
-        {toastBanner}
       </main>
     )
   }
@@ -1055,6 +1016,11 @@ export function EventsPage() {
                 autoFocus
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    flushEventSearch()
+                  }
+                }}
                 placeholder="Search events..."
                 className="h-10 w-full rounded-[13px] border border-[#e5dec9] bg-[#faf5e8] pr-4 pl-10 text-xs text-[#0a0a0a] shadow-2xs transition-all outline-none placeholder:text-[#8a8678] focus:border-[#0a0a0a] focus:bg-[#fffaf0] focus:ring-1 focus:ring-[#0a0a0a] sm:h-11 sm:text-sm"
               />
@@ -1424,7 +1390,6 @@ export function EventsPage() {
           }}
         />
       </ResponsiveFormModal>
-      {toastBanner}
     </main>
   )
 }

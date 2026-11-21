@@ -12,6 +12,7 @@ import { badgeActivitiesApi } from "../api/configureApi"
 import { Button } from "@/components/base/Button"
 import { Card } from "@/components/base/Card"
 import { Input } from "@/components/base/Input"
+import { toast } from "@/components/base"
 import {
   parseBoundedInteger,
   sanitizeIntegerInput,
@@ -66,9 +67,12 @@ export function BadgeActivityCreatePage() {
         bonus_points: parsedBonusPoints,
         is_active: isActive,
       })
+      toast.success(`Badge activity "${label.trim()}" created successfully.`)
       await navigate({ to: "/configure/master/badge-activity" })
     } catch (err: any) {
-      setErrorMessage(err?.message || "Failed to create badge activity.")
+      const msg = err?.message || "Failed to create badge activity."
+      setErrorMessage(msg)
+      toast.error(msg)
     } finally {
       setSaving(false)
     }

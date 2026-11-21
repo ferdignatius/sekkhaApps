@@ -433,14 +433,17 @@ describe("PeoplePage 2-Column Mobile Grid, Fast Loading & Directory Isolation", 
       target: { value: "Budi Santosa" },
     })
 
-    await waitFor(() => {
-      expect(similarSpy).toHaveBeenCalledWith(
-        "Budi Santosa",
-        5,
-        expect.objectContaining({ signal: expect.any(AbortSignal) })
-      )
-      expect(screen.getByText(/Similar existing members found/i)).toBeTruthy()
-    })
+    await waitFor(
+      () => {
+        expect(similarSpy).toHaveBeenCalledWith(
+          "Budi Santosa",
+          5,
+          expect.objectContaining({ signal: expect.any(AbortSignal) })
+        )
+        expect(screen.getByText(/Similar existing members found/i)).toBeTruthy()
+      },
+      { timeout: 2500 }
+    )
 
     // Preview + See More button rendered, and Register Member remains enabled (non-blocking)
     expect(screen.getByText("Budi Santoso")).toBeTruthy()
@@ -470,10 +473,13 @@ describe("PeoplePage 2-Column Mobile Grid, Fast Loading & Directory Isolation", 
     fireEvent.change(screen.getByLabelText(/Full Name/i), {
       target: { value: "Zyxwvu Unique" },
     })
-    await waitFor(() => {
-      expect(screen.queryByText(/Similar existing members found/i)).toBeNull()
-      expect(screen.queryByRole("button", { name: /See More/i })).toBeNull()
-    })
+    await waitFor(
+      () => {
+        expect(screen.queryByText(/Similar existing members found/i)).toBeNull()
+        expect(screen.queryByRole("button", { name: /See More/i })).toBeNull()
+      },
+      { timeout: 2500 }
+    )
   })
 
   it("supports searching schools by keyword inside Create New Member modal", async () => {
@@ -521,15 +527,18 @@ describe("PeoplePage 2-Column Mobile Grid, Fast Loading & Directory Isolation", 
       const searchInput = await screen.findByPlaceholderText("Search school name...")
       fireEvent.change(searchInput, { target: { value: "Tarumanagara" } })
 
-      await waitFor(() => {
-        expect(
-          screen.getByRole("option", { name: /Universitas Tarumanagara/i })
-        ).toBeDefined()
-        expect(screen.queryByRole("option", { name: /SMA Tri Ratna/i })).toBeNull()
-        expect(schoolsSpy).toHaveBeenCalledWith(
-          expect.objectContaining({ search: "Tarumanagara" })
-        )
-      })
+      await waitFor(
+        () => {
+          expect(
+            screen.getByRole("option", { name: /Universitas Tarumanagara/i })
+          ).toBeDefined()
+          expect(screen.queryByRole("option", { name: /SMA Tri Ratna/i })).toBeNull()
+          expect(schoolsSpy).toHaveBeenCalledWith(
+            expect.objectContaining({ search: "Tarumanagara" })
+          )
+        },
+        { timeout: 2500 }
+      )
     } finally {
       HTMLElement.prototype.scrollIntoView = origScrollIntoView
     }

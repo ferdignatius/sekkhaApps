@@ -14,6 +14,7 @@ import type { BadgeActivityDto } from "../api/configureApi"
 import { Button } from "@/components/base/Button"
 import { Card } from "@/components/base/Card"
 import { Input } from "@/components/base/Input"
+import { toast } from "@/components/base"
 import {
   parseBoundedInteger,
   sanitizeIntegerInput,
@@ -126,8 +127,11 @@ export function BadgeActivityDetailPage() {
       })
       setItem(updated)
       setSuccessNotice(true)
+      toast.success(`Badge activity "${label.trim()}" updated successfully.`)
     } catch (err: any) {
-      setErrorMessage(err?.message || "Failed to update badge activity.")
+      const msg = err?.message || "Failed to update badge activity."
+      setErrorMessage(msg)
+      toast.error(msg)
     } finally {
       setSaving(false)
     }
@@ -137,8 +141,10 @@ export function BadgeActivityDetailPage() {
     if (!item) return
     setDeleting(true)
     try {
+      const deletedLabel = item.label
       await badgeActivitiesApi.remove(item.id)
       setShowDeleteModal(false)
+      toast.success(`Badge activity "${deletedLabel}" deleted.`)
       await navigate({ to: "/configure/master/badge-activity" })
     } catch (err: any) {
       setShowDeleteModal(false)
@@ -148,7 +154,9 @@ export function BadgeActivityDetailPage() {
             "Badge activity cannot be deleted because it is already linked to attendance records. Deactivate it instead."
         )
       } else {
-        setErrorMessage(err?.message || "Failed to delete badge activity.")
+        const msg = err?.message || "Failed to delete badge activity."
+        setErrorMessage(msg)
+        toast.error(msg)
       }
     } finally {
       setDeleting(false)
@@ -166,8 +174,11 @@ export function BadgeActivityDetailPage() {
       setIsActive(false)
       setConflictMessage(null)
       setSuccessNotice(true)
+      toast.success(`Badge activity "${item.label}" deactivated.`)
     } catch (err: any) {
-      setErrorMessage(err?.message || "Failed to deactivate badge activity.")
+      const msg = err?.message || "Failed to deactivate badge activity."
+      setErrorMessage(msg)
+      toast.error(msg)
     } finally {
       setSaving(false)
     }

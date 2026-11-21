@@ -23,6 +23,7 @@ import {
 } from "@/lib/numericInput"
 import { seasonsApi } from "../api/configureApi"
 import type { SeasonDto } from "../api/configureApi"
+import { toast } from "@/components/base"
 
 function formatDateDisplay(iso: string) {
   try {
@@ -189,10 +190,17 @@ export function SeasonPage() {
       }
 
       await loadSeasons()
+      toast.success(
+        editingSeason
+          ? `Season "${formData.name.trim()}" updated successfully.`
+          : `Season "${formData.name.trim()}" created successfully.`
+      )
       setModalOpen(false)
     } catch (err: any) {
       console.error("Failed to save season:", err)
-      setFormError(err.message || "Failed to save season configuration.")
+      const msg = err.message || "Failed to save season configuration."
+      setFormError(msg)
+      toast.error(msg)
     } finally {
       setSubmitting(false)
     }
@@ -204,9 +212,10 @@ export function SeasonPage() {
       setActivatingId(s.id)
       await seasonsApi.activate(s.id)
       await loadSeasons()
+      toast.success(`Season "${s.name}" is now active.`)
     } catch (err: any) {
       console.error("Failed to activate season:", err)
-      alert(err.message || "Failed to activate season.")
+      toast.error(err.message || "Failed to activate season.")
     } finally {
       setActivatingId(null)
     }
@@ -223,10 +232,12 @@ export function SeasonPage() {
     try {
       setIsDeleting(true)
       setDeleteError(null)
+      const deletedName = deletingSeason.name
       await seasonsApi.remove(deletingSeason.id)
       await loadSeasons()
       setDeleteModalOpen(false)
       setDeletingSeason(null)
+      toast.success(`Season "${deletedName}" deleted.`)
     } catch (err: any) {
       console.error("Failed to delete season:", err)
       // Check for 409 Conflict / SEASON_IN_USE
@@ -238,7 +249,9 @@ export function SeasonPage() {
         setConflictSeason(deletingSeason)
         setDeleteModalOpen(false)
       } else {
-        setDeleteError(err.message || "Failed to delete season.")
+        const msg = err.message || "Failed to delete season."
+        setDeleteError(msg)
+        toast.error(msg)
       }
     } finally {
       setIsDeleting(false)
@@ -248,11 +261,13 @@ export function SeasonPage() {
   async function handleDeactivateConflictSeason() {
     if (!conflictSeason) return
     try {
+      const targetName = conflictSeason.name
       await seasonsApi.update(conflictSeason.id, { is_active: false })
       await loadSeasons()
       setConflictSeason(null)
+      toast.success(`Season "${targetName}" deactivated.`)
     } catch (err: any) {
-      alert(err.message || "Failed to deactivate season.")
+      toast.error(err.message || "Failed to deactivate season.")
     }
   }
 

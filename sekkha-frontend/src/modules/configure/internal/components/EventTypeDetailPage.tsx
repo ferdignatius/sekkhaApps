@@ -15,6 +15,7 @@ import type { EventTypeDto } from "../api/configureApi"
 import { Button } from "@/components/base/Button"
 import { Card } from "@/components/base/Card"
 import { Input } from "@/components/base/Input"
+import { toast } from "@/components/base"
 import { Switch } from "@/components/ui/switch"
 import {
   parseBoundedInteger,
@@ -164,8 +165,11 @@ export function EventTypeDetailPage() {
       })
       setSuccessNotice(true)
       setTimeout(() => setSuccessNotice(false), 3000)
+      toast.success(`Category "${label.trim()}" updated successfully.`)
     } catch (err: any) {
-      setErrorMessage(err?.message || "Failed to update event type.")
+      const msg = err?.message || "Failed to update event type."
+      setErrorMessage(msg)
+      toast.error(msg)
     } finally {
       setSaving(false)
     }
@@ -175,8 +179,10 @@ export function EventTypeDetailPage() {
     if (!item) return
     setDeleting(true)
     try {
+      const deletedLabel = item.label
       await eventTypesApi.remove(item.id)
       setShowDeleteModal(false)
+      toast.success(`Category "${deletedLabel}" deleted.`)
       await navigate({ to: "/configure/master/event-type" })
     } catch (err: any) {
       const msg = err?.message || ""
@@ -191,7 +197,9 @@ export function EventTypeDetailPage() {
         )
         setShowDeleteModal(false)
       } else {
-        setErrorMessage(msg || "Failed to delete event type.")
+        const errText = msg || "Failed to delete event type."
+        setErrorMessage(errText)
+        toast.error(errText)
       }
     } finally {
       setDeleting(false)
@@ -205,8 +213,11 @@ export function EventTypeDetailPage() {
       setIsActive(false)
       setConflictMessage(null)
       setSuccessNotice(true)
+      toast.success(`Category "${item.label}" deactivated.`)
     } catch (err: any) {
-      setErrorMessage(err?.message || "Failed to deactivate event type.")
+      const msg = err?.message || "Failed to deactivate event type."
+      setErrorMessage(msg)
+      toast.error(msg)
     }
   }
 

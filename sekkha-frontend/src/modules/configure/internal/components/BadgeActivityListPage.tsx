@@ -18,6 +18,7 @@ import type { BadgeActivityDto } from "../api/configureApi"
 import { Button } from "@/components/base/Button"
 import { Card } from "@/components/base/Card"
 import { Input } from "@/components/base/Input"
+import { toast } from "@/components/base"
 import {
   Dialog,
   DialogContent,
@@ -103,8 +104,10 @@ export function BadgeActivityListPage() {
     if (!itemToDelete) return
     setDeleting(true)
     try {
+      const deletedLabel = itemToDelete.label
       await badgeActivitiesApi.remove(itemToDelete.id)
       setItemToDelete(null)
+      toast.success(`Badge activity "${deletedLabel}" deleted.`)
       await fetchBadgeActivities()
     } catch (err: any) {
       setItemToDelete(null)
@@ -116,7 +119,9 @@ export function BadgeActivityListPage() {
             "Badge activity cannot be deleted because it is already linked to attendance records. Deactivate it instead.",
         })
       } else {
-        setActionError(err?.message || "Failed to delete badge activity.")
+        const msg = err?.message || "Failed to delete badge activity."
+        setActionError(msg)
+        toast.error(msg)
       }
     } finally {
       setDeleting(false)
@@ -126,13 +131,17 @@ export function BadgeActivityListPage() {
   const handleDeactivateFromConflict = async () => {
     if (!conflictItem) return
     try {
+      const targetLabel = conflictItem.item.label
       await badgeActivitiesApi.update(conflictItem.item.id, {
         is_active: false,
       })
       setConflictItem(null)
+      toast.success(`Badge activity "${targetLabel}" deactivated.`)
       await fetchBadgeActivities()
     } catch (err: any) {
-      setActionError(err?.message || "Failed to deactivate badge activity.")
+      const msg = err?.message || "Failed to deactivate badge activity."
+      setActionError(msg)
+      toast.error(msg)
     }
   }
 

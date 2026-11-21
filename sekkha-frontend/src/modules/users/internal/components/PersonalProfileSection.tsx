@@ -57,7 +57,7 @@ export function PersonalProfileSection({
     null
   )
   const [schoolSearch, setSchoolSearch] = useState("")
-  const debouncedSchoolSearch = useDebounce(schoolSearch, 250)
+  const debouncedSchoolSearch = useDebounce(schoolSearch)
 
   // Reset draft values whenever server profile updates while not editing
   useEffect(() => {

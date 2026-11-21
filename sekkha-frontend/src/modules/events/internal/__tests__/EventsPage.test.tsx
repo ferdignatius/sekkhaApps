@@ -502,12 +502,15 @@ describe("EventsPage Category Filter Dropdown — Initial 5 + Infinite Scroll", 
     const searchInput = screen.getByPlaceholderText(/Search events/i)
     fireEvent.change(searchInput, { target: { value: "Evening Puja" } })
 
-    await waitFor(() => {
-      const otherDayBtnsAfterSearch = screen.getAllByRole("button", {
-        name: new RegExp(otherLabel),
-      })
-      expect(otherDayBtnsAfterSearch[0].querySelectorAll("span.rounded-full").length).toBe(0)
-    })
+    await waitFor(
+      () => {
+        const otherDayBtnsAfterSearch = screen.getAllByRole("button", {
+          name: new RegExp(otherLabel),
+        })
+        expect(otherDayBtnsAfterSearch[0].querySelectorAll("span.rounded-full").length).toBe(0)
+      },
+      { timeout: 2500 }
+    )
 
     // Clear search -> dot returns, then filter by "Regular" category -> otherDay dot disappears again
     fireEvent.change(searchInput, { target: { value: "" } })

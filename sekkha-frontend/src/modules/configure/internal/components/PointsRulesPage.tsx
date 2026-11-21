@@ -21,6 +21,7 @@ import {
 } from "@/lib/numericInput"
 import { pointRulesApi } from "../api/configureApi"
 import type { PointRuleDto } from "../api/configureApi"
+import { toast } from "@/components/base"
 
 interface RuleSectionConfig {
   id: string
@@ -121,10 +122,13 @@ export function PointsRulesPage() {
       })
 
       await loadRules()
+      toast.success(`Point rule "${formData.label.trim()}" updated successfully.`)
       setEditingRule(null)
     } catch (err: any) {
       console.error("Failed to save point rule:", err)
-      setFormError(err.message || "Failed to save point rule changes.")
+      const msg = err.message || "Failed to save point rule changes."
+      setFormError(msg)
+      toast.error(msg)
     } finally {
       setSubmitting(false)
     }

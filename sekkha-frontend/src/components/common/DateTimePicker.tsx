@@ -2,18 +2,12 @@ import { useMemo, useState } from "react"
 import {
   CalendarIcon,
   CheckIcon,
-  ChevronDownIcon,
   ClockIcon,
   SparklesIcon,
 } from "lucide-react"
-import { Badge, Button, Card, Chip, Select } from "@/components/base"
+import { Button, Chip, Select } from "@/components/base"
 import type { SelectOption } from "@/components/base"
 import { EventCalendar } from "@/components/ui/EventCalendar"
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible"
 import { cn } from "@/lib/utils"
 
 export interface DateTimePickerProps {
@@ -58,13 +52,6 @@ const HOUR_OPTIONS: SelectOption[] = Array.from({ length: 24 }, (_, i) => {
 const MINUTE_STEP_VALUES = Array.from({ length: 12 }, (_, i) =>
   String(i * 5).padStart(2, "0")
 )
-
-function formatCompactDate(datePart: string): string {
-  const [y, m, d] = datePart.split("-").map(Number)
-  if (!y || !m || !d) return datePart
-  const monthName = MONTHS_SHORT[m - 1] ?? ""
-  return `${d} ${monthName}`
-}
 
 const DAYS_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const
 const MONTHS_SHORT = [
@@ -146,15 +133,9 @@ function formatReadableDate(datePart: string): string {
   return `${dayName}, ${d} ${monthName} ${y}`
 }
 
-function formatDisplayDateTime(datePart: string, timePart: string): string {
-  if (!datePart) return "Select Date & Time..."
-  return `${formatReadableDate(datePart)} · ${timePart} WIB`
-}
-
 /**
- * Inline collapsible Date & Time picker built with Sekkha base components
- * (Card, Chip, Button, Badge) and a native time input so it stays compact on
- * mobile without clipping or trapping focus inside modals or drawers.
+ * Two-pill iOS Calendar-style inline Date & Time picker.
+ * Tapping Date opens the calendar directly; tapping Time opens time presets & Hour/Minute selects.
  */
 export function DateTimePicker({
   id,
@@ -165,8 +146,9 @@ export function DateTimePicker({
   defaultOpen = false,
   recentTimes,
 }: DateTimePickerProps) {
-  const [open, setOpen] = useState(defaultOpen)
-  const [activeTab, setActiveTab] = useState<"date" | "time">("date")
+  const [activePanel, setActivePanel] = useState<"date" | "time" | null>(
+    defaultOpen ? "date" : null
+  )
   const { datePart, timePart, dateObj } = parseValue(value)
   const [calendarMonth, setCalendarMonth] = useState<Date>(dateObj)
 
@@ -194,28 +176,32 @@ export function DateTimePicker({
     onChange(`${nextDate || getTodayString()}T${nextTime || "08:00"}`)
   }
 
-  function handleOpenChange(nextOpen: boolean) {
-    if (nextOpen) {
-      setCalendarMonth(parseDateObj(datePart))
-      setActiveTab("date")
+  function togglePanel(panel: "date" | "time") {
+    if (activePanel === panel) {
+      setActivePanel(null)
+      return
     }
-    setOpen(nextOpen)
+    if (panel === "date") {
+      setCalendarMonth(parseDateObj(datePart))
+    }
+    setActivePanel(panel)
   }
 
   function handleSelectDate(selectedDate: string | null) {
     if (!selectedDate) return
     commitSchedule(selectedDate, timePart)
-    setActiveTab("time")
+    setActivePanel(null)
   }
 
   function handleQuickDate(targetDate: string) {
     setCalendarMonth(parseDateObj(targetDate))
     commitSchedule(targetDate, timePart)
-    setActiveTab("time")
+    setActivePanel(null)
   }
 
   function handleQuickTime(presetTime: string) {
     commitSchedule(datePart, presetTime)
+    setActivePanel(null)
   }
 
   function handleHourChange(nextHour: string) {
@@ -227,239 +213,162 @@ export function DateTimePicker({
   }
 
   return (
-    <Collapsible
-      open={open}
-      onOpenChange={handleOpenChange}
-      className="w-full text-left font-sans"
-    >
-      {/* ── Trigger Bar ───────────────────────────────────────────────────── */}
-      <CollapsibleTrigger asChild>
+    <div className="w-full space-y-2 text-left font-sans">
+      {/* ── Two Clear Triggers: Date Pill + Time Pill ── */}
+      <div className="grid grid-cols-[1.35fr_1fr] gap-2">
         <button
           id={id}
           type="button"
-          aria-expanded={open}
+          onClick={() => togglePanel("date")}
+          aria-expanded={activePanel === "date"}
           aria-invalid={Boolean(error)}
           aria-describedby={error && id ? `${id}-error` : undefined}
           className={cn(
-            "group flex min-h-11 w-full cursor-pointer items-center justify-between gap-2 rounded-[12px] border bg-canvas px-3.5 py-2 text-xs text-ink shadow-2xs transition-all duration-150 outline-none sm:text-sm",
+            "flex min-h-11 min-w-0 cursor-pointer items-center gap-2 rounded-[12px] border bg-canvas px-3 py-2 text-xs text-ink shadow-2xs transition-all outline-none sm:px-3.5 sm:text-sm",
             error
-              ? "border-rose-400 bg-rose-50/40 text-rose-900 focus-visible:ring-2 focus-visible:ring-rose-400/30"
-              : open
-                ? "border-ink ring-2 ring-ink/15"
-                : "border-hairline hover:border-[#bfbfbf] hover:bg-surface-soft focus-visible:border-ink focus-visible:ring-2 focus-visible:ring-ink/15"
+              ? "border-rose-400 bg-rose-50/40 text-rose-900"
+              : activePanel === "date"
+                ? "border-ink bg-surface-card ring-2 ring-ink/10"
+                : "border-hairline hover:border-[#bfbfbf] hover:bg-surface-soft"
           )}
         >
-          <div className="flex min-w-0 items-center gap-2.5">
-            <CalendarIcon className="size-4 shrink-0 text-clay-teal" />
-            <span className="truncate font-bold text-ink">
-              {value ? (
-                formatDisplayDateTime(datePart, timePart)
-              ) : (
-                <span className="font-normal text-text-muted">
-                  Select Date &amp; Time...
-                </span>
-              )}
-            </span>
-          </div>
-
-          <div className="flex shrink-0 items-center gap-1.5">
-            <Badge
-              variant={open ? "primary" : "secondary"}
-              size="sm"
-              className="font-semibold"
-            >
-              {open ? "Editing" : value ? "Change" : "Select"}
-            </Badge>
-            <ChevronDownIcon
-              className={cn(
-                "size-4 text-text-muted transition-transform duration-200",
-                open && "rotate-180 text-ink"
-              )}
-              aria-hidden="true"
-            />
-          </div>
+          <CalendarIcon className="size-4 shrink-0 text-clay-teal" aria-hidden="true" />
+          <span className="truncate font-bold">
+            {value ? formatReadableDate(datePart) : "Select date"}
+          </span>
         </button>
-      </CollapsibleTrigger>
 
-      {/* ── Inline Collapsible Schedule Panel ─────────────────────────────── */}
-      <CollapsibleContent className="mt-2">
-        <Card
-          variant="soft"
-          className="space-y-3 border-hairline p-3 shadow-xs sm:p-4"
+        <button
+          id={id ? `${id}-time` : undefined}
+          type="button"
+          onClick={() => togglePanel("time")}
+          aria-expanded={activePanel === "time"}
+          aria-invalid={Boolean(error)}
+          className={cn(
+            "flex min-h-11 min-w-0 cursor-pointer items-center gap-2 rounded-[12px] border bg-canvas px-3 py-2 text-xs text-ink shadow-2xs transition-all outline-none sm:px-3.5 sm:text-sm",
+            error
+              ? "border-rose-400 bg-rose-50/40 text-rose-900"
+              : activePanel === "time"
+                ? "border-ink bg-surface-card ring-2 ring-ink/10"
+                : "border-hairline hover:border-[#bfbfbf] hover:bg-surface-soft"
+          )}
         >
-          {/* Mobile Segmented Toggle: Date | Time (hidden on md+ where both panes show side-by-side) */}
-          <div
-            role="group"
-            aria-label="Schedule step"
-            className="grid grid-cols-2 gap-1 rounded-[12px] border border-hairline bg-canvas p-1 md:hidden"
-          >
-            <button
-              type="button"
-              aria-pressed={activeTab === "date"}
-              onClick={() => setActiveTab("date")}
-              className={cn(
-                "flex min-h-9 cursor-pointer items-center justify-center gap-1.5 rounded-[9px] px-2.5 py-1.5 text-xs font-bold transition-all",
-                activeTab === "date"
-                  ? "bg-ink text-canvas shadow-2xs"
-                  : "text-text-muted hover:text-ink"
-              )}
+          <ClockIcon className="size-4 shrink-0 text-clay-teal" aria-hidden="true" />
+          <span className="truncate font-mono font-bold tabular-nums">
+            {timePart} WIB
+          </span>
+        </button>
+      </div>
+
+      {/* ── Single Flat Inline Picker Panel ── */}
+      {activePanel === "date" && (
+        <div className="space-y-2.5 rounded-[16px] border border-hairline bg-canvas p-3 shadow-xs">
+          <div className="flex flex-wrap gap-1.5">
+            <Chip
+              variant="assist"
+              selected={value !== "" && datePart === todayStr}
+              onClick={() => handleQuickDate(todayStr)}
             >
-              <CalendarIcon className="size-3.5 shrink-0" aria-hidden="true" />
-              <span>Date · {formatCompactDate(datePart)}</span>
-            </button>
-            <button
-              type="button"
-              aria-pressed={activeTab === "time"}
-              onClick={() => setActiveTab("time")}
-              className={cn(
-                "flex min-h-9 cursor-pointer items-center justify-center gap-1.5 rounded-[9px] px-2.5 py-1.5 text-xs font-bold transition-all",
-                activeTab === "time"
-                  ? "bg-ink text-canvas shadow-2xs"
-                  : "text-text-muted hover:text-ink"
-              )}
+              Today
+            </Chip>
+            <Chip
+              variant="assist"
+              selected={value !== "" && datePart === tomorrowStr}
+              onClick={() => handleQuickDate(tomorrowStr)}
             >
-              <ClockIcon className="size-3.5 shrink-0" aria-hidden="true" />
-              <span className="font-mono tabular-nums">Time · {timePart}</span>
-            </button>
+              Tomorrow
+            </Chip>
+            <Chip
+              variant="assist"
+              selected={value !== "" && datePart === nextSundayStr}
+              leadingIcon={<SparklesIcon className="text-clay-ochre" />}
+              onClick={() => handleQuickDate(nextSundayStr)}
+            >
+              Next Sun
+            </Chip>
           </div>
 
-          {/* 2-Column Responsive Grid: Calendar (Left) + Time Controls (Right) */}
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-[1.15fr_1fr] md:items-start">
-            {/* ── Date Pane ── */}
-            <div
-              className={cn(
-                "space-y-2.5",
-                activeTab !== "date" && "hidden md:block"
-              )}
-            >
-              <div className="flex flex-wrap gap-1.5">
+          <EventCalendar
+            month={calendarMonth}
+            onMonthChange={setCalendarMonth}
+            selected={datePart}
+            onSelect={handleSelectDate}
+            compact={true}
+            hideTodayButton={true}
+            allowDeselect={false}
+            disablePastDates={disablePastDates}
+          />
+        </div>
+      )}
+
+      {activePanel === "time" && (
+        <div className="space-y-3 rounded-[16px] border border-hairline bg-canvas p-3 shadow-xs sm:p-4">
+          <div className="space-y-1.5">
+            <span className="text-[11px] font-semibold text-text-muted">
+              {quickTimeMeta.isFromRecent ? "Recent times" : "Quick presets"}
+            </span>
+            <div className="flex flex-wrap gap-1.5">
+              {quickTimeMeta.items.map((preset) => (
                 <Chip
-                  variant="assist"
-                  selected={value !== "" && datePart === todayStr}
-                  onClick={() => handleQuickDate(todayStr)}
+                  key={preset}
+                  variant="filter"
+                  selected={timePart === preset}
+                  onClick={() => handleQuickTime(preset)}
+                  className="font-mono tabular-nums"
                 >
-                  Today
+                  {preset}
                 </Chip>
-                <Chip
-                  variant="assist"
-                  selected={value !== "" && datePart === tomorrowStr}
-                  onClick={() => handleQuickDate(tomorrowStr)}
-                >
-                  Tomorrow
-                </Chip>
-                <Chip
-                  variant="assist"
-                  selected={value !== "" && datePart === nextSundayStr}
-                  leadingIcon={<SparklesIcon className="text-clay-ochre" />}
-                  onClick={() => handleQuickDate(nextSundayStr)}
-                >
-                  Next Sun
-                </Chip>
-              </div>
-
-              <Card variant="canvas" className="p-1 shadow-2xs">
-                <EventCalendar
-                  month={calendarMonth}
-                  onMonthChange={setCalendarMonth}
-                  selected={datePart}
-                  onSelect={handleSelectDate}
-                  compact={true}
-                  hideTodayButton={true}
-                  allowDeselect={false}
-                  disablePastDates={disablePastDates}
-                />
-              </Card>
-            </div>
-
-            {/* ── Time Pane ── */}
-            <div
-              className={cn(
-                "flex h-full flex-col justify-between gap-3",
-                activeTab !== "time" && "hidden md:flex"
-              )}
-            >
-              <div className="space-y-3">
-                <div className="hidden items-center gap-1.5 md:flex">
-                  <ClockIcon className="size-3.5 text-clay-teal" aria-hidden="true" />
-                  <span className="text-xs font-bold text-ink">
-                    Service Time
-                  </span>
-                </div>
-
-                {/* Quick Presets using Sekkha Filter Chips */}
-                <div className="space-y-1.5">
-                  <span className="text-[11px] font-semibold text-text-muted">
-                    {quickTimeMeta.isFromRecent ? "Recent times" : "Quick presets"}
-                  </span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {quickTimeMeta.items.map((preset) => (
-                      <Chip
-                        key={preset}
-                        variant="filter"
-                        selected={timePart === preset}
-                        onClick={() => handleQuickTime(preset)}
-                        className="font-mono tabular-nums"
-                      >
-                        {preset}
-                      </Chip>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Sekkha Hour / Minute Selects (no native OS time popup) */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-ink">
-                      Custom time
-                    </span>
-                    <span className="text-[11px] font-medium text-text-muted">
-                      24-hour · WIB
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-[1fr_auto_1fr] items-end gap-2">
-                    <Select
-                      id={id ? `${id}-hour` : undefined}
-                      label="Hour"
-                      value={activeHour}
-                      onValueChange={handleHourChange}
-                      options={HOUR_OPTIONS}
-                      className="font-mono font-bold tabular-nums"
-                    />
-                    <span
-                      aria-hidden="true"
-                      className="pb-2.5 font-mono text-base font-bold text-text-muted"
-                    >
-                      :
-                    </span>
-                    <Select
-                      id={id ? `${id}-minute` : undefined}
-                      label="Minute"
-                      value={activeMinute}
-                      onValueChange={handleMinuteChange}
-                      options={minuteOptions}
-                      className="font-mono font-bold tabular-nums"
-                    />
-                  </div>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
 
-          {/* Compact Confirm Footer */}
-          <div className="flex justify-end border-t border-hairline pt-2.5">
+          <div className="space-y-2 border-t border-hairline pt-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-ink">Custom time</span>
+              <span className="text-[11px] font-medium text-text-muted">
+                24-hour · WIB
+              </span>
+            </div>
+            <div className="grid grid-cols-[1fr_auto_1fr] items-end gap-2">
+              <Select
+                id={id ? `${id}-hour` : undefined}
+                label="Hour"
+                value={activeHour}
+                onValueChange={handleHourChange}
+                options={HOUR_OPTIONS}
+                className="font-mono font-bold tabular-nums"
+              />
+              <span
+                aria-hidden="true"
+                className="pb-2.5 font-mono text-base font-bold text-text-muted"
+              >
+                :
+              </span>
+              <Select
+                id={id ? `${id}-minute` : undefined}
+                label="Minute"
+                value={activeMinute}
+                onValueChange={handleMinuteChange}
+                options={minuteOptions}
+                className="font-mono font-bold tabular-nums"
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end pt-1">
             <Button
               type="button"
-              variant="primary"
+              variant="outlined"
               size="sm"
-              onClick={() => setOpen(false)}
-              className="w-full gap-1.5 rounded-[12px] md:w-auto"
+              onClick={() => setActivePanel(null)}
+              className="gap-1.5 rounded-[10px]"
             >
               <CheckIcon className="size-3.5" aria-hidden="true" />
               <span>Done</span>
             </Button>
           </div>
-        </Card>
-      </CollapsibleContent>
-    </Collapsible>
+        </div>
+      )}
+    </div>
   )
 }

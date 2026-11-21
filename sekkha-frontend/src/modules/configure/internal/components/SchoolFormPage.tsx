@@ -7,6 +7,7 @@ import { Button } from "@/components/base/Button"
 import { Card } from "@/components/base/Card"
 import { Input } from "@/components/base/Input"
 import { Select } from "@/components/base/Select"
+import { toast } from "@/components/base"
 
 const SCHOOL_TYPES = [
   { value: "SMP", label: "Junior High School (SMP)" },
@@ -39,14 +40,16 @@ export function SchoolFormPage() {
         name: trimmedName,
         type,
       })
+      toast.success(`Institution "${trimmedName}" added successfully.`)
       await navigate({
         to: "/configure/master/school/$schoolId",
         params: { schoolId: school.id },
       })
     } catch (err: any) {
-      setErrorMsg(
+      const msg =
         err?.message || "Failed to create institution. Please try again."
-      )
+      setErrorMsg(msg)
+      toast.error(msg)
     } finally {
       setSaving(false)
     }

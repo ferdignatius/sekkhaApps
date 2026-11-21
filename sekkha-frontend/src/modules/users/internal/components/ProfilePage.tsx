@@ -8,7 +8,6 @@ import {
   SparklesIcon,
   LogOutIcon,
   AlertCircleIcon,
-  CheckCircle2Icon,
 } from "lucide-react"
 import { DigitalMemberCard } from "@/components/common/DigitalMemberCard"
 import { InstallAppCard } from "@/components/common/InstallAppPrompt"
@@ -30,6 +29,7 @@ import {
   TabsList,
   TabsTrigger,
   TabsContent,
+  toast,
 } from "@/components/base"
 import { useAuth } from "@/modules/auth"
 import { userApi } from "../api/userApi"
@@ -50,15 +50,14 @@ export function ProfilePage() {
   const [activeTab, setActiveTab] = useState<ProfileTab>("card")
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
   const [signingOut, setSigningOut] = useState(false)
-  const [toast, setToast] = useState<{
-    text: string
-    type: "success" | "error"
-  } | null>(null)
 
   const showToast = useCallback(
     (text: string, type: "success" | "error" = "success") => {
-      setToast({ text, type })
-      setTimeout(() => setToast(null), 3500)
+      if (type === "error") {
+        toast.error(text)
+      } else {
+        toast.success(text)
+      }
     },
     []
   )
@@ -124,24 +123,6 @@ export function ProfilePage() {
   return (
     <main className="min-h-screen bg-surface-soft font-sans text-ink">
       <PageBreadcrumb items={[{ label: "Profile" }]} showBack={false} />
-
-      {toast && (
-        <div
-          role="status"
-          className={`fixed top-16 right-4 left-4 z-50 mx-auto flex max-w-sm items-center gap-2 rounded-[14px] border px-4 py-3 text-xs font-bold shadow-lg sm:right-6 sm:left-auto ${
-            toast.type === "error"
-              ? "border-rose-200 bg-rose-50 text-rose-800"
-              : "border-emerald-200 bg-emerald-50 text-emerald-800"
-          }`}
-        >
-          {toast.type === "error" ? (
-            <AlertCircleIcon className="size-4 shrink-0" />
-          ) : (
-            <CheckCircle2Icon className="size-4 shrink-0" />
-          )}
-          <span>{toast.text}</span>
-        </div>
-      )}
 
       <div className="mx-auto max-w-7xl px-3.5 py-3 pb-32 sm:px-6 sm:py-6 md:px-8 md:pb-12 lg:px-12">
         {loading ? (

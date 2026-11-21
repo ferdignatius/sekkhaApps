@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react"
+import { SEARCH_DEBOUNCE_MS } from "@/hooks/useDebounce"
 import { peopleApi } from "../api/peopleApi"
 import type { SimilarMemberDto } from "../api/peopleApi"
 
@@ -17,7 +18,12 @@ export function useSimilarMembers(
   nameQuery: string,
   options: UseSimilarMembersOptions = {}
 ) {
-  const { enabled = true, minChars = 3, delayMs = 250, limit = 5 } = options
+  const {
+    enabled = true,
+    minChars = 3,
+    delayMs = SEARCH_DEBOUNCE_MS,
+    limit = 5,
+  } = options
   const cappedLimit = Math.min(Math.max(limit, 1), 5)
 
   const [similarMembers, setSimilarMembers] = useState<SimilarMemberDto[]>([])

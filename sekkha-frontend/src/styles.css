@@ -744,14 +744,7 @@
     box-shadow 0.35s cubic-bezier(0.32, 0.72, 0, 1);
 }
 
-/* Prevent iOS Safari / iOS PWA viewport auto-zoom when focusing inputs with <16px font-size */
-@media (max-width: 767px) {
-  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
-  textarea,
-  select {
-    font-size: 16px !important;
-  }
-}
+
 
 
 

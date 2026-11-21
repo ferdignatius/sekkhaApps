@@ -21,6 +21,7 @@ import { Card } from "@/components/base/Card"
 import { Chip } from "@/components/base/Chip"
 import { Badge } from "@/components/base/Badge"
 import { Input } from "@/components/base/Input"
+import { toast } from "@/components/base"
 
 const SCHOOL_TYPES = ["SMP", "SMA/SMK", "Universitas", "Umum"] as const
 
@@ -87,16 +88,20 @@ export function SchoolPage() {
       setProcessingId(id)
       setFeedback(null)
       await schoolsApi.acceptRequest(id)
+      const okMsg = `School "${name}" approved successfully and added to directory.`
       setFeedback({
         type: "success",
-        message: `School "${name}" approved successfully and added to directory.`,
+        message: okMsg,
       })
+      toast.success(okMsg)
       await Promise.all([fetchRequests(), fetchSchools()])
     } catch (err: any) {
+      const errMsg = err?.message || `Failed to approve school "${name}".`
       setFeedback({
         type: "error",
-        message: err?.message || `Failed to approve school "${name}".`,
+        message: errMsg,
       })
+      toast.error(errMsg)
     } finally {
       setProcessingId(null)
     }
@@ -107,16 +112,20 @@ export function SchoolPage() {
       setProcessingId(id)
       setFeedback(null)
       await schoolsApi.rejectRequest(id)
+      const okMsg = `School request "${name}" has been rejected.`
       setFeedback({
         type: "success",
-        message: `School request "${name}" has been rejected.`,
+        message: okMsg,
       })
+      toast.success(okMsg)
       await fetchRequests()
     } catch (err: any) {
+      const errMsg = err?.message || `Failed to reject school "${name}".`
       setFeedback({
         type: "error",
-        message: err?.message || `Failed to reject school "${name}".`,
+        message: errMsg,
       })
+      toast.error(errMsg)
     } finally {
       setProcessingId(null)
     }

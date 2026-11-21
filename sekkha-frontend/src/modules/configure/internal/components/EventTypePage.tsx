@@ -12,6 +12,7 @@ import { eventTypesApi } from "../api/configureApi"
 import { Button } from "@/components/base/Button"
 import { Card } from "@/components/base/Card"
 import { Input } from "@/components/base/Input"
+import { toast } from "@/components/base"
 import { Switch } from "@/components/ui/switch"
 import {
   parseBoundedInteger,
@@ -97,9 +98,12 @@ export function EventTypeCreatePage() {
         default_late_penalty_points: parsedPenalty ?? 0,
         is_active: isActive,
       })
+      toast.success(`Event category "${label.trim()}" created successfully.`)
       await navigate({ to: "/configure/master/event-type" })
     } catch (err: any) {
-      setErrorMessage(err?.message || "Failed to create event type.")
+      const msg = err?.message || "Failed to create event type."
+      setErrorMessage(msg)
+      toast.error(msg)
     } finally {
       setSaving(false)
     }

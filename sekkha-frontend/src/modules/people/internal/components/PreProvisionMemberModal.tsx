@@ -56,7 +56,7 @@ export function PreProvisionMemberModal({
   const [copiedInvite, setCopiedInvite] = useState(false)
   const [similarModalOpen, setSimilarModalOpen] = useState(false)
   const [schoolSearch, setSchoolSearch] = useState("")
-  const debouncedSchoolSearch = useDebounce(schoolSearch, 250)
+  const debouncedSchoolSearch = useDebounce(schoolSearch)
 
   // Async non-blocking fuzzy similarity check while typing Full Name
   const { similarMembers, totalMatches } = useSimilarMembers(createForm.name, {

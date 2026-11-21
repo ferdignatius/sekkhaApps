@@ -17,6 +17,7 @@ import { Card } from "@/components/base/Card"
 import { Badge } from "@/components/base/Badge"
 import { Input } from "@/components/base/Input"
 import { Select } from "@/components/base/Select"
+import { toast } from "@/components/base"
 import {
   Dialog,
   DialogContent,
@@ -113,15 +114,19 @@ export function SchoolDetailPage() {
       })
 
       setSchool((prev) => (prev ? { ...prev, ...updated } : updated))
+      const okMsg = "Institution details updated successfully."
       setFeedback({
         type: "success",
-        message: "Institution details updated successfully.",
+        message: okMsg,
       })
+      toast.success(okMsg)
     } catch (err: any) {
+      const errMsg = err?.message || "Failed to update institution details."
       setFeedback({
         type: "error",
-        message: err?.message || "Failed to update institution details.",
+        message: errMsg,
       })
+      toast.error(errMsg)
     } finally {
       setSaving(false)
     }
@@ -135,11 +140,13 @@ export function SchoolDetailPage() {
     try {
       await schoolsApi.remove(schoolId)
       setShowDeleteModal(false)
+      toast.success(`Institution "${name}" deleted.`)
       await navigate({ to: "/configure/master/school" })
     } catch (err: any) {
       setShowDeleteModal(false)
       const msg = err?.message || "Cannot delete this institution."
       setConflictMessage(msg)
+      toast.error(msg)
     } finally {
       setDeleting(false)
     }
@@ -152,15 +159,19 @@ export function SchoolDetailPage() {
       await schoolsApi.update(schoolId, { is_active: false })
       setIsActive(false)
       setConflictMessage(null)
+      const okMsg = `"${name}" has been deactivated instead. It will no longer appear in onboarding searches.`
       setFeedback({
         type: "success",
-        message: `"${name}" has been deactivated instead. It will no longer appear in onboarding searches.`,
+        message: okMsg,
       })
+      toast.success(`Institution "${name}" deactivated.`)
     } catch (err: any) {
+      const errMsg = err?.message || "Failed to deactivate institution."
       setFeedback({
         type: "error",
-        message: err?.message || "Failed to deactivate institution.",
+        message: errMsg,
       })
+      toast.error(errMsg)
     } finally {
       setSaving(false)
     }

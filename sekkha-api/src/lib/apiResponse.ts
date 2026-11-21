@@ -4,6 +4,6 @@ export function apiSuccess<T>(res: Response, code: number, message: string, data
   return res.status(code).json({ status: "success", code, message, data })
 }
 
-export function apiFailure(res: Response, code: number, message: string, data: null = null) {
+export function apiFailure(res: Response, code: number, message: string, data: unknown = null) {
   return res.status(code).json({ status: "fail", code, message, data })
 }

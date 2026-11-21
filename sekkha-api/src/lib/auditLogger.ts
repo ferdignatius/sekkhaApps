@@ -8,6 +8,7 @@ export interface AuditLogEntry {
     | "AUTH_LOGIN_SUCCESS"
     | "AUTH_LOGIN_FAILED"
     | "AUTH_LOGOUT"
+    | "AUTH_REFRESH_REUSE_DETECTED"
     | "AUTH_PASSWORD_RESET"
     | "AUTH_PASSWORD_CHANGED"
     | "USER_PASSWORD_RESET"

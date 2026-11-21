@@ -187,6 +187,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     if (typeof window === "undefined") return
 
+    function buildTokenUpdatePayload(accessToken: string) {
+      return {
+        accessToken,
+        userId: authState.userId,
+        role: authState.role,
+        name: authState.name,
+        email: authState.email,
+        ...(authState.username !== undefined && {
+          username: authState.username,
+        }),
+        ...(typeof authState.onboardingCompleted === "boolean" && {
+          onboardingCompleted: authState.onboardingCompleted,
+        }),
+      }
+    }
+
     function handleSessionInvalidated() {
       dispatch({ type: "AUTH_VERIFY_FAILED" })
     }
@@ -196,19 +212,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (detail?.accessToken && authState.status === "authenticated") {
         dispatch({
           type: "AUTH_SUCCESS",
-          payload: {
-            accessToken: detail.accessToken,
-            userId: authState.userId,
-            role: authState.role,
-            name: authState.name,
-            email: authState.email,
-            ...(authState.username !== undefined && {
-              username: authState.username,
-            }),
-            ...(authState.onboardingCompleted !== undefined && {
-              onboardingCompleted: authState.onboardingCompleted,
-            }),
-          },
+          payload: buildTokenUpdatePayload(detail.accessToken),
         })
       }
     }
@@ -220,19 +224,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       } else if (authState.status === "authenticated") {
         dispatch({
           type: "AUTH_SUCCESS",
-          payload: {
-            accessToken: event.newValue,
-            userId: authState.userId,
-            role: authState.role,
-            name: authState.name,
-            email: authState.email,
-            ...(authState.username !== undefined && {
-              username: authState.username,
-            }),
-            ...(authState.onboardingCompleted !== undefined && {
-              onboardingCompleted: authState.onboardingCompleted,
-            }),
-          },
+          payload: buildTokenUpdatePayload(event.newValue),
         })
       }
     }
@@ -257,19 +249,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           ) {
             dispatch({
               type: "AUTH_SUCCESS",
-              payload: {
-                accessToken: msg.accessToken,
-                userId: authState.userId,
-                role: authState.role,
-                name: authState.name,
-                email: authState.email,
-                ...(authState.username !== undefined && {
-                  username: authState.username,
-                }),
-                ...(authState.onboardingCompleted !== undefined && {
-                  onboardingCompleted: authState.onboardingCompleted,
-                }),
-              },
+              payload: buildTokenUpdatePayload(msg.accessToken),
             })
           }
         }

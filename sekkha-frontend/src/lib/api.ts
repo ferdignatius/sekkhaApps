@@ -4,7 +4,8 @@
 import type { ZodType } from "zod"
 import { safeStorage } from "./storage"
 import { isJwtExpired } from "./jwt"
-import { coordinatedRefreshSession, type UnifiedRefreshResult } from "./authRefresh"
+import { coordinatedRefreshSession } from "./authRefresh"
+import type { UnifiedRefreshResult } from "./authRefresh"
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:4000/api"
 

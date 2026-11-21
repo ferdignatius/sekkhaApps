@@ -44,12 +44,10 @@ export type UnifiedRefreshResult =
 
 let inFlightTabRefresh: Promise<UnifiedRefreshResult> | null = null
 let rateLimitedUntil = 0
-let lastBroadcastToken: string | null = null
 
 export function resetRefreshCoordinatorForTests(): void {
   inFlightTabRefresh = null
   rateLimitedUntil = 0
-  lastBroadcastToken = null
   safeStorage.removeItem(REFRESH_LOCK_KEY)
 }
 
@@ -72,7 +70,6 @@ function postAuthChannelMessage(message: {
 }
 
 export function broadcastLogout(): void {
-  lastBroadcastToken = null
   postAuthChannelMessage({ type: "LOGOUT" })
 }
 
@@ -191,18 +188,6 @@ function checkSiblingTokenUpdate(
     }
   }
 
-  if (lastBroadcastToken && observedToken !== undefined && lastBroadcastToken !== observedToken) {
-    if (!isJwtExpired(lastBroadcastToken)) {
-      safeStorage.setItem(ACCESS_TOKEN_KEY, lastBroadcastToken)
-      return {
-        ok: true,
-        accessToken: lastBroadcastToken,
-        user: null,
-        reusedExisting: true,
-      }
-    }
-  }
-
   if (latestToken === null && observedToken) {
     return {
       ok: false,
@@ -278,7 +263,6 @@ async function performSingleRefreshHttp(): Promise<UnifiedRefreshResult> {
 
     if (response.status === 401 || response.status === 403) {
       safeStorage.removeItem(ACCESS_TOKEN_KEY)
-      lastBroadcastToken = null
       postAuthChannelMessage({ type: "SESSION_INVALIDATED" })
       dispatchWindowEvent(SESSION_INVALIDATED_EVENT, { status: response.status, errorCode })
       return {
@@ -315,7 +299,6 @@ async function performSingleRefreshHttp(): Promise<UnifiedRefreshResult> {
     const user = (data?.user as RefreshedUserSummary | undefined) ?? null
     // Persist the new access token BEFORE releasing the lock so subsequent tabs/callers observe it.
     safeStorage.setItem(ACCESS_TOKEN_KEY, accessToken)
-    lastBroadcastToken = accessToken
     postAuthChannelMessage({ type: "TOKEN_REFRESHED", accessToken })
     dispatchWindowEvent(TOKEN_SYNCED_EVENT, { accessToken, user })
 

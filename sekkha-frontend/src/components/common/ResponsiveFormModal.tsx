@@ -8,7 +8,7 @@ import {
   DrawerHeader,
   DrawerTitle,
   DrawerDescription,
-} from "@/components/ui/drawer"
+} from "@/components/base"
 import { cn } from "@/lib/utils"
 
 // ─── Hook: detect desktop vs mobile ─────────────────────────────────────────
@@ -110,7 +110,7 @@ export function ResponsiveFormModal({
         <div
           onClick={(e) => e.stopPropagation()}
           className={cn(
-            "relative z-10 flex max-h-[92vh] w-full animate-in flex-col rounded-[28px] border border-[#e5e5e5] bg-[#faf5e8] p-5 text-[#0a0a0a] shadow-2xl ring-1 ring-black/[0.05] backdrop-blur-[30px] transition-all zoom-in-95 sm:p-6",
+            "relative z-10 flex max-h-[92vh] w-full animate-in flex-col rounded-[28px] border border-[#e5dec9] bg-[#fffaf0] p-5 text-[#0a0a0a] shadow-2xl ring-1 ring-black/[0.05] transition-all zoom-in-95 sm:p-6",
             maxWidth
           )}
         >
@@ -165,17 +165,12 @@ export function ResponsiveFormModal({
         }}
         data-expanded={isExpanded ? "true" : "false"}
         className={cn(
-          "z-[100] flex flex-col overflow-hidden rounded-t-[28px] border-t border-[#e5e5e5] bg-[#faf5e8] p-0 font-sans backdrop-blur-[40px] transition-[transform,max-height,box-shadow] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]",
-          isExpanded ? "max-h-[100dvh] shadow-2xl" : "max-h-[88dvh]"
+          "z-[100] flex flex-col overflow-hidden rounded-t-[28px] border-t border-[#e5dec9] bg-[#fffaf0] p-0 font-sans shadow-[0_-10px_28px_-4px_rgba(10,10,10,0.12)] backdrop-blur-none transition-[max-height,box-shadow] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]",
+          isExpanded ? "max-h-[94dvh]" : "max-h-[88dvh]"
         )}
       >
-        {/* Sticky Drag Handle Header with Blur Background */}
-        <div
-          className={cn(
-            "sticky top-0 z-20 flex shrink-0 items-center justify-center border-b border-[#e5e5e5] bg-[#faf5e8] py-3 backdrop-blur-[30px] transition-shadow duration-300",
-            isExpanded && "shadow-2xs"
-          )}
-        >
+        {/* Sticky Drag Handle Header */}
+        <div className="sticky top-0 z-20 flex shrink-0 items-center justify-center bg-[#fffaf0] py-3">
           <div
             className={cn(
               "h-1.5 rounded-full transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]",

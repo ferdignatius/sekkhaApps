@@ -125,11 +125,10 @@ export function EventCalendar({
 
   return (
     <div
-      className={`w-full text-left font-sans select-none ${
-        compact
+      className={`w-full text-left font-sans select-none ${compact
           ? "space-y-2 bg-transparent p-1.5"
           : "space-y-3 rounded-[20px] border border-[#e5e5e5] bg-[#fffaf0] p-4 shadow-xs"
-      }`}
+        }`}
     >
       {/* ── Month Navigation Header ── */}
       {!hideHeader && (
@@ -148,26 +147,6 @@ export function EventCalendar({
                 Today
               </button>
             )}
-          </div>
-
-          <div className="flex items-center gap-1.5">
-            <button
-              type="button"
-              onClick={prevMonth}
-              aria-label="Previous month"
-              className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-[10px] border border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] shadow-2xs transition-all hover:bg-[#faf5e8] active:scale-95"
-            >
-              <ChevronLeftIcon className="size-4" />
-            </button>
-
-            <button
-              type="button"
-              onClick={nextMonth}
-              aria-label="Next month"
-              className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-[10px] border border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] shadow-2xs transition-all hover:bg-[#faf5e8] active:scale-95"
-            >
-              <ChevronRightIcon className="size-4" />
-            </button>
           </div>
         </div>
       )}

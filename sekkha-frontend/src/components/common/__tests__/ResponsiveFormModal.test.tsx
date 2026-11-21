@@ -62,7 +62,7 @@ describe("ResponsiveFormModal mobile drawer scroll-to-expand behavior", () => {
     expect(drawerContent.getAttribute("data-expanded")).toBe("false")
     expect(drawerContent.className).toContain("max-h-[88dvh]")
     expect(drawerContent.className).toContain("rounded-t-[28px]")
-    expect(drawerContent.className).toContain("transition-[transform,max-height,box-shadow]")
+    expect(drawerContent.className).toContain("transition-[max-height,box-shadow]")
     expect(drawerContent.className).toContain("ease-[cubic-bezier(0.32,0.72,0,1)]")
 
     const scrollContainer = screen.getByTestId("drawer-scroll-container")
@@ -74,7 +74,7 @@ describe("ResponsiveFormModal mobile drawer scroll-to-expand behavior", () => {
     fireEvent.scroll(scrollContainer)
 
     expect(drawerContent.getAttribute("data-expanded")).toBe("true")
-    expect(drawerContent.className).toContain("max-h-[100dvh]")
+    expect(drawerContent.className).toContain("max-h-[94dvh]")
     expect(drawerContent.className).toContain("rounded-t-[28px]")
 
     // Scrolling back to top (scrollTop === 0) keeps drawer expanded until closed

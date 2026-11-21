@@ -115,6 +115,7 @@ export const eventServices = {
       status?: string
       event_type_id?: string
       month?: string
+      year?: string
       search?: string
     }
   ) {
@@ -160,6 +161,16 @@ export const eventServices = {
           lte: endOfMonth,
         },
       })
+    } else if (filters?.year && /^\d{4}$/.test(filters.year)) {
+      const y = parseInt(filters.year, 10)
+      const startOfYear = new Date(Date.UTC(y, 0, 1, 0, 0, 0))
+      const endOfYear = new Date(Date.UTC(y, 11, 31, 23, 59, 59, 999))
+      andConditions.push({
+        eventDate: {
+          gte: startOfYear,
+          lte: endOfYear,
+        },
+      })
     }
 
     if (filters?.search && typeof filters.search === "string" && filters.search.trim()) {
@@ -183,6 +194,7 @@ export const eventServices = {
       status: filters?.status || null,
       event_type_id: filters?.event_type_id || null,
       month: filters?.month || null,
+      year: filters?.year || null,
       search: filters?.search?.trim() || null,
     }
 

@@ -267,6 +267,7 @@ describe("EventsPage — Always-Active Date (Default Today), No Full-Month Dump 
     })
     expect(screen.queryByText("Archived Retreat")).toBeNull()
 
+    fireEvent.click(screen.getByRole("button", { name: /^Search events$/i }))
     const searchInput = screen.getByPlaceholderText("Search events...")
     fireEvent.change(searchInput, { target: { value: "Retreat" } })
 
@@ -274,7 +275,7 @@ describe("EventsPage — Always-Active Date (Default Today), No Full-Month Dump 
       expect(screen.getByText("Archived Retreat")).toBeTruthy()
     })
 
-    fireEvent.click(screen.getByRole("button", { name: "Clear Search" }))
+    fireEvent.click(screen.getByRole("button", { name: /^Close search$/i }))
 
     await waitFor(() => {
       expect(screen.getByText("Today Puja")).toBeTruthy()
@@ -497,6 +498,7 @@ describe("EventsPage Category Filter Dropdown — Initial 5 + Infinite Scroll", 
     expect(otherDayBtnsBefore[0].querySelectorAll("span.rounded-full").length).toBeGreaterThan(0)
 
     // Filter by search query matching only Evening Puja -> otherDay dot disappears
+    fireEvent.click(screen.getByRole("button", { name: /^Search events$/i }))
     const searchInput = screen.getByPlaceholderText(/Search events/i)
     fireEvent.change(searchInput, { target: { value: "Evening Puja" } })
 
@@ -519,7 +521,8 @@ describe("EventsPage Category Filter Dropdown — Initial 5 + Infinite Scroll", 
       { timeout: 2500 }
     )
 
-    // Select "Chanting" category -> today's Puja is filtered out, otherDay keeps dot
+    // Open top-bar category filter and select "Chanting" -> today's Puja is filtered out, otherDay keeps dot
+    fireEvent.click(screen.getByTitle(/Filter by category/i))
     const chantingChips = screen.getAllByRole("button", { name: /Chanting/i })
     fireEvent.click(chantingChips[0])
 
@@ -530,5 +533,36 @@ describe("EventsPage Category Filter Dropdown — Initial 5 + Infinite Scroll", 
       })
       expect(btns[0].querySelectorAll("span.rounded-full").length).toBeGreaterThan(0)
     })
+  })
+
+  it("expands the mobile event drawer over the calendar when scrolled down and allows collapsing back", async () => {
+    const now = new Date()
+    const todayKey = toWibKey(now)
+    const [year, month] = todayKey.split("-").map(Number)
+    const monthKey = `${year}-${String(month).padStart(2, "0")}`
+
+    renderEventsPage({
+      [monthKey]: [
+        makeEvent("evt_1", "Morning Chanting", todayKey, "08:00", "scheduled"),
+        makeEvent("evt_2", "Evening Puja", todayKey, "19:00", "scheduled"),
+      ],
+    })
+
+    const drawer = await screen.findByTestId("events-list-drawer")
+    expect(drawer.getAttribute("data-expanded")).toBe("false")
+
+    // Add button sits inside the drawer header
+    expect(within(drawer).getByRole("button", { name: /Create New Event/i })).toBeTruthy()
+
+    // Scrolling the drawer event list down expands it over the calendar
+    const scrollArea = screen.getByTestId("events-drawer-scroll")
+    Object.defineProperty(scrollArea, "scrollTop", { value: 40, configurable: true })
+    fireEvent.scroll(scrollArea)
+
+    expect(drawer.getAttribute("data-expanded")).toBe("true")
+
+    // Clicking the drawer grab handle ("Show calendar") collapses the drawer back so the calendar is visible again
+    fireEvent.click(within(drawer).getByRole("button", { name: /^Show calendar$/i }))
+    expect(drawer.getAttribute("data-expanded")).toBe("false")
   })
 })

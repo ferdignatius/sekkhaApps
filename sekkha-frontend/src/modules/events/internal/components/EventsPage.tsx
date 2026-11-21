@@ -21,8 +21,9 @@ import { api, clearApiCache } from "@/lib/api"
 import { z } from "zod"
 
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
+import { CollapsibleBottomSheet } from "@/components/common/CollapsibleBottomSheet"
 import { ResponsiveFormModal } from "@/components/common/ResponsiveFormModal"
-import { Button, Chip, Card, Badge, ConfirmDialog } from "@/components/base"
+import { Button, Card, Badge, ConfirmDialog } from "@/components/base"
 import { EventCalendar } from "@/components/ui/EventCalendar"
 import type { EventDotItem } from "@/components/ui/EventCalendar"
 import { useDebounce } from "@/hooks/useDebounce"
@@ -125,12 +126,11 @@ export function EventsPage() {
     toDateKey(new Date().toISOString())
   )
   const [searchQuery, setSearchQuery] = useState("")
+  const [searchOpen, setSearchOpen] = useState(false)
   const debouncedSearchQuery = useDebounce(searchQuery, 250)
   const [selectedCategoryTag, setSelectedCategoryTag] = useState<string>("all")
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false)
-  const [mobileCalendarMode, setMobileCalendarMode] = useState<"month" | "week">(
-    "month"
-  )
+  const [mobileSheetExpanded, setMobileSheetExpanded] = useState(false)
   const categoryDropdownRef = useRef<HTMLDivElement>(null)
   const [monthPickerOpen, setMonthPickerOpen] = useState(false)
   const [pickerYear, setPickerYear] = useState<number>(new Date().getFullYear())
@@ -274,6 +274,13 @@ export function EventsPage() {
     [activeMonth, eventsCache]
   )
 
+  // Expand mobile event sheet automatically when searching globally
+  useEffect(() => {
+    if (searchQuery.trim().length > 0) {
+      setMobileSheetExpanded(true)
+    }
+  }, [searchQuery])
+
   // Load events for active month
   useEffect(() => {
     if (!debouncedSearchQuery.trim()) {
@@ -281,7 +288,9 @@ export function EventsPage() {
     }
   }, [activeMonthParam, debouncedSearchQuery])
 
-  // Global search when user types in search query
+  const activeYear = activeMonth.getFullYear()
+
+  // Search events scoped to the active calendar year when user types in search query
   useEffect(() => {
     const q = debouncedSearchQuery.trim()
     if (!q) {
@@ -299,7 +308,7 @@ export function EventsPage() {
       try {
         setLoadingEvents(true)
         const data = await api.get<EventListItem[]>(
-          `/events?search=${encodeURIComponent(q)}&page=1&limit=50`,
+          `/events?search=${encodeURIComponent(q)}&year=${activeYear}&page=1&limit=50`,
           { schema: EventsResponseSchema }
         )
         if (!cancelled) {
@@ -315,7 +324,7 @@ export function EventsPage() {
     return () => {
       cancelled = true
     }
-  }, [debouncedSearchQuery])
+  }, [debouncedSearchQuery, activeYear])
 
   // Attendance records keyed by event id (only fetched on demand for pengurus/admin)
   const [attendances, setAttendances] = useState<
@@ -882,7 +891,7 @@ export function EventsPage() {
 
   // ── Calendar + List View ──
   return (
-    <main className="relative min-h-screen bg-[#fffaf0] pb-32 text-left font-sans md:pb-12">
+    <main className="relative flex min-h-dvh flex-col bg-[#fffaf0] pb-0 text-left font-sans lg:block lg:min-h-screen lg:pb-12">
       {/* Apple HIG Ambient Vibrancy Backdrop Mesh */}
       <div
         className="pointer-events-none fixed inset-0 -z-10 overflow-hidden"
@@ -893,340 +902,332 @@ export function EventsPage() {
         <div className="absolute right-12 -bottom-24 size-96 rounded-full bg-[#ff4d8b]/8 blur-3xl" />
       </div>
 
-      <PageBreadcrumb items={[{ label: "Events" }]} />
+      <PageBreadcrumb
+        items={[{ label: "Events" }]}
+        actions={
+          <div className="flex items-center gap-1.5">
+            {/* Unified Category Filter Dropdown (Mobile & Desktop) */}
+            <div className="relative" ref={categoryDropdownRef}>
+              <button
+                type="button"
+                onClick={() => setCategoryDropdownOpen((prev) => !prev)}
+                aria-label={`Filter by category: ${currentCategoryLabel}`}
+                aria-expanded={categoryDropdownOpen}
+                title={`Filter by category: ${currentCategoryLabel}`}
+                className={`flex h-9 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-full border transition-all active:scale-95 sm:h-10 ${selectedCategoryTag !== "all"
+                  ? "border-[#0a0a0a] bg-[#0a0a0a] px-3 text-xs font-semibold text-white shadow-xs"
+                  : "w-9 border-[#ded6c2] bg-[#faf5e8]/90 text-[#0a0a0a] shadow-2xs hover:bg-[#f5efe0] sm:w-10"
+                  }`}
+              >
+                {selectedCategoryTag !== "all" && currentCategoryColor ? (
+                  <>
+                    <span
+                      className="size-2 shrink-0 rounded-full"
+                      style={{ backgroundColor: currentCategoryColor }}
+                    />
+                    <span className="max-w-[92px] truncate capitalize sm:max-w-[140px]">
+                      {currentCategoryLabel}
+                    </span>
+                  </>
+                ) : (
+                  <FilterIcon className="size-4" aria-hidden="true" />
+                )}
+              </button>
 
-      <div className="px-3.5 py-4 sm:px-6 sm:py-6 md:px-8 lg:px-12">
-        <div className="mx-auto max-w-7xl space-y-4 sm:space-y-5">
-          {/* ── Month & Year Title Header with Unified Controls & Category Filter ── */}
-          <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
-            {/* Top Bar: Month/Year Title & Controls */}
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex min-w-0 flex-1 items-center gap-2">
-                <div className="relative min-w-0" ref={monthPickerRef}>
+              {categoryDropdownOpen && (
+                <div className="absolute top-full right-0 z-50 mt-2 w-60 animate-in space-y-0.5 rounded-[22px] border border-[#ded5c0] bg-[#faf5e8]/95 p-2 text-left shadow-[0_16px_40px_rgba(0,0,0,0.14)] ring-1 ring-black/[0.05] backdrop-blur-2xl zoom-in-95 fade-in">
                   <button
                     type="button"
                     onClick={() => {
-                      setPickerYear(activeMonth.getFullYear())
-                      setMonthPickerOpen(!monthPickerOpen)
+                      setSelectedCategoryTag("all")
+                      setCategoryDropdownOpen(false)
                     }}
-                    className="group flex min-w-0 cursor-pointer items-center gap-1.5 text-base font-bold tracking-tight text-[#0a0a0a] hover:text-[#c28e20] sm:text-xl md:text-2xl"
-                    title="Choose month and year"
+                    className={`flex w-full cursor-pointer items-center justify-between rounded-[12px] px-3 py-2 text-xs font-semibold transition-colors ${selectedCategoryTag === "all"
+                      ? "bg-[#fffaf0] font-bold text-[#0a0a0a] shadow-2xs"
+                      : "text-[#6a6a6a] hover:bg-[#fffaf0]/80 hover:text-[#0a0a0a]"
+                      }`}
                   >
-                    <span className="truncate">
-                      <span className="hidden sm:inline">
-                        {formatSelectedDate(selectedDate)}
-                      </span>
-                      <span className="sm:hidden">
-                        {formatSelectedDate(selectedDate, "short")}
-                      </span>
-                    </span>
-                    <ChevronDownIcon
-                      className={`size-4 shrink-0 text-[#6a6a6a] transition-transform duration-200 group-hover:text-[#0a0a0a] sm:size-5 ${monthPickerOpen ? "rotate-180" : ""
-                        }`}
-                    />
+                    <span>All Categories</span>
+                    {selectedCategoryTag === "all" && (
+                      <CheckIcon className="size-3.5 text-[#0a0a0a]" />
+                    )}
                   </button>
 
-                  {/* Apple HIG Month/Year Picker Popover */}
-                  {monthPickerOpen && (
-                    <div className="absolute top-full left-0 z-40 mt-2 w-68 animate-in space-y-3 rounded-[24px] border border-[#ded5c0] bg-[#faf5e8]/95 p-3.5 shadow-[0_16px_40px_rgba(0,0,0,0.12)] ring-1 ring-black/[0.04] backdrop-blur-2xl zoom-in-95 fade-in">
-                      {/* Year Navigation Bar */}
-                      <div className="flex items-center justify-between border-b border-black/[0.06] px-1 pb-2">
-                        <span className="text-sm font-bold tracking-tight text-[#0a0a0a]">
-                          {pickerYear}
-                        </span>
-                        <div className="flex items-center gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => setPickerYear((y) => y - 1)}
-                            className="flex size-8 cursor-pointer items-center justify-center rounded-full border border-[#ded6c2] bg-[#fffaf0] text-[#0a0a0a] shadow-2xs backdrop-blur-md transition-all hover:bg-[#f5efe0] active:scale-95"
-                            title="Previous year"
-                          >
-                            <ChevronLeftIcon className="size-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setPickerYear((y) => y + 1)}
-                            className="flex size-8 cursor-pointer items-center justify-center rounded-full border border-[#ded6c2] bg-[#fffaf0] text-[#0a0a0a] shadow-2xs backdrop-blur-md transition-all hover:bg-[#f5efe0] active:scale-95"
-                            title="Next year"
-                          >
-                            <ChevronRightIcon className="size-3.5" />
-                          </button>
-                        </div>
-                      </div>
+                  <div className="my-1 h-px bg-black/[0.06]" />
 
-                      {/* 12 Months Grid */}
-                      <div className="grid grid-cols-3 gap-1.5 text-xs font-semibold">
-                        {MONTH_NAMES_SHORT.map((m, idx) => {
-                          const isSelected =
-                            activeMonth.getFullYear() === pickerYear &&
-                            activeMonth.getMonth() === idx
-                          return (
-                            <button
-                              key={m}
-                              type="button"
-                              onClick={() => {
-                                handleMonthChange(new Date(pickerYear, idx, 1))
-                                setMonthPickerOpen(false)
-                              }}
-                              className={`cursor-pointer rounded-[14px] py-2 text-center transition-all ${isSelected
-                                ? "bg-[#0a0a0a] font-bold text-white shadow-xs"
-                                : "text-[#3a3a3a] hover:bg-[#f0e8d5] hover:text-[#0a0a0a]"
-                                }`}
-                            >
-                              {m}
-                            </button>
-                          )
-                        })}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Custom Category Filter Dropdown (Desktop Beside Title) */}
-                <div
-                  className="relative hidden shrink-0 sm:block"
-                  ref={categoryDropdownRef}
-                >
-                  <Chip
-                    variant="filter"
-                    selected={selectedCategoryTag !== "all"}
-                    onClick={() =>
-                      setCategoryDropdownOpen(!categoryDropdownOpen)
-                    }
-                    leadingIcon={
-                      selectedCategoryTag !== "all" && currentCategoryColor ? (
-                        <span
-                          className="size-2 shrink-0 rounded-full"
-                          style={{ backgroundColor: currentCategoryColor }}
-                        />
-                      ) : (
-                        <FilterIcon className="size-3.5 text-[#6a6a6a]" />
-                      )
-                    }
-                    trailingIcon={
-                      <ChevronDownIcon className="size-3 text-[#6a6a6a]" />
-                    }
-                    title={`Filter by category: ${currentCategoryLabel}`}
+                  <div
+                    data-testid="events-category-scroll-list"
+                    onScroll={handleCategoryScroll}
+                    className="max-h-[192px] space-y-0.5 overflow-y-auto overscroll-contain pr-0.5"
                   >
-                    {currentCategoryLabel}
-                  </Chip>
+                    {accessibleCategories.map((cat) => {
+                      const isSelected =
+                        selectedCategoryTag.toLowerCase() ===
+                        cat.tag.toLowerCase()
+                      const colorHex = cat.colorHex || "#1a3a3a"
+                      return (
+                        <button
+                          key={cat.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedCategoryTag(cat.tag)
+                            setCategoryDropdownOpen(false)
+                          }}
+                          className={`flex w-full cursor-pointer items-center justify-between rounded-[12px] px-3 py-2 text-xs font-semibold transition-colors ${isSelected
+                            ? "bg-[#fffaf0] font-bold text-[#0a0a0a] shadow-2xs"
+                            : "text-[#6a6a6a] hover:bg-[#fffaf0]/80 hover:text-[#0a0a0a]"
+                            }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span
+                              className="h-2 w-2 shrink-0 rounded-full shadow-2xs"
+                              style={{ backgroundColor: colorHex }}
+                            />
+                            <span className="capitalize">{cat.name}</span>
+                          </div>
+                          {isSelected && (
+                            <CheckIcon className="size-3.5 text-[#0a0a0a]" />
+                          )}
+                        </button>
+                      )
+                    })}
+                    <InfiniteScrollFooter
+                      hasMore={hasMoreCategories}
+                      isLoadingMore={loadingMoreCategories}
+                      loadedCount={masterCategories.length}
+                      totalCount={totalCategories}
+                      onLoadMore={loadMoreCategories}
+                      itemLabel="categories"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
 
-                  {/* Popover Menu */}
-                  {categoryDropdownOpen && (
-                    <div className="absolute top-full left-0 z-40 mt-1.5 w-56 animate-in space-y-0.5 rounded-[22px] border border-[#ded5c0] bg-[#faf5e8]/95 p-2 text-left shadow-[0_16px_40px_rgba(0,0,0,0.12)] ring-1 ring-black/[0.04] backdrop-blur-2xl zoom-in-95 fade-in">
+            {/* Search Toggle / Close Button */}
+            <button
+              type="button"
+              onClick={() => {
+                if (searchOpen || searchQuery.trim()) {
+                  setSearchQuery("")
+                  setSearchOpen(false)
+                } else {
+                  setSearchOpen(true)
+                }
+              }}
+              aria-label={
+                searchOpen || Boolean(searchQuery.trim())
+                  ? "Close search"
+                  : "Search events"
+              }
+              aria-expanded={searchOpen || Boolean(searchQuery.trim())}
+              title={
+                searchOpen || Boolean(searchQuery.trim())
+                  ? "Close search"
+                  : "Search events"
+              }
+              className={`flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full border transition-all active:scale-95 sm:size-10 ${searchOpen || searchQuery.trim()
+                ? "border-[#0a0a0a] bg-[#0a0a0a] text-white shadow-xs"
+                : "border-[#ded6c2] bg-[#faf5e8]/90 text-[#0a0a0a] shadow-2xs hover:bg-[#f5efe0]"
+                }`}
+            >
+              {searchOpen || searchQuery.trim() ? (
+                <XIcon className="size-4" aria-hidden="true" />
+              ) : (
+                <SearchIcon className="size-4" aria-hidden="true" />
+              )}
+            </button>
+          </div>
+        }
+      />
+
+      {/* Floating Top-Bar Search Bar */}
+      {(searchOpen || searchQuery.trim().length > 0) && (
+        <div className="pointer-events-none fixed inset-x-0 top-[68px] z-40 px-3.5 sm:top-[76px] sm:px-6 md:px-8 lg:px-12">
+          <div className="pointer-events-auto mx-auto max-w-7xl animate-in rounded-[18px] border border-[#ded5c0] bg-[#fffaf0]/95 p-1.5 shadow-[0_14px_34px_rgba(10,10,10,0.12)] ring-1 ring-black/[0.04] backdrop-blur-xl duration-200 fade-in slide-in-from-top-2">
+            <div className="relative">
+              <SearchIcon
+                className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[#7a776a]"
+                aria-hidden="true"
+              />
+              <input
+                type="text"
+                autoFocus
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search events..."
+                className="h-10 w-full rounded-[13px] border border-[#e5dec9] bg-[#faf5e8] pr-4 pl-10 text-xs text-[#0a0a0a] shadow-2xs transition-all outline-none placeholder:text-[#8a8678] focus:border-[#0a0a0a] focus:bg-[#fffaf0] focus:ring-1 focus:ring-[#0a0a0a] sm:h-11 sm:text-sm"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      <CollapsibleBottomSheet
+        expanded={mobileSheetExpanded}
+        onExpandedChange={setMobileSheetExpanded}
+        expandLabel="Expand event list"
+        collapseLabel="Show calendar"
+        drawerTestId="events-list-drawer"
+        scrollTestId="events-drawer-scroll"
+        topContent={
+          <div className="space-y-2.5 px-4 pt-3 pb-3.5 sm:px-6 lg:p-0">
+              {/* ── Month & Year Title Header with Unified Controls & Category Filter ── */}
+              <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+                {/* Top Bar: Month/Year Title & Controls */}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex min-w-0 flex-1 items-center gap-2">
+                    <div className="relative min-w-0" ref={monthPickerRef}>
                       <button
                         type="button"
                         onClick={() => {
-                          setSelectedCategoryTag("all")
-                          setCategoryDropdownOpen(false)
+                          setPickerYear(activeMonth.getFullYear())
+                          setMonthPickerOpen(!monthPickerOpen)
                         }}
-                        className={`flex w-full cursor-pointer items-center justify-between rounded-[12px] px-3 py-2 text-xs font-semibold transition-colors ${selectedCategoryTag === "all"
-                          ? "bg-[#fffaf0] font-bold text-[#0a0a0a] shadow-2xs"
-                          : "text-[#6a6a6a] hover:bg-[#fffaf0]/80 hover:text-[#0a0a0a]"
-                          }`}
+                        className="group flex min-w-0 cursor-pointer items-center gap-1.5 text-base font-bold tracking-tight text-[#0a0a0a] hover:text-[#c28e20] sm:text-xl md:text-2xl"
+                        title="Choose month and year"
                       >
-                        <span>All Categories</span>
-                        {selectedCategoryTag === "all" && (
-                          <CheckIcon className="size-3.5 text-[#0a0a0a]" />
-                        )}
+                        <span className="truncate">
+                          <span className="hidden sm:inline">
+                            {formatSelectedDate(selectedDate)}
+                          </span>
+                          <span className="sm:hidden">
+                            {formatSelectedDate(selectedDate, "short")}
+                          </span>
+                        </span>
+                        <ChevronDownIcon
+                          className={`size-4 shrink-0 text-[#6a6a6a] transition-transform duration-200 group-hover:text-[#0a0a0a] sm:size-5 ${monthPickerOpen ? "rotate-180" : ""
+                            }`}
+                        />
                       </button>
 
-                      <div className="my-1 h-px bg-black/[0.06]" />
+                      {/* Apple HIG Month/Year Picker Popover */}
+                      {monthPickerOpen && (
+                        <div className="absolute top-full left-0 z-40 mt-2 w-68 animate-in space-y-3 rounded-[24px] border border-[#ded5c0] bg-[#faf5e8]/95 p-3.5 shadow-[0_16px_40px_rgba(0,0,0,0.12)] ring-1 ring-black/[0.04] backdrop-blur-2xl zoom-in-95 fade-in">
+                          {/* Year Navigation Bar */}
+                          <div className="flex items-center justify-between border-b border-black/[0.06] px-1 pb-2">
+                            <span className="text-sm font-bold tracking-tight text-[#0a0a0a]">
+                              {pickerYear}
+                            </span>
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => setPickerYear((y) => y - 1)}
+                                className="flex size-8 cursor-pointer items-center justify-center rounded-full border border-[#ded6c2] bg-[#fffaf0] text-[#0a0a0a] shadow-2xs backdrop-blur-md transition-all hover:bg-[#f5efe0] active:scale-95"
+                                title="Previous year"
+                              >
+                                <ChevronLeftIcon className="size-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setPickerYear((y) => y + 1)}
+                                className="flex size-8 cursor-pointer items-center justify-center rounded-full border border-[#ded6c2] bg-[#fffaf0] text-[#0a0a0a] shadow-2xs backdrop-blur-md transition-all hover:bg-[#f5efe0] active:scale-95"
+                                title="Next year"
+                              >
+                                <ChevronRightIcon className="size-3.5" />
+                              </button>
+                            </div>
+                          </div>
 
-                      <div
-                        data-testid="events-category-scroll-list"
-                        onScroll={handleCategoryScroll}
-                        className="max-h-[168px] space-y-0.5 overflow-y-auto overscroll-contain pr-0.5"
-                      >
-                        {accessibleCategories.map((cat) => {
-                          const isSelected =
-                            selectedCategoryTag.toLowerCase() ===
-                            cat.tag.toLowerCase()
-                          const colorHex = cat.colorHex || "#1a3a3a"
-                          return (
-                            <button
-                              key={cat.id}
-                              type="button"
-                              onClick={() => {
-                                setSelectedCategoryTag(cat.tag)
-                                setCategoryDropdownOpen(false)
-                              }}
-                              className={`flex w-full cursor-pointer items-center justify-between rounded-[12px] px-3 py-2 text-xs font-semibold transition-colors ${isSelected
-                                ? "bg-[#fffaf0] font-bold text-[#0a0a0a] shadow-2xs"
-                                : "text-[#6a6a6a] hover:bg-[#fffaf0]/80 hover:text-[#0a0a0a]"
-                                }`}
-                            >
-                              <div className="flex items-center gap-2">
-                                <span
-                                  className="h-2 w-2 shrink-0 rounded-full shadow-2xs"
-                                  style={{ backgroundColor: colorHex }}
-                                />
-                                <span className="capitalize">{cat.name}</span>
-                              </div>
-                              {isSelected && (
-                                <CheckIcon className="size-3.5 text-[#0a0a0a]" />
-                              )}
-                            </button>
-                          )
-                        })}
-                        <InfiniteScrollFooter
-                          hasMore={hasMoreCategories}
-                          isLoadingMore={loadingMoreCategories}
-                          loadedCount={masterCategories.length}
-                          totalCount={totalCategories}
-                          onLoadMore={loadMoreCategories}
-                          itemLabel="categories"
-                        />
-                      </div>
+                          {/* 12 Months Grid */}
+                          <div className="grid grid-cols-3 gap-1.5 text-xs font-semibold">
+                            {MONTH_NAMES_SHORT.map((m, idx) => {
+                              const isSelected =
+                                activeMonth.getFullYear() === pickerYear &&
+                                activeMonth.getMonth() === idx
+                              return (
+                                <button
+                                  key={m}
+                                  type="button"
+                                  onClick={() => {
+                                    handleMonthChange(new Date(pickerYear, idx, 1))
+                                    setMonthPickerOpen(false)
+                                  }}
+                                  className={`cursor-pointer rounded-[14px] py-2 text-center transition-all ${isSelected
+                                    ? "bg-[#0a0a0a] font-bold text-white shadow-xs"
+                                    : "text-[#3a3a3a] hover:bg-[#f0e8d5] hover:text-[#0a0a0a]"
+                                    }`}
+                                >
+                                  {m}
+                                </button>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  )}
+
+                    {/* Custom Category Filter Dropdown (Desktop Beside Title) */}
+                  </div>
+
+                  {/* Mobile-Only Action: Today */}
+                  <div className="flex shrink-0 items-center gap-1 sm:hidden">
+                    <Button
+                      variant="outlined"
+                      size="sm"
+                      onClick={handleGoToday}
+                      className="h-9 rounded-full border-[#ded6c2] bg-[#faf5e8] px-3.5 text-xs font-semibold shadow-2xs backdrop-blur-md hover:bg-[#f5efe0]"
+                      title="Go to Today"
+                    >
+                      Today
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Desktop-Only Month Controls: Today, Prev, Next */}
+                <div className="hidden shrink-0 items-center gap-1.5 sm:flex">
+                  <Button
+                    variant="outlined"
+                    size="sm"
+                    onClick={handleGoToday}
+                    className="h-9 rounded-full border-[#ded6c2] bg-[#faf5e8] px-3.5 text-xs font-semibold shadow-2xs backdrop-blur-md hover:bg-[#f5efe0]"
+                    title="Go to Today"
+                  >
+                    Today
+                  </Button>
+
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleMonthChange(
+                          new Date(
+                            activeMonth.getFullYear(),
+                            activeMonth.getMonth() - 1,
+                            1
+                          )
+                        )
+                      }
+                      className="flex size-9 cursor-pointer items-center justify-center rounded-full border border-[#ded6c2] bg-[#faf5e8] text-[#0a0a0a] shadow-2xs backdrop-blur-md transition-all hover:bg-[#f5efe0] active:scale-95"
+                      title="Previous month"
+                      aria-label="Previous month"
+                    >
+                      <ChevronLeftIcon className="size-4" />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleMonthChange(
+                          new Date(
+                            activeMonth.getFullYear(),
+                            activeMonth.getMonth() + 1,
+                            1
+                          )
+                        )
+                      }
+                      className="flex size-9 cursor-pointer items-center justify-center rounded-full border border-[#ded6c2] bg-[#faf5e8] text-[#0a0a0a] shadow-2xs backdrop-blur-md transition-all hover:bg-[#f5efe0] active:scale-95"
+                      title="Next month"
+                      aria-label="Next month"
+                    >
+                      <ChevronRightIcon className="size-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              {/* Mobile-Only Action: Today + Prev/Next month (44pt HIG touch targets) */}
-              <div className="flex shrink-0 items-center gap-1 sm:hidden">
-                <Button
-                  variant="outlined"
-                  size="sm"
-                  onClick={handleGoToday}
-                  className="h-11 rounded-full border-[#ded6c2] bg-[#faf5e8] px-3 text-xs font-semibold shadow-2xs backdrop-blur-md hover:bg-[#f5efe0]"
-                  title="Go to Today"
-                >
-                  Today
-                </Button>
-
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      handleMonthChange(
-                        new Date(
-                          activeMonth.getFullYear(),
-                          activeMonth.getMonth() - 1,
-                          1
-                        )
-                      )
-                    }
-                    className="flex size-11 cursor-pointer items-center justify-center rounded-full border border-[#ded6c2] bg-[#faf5e8] text-[#0a0a0a] shadow-2xs backdrop-blur-md transition-all hover:bg-[#f5efe0] active:scale-95"
-                    title="Previous month"
-                    aria-label="Previous month"
-                  >
-                    <ChevronLeftIcon className="size-4" />
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      handleMonthChange(
-                        new Date(
-                          activeMonth.getFullYear(),
-                          activeMonth.getMonth() + 1,
-                          1
-                        )
-                      )
-                    }
-                    className="flex size-11 cursor-pointer items-center justify-center rounded-full border border-[#ded6c2] bg-[#faf5e8] text-[#0a0a0a] shadow-2xs backdrop-blur-md transition-all hover:bg-[#f5efe0] active:scale-95"
-                    title="Next month"
-                    aria-label="Next month"
-                  >
-                    <ChevronRightIcon className="size-4" />
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Mobile-Only Row 2: Smooth Horizontal Scrollable Category Filter Chips */}
-            <div className="flex scrollbar-none items-center gap-1.5 overflow-x-auto pb-0.5 sm:hidden">
-              <Chip
-                variant="filter"
-                selected={selectedCategoryTag === "all"}
-                onClick={() => setSelectedCategoryTag("all")}
-              >
-                All Categories
-              </Chip>
-              {accessibleCategories.map((cat) => {
-                const isSelected =
-                  selectedCategoryTag.toLowerCase() === cat.tag.toLowerCase()
-                const colorHex = cat.colorHex || "#1a3a3a"
-                return (
-                  <Chip
-                    key={cat.id}
-                    variant="filter"
-                    selected={isSelected}
-                    onClick={() => setSelectedCategoryTag(cat.tag)}
-                    leadingIcon={
-                      <span
-                        className="size-2 shrink-0 rounded-full shadow-2xs"
-                        style={{ backgroundColor: colorHex }}
-                      />
-                    }
-                  >
-                    {cat.name}
-                  </Chip>
-                )
-              })}
-            </div>
-
-            {/* Desktop-Only Month Controls: Today, Prev, Next */}
-            <div className="hidden shrink-0 items-center gap-1.5 sm:flex">
-              <Button
-                variant="outlined"
-                size="sm"
-                onClick={handleGoToday}
-                className="h-9 rounded-full border-[#ded6c2] bg-[#faf5e8] px-3.5 text-xs font-semibold shadow-2xs backdrop-blur-md hover:bg-[#f5efe0]"
-                title="Go to Today"
-              >
-                Today
-              </Button>
-
-              <div className="flex items-center gap-1">
-                <button
-                  type="button"
-                  onClick={() =>
-                    handleMonthChange(
-                      new Date(
-                        activeMonth.getFullYear(),
-                        activeMonth.getMonth() - 1,
-                        1
-                      )
-                    )
-                  }
-                  className="flex size-9 cursor-pointer items-center justify-center rounded-full border border-[#ded6c2] bg-[#faf5e8] text-[#0a0a0a] shadow-2xs backdrop-blur-md transition-all hover:bg-[#f5efe0] active:scale-95"
-                  title="Previous month"
-                  aria-label="Previous month"
-                >
-                  <ChevronLeftIcon className="size-4" />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    handleMonthChange(
-                      new Date(
-                        activeMonth.getFullYear(),
-                        activeMonth.getMonth() + 1,
-                        1
-                      )
-                    )
-                  }
-                  className="flex size-9 cursor-pointer items-center justify-center rounded-full border border-[#ded6c2] bg-[#faf5e8] text-[#0a0a0a] shadow-2xs backdrop-blur-md transition-all hover:bg-[#f5efe0] active:scale-95"
-                  title="Next month"
-                  aria-label="Next month"
-                >
-                  <ChevronRightIcon className="size-4" />
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* ── Mobile-Only: Single Clean Calendar Card with Week/Month Toggle ── */}
-          <div className="w-full lg:hidden">
-            <Card
-              variant="soft"
-              glass
-              className="rounded-[22px] border border-[#e6decb]/80 bg-[#faf5e8]/90 p-2.5 shadow-xs ring-1 ring-black/[0.04] backdrop-blur-xl"
-            >
-              {mobileCalendarMode === "month" ? (
+              {/* ── Mobile-Only: Bordered Full-Month Calendar on Unified Canvas Backdrop ── */}
+              <div className="w-full rounded-[22px] border border-[#e5dec9] bg-[#faf5e8] p-2 shadow-2xs lg:hidden">
                 <EventCalendar
                   dots={dotMap}
                   selected={selectedDate}
@@ -1237,281 +1238,163 @@ export function EventsPage() {
                   compact={true}
                   hideHeader={true}
                 />
-              ) : (
-                <div className="grid grid-cols-7 gap-1 px-1 py-1">
-                  {(() => {
-                    const base = new Date(`${selectedDate}T00:00:00`)
-                    const weekStart = new Date(base)
-                    weekStart.setDate(base.getDate() - base.getDay())
-                    const dayLabels = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"]
-                    return Array.from({ length: 7 }).map((_, idx) => {
-                      const d = new Date(weekStart)
-                      d.setDate(weekStart.getDate() + idx)
-                      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
-                      const isSel = key === selectedDate
-                      const isTod = key === todayKey
-                      const cellDots = dotMap[key] ?? []
-                      return (
-                        <button
-                          key={key}
-                          type="button"
-                          onClick={() => handleCalendarSelect(key)}
-                          className={`flex min-h-12 cursor-pointer flex-col items-center justify-center gap-0.5 rounded-xl py-1 text-center transition-all ${isSel
-                            ? "bg-[#0a0a0a] text-white shadow-xs"
-                            : isTod
-                              ? "bg-[#e8b94a]/25 font-bold text-[#0a0a0a]"
-                              : "text-[#0a0a0a] hover:bg-[#f0e8d5]"
-                            }`}
-                        >
-                          <span
-                            className={`text-[9px] font-bold ${isSel ? "text-white/70" : "text-[#6a6a6a]"
-                              }`}
-                          >
-                            {dayLabels[idx]}
-                          </span>
-                          <span className="text-xs font-bold">{d.getDate()}</span>
-                          <span className="flex h-1.5 items-center gap-0.5">
-                            {cellDots.slice(0, 3).map((dot, dotIdx) => (
-                              <span
-                                key={dotIdx}
-                                className="size-1 rounded-full"
-                                style={{
-                                  backgroundColor: isSel
-                                    ? "#ffffff"
-                                    : typeof dot === "string"
-                                      ? "#1a3a3a"
-                                      : dot.colorHex || "#1a3a3a",
-                                }}
-                              />
-                            ))}
-                          </span>
-                        </button>
-                      )
-                    })
-                  })()}
-                </div>
-              )}
-
-              <div className="mt-1 flex items-center justify-center border-t border-black/[0.05] pt-1.5">
-                <button
-                  type="button"
-                  onClick={() =>
-                    setMobileCalendarMode((prev) =>
-                      prev === "month" ? "week" : "month"
-                    )
-                  }
-                  className="inline-flex min-h-8 cursor-pointer items-center gap-1 rounded-full px-3 py-0.5 text-[11px] font-semibold text-[#6a6a6a] transition-colors hover:bg-black/[0.04] hover:text-[#0a0a0a]"
-                >
-                  <span>
-                    {mobileCalendarMode === "month" ? "Compact Week" : "Full Month"}
-                  </span>
-                  <ChevronDownIcon
-                    className={`size-3.5 transition-transform duration-200 ${mobileCalendarMode === "month" ? "rotate-180" : ""
-                      }`}
-                  />
-                </button>
               </div>
-            </Card>
           </div>
-
-          {/* ── Two-column layout: Integrated Search + Event List (Left) | Calendar Card (Right on lg+) ── */}
-          <div className="flex flex-col items-start gap-4 sm:gap-5 lg:flex-row">
-            {/* ── Left Column: Search/Create Toolbar + Event List Container ── */}
-            <div className="w-full flex-1 space-y-3.5 sm:space-y-4 lg:min-w-0">
-              {/* Search Bar + Create Button Controls Row (scoped to left column width on desktop) */}
-              <div className="relative z-20 flex w-full flex-row items-center gap-2 sm:gap-2.5">
-                {/* Search Input */}
-                <div className="relative min-w-0 flex-1">
-                  <SearchIcon
-                    className="pointer-events-none absolute top-1/2 left-3.5 z-10 size-4 -translate-y-1/2 text-[#7a776a]"
-                    aria-hidden="true"
-                  />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search events..."
-                    className="h-11 w-full rounded-[16px] border border-[#e5dec9] bg-[#faf5e8]/90 pr-10 pl-10 text-xs text-[#0a0a0a] shadow-xs ring-1 ring-black/[0.03] backdrop-blur-md transition-all outline-none placeholder:text-[#8a8678] focus:border-[#0a0a0a] focus:bg-[#fffaf0] focus:ring-1 focus:ring-[#0a0a0a] sm:h-12 sm:rounded-[18px] sm:pl-11 sm:text-sm"
-                  />
-                  {searchQuery && (
-                    <button
-                      type="button"
-                      onClick={() => setSearchQuery("")}
-                      className="absolute top-1/2 right-3.5 flex size-5 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-black/[0.08] text-[#6a6a6a] transition-colors hover:bg-[#0a0a0a] hover:text-white"
-                      title="Clear search"
-                    >
-                      <XIcon className="size-3" />
-                    </button>
-                  )}
-                </div>
-
-                {/* Create button for Pengurus */}
-                {isPengurus && (
-                  <Button
-                    variant="filled"
-                    onClick={() => {
-                      setEditTarget(null)
-                      setFormError(null)
-                      setFormOpen(true)
-                    }}
-                    className="h-11 shrink-0 rounded-full px-4 font-bold shadow-xs active:scale-[0.98] sm:h-12 sm:px-5"
-                    title="Create New Event"
-                    aria-label="Create New Event"
-                  >
-                    <PlusIcon className="size-4" aria-hidden="true" />
-                    <span className="hidden sm:inline">Create Event</span>
-                  </Button>
-                )}
-              </div>
-
-              <Card
-                variant="soft"
-                glass
-                className="relative rounded-[26px] border border-[#e6decb]/80 bg-[#faf5e8]/80 p-4 shadow-xs ring-1 ring-black/[0.04] backdrop-blur-xl sm:rounded-[28px] sm:p-6"
-              >
-                {/* Card Sub-header */}
-                <div className="mb-3.5 flex flex-wrap items-center justify-between gap-2 border-b border-black/[0.06] pb-3">
-                  <div className="flex flex-wrap items-center gap-2.5">
-                    <span className="flex size-8 items-center justify-center rounded-full bg-[#0a0a0a] text-white shadow-2xs">
+        }
+        header={
+          /* Drawer Header: Title + Count + Add (+) Button */
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-black/[0.06] pb-3">
+                  <div className="flex min-w-0 flex-wrap items-center gap-2">
+                    <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#0a0a0a] text-white shadow-2xs">
                       <CalendarDaysIcon className="size-4 text-[#e8b94a]" />
                     </span>
-                    <h2 className="text-sm font-bold text-[#0a0a0a] sm:text-base">
-                      {searchQuery.trim()
-                        ? `Search: "${searchQuery}"`
-                        : "Community Events"}
-                    </h2>
-                    <Badge
-                      variant="secondary"
-                      glass
-                      className="font-semibold text-[#0a0a0a]"
-                    >
-                      {listedEvents.length}{" "}
-                      {listedEvents.length === 1 ? "Event" : "Events"}
-                    </Badge>
-                  </div>
-                  {searchQuery.trim() && (
-                    <button
-                      type="button"
-                      onClick={() => setSearchQuery("")}
-                      className="cursor-pointer text-xs font-semibold text-[#1a3a3a] hover:underline"
-                    >
-                      Clear Search
-                    </button>
-                  )}
-                </div>
-
-                {/* Global Search Scope Transparency Pill */}
-                {searchQuery.trim() && (
-                  <div className="mb-3 flex items-center gap-2 rounded-xl border border-amber-300/40 bg-amber-500/10 px-3 py-1.5 text-xs text-[#0a0a0a] shadow-2xs">
-                    <span className="size-1.5 shrink-0 rounded-full bg-amber-600" />
-                    <span className="font-medium text-[#4a3a10]">
-                      Searching all upcoming events across all dates &amp; months
-                    </span>
-                  </div>
-                )}
-
-                {loadingEvents ? (
-                  <div className="space-y-3 py-2">
-                    {Array.from({ length: 4 }).map((_, idx) => (
-                      <div
-                        key={idx}
-                        className="flex items-center gap-3.5 rounded-[20px] border border-[#e6decb]/80 bg-[#fffaf0]/70 p-3.5 backdrop-blur-md"
-                      >
-                        <Skeleton className="size-11 shrink-0 rounded-[14px]" />
-                        <div className="min-w-0 flex-1 space-y-1.5">
-                          <Skeleton className="h-4 w-40 rounded-md" />
-                          <Skeleton className="h-3 w-24 rounded-md" />
-                        </div>
-                        <Skeleton className="h-6 w-16 shrink-0 rounded-full" />
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h2 className="truncate text-sm font-bold text-[#0a0a0a] sm:text-base">
+                          {searchQuery.trim()
+                            ? `Search: "${searchQuery}"`
+                            : "Community Events"}
+                        </h2>
+                        <Badge
+                          variant="secondary"
+                          glass
+                          className="font-semibold text-[#0a0a0a]"
+                        >
+                          {listedEvents.length}{" "}
+                          {listedEvents.length === 1 ? "Event" : "Events"}
+                        </Badge>
                       </div>
-                    ))}
+                      <p className="text-[11px] font-medium text-[#6a6a6a] lg:hidden">
+                        {formatSelectedDate(selectedDate, "short")}
+                      </p>
+                    </div>
                   </div>
-                ) : listedEvents.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
-                    <CalendarDaysIcon
-                      className="size-10 text-[#6a6a6a]/40"
-                      aria-hidden="true"
-                    />
-                    <p className="text-xs font-medium text-[#6a6a6a]">
-                      {searchQuery.trim()
-                        ? `No events found matching "${searchQuery}".`
-                        : "No events on this date."}
-                    </p>
-                    {searchQuery.trim() && (
-                      <button
-                        type="button"
-                        onClick={() => setSearchQuery("")}
-                        className="cursor-pointer rounded-full border border-[#ded6c2] bg-[#fffaf0] px-4 py-2 text-xs font-semibold text-[#0a0a0a] shadow-2xs backdrop-blur-md transition-colors hover:bg-[#faf5e8]"
+
+                  <div className="flex shrink-0 items-center gap-1.5">
+
+                    {/* Create button inside drawer header (reference: "+" on top-right of drawer) */}
+                    {isPengurus && (
+                      <Button
+                        variant="filled"
+                        onClick={() => {
+                          setEditTarget(null)
+                          setFormError(null)
+                          setFormOpen(true)
+                        }}
+                        className="size-9 shrink-0 rounded-full p-0 font-bold shadow-xs active:scale-[0.96] sm:h-9 sm:w-auto sm:px-3.5"
+                        title="Create New Event"
+                        aria-label="Create New Event"
                       >
-                        Clear Search Filter
-                      </button>
+                        <PlusIcon className="size-4" aria-hidden="true" />
+                        <span className="hidden sm:inline">Add Event</span>
+                      </Button>
                     )}
                   </div>
-                ) : (
-                  <div className="space-y-2.5">
-                    {listedEvents.map((ev) => (
-                      <EventCard
-                        key={ev.id}
-                        event={ev}
-                        onClick={() => handleSelectEvent(ev)}
-                      />
-                    ))}
-                  </div>
-                )}
-              </Card>
+                </div>
+        }
+        subHeader={
+          searchQuery.trim() ? (
+            <div className="mb-3 flex items-center gap-2 rounded-xl border border-amber-300/40 bg-amber-500/10 px-3 py-1.5 text-xs text-[#0a0a0a] shadow-2xs">
+              <span className="size-1.5 shrink-0 rounded-full bg-amber-600" />
+              <span className="font-medium text-[#4a3a10]">
+                Searching events in {activeYear} across all months
+              </span>
             </div>
-
-            {/* ── Right: Mini Calendar Card (Desktop Only lg+) ── */}
-            <aside className="hidden w-full shrink-0 lg:block lg:w-84 xl:w-92">
-              <Card
-                variant="soft"
-                glass
-                className="relative sticky top-16 space-y-3 rounded-[26px] border border-[#e6decb]/80 bg-[#faf5e8]/80 p-4 shadow-xs ring-1 ring-black/[0.04] backdrop-blur-xl sm:rounded-[28px] sm:p-5"
-              >
-                <div className="flex items-center justify-between border-b border-black/[0.06] pb-2.5">
-                  <span className="text-xs font-bold tracking-tight text-[#0a0a0a] sm:text-sm">
-                    {activeMonth.toLocaleDateString("en-US", {
-                      month: "long",
-                      year: "numeric",
-                    })}
-                  </span>
-                  <span className="rounded-full bg-black/[0.05] px-2.5 py-0.5 font-mono text-[11px] font-semibold text-[#6a6a6a]">
-                    {formatSelectedDate(selectedDate, "short")}
-                  </span>
-                </div>
-
-                <EventCalendar
-                  dots={dotMap}
-                  selected={selectedDate}
-                  allowDeselect={false}
-                  onSelect={handleCalendarSelect}
-                  month={activeMonth}
-                  onMonthChange={handleMonthChange}
-                  hideHeader={true}
-                />
-
-                {/* Dynamic Master Data Category Legend */}
-                <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1.5 border-t border-black/[0.06] pt-3 text-xs">
-                  {accessibleCategories.map((cat) => {
-                    const colorHex = cat.colorHex || "#1a3a3a"
-                    return (
-                      <div key={cat.id} className="flex items-center gap-1.5">
-                        <span
-                          className="h-2 w-2 shrink-0 rounded-full shadow-2xs"
-                          style={{ backgroundColor: colorHex }}
-                        />
-                        <span className="font-medium text-[#6a6a6a] capitalize">
-                          {cat.name}
-                        </span>
-                      </div>
-                    )
+          ) : undefined
+        }
+        sideContent={
+          /* ── Right: Mini Calendar Card (Desktop Only lg+) ── */
+          <aside className="hidden w-full shrink-0 lg:block lg:w-84 xl:w-92">
+            <Card
+              variant="soft"
+              glass
+              className="relative sticky top-16 space-y-3 rounded-[26px] border border-[#e6decb]/80 bg-[#faf5e8]/80 p-4 shadow-xs ring-1 ring-black/[0.04] backdrop-blur-xl sm:rounded-[28px] sm:p-5"
+            >
+              <div className="flex items-center justify-between border-b border-black/[0.06] pb-2.5">
+                <span className="text-xs font-bold tracking-tight text-[#0a0a0a] sm:text-sm">
+                  {activeMonth.toLocaleDateString("en-US", {
+                    month: "long",
+                    year: "numeric",
                   })}
-                </div>
-              </Card>
-            </aside>
-          </div>
-        </div>
-      </div>
+                </span>
+                <span className="rounded-full bg-black/[0.05] px-2.5 py-0.5 font-mono text-[11px] font-semibold text-[#6a6a6a]">
+                  {formatSelectedDate(selectedDate, "short")}
+                </span>
+              </div>
+
+              <EventCalendar
+                dots={dotMap}
+                selected={selectedDate}
+                allowDeselect={false}
+                onSelect={handleCalendarSelect}
+                month={activeMonth}
+                onMonthChange={handleMonthChange}
+                hideHeader={true}
+              />
+
+              {/* Dynamic Master Data Category Legend */}
+              <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1.5 border-t border-black/[0.06] pt-3 text-xs">
+                {accessibleCategories.map((cat) => {
+                  const colorHex = cat.colorHex || "#1a3a3a"
+                  return (
+                    <div key={cat.id} className="flex items-center gap-1.5">
+                      <span
+                        className="h-2 w-2 shrink-0 rounded-full shadow-2xs"
+                        style={{ backgroundColor: colorHex }}
+                      />
+                      <span className="font-medium text-[#6a6a6a] capitalize">
+                        {cat.name}
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+            </Card>
+          </aside>
+        }
+      >
+
+                  {loadingEvents ? (
+                    <div className="space-y-3 py-2">
+                      {Array.from({ length: 4 }).map((_, idx) => (
+                        <div
+                          key={idx}
+                          className="flex items-center gap-3.5 rounded-[20px] border border-[#e6decb]/80 bg-[#fffaf0]/70 p-3.5 backdrop-blur-md"
+                        >
+                          <Skeleton className="size-11 shrink-0 rounded-[14px]" />
+                          <div className="min-w-0 flex-1 space-y-1.5">
+                            <Skeleton className="h-4 w-40 rounded-md" />
+                            <Skeleton className="h-3 w-24 rounded-md" />
+                          </div>
+                          <Skeleton className="h-6 w-16 shrink-0 rounded-full" />
+                        </div>
+                      ))}
+                    </div>
+                  ) : listedEvents.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
+                      <CalendarDaysIcon
+                        className="size-10 text-[#6a6a6a]/40"
+                        aria-hidden="true"
+                      />
+                      <p className="text-xs font-medium text-[#6a6a6a]">
+                        {searchQuery.trim()
+                          ? `No events found matching "${searchQuery}".`
+                          : "No events on this date."}
+                      </p>
+
+                    </div>
+                  ) : (
+                    <div className="space-y-2.5">
+                      {listedEvents.map((ev) => (
+                        <EventCard
+                          key={ev.id}
+                          event={ev}
+                          onClick={() => handleSelectEvent(ev)}
+                        />
+                      ))}
+                    </div>
+                  )}
+      </CollapsibleBottomSheet>
 
       {/* Create / Edit event modal */}
       <ResponsiveFormModal

@@ -59,12 +59,14 @@ export const eventControllers = {
       const status = req.query.status ? String(req.query.status) : undefined
       const event_type_id = req.query.event_type_id ? String(req.query.event_type_id) : undefined
       const month = req.query.month ? String(req.query.month) : undefined
+      const year = req.query.year ? String(req.query.year) : undefined
       const search = typeof req.query.search === "string" ? req.query.search : undefined
 
       const result = await eventServices.listEvents(userRole, isPrivileged, page, limit, {
         status,
         event_type_id,
         month,
+        year,
         search,
       })
 

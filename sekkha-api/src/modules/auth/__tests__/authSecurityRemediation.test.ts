@@ -287,4 +287,48 @@ describe("Auth Security Remediation Integration Tests", () => {
       )
     }
   })
+
+  it("includes configured COOKIE_DOMAIN on refresh Set-Cookie and logout clearCookie", async () => {
+    process.env.COOKIE_DOMAIN = ".sekkha.example.com"
+    process.env.COOKIE_SAME_SITE = "lax"
+    const rt = "cookie_domain_rt_001"
+    await saveRefreshToken("usr_domain_1", rt, 600, "fam_domain_1")
+
+    const app = createApp()
+    const server = http.createServer(app)
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve))
+
+    try {
+      const { port } = server.address() as AddressInfo
+      const refreshRes = await fetch(`http://127.0.0.1:${port}/api/auth/refresh`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Requested-With": "fetch",
+          Cookie: `sekkha_refresh_token=${rt}`,
+        },
+      })
+      expect(refreshRes.status).toBe(200)
+      const refreshCookie = refreshRes.headers.get("set-cookie") || ""
+      expect(refreshCookie).toContain("Domain=.sekkha.example.com")
+      expect(refreshCookie).toContain("SameSite=Lax")
+
+      const logoutRes = await fetch(`http://127.0.0.1:${port}/api/auth/logout`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Requested-With": "fetch",
+        },
+      })
+      expect(logoutRes.status).toBe(200)
+      const logoutCookie = logoutRes.headers.get("set-cookie") || ""
+      expect(logoutCookie).toContain("Domain=.sekkha.example.com")
+    } finally {
+      delete process.env.COOKIE_DOMAIN
+      delete process.env.COOKIE_SAME_SITE
+      await new Promise<void>((resolve, reject) =>
+        server.close((err) => (err ? reject(err) : resolve()))
+      )
+    }
+  })
 })

@@ -35,11 +35,13 @@ function getRefreshCookieOptions() {
       : secureEnv === "false"
         ? false
         : sameSite === "none" || isProduction
+  const rawDomain = process.env.COOKIE_DOMAIN?.trim()
   return {
     httpOnly: true,
     secure,
     sameSite,
     path: "/api/auth",
+    ...(rawDomain ? { domain: rawDomain } : {}),
   }
 }
 

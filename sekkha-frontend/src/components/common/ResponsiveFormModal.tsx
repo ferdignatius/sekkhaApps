@@ -1,5 +1,5 @@
 import * as React from "react"
-import { useEffect, useState } from "react"
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import { XIcon } from "lucide-react"
 import {
@@ -10,6 +10,61 @@ import {
   DrawerDescription,
 } from "@/components/base"
 import { cn } from "@/lib/utils"
+
+// ─── Scroll Coordination Context (Calendar & Time Panels Only) ──────────────
+
+export interface ResponsiveModalScrollContextValue {
+  revealElement: (target: HTMLElement | null | undefined) => void
+}
+
+const ResponsiveModalScrollContext =
+  React.createContext<ResponsiveModalScrollContextValue>({
+    revealElement: () => {},
+  })
+
+/** Allows inline date/time pickers inside ResponsiveFormModal to scroll themselves cleanly into view without moving the drawer itself. */
+export function useResponsiveModalScroll(): ResponsiveModalScrollContextValue {
+  return useContext(ResponsiveModalScrollContext)
+}
+
+function scrollElementIntoContainerView(
+  container: HTMLElement | null,
+  target: HTMLElement
+) {
+  if (!container) {
+    target.scrollIntoView?.({ block: "nearest", behavior: "smooth" })
+    return
+  }
+
+  const containerRect = container.getBoundingClientRect()
+  const targetRect = target.getBoundingClientRect()
+  if (containerRect.height === 0 && targetRect.height === 0) {
+    target.scrollIntoView?.({ block: "nearest", behavior: "smooth" })
+    return
+  }
+
+  const visibleTop = containerRect.top + 12
+  const visibleBottom = Math.max(visibleTop + 80, containerRect.bottom - 12)
+  const visibleHeight = visibleBottom - visibleTop
+
+  let nextScrollTop: number | null = null
+  if (targetRect.height > visibleHeight || targetRect.top < visibleTop) {
+    nextScrollTop = container.scrollTop + (targetRect.top - visibleTop)
+  } else if (targetRect.bottom > visibleBottom) {
+    nextScrollTop = container.scrollTop + (targetRect.bottom - visibleBottom)
+  }
+
+  if (nextScrollTop === null) return
+
+  const clampedTop = Math.max(0, Math.round(nextScrollTop))
+  if (Math.abs(clampedTop - container.scrollTop) <= 4) return
+
+  if (typeof container.scrollTo === "function") {
+    container.scrollTo({ top: clampedTop, behavior: "smooth" })
+  } else {
+    container.scrollTop = clampedTop
+  }
+}
 
 // ─── Hook: detect desktop vs mobile ─────────────────────────────────────────
 
@@ -65,7 +120,37 @@ export function ResponsiveFormModal({
   const isDesktop = useIsDesktop()
   const isModalOpen = open ?? isOpen ?? false
   const [isExpanded, setIsExpanded] = useState(false)
-  const prevOpenRef = React.useRef(isModalOpen)
+  const prevOpenRef = useRef(isModalOpen)
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null)
+  const rafIdRef = useRef<number | null>(null)
+
+  const revealElement = useCallback((target: HTMLElement | null | undefined) => {
+    if (!target) return
+    if (
+      rafIdRef.current !== null &&
+      typeof window !== "undefined" &&
+      typeof window.cancelAnimationFrame === "function"
+    ) {
+      window.cancelAnimationFrame(rafIdRef.current)
+      rafIdRef.current = null
+    }
+    if (
+      typeof window !== "undefined" &&
+      typeof window.requestAnimationFrame === "function"
+    ) {
+      rafIdRef.current = window.requestAnimationFrame(() => {
+        rafIdRef.current = null
+        scrollElementIntoContainerView(scrollContainerRef.current, target)
+      })
+    } else {
+      scrollElementIntoContainerView(scrollContainerRef.current, target)
+    }
+  }, [])
+
+  const scrollContextValue = useMemo<ResponsiveModalScrollContextValue>(
+    () => ({ revealElement }),
+    [revealElement]
+  )
 
   useEffect(() => {
     const wasOpen = prevOpenRef.current
@@ -82,6 +167,18 @@ export function ResponsiveFormModal({
       return () => clearTimeout(timer)
     }
   }, [isModalOpen])
+
+  useEffect(() => {
+    return () => {
+      if (
+        rafIdRef.current !== null &&
+        typeof window !== "undefined" &&
+        typeof window.cancelAnimationFrame === "function"
+      ) {
+        window.cancelAnimationFrame(rafIdRef.current)
+      }
+    }
+  }, [])
 
   const handleClose = () => {
     onClose?.()
@@ -131,7 +228,14 @@ export function ResponsiveFormModal({
               <XIcon className="size-4" />
             </button>
           </div>
-          <div className="scrollbar-none flex-1 overflow-y-auto px-1 pt-3">{children}</div>
+          <div
+            ref={scrollContainerRef}
+            className="scrollbar-none flex-1 overflow-y-auto px-1 pt-3"
+          >
+            <ResponsiveModalScrollContext.Provider value={scrollContextValue}>
+              {children}
+            </ResponsiveModalScrollContext.Provider>
+          </div>
         </div>
       </div>
     )
@@ -141,9 +245,9 @@ export function ResponsiveFormModal({
       : desktopModal
   }
 
-  // Mobile (<768px): Native Bottom Drawer Sheet - Apple HIG Material Thick
-  // Disable Vaul's repositionInputs (which breaks on iOS PWA keyboards and hides lower fields)
-  // and scroll the focused field smoothly into view instead.
+  // Mobile (<768px): Static Bottom Drawer Sheet - Apple HIG Material Thick
+  // Keep drawer dimensions static (repositionInputs={false}, no keyboard padding/bottom overrides)
+  // so iOS Safari never bounces the drawer when fields are focused.
   return (
     <Drawer
       open={isModalOpen}
@@ -151,6 +255,14 @@ export function ResponsiveFormModal({
       repositionInputs={false}
     >
       <DrawerContent
+        tabIndex={-1}
+        onOpenAutoFocus={(e) => {
+          // Prevent Vaul/Radix Dialog from auto-focusing the first <input> on mobile open (avoids unsolicited keyboard popup)
+          e.preventDefault()
+          ;(e.currentTarget as HTMLElement | null)?.focus?.({
+            preventScroll: true,
+          })
+        }}
         onPointerDownOutside={(e) => {
           const target = e.target as HTMLElement | null
           if (target?.closest?.('[data-slot="select-content"]')) {
@@ -165,8 +277,8 @@ export function ResponsiveFormModal({
         }}
         data-expanded={isExpanded ? "true" : "false"}
         className={cn(
-          "z-[100] flex flex-col overflow-hidden rounded-t-[28px] border-t border-[#e5dec9] bg-[#fffaf0] p-0 font-sans shadow-[0_-10px_28px_-4px_rgba(10,10,10,0.12)] backdrop-blur-none transition-[max-height,box-shadow] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]",
-          isExpanded ? "max-h-[94dvh]" : "max-h-[88dvh]"
+          "z-[100] flex flex-col overflow-hidden rounded-t-[28px] border-t border-[#e5dec9] bg-[#fffaf0] p-0 font-sans shadow-[0_-10px_28px_-4px_rgba(10,10,10,0.12)] backdrop-blur-none transition-[height,max-height,box-shadow] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]",
+          isExpanded ? "h-[94dvh] max-h-[94dvh]" : "h-[88dvh] max-h-[88dvh]"
         )}
       >
         {/* Sticky Drag Handle Header */}
@@ -181,27 +293,11 @@ export function ResponsiveFormModal({
 
         {/* Scrollable Container */}
         <div
+          ref={scrollContainerRef}
           data-testid="drawer-scroll-container"
           onScroll={(e) => {
             if (!isExpanded && e.currentTarget.scrollTop > 0) {
               setIsExpanded(true)
-            }
-          }}
-          onFocusCapture={(e) => {
-            const target = e.target as HTMLElement | null
-            if (
-              target &&
-              (target.tagName === "INPUT" ||
-                target.tagName === "TEXTAREA" ||
-                target.tagName === "SELECT")
-            ) {
-              setIsExpanded(true)
-              setTimeout(() => {
-                target.scrollIntoView?.({
-                  block: "center",
-                  behavior: "smooth",
-                })
-              }, 160)
             }
           }}
           className="scrollbar-none flex-1 overscroll-contain overflow-y-auto px-5 pt-3 pb-10"
@@ -216,7 +312,9 @@ export function ResponsiveFormModal({
               </DrawerDescription>
             )}
           </DrawerHeader>
-          {children}
+          <ResponsiveModalScrollContext.Provider value={scrollContextValue}>
+            {children}
+          </ResponsiveModalScrollContext.Provider>
         </div>
       </DrawerContent>
     </Drawer>

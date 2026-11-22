@@ -185,4 +185,33 @@ describe("HomePage Component Tests", () => {
       expect(screen.queryByTestId("mock-qr-modal")).toBeNull()
     })
   })
+
+  it("opens All Menus drawer with NO search <input> mounted until user taps Search, preventing mobile auto-focus/keyboard", async () => {
+    vi.mocked(api.get).mockResolvedValueOnce(mockDashboardData)
+    renderHomePage()
+
+    await waitFor(() => {
+      expect(screen.getByText(/Good (morning|afternoon|evening)\./i)).toBeDefined()
+    })
+
+    const seeMoreBtn = screen.getByRole("button", { name: /See More/i })
+    fireEvent.click(seeMoreBtn)
+
+    // Initially renders an inert button trigger — zero <input> in DOM so iOS Safari cannot auto-focus or pop keyboard
+    const searchTrigger = await screen.findByRole("button", {
+      name: "Search menus and features",
+    })
+    expect(searchTrigger.tagName).toBe("BUTTON")
+    expect(screen.queryByRole("textbox", { name: "Search menus and features" })).toBeNull()
+
+    // Tapping the search trigger synchronously mounts and focuses the real <Input>
+    fireEvent.click(searchTrigger)
+    const searchInput = screen.getByRole("textbox", {
+      name: "Search menus and features",
+    }) as HTMLInputElement
+    expect(document.activeElement).toBe(searchInput)
+
+    fireEvent.change(searchInput, { target: { value: "Leaderboard" } })
+    expect(searchInput.value).toBe("Leaderboard")
+  })
 })

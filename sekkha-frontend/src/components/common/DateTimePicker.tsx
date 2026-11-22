@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import {
   CalendarIcon,
   CheckIcon,
@@ -7,6 +7,7 @@ import {
 } from "lucide-react"
 import { Button, Chip, Select } from "@/components/base"
 import type { SelectOption } from "@/components/base"
+import { useResponsiveModalScroll } from "@/components/common/ResponsiveFormModal"
 import { EventCalendar } from "@/components/ui/EventCalendar"
 import { cn } from "@/lib/utils"
 
@@ -151,6 +152,15 @@ export function DateTimePicker({
   )
   const { datePart, timePart, dateObj } = parseValue(value)
   const [calendarMonth, setCalendarMonth] = useState<Date>(dateObj)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const shouldRevealPanelRef = useRef(false)
+  const { revealElement } = useResponsiveModalScroll()
+
+  useEffect(() => {
+    if (!activePanel || !shouldRevealPanelRef.current) return
+    shouldRevealPanelRef.current = false
+    revealElement(containerRef.current)
+  }, [activePanel, revealElement])
 
   const [activeHour = "08", activeMinute = "00"] = timePart.split(":")
 
@@ -178,12 +188,14 @@ export function DateTimePicker({
 
   function togglePanel(panel: "date" | "time") {
     if (activePanel === panel) {
+      shouldRevealPanelRef.current = false
       setActivePanel(null)
       return
     }
     if (panel === "date") {
       setCalendarMonth(parseDateObj(datePart))
     }
+    shouldRevealPanelRef.current = true
     setActivePanel(panel)
   }
 
@@ -213,7 +225,7 @@ export function DateTimePicker({
   }
 
   return (
-    <div className="w-full space-y-2 text-left font-sans">
+    <div ref={containerRef} className="w-full space-y-2 text-left font-sans">
       {/* ── Two Clear Triggers: Date Pill + Time Pill ── */}
       <div className="grid grid-cols-[1.35fr_1fr] gap-2">
         <button

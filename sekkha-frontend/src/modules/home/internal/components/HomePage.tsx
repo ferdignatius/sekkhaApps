@@ -1,6 +1,7 @@
 // ─── Imports ────────────────────────────────────────────────────────────────────
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useRef } from "react"
+import { flushSync } from "react-dom"
 import { useAuth } from "@/modules/auth"
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
 import { MemberQrModal } from "@/components/common/MemberQrModal"
@@ -175,6 +176,16 @@ export function HomePage() {
   // State for "See More" (Lainnya) modal and in-modal menu search
   const [showAllMenusModal, setShowAllMenusModal] = useState(false)
   const [menuSearchQuery, setMenuSearchQuery] = useState("")
+  // Mount the search <Input> only after an explicit tap so no <input> exists on drawer open (prevents iOS auto-focus & keyboard popup)
+  const [isSearchActive, setIsSearchActive] = useState(false)
+  const searchInputRef = useRef<HTMLInputElement>(null)
+
+  const activateSearchInput = () => {
+    flushSync(() => {
+      setIsSearchActive(true)
+    })
+    searchInputRef.current?.focus()
+  }
 
   const isPengurus =
     role === "organizer" || role === "pengurus" || role === "admin"
@@ -230,6 +241,7 @@ export function HomePage() {
       iconColor: "text-[#0a0a0a]",
       onClick: () => {
         setMenuSearchQuery("")
+        setIsSearchActive(false)
         setShowAllMenusModal(true)
       },
     },
@@ -928,35 +940,56 @@ export function HomePage() {
       <ResponsiveFormModal
         open={showAllMenusModal}
         onOpenChange={(open) => {
+          if (!open) {
+            setIsSearchActive(false)
+            setMenuSearchQuery("")
+          }
           setShowAllMenusModal(open)
-          if (!open) setMenuSearchQuery("")
         }}
         title="All Menus & Features"
         maxWidth="max-w-4xl"
       >
         <div className="space-y-4 pt-0 font-sans">
-          {/* Search bar inside modal / drawer */}
-          <Input
-            value={menuSearchQuery}
-            onChange={(e) => setMenuSearchQuery(e.target.value)}
-            placeholder="Search features or menus..."
-            aria-label="Search menus and features"
-            autoFocus
-            className="rounded-[14px]"
-            startIcon={<SearchIcon className="size-4 text-[#6a6a6a]" />}
-            endIcon={
-              menuSearchQuery ? (
-                <button
-                  type="button"
-                  onClick={() => setMenuSearchQuery("")}
-                  className="cursor-pointer p-0.5 text-[#6a6a6a] hover:text-[#0a0a0a]"
-                  aria-label="Clear search"
-                >
-                  <XIcon className="size-3.5" />
-                </button>
-              ) : undefined
-            }
-          />
+          {/* Search bar inside modal / drawer: keep as inert button until tapped so iOS Safari never auto-focuses */}
+          {isSearchActive ? (
+            <Input
+              ref={searchInputRef}
+              value={menuSearchQuery}
+              onChange={(e) => setMenuSearchQuery(e.target.value)}
+              placeholder="Search features or menus..."
+              aria-label="Search menus and features"
+              className="rounded-[14px]"
+              startIcon={<SearchIcon className="size-4 text-[#6a6a6a]" />}
+              endIcon={
+                menuSearchQuery ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMenuSearchQuery("")
+                      searchInputRef.current?.focus()
+                    }}
+                    className="cursor-pointer p-0.5 text-[#6a6a6a] hover:text-[#0a0a0a]"
+                    aria-label="Clear search"
+                  >
+                    <XIcon className="size-3.5" />
+                  </button>
+                ) : undefined
+              }
+            />
+          ) : (
+            <button
+              type="button"
+              onClick={activateSearchInput}
+              aria-label="Search menus and features"
+              className="relative flex h-11 w-full cursor-text items-center rounded-[14px] border border-[#e5e5e5] bg-[#fffaf0] pr-4 pl-10 text-left text-sm text-[#767676] shadow-2xs transition-all hover:border-[#bfbfbf]"
+            >
+              <SearchIcon
+                className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[#6a6a6a]"
+                aria-hidden="true"
+              />
+              <span>Search features or menus...</span>
+            </button>
+          )}
 
           {/* Categorized and filtered items container (delegates scroll to ResponsiveFormModal) */}
           <div className="space-y-5">

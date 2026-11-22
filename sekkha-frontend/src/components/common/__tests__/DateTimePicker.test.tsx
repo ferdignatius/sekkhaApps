@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-import { cleanup, fireEvent, render, screen } from "@testing-library/react"
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react"
+import { ResponsiveFormModal } from "../ResponsiveFormModal"
 import { DateTimePicker } from "../DateTimePicker"
 
 beforeEach(() => {
@@ -133,5 +134,92 @@ describe("DateTimePicker (two-pill Date + Time inline picker)", () => {
     fireEvent.click(minuteTrigger)
     fireEvent.click(screen.getByRole("option", { name: "30" }))
     expect(handleChange).toHaveBeenCalledWith("2026-07-26T09:30")
+  })
+
+  it("scrolls Date/Time picker into view inside ResponsiveFormModal without resizing drawer or blurring active input", () => {
+    const origInnerWidth = window.innerWidth
+    Object.defineProperty(window, "innerWidth", {
+      writable: true,
+      configurable: true,
+      value: 390,
+    })
+    const rafSpy = vi
+      .spyOn(window, "requestAnimationFrame")
+      .mockImplementation((cb) => {
+        cb(0)
+        return 1
+      })
+
+    try {
+      render(
+        <ResponsiveFormModal open={true} onOpenChange={vi.fn()} title="Create New Event">
+          <input aria-label="Event name" />
+          <DateTimePicker id="ev-date" value="2026-07-26T09:00" onChange={vi.fn()} />
+        </ResponsiveFormModal>
+      )
+
+      const scrollContainer = screen.getByTestId("drawer-scroll-container")
+      const scrollToSpy = vi.fn()
+      scrollContainer.scrollTo = scrollToSpy
+      Object.defineProperty(scrollContainer, "scrollTop", {
+        writable: true,
+        configurable: true,
+        value: 0,
+      })
+      scrollContainer.getBoundingClientRect = () =>
+        ({
+          top: 60,
+          bottom: 700,
+          height: 640,
+          left: 0,
+          right: 390,
+          width: 390,
+          x: 0,
+          y: 60,
+          toJSON: () => ({}),
+        }) as DOMRect
+
+      const dateTrigger = screen.getByRole("button", { name: /Sun, 26 Jul 2026/i })
+      const pickerRoot = dateTrigger.closest(".space-y-2") as HTMLElement
+      pickerRoot.getBoundingClientRect = () =>
+        ({
+          top: 480,
+          bottom: 830,
+          height: 350,
+          left: 0,
+          right: 390,
+          width: 390,
+          x: 0,
+          y: 480,
+          toJSON: () => ({}),
+        }) as DOMRect
+
+      const nameInput = screen.getByLabelText("Event name")
+      act(() => {
+        nameInput.focus()
+      })
+      expect(document.activeElement).toBe(nameInput)
+
+      act(() => {
+        fireEvent.click(dateTrigger)
+      })
+
+      const drawerContent = document.querySelector(
+        '[data-slot="drawer-content"]'
+      ) as HTMLElement
+      expect(drawerContent.getAttribute("data-expanded")).toBe("false")
+      expect(document.activeElement).toBe(nameInput)
+      expect(scrollToSpy).toHaveBeenCalledWith({
+        top: 142,
+        behavior: "smooth",
+      })
+    } finally {
+      rafSpy.mockRestore()
+      Object.defineProperty(window, "innerWidth", {
+        writable: true,
+        configurable: true,
+        value: origInnerWidth,
+      })
+    }
   })
 })

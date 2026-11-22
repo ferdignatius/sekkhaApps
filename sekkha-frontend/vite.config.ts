@@ -15,7 +15,14 @@ const config = defineConfig({
         routeFileIgnorePattern: "\\.md$",
       },
     }),
-    nitro(),
+    nitro({
+      devProxy: {
+        "/api/**": {
+          target: "http://localhost:4000",
+          changeOrigin: true,
+        },
+      },
+    }),
     // this is the plugin that enables path aliases
     viteTsConfigPaths({
       projects: ["./tsconfig.json"],
@@ -25,6 +32,15 @@ const config = defineConfig({
   ],
   resolve: {
     dedupe: ["react", "react-dom"],
+  },
+  server: {
+    allowedHosts: [".ngrok-free.app", ".ngrok-free.dev", ".ngrok.io"],
+    proxy: {
+      "/api": {
+        target: "http://localhost:4000",
+        changeOrigin: true,
+      },
+    },
   },
 })
 

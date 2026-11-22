@@ -116,7 +116,12 @@ export function isOriginAllowed(origin: string, rawOrigins: string[] = []): bool
 
   if (
     process.env.NODE_ENV !== "production" &&
-    (/^https?:\/\/localhost(:\d+)?$/.test(normalizedOrigin) || /^https?:\/\/127\.0\.0\.1(:\d+)?$/.test(normalizedOrigin))
+    (/^https?:\/\/localhost(:\d+)?$/.test(normalizedOrigin) ||
+      /^https?:\/\/127\.0\.0\.1(:\d+)?$/.test(normalizedOrigin) ||
+      /^https?:\/\/(192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+)(:\d+)?$/.test(
+        normalizedOrigin
+      ) ||
+      /^https:\/\/[a-z0-9-]+\.(ngrok-free\.app|ngrok-free\.dev|ngrok\.io)$/.test(normalizedOrigin))
   ) {
     return true
   }

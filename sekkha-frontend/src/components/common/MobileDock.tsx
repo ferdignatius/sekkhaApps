@@ -4,6 +4,7 @@
 
 import { Link, useRouterState } from "@tanstack/react-router"
 import { useAuth } from "@/modules/auth"
+import { useMobileKeyboardInset } from "@/hooks/useMobileKeyboardInset"
 import { activeModules } from "@/shell/registry"
 import { iconMap } from "@/shell/icon-map"
 
@@ -19,6 +20,7 @@ export function MobileDock() {
   const { location } = useRouterState()
   const pathname = location.pathname
   const { authState } = useAuth()
+  const { isKeyboardOpen } = useMobileKeyboardInset()
 
   const role = authState?.status === "authenticated" ? authState.role : null
   const isPengurus =
@@ -44,6 +46,10 @@ export function MobileDock() {
       }))
     })
     .sort((a, b) => (DOCK_ORDER[a.to] ?? 99) - (DOCK_ORDER[b.to] ?? 99))
+
+  if (isKeyboardOpen) {
+    return null
+  }
 
   return (
     /* Safe-area aware floating dock */

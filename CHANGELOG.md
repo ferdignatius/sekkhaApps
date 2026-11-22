@@ -4,6 +4,12 @@ All notable changes to Sekkha Apps. Semver (`MAJOR.MINOR.PATCH`); newest on top.
 
 ## [Unreleased]
 
+## [1.2.4] - 2026-11-22
+
+### Added
+- **Configurable `COOKIE_DOMAIN` Support (`controllers.ts` & `.env.example`)**: Added optional `COOKIE_DOMAIN` environment variable support in `getRefreshCookieOptions()` so first-party subdomain deployments (`app.domain.com` + `api.domain.com`) share `SameSite=Lax` refresh cookies consistently across `Set-Cookie` and `clearRefreshCookie`.
+- **Redis AOF Persistence (`docker-compose.yml`)**: Enabled `--appendonly yes` on the `redis` service so active refresh tokens and revocation records survive container restarts.
+
 ## [1.2.3] - 2026-11-21
 
 ### Added

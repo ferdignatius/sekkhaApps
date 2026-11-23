@@ -204,4 +204,28 @@ describe("MobileDock", () => {
       })
     }
   })
+
+  it("hides MobileDock during focused Event Detail view and restores when closed", () => {
+    currentPath = "/events"
+    renderDock("member")
+    expect(screen.getByRole("navigation", { name: /bottom navigation/i })).toBeTruthy()
+
+    act(() => {
+      window.dispatchEvent(
+        new CustomEvent("sekkha:mobile-dock-visibility", {
+          detail: { hidden: true },
+        })
+      )
+    })
+    expect(screen.queryByRole("navigation", { name: /bottom navigation/i })).toBeNull()
+
+    act(() => {
+      window.dispatchEvent(
+        new CustomEvent("sekkha:mobile-dock-visibility", {
+          detail: { hidden: false },
+        })
+      )
+    })
+    expect(screen.getByRole("navigation", { name: /bottom navigation/i })).toBeTruthy()
+  })
 })

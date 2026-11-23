@@ -102,6 +102,7 @@ export interface ResponsiveFormModalProps {
   title: string
   description?: string
   maxWidth?: string
+  footer?: React.ReactNode
   children: React.ReactNode
 }
 
@@ -115,6 +116,7 @@ export function ResponsiveFormModal({
   title,
   description,
   maxWidth = "max-w-3xl",
+  footer,
   children,
 }: ResponsiveFormModalProps) {
   const isDesktop = useIsDesktop()
@@ -265,13 +267,21 @@ export function ResponsiveFormModal({
         }}
         onPointerDownOutside={(e) => {
           const target = e.target as HTMLElement | null
-          if (target?.closest?.('[data-slot="select-content"]')) {
+          if (
+            target?.closest?.(
+              '[data-slot="select-content"], [role="dialog"], [role="alertdialog"], [data-slot="alert-dialog-content"], [data-slot="alert-dialog-overlay"]'
+            )
+          ) {
             e.preventDefault()
           }
         }}
         onInteractOutside={(e) => {
           const target = e.target as HTMLElement | null
-          if (target?.closest?.('[data-slot="select-content"]')) {
+          if (
+            target?.closest?.(
+              '[data-slot="select-content"], [role="dialog"], [role="alertdialog"], [data-slot="alert-dialog-content"], [data-slot="alert-dialog-overlay"]'
+            )
+          ) {
             e.preventDefault()
           }
         }}
@@ -316,6 +326,12 @@ export function ResponsiveFormModal({
             {children}
           </ResponsiveModalScrollContext.Provider>
         </div>
+
+        {footer && (
+          <div className="shrink-0 border-t border-[#e5e5e5]/70 bg-[#fffaf0] px-5 pt-2.5 pb-[max(1rem,env(safe-area-inset-bottom))]">
+            {footer}
+          </div>
+        )}
       </DrawerContent>
     </Drawer>
   )

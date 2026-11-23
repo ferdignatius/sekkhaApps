@@ -569,4 +569,123 @@ describe("EventForm & EventDetailSheet Enhancements", () => {
     expect((screen.getByLabelText(/Grace Period/i) as HTMLInputElement).value).toBe("0")
     expect((screen.getByLabelText(/Penalty Deduction/i) as HTMLInputElement).value).toBe("20")
   })
+
+  it("renders mobile peek-up Attendance sheet with stacked attendee initials without Maps URL pill, and opens MemberQrModal for members", async () => {
+    const origInnerWidth = window.innerWidth
+    Object.defineProperty(window, "innerWidth", {
+      writable: true,
+      configurable: true,
+      value: 390,
+    })
+    vi.spyOn(api, "get").mockResolvedValueOnce({
+      user_number: "2026112201",
+    } as any)
+
+    try {
+      const activeEvent: EventListItem = {
+        id: "evt_mob_1",
+        title: "Sunday Dhamma Service",
+        location: "Main Dhammasala",
+        event_date: new Date(Date.now() + 86400000).toISOString(),
+        point_reward: 50,
+        status: "active",
+        event_type: "regular-puja",
+        tag: "regular-puja",
+        description: "Morning chanting and meditation.",
+      }
+
+      const attendees = [
+        {
+          attendance_id: "att_1",
+          user_id: "u1",
+          name: "Siddhartha Gautama",
+          user_number: "2026110101",
+          role: "member",
+          method: "qr" as const,
+          points_earned: 50,
+          is_late: false,
+          late_penalty_applied: 0,
+          is_finalized: false,
+          scanned_at: new Date().toISOString(),
+        },
+        {
+          attendance_id: "att_2",
+          user_id: "u2",
+          name: "Ananda Kumar",
+          user_number: "2026110102",
+          role: "member",
+          method: "qr" as const,
+          points_earned: 50,
+          is_late: false,
+          late_penalty_applied: 0,
+          is_finalized: false,
+          scanned_at: new Date().toISOString(),
+        },
+      ]
+
+      // 1. Organizer sees stacked initials in collapsed peek bar and can expand to AttendanceListSheet
+      const onRefresh = vi.fn()
+      renderWithRole(
+        <EventDetailSheet
+          event={activeEvent}
+          role="organizer"
+          attendances={attendees}
+          onClose={vi.fn()}
+          onRefreshAttendances={onRefresh}
+        />,
+        "organizer",
+        "usr_org"
+      )
+
+      expect(screen.getByTestId("event-calendar-squircle")).toBeTruthy()
+      expect(screen.getByTestId("event-metadata-list")).toBeTruthy()
+      expect(screen.getByText("Event Guidelines")).toBeTruthy()
+      expect(screen.queryByRole("link", { name: /Maps/i })).toBeNull()
+      const peekSheet = screen.getByTestId("event-mobile-peek-sheet")
+      expect(peekSheet.getAttribute("data-expanded")).toBe("false")
+      expect(peekSheet.textContent).toContain("SG")
+      expect(peekSheet.textContent).toContain("AK")
+      expect(screen.getByRole("button", { name: /Live Scanner/i })).toBeTruthy()
+
+      // Swipe up on sticky peek bar hides peek bar and opens standard ResponsiveFormModal Vaul drawer
+      fireEvent.touchStart(peekSheet, { touches: [{ clientY: 500 }] })
+      fireEvent.touchMove(peekSheet, { touches: [{ clientY: 420 }] })
+      fireEvent.touchEnd(peekSheet)
+      expect(peekSheet.getAttribute("data-expanded")).toBe("true")
+      expect(peekSheet.className).toContain("opacity-0")
+      expect(await screen.findByTestId("drawer-scroll-container")).toBeTruthy()
+      expect(onRefresh).toHaveBeenCalled()
+      expect(screen.getByText("Siddhartha Gautama")).toBeTruthy()
+
+      fireEvent.keyDown(document, { key: "Escape" })
+      expect(peekSheet.getAttribute("data-expanded")).toBe("false")
+
+      fireEvent.click(screen.getByRole("button", { name: /Expand attendance list/i }))
+      expect(peekSheet.getAttribute("data-expanded")).toBe("true")
+      cleanup()
+
+      // 2. Member sees sticky Show My Member QR CTA and tapping it opens MemberQrModal
+      renderWithRole(
+        <EventDetailSheet
+          event={activeEvent}
+          role="member"
+          attendances={[]}
+          onClose={vi.fn()}
+        />,
+        "member",
+        "usr_mem"
+      )
+
+      const qrCta = screen.getByRole("button", { name: /Show My Member QR/i })
+      fireEvent.click(qrCta)
+
+      expect(await screen.findByText("Check-in QR Code")).toBeTruthy()
+    } finally {
+      Object.defineProperty(window, "innerWidth", {
+        writable: true,
+        configurable: true,
+        value: origInnerWidth,
+      })
+    }
+  })
 })

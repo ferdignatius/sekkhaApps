@@ -2,6 +2,7 @@
 // Floating Apple-style bottom navigation dock for mobile screens (md and below).
 // Design: Apple HIG iOS dock — frosted glass, warm canvas tint, ochre active state.
 
+import { useEffect, useState } from "react"
 import { Link, useRouterState } from "@tanstack/react-router"
 import { useAuth } from "@/modules/auth"
 import { useMobileKeyboardInset } from "@/hooks/useMobileKeyboardInset"
@@ -16,11 +17,50 @@ const DOCK_ORDER: Record<string, number> = {
   "/profile": 5,
 }
 
+function hasEventIdInUrl(): boolean {
+  if (typeof window === "undefined") return false
+  return new URLSearchParams(window.location.search).has("eventId")
+}
+
 export function MobileDock() {
   const { location } = useRouterState()
   const pathname = location.pathname
+  const routerHasEventId = Boolean(
+    (location as { search?: { eventId?: string } }).search?.eventId
+  )
+  const [hiddenByDetailView, setHiddenByDetailView] = useState(
+    () => routerHasEventId || (pathname === "/events" && hasEventIdInUrl())
+  )
   const { authState } = useAuth()
   const { isKeyboardOpen } = useMobileKeyboardInset()
+
+  useEffect(() => {
+    setHiddenByDetailView(
+      routerHasEventId || (pathname === "/events" && hasEventIdInUrl())
+    )
+  }, [pathname, routerHasEventId])
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const handleVisibility = (e: Event) => {
+      const custom = e as CustomEvent<{ hidden?: boolean }>
+      setHiddenByDetailView(Boolean(custom.detail?.hidden))
+    }
+    const handlePopState = () => {
+      setHiddenByDetailView(
+        window.location.pathname === "/events" && hasEventIdInUrl()
+      )
+    }
+    window.addEventListener("sekkha:mobile-dock-visibility", handleVisibility)
+    window.addEventListener("popstate", handlePopState)
+    return () => {
+      window.removeEventListener(
+        "sekkha:mobile-dock-visibility",
+        handleVisibility
+      )
+      window.removeEventListener("popstate", handlePopState)
+    }
+  }, [])
 
   const role = authState?.status === "authenticated" ? authState.role : null
   const isPengurus =
@@ -47,7 +87,7 @@ export function MobileDock() {
     })
     .sort((a, b) => (DOCK_ORDER[a.to] ?? 99) - (DOCK_ORDER[b.to] ?? 99))
 
-  if (isKeyboardOpen) {
+  if (isKeyboardOpen || hiddenByDetailView) {
     return null
   }
 

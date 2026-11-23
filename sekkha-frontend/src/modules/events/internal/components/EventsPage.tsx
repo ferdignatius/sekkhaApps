@@ -427,6 +427,22 @@ export function EventsPage() {
     }
   }, [isPengurus])
 
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    window.dispatchEvent(
+      new CustomEvent("sekkha:mobile-dock-visibility", {
+        detail: { hidden: view === "detail" },
+      })
+    )
+    return () => {
+      window.dispatchEvent(
+        new CustomEvent("sekkha:mobile-dock-visibility", {
+          detail: { hidden: false },
+        })
+      )
+    }
+  }, [view])
+
   async function loadEventAttendances(eventId: string) {
     try {
       const data = await api.get<any>(`/events/${eventId}/attendances`)
@@ -705,18 +721,20 @@ export function EventsPage() {
           <div className="absolute right-12 -bottom-24 size-96 rounded-full bg-[#ff4d8b]/8 blur-3xl" />
         </div>
 
-        <PageBreadcrumb
-          items={[
-            {
-              label: "Events",
-              href: "/events",
-              onClick: handleCloseDetail,
-            },
-            { label: selected.title },
-          ]}
-          onBack={handleCloseDetail}
-        />
-        <div className="px-3.5 py-4 pb-28 sm:px-6 sm:py-6 sm:pb-12 md:px-8 lg:px-12">
+        <div className="hidden sm:block">
+          <PageBreadcrumb
+            items={[
+              {
+                label: "Events",
+                href: "/events",
+                onClick: handleCloseDetail,
+              },
+              { label: selected.title },
+            ]}
+            onBack={handleCloseDetail}
+          />
+        </div>
+        <div className="px-3.5 pt-3 pb-48 sm:px-6 sm:py-6 sm:pb-12 md:px-8 lg:px-12">
           <div className="mx-auto max-w-7xl space-y-4 sm:space-y-5">
             <EventDetailSheet
               event={selected}

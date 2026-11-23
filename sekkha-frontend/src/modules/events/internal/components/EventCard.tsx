@@ -59,15 +59,14 @@ export function EventCard({ event, onClick }: EventCardProps) {
       <button
         type="button"
         onClick={onClick}
-        className={`group relative w-full cursor-pointer overflow-hidden rounded-[20px] border bg-[#fffaf0]/90 p-3.5 text-left shadow-2xs ring-1 backdrop-blur-md transition-all hover:border-[#d9cfb8] hover:bg-[#faf5e8] hover:shadow-xs active:scale-[0.985] sm:p-4 ${
-          status === "active"
+        className={`group relative w-full cursor-pointer overflow-hidden rounded-[20px] border bg-[#fffaf0]/90 p-3.5 text-left shadow-2xs ring-1 backdrop-blur-md transition-all hover:border-[#d9cfb8] hover:bg-[#faf5e8] hover:shadow-xs active:scale-[0.985] sm:p-4 ${status === "active"
             ? "border-emerald-300/90 ring-emerald-500/20"
             : status === "closed"
               ? "border-[#e6decb]/80 opacity-80 ring-black/[0.03]"
               : status === "cancel"
                 ? "border-rose-200/70 opacity-70 ring-black/[0.03]"
                 : "border-[#e6decb]/80 ring-black/[0.03]"
-        }`}
+          }`}
       >
         <div className="flex items-center gap-3 sm:gap-3.5">
           {/* Dynamic Color Accent Bar */}
@@ -78,9 +77,12 @@ export function EventCard({ event, onClick }: EventCardProps) {
 
           {/* Main Info: 3-Element HIG Hierarchy (Title + Status -> Time & Venue -> Category + Points) */}
           <div className="min-w-0 flex-1 space-y-1.5">
-            {/* Row 1: Primary Title + Inline Status Badge (never collides with right-side Details CTA) */}
-            <div className="flex flex-wrap items-center gap-2">
-              <h3 className="truncate text-sm font-bold text-[#0a0a0a] transition-colors group-hover:text-[#1a3a3a] sm:text-base">
+            {/* Row 1: Primary Title + Inline Status Badge (never wraps or collides) */}
+            <div className="flex min-w-0 items-center gap-2">
+              <h3
+                title={event.title}
+                className="min-w-0 truncate text-sm font-bold text-[#0a0a0a] transition-colors group-hover:text-[#1a3a3a] sm:text-base"
+              >
                 {event.title}
               </h3>
 
@@ -95,7 +97,7 @@ export function EventCard({ event, onClick }: EventCardProps) {
                       <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-500 opacity-75" />
                       <span className="relative inline-flex size-1.5 rounded-full bg-emerald-600" />
                     </span>
-                    Live Attendance
+                    Active
                   </Badge>
                 )}
 

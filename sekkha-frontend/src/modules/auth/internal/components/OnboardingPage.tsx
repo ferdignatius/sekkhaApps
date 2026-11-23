@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useNavigate } from "@tanstack/react-router"
 import {
   CheckIcon,
@@ -9,14 +9,25 @@ import {
   GraduationCapIcon,
   AtSignIcon,
   UsersIcon,
-  XIcon,
   PlusIcon,
   CheckCircle2Icon,
 } from "lucide-react"
 import { api } from "@/lib/api"
 import { useAuth } from "@/modules/auth"
-import { SchoolCombobox } from "@/components/common/SchoolCombobox"
-import type { SchoolOption } from "@/components/common/SchoolCombobox"
+import { Button, Input, ManyToOneSelect } from "@/components/base"
+import type { ManyToOneSelectOption } from "@/components/base"
+import { ResponsiveFormModal } from "@/components/common/ResponsiveFormModal"
+import { useDebounce } from "@/hooks/useDebounce"
+import { usePaginatedDropdown } from "@/hooks/usePaginatedDropdown"
+import { DROPDOWN_PAGE_SIZE, fetchSchoolsPaginated } from "@/lib/pagination"
+
+interface SchoolOption {
+  id: string
+  name: string
+  type: string
+  status?: "active" | "pending" | "cancel"
+  userCount?: number
+}
 
 type OnboardingStep = "profile" | "school"
 
@@ -44,11 +55,71 @@ export function OnboardingPage() {
     school_id: "",
   })
 
-  // School Request Modal State
+  // School selector & Request Modal State
+  const [schoolSearch, setSchoolSearch] = useState("")
+  const debouncedSchoolSearch = useDebounce(schoolSearch)
+  const [selectedSchoolCache, setSelectedSchoolCache] =
+    useState<SchoolOption | null>(null)
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false)
   const [requestName, setRequestName] = useState("")
   const [requestSubmitting, setRequestSubmitting] = useState(false)
   const [requestError, setRequestError] = useState<string | null>(null)
+
+  const {
+    items: schools,
+    hasMore: hasMoreSchools,
+    loading: schoolsLoading,
+    loadingMore: loadingMoreSchools,
+    total: totalSchools,
+    loadMore: loadMoreSchools,
+  } = usePaginatedDropdown<SchoolOption>({
+    fetcher: ({ page, limit, search: term }) =>
+      fetchSchoolsPaginated<SchoolOption>({
+        page,
+        limit,
+        search: term,
+        includePending: true,
+      }),
+    getKey: (s) => s.id,
+    pageSize: DROPDOWN_PAGE_SIZE,
+    search: debouncedSchoolSearch,
+    enabled: step === "school",
+  })
+
+  const schoolOptions = useMemo<ManyToOneSelectOption[]>(() => {
+    const mapped: ManyToOneSelectOption[] = schools.map((s) => ({
+      value: s.id,
+      label: s.name,
+      description:
+        s.status === "pending"
+          ? `${s.type || "School"} · Pending review`
+          : s.type || "Active Institution",
+      schoolObj: s,
+    }))
+
+    if (
+      profileForm.school_id &&
+      profileForm.school &&
+      !mapped.some((opt) => opt.value === profileForm.school_id)
+    ) {
+      const cached = selectedSchoolCache
+      mapped.unshift({
+        value: profileForm.school_id,
+        label: profileForm.school,
+        description:
+          cached?.status === "pending"
+            ? `${cached.type || "School"} · Pending review`
+            : cached?.type || "Selected Institution",
+        schoolObj: cached ?? {
+          id: profileForm.school_id,
+          name: profileForm.school,
+          type: "Umum",
+        },
+      })
+    }
+
+    return mapped
+  }, [schools, profileForm.school_id, profileForm.school, selectedSchoolCache])
 
   // Stats for matching/similar users
   const [stats, setStats] = useState<SimilarUsersStats | null>(null)
@@ -178,6 +249,7 @@ export function OnboardingPage() {
 
   // ── Step 2 Handlers: School (OPTIONAL - CAN SKIP) ───────────────────────────
   function handleSchoolChange(schoolName: string, schoolObj?: SchoolOption) {
+    setSelectedSchoolCache(schoolObj ?? null)
     setProfileForm((prev) => ({
       ...prev,
       school: schoolName,
@@ -479,24 +551,57 @@ export function OnboardingPage() {
                 </span>
               </div>
 
-              {/* School Autocomplete Search */}
-              <div className="space-y-1.5">
-                <label className="flex items-center gap-1 text-xs font-semibold text-[#0a0a0a]">
-                  <span>School / Campus / Institution</span>
-                  <span className="text-[11px] font-normal text-[#6a6a6a]">
-                    (Optional)
-                  </span>
-                </label>
-                <SchoolCombobox
-                  value={profileForm.school}
-                  onChange={handleSchoolChange}
-                  onRequestSchool={handleOpenRequestModal}
+              {/* School Autocomplete Search (ManyToOneSelect) */}
+              <div className="space-y-2">
+                <ManyToOneSelect
+                  id="onboarding-school-select"
+                  label="School / Campus / Institution (Optional)"
+                  value={profileForm.school_id}
+                  onValueChange={(val, opt) => {
+                    if (!val) {
+                      handleSchoolChange("", undefined)
+                      return
+                    }
+                    const schoolObj = opt?.schoolObj as SchoolOption | undefined
+                    handleSchoolChange(
+                      opt?.label || schoolObj?.name || "",
+                      schoolObj ?? {
+                        id: val,
+                        name: opt?.label || "",
+                        type: "Umum",
+                      }
+                    )
+                  }}
+                  options={schoolOptions}
+                  loading={schoolsLoading}
+                  hasMore={hasMoreSchools}
+                  isLoadingMore={loadingMoreSchools}
+                  totalCount={totalSchools}
+                  onLoadMore={loadMoreSchools}
+                  onSearchChange={setSchoolSearch}
+                  clientFilter={false}
+                  clearable={true}
                   placeholder="Search registered & active schools..."
+                  searchPlaceholder="Search school or university..."
+                  itemLabel="schools"
+                  emptyText="No matching school found."
                 />
-                <p className="text-[11px] text-[#6a6a6a]">
-                  Only active and verified institutions appear in search. If
-                  yours is not listed, use the "Request New School" button.
-                </p>
+
+                <div className="flex flex-wrap items-center justify-between gap-2 pt-0.5">
+                  <p className="text-[11px] text-[#6a6a6a]">
+                    Can&apos;t find your institution in the list?
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outlined"
+                    size="sm"
+                    onClick={() => handleOpenRequestModal(schoolSearch)}
+                    className="h-8 gap-1 rounded-full px-3 text-[11px] font-bold"
+                  >
+                    <PlusIcon className="size-3.5" />
+                    <span>Request New School</span>
+                  </Button>
+                </div>
               </div>
 
               {/* Social Proof Peer Widget */}
@@ -547,23 +652,25 @@ export function OnboardingPage() {
               {/* Action Buttons */}
               <div className="space-y-2 pt-3">
                 <div className="flex items-center gap-3">
-                  <button
+                  <Button
                     type="button"
+                    variant="outlined"
                     onClick={() => {
                       setErrorMsg(null)
                       setStep("profile")
                     }}
-                    className="flex h-11 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-[12px] border border-[#e5e5e5] bg-[#fffaf0] px-4 text-sm font-semibold text-[#0a0a0a] transition-all hover:bg-[#faf5e8]"
+                    className="h-11 shrink-0 gap-1.5 rounded-[12px] px-4 text-sm font-semibold"
                   >
                     <ArrowLeftIcon className="size-4" />
                     <span>Back</span>
-                  </button>
+                  </Button>
 
-                  <button
+                  <Button
                     type="button"
+                    variant="primary"
                     disabled={submitting}
                     onClick={() => handleFinishOnboarding(false)}
-                    className="flex h-11 flex-1 cursor-pointer items-center justify-center gap-2 rounded-[12px] bg-[#0a0a0a] text-sm font-semibold text-white shadow-xs transition-all hover:bg-[#1f1f1f] disabled:opacity-50"
+                    className="h-11 flex-1 gap-2 rounded-[12px] text-sm font-semibold"
                   >
                     {submitting ? (
                       "Finishing..."
@@ -573,7 +680,7 @@ export function OnboardingPage() {
                         <ArrowRightIcon className="size-4" />
                       </>
                     )}
-                  </button>
+                  </Button>
                 </div>
 
                 <button
@@ -591,75 +698,58 @@ export function OnboardingPage() {
       </div>
 
       {/* ─────────────────────────────────────────────────────────────────── */}
-      {/* MODAL: REQUEST NEW SCHOOL                                           */}
+      {/* MODAL: REQUEST NEW SCHOOL (ResponsiveFormModal + Sekkha Base UI)    */}
       {/* ─────────────────────────────────────────────────────────────────── */}
-      {isRequestModalOpen && (
-        <div className="fixed inset-0 z-50 flex animate-in items-center justify-center bg-black/50 p-4 backdrop-blur-xs fade-in">
-          <div className="w-full max-w-md space-y-4 rounded-[20px] border border-[#e5e5e5] bg-[#ffffff] p-6 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-[#e5e5e5] pb-3">
-              <div className="flex items-center gap-2">
-                <PlusIcon className="size-4 text-[#0a0a0a]" />
-                <h3 className="text-sm font-bold text-[#0a0a0a]">
-                  Request New School
-                </h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsRequestModalOpen(false)}
-                className="rounded-full p-1 text-[#6a6a6a] hover:bg-[#e5e5e5]/50 hover:text-[#0a0a0a]"
-              >
-                <XIcon className="size-4" />
-              </button>
+      <ResponsiveFormModal
+        open={isRequestModalOpen}
+        onOpenChange={(open) => {
+          setIsRequestModalOpen(open)
+          if (!open) setRequestError(null)
+        }}
+        title="Request New School"
+        description="Submitted requests remain Pending until verified by administrators. You can proceed with onboarding right away without waiting for approval."
+        maxWidth="max-w-md"
+      >
+        <div className="space-y-4 text-left">
+          {requestError && (
+            <div className="flex items-center gap-2 rounded-[12px] border border-[#ef4444]/20 bg-[#ef4444]/10 p-3 text-xs font-medium text-[#ef4444]">
+              <AlertTriangleIcon className="size-4 shrink-0" />
+              <span>{requestError}</span>
             </div>
+          )}
 
-            {requestError && (
-              <div className="flex items-center gap-2 rounded-[10px] border border-[#ef4444]/20 bg-[#ef4444]/10 p-2.5 text-xs text-[#ef4444]">
-                <AlertTriangleIcon className="size-3.5 shrink-0" />
-                <span>{requestError}</span>
-              </div>
-            )}
+          <form onSubmit={handleSubmitSchoolRequest} className="space-y-4">
+            <Input
+              label="School / Campus Name"
+              type="text"
+              required
+              placeholder="e.g. SMA Maitreya or University of Indonesia"
+              value={requestName}
+              onChange={(e) => setRequestName(e.target.value)}
+              startIcon={<GraduationCapIcon className="size-4" />}
+            />
 
-            <form onSubmit={handleSubmitSchoolRequest} className="space-y-3.5">
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-[#0a0a0a]">
-                  School / Campus Name
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. SMA Maitreya or University of Indonesia"
-                  value={requestName}
-                  onChange={(e) => setRequestName(e.target.value)}
-                  className="h-10 w-full rounded-[10px] border border-[#e5e5e5] bg-[#fffaf0] px-3 text-xs text-[#0a0a0a] transition outline-none focus:border-[#0a0a0a] focus:ring-1 focus:ring-[#0a0a0a]"
-                />
-              </div>
-
-              <p className="text-[11px] leading-relaxed text-[#6a6a6a]">
-                Submitted requests remain <strong>Pending</strong> until
-                verified by administrators. You can proceed with onboarding
-                right away without waiting for approval.
-              </p>
-
-              <div className="flex items-center justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsRequestModalOpen(false)}
-                  className="h-9 cursor-pointer rounded-[10px] border border-[#e5e5e5] px-3.5 text-xs font-semibold text-[#6a6a6a] hover:bg-[#faf5e8]"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={requestSubmitting}
-                  className="h-9 cursor-pointer rounded-[10px] bg-[#0a0a0a] px-4 text-xs font-semibold text-white shadow-xs transition hover:bg-[#1f1f1f] disabled:opacity-50"
-                >
-                  {requestSubmitting ? "Submitting..." : "Submit Request"}
-                </button>
-              </div>
-            </form>
-          </div>
+            <div className="flex flex-row gap-2.5 border-t border-hairline pt-4 sm:justify-end">
+              <Button
+                type="button"
+                variant="outlined"
+                onClick={() => setIsRequestModalOpen(false)}
+                className="flex-1 rounded-xl sm:flex-none"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                variant="primary"
+                disabled={requestSubmitting}
+                className="flex-[2] rounded-xl sm:flex-none"
+              >
+                {requestSubmitting ? "Submitting..." : "Submit Request"}
+              </Button>
+            </div>
+          </form>
         </div>
-      )}
+      </ResponsiveFormModal>
     </main>
   )
 }

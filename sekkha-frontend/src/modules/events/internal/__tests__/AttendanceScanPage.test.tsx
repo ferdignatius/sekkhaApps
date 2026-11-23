@@ -115,6 +115,13 @@ describe("AttendanceScanPage Manual Entry — Unified Search, Clickable Rows, ID
     expect(screen.queryByRole("button", { name: /QR Scanner/i })).toBeNull()
     expect(await screen.findByTestId("mock-qr-camera")).toBeTruthy()
 
+    // Bottom floating pill shows inert search trigger & opens standard ResponsiveFormModal drawer
+    const pillTrigger = await screen.findByRole("button", {
+      name: /Search member name or ID/i,
+    })
+    fireEvent.click(pillTrigger)
+    expect(await screen.findByTestId("drawer-scroll-container")).toBeTruthy()
+
     const searchInput = await screen.findByPlaceholderText(
       /Search member name or ID/i
     )

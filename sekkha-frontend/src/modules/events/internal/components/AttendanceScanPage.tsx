@@ -21,6 +21,7 @@ import {
 } from "lucide-react"
 import { useAuth } from "@/modules/auth"
 import { api } from "@/lib/api"
+import { useDebouncedSearch } from "@/hooks/useDebounce"
 import {
   peopleApi,
   PreProvisionMemberModal,
@@ -28,6 +29,7 @@ import {
 } from "@/modules/people"
 import type { MemberDto, SimilarMemberDto } from "@/modules/people"
 import type { EventListItem, AttendanceRecord, UserRole } from "../types"
+import { ResponsiveFormModal } from "@/components/common/ResponsiveFormModal"
 import { QrScannerCamera } from "./QrScannerCamera"
 
 interface RecentScanItem {
@@ -178,40 +180,60 @@ export function AttendanceScanPage() {
   // People list for manual attendance
   const [peopleList, setPeopleList] = useState<MemberDto[]>([])
   const [searchQuery, setSearchQuery] = useState("")
+  const [debouncedSearchQuery, flushSearchNow] = useDebouncedSearch(searchQuery)
   const [preProvisionOpen, setPreProvisionOpen] = useState(false)
 
   const isNumericQuery = /^\d+$/.test(searchQuery.trim())
+  const isDebouncedNumeric = /^\d+$/.test(debouncedSearchQuery.trim())
 
-  // Async fuzzy similarity lookup powers typo-tolerant results inside the floating search dropdown
-  const { similarMembers } = useSimilarMembers(searchQuery, {
-    enabled: isPengurus && !isNumericQuery,
-  })
+  // Async fuzzy similarity lookup powers typo-tolerant results inside the manual check-in drawer
+  const { similarMembers, searching: searchingSimilar } = useSimilarMembers(
+    debouncedSearchQuery,
+    {
+      enabled: isPengurus && !isDebouncedNumeric,
+      delayMs: 0,
+    }
+  )
 
-  // Bottom sheet drag gesture state for History drawer
-  const sheetDragStartYRef = useRef<number | null>(null)
-  const sheetDraggedRef = useRef(false)
+  const isSearchPending =
+    searchQuery.trim().length > 0 &&
+    (searchQuery.trim() !== debouncedSearchQuery.trim() || searchingSimilar)
 
-  function handleSheetPointerDown(e: React.PointerEvent<HTMLElement>) {
-    sheetDragStartYRef.current = e.clientY
-    sheetDraggedRef.current = false
+  // Bottom pill swipe-up gesture state for opening standard ResponsiveFormModal drawer
+  const pillTouchStartYRef = useRef<number | null>(null)
+  const pillTouchStartTimeRef = useRef<number>(0)
+  const pillTouchDeltaYRef = useRef<number>(0)
+
+  function handlePillTouchStart(e: React.TouchEvent<HTMLDivElement>) {
+    const startY = e.touches[0]?.clientY
+    if (typeof startY !== "number") return
+    pillTouchStartYRef.current = startY
+    pillTouchStartTimeRef.current =
+      typeof performance !== "undefined" ? performance.now() : Date.now()
+    pillTouchDeltaYRef.current = 0
   }
 
-  function handleSheetPointerMove(e: React.PointerEvent<HTMLElement>) {
-    if (sheetDragStartYRef.current === null) return
-    const deltaY = e.clientY - sheetDragStartYRef.current
-    if (Math.abs(deltaY) > 24) {
-      sheetDraggedRef.current = true
-      if (deltaY < -24) {
-        setIsHistoryDrawerOpen(true)
-      } else if (deltaY > 24) {
-        setIsHistoryDrawerOpen(false)
-      }
-      sheetDragStartYRef.current = null
+  function handlePillTouchMove(e: React.TouchEvent<HTMLDivElement>) {
+    if (pillTouchStartYRef.current === null) return
+    const currentY = e.touches[0]?.clientY
+    if (typeof currentY !== "number") return
+    const deltaY = currentY - pillTouchStartYRef.current
+    if (deltaY < 0) {
+      pillTouchDeltaYRef.current = deltaY
     }
   }
 
-  function handleSheetPointerEnd() {
-    sheetDragStartYRef.current = null
+  function handlePillTouchEnd() {
+    if (pillTouchStartYRef.current === null) return
+    const deltaY = pillTouchDeltaYRef.current
+    const now = typeof performance !== "undefined" ? performance.now() : Date.now()
+    const elapsedMs = Math.max(1, now - pillTouchStartTimeRef.current)
+    const velocity = deltaY / elapsedMs
+    pillTouchStartYRef.current = null
+    pillTouchDeltaYRef.current = 0
+    if (deltaY < -20 || velocity < -0.3) {
+      setIsHistoryDrawerOpen(true)
+    }
   }
 
   // Attendance state
@@ -561,8 +583,8 @@ export function AttendanceScanPage() {
   }
 
   const filteredPeople = useMemo(() => {
-    if (!searchQuery.trim()) return []
-    const q = searchQuery.toLowerCase().trim()
+    const q = debouncedSearchQuery.toLowerCase().trim()
+    if (!q) return []
     return peopleList
       .filter((p) => {
         const nameMatch = p.name.toLowerCase().includes(q)
@@ -573,17 +595,18 @@ export function AttendanceScanPage() {
         return nameMatch || numMatch
       })
       .slice(0, 10)
-  }, [peopleList, searchQuery])
+  }, [peopleList, debouncedSearchQuery])
 
   const displayedManualPeople: Array<MemberDto | SimilarMemberDto> = useMemo(() => {
-    if (!searchQuery.trim()) return []
-    if (!isNumericQuery && searchQuery.trim().length >= 3 && similarMembers.length > 0) {
+    const trimmed = debouncedSearchQuery.trim()
+    if (!trimmed) return []
+    if (!isDebouncedNumeric && trimmed.length >= 3 && similarMembers.length > 0) {
       const seen = new Set(filteredPeople.map((p) => p.id))
       const extraFuzzy = similarMembers.filter((m) => !seen.has(m.id))
       return [...filteredPeople, ...extraFuzzy].slice(0, 8)
     }
     return filteredPeople.slice(0, 8)
-  }, [searchQuery, isNumericQuery, similarMembers, filteredPeople])
+  }, [debouncedSearchQuery, isDebouncedNumeric, similarMembers, filteredPeople])
 
   return (
     <div className="fixed inset-0 z-50 flex h-screen w-screen flex-col overflow-hidden bg-[#fffaf0] font-sans select-none">
@@ -808,49 +831,73 @@ export function AttendanceScanPage() {
         )}
       </div>
 
-      {/* ── 4. iOS-style Bottom Frosted Search Bar + Draggable History Sheet ── */}
+      {/* ── 4. Floating Bottom Trigger Pill + Standard Vaul Drawer (ResponsiveFormModal) ── */}
       {isPengurus && !eventError && (
         <>
-          {(searchQuery.trim().length > 0 || isHistoryDrawerOpen) && (
+          <div
+            className={`fixed inset-x-3 bottom-[max(0.85rem,env(safe-area-inset-bottom))] z-30 mx-auto max-w-md transition-opacity duration-150 ${
+              isHistoryDrawerOpen
+                ? "pointer-events-none opacity-0"
+                : "pointer-events-auto opacity-100"
+            }`}
+          >
             <div
-              className="fixed inset-0 z-20"
-              onClick={() => {
-                setSearchQuery("")
-                setIsHistoryDrawerOpen(false)
-              }}
-            />
-          )}
-
-          <div className="pointer-events-none fixed inset-x-3 bottom-[max(0.85rem,env(safe-area-inset-bottom))] z-30 mx-auto max-w-md">
-            <div
-              onPointerDown={handleSheetPointerDown}
-              onPointerMove={handleSheetPointerMove}
-              onPointerUp={handleSheetPointerEnd}
-              onPointerCancel={handleSheetPointerEnd}
-              className="pointer-events-auto overflow-hidden rounded-[24px] border border-[#ded5c0] bg-[#fffaf0]/92 text-[#0a0a0a] shadow-m3-2 backdrop-blur-xl transition-all duration-200"
+              onTouchStart={handlePillTouchStart}
+              onTouchMove={handlePillTouchMove}
+              onTouchEnd={handlePillTouchEnd}
+              onTouchCancel={handlePillTouchEnd}
+              className="touch-none overflow-hidden rounded-[24px] border border-[#ded5c0] bg-[#fffaf0] text-[#0a0a0a] shadow-m3-2 select-none"
             >
-              {/* Drag Handle Bar — swipe up anywhere on pill or tap handle to reveal History */}
-              <div
-                onClick={() => {
-                  if (sheetDraggedRef.current) {
-                    sheetDraggedRef.current = false
-                    return
-                  }
-                  if (searchQuery.trim().length > 0) return
-                  setIsHistoryDrawerOpen((prev) => !prev)
-                }}
-                aria-label="Drag up or tap for attendance history"
-                className="flex cursor-grab touch-none justify-center pt-2 pb-1 active:cursor-grabbing"
-              >
-                <div className="h-1 w-9 rounded-full bg-[#0a0a0a]/20" />
+              {/* Drag / Tap Handle */}
+              <div className="flex justify-center pt-2 pb-0.5">
+                <button
+                  type="button"
+                  onClick={() => setIsHistoryDrawerOpen(true)}
+                  aria-label="Drag up or tap for attendance history"
+                  className="flex cursor-pointer flex-col items-center rounded-full px-8 py-1 transition-colors hover:bg-black/[0.04] active:scale-95"
+                >
+                  <span className="h-1 w-9 rounded-full bg-[#0a0a0a]/20" />
+                </button>
               </div>
 
-              {/* iOS-Style Frosted Search Input Row (stays at top of sheet when dragged up) */}
+              {/* Inert Search Trigger Row (avoids unsolicited iOS keyboard popup over camera) */}
+              <button
+                type="button"
+                onClick={() => setIsHistoryDrawerOpen(true)}
+                className="flex min-h-[44px] w-full cursor-pointer items-center justify-between gap-2.5 px-3.5 pt-1 pb-2.5 text-left transition-colors hover:bg-[#faf5e8]"
+              >
+                <span className="flex min-w-0 flex-1 items-center gap-2 text-xs font-medium text-[#6a6a6a]">
+                  <SearchIcon className="size-4 shrink-0 text-[#6a6a6a]" />
+                  <span className="truncate">Search member name or ID...</span>
+                </span>
+                <span className="shrink-0 rounded-full border border-[#e5dec9] bg-[#faf5e8] px-2.5 py-0.5 text-[11px] font-bold text-[#0a0a0a] tabular-nums">
+                  {recentScans.length} scanned
+                </span>
+              </button>
+            </div>
+          </div>
+
+          <ResponsiveFormModal
+            open={isHistoryDrawerOpen}
+            onOpenChange={(open) => {
+              setIsHistoryDrawerOpen(open)
+              if (!open) setSearchQuery("")
+            }}
+            title="Manual Check-In & History"
+            description={
+              event?.title
+                ? `${event.title} · ${recentScans.length} scanned`
+                : "Search a member by name or ID, or review session check-ins."
+            }
+          >
+            <div className="space-y-4">
+              {/* Search Form inside static-height drawer */}
               <form
                 onSubmit={(e) => {
                   e.preventDefault()
                   const q = searchQuery.trim()
                   if (!q) return
+                  flushSearchNow()
                   if (/^\d+$/.test(q)) {
                     void recordManualAttendance(q)
                   } else if (displayedManualPeople.length === 1) {
@@ -863,27 +910,22 @@ export function AttendanceScanPage() {
                     )
                   }
                 }}
-                className="flex items-center gap-2 px-3.5 pt-1 pb-2.5"
+                className="flex items-center gap-2 rounded-2xl border border-[#e5dec9] bg-[#faf5e8] px-3.5 py-2 focus-within:border-[#0a0a0a] focus-within:bg-[#fffaf0]"
               >
                 <SearchIcon className="size-4 shrink-0 text-[#6a6a6a]" />
                 <input
                   type="text"
                   value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value)
-                    if (e.target.value.trim()) {
-                      setIsHistoryDrawerOpen(false)
-                    }
-                  }}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search member name or ID..."
-                  className="min-w-0 flex-1 bg-transparent text-xs font-medium text-[#0a0a0a] outline-none placeholder:text-[#6a6a6a]"
+                  className="min-h-[30px] min-w-0 flex-1 bg-transparent text-xs font-medium text-[#0a0a0a] outline-none placeholder:text-[#6a6a6a] sm:text-sm"
                 />
                 {searchQuery.trim().length > 0 && (
                   <button
                     type="button"
                     onClick={() => setSearchQuery("")}
                     aria-label="Clear search"
-                    className="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-full text-[#6a6a6a] transition-colors hover:bg-[#ebe6d6] hover:text-[#0a0a0a]"
+                    className="flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-full text-[#6a6a6a] transition-colors hover:bg-[#ebe6d6] hover:text-[#0a0a0a]"
                   >
                     <XIcon className="size-3.5" />
                   </button>
@@ -898,10 +940,9 @@ export function AttendanceScanPage() {
                 )}
               </form>
 
-              {/* Expanded Area Below Search Bar: either Live Search Results OR Dragged-Up History */}
               {searchQuery.trim().length > 0 ? (
-                <div className="animate-in border-t border-[#e5e5e5] px-2.5 pt-2.5 pb-2.5 duration-150 fade-in slide-in-from-bottom-2">
-                  <div className="max-h-[42vh] touch-pan-y space-y-1.5 overflow-y-auto pr-0.5">
+                <div className="space-y-3">
+                  <div className="space-y-1.5">
                     {displayedManualPeople.map((p) => {
                       const isAttended = sessionAttendedIds.has(p.id)
                       return (
@@ -916,23 +957,23 @@ export function AttendanceScanPage() {
                               p.name
                             )
                           }}
-                          className={`flex w-full items-center justify-between gap-2 rounded-xl border p-2.5 text-left transition-all ${
+                          className={`flex w-full items-center justify-between gap-2 rounded-xl border p-3 text-left transition-all ${
                             isAttended
                               ? "cursor-default border-emerald-500/30 bg-emerald-500/10"
                               : "cursor-pointer border-[#ded5c0] bg-[#faf5e8] hover:border-[#e8b94a] hover:bg-[#f5f0e0] active:scale-[0.99]"
                           }`}
                         >
                           <div className="min-w-0 flex-1">
-                            <p className="truncate text-xs font-bold text-[#0a0a0a]">
+                            <p className="truncate text-xs font-bold text-[#0a0a0a] sm:text-sm">
                               {p.name}
                             </p>
-                            <p className="truncate text-[10px] text-[#6a6a6a]">
+                            <p className="truncate text-[11px] text-[#6a6a6a]">
                               {p.user_number || "-"}
                               {"school" in p && p.school ? ` · ${p.school}` : ""}
                             </p>
                           </div>
                           {isAttended ? (
-                            <span className="shrink-0 rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-[10px] font-bold text-emerald-700">
+                            <span className="shrink-0 rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-[11px] font-bold text-emerald-700">
                               Present
                             </span>
                           ) : (
@@ -945,58 +986,49 @@ export function AttendanceScanPage() {
                     })}
 
                     {displayedManualPeople.length === 0 && (
-                      <p className="py-3 text-center text-xs text-[#6a6a6a]">
-                        No registered member matches &ldquo;{searchQuery.trim()}&rdquo;.
+                      <p className="py-6 text-center text-xs text-[#6a6a6a]">
+                        {isSearchPending
+                          ? "Searching members..."
+                          : `No registered member matches \u201C${debouncedSearchQuery.trim()}\u201D.`}
                       </p>
                     )}
                   </div>
 
-                  {/* Create New Member Action at the bottom of results */}
-                  <div className="mt-2 border-t border-[#e5e5e5] pt-2">
+                  {/* Create New Member Action */}
+                  <div className="border-t border-[#e5e5e5] pt-3">
                     <button
                       type="button"
                       onClick={() => setPreProvisionOpen(true)}
-                      className="flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-[#e8b94a]/70 bg-[#faf5e8] px-3 py-2 text-xs font-bold text-[#0a0a0a] transition-colors hover:bg-[#f5ebd0]"
+                      className="flex min-h-[44px] w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-[#e8b94a]/70 bg-[#faf5e8] px-3 py-2.5 text-xs font-bold text-[#0a0a0a] transition-colors hover:bg-[#f5ebd0]"
                     >
-                      <UserPlusIcon className="size-3.5 text-[#9a6e13]" />
+                      <UserPlusIcon className="size-4 text-[#9a6e13]" />
                       <span>Create New Member</span>
                     </button>
                   </div>
                 </div>
-              ) : isHistoryDrawerOpen ? (
-                <div className="animate-in border-t border-[#e5e5e5] px-3.5 pt-2.5 pb-3 duration-150 fade-in slide-in-from-bottom-2">
-                  <div className="mb-2 flex items-center justify-between">
-                    <p className="text-[11px] font-bold tracking-wider text-[#6a6a6a] uppercase">
-                      Session Attendance ({recentScans.length})
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => setIsHistoryDrawerOpen(false)}
-                      aria-label="Close history"
-                      className="flex size-6 cursor-pointer items-center justify-center rounded-full text-[#6a6a6a] hover:bg-[#ebe6d6] hover:text-[#0a0a0a]"
-                    >
-                      <XIcon className="size-3.5" />
-                    </button>
-                  </div>
-
-                  <div className="max-h-[42vh] touch-pan-y space-y-2 divide-y divide-[#e5e5e5] overflow-y-auto pr-1">
+              ) : (
+                <div className="space-y-2.5">
+                  <p className="text-[11px] font-bold tracking-wider text-[#6a6a6a] uppercase">
+                    Session Attendance ({recentScans.length})
+                  </p>
+                  <div className="divide-y divide-[#e5e5e5]">
                     {recentScans.length > 0 ? (
                       recentScans.map((item) => (
                         <div
                           key={item.id}
-                          className="flex items-center justify-between pt-2 first:pt-0"
+                          className="flex items-center justify-between py-2.5 first:pt-0"
                         >
                           <div className="min-w-0 flex-1">
-                            <p className="truncate text-xs font-bold text-[#0a0a0a]">
+                            <p className="truncate text-xs font-bold text-[#0a0a0a] sm:text-sm">
                               {item.name}
                             </p>
-                            <p className="truncate text-[10px] text-[#6a6a6a]">
+                            <p className="truncate text-[11px] text-[#6a6a6a]">
                               {item.userNumber ? `${item.userNumber} • ` : ""}
                               {item.message}
                             </p>
                           </div>
                           <span
-                            className={`ml-2 shrink-0 rounded-full border px-2 py-0.5 text-[9px] font-bold ${
+                            className={`ml-2 shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-bold ${
                               item.status === "success"
                                 ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700"
                                 : "border-[#e8b94a]/50 bg-[#e8b94a]/15 text-[#8a6110]"
@@ -1007,15 +1039,15 @@ export function AttendanceScanPage() {
                         </div>
                       ))
                     ) : (
-                      <p className="py-4 text-center text-xs text-[#6a6a6a]">
+                      <p className="py-8 text-center text-xs text-[#6a6a6a]">
                         No attendance scans recorded in this session yet.
                       </p>
                     )}
                   </div>
                 </div>
-              ) : null}
+              )}
             </div>
-          </div>
+          </ResponsiveFormModal>
         </>
       )}
 

@@ -33,7 +33,7 @@ export function AlertDialogContent({
   return (
     <ShadcnAlertDialogContent
       className={cn(
-        "rounded-[28px] border border-[#e5e5e5] bg-[#faf5e8] p-6 text-left font-sans text-[#0a0a0a] shadow-2xl backdrop-blur-sm sm:max-w-md",
+        "z-[110] rounded-[28px] border border-[#e5e5e5] bg-[#faf5e8] p-6 text-left font-sans text-[#0a0a0a] shadow-2xl backdrop-blur-sm sm:max-w-md",
         className
       )}
       {...props}

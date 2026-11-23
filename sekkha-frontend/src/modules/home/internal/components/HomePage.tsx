@@ -564,7 +564,7 @@ export function HomePage() {
                     <div className="flex flex-wrap items-center gap-1.5 pt-0.5 text-sm">
                       <StarIcon className="size-4 shrink-0 fill-[#e8b94a] text-[#c28e20]" />
                       <span className="font-extrabold text-[#0a0a0a] tabular-nums">
-                        {totalPoints.toLocaleString("en-US")} Pts
+                        {totalPoints.toLocaleString("en-US")}
                       </span>
                       <span className="text-xs font-medium text-[#6a6252]">
                         Karma Points

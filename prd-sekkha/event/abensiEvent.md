@@ -376,8 +376,8 @@ Selain banner status di bagian atas dan umpan balik audio, setiap hasil check-in
 
 * **Summary Card**: Total Kehadiran (`total_attended`), Status Finalisasi (`is_finalized: false / true`). *(Tidak ada data photo_url, total RSVP, atau attendance rate).*
 * **Tabel Presensi**:
-  * Kolom: Nomor Anggota (`userNumber`), Nama Jemaat, Role, Sekolah, Waktu Scan, Metode (`qr` / `manual`), Badge Aktivitas, Status Terlambat, Aksi (Hapus presensi draft jika event masih `active`).
-* Akses: `organizer` dan `admin` only (`activist` dan `member` dilarang).
+  * Kolom: Nomor Anggota (`userNumber`), Nama Jemaat, Role, Sekolah, Waktu Scan, Metode (`qr` / `manual`), Badge Aktivitas, Status Terlambat (dengan aksi **Remove Late Status** khusus role `admin` sebelum event `closed`), Aksi (Hapus presensi draft jika event masih `active`).
+* Akses: `organizer` dan `admin` only (`activist` dan `member` dilarang). Penghapusan status terlambat (`waive-late`) hanya diizinkan untuk **`admin`**.
 
 ---
 
@@ -526,7 +526,7 @@ Semua endpoint menggunakan format envelope numerik standar Sekkha Apps:
 
 ---
 
-### 12.4. Hapus / Koreksi Kehadiran Draft
+### 12.4. Hapus / Koreksi Kehadiran Draft & Penghapusan Status Terlambat (Admin Only)
 #### `DELETE /api/events/:id/attendances/:userId`
 - **Akses**: `organizer`, `admin`
 - **Aturan**: Hanya bisa dilakukan saat status event belum `closed`.
@@ -538,6 +538,25 @@ Semua endpoint menggunakan format envelope numerik standar Sekkha Apps:
     "message": "Presensi peserta berhasil dibatalkan",
     "data": {
       "user_id": "usr_9b1deb4d"
+    }
+  }
+  ```
+
+#### `PATCH /api/events/:id/attendances/:userId/waive-late`
+- **Akses**: **Eksklusif `admin`** (`requireRole("admin")`). `organizer` ditolak dengan `403 Forbidden`.
+- **Aturan**: Hanya bisa dilakukan selama event **belum `closed`** dan record belum difinalisasi (`is_finalized: false`). Mengubah `is_late` menjadi `false`, `late_penalty_applied` menjadi `0`, serta mengembalikan poin potongan ke `points_earned`.
+- **Response 200 OK**:
+  ```json
+  {
+    "status": "success",
+    "code": 200,
+    "message": "Late status removed and penalty restored",
+    "data": {
+      "attendance_id": "att_001",
+      "user_id": "usr_9b1deb4d",
+      "is_late": false,
+      "late_penalty_applied": 0,
+      "points_earned": 50
     }
   }
   ```
@@ -595,6 +614,7 @@ model Attendance {
 | **AC-ATT-05** | Panitia memindai jemaat yang sama dua kali atau multi-gate scan berbarengan | Backend merespon `409 Conflict` (code `409`) dengan pesan "Peserta sudah tercatat hadir" berkat constraint `@@unique([userId, eventId])`. Data tidak ganda. |
 | **AC-ATT-06** | Evaluasi keterlambatan presensi terhadap `max_late_minutes` dan `late_penalty_points` | Jika `late_penalty_points > 0` dan `scanned_at > event_date (waktu start aktif) + max_late_minutes`, sistem mencatat `is_late: true` dan mengurangi perolehan poin sesuai `late_penalty_applied`. Jika `late_penalty_points === 0`, `is_late` selalu `false` dan tidak ada penalti meski scan dilakukan berjam-jam setelah acara dimulai. |
 | **AC-ATT-07** | Panitia menghapus entri salah scan saat event masih `active` | Data draft terhapus via `DELETE /api/events/:id/attendances/:userId` tanpa perlu rollback saldo poin (karena poin belum terdistribusi). |
+| **AC-ATT-07B** | Admin menghapus status terlambat (*Remove Late Status*) sebelum event `closed` | Hanya role `admin` yang melihat aksi `×` pada badge `Late (-N Pts)` saat event belum `closed`. Endpoint `PATCH /api/events/:id/attendances/:userId/waive-late` mengubah `is_late: false`, `late_penalty_applied: 0`, dan memulihkan `points_earned`. Role `organizer` ditolak `403 Forbidden`. |
 | **AC-ATT-08** | Organizer klik "Close & Finalize Event", atau hari berganti melewati tanggal start (`current date > event_date` WIB) pada event `active` | Status event berubah menjadi `closed` (code `200` / auto-close), seluruh presensi ditandai `is_finalized = true`, poin dikreditkan serentak dalam 1 transaksi DB. |
 | **AC-ATT-09** | Organizer membuka Rekap Kehadiran (`/events/:id/attendances`) | Menampilkan `total_attended`, status finalisasi, dan daftar peserta dengan nomor anggota, sekolah, dan waktu scan (tanpa photo_url, tanpa RSVP, tanpa attendance rate). |
 | **AC-ATT-10** | Organizer melakukan "Reschedule Event" pada event `cancel` | Menentukan tanggal baru (`event_date >= current date`), status berubah kembali menjadi `scheduled` (code `200`). |

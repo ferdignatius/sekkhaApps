@@ -3,8 +3,14 @@
 // Connects frontend CRUD operations to backend endpoints.
 
 import { api } from "@/lib/api"
+import type {
+  EventVisibilityOption,
+  TargetAudienceRole,
+} from "@/lib/eventAudience"
 
 // ─── Types ───────────────────────────────────────────────────────────────────
+
+export type { EventVisibilityOption, TargetAudienceRole }
 
 export interface EventTypeDto {
   id: string
@@ -16,6 +22,9 @@ export interface EventTypeDto {
   apply_late_penalty?: boolean
   default_max_late_minutes?: number
   default_late_penalty_points?: number
+  default_visibility?: EventVisibilityOption
+  default_target_roles?: TargetAudienceRole[]
+  counts_toward_streak?: boolean
   is_active: boolean
   created_at?: string
   updated_at?: string
@@ -72,6 +81,9 @@ export const eventTypesApi = {
     apply_late_penalty?: boolean
     default_max_late_minutes?: number
     default_late_penalty_points?: number
+    default_visibility?: EventVisibilityOption
+    default_target_roles?: TargetAudienceRole[]
+    counts_toward_streak?: boolean
     is_active?: boolean
   }) =>
     api.post<{ id: string; code: string; label?: string }>(
@@ -89,6 +101,9 @@ export const eventTypesApi = {
       apply_late_penalty?: boolean
       default_max_late_minutes?: number
       default_late_penalty_points?: number
+      default_visibility?: EventVisibilityOption
+      default_target_roles?: TargetAudienceRole[]
+      counts_toward_streak?: boolean
       is_active?: boolean
     }
   ) =>

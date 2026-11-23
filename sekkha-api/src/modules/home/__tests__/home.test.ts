@@ -94,7 +94,7 @@ describe("Home Module — Unit Tests (Dashboard, Events & Stats)", () => {
   })
 
   describe("2. Event Visibility Filtering by Role", () => {
-    it("queries events with member visibility for member role", async () => {
+    it("queries events with member target_roles or legacy visibility for member role", async () => {
       let passedWhere: any = null
       homeModels.findUpcomingEvents = async (where: any) => {
         passedWhere = where
@@ -103,11 +103,14 @@ describe("Home Module — Unit Tests (Dashboard, Events & Stats)", () => {
 
       await homeServices.getDashboard("usr_mem", "member")
       expect(passedWhere).toBeDefined()
-      expect(passedWhere.visibility.in).toEqual(["all", "member"])
+      expect(passedWhere.OR).toEqual([
+        { targetRoles: { has: "member" } },
+        { targetRoles: { isEmpty: true }, visibility: { in: ["all", "member"] } },
+      ])
       expect(passedWhere.status.in).toEqual(["scheduled", "active"])
     })
 
-    it("queries events with activist visibility for activist role", async () => {
+    it("queries events with activist target_roles or legacy visibility for activist role", async () => {
       let passedWhere: any = null
       homeModels.findUpcomingEvents = async (where: any) => {
         passedWhere = where
@@ -115,7 +118,10 @@ describe("Home Module — Unit Tests (Dashboard, Events & Stats)", () => {
       }
 
       await homeServices.getDashboard("usr_act", "activist")
-      expect(passedWhere.visibility.in).toEqual(["all", "activist"])
+      expect(passedWhere.OR).toEqual([
+        { targetRoles: { has: "activist" } },
+        { targetRoles: { isEmpty: true }, visibility: { in: ["all", "activist"] } },
+      ])
     })
 
     it("queries events with all visibility tiers for organizer and admin roles", async () => {

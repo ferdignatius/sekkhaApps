@@ -1101,4 +1101,107 @@ describe("Admin-Only Reset Closed Event to Draft (Scheduled)", () => {
       ;(prisma as any).$transaction = origTx
     }
   })
+
+  it("credits points without altering currentStreak or awarding streak bonus when closing an optional event (countsTowardStreak: false)", async () => {
+    let createdPointTxs: any[] = []
+    let updatedStats: any[] = []
+
+    const eventDate = new Date("2026-04-12T10:00:00Z")
+    const origTx = prisma.$transaction
+
+    ;(prisma as any).$transaction = async (cb: any) => {
+      const txMock = {
+        event: {
+          findUnique: async () => ({
+            id: "evt_optional_1",
+            title: "Committee Meeting",
+            eventDate,
+            status: "active",
+            countsTowardStreak: false,
+            type: { id: "type_meeting", code: "meeting" },
+          }),
+          update: async () => ({
+            id: "evt_optional_1",
+            title: "Committee Meeting",
+            eventDate,
+            status: "closed",
+            countsTowardStreak: false,
+          }),
+        },
+        attendance: {
+          findMany: async () => [
+            {
+              id: "att_opt_1",
+              userId: "usr_member_opt",
+              pointsEarned: 40,
+              badgeBonusPoints: 0,
+              scannedAt: new Date("2026-04-12T10:05:00Z"),
+            },
+          ],
+          updateMany: async () => ({ count: 1 }),
+        },
+        pointTransaction: {
+          findMany: async () => [],
+          groupBy: async () => [],
+          createMany: async ({ data }: any) => {
+            createdPointTxs = data
+            return { count: data.length }
+          },
+        },
+        pointRule: {
+          findMany: async () => [
+            {
+              id: "rule_streak_4w",
+              code: "streak_monthly_bonus",
+              label: "4-Week Attendance Streak",
+              points: 50,
+              isActive: true,
+            },
+          ],
+        },
+        user: {
+          findMany: async () => [
+            {
+              id: "usr_member_opt",
+              isClaimed: true,
+              stats: {
+                totalAttendances: 5,
+                currentStreak: 3,
+              },
+            },
+          ],
+        },
+        userStats: {
+          upsert: async (payload: any) => {
+            updatedStats.push(payload)
+            return payload
+          },
+        },
+        memberPointSummary: {
+          upsert: async () => ({}),
+        },
+      }
+      return cb(txMock)
+    }
+
+    try {
+      await eventServices.updateEventStatus("usr_admin", "admin", "evt_optional_1", "closed")
+
+      const attTx = createdPointTxs.find((tx) => tx.type === "attendance")
+      expect(attTx).toBeDefined()
+      expect(attTx.amount).toBe(40)
+
+      // No streak_monthly_bonus should be awarded for optional events
+      expect(createdPointTxs.some((tx) => tx.ruleId === "rule_streak_4w")).toBe(false)
+
+      // userStats.upsert increments points & attendances without touching currentStreak
+      const userStat = updatedStats.find((s) => s.where.userId === "usr_member_opt")
+      expect(userStat).toBeDefined()
+      expect(userStat.update.points.increment).toBe(40)
+      expect(userStat.update.totalAttendances.increment).toBe(1)
+      expect(userStat.update.currentStreak).toBeUndefined()
+    } finally {
+      ;(prisma as any).$transaction = origTx
+    }
+  })
 })

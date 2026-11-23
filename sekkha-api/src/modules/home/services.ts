@@ -1,7 +1,7 @@
 import { cached, CacheKeys } from "../../lib/cache"
-import { calculateWeeklyStreak } from "../../lib/streak"
+import { calculateWeeklyStreak, toWeekKey } from "../../lib/streak"
 import { homeModels } from "./models"
-import type { EventVisibility } from "@prisma/client"
+import type { EventVisibility, Prisma } from "@prisma/client"
 
 function eventVisibility(role: string): EventVisibility[] {
   if (role === "organizer" || role === "admin") return ["all", "member", "activist", "organizer"]
@@ -9,28 +9,54 @@ function eventVisibility(role: string): EventVisibility[] {
   return ["all", "member"]
 }
 
+function buildUpcomingEventsWhere(role: string, now: Date): Prisma.EventWhereInput {
+  if (role === "organizer" || role === "admin") {
+    return {
+      status: { in: ["scheduled", "active"] },
+      visibility: { in: eventVisibility(role) },
+      eventDate: { gte: now },
+    }
+  }
+  const audienceRole = role === "activist" ? "activist" : "member"
+  return {
+    status: { in: ["scheduled", "active"] },
+    OR: [
+      { targetRoles: { has: audienceRole } } as Prisma.EventWhereInput,
+      {
+        targetRoles: { isEmpty: true } as Prisma.EventWhereInput,
+        visibility: { in: eventVisibility(role) },
+      } as Prisma.EventWhereInput,
+    ],
+    eventDate: { gte: now },
+  }
+}
+
 export const homeServices = {
   async getDashboard(userId: string, role: string) {
     const result = await cached(CacheKeys.home(userId, role), 5, async () => {
       const now = new Date()
-      const [profile, events, activity, attendanceWeeks, activeSeason] = await Promise.all([
+      const [profile, events, activity, attendanceWeeks, closedStreakEvents, activeSeason] = await Promise.all([
         homeModels.findProfile(userId),
-        homeModels.findUpcomingEvents({
-          status: { in: ["scheduled", "active"] },
-          visibility: { in: eventVisibility(role) },
-          eventDate: { gte: now },
-        }),
+        homeModels.findUpcomingEvents(buildUpcomingEventsWhere(role, now)),
         homeModels.findRecentActivity(userId),
         homeModels.findAttendanceWeeks(userId),
+        homeModels.findClosedStreakEventDates().catch(() => []),
         homeModels.findActiveSeason(),
       ])
 
       if (!profile) return null
 
+      const activeWeeks =
+        closedStreakEvents.length > 0
+          ? closedStreakEvents.map((e) => toWeekKey(new Date(e.eventDate)))
+          : undefined
+
       const streak = calculateWeeklyStreak(
         attendanceWeeks
           .filter(({ week }) => week instanceof Date && !Number.isNaN(week.getTime()))
-          .map(({ week }) => ({ scannedAt: week }))
+          .map(({ week }) => ({ scannedAt: week })),
+        now,
+        activeWeeks
       )
 
       const activeCustom = activeSeason && activeSeason.endDate >= now ? activeSeason : null

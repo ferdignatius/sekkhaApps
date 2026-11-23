@@ -86,4 +86,77 @@ describe("AttendanceListSheet Service Role Picker — Initial 5 + Infinite Scrol
       expect(screen.getByText("Usher Duty")).toBeDefined()
     })
   })
+
+  it("allows admin (and not organizer) to remove late status before event is closed", async () => {
+    const patchSpy = vi
+      .spyOn(api, "patch")
+      .mockResolvedValue({
+        attendance_id: "att_1",
+        user_id: "usr_late",
+        is_late: false,
+        late_penalty_applied: 0,
+        points_earned: 50,
+      } as any)
+    const onRefresh = vi.fn()
+
+    const lateRecord = {
+      user_id: "usr_late",
+      user_number: "2026110102",
+      name: "Siti Rahma",
+      role: "member",
+      method: "qr",
+      is_late: true,
+      late_penalty_applied: 15,
+      points_earned: 35,
+      scanned_at: "2026-11-11T09:40:00Z",
+    } as any
+
+    const { rerender } = render(
+      <AttendanceListSheet
+        eventId="evt_1"
+        role="organizer"
+        records={[lateRecord]}
+      />
+    )
+    expect(screen.getByText(/Late \(-15 Pts\)/i)).toBeDefined()
+    expect(
+      screen.queryByRole("button", { name: /Remove late status/i })
+    ).toBeNull()
+
+    rerender(
+      <AttendanceListSheet
+        eventId="evt_1"
+        role="admin"
+        isClosed={true}
+        records={[lateRecord]}
+      />
+    )
+    expect(
+      screen.queryByRole("button", { name: /Remove late status/i })
+    ).toBeNull()
+
+    rerender(
+      <AttendanceListSheet
+        eventId="evt_1"
+        role="admin"
+        isClosed={false}
+        records={[lateRecord]}
+        onRefresh={onRefresh}
+      />
+    )
+
+    const removeLateBtn = screen.getByRole("button", {
+      name: /Remove late status/i,
+    })
+    fireEvent.click(removeLateBtn)
+
+    await waitFor(() => {
+      expect(patchSpy).toHaveBeenCalledWith(
+        "/events/evt_1/attendances/usr_late/waive-late",
+        {}
+      )
+      expect(screen.getByText("On Time")).toBeDefined()
+      expect(onRefresh).toHaveBeenCalled()
+    })
+  })
 })

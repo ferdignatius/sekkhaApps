@@ -586,6 +586,8 @@ Mengambil daftar acara. Member hanya melihat acara dengan visibilitas `all` / `m
         "season_id": "sea_2026_q3",
         "status": "scheduled",
         "visibility": "all",
+        "target_roles": ["member", "activist", "organizer"],
+        "counts_toward_streak": true,
         "point_reward": 50,
         "max_late_minutes": 30,
         "late_penalty_points": 15
@@ -613,6 +615,7 @@ Mengambil detail satu acara secara lengkap.
       "season_id": "sea_2026_q3",
       "status": "scheduled",
       "visibility": "all",
+      "counts_toward_streak": true,
       "point_reward": 50,
       "max_late_minutes": 30,
       "late_penalty_points": 15
@@ -635,6 +638,7 @@ Membuat acara baru.
     "event_type_id": "typ_khusus_02",
     "season_id": "sea_2026_q4",
     "visibility": "all",
+    "counts_toward_streak": true,
     "point_reward": 100,
     "max_late_minutes": 30,
     "late_penalty_points": 15
@@ -822,6 +826,25 @@ Membatalkan / menghapus catatan presensi peserta tertentu dari event yang sedang
     "message": "Presensi peserta berhasil dibatalkan",
     "data": {
       "user_id": "usr_abc123"
+    }
+  }
+  ```
+
+### 8B. `PATCH /api/events/:id/attendances/:userId/waive-late`
+Menghapus status terlambat (*waive late penalty*) pada presensi draft sebelum event difinalisasi (`!isClosed`).
+- **Akses**: **Eksklusif Admin** (`requireRole("admin")`)
+- **Response (200 OK)**:
+  ```json
+  {
+    "status": "success",
+    "code": 200,
+    "message": "Late status removed and penalty restored",
+    "data": {
+      "attendance_id": "att_001",
+      "user_id": "usr_abc123",
+      "is_late": false,
+      "late_penalty_applied": 0,
+      "points_earned": 50
     }
   }
   ```
@@ -1286,8 +1309,12 @@ Manajemen konfigurasi sistem master vihara: kategori acara (*event types*), pera
         "name": "Kebaktian Rutin Remaja",
         "description": "Kegiatan rutin kebaktian hari Minggu",
         "default_point_reward": 50,
+        "apply_late_penalty": true,
         "default_max_late_minutes": 30,
         "default_late_penalty_points": 15,
+        "default_visibility": "all",
+        "default_target_roles": ["member", "activist", "organizer"],
+        "counts_toward_streak": true,
         "is_active": true
       },
       {
@@ -1296,8 +1323,12 @@ Manajemen konfigurasi sistem master vihara: kategori acara (*event types*), pera
         "name": "Perayaan Hari Besar / Retreat",
         "description": "Waisak, Kathina, Asadha, atau Retreat",
         "default_point_reward": 100,
+        "apply_late_penalty": true,
         "default_max_late_minutes": 30,
         "default_late_penalty_points": 15,
+        "default_visibility": "all",
+        "default_target_roles": ["member", "activist", "organizer"],
+        "counts_toward_streak": false,
         "is_active": true
       }
     ]
@@ -1308,11 +1339,15 @@ Manajemen konfigurasi sistem master vihara: kategori acara (*event types*), pera
 - **Request Body**:
   ```json
   {
-    "name": "Workshop & Pelatihan",
+    "label": "Workshop & Pelatihan",
+    "color": "#4262FF",
     "description": "Kelas keterampilan dan kepemimpinan pemuda",
     "default_point_reward": 75,
+    "apply_late_penalty": true,
     "default_max_late_minutes": 30,
     "default_late_penalty_points": 15,
+    "default_target_roles": ["activist", "organizer"],
+    "counts_toward_streak": false,
     "is_active": true
   }
   ```

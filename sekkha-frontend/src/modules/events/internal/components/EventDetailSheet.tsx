@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { AttendanceListSheet } from "./AttendanceListSheet"
 import { ResponsiveFormModal } from "@/components/common/ResponsiveFormModal"
+import { formatAudienceRolesLabel } from "@/lib/eventAudience"
 import { DateTimePicker } from "@/components/common/DateTimePicker"
 import { MemberQrModal } from "@/components/common/MemberQrModal"
 import { Button } from "@/components/base"
@@ -174,13 +175,6 @@ function getInitials(name: string): string {
   if (parts.length === 0) return "?"
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
   return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase()
-}
-
-function formatAudienceLabel(visibility?: string | null): string {
-  if (visibility === "all") return "All Members"
-  if (visibility === "activist") return "Activists & Organizers"
-  if (visibility === "organizer") return "Organizers Only"
-  return "Community Members"
 }
 
 function useIsDesktopLayout(breakpoint = 1024) {
@@ -562,8 +556,16 @@ export function EventDetailSheet({
               <span className="font-bold text-ink">
                 +{pointsReward} Karma Points
               </span>
-              <span className="rounded-full bg-[#faf5e8] px-2 py-0.5 text-[10px] font-semibold text-[#9a6e14]">
-                Streak Eligible
+              <span
+                className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                  event.counts_toward_streak === false
+                    ? "bg-surface-soft text-text-muted"
+                    : "bg-[#faf5e8] text-[#9a6e14]"
+                }`}
+              >
+                {event.counts_toward_streak === false
+                  ? "Optional · No Streak"
+                  : "Mandatory · Streak"}
               </span>
             </div>
           </div>
@@ -584,8 +586,8 @@ export function EventDetailSheet({
 
           <div className="flex items-center justify-between gap-3 p-3">
             <span className="font-medium text-text-muted">Access Right</span>
-            <span className="font-bold text-ink capitalize">
-              {formatAudienceLabel(event.visibility)}
+            <span className="text-right font-bold text-ink">
+              {formatAudienceRolesLabel(event.target_roles, event.visibility)}
             </span>
           </div>
         </div>

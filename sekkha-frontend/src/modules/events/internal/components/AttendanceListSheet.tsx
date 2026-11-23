@@ -67,7 +67,9 @@ export function AttendanceListSheet({
   onRefresh,
 }: AttendanceListSheetProps) {
   const isPengurus = role === "organizer" || role === "admin"
+  const isAdmin = role === "admin"
   const isEditable = isPengurus && !isClosed
+  const canWaiveLate = isAdmin && !isClosed
 
   const [localRecords, setLocalRecords] = useState<AttendanceRecord[]>(records)
   const [deleteTarget, setDeleteTarget] = useState<AttendanceRecord | null>(
@@ -166,6 +168,38 @@ export function AttendanceListSheet({
     } catch (err: any) {
       console.error("Failed to assign service role:", err)
       toast.error(err?.message || "Failed to assign service role.")
+    }
+  }
+
+  // ── Admin-only Waive Late Status ──
+  async function handleWaiveLatePenalty(userId: string) {
+    if (!eventId || !canWaiveLate) return
+    try {
+      const res = await api.patch<{
+        is_late: boolean
+        late_penalty_applied: number
+        points_earned: number
+      }>(`/events/${eventId}/attendances/${userId}/waive-late`, {})
+      setLocalRecords((prev) =>
+        prev.map((rec) =>
+          rec.user_id === userId
+            ? {
+                ...rec,
+                is_late: false,
+                late_penalty_applied: 0,
+                points_earned:
+                  typeof res?.points_earned === "number"
+                    ? res.points_earned
+                    : (rec.points_earned ?? 0) + (rec.late_penalty_applied ?? 0),
+              }
+            : rec
+        )
+      )
+      toast.success("Late status removed and penalty restored.")
+      onRefresh?.()
+    } catch (err: any) {
+      console.error("Failed to remove late status:", err)
+      toast.error(err?.message || "Failed to remove late status.")
     }
   }
 
@@ -374,6 +408,17 @@ export function AttendanceListSheet({
                         <span>
                           Late (-{rec.late_penalty_applied ?? 15} Pts)
                         </span>
+                        {canWaiveLate && (
+                          <button
+                            type="button"
+                            onClick={() => void handleWaiveLatePenalty(rec.user_id)}
+                            className="ml-0.5 inline-flex size-4 shrink-0 cursor-pointer items-center justify-center rounded-full hover:bg-white/25"
+                            title="Admin: Remove late status"
+                            aria-label="Remove late status"
+                          >
+                            <XIcon className="size-3" />
+                          </button>
+                        )}
                       </Badge>
                     ) : (
                       <Badge

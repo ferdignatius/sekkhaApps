@@ -45,6 +45,12 @@ describe("Event Policy & Access Control", () => {
     // Visibility: organizer only
     expect(canViewEvent("member", "scheduled", "organizer")).toBe(false)
     expect(canViewEvent("activist", "scheduled", "organizer")).toBe(false)
+
+    // M2M targetRoles override
+    expect(canViewEvent("member", "scheduled", "organizer", ["member", "organizer"])).toBe(true)
+    expect(canViewEvent("activist", "scheduled", "organizer", ["member", "organizer"])).toBe(false)
+    expect(canViewEvent("activist", "scheduled", "all", ["member", "activist"])).toBe(true)
+    expect(canViewEvent("organizer", "scheduled", "member", ["member"])).toBe(true)
   })
 })
 
@@ -352,5 +358,70 @@ describe("Event Services & State Transitions", () => {
     eventModels.findUserForAttendance = origFindUser
     eventModels.countEventAttendances = origCount
     eventModels.findEventAttendances = origFindMany
+  })
+
+  it("waiveLatePenalty enforces admin-only access, rejects closed events, and restores late penalty points", async () => {
+    const origFindBasic = eventModels.findEventBasic
+    const origFindExisting = eventModels.findExistingAttendance
+    const origUpdateAttendance = eventModels.updateAttendance
+
+    // Non-admin (organizer) rejected with 403
+    try {
+      await eventServices.waiveLatePenalty("usr_org", "organizer", "evt_1", "usr_mem")
+      expect(true).toBe(false)
+    } catch (err: any) {
+      expect(err.statusCode ?? err.status).toBe(403)
+    }
+
+    // Closed event rejected with 400
+    eventModels.findEventBasic = async () => ({ id: "evt_1", status: "closed" } as any)
+    eventModels.findExistingAttendance = async () =>
+      ({
+        id: "att_1",
+        userId: "usr_mem",
+        isLate: true,
+        latePenaltyApplied: 15,
+        pointsEarned: 35,
+        isFinalized: false,
+      } as any)
+
+    try {
+      await eventServices.waiveLatePenalty("usr_adm", "admin", "evt_1", "usr_mem")
+      expect(true).toBe(false)
+    } catch (err: any) {
+      expect(err.statusCode ?? err.status).toBe(400)
+    }
+
+    // Active draft event: admin waives late penalty and restores pointsEarned
+    eventModels.findEventBasic = async () => ({ id: "evt_1", status: "active" } as any)
+    let capturedUpdate: any = null
+    eventModels.updateAttendance = async (_id: string, data: any) => {
+      capturedUpdate = data
+      return {
+        id: "att_1",
+        userId: "usr_mem",
+        isLate: data.isLate,
+        latePenaltyApplied: data.latePenaltyApplied,
+        pointsEarned: data.pointsEarned,
+      } as any
+    }
+
+    const res = await eventServices.waiveLatePenalty("usr_adm", "admin", "evt_1", "usr_mem")
+    expect(capturedUpdate).toEqual({
+      isLate: false,
+      latePenaltyApplied: 0,
+      pointsEarned: 50,
+    })
+    expect(res).toEqual({
+      attendance_id: "att_1",
+      user_id: "usr_mem",
+      is_late: false,
+      late_penalty_applied: 0,
+      points_earned: 50,
+    })
+
+    eventModels.findEventBasic = origFindBasic
+    eventModels.findExistingAttendance = origFindExisting
+    eventModels.updateAttendance = origUpdateAttendance
   })
 })

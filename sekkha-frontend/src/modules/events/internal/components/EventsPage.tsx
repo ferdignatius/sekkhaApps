@@ -70,11 +70,21 @@ const EventsResponseSchema = z.array(
           label: z.string(),
           color: z.string().optional(),
           default_point_reward: z.number().optional(),
+          default_visibility: z.enum(["all", "member", "activist", "organizer"]).optional(),
+          default_target_roles: z
+            .array(z.enum(["member", "activist", "organizer"]))
+            .optional(),
+          counts_toward_streak: z.boolean().optional(),
         }),
       ])
       .optional(),
     tag: z.string().optional(),
     status: z.string(),
+    visibility: z.enum(["all", "member", "activist", "organizer"]).optional(),
+    target_roles: z
+      .array(z.enum(["member", "activist", "organizer"]))
+      .optional(),
+    counts_toward_streak: z.boolean().optional(),
     point_reward: z.number().optional(),
     max_late_minutes: z.number().optional(),
     late_penalty_points: z.number().optional(),
@@ -770,6 +780,9 @@ export function EventsPage() {
                             ? ev.event_type?.id
                             : undefined,
                         tag: getEventTag(ev),
+                        visibility: ev.visibility,
+                        target_roles: ev.target_roles,
+                        counts_toward_streak: ev.counts_toward_streak,
                       }
                       const dup = await api.post<EventListItem>(
                         "/events",

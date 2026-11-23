@@ -152,7 +152,11 @@ export const userModels = {
 
   findUserAttendancesForStreak(userId: string) {
     return prisma.attendance.findMany({
-      where: { userId },
+      where: {
+        userId,
+        isFinalized: true,
+        event: { countsTowardStreak: true },
+      },
       orderBy: { scannedAt: "desc" },
       select: { scannedAt: true },
       take: 500,
@@ -175,7 +179,7 @@ export const userModels = {
 
   findClosedEventDates() {
     return prisma.event.findMany({
-      where: { status: "closed" },
+      where: { status: "closed", countsTowardStreak: true },
       orderBy: { eventDate: "desc" },
       select: { eventDate: true },
       take: 500,

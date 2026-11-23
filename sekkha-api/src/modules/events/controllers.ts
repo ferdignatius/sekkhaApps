@@ -22,7 +22,12 @@ export const CreateEventSchema = z.object({
   event_type_id: z.string().optional(),
   season_id: z.string().optional(),
   tag: z.string().max(50).optional(),
-  visibility: z.enum(["all", "member", "activist", "organizer"]).optional().default("all"),
+  visibility: z.enum(["all", "member", "activist", "organizer"]).optional(),
+  target_roles: z
+    .array(z.enum(["member", "activist", "organizer"]))
+    .min(1, "Select at least one target role")
+    .optional(),
+  counts_toward_streak: z.boolean().optional(),
   point_reward: z.number().int().min(0).max(100).optional(),
   max_late_minutes: z.number().int().min(0).max(240).optional(),
   late_penalty_points: z.number().int().min(0).max(100).optional(),
@@ -325,6 +330,34 @@ export const eventControllers = {
         status: "success",
         code: 200,
         message: "Attendance successfully removed",
+        data: result,
+      })
+    } catch (err: any) {
+      const status = err.status || err.statusCode
+      if (status) {
+        res.status(status).json({
+          status: "error",
+          code: status,
+          message: err.message,
+        })
+        return
+      }
+      next(err)
+    }
+  },
+
+  async waiveLatePenalty(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const id = req.params.id as string
+      const userId = req.params.userId as string
+      const actorId = req.user!.userId
+      const actorRole = req.user!.role
+      const result = await eventServices.waiveLatePenalty(actorId, actorRole, id, userId)
+
+      res.json({
+        status: "success",
+        code: 200,
+        message: "Late status removed and penalty restored",
         data: result,
       })
     } catch (err: any) {

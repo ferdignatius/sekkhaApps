@@ -71,10 +71,14 @@ model EventType {
   code                    String   @unique
   label                   String
   description             String?
-  defaultPointReward      Int      @default(0) @map("default_point_reward")
-  defaultMaxLateMinutes   Int?     @default(30) @map("default_max_late_minutes")
-  defaultLatePenaltyPoints Int?    @default(15) @map("default_late_penalty_points")
-  isActive                Boolean  @default(true) @map("is_active")
+  defaultPointReward       Int             @default(0) @map("default_point_reward")
+  applyLatePenalty         Boolean         @default(true) @map("apply_late_penalty")
+  defaultMaxLateMinutes    Int?            @default(30) @map("default_max_late_minutes")
+  defaultLatePenaltyPoints Int?            @default(15) @map("default_late_penalty_points")
+  defaultVisibility        EventVisibility @default(all) @map("default_visibility")
+  defaultTargetRoles       Role[]          @default([member, activist, organizer]) @map("default_target_roles")
+  countsTowardStreak       Boolean         @default(true) @map("counts_toward_streak")
+  isActive                 Boolean         @default(true) @map("is_active")
   color                   String
   createdAt               DateTime @default(now()) @map("created_at")
   updatedAt               DateTime @updatedAt @map("updated_at")
@@ -97,6 +101,9 @@ model EventType {
 | `default_point_reward` | `default_point_reward` | `Int` | Yes | Nilai integer antara 0 s/d 100, default `50`. |
 | `default_max_late_minutes` | `default_max_late_minutes` | `Int?` | No | Batas toleransi menit keterlambatan standar, default `30` menit (rentang 0-180 menit). |
 | `default_late_penalty_points` | `default_late_penalty_points` | `Int?` | No | Potongan poin keterlambatan standar, default `15` poin (rentang 0-100 poin). |
+| `default_visibility` | `default_visibility` | `EventVisibility` | Yes | Legacy ringkasan hak akses audiens event (`all` \| `member` \| `activist` \| `organizer`), otomatis diturunkan dari `default_target_roles` untuk kompatibilitas API. |
+| `default_target_roles` | `default_target_roles` | `Role[]` | Yes | Hak akses default audiens berbasis Many-to-Many (`member`, `activist`, `organizer`, minimal 1 role — tidak ada event khusus admin). Default `[member, activist, organizer]`. Otomatis mengisi `target_roles` saat Create Event dan masih dapat di-override per event. |
+| `counts_toward_streak` | `counts_toward_streak` | `Boolean` | Yes | Menentukan apakah event bertipe **Mandatory Event (Affects Weekly Streak)** (`true`) atau **Optional Event (Does Not Affect Streak)** (`false`). Default `true`, dapat di-override per event. |
 | `is_active` | `is_active` | `Boolean` | Yes | Default `true`. Mengontrol ketersediaan opsi di form event. |
 | `created_at` | `created_at` | `DateTime` | Yes | Otomatis dibuat oleh server (`now()`). |
 | `updated_at` | `updated_at` | `DateTime` | Yes | Otomatis diperbarui saat mutasi data (`updatedAt`). |
@@ -112,15 +119,8 @@ Field `code` adalah **identifikator semantik permanen berbasis string (kebab-cas
 - **Solusi dengan `code`**: Jika kode bisnis bergantung pada nama tampilan, penggantian nama akan merusak logika aplikasi. Dengan field `code` (`"regular-service"`), admin bebas mengubah `label` kapan saja tanpa merusak integrasi backend atau frontend.
 
 ### Case 2: Aturan Bisnis Gamifikasi & Streak Attendance yang Deterministik
-- **Masalah**: Tidak semua event di vihara menambah streak mingguan kehadiran anggota. Rapat panitia, kelas pelatihan, atau gladi bersih tidak boleh dihitung sebagai kebaktian rutin mingguan.
-- **Solusi dengan `code`**: Logika bisnis streak cukup mengecek secara aman:
-  ```typescript
-  if (event.type?.code === "regular-service") {
-    // Jalankan kalkulasi penambahan streak & streak milestone badge
-    await evaluateUserAttendanceStreak(userId)
-  }
-  ```
-  Ini jauh lebih aman, bersih, dan cepat daripada mencocokkan ID CUID dinamis atau teks label yang rawan typo.
+- **Masalah**: Tidak semua event di vihara menambah streak mingguan kehadiran anggota. Rapat panitia, kelas pelatihan, atau acara sukarela opsional tidak boleh memutus atau menambah streak mingguan.
+- **Solusi dengan `counts_toward_streak` + `code`**: Selain memiliki `code` semantik yang stabil, `EventType` menyediakan flag `counts_toward_streak` (`true`/`false`) sebagai default kebijakan kategori (misal: `regular-puja` = `true`, sedangkan `meeting` / `training` = `false`) yang otomatis diwariskan ke event dan tetap dapat di-override per event. Mesin kalkulasi streak hanya mengevaluasi event dengan `countsTowardStreak: true`.
 
 ### Case 3: Integrasi API, Batch Import & Fallback Event Creation
 - **Implementasi**: Di `sekkha-api/src/modules/events/services.ts`, saat membuat event baru, sistem mengizinkan klien mengirim `event_type_id` (CUID) ATAU `event_type` (`code`):
@@ -236,6 +236,12 @@ Base route: `/api/configure/event-types`
     "color": "#4262FF",
     "description": "Kebaktian rutin mingguan pemuda vihara",
     "default_point_reward": 50,
+    "apply_late_penalty": true,
+    "default_max_late_minutes": 30,
+    "default_late_penalty_points": 15,
+    "default_visibility": "all",
+    "default_target_roles": ["member", "activist", "organizer"],
+    "counts_toward_streak": true,
     "is_active": true
   },
   {
@@ -245,6 +251,12 @@ Base route: `/api/configure/event-types`
     "color": "#0D9488",
     "description": "Sesi pelafalan paritta dan sutra kebajikan",
     "default_point_reward": 60,
+    "apply_late_penalty": true,
+    "default_max_late_minutes": 30,
+    "default_late_penalty_points": 15,
+    "default_visibility": "all",
+    "default_target_roles": ["member", "activist", "organizer"],
+    "counts_toward_streak": true,
     "is_active": true
   }
 ]
@@ -258,6 +270,12 @@ Base route: `/api/configure/event-types`
   "color": "#EC4899",
   "description": "Kegiatan bakti sosial dan aksi kerelawanan pemuda",
   "default_point_reward": 80,
+  "apply_late_penalty": true,
+  "default_max_late_minutes": 30,
+  "default_late_penalty_points": 15,
+  "default_visibility": "all",
+  "default_target_roles": ["member", "activist", "organizer"],
+  "counts_toward_streak": false,
   "is_active": true
 }
 ```

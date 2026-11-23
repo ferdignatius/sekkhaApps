@@ -12,11 +12,15 @@ export function canRecordAttendance(role: string): boolean {
 export function canViewEvent(
   role: string,
   status: EventStatus,
-  visibility: EventVisibility
+  visibility: EventVisibility,
+  targetRoles?: readonly string[] | null
 ): boolean {
   if (canManageEvent(role)) return true
   // Cancelled events are invisible to regular members and activists
   if (status === "cancel") return false
+  if (targetRoles && targetRoles.length > 0) {
+    return targetRoles.includes(role)
+  }
   if (visibility === "all") return true
   if (visibility === "member") return role === "member"
   if (visibility === "activist") return role === "activist"

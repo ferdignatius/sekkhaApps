@@ -115,25 +115,26 @@ Perubahan status dilakukan secara eksplisit melalui **Action Buttons** kontekstu
 
 ---
 
-## 5. Konsep: Target Audiens (`visibility`)
+## 5. Konsep: Target Audiens (`target_roles` & `visibility`)
 
-Visibilitas menentukan siapa yang dapat melihat jadwal event:
+Hak akses audiens menggunakan model **Many-to-Many (`target_roles: Role[]`)** dengan pilihan role `member`, `activist`, dan `organizer` (**tidak ada event khusus `admin`** — role `organizer` & `admin` selalu melihat seluruh jadwal event).
 
-| Nilai `visibility` | Label UI | Hak Melihat |
-| --- | --- | --- |
-| `all` | Semua | Semua role (`member`, `activist`, `organizer`, `admin`) |
-| `member` | Jemaat/Member | `member`, `organizer`, `admin` |
-| `activist` | Aktivis | `activist`, `organizer`, `admin` |
-| `organizer` | Internal Pengurus | Khusus `organizer` & `admin` |
+| Role Terpilih di `target_roles` | Efek Visibilitas ke Pengguna |
+| --- | --- |
+| `member` | Event muncul untuk `member` (selain `organizer` & `admin`) |
+| `activist` | Event muncul untuk `activist` (selain `organizer` & `admin`) |
+| `organizer` | Selalu disertakan / internal pengurus (`organizer` & `admin` dapat melihat semua event) |
 
-### 5.1. Visibilitas Terpadu Berbasis Kategori (*Derived Visibility*)
-Pada antarmuka pembuatan dan penyuntingan event (`EventForm`), kolom `visibility` **tidak diinputkan secara manual sebagai kontrol input tersendiri**. Visibilitas diturunkan (*derived*) secara otomatis dari konfigurasi `target_roles` pada Kategori / Jenis Event (`event_type_id`) yang dipilih:
-* Jika `target_roles` kategori hanya berisi `['organizer']` atau `['organizer', 'admin']` $\rightarrow$ `visibility: "organizer"`.
-* Jika `target_roles` kategori hanya mencakup `['activist']` (atau `['activist', 'organizer']` tanpa `member`) $\rightarrow$ `visibility: "activist"`.
-* Jika `target_roles` kategori hanya mencakup `['member']` (atau `['member', 'organizer']` tanpa `activist`) $\rightarrow$ `visibility: "member"`.
-* Jika `target_roles` kategori kosong, terbuka umum, atau mencakup seluruh role $\rightarrow$ `visibility: "all"`.
+Field legacy `visibility` (`all` \| `member` \| `activist` \| `organizer`) tetap disinkronkan otomatis di server dari kombinasi `target_roles` untuk kompatibilitas mundur.
 
-Dengan pendekatan ini, form event lebih ramping (*streamlined*) dan terhindar dari ketidaksinkronan antara peran sasaran kategori dengan visibilitas event.
+### 5.1. Visibilitas & Kebijakan Streak Default dari Event Type + Per-Event Override
+Pada antarmuka pembuatan dan penyuntingan event (`EventForm`), kolom **Access Right (`target_roles`)** dan **Attendance Requirement (`counts_toward_streak`)** otomatis diisi (*inherited*) dari konfigurasi Event Type / Kategori terpilih (`default_target_roles` dan `counts_toward_streak`), namun **tetap dapat di-override secara fleksibel per event** di dalam panel **Optional Settings**:
+* Jika `target_roles` tidak dikirim eksplisit saat pembuatan event, backend otomatis mewarisi nilainya dari `eventType.defaultTargetRoles` (atau menurunkan dari `visibility`).
+* Status keikutsertaan streak ditampilkan tegas sebagai:
+  * **`Mandatory Event (Affects Weekly Streak)`** (`counts_toward_streak: true`) — Wajib untuk menjaga/menambah weekly streak dan dihitung dalam *community active weeks*.
+  * **`Optional Event (Does Not Affect Streak)`** (`counts_toward_streak: false`) — Kehadiran tetap memberikan Karma Points, namun **tidak memengaruhi weekly streak** maupun *Perfect Month bonus*.
+
+Dengan pendekatan ini, form tetap ringkas (kebijakan standar sudah terisi otomatis oleh kategori) sekaligus fleksibel untuk kasus pengecualian di lapangan tanpa harus menduplikasi Event Type.
 
 > **Keamanan Server-Side**:
 > Event dengan visibilitas yang tidak sesuai dengan role user otomatis difilter di query level database. Jika user mencoba mengakses langsung URL detail `/api/events/:id` yang tidak berhak dilihatnya, server mengembalikan respon `404 Not Found` (bukan `403`) untuk mencegah kebocoran informasi (*information disclosure*).
@@ -163,8 +164,8 @@ Dengan pendekatan ini, form event lebih ramping (*streamlined*) dan terhindar da
   * Jenis Event (`event_type_id`) berdasarkan master data aktif.
   * Bulan / Periode tanggal kalender (`activeMonth`).
 * **Visibilitas Server-Side**:
-  * `member`: hanya mengambil event dengan `visibility IN ('all', 'member')` dan status `scheduled`, `active`, atau `closed`.
-  * `activist`: hanya mengambil event dengan `visibility IN ('all', 'activist')`.
+  * `member`: hanya mengambil event yang memiliki `"member"` di `target_roles` (fallback legacy `visibility IN ('all', 'member')`) dengan status `scheduled`, `active`, atau `closed`.
+  * `activist`: hanya mengambil event yang memiliki `"activist"` di `target_roles` (fallback legacy `visibility IN ('all', 'activist')`).
   * `organizer` / `admin`: melihat seluruh event tanpa batasan visibilitas.
 
 ### 6.2. Detail Event (`GET /api/events/:id`)
@@ -193,7 +194,7 @@ Dengan pendekatan ini, form event lebih ramping (*streamlined*) dan terhindar da
 * **Route**: `/events/new` dan `/events/:id/edit`
 * **Akses**: Hanya `organizer` dan `admin`.
 * **Struktur Form 3 Bagian & UX Enhancements**:
-  1. **Section 1 — Basic Details**: `Event name` (`title`), `Description` (textarea opsional yang **selalu tampil** tanpa tersembunyi di balik toggle), `Event Type` (`event_type_id` dari Master Data), dan `Visibility` radio (`all`, `member`, `activist`, `organizer`).
+  1. **Section 1 — Basic Details**: `Event name` (`title`), `Description` (textarea opsional yang **selalu tampil** tanpa tersembunyi di balik toggle), dan `Event Type` (`event_type_id` dari Master Data). Access Right (`target_roles`) dan Attendance Requirement (`counts_toward_streak`) otomatis diwariskan dari Event Type dan dapat di-override melalui **Optional Settings**.
   2. **Section 2 — Schedule & Venue**:
      * `DateTimePickerPopover`: menggunakan semantic token `DESIGN.md` (`z-[120]`), chip pilihan tanggal cepat (**`Today`**, **`Tomorrow`**, **`Next Sun`**), preset waktu cepat (**`08:00`**, **`09:00`**, **`13:00`**, **`17:00`**, **`19:00`**) + custom time input, serta menonaktifkan tanggal masa lampau (`disablePastDates`) saat membuat event baru.
      * `Location`: input teks bebas (*free-text*) dilengkapi dropdown **"Recent Locations"** yang menampilkan maksimal **3 lokasi berbeda terakhir** yang pernah digunakan oleh event sebelumnya (tanpa chip/autofill lokasi hardcode).
@@ -204,8 +205,9 @@ Dengan pendekatan ini, form event lebih ramping (*streamlined*) dan terhindar da
 * **Field Form & Validasi Inti**:
   * `title`: Nama Acara (wajib, min 3 karakter).
   * `description`: Deskripsi lengkap kegiatan (opsional).
-  * `event_type_id`: Dropdown pilihan dari Master Data Event Type (wajib). Saat dipilih, otomatis mengisi nilai `point_reward`, default `max_late_minutes` dan `late_penalty_points` apabila toggle penalti aktif, serta menurunkan field `visibility` secara otomatis dari `target_roles` kategori tersebut.
-  * `visibility`: Diturunkan secara otomatis (*derived*) dari `target_roles` kategori/tipe acara yang dipilih (`all`, `member`, `activist`, atau `organizer`). Tidak memerlukan input manual terpisah di form.
+  * `event_type_id`: Dropdown pilihan dari Master Data Event Type (wajib). Saat dipilih, otomatis mengisi nilai default `point_reward`, `max_late_minutes`, `late_penalty_points`, `target_roles` (dan `visibility`), serta `counts_toward_streak`.
+  * `target_roles`: Daftar multi-pilih role audiens (`member`, `activist`, `organizer`; minimal 1 role, tanpa role `admin`). Otomatis mengikuti `EventType.default_target_roles` dan dapat di-override pada **Optional Settings** di `EventForm`. Field `visibility` diturunkan otomatis oleh backend.
+  * `counts_toward_streak`: Boolean (default mengikuti `EventType.counts_toward_streak`). Menentukan apakah event bersifat **Mandatory Event (Affects Weekly Streak)** (`true`) atau **Optional Event (Does Not Affect Streak)** (`false`), dapat di-override di **Optional Settings**.
   * `event_date`: Tanggal dan jam pelaksanaan (wajib, DateTime ISO).
     * **Validasi Pembuatan Event Baru**: **`event_date >= current date`** (waktu saat request dibuat). Form menolak tanggal di masa lampau dan menampilkan pesan error validasi.
   * `location`: Lokasi kegiatan (wajib, teks).
@@ -284,9 +286,11 @@ model Event {
   eventDate         DateTime        @map("event_date")
   eventTypeId       String?         @map("event_type_id")
   seasonId          String?         @map("season_id")
-  status            EventStatus     @default(scheduled)
-  visibility        EventVisibility @default(all)
-  qrCode            String?         @map("qr_code")
+  status             EventStatus     @default(scheduled)
+  visibility         EventVisibility @default(all)
+  targetRoles        Role[]          @default([member, activist, organizer]) @map("target_roles")
+  countsTowardStreak Boolean         @default(true) @map("counts_toward_streak")
+  qrCode             String?         @map("qr_code")
   pointReward       Int             @default(50) @map("point_reward")
   maxLateMinutes    Int?            @default(30) @map("max_late_minutes")
   latePenaltyPoints Int?            @default(15) @map("late_penalty_points")

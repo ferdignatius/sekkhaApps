@@ -5,6 +5,10 @@
 import type { AttendanceBadge } from "./types"
 import { api } from "@/lib/api"
 import {
+  deriveVisibilityFromTargetRoles,
+  normalizeTargetRoles,
+} from "@/lib/eventAudience"
+import {
   DROPDOWN_PAGE_SIZE,
   normalizePaginatedResult,
 } from "@/lib/pagination"
@@ -123,6 +127,8 @@ export interface EventCategoryItem {
   autofillTitle?: string
   autofillDesc?: string
   colorHex?: string
+  defaultVisibility?: "all" | "member" | "activist" | "organizer"
+  countsTowardStreak?: boolean
   target_roles?: string[] // Many-to-many allowed user roles (e.g. ["admin", "pengurus", "aktivis", "umat"])
 }
 
@@ -140,6 +146,8 @@ export const DEFAULT_CATEGORIES: EventCategoryItem[] = [
     latePenaltyPoints: 15,
     is_active: true,
     colorHex: "#4262FF",
+    defaultVisibility: "all",
+    countsTowardStreak: true,
     autofillTitle: "Regular Puja",
     autofillDesc: "Weekly youth puja and fellowship session",
     target_roles: ["admin", "organizer", "activist", "member"],
@@ -157,6 +165,8 @@ export const DEFAULT_CATEGORIES: EventCategoryItem[] = [
     latePenaltyPoints: 15,
     is_active: true,
     colorHex: "#0D9488",
+    defaultVisibility: "all",
+    countsTowardStreak: true,
     autofillTitle: "Chanting",
     autofillDesc: "Chanting and paritta recitation session",
     target_roles: ["admin", "organizer", "activist", "member"],
@@ -174,6 +184,8 @@ export const DEFAULT_CATEGORIES: EventCategoryItem[] = [
     latePenaltyPoints: 15,
     is_active: true,
     colorHex: "#EC4899",
+    defaultVisibility: "all",
+    countsTowardStreak: false,
     autofillTitle: "Volunteer",
     autofillDesc: "Youth volunteer activity and social seva program",
     target_roles: ["admin", "organizer", "activist", "member"],
@@ -247,7 +259,12 @@ function mapEventTypeDtoToCategory(t: any): EventCategoryItem {
     autofillTitle: t.label,
     autofillDesc:
       t.description || `${t.label} session with Sekkha community members.`,
-    target_roles: ["admin", "organizer", "activist", "member"],
+    defaultVisibility: t.default_visibility ?? "all",
+    countsTowardStreak: t.counts_toward_streak ?? true,
+    target_roles: normalizeTargetRoles(
+      t.default_target_roles ?? t.target_roles,
+      t.default_visibility
+    ),
   }
 }
 
@@ -319,26 +336,7 @@ export function getMasterCategories(activeOnly = false): EventCategoryItem[] {
 export function deriveVisibilityFromRoles(
   roles?: string[]
 ): "all" | "member" | "activist" | "organizer" {
-  if (!roles || roles.length === 0) return "all"
-  const normalized = roles.map((r) => r.toLowerCase())
-  if (
-    normalized.includes("member") ||
-    normalized.includes("umat") ||
-    normalized.includes("all")
-  ) {
-    return "all"
-  }
-  if (normalized.includes("activist") || normalized.includes("aktivis")) {
-    return "activist"
-  }
-  if (
-    normalized.includes("organizer") ||
-    normalized.includes("pengurus") ||
-    normalized.includes("admin")
-  ) {
-    return "organizer"
-  }
-  return "all"
+  return deriveVisibilityFromTargetRoles(roles)
 }
 
 export function getAccessibleCategories(
@@ -347,6 +345,7 @@ export function getAccessibleCategories(
 ): EventCategoryItem[] {
   const cats = getMasterCategories(activeOnly)
   const role = (userRole || "member").toLowerCase()
+  if (role === "admin" || role === "organizer") return cats
   return cats.filter((c) => {
     if (!c.target_roles || c.target_roles.length === 0) return true
     return c.target_roles.some((r) => r.toLowerCase() === role)

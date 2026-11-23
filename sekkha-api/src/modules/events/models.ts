@@ -131,12 +131,18 @@ export const eventModels = {
     data: {
       badgeActivityId?: string | null
       badgeBonusPoints?: number
+      isLate?: boolean
+      latePenaltyApplied?: number
+      pointsEarned?: number
     }
   ) {
     return prisma.attendance.update({
       where: { id },
       data: {
-        badgeBonusPoints: data.badgeBonusPoints,
+        ...(data.badgeBonusPoints !== undefined ? { badgeBonusPoints: data.badgeBonusPoints } : {}),
+        ...(data.isLate !== undefined ? { isLate: data.isLate } : {}),
+        ...(data.latePenaltyApplied !== undefined ? { latePenaltyApplied: data.latePenaltyApplied } : {}),
+        ...(data.pointsEarned !== undefined ? { pointsEarned: data.pointsEarned } : {}),
         badgeActivity:
           data.badgeActivityId !== undefined
             ? data.badgeActivityId

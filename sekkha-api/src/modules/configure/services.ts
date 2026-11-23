@@ -3,6 +3,12 @@ import { AppError } from "../../lib/AppError"
 import { cached, invalidatePattern, CacheKeys } from "../../lib/cache"
 import { eventbus, DomainEvents } from "../../core/eventbus"
 import { auditLogger } from "../../lib/auditLogger"
+import {
+  normalizeTargetRoles,
+  resolveAudiencePolicy,
+  type EventVisibilityTier,
+  type TargetAudienceRole,
+} from "../../lib/eventAudience"
 
 const CONFIG_CACHE_TTL_SECONDS = 120
 
@@ -77,12 +83,17 @@ function formatEventType(t: {
   description: string | null
   defaultPointReward: number
   applyLatePenalty?: boolean
-  defaultMaxLateMinutes?: number
-  defaultLatePenaltyPoints?: number
+  defaultMaxLateMinutes?: number | null
+  defaultLatePenaltyPoints?: number | null
+  defaultVisibility?: EventVisibilityTier
+  defaultTargetRoles?: string[] | null
+  countsTowardStreak?: boolean
   isActive: boolean
   createdAt: Date
   updatedAt: Date
 }) {
+  const defaultVisibility = t.defaultVisibility ?? "all"
+  const defaultTargetRoles = normalizeTargetRoles(t.defaultTargetRoles, defaultVisibility)
   return {
     id: t.id,
     code: t.code,
@@ -93,6 +104,9 @@ function formatEventType(t: {
     apply_late_penalty: t.applyLatePenalty ?? true,
     default_max_late_minutes: t.defaultMaxLateMinutes ?? 30,
     default_late_penalty_points: t.defaultLatePenaltyPoints ?? 15,
+    default_visibility: defaultVisibility,
+    default_target_roles: defaultTargetRoles,
+    counts_toward_streak: t.countsTowardStreak ?? true,
     is_active: t.isActive,
     created_at: t.createdAt.toISOString(),
     updated_at: t.updatedAt.toISOString(),
@@ -202,6 +216,9 @@ export const configureServices = {
       apply_late_penalty?: boolean
       default_max_late_minutes?: number
       default_late_penalty_points?: number
+      default_visibility?: EventVisibilityTier
+      default_target_roles?: TargetAudienceRole[]
+      counts_toward_streak?: boolean
       is_active?: boolean
     },
     actor?: ConfigureActor
@@ -224,6 +241,12 @@ export const configureServices = {
     const applyLatePenalty = data.apply_late_penalty ?? true
     const defaultMaxLateMinutes = applyLatePenalty ? (data.default_max_late_minutes ?? 30) : 0
     const defaultLatePenaltyPoints = applyLatePenalty ? (data.default_late_penalty_points ?? 15) : 0
+    const audience = resolveAudiencePolicy({
+      targetRoles: data.default_target_roles,
+      visibility: data.default_visibility,
+      fallbackVisibility: "all",
+    })
+    const countsTowardStreak = data.counts_toward_streak ?? true
 
     const type = await configureModels.createEventType({
       code: cleanCode,
@@ -234,6 +257,9 @@ export const configureServices = {
       applyLatePenalty,
       defaultMaxLateMinutes,
       defaultLatePenaltyPoints,
+      defaultVisibility: audience.visibility,
+      defaultTargetRoles: audience.targetRoles,
+      countsTowardStreak,
       isActive: data.is_active ?? true,
     })
 
@@ -246,6 +272,10 @@ export const configureServices = {
       details: { code: type.code },
     })
 
+    const createdRoles = normalizeTargetRoles(
+      (type as { defaultTargetRoles?: string[] }).defaultTargetRoles,
+      type.defaultVisibility ?? audience.visibility
+    )
     return {
       id: type.id,
       code: type.code,
@@ -256,6 +286,9 @@ export const configureServices = {
       apply_late_penalty: type.applyLatePenalty ?? applyLatePenalty,
       default_max_late_minutes: type.defaultMaxLateMinutes ?? defaultMaxLateMinutes,
       default_late_penalty_points: type.defaultLatePenaltyPoints ?? defaultLatePenaltyPoints,
+      default_visibility: type.defaultVisibility ?? audience.visibility,
+      default_target_roles: createdRoles,
+      counts_toward_streak: type.countsTowardStreak ?? countsTowardStreak,
       is_active: type.isActive,
     }
   },
@@ -271,6 +304,9 @@ export const configureServices = {
       apply_late_penalty?: boolean
       default_max_late_minutes?: number
       default_late_penalty_points?: number
+      default_visibility?: EventVisibilityTier
+      default_target_roles?: TargetAudienceRole[]
+      counts_toward_streak?: boolean
       is_active?: boolean
     },
     actor?: ConfigureActor
@@ -292,6 +328,16 @@ export const configureServices = {
       if (data.default_max_late_minutes === undefined) updateData.defaultMaxLateMinutes = 0
       if (data.default_late_penalty_points === undefined) updateData.defaultLatePenaltyPoints = 0
     }
+    if (data.default_target_roles !== undefined || data.default_visibility !== undefined) {
+      const audience = resolveAudiencePolicy({
+        targetRoles: data.default_target_roles,
+        visibility: data.default_visibility,
+        fallbackVisibility: existing.defaultVisibility ?? "all",
+      })
+      updateData.defaultTargetRoles = audience.targetRoles
+      updateData.defaultVisibility = audience.visibility
+    }
+    if (data.counts_toward_streak !== undefined) updateData.countsTowardStreak = data.counts_toward_streak
     if (data.is_active !== undefined) updateData.isActive = data.is_active
 
     // Auto-sync code from label (or explicit code)
@@ -324,6 +370,10 @@ export const configureServices = {
       details: { code: type.code },
     })
 
+    const updatedRoles = normalizeTargetRoles(
+      (type as { defaultTargetRoles?: string[] }).defaultTargetRoles,
+      type.defaultVisibility ?? "all"
+    )
     return {
       id: type.id,
       code: type.code,
@@ -334,6 +384,9 @@ export const configureServices = {
       apply_late_penalty: type.applyLatePenalty ?? true,
       default_max_late_minutes: type.defaultMaxLateMinutes ?? 30,
       default_late_penalty_points: type.defaultLatePenaltyPoints ?? 15,
+      default_visibility: type.defaultVisibility ?? "all",
+      default_target_roles: updatedRoles,
+      counts_toward_streak: type.countsTowardStreak ?? true,
       is_active: type.isActive,
     }
   },

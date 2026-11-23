@@ -145,18 +145,21 @@ model School {
 // ─── Master Data: Event Types ────────────────────────────────────────────────
 
 model EventType {
-  id        String   @id @default(cuid())
-  code      String   @unique
-  label     String
-  description String?
-  defaultPointReward Int @default(0) @map("default_point_reward")
-  applyLatePenalty Boolean @default(true) @map("apply_late_penalty")
-  defaultMaxLateMinutes Int @default(30) @map("default_max_late_minutes")
-  defaultLatePenaltyPoints Int @default(15) @map("default_late_penalty_points")
-  isActive Boolean @default(true) @map("is_active")
-  color     String
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id                       String          @id @default(cuid())
+  code                     String          @unique
+  label                    String
+  description              String?
+  defaultPointReward       Int             @default(0) @map("default_point_reward")
+  applyLatePenalty         Boolean         @default(true) @map("apply_late_penalty")
+  defaultMaxLateMinutes    Int?            @default(30) @map("default_max_late_minutes")
+  defaultLatePenaltyPoints Int?            @default(15) @map("default_late_penalty_points")
+  defaultVisibility        EventVisibility @default(all) @map("default_visibility")
+  defaultTargetRoles       Role[]          @default([]) @map("default_target_roles")
+  countsTowardStreak       Boolean         @default(true) @map("counts_toward_streak")
+  isActive                 Boolean         @default(true) @map("is_active")
+  color                    String
+  createdAt                DateTime        @default(now()) @map("created_at")
+  updatedAt                DateTime        @updatedAt @map("updated_at")
 
   events Event[]
 
@@ -187,20 +190,22 @@ model Season {
 // ─── Events ──────────────────────────────────────────────────────────────────
 
 model Event {
-  id                String          @id @default(cuid())
-  title             String
-  description       String?
-  location          String
-  eventDate         DateTime        @map("event_date")
-  eventTypeId       String?         @map("event_type_id")
-  seasonId          String?         @map("season_id")
-  status            EventStatus     @default(scheduled)
-  visibility        EventVisibility @default(all)
-  pointReward       Int             @default(50) @map("point_reward")
-  maxLateMinutes    Int?            @default(30) @map("max_late_minutes")
-  latePenaltyPoints Int?            @default(15) @map("late_penalty_points")
-  createdAt         DateTime        @default(now()) @map("created_at")
-  updatedAt         DateTime        @updatedAt @map("updated_at")
+  id                 String          @id @default(cuid())
+  title              String
+  description        String?
+  location           String
+  eventDate          DateTime        @map("event_date")
+  eventTypeId        String?         @map("event_type_id")
+  seasonId           String?         @map("season_id")
+  status             EventStatus     @default(scheduled)
+  visibility         EventVisibility @default(all)
+  targetRoles        Role[]          @default([]) @map("target_roles")
+  countsTowardStreak Boolean         @default(true) @map("counts_toward_streak")
+  pointReward        Int             @default(50) @map("point_reward")
+  maxLateMinutes     Int?            @default(30) @map("max_late_minutes")
+  latePenaltyPoints  Int?            @default(15) @map("late_penalty_points")
+  createdAt          DateTime        @default(now()) @map("created_at")
+  updatedAt          DateTime        @updatedAt @map("updated_at")
 
   // Relations
   type        EventType?   @relation(fields: [eventTypeId], references: [id], onDelete: SetNull)
@@ -211,6 +216,7 @@ model Event {
   @@index([status, eventDate])
   @@index([status, visibility])
   @@index([status, visibility, eventDate])
+  @@index([status, countsTowardStreak, eventDate])
   @@index([visibility, eventDate])
   @@index([seasonId, eventDate])
   @@index([eventTypeId])

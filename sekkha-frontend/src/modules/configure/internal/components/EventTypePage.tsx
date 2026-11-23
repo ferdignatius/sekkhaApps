@@ -5,10 +5,19 @@ import {
   CoinsIcon,
   AlertTriangleIcon,
   LockIcon,
+  FlameIcon,
+  ShieldCheckIcon,
+  CheckIcon,
 } from "lucide-react"
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
 import { useAuth } from "@/modules/auth"
 import { eventTypesApi } from "../api/configureApi"
+import type { TargetAudienceRole } from "../api/configureApi"
+import {
+  TARGET_ROLE_OPTIONS,
+  deriveVisibilityFromTargetRoles,
+  toggleTargetRoleSelection,
+} from "@/lib/eventAudience"
 import { Button } from "@/components/base/Button"
 import { Card } from "@/components/base/Card"
 import { Input } from "@/components/base/Input"
@@ -41,6 +50,10 @@ export function EventTypeCreatePage() {
   const [applyLatePenalty, setApplyLatePenalty] = useState(true)
   const [defaultMaxLateMinutes, setDefaultMaxLateMinutes] = useState("30")
   const [defaultLatePenaltyPoints, setDefaultLatePenaltyPoints] = useState("15")
+  const [defaultTargetRoles, setDefaultTargetRoles] = useState<
+    TargetAudienceRole[]
+  >(["member", "activist", "organizer"])
+  const [countsTowardStreak, setCountsTowardStreak] = useState(true)
   const [isActive, setIsActive] = useState(true)
   const [description, setDescription] = useState("")
 
@@ -96,6 +109,9 @@ export function EventTypeCreatePage() {
         apply_late_penalty: applyLatePenalty,
         default_max_late_minutes: parsedGrace ?? 0,
         default_late_penalty_points: parsedPenalty ?? 0,
+        default_target_roles: defaultTargetRoles,
+        default_visibility: deriveVisibilityFromTargetRoles(defaultTargetRoles),
+        counts_toward_streak: countsTowardStreak,
         is_active: isActive,
       })
       toast.success(`Event category "${label.trim()}" created successfully.`)
@@ -288,6 +304,79 @@ export function EventTypeCreatePage() {
                   />
                 </div>
               )}
+            </div>
+
+            {/* Default Access Right & Weekly Streak Policy */}
+            <div className="space-y-4 rounded-[14px] border border-[#e5e5e5] bg-[#fffaf0] p-4">
+              <div className="space-y-2">
+                <div className="flex items-center gap-1.5">
+                  <ShieldCheckIcon className="size-4 text-[#0a0a0a]" />
+                  <span className="text-xs font-bold text-[#0a0a0a]">
+                    Default Access Right (Target Roles)
+                  </span>
+                </div>
+                <p className="text-[11px] text-[#6a6a6a]">
+                  Select one or more roles that can view events in this
+                  category. Organizers and admins can always manage all events.
+                </p>
+                <div
+                  role="group"
+                  aria-label="Default Access Right"
+                  className="grid grid-cols-3 gap-2"
+                >
+                  {TARGET_ROLE_OPTIONS.map((opt) => {
+                    const selected = defaultTargetRoles.includes(opt.value)
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        role="checkbox"
+                        aria-checked={selected}
+                        onClick={() =>
+                          setDefaultTargetRoles((prev) =>
+                            toggleTargetRoleSelection(prev, opt.value)
+                          )
+                        }
+                        className={`flex min-h-[38px] cursor-pointer items-center justify-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold transition-all ${
+                          selected
+                            ? "border-[#0a0a0a] bg-[#0a0a0a] text-white shadow-2xs"
+                            : "border-[#e5e5e5] bg-[#faf5e8] text-[#6a6a6a] hover:bg-[#ebe6d6] hover:text-[#0a0a0a]"
+                        }`}
+                      >
+                        {selected && <CheckIcon className="size-3.5 shrink-0" />}
+                        <span>{opt.label}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between gap-4 border-t border-[#e5e5e5] pt-3.5">
+                <div className="space-y-0.5">
+                  <label
+                    htmlFor="et-counts-streak"
+                    className="flex cursor-pointer items-center gap-1.5 text-xs font-bold text-[#0a0a0a]"
+                  >
+                    <FlameIcon className="size-3.5 text-[#c28e20]" />
+                    <span>
+                      {countsTowardStreak
+                        ? "Mandatory Event (Affects Weekly Streak)"
+                        : "Optional Event (Does Not Affect Streak)"}
+                    </span>
+                  </label>
+                  <p className="text-[11px] text-[#6a6a6a]">
+                    Mandatory events require attendance to maintain weekly
+                    streaks. Turn off for optional activities—members still earn
+                    Karma Points without breaking streaks.
+                  </p>
+                </div>
+                <Switch
+                  id="et-counts-streak"
+                  checked={countsTowardStreak}
+                  onCheckedChange={setCountsTowardStreak}
+                  aria-label="Mandatory Event for Weekly Streak"
+                />
+              </div>
             </div>
 
             {/* Description Field */}

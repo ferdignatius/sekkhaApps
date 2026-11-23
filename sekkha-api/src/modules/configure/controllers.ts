@@ -32,6 +32,12 @@ export const EventTypeSchema = z.object({
   apply_late_penalty: z.boolean().optional().default(true),
   default_max_late_minutes: z.number().int().min(0).max(180).optional().default(30),
   default_late_penalty_points: z.number().int().min(0).max(100).optional().default(15),
+  default_visibility: z.enum(["all", "member", "activist", "organizer"]).optional(),
+  default_target_roles: z
+    .array(z.enum(["member", "activist", "organizer"]))
+    .min(1, "Select at least one target role")
+    .optional(),
+  counts_toward_streak: z.boolean().optional().default(true),
   is_active: z.boolean().optional().default(true),
 })
 
@@ -51,6 +57,12 @@ export const EventTypeUpdateSchema = z.object({
   apply_late_penalty: z.boolean().optional(),
   default_max_late_minutes: z.number().int().min(0).max(180).optional(),
   default_late_penalty_points: z.number().int().min(0).max(100).optional(),
+  default_visibility: z.enum(["all", "member", "activist", "organizer"]).optional(),
+  default_target_roles: z
+    .array(z.enum(["member", "activist", "organizer"]))
+    .min(1, "Select at least one target role")
+    .optional(),
+  counts_toward_streak: z.boolean().optional(),
   is_active: z.boolean().optional(),
 })
 

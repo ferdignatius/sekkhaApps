@@ -87,6 +87,8 @@ export interface EventListItem {
   tag?: EventTag
   status: EventStatus
   visibility?: "all" | "member" | "activist" | "organizer"
+  target_roles?: ("member" | "activist" | "organizer")[]
+  counts_toward_streak?: boolean
   point_reward?: number
   max_late_minutes?: number
   late_penalty_points?: number
@@ -142,6 +144,8 @@ export interface CreateEventPayload {
   event_type_id?: string
   tag?: string
   visibility?: "all" | "member" | "activist" | "organizer"
+  target_roles?: ("member" | "activist" | "organizer")[]
+  counts_toward_streak?: boolean
   point_reward?: number
   max_late_minutes?: number
   late_penalty_points?: number

@@ -54,13 +54,25 @@ export const homeModels = {
 
   findAttendanceWeeks(userId: string) {
     return prisma.$queryRaw<Array<{ week: Date; last_attended: Date }>>`
-      SELECT DATE_TRUNC('week', "scanned_at") AS week,
-             MAX("scanned_at") AS last_attended
-      FROM "attendances"
-      WHERE "user_id" = ${userId}
-      GROUP BY DATE_TRUNC('week', "scanned_at")
+      SELECT DATE_TRUNC('week', a."scanned_at") AS week,
+             MAX(a."scanned_at") AS last_attended
+      FROM "attendances" a
+      INNER JOIN "events" e ON e."id" = a."event_id"
+      WHERE a."user_id" = ${userId}
+        AND a."is_finalized" = true
+        AND e."counts_toward_streak" = true
+      GROUP BY DATE_TRUNC('week', a."scanned_at")
       ORDER BY week DESC
     `
+  },
+
+  findClosedStreakEventDates() {
+    return prisma.event.findMany({
+      where: { status: "closed", countsTowardStreak: true },
+      orderBy: { eventDate: "desc" },
+      select: { eventDate: true },
+      take: 500,
+    })
   },
 
   findActiveSeason() {

@@ -7,6 +7,7 @@ import {
   CalendarIcon,
   ChevronDownIcon,
   FileTextIcon,
+  FlameIcon,
   LoaderCircleIcon,
   MapPinIcon,
   Maximize2Icon,
@@ -26,10 +27,17 @@ import { DateTimePicker } from "@/components/common/DateTimePicker"
 import { Switch } from "@/components/ui/switch"
 import type { CreateEventPayload, EventListItem } from "../types"
 import {
-  deriveVisibilityFromRoles,
   getAccessibleCategories,
   getEventTag,
 } from "../masterdata"
+import type { TargetAudienceRole } from "@/lib/eventAudience"
+import {
+  TARGET_ROLE_OPTIONS,
+  deriveVisibilityFromTargetRoles,
+  formatAudienceRolesLabel,
+  normalizeTargetRoles,
+  toggleTargetRoleSelection,
+} from "@/lib/eventAudience"
 import { buildDefaultEventDescription } from "../utils/eventDescriptionTemplate"
 
 export { buildDefaultEventDescription }
@@ -169,6 +177,7 @@ export interface CategoryOption {
   defaultLatePenaltyPoints?: number
   target_roles?: string[]
   visibility?: "all" | "member" | "activist" | "organizer"
+  countsTowardStreak?: boolean
   autofill: {
     title: string
     description: string
@@ -201,8 +210,13 @@ export function EventForm({
       applyLatePenalty: cat.applyLatePenalty ?? true,
       defaultMaxLateMinutes: cat.maxLateMinutes ?? 30,
       defaultLatePenaltyPoints: cat.latePenaltyPoints ?? 15,
-      target_roles: cat.target_roles,
-      visibility: deriveVisibilityFromRoles(cat.target_roles),
+      target_roles: normalizeTargetRoles(
+        cat.target_roles,
+        cat.defaultVisibility
+      ),
+      visibility:
+        cat.defaultVisibility ?? deriveVisibilityFromTargetRoles(cat.target_roles),
+      countsTowardStreak: cat.countsTowardStreak ?? true,
       autofill: {
         title: cat.autofillTitle ?? `${cat.name} Activity`,
         description:
@@ -226,6 +240,10 @@ export function EventForm({
           const mapped: CategoryOption[] = types.map((t) => {
             const hex = t.color || "#4262FF"
             const applyLatePenalty = t.apply_late_penalty ?? true
+            const resolvedRoles = normalizeTargetRoles(
+              t.default_target_roles ?? t.target_roles,
+              t.default_visibility ?? t.visibility
+            )
             return {
               id: t.id,
               code: t.code,
@@ -239,8 +257,12 @@ export function EventForm({
               defaultLatePenaltyPoints: applyLatePenalty
                 ? (t.default_late_penalty_points ?? 15)
                 : 0,
-              target_roles: t.target_roles,
-              visibility: t.visibility ?? deriveVisibilityFromRoles(t.target_roles),
+              target_roles: resolvedRoles,
+              visibility:
+                t.default_visibility ??
+                t.visibility ??
+                deriveVisibilityFromTargetRoles(resolvedRoles),
+              countsTowardStreak: t.counts_toward_streak ?? true,
               autofill: {
                 title: t.label,
                 description:
@@ -250,10 +272,20 @@ export function EventForm({
             }
           })
           setCategories(mapped)
-          if (!initial?.id && selectedTypeIdRef.current && !isLatePolicyEditedRef.current) {
+          if (!initial?.id && selectedTypeIdRef.current) {
             const matched = mapped.find((c) => c.id === selectedTypeIdRef.current)
             if (matched) {
-              syncCategoryLatePolicy(matched)
+              if (!isLatePolicyEditedRef.current) {
+                syncCategoryLatePolicy(matched)
+              }
+              if (!isVisibilityEditedRef.current) {
+                setTargetRoles(
+                  normalizeTargetRoles(matched.target_roles, matched.visibility)
+                )
+              }
+              if (!isStreakPolicyEditedRef.current) {
+                setCountsTowardStreak(matched.countsTowardStreak ?? true)
+              }
             }
           }
         }
@@ -413,6 +445,12 @@ export function EventForm({
       ? String(initial.late_penalty_points)
       : "15"
   )
+  const [targetRoles, setTargetRoles] = useState<TargetAudienceRole[]>(() =>
+    normalizeTargetRoles(initial?.target_roles, initial?.visibility ?? "all")
+  )
+  const [countsTowardStreak, setCountsTowardStreak] = useState<boolean>(
+    () => initial?.counts_toward_streak ?? true
+  )
   const [showOptionalSettings, setShowOptionalSettings] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [internalSubmitting, setInternalSubmitting] = useState(false)
@@ -420,6 +458,8 @@ export function EventForm({
   const selectedTypeIdRef = useRef(selectedTypeId)
   selectedTypeIdRef.current = selectedTypeId
   const isLatePolicyEditedRef = useRef(false)
+  const isVisibilityEditedRef = useRef(false)
+  const isStreakPolicyEditedRef = useRef(false)
 
   function syncCategoryLatePolicy(cat: CategoryOption) {
     const shouldApplyLate =
@@ -457,6 +497,12 @@ export function EventForm({
     if (!initial?.id) {
       isLatePolicyEditedRef.current = false
       syncCategoryLatePolicy(cat)
+      if (!isVisibilityEditedRef.current) {
+        setTargetRoles(normalizeTargetRoles(cat.target_roles, cat.visibility))
+      }
+      if (!isStreakPolicyEditedRef.current) {
+        setCountsTowardStreak(cat.countsTowardStreak ?? true)
+      }
     }
   }
 
@@ -518,10 +564,9 @@ export function EventForm({
         event_type_id: selectedTypeId,
         event_type: chosenType?.code,
         tag: chosenType?.code,
-        visibility:
-          chosenType?.visibility ??
-          deriveVisibilityFromRoles(chosenType?.target_roles) ??
-          "all",
+        target_roles: targetRoles,
+        visibility: deriveVisibilityFromTargetRoles(targetRoles),
+        counts_toward_streak: countsTowardStreak,
         max_late_minutes: parsedGrace ?? 0,
         late_penalty_points: parsedPenalty ?? 0,
       })
@@ -885,12 +930,16 @@ export function EventForm({
               <span>3. Optional Settings</span>
             </div>
             <p className="truncate text-[11px] font-medium text-text-muted">
-              {isDescriptionEdited
-                ? "Custom description"
-                : "Description template ready"}{" "}
+              {targetRoles.length >= 3
+                ? "All roles"
+                : formatAudienceRolesLabel(targetRoles)}{" "}
+              ·{" "}
+              {countsTowardStreak
+                ? "Mandatory (streak)"
+                : "Optional (no streak)"}{" "}
               ·{" "}
               {applyLatePenalty
-                ? `Late penalty: -${latePenaltyPoints || "0"} pts after ${maxLateMinutes || "0"}m`
+                ? `Late: -${latePenaltyPoints || "0"} pts (${maxLateMinutes || "0"}m)`
                 : "No late penalty"}
             </p>
           </div>
@@ -966,6 +1015,81 @@ export function EventForm({
                 className={`w-full resize-y rounded-xl border border-hairline bg-canvas px-3.5 py-2.5 text-xs leading-relaxed text-ink shadow-2xs transition-all outline-none placeholder:text-text-muted/70 focus:border-ink focus:ring-1 focus:ring-ink sm:text-sm ${isDescExpanded ? "min-h-[300px]" : "min-h-[104px] sm:min-h-[132px]"
                   }`}
               />
+            </div>
+
+            {/* Access Right (Target Roles) & Weekly Streak Requirement */}
+            <div className="space-y-3.5 border-t border-hairline pt-3.5">
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="flex items-center gap-2 text-xs font-bold text-ink sm:text-sm">
+                    <ShieldCheckIcon className="size-4 text-clay-teal" />
+                    <span>Access Right (Target Roles)</span>
+                  </span>
+                  <span className="text-[11px] text-text-muted">
+                    Select 1 or more roles
+                  </span>
+                </div>
+                <div
+                  role="group"
+                  aria-label="Event visibility"
+                  className="grid grid-cols-3 gap-2"
+                >
+                  {TARGET_ROLE_OPTIONS.map((opt) => {
+                    const selected = targetRoles.includes(opt.value)
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        role="checkbox"
+                        aria-checked={selected}
+                        onClick={() => {
+                          isVisibilityEditedRef.current = true
+                          setTargetRoles((prev) =>
+                            toggleTargetRoleSelection(prev, opt.value)
+                          )
+                        }}
+                        className={`flex min-h-[38px] cursor-pointer items-center justify-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold transition-all ${selected
+                          ? "border-ink bg-ink text-white shadow-2xs"
+                          : "border-hairline bg-canvas text-text-muted hover:bg-surface-card hover:text-ink"
+                          }`}
+                      >
+                        {selected && <CheckIcon className="size-3.5 shrink-0" />}
+                        <span>{opt.label}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between gap-3 border-t border-hairline/70 pt-3">
+                <div className="space-y-0.5">
+                  <label
+                    htmlFor="ev-counts-streak-toggle"
+                    className="flex cursor-pointer items-center gap-2 text-xs font-bold text-ink sm:text-sm"
+                  >
+                    <FlameIcon className="size-4 text-[#c28e20]" />
+                    <span>
+                      {countsTowardStreak
+                        ? "Mandatory Event (Affects Weekly Streak)"
+                        : "Optional Event (Does Not Affect Streak)"}
+                    </span>
+                  </label>
+                  <p className="text-[11px] leading-relaxed text-text-muted">
+                    Mandatory events maintain weekly streaks. Turn off for
+                    optional events—members still earn Karma Points without
+                    affecting streaks.
+                  </p>
+                </div>
+                <Switch
+                  id="ev-counts-streak-toggle"
+                  checked={countsTowardStreak}
+                  onCheckedChange={(checked) => {
+                    isStreakPolicyEditedRef.current = true
+                    setCountsTowardStreak(checked)
+                  }}
+                  aria-label="Mandatory Event (Affects Weekly Streak)"
+                />
+              </div>
             </div>
 
             {/* Attendance & Late Arrival Policy */}

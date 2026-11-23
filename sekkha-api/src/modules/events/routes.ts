@@ -54,6 +54,14 @@ eventsRouter.post(
   eventControllers.assignBadgeActivity
 )
 
+// PATCH /api/events/:id/attendances/:userId/waive-late — Admin-only removal of late status before event close
+eventsRouter.patch(
+  "/:id/attendances/:userId/waive-late",
+  requireAuth,
+  requireRole("admin"),
+  eventControllers.waiveLatePenalty
+)
+
 // DELETE /api/events/:id/attendances/:userId — Delete draft attendance record (Organizer & Admin only)
 eventsRouter.delete(
   "/:id/attendances/:userId",

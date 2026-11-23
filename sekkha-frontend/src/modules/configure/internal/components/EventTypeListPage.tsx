@@ -16,6 +16,7 @@ import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
 import { useAuth } from "@/modules/auth"
 import { eventTypesApi } from "../api/configureApi"
 import type { EventTypeDto } from "../api/configureApi"
+import { formatAudienceRolesLabel, normalizeTargetRoles } from "@/lib/eventAudience"
 import { Button } from "@/components/base/Button"
 import { Card } from "@/components/base/Card"
 import { Input } from "@/components/base/Input"
@@ -376,6 +377,32 @@ export function EventTypePage() {
                         ? "No Late Penalty"
                         : `${type.default_max_late_minutes ?? 30}m / -${type.default_late_penalty_points ?? 15} pts`}
                     </span>
+                    <span
+                      className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${
+                        type.counts_toward_streak === false
+                          ? "border-[#e5e5e5] bg-[#ebe6d6]/70 text-[#6a6a6a]"
+                          : "border-emerald-500/30 bg-emerald-500/10 text-emerald-800"
+                      }`}
+                    >
+                      {type.counts_toward_streak === false
+                        ? "Optional • No Streak"
+                        : "Mandatory • Streak"}
+                    </span>
+                    {(() => {
+                      const roles = normalizeTargetRoles(
+                        type.default_target_roles,
+                        type.default_visibility
+                      )
+                      if (roles.length >= 3) return null
+                      return (
+                        <span className="inline-flex items-center rounded-full border border-[#e5e5e5] bg-[#fffaf0] px-2.5 py-0.5 text-[11px] font-semibold text-[#0a0a0a]">
+                          {formatAudienceRolesLabel(
+                            type.default_target_roles,
+                            type.default_visibility
+                          )}
+                        </span>
+                      )
+                    })()}
                     <span className="font-mono text-[10px] text-[#6a6a6a] uppercase">
                       {type.color}
                     </span>

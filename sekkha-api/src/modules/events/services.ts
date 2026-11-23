@@ -6,6 +6,12 @@ import { Prisma } from "@prisma/client"
 import { AppError } from "../../lib/AppError"
 import type { Prisma as PrismaTypes } from "@prisma/client"
 import { canViewEvent } from "./policy"
+import {
+  normalizeTargetRoles,
+  resolveAudiencePolicy,
+  type EventVisibilityTier,
+  type TargetAudienceRole,
+} from "../../lib/eventAudience"
 import { eventbus, DomainEvents } from "../../core/eventbus"
 import {
   calculateWeeklyStreak,
@@ -79,7 +85,9 @@ type CreateEventInput = {
   event_type_id?: string
   season_id?: string
   tag?: string
-  visibility?: "all" | "member" | "activist" | "organizer"
+  visibility?: EventVisibilityTier
+  target_roles?: TargetAudienceRole[]
+  counts_toward_streak?: boolean
   point_reward?: number
   max_late_minutes?: number
   late_penalty_points?: number
@@ -131,12 +139,24 @@ export const eventServices = {
     if (userRole === "member") {
       andConditions.push({
         status: { in: ["scheduled", "active", "closed"] },
-        visibility: { in: ["all", "member"] },
+        OR: [
+          { targetRoles: { has: "member" } } as PrismaTypes.EventWhereInput,
+          {
+            targetRoles: { isEmpty: true } as PrismaTypes.EventWhereInput,
+            visibility: { in: ["all", "member"] },
+          } as PrismaTypes.EventWhereInput,
+        ],
       })
     } else if (userRole === "activist") {
       andConditions.push({
         status: { in: ["scheduled", "active", "closed"] },
-        visibility: { in: ["all", "activist"] },
+        OR: [
+          { targetRoles: { has: "activist" } } as PrismaTypes.EventWhereInput,
+          {
+            targetRoles: { isEmpty: true } as PrismaTypes.EventWhereInput,
+            visibility: { in: ["all", "activist"] },
+          } as PrismaTypes.EventWhereInput,
+        ],
       })
     }
 
@@ -221,6 +241,11 @@ export const eventServices = {
               : new Date(e.eventDate).toISOString(),
           status: e.status,
           visibility: e.visibility,
+          target_roles: normalizeTargetRoles(
+            (e as { targetRoles?: string[] }).targetRoles,
+            e.visibility
+          ),
+          counts_toward_streak: e.countsTowardStreak ?? true,
           point_reward: e.pointReward,
           max_late_minutes: e.maxLateMinutes ?? 30,
           late_penalty_points: e.latePenaltyPoints ?? 15,
@@ -235,6 +260,12 @@ export const eventServices = {
                 apply_late_penalty: e.type.applyLatePenalty ?? true,
                 default_max_late_minutes: e.type.defaultMaxLateMinutes ?? 30,
                 default_late_penalty_points: e.type.defaultLatePenaltyPoints ?? 15,
+                default_visibility: e.type.defaultVisibility ?? "all",
+                default_target_roles: normalizeTargetRoles(
+                  (e.type as { defaultTargetRoles?: string[] }).defaultTargetRoles,
+                  e.type.defaultVisibility ?? "all"
+                ),
+                counts_toward_streak: e.type.countsTowardStreak ?? true,
               }
             : null,
         }))
@@ -266,7 +297,11 @@ export const eventServices = {
           ;(event as any).status = "closed"
         }
 
-        if (!canViewEvent(userRole, event.status, event.visibility)) {
+        const eventTargetRoles = normalizeTargetRoles(
+          (event as { targetRoles?: string[] }).targetRoles,
+          event.visibility
+        )
+        if (!canViewEvent(userRole, event.status, event.visibility, eventTargetRoles)) {
           // Return 404 Not Found to prevent information disclosure per PRD Section 5
           throw new AppError("Event not found", 404, "EVENT_NOT_FOUND")
         }
@@ -282,6 +317,8 @@ export const eventServices = {
               : new Date(event.eventDate).toISOString(),
           status: event.status,
           visibility: event.visibility,
+          target_roles: eventTargetRoles,
+          counts_toward_streak: event.countsTowardStreak ?? true,
           point_reward: event.pointReward,
           max_late_minutes: event.maxLateMinutes ?? 30,
           late_penalty_points: event.latePenaltyPoints ?? 15,
@@ -296,6 +333,12 @@ export const eventServices = {
                 apply_late_penalty: event.type.applyLatePenalty ?? true,
                 default_max_late_minutes: event.type.defaultMaxLateMinutes ?? 30,
                 default_late_penalty_points: event.type.defaultLatePenaltyPoints ?? 15,
+                default_visibility: event.type.defaultVisibility ?? "all",
+                default_target_roles: normalizeTargetRoles(
+                  (event.type as { defaultTargetRoles?: string[] }).defaultTargetRoles,
+                  event.type.defaultVisibility ?? "all"
+                ),
+                counts_toward_streak: event.type.countsTowardStreak ?? true,
               }
             : null,
           season_id: event.seasonId,
@@ -361,6 +404,15 @@ export const eventServices = {
     const latePenaltyPoints =
       body.late_penalty_points ??
       (applyLatePenalty ? (eventType.defaultLatePenaltyPoints ?? 15) : 0)
+    const audience = resolveAudiencePolicy({
+      targetRoles: body.target_roles,
+      visibility: body.visibility,
+      fallbackTargetRoles: (eventType as { defaultTargetRoles?: string[] }).defaultTargetRoles,
+      fallbackVisibility: eventType.defaultVisibility ?? "all",
+    })
+    const visibility = audience.visibility
+    const countsTowardStreak =
+      body.counts_toward_streak ?? eventType.countsTowardStreak ?? true
 
     const event = await prisma.event.create({
       data: {
@@ -371,7 +423,9 @@ export const eventServices = {
         eventTypeId,
         seasonId: seasonId || null,
         status: "scheduled", // PRD: new event always starts as scheduled
-        visibility: body.visibility ?? "all",
+        visibility,
+        ...({ targetRoles: audience.targetRoles } as Record<string, unknown>),
+        countsTowardStreak,
         pointReward,
         maxLateMinutes,
         latePenaltyPoints,
@@ -387,7 +441,12 @@ export const eventServices = {
       action: "EVENT_CREATED",
       targetId: event.id,
       status: "SUCCESS",
-      details: { title: event.title, visibility: event.visibility },
+      details: {
+        title: event.title,
+        visibility: event.visibility,
+        targetRoles: audience.targetRoles,
+        countsTowardStreak: event.countsTowardStreak,
+      },
     })
 
     return {
@@ -397,6 +456,8 @@ export const eventServices = {
       location: event.location,
       event_date: event.eventDate.toISOString(),
       visibility: event.visibility,
+      target_roles: audience.targetRoles,
+      counts_toward_streak: event.countsTowardStreak ?? true,
       status: event.status,
       point_reward: event.pointReward,
       max_late_minutes: event.maxLateMinutes,
@@ -410,6 +471,12 @@ export const eventServices = {
             apply_late_penalty: event.type.applyLatePenalty ?? true,
             default_max_late_minutes: event.type.defaultMaxLateMinutes ?? 30,
             default_late_penalty_points: event.type.defaultLatePenaltyPoints ?? 15,
+            default_visibility: event.type.defaultVisibility ?? "all",
+            default_target_roles: normalizeTargetRoles(
+              (event.type as { defaultTargetRoles?: string[] }).defaultTargetRoles,
+              event.type.defaultVisibility ?? "all"
+            ),
+            counts_toward_streak: event.type.countsTowardStreak ?? true,
           }
         : null,
     }
@@ -458,6 +525,16 @@ export const eventServices = {
       if (typeByTag) eventTypeId = typeByTag.id
     }
 
+    const audienceUpdate =
+      body.target_roles !== undefined || body.visibility !== undefined
+        ? resolveAudiencePolicy({
+            targetRoles: body.target_roles,
+            visibility: body.visibility,
+            fallbackTargetRoles: (current as { targetRoles?: string[] }).targetRoles,
+            fallbackVisibility: current.visibility,
+          })
+        : null
+
     const event = await prisma.event.update({
       where: { id },
       data: {
@@ -465,7 +542,15 @@ export const eventServices = {
         ...(body.description !== undefined && { description: body.description?.trim() || null }),
         ...(body.location !== undefined && { location: body.location?.trim() }),
         ...(eventDate && { eventDate }),
-        ...(body.visibility && { visibility: body.visibility }),
+        ...(audienceUpdate
+          ? ({
+              visibility: audienceUpdate.visibility,
+              targetRoles: audienceUpdate.targetRoles,
+            } as Record<string, unknown>)
+          : {}),
+        ...(body.counts_toward_streak !== undefined && {
+          countsTowardStreak: body.counts_toward_streak,
+        }),
         ...(eventTypeId !== undefined && { eventTypeId }),
         ...(body.season_id !== undefined && { seasonId: body.season_id }),
         ...(body.point_reward !== undefined && { pointReward: body.point_reward }),
@@ -477,13 +562,22 @@ export const eventServices = {
 
     await invalidateEventMutationCaches()
 
+    const updatedRoles = normalizeTargetRoles(
+      (event as { targetRoles?: string[] }).targetRoles,
+      event.visibility
+    )
     auditLogger.log({
       actorId,
       actorRole,
       action: "EVENT_UPDATED",
       targetId: event.id,
       status: "SUCCESS",
-      details: { title: event.title, visibility: event.visibility },
+      details: {
+        title: event.title,
+        visibility: event.visibility,
+        targetRoles: updatedRoles,
+        countsTowardStreak: event.countsTowardStreak,
+      },
     })
 
     return {
@@ -491,6 +585,8 @@ export const eventServices = {
       title: event.title,
       status: event.status,
       visibility: event.visibility,
+      target_roles: updatedRoles,
+      counts_toward_streak: event.countsTowardStreak ?? true,
     }
   },
 
@@ -704,17 +800,22 @@ export const eventServices = {
             })
             const userMetaById = new Map(attendeeUsers.map((u) => [u.id, u]))
 
-            // Fetch all finalized attendances for streak calculation
-            const finalizedAttendances = await tx.attendance.findMany({
-              where: {
-                userId: { in: attendeeUserIds },
-                isFinalized: true,
-              },
-              select: {
-                userId: true,
-                scannedAt: true,
-              },
-            })
+            const countsTowardStreak = currentEvent.countsTowardStreak ?? true
+
+            // Fetch finalized streak-eligible attendances when closing a streak-eligible event
+            const finalizedAttendances = countsTowardStreak
+              ? await tx.attendance.findMany({
+                  where: {
+                    userId: { in: attendeeUserIds },
+                    isFinalized: true,
+                    event: { countsTowardStreak: true },
+                  },
+                  select: {
+                    userId: true,
+                    scannedAt: true,
+                  },
+                })
+              : []
             const attendancesByUser = new Map<string, { scannedAt: Date }[]>()
             for (const fa of finalizedAttendances) {
               const list = attendancesByUser.get(fa.userId) ?? []
@@ -732,43 +833,52 @@ export const eventServices = {
             const currentEventWeekKey = toWeekKey(eventDt)
             const currentMonthKey = toMonthKey(eventDt)
 
-            const activeCommunityWeeks = new Set<string>([currentEventWeekKey])
-            let monthEventDates: Date[] = [eventDt]
+            const activeCommunityWeeks = new Set<string>(
+              countsTowardStreak ? [currentEventWeekKey] : []
+            )
+            let monthEventDates: Date[] = countsTowardStreak ? [eventDt] : []
             let hasFutureUnclosedWeeksInMonth = false
 
-            if (typeof (tx.event as any).findMany === "function") {
-              const [closedEvents, monthEvents] = await Promise.all([
-                tx.event.findMany({
-                  where: { status: "closed", eventDate: { lte: eventDt } },
-                  select: { eventDate: true },
-                }),
-                tx.event.findMany({
-                  where: {
-                    status: { in: ["closed", "active", "scheduled"] },
-                    eventDate: { gte: monthStart, lte: monthEnd },
-                  },
-                  select: { id: true, eventDate: true, status: true },
-                }),
-              ])
-              for (const ce of closedEvents) {
-                activeCommunityWeeks.add(toWeekKey(new Date(ce.eventDate)))
-              }
-              monthEventDates = monthEvents.map((e) => new Date(e.eventDate))
-              if (!monthEvents.some((e) => e.id === currentEvent.id)) {
-                monthEventDates.push(eventDt)
-              }
-              hasFutureUnclosedWeeksInMonth = monthEvents.some(
-                (e) =>
-                  e.id !== currentEvent.id &&
-                  e.status !== "closed" &&
-                  toWeekKey(new Date(e.eventDate)) > currentEventWeekKey
-              )
-            } else {
-              for (const fa of finalizedAttendances) {
-                const faDt = new Date(fa.scannedAt)
-                activeCommunityWeeks.add(toWeekKey(faDt))
-                if (toMonthKey(faDt) === currentMonthKey) {
-                  monthEventDates.push(faDt)
+            if (countsTowardStreak) {
+              if (typeof (tx.event as any).findMany === "function") {
+                const [closedEvents, monthEvents] = await Promise.all([
+                  tx.event.findMany({
+                    where: {
+                      status: "closed",
+                      countsTowardStreak: true,
+                      eventDate: { lte: eventDt },
+                    },
+                    select: { eventDate: true },
+                  }),
+                  tx.event.findMany({
+                    where: {
+                      status: { in: ["closed", "active", "scheduled"] },
+                      countsTowardStreak: true,
+                      eventDate: { gte: monthStart, lte: monthEnd },
+                    },
+                    select: { id: true, eventDate: true, status: true },
+                  }),
+                ])
+                for (const ce of closedEvents) {
+                  activeCommunityWeeks.add(toWeekKey(new Date(ce.eventDate)))
+                }
+                monthEventDates = monthEvents.map((e) => new Date(e.eventDate))
+                if (!monthEvents.some((e) => e.id === currentEvent.id)) {
+                  monthEventDates.push(eventDt)
+                }
+                hasFutureUnclosedWeeksInMonth = monthEvents.some(
+                  (e) =>
+                    e.id !== currentEvent.id &&
+                    e.status !== "closed" &&
+                    toWeekKey(new Date(e.eventDate)) > currentEventWeekKey
+                )
+              } else {
+                for (const fa of finalizedAttendances) {
+                  const faDt = new Date(fa.scannedAt)
+                  activeCommunityWeeks.add(toWeekKey(faDt))
+                  if (toMonthKey(faDt) === currentMonthKey) {
+                    monthEventDates.push(faDt)
+                  }
                 }
               }
             }
@@ -801,17 +911,21 @@ export const eventServices = {
                 current.count += 1
                 if (att.scannedAt > current.scannedAt) current.scannedAt = att.scannedAt
               } else {
-                const userAtts = attendancesByUser.get(att.userId) ?? [{ scannedAt: att.scannedAt }]
-                const { current_streak } = calculateWeeklyStreak(
-                  userAtts,
-                  eventDt,
-                  activeCommunityWeeks
-                )
+                const existingStreak = userMetaById.get(att.userId)?.stats?.currentStreak ?? 0
+                let nextStreak = existingStreak
+                if (countsTowardStreak) {
+                  const userAtts = attendancesByUser.get(att.userId) ?? [{ scannedAt: att.scannedAt }]
+                  nextStreak = calculateWeeklyStreak(
+                    userAtts,
+                    eventDt,
+                    activeCommunityWeeks
+                  ).current_streak
+                }
                 statsByUser.set(att.userId, {
                   points: clampedAmount,
                   count: 1,
                   scannedAt: att.scannedAt,
-                  currentStreak: current_streak,
+                  currentStreak: nextStreak,
                 })
               }
             }
@@ -821,17 +935,19 @@ export const eventServices = {
             const monthBonusByUser = new Map<string, ReturnType<typeof evaluatePerfectMonthBonus>>()
             for (const [userId] of statsByUser) {
               bonusCandidateRefs.push(`first_attendance:${userId}`)
-              const userAtts = attendancesByUser.get(userId) ?? []
-              const monthEval = evaluatePerfectMonthBonus({
-                userId,
-                userAttendances: userAtts,
-                monthEventDates,
-                referenceEventDate: eventDt,
-                hasFutureUnclosedWeeksInMonth,
-              })
-              monthBonusByUser.set(userId, monthEval)
-              if (monthEval.eligible) {
-                bonusCandidateRefs.push(monthEval.referenceId)
+              if (countsTowardStreak) {
+                const userAtts = attendancesByUser.get(userId) ?? []
+                const monthEval = evaluatePerfectMonthBonus({
+                  userId,
+                  userAttendances: userAtts,
+                  monthEventDates,
+                  referenceEventDate: eventDt,
+                  hasFutureUnclosedWeeksInMonth,
+                })
+                monthBonusByUser.set(userId, monthEval)
+                if (monthEval.eligible) {
+                  bonusCandidateRefs.push(monthEval.referenceId)
+                }
               }
             }
 
@@ -898,14 +1014,14 @@ export const eventServices = {
                   update: {
                     points: { increment: stats.points },
                     totalAttendances: { increment: stats.count },
-                    currentStreak: stats.currentStreak,
+                    ...(countsTowardStreak ? { currentStreak: stats.currentStreak } : {}),
                     lastActivityAt: stats.scannedAt,
                   },
                   create: {
                     userId,
                     points: stats.points,
                     totalAttendances: stats.count,
-                    currentStreak: stats.currentStreak,
+                    currentStreak: countsTowardStreak ? stats.currentStreak : 0,
                     lastActivityAt: stats.scannedAt,
                   },
                 })
@@ -934,13 +1050,19 @@ export const eventServices = {
           const eventDt = new Date(currentEvent.eventDate)
           const currentMonthKey = toMonthKey(eventDt)
 
+          const countsTowardStreak = currentEvent.countsTowardStreak ?? true
+
           const [attendanceTxs, remainingFinalized] = await Promise.all([
             tx.pointTransaction.findMany({
               where: { referenceId: { in: attendeeIds } },
               select: { id: true, userId: true, amount: true, referenceId: true },
             }),
             tx.attendance.findMany({
-              where: { userId: { in: attendeeUserIds }, isFinalized: true },
+              where: {
+                userId: { in: attendeeUserIds },
+                isFinalized: true,
+                ...(countsTowardStreak ? { event: { countsTowardStreak: true } } : {}),
+              },
               select: { userId: true, scannedAt: true },
             }),
           ])
@@ -958,7 +1080,9 @@ export const eventServices = {
             if (remaining.length === 0) {
               bonusCandidateRefs.push(`first_attendance:${userId}`)
             }
-            bonusCandidateRefs.push(`streak_monthly_bonus:${userId}:${currentMonthKey}`)
+            if (countsTowardStreak) {
+              bonusCandidateRefs.push(`streak_monthly_bonus:${userId}:${currentMonthKey}`)
+            }
           }
 
           const bonusTxs =
@@ -990,9 +1114,9 @@ export const eventServices = {
 
           // Recompute remaining community active weeks for accurate streak rollback
           const activeCommunityWeeks = new Set<string>()
-          if (typeof (tx.event as any).findMany === "function") {
+          if (countsTowardStreak && typeof (tx.event as any).findMany === "function") {
             const closedEvents = await tx.event.findMany({
-              where: { status: "closed" },
+              where: { status: "closed", countsTowardStreak: true },
               select: { eventDate: true },
             })
             for (const ce of closedEvents) {
@@ -1012,20 +1136,23 @@ export const eventServices = {
               const deductAtts = attendanceCountByUser.get(userId) ?? 0
               const remainingUserAtts = remainingByUser.get(userId) ?? []
 
-              let recomputedStreak = 0
+              let recomputedStreak = existingStats.currentStreak ?? 0
               let latestRemainingScan: Date | null = null
-              if (remainingUserAtts.length > 0) {
-                for (const r of remainingUserAtts) {
-                  if (!latestRemainingScan || r.scannedAt > latestRemainingScan) {
-                    latestRemainingScan = r.scannedAt
-                  }
+              for (const r of remainingUserAtts) {
+                if (!latestRemainingScan || r.scannedAt > latestRemainingScan) {
+                  latestRemainingScan = r.scannedAt
                 }
-                const { current_streak } = calculateWeeklyStreak(
-                  remainingUserAtts,
-                  latestRemainingScan ?? new Date(),
-                  activeCommunityWeeks
-                )
-                recomputedStreak = current_streak
+              }
+              if (countsTowardStreak) {
+                recomputedStreak = 0
+                if (remainingUserAtts.length > 0) {
+                  const { current_streak } = calculateWeeklyStreak(
+                    remainingUserAtts,
+                    latestRemainingScan ?? new Date(),
+                    activeCommunityWeeks
+                  )
+                  recomputedStreak = current_streak
+                }
               }
 
               await (tx.userStats as any).update({
@@ -1033,7 +1160,7 @@ export const eventServices = {
                 data: {
                   points: Math.max(0, (existingStats.points ?? 0) - deductPoints),
                   totalAttendances: Math.max(0, (existingStats.totalAttendances ?? 0) - deductAtts),
-                  currentStreak: recomputedStreak,
+                  ...(countsTowardStreak ? { currentStreak: recomputedStreak } : {}),
                   lastActivityAt: latestRemainingScan,
                 },
               })
@@ -1246,6 +1373,78 @@ export const eventServices = {
       badge_activity_id: updated.badgeActivityId,
       badge_activity: updated.badgeActivity?.label ?? null,
       badge_bonus_points: updated.badgeBonusPoints,
+    }
+  },
+
+  async waiveLatePenalty(
+    actorId: string,
+    actorRole: string,
+    eventId: string,
+    userId: string
+  ) {
+    if (actorRole !== "admin") {
+      throw new AppError("Only admins can remove late status.", 403, "FORBIDDEN")
+    }
+
+    const [event, existing] = await Promise.all([
+      eventModels.findEventBasic(eventId),
+      eventModels.findExistingAttendance(eventId, userId),
+    ])
+    if (!event) {
+      throw new AppError("Event not found.", 404, "EVENT_NOT_FOUND")
+    }
+    if (!existing) {
+      throw new AppError("Attendance record not found.", 404, "ATTENDANCE_NOT_FOUND")
+    }
+    if (existing.isFinalized || event.status === "closed") {
+      throw new AppError(
+        "Cannot remove late status on a closed event.",
+        400,
+        "ATTENDANCE_ALREADY_FINALIZED"
+      )
+    }
+
+    if (!existing.isLate) {
+      return {
+        attendance_id: existing.id,
+        user_id: existing.userId,
+        is_late: false,
+        late_penalty_applied: 0,
+        points_earned: existing.pointsEarned,
+      }
+    }
+
+    const restoredPenalty = Math.max(0, existing.latePenaltyApplied ?? 0)
+    const restoredPoints = Math.max(0, existing.pointsEarned + restoredPenalty)
+    const updated = await eventModels.updateAttendance(existing.id, {
+      isLate: false,
+      latePenaltyApplied: 0,
+      pointsEarned: restoredPoints,
+    })
+
+    await invalidateAttendanceMutationCaches()
+
+    auditLogger.log({
+      actorId,
+      actorRole,
+      action: "EVENT_UPDATED",
+      targetId: existing.id,
+      status: "SUCCESS",
+      details: {
+        subAction: "LATE_PENALTY_WAIVED",
+        eventId,
+        userId,
+        restoredPenalty,
+        pointsEarned: updated.pointsEarned,
+      },
+    })
+
+    return {
+      attendance_id: updated.id,
+      user_id: updated.userId,
+      is_late: false,
+      late_penalty_applied: 0,
+      points_earned: updated.pointsEarned,
     }
   },
 

@@ -688,4 +688,87 @@ describe("EventForm & EventDetailSheet Enhancements", () => {
       })
     }
   })
+
+  it("inherits M2M target_roles & counts_toward_streak from EventType and allows overriding in Optional Settings", async () => {
+    vi.spyOn(api, "get").mockImplementation((path: string) => {
+      if (path.startsWith("/configure/event-types")) {
+        return Promise.resolve([
+          {
+            id: "typ_activist_meet",
+            code: "activist-meeting",
+            label: "Activist Meeting",
+            color: "#1a3a3a",
+            default_point_reward: 40,
+            apply_late_penalty: false,
+            default_max_late_minutes: 0,
+            default_late_penalty_points: 0,
+            default_visibility: "activist",
+            default_target_roles: ["activist", "organizer"],
+            counts_toward_streak: false,
+            is_active: true,
+          },
+        ] as any)
+      }
+      return Promise.resolve([] as any)
+    })
+
+    const handleSubmit = vi.fn()
+    const futureDate = new Date(Date.now() + 3 * 86400000)
+      .toISOString()
+      .slice(0, 10)
+
+    renderWithRole(
+      <EventForm
+        initialDate={futureDate}
+        recentLocations={[]}
+        onSubmit={handleSubmit}
+        onCancel={vi.fn()}
+      />,
+      "organizer"
+    )
+
+    const catRadio = await screen.findByRole("radio", {
+      name: /Activist Meeting/i,
+    })
+    fireEvent.click(catRadio)
+
+    fireEvent.change(screen.getByPlaceholderText(/Event Name/i), {
+      target: { value: "Monthly Activist Briefing" },
+    })
+
+    // Expand Optional Settings: inherited values should be Activist+Organizer + Optional (Streak OFF)
+    fireEvent.click(
+      screen.getByRole("button", { name: /3\. Optional Settings/i })
+    )
+    const memberCheckbox = screen.getByRole("checkbox", { name: /^Member$/i })
+    const activistCheckbox = screen.getByRole("checkbox", { name: /^Activist$/i })
+    const organizerCheckbox = screen.getByRole("checkbox", {
+      name: /^Organizer$/i,
+    })
+    expect(memberCheckbox.getAttribute("aria-checked")).toBe("false")
+    expect(activistCheckbox.getAttribute("aria-checked")).toBe("true")
+    expect(organizerCheckbox.getAttribute("aria-checked")).toBe("true")
+
+    const streakSwitch = screen.getByRole("switch", {
+      name: /Mandatory Event \(Affects Weekly Streak\)/i,
+    })
+    expect(streakSwitch.getAttribute("aria-checked")).toBe("false")
+
+    // Pick multiple roles: disable Activist, enable Member -> ["member", "organizer"] & toggle Mandatory ON
+    fireEvent.click(activistCheckbox)
+    fireEvent.click(memberCheckbox)
+    fireEvent.click(streakSwitch)
+
+    fireEvent.click(screen.getByRole("button", { name: /Create Event/i }))
+    await waitFor(() => {
+      expect(handleSubmit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: "Monthly Activist Briefing",
+          target_roles: ["member", "organizer"],
+          visibility: "member",
+          counts_toward_streak: true,
+        })
+      )
+    })
+  })
 })

@@ -8,7 +8,7 @@ import {
   CheckCircle2Icon,
   CheckCircleIcon,
   CheckIcon,
-  ClockIcon,
+  FileExclamationPoint,
   CopyIcon,
   FlameIcon,
   GraduationCapIcon,
@@ -467,7 +467,7 @@ export function MemberDetailPage({
                     {member.is_claimed ? (
                       <CheckCircle2Icon className="size-3.5" aria-hidden="true" />
                     ) : (
-                      <ClockIcon className="size-3.5" aria-hidden="true" />
+                      <FileExclamationPoint className="size-3.5" aria-hidden="true" />
                     )}
                   </span>
                 </div>
@@ -587,7 +587,7 @@ export function MemberDetailPage({
                             Member ID
                           </span>
                           <span className="block truncate font-mono font-semibold text-ink">
-                            #{memberNumberStr}
+                            {memberNumberStr}
                           </span>
                         </div>
                         {copiedId ? (

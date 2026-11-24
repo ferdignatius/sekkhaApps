@@ -182,10 +182,13 @@ describe("ProfilePage UI/UX, Layout & Behavioral Improvements", () => {
     })
 
     const hero = screen.getByTestId("profile-hero-card")
+    expect(within(hero).getByLabelText("Claimed Account")).toBeDefined()
     expect(within(hero).getByText("Admin Sekkha")).toBeDefined()
     expect(within(hero).getByText("@admin")).toBeDefined()
-    expect(within(hero).getByText("100 Pts")).toBeDefined()
-    expect(within(hero).getByText("1 Week")).toBeDefined()
+    expect(within(hero).getByText("100")).toBeDefined()
+    expect(within(hero).getByText("Karma Points")).toBeDefined()
+    expect(within(hero).getByText("1")).toBeDefined()
+    expect(within(hero).getByText("Weekly Streak")).toBeDefined()
 
     // Duplicate details belong exclusively in Pass & Personal Profile sections
     expect(within(hero).queryByText(/26010104/)).toBeNull()

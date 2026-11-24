@@ -3,8 +3,8 @@ import {
   IdCardIcon,
   Bolt,
   FlameIcon,
-  ShieldCheckIcon,
-  SparklesIcon,
+  CheckCircle2Icon,
+  FileExclamationPoint,
   LogOutIcon,
   AlertCircleIcon,
   SettingsIcon,
@@ -148,7 +148,7 @@ export function ProfilePage() {
 
   const role = normalizeRoleKey(profile?.role || authState.role)
   const roleLabel = formatRoleLabel(role)
-  const isShieldRole = role === "admin" || role === "organizer"
+  const isAccountVerified = profile?.email_verified ?? Boolean(profile?.email)
   const displayName = profile?.name || authState.name || "Community Member"
   const username = profile?.username || authState.username || ""
   const school = profile?.school || ""
@@ -245,13 +245,16 @@ export function ProfilePage() {
                       {getInitials(displayName, "M")}
                     </div>
                     <span
-                      aria-hidden="true"
-                      className="absolute right-0 bottom-0 flex size-6 items-center justify-center rounded-full border-2 border-[#fffaf0] bg-[#0a0a0a] text-[#e8b94a] shadow-xs"
+                      className={`absolute -right-0.5 -bottom-0.5 flex size-7 items-center justify-center rounded-full border-2 border-[#fffaf0] text-white shadow-xs ${
+                        isAccountVerified ? "bg-emerald-600" : "bg-amber-500"
+                      }`}
+                      title={isAccountVerified ? "Claimed Account" : "Unclaimed Account"}
+                      aria-label={isAccountVerified ? "Claimed Account" : "Unclaimed Account"}
                     >
-                      {isShieldRole ? (
-                        <ShieldCheckIcon className="size-3" />
+                      {isAccountVerified ? (
+                        <CheckCircle2Icon className="size-3.5" aria-hidden="true" />
                       ) : (
-                        <SparklesIcon className="size-3" />
+                        <FileExclamationPoint className="size-3.5" aria-hidden="true" />
                       )}
                     </span>
                   </div>

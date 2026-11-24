@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import {
-  SparklesIcon,
+  BookOpenText,
   Share2Icon,
   QuoteIcon,
   CheckIcon,
@@ -65,7 +65,7 @@ export function DhammaWidget() {
       setVerses(cachedVerses)
       const dayOfYear = Math.floor(
         (Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) /
-          86400000
+        86400000
       )
       setCurrentQuote(
         cachedVerses[dayOfYear % cachedVerses.length] || cachedVerses[0]
@@ -97,7 +97,7 @@ export function DhammaWidget() {
           setVerses(flattened)
           const dayOfYear = Math.floor(
             (Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) /
-              86400000
+            86400000
           )
           setCurrentQuote(
             flattened[dayOfYear % flattened.length] || flattened[0]
@@ -154,7 +154,7 @@ export function DhammaWidget() {
         <div className="mb-4 flex items-center justify-between gap-2">
           <div className="flex min-w-0 items-center gap-2.5">
             <span className="flex size-9 shrink-0 items-center justify-center rounded-[12px] border border-[#e8b94a]/40 bg-[#e8b94a]/20 text-[#0a0a0a] shadow-xs">
-              <SparklesIcon className="size-4.5 text-[#b88015]" />
+              <BookOpenText className="size-4.5 text-[#b88015]" />
             </span>
             <div className="min-w-0">
               <h3
@@ -215,7 +215,7 @@ export function DhammaWidget() {
       {/* Action Footer */}
       <div className="mt-3.5 flex items-center justify-between text-xs">
         <span className="hidden text-[11px] font-medium text-[#6a6a6a] sm:inline">
-          <SparklesIcon className="mr-1 inline size-3.5 text-[#e8b94a]" />
+          <BookOpenText className="mr-1 inline size-3.5 text-[#e8b94a]" />
           Share this wisdom
         </span>
 

@@ -975,7 +975,8 @@ Mencari dan menampilkan daftar anggota jemaat komunitas.
   - `search` (string): Pencarian nama, username, nomor anggota (`yyyymmddnn`), sekolah, atau email.
   - `claimed_status` (`all` | `claimed` | `unclaimed`, default: `all`)
   - `role` (`all` | `member` | `activist` | `organizer` | `admin`, default: `all`)
-  - `page` (number, default: 1)
+  - `cursor` (string, optional): ID member terakhir untuk cursor-based infinite scroll (lebih efisien untuk halaman dalam; saat diisi, query `countByRole`/`countByClaimStatus` dilewati).
+  - `page` (number, default: 1, diabaikan saat `cursor` diisi)
   - `limit` (number, default: 20, max: 100)
 - **Response (200 OK)**:
   ```json
@@ -999,8 +1000,12 @@ Mencari dan menampilkan daftar anggota jemaat komunitas.
       "page": 1,
       "limit": 20,
       "total": 142,
-      "totalPages": 8
-    }
+      "total_pages": 8,
+      "has_more": true,
+      "next_cursor": "usr_abc123"
+    },
+    "has_more": true,
+    "next_cursor": "usr_abc123"
   }
   ```
 

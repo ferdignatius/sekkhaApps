@@ -246,14 +246,28 @@ export const userControllers = {
   async getPointTransactions(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const userId = req.user!.userId
-      const limit = parseInt(req.query.limit as string, 10) || 10
-      const transactions = await userServices.getPointTransactions(userId, limit)
+      const limit = Math.min(Math.max(parseInt(req.query.limit as string, 10) || 15, 1), 50)
+      const cursor =
+        typeof req.query.cursor === "string" && req.query.cursor.trim()
+          ? req.query.cursor.trim()
+          : undefined
+      const paginated = req.query.paginated === "true"
+      const transactions = await userServices.getPointTransactions(userId, limit, cursor)
       res.json({
         status: "success",
         code: 200,
         message: "Points history retrieved successfully",
-        data: transactions.items,
+        data:
+          paginated || cursor
+            ? {
+                items: transactions.items,
+                has_more: transactions.has_more,
+                next_cursor: transactions.next_cursor,
+              }
+            : transactions.items,
         items: transactions.items,
+        has_more: transactions.has_more,
+        next_cursor: transactions.next_cursor,
       })
     } catch (err) {
       next(err)

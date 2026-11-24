@@ -22,12 +22,23 @@ export const peopleModels = {
     })
   },
 
-  findMany(where: any, take: number, skip: number) {
+  findMany(
+    where: any,
+    take: number,
+    skipOrOptions: number | { skip?: number; cursorId?: string } = 0
+  ) {
+    const opts =
+      typeof skipOrOptions === "number"
+        ? { skip: skipOrOptions }
+        : skipOrOptions
+
     return prisma.user.findMany({
       where: { ...(where || {}), anonymizedAt: null },
-      orderBy: { createdAt: "desc" },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       take,
-      skip,
+      ...(opts.cursorId
+        ? { cursor: { id: opts.cursorId }, skip: 1 }
+        : { skip: opts.skip ?? 0 }),
       select: {
         id: true,
         username: true,

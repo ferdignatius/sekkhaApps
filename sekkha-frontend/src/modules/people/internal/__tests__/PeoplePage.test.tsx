@@ -99,8 +99,83 @@ describe("PeoplePage 2-Column Mobile Grid, Fast Loading & Directory Isolation", 
       expect.objectContaining({ page: 1, limit: 12 }),
       expect.objectContaining({ signal: expect.any(AbortSignal) })
     )
+    // Role & Claim filters are inside top-bar Filter dropdown; Add Member is a bottom-right FAB
+    expect(screen.queryByText("Role Distribution")).toBeNull()
+    expect(screen.getByText("Unclaimed")).toBeTruthy()
+    expect(screen.queryByText("Claimed")).toBeNull()
+
+    const addFab = screen.getByRole("button", { name: /Add Member/i })
+    expect(addFab.className).toContain("fixed")
+    expect(addFab.className).toContain("rounded-full")
+
+    fireEvent.click(screen.getByRole("button", { name: /Filter members/i }))
+    expect(screen.getByText(/Organizers · 2/i)).toBeTruthy()
+    expect(screen.getByText(/All Accounts/i)).toBeTruthy()
+
+    fireEvent.click(screen.getByRole("button", { name: /Search members/i }))
+    expect(
+      screen.getByPlaceholderText(/Search name, @username, Member ID/i)
+    ).toBeTruthy()
+
     // Schools dropdown is lazy-loaded only when opening Add Member modal
     expect(schoolsSpy).not.toHaveBeenCalled()
+    expect(screen.queryByText(/Items per page/i)).toBeNull()
+  })
+
+  it("loads next cursor chunk via InfiniteScrollFooter Load more button without duplicates", async () => {
+    const { listSpy } = renderPeoplePage({
+      items: [
+        {
+          id: "usr_1",
+          name: "Alpha Member",
+          username: "alpha",
+          role: "member",
+          user_number: "26010101",
+          is_claimed: true,
+          created_at: "2026-10-01T00:00:00Z",
+        },
+      ],
+      total: 2,
+      page: 1,
+      limit: 12,
+      totalPages: 1,
+      has_more: true,
+      next_cursor: "usr_1",
+      stats: { total: 2, member: 2, activist: 0, organizer: 0 },
+    })
+
+    await waitFor(() => {
+      expect(screen.getByText("Alpha Member")).toBeTruthy()
+    })
+
+    listSpy.mockResolvedValueOnce({
+      items: [
+        {
+          id: "usr_2",
+          name: "Beta Member",
+          username: "beta",
+          role: "activist",
+          user_number: "26010102",
+          is_claimed: false,
+          created_at: "2026-10-02T00:00:00Z",
+        },
+      ],
+      limit: 12,
+      has_more: false,
+      next_cursor: null,
+    } as any)
+
+    const loadMoreBtn = screen.getByRole("button", { name: /Load more/i })
+    fireEvent.click(loadMoreBtn)
+
+    await waitFor(() => {
+      expect(screen.getByText("Beta Member")).toBeTruthy()
+    })
+    expect(screen.getByText("Alpha Member")).toBeTruthy()
+    expect(listSpy).toHaveBeenLastCalledWith(
+      expect.objectContaining({ cursor: "usr_1", limit: 12 }),
+      expect.objectContaining({ signal: expect.any(AbortSignal) })
+    )
   })
 
   it("lazy-loads verified schools only when opening Add Member and navigates to detail only on card click", async () => {
@@ -211,7 +286,7 @@ describe("PeoplePage 2-Column Mobile Grid, Fast Loading & Directory Isolation", 
       fireEvent.keyDown(schoolTrigger, { key: "ArrowDown" })
 
       const umnOption = await screen.findByRole("option", {
-        name: /Universitas Multimedia Nusantara \(Universitas\)/i,
+        name: /^Universitas Multimedia Nusantara$/i,
       })
       fireEvent.click(umnOption)
 

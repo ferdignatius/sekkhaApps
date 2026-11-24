@@ -4,11 +4,12 @@ import {
   CalendarIcon,
   RefreshCwIcon,
   AlertCircleIcon,
-  ChevronDownIcon,
   TrendingUpIcon,
   TrendingDownIcon,
 } from "lucide-react"
 import { Button, Card } from "@/components/base"
+import { InfiniteScrollFooter } from "@/components/common/InfiniteScrollFooter"
+import { useInfiniteScrollSentinel } from "@/hooks/useInfiniteScrollSentinel"
 import { userApi } from "../api/userApi"
 import type { PointTransactionDto } from "../api/userApi"
 
@@ -17,8 +18,7 @@ interface PointsLedgerProps {
   totalPoints?: number
 }
 
-const INITIAL_VISIBLE_COUNT = 3
-const LOAD_MORE_STEP = 10
+const PAGE_SIZE = 15
 
 function formatTxDate(dateStr?: string) {
   if (!dateStr) return "-"
@@ -50,38 +50,82 @@ function getTxCategoryLabel(type?: string): string {
 export function PointsLedger(_props: PointsLedgerProps) {
   const [transactions, setTransactions] = useState<PointTransactionDto[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
+  const [hasMore, setHasMore] = useState(false)
+  const [nextCursor, setNextCursor] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE_COUNT)
 
-  const fetchHistory = useCallback(async (isManualRefresh = false) => {
-    if (isManualRefresh) {
-      setRefreshing(true)
-    } else {
-      setLoading(true)
-    }
-    setError(null)
-    try {
-      const data = await userApi.getPointsHistory(50)
-      setTransactions(data)
-      if (isManualRefresh) {
-        setVisibleCount(INITIAL_VISIBLE_COUNT)
+  const fetchHistory = useCallback(
+    async (options: { isManualRefresh?: boolean; cursor?: string | null } = {}) => {
+      const { isManualRefresh = false, cursor } = options
+      const isLoadMore = Boolean(cursor)
+      if (isLoadMore) {
+        setLoadingMore(true)
+      } else if (isManualRefresh) {
+        setRefreshing(true)
+      } else {
+        setLoading(true)
       }
-    } catch (err: any) {
-      console.error("Failed to fetch points history:", err)
-      setError(err?.message || "Please check your connection and try again.")
-    } finally {
-      setLoading(false)
-      setRefreshing(false)
-    }
-  }, [])
+      setError(null)
+      try {
+        const pageRes =
+          typeof userApi.getPointsHistoryPage === "function"
+            ? await userApi.getPointsHistoryPage({
+                limit: PAGE_SIZE,
+                cursor: cursor ?? undefined,
+              })
+            : undefined
+
+        if (pageRes) {
+          if (isLoadMore) {
+            setTransactions((prev) => {
+              const seen = new Set(prev.map((t) => t.id))
+              const unique = pageRes.items.filter((t) => !seen.has(t.id))
+              return [...prev, ...unique]
+            })
+          } else {
+            setTransactions(pageRes.items)
+          }
+          setHasMore(pageRes.has_more)
+          setNextCursor(pageRes.next_cursor)
+        } else {
+          const data = await userApi.getPointsHistory(PAGE_SIZE)
+          setTransactions(data)
+          setHasMore(false)
+          setNextCursor(null)
+        }
+      } catch (err: any) {
+        console.error("Failed to fetch points history:", err)
+        if (!isLoadMore) {
+          setError(err?.message || "Please check your connection and try again.")
+        }
+      } finally {
+        setLoading(false)
+        setLoadingMore(false)
+        setRefreshing(false)
+      }
+    },
+    []
+  )
 
   useEffect(() => {
-    void fetchHistory(false)
+    void fetchHistory({ isManualRefresh: false })
   }, [fetchHistory])
 
-  const visibleTransactions = transactions.slice(0, visibleCount)
-  const remainingCount = Math.max(0, transactions.length - visibleCount)
+  const handleLoadMore = useCallback(() => {
+    if (!hasMore || loadingMore || !nextCursor) return
+    void fetchHistory({ cursor: nextCursor })
+  }, [hasMore, loadingMore, nextCursor, fetchHistory])
+
+  const sentinelRef = useInfiniteScrollSentinel({
+    hasMore,
+    loading: loading || refreshing,
+    loadingMore,
+    onLoadMore: handleLoadMore,
+  })
+
+  const visibleTransactions = transactions
 
   return (
     <div data-testid="points-ledger-section" className="space-y-3 sm:space-y-4">
@@ -99,7 +143,7 @@ export function PointsLedger(_props: PointsLedgerProps) {
           type="button"
           variant="secondary"
           size="icon"
-          onClick={() => void fetchHistory(true)}
+          onClick={() => void fetchHistory({ isManualRefresh: true })}
           disabled={loading || refreshing}
           aria-label="Refresh points history"
           title="Refresh history"
@@ -147,7 +191,7 @@ export function PointsLedger(_props: PointsLedgerProps) {
               type="button"
               variant="secondary"
               size="sm"
-              onClick={() => void fetchHistory(true)}
+              onClick={() => void fetchHistory({ isManualRefresh: true })}
               className="h-10 rounded-[12px] px-4 text-xs font-bold"
             >
               Try Again
@@ -223,19 +267,14 @@ export function PointsLedger(_props: PointsLedgerProps) {
             </ul>
           </Card>
 
-          {remainingCount > 0 && (
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() =>
-                setVisibleCount((prev) => prev + LOAD_MORE_STEP)
-              }
-              className="h-11 w-full gap-1.5 rounded-[14px] text-xs font-bold"
-            >
-              <span>Show More ({remainingCount} remaining)</span>
-              <ChevronDownIcon className="size-4" />
-            </Button>
-          )}
+          <InfiniteScrollFooter
+            hasMore={hasMore}
+            isLoadingMore={loadingMore}
+            loadedCount={visibleTransactions.length}
+            sentinelRef={sentinelRef}
+            onLoadMore={handleLoadMore}
+            itemLabel="transactions"
+          />
         </div>
       )}
     </div>

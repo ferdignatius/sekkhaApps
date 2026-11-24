@@ -128,6 +128,47 @@ export const userApi = {
     }
   },
 
+  getPointsHistoryPage: async (params?: {
+    limit?: number
+    cursor?: string | null
+  }): Promise<{
+    items: PointTransactionDto[]
+    has_more: boolean
+    next_cursor: string | null
+  }> => {
+    const limit = params?.limit ?? 15
+    const q = new URLSearchParams({
+      paginated: "true",
+      limit: String(limit),
+    })
+    if (params?.cursor) q.set("cursor", params.cursor)
+
+    const unwrap = (res: any) => {
+      const items: PointTransactionDto[] = Array.isArray(res)
+        ? res
+        : Array.isArray(res?.items)
+          ? res.items
+          : Array.isArray(res?.data)
+            ? res.data
+            : []
+      return {
+        items,
+        has_more: Boolean(res?.has_more),
+        next_cursor: (res?.next_cursor as string | null) ?? null,
+      }
+    }
+
+    try {
+      const res = await api.get<any>(`/users/me/points-history?${q.toString()}`)
+      return unwrap(res)
+    } catch {
+      const fallback = await api.get<any>(
+        `/users/me/point-transactions?${q.toString()}`
+      )
+      return unwrap(fallback)
+    }
+  },
+
   getActivityHeatmap: async (year?: number): Promise<ActivityHeatmapDto> => {
     const query = year ? `?year=${year}` : ""
     const res = await api.get<any>(`/users/me/activity-heatmap${query}`)

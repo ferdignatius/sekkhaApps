@@ -990,6 +990,64 @@ describe("People Module RBAC & Self-Protection Guardrails", () => {
         cache.restore()
       }
     })
+
+    it("supports cursor-based pagination with limit+1 lookahead and skips aggregate counts on cursor scroll", async () => {
+      const origCount = peopleModels.count
+      const origFindMany = peopleModels.findMany
+      const origRoleCounts = peopleModels.countByRole
+      const origClaimCounts = peopleModels.countByClaimStatus
+      const cache = withRedisCacheCapture()
+
+      let countCalls = 0
+      let roleCountCalls = 0
+      let claimCountCalls = 0
+      let capturedTake = 0
+      let capturedSkipOrOpts: any
+
+      peopleModels.count = async () => {
+        countCalls++
+        return 10
+      }
+      peopleModels.findMany = async (_where: any, take: number, skipOrOpts: any) => {
+        capturedTake = take
+        capturedSkipOrOpts = skipOrOpts
+        return [
+          makeUserRecord({ id: "usr_c1", username: "c1", profile: { name: "C1" } }),
+          makeUserRecord({ id: "usr_c2", username: "c2", profile: { name: "C2" } }),
+          makeUserRecord({ id: "usr_c3", username: "c3", profile: { name: "C3" } }),
+        ] as any
+      }
+      peopleModels.countByRole = async () => {
+        roleCountCalls++
+        return [] as any
+      }
+      peopleModels.countByClaimStatus = async () => {
+        claimCountCalls++
+        return [] as any
+      }
+
+      try {
+        const res = await peopleServices.getMembers(
+          { page: 1, limit: 2, cursor: "usr_prev" },
+          ORGANIZER_ACTOR
+        )
+
+        expect(capturedTake).toBe(3)
+        expect(capturedSkipOrOpts).toEqual({ cursorId: "usr_prev" })
+        expect(countCalls).toBe(0)
+        expect(roleCountCalls).toBe(0)
+        expect(claimCountCalls).toBe(0)
+        expect(res.items.length).toBe(2)
+        expect(res.has_more).toBe(true)
+        expect(res.next_cursor).toBe("usr_c2")
+      } finally {
+        peopleModels.count = origCount
+        peopleModels.findMany = origFindMany
+        peopleModels.countByRole = origRoleCounts
+        peopleModels.countByClaimStatus = origClaimCounts
+        cache.restore()
+      }
+    })
   })
 })
 

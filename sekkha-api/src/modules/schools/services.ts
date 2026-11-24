@@ -34,27 +34,33 @@ export const schoolServices = {
     status?: string
     page?: number
     limit?: number
+    cursor?: string
+    includeStats?: boolean
   }) {
     const search = params?.search?.trim() || ""
     const validLimit = Math.min(Math.max(Math.floor(Number(params?.limit) || 100), 1), 200)
     const validPage = Math.max(Math.floor(Number(params?.page) || 1), 1)
     const skip = (validPage - 1) * validLimit
+    const cursor = params?.cursor?.trim() || undefined
+    const includeStats = Boolean(params?.includeStats && !cursor)
 
-    const whereClause: any = {}
+    const baseWhere: any = {}
 
     if (params?.includePending) {
-      whereClause.status = { in: ["active", "pending"] }
+      baseWhere.status = { in: ["active", "pending"] }
       if (params?.isActive !== undefined) {
-        whereClause.isActive = params.isActive
+        baseWhere.isActive = params.isActive
       }
     } else {
-      whereClause.status = params?.status || "active"
+      baseWhere.status = params?.status || "active"
       if (params?.isActive !== undefined) {
-        whereClause.isActive = params.isActive
-      } else if (whereClause.status === "active") {
-        whereClause.isActive = true
+        baseWhere.isActive = params.isActive
+      } else if (baseWhere.status === "active" && !includeStats) {
+        baseWhere.isActive = true
       }
     }
+
+    const whereClause: any = { ...baseWhere }
 
     if (params?.type && params.type !== "all") {
       whereClause.type = normalizeSchoolType(params.type)
@@ -73,16 +79,51 @@ export const schoolServices = {
       isActive: params?.isActive,
       includePending: Boolean(params?.includePending),
       status: params?.status,
-      page: validPage,
+      page: cursor ? undefined : validPage,
       limit: validLimit,
+      cursor: cursor || "",
+      includeStats,
     }
 
     return cached(CacheKeys.schoolsList(JSON.stringify(filter)), 120, async () => {
-      const [schools, total] = await Promise.all([
-        schoolModels.findSchools(whereClause, validLimit, skip),
-        schoolModels.countSchoolsByWhere(whereClause),
-      ])
-      const result = schools.map((s) => ({
+      let rawSchools: Awaited<ReturnType<typeof schoolModels.findSchools>>
+      let total: number | undefined
+      let stats:
+        | { total: number; senior_high: number; university: number; linked_users: number }
+        | undefined
+
+      if (cursor) {
+        rawSchools = await schoolModels.findSchools(whereClause, validLimit + 1, {
+          cursorId: cursor,
+        })
+      } else if (includeStats) {
+        const [schoolsRows, countRows, statsRows] = await Promise.all([
+          schoolModels.findSchools(whereClause, validLimit + 1, skip),
+          schoolModels.countSchoolsByWhere(whereClause),
+          schoolModels.getSchoolDirectoryStats(baseWhere),
+        ])
+        rawSchools = schoolsRows
+        total = countRows
+        stats = statsRows
+      } else {
+        const [schoolsRows, countRows] = await Promise.all([
+          schoolModels.findSchools(whereClause, validLimit, skip),
+          schoolModels.countSchoolsByWhere(whereClause),
+        ])
+        rawSchools = schoolsRows
+        total = countRows
+      }
+
+      const usesLookahead = Boolean(cursor || includeStats)
+      const hasMore = usesLookahead
+        ? rawSchools.length > validLimit
+        : skip + rawSchools.length < (total ?? 0)
+      const pageRows =
+        usesLookahead && rawSchools.length > validLimit
+          ? rawSchools.slice(0, validLimit)
+          : rawSchools
+
+      const result = pageRows.map((s) => ({
         id: s.id,
         name: s.name,
         type: s.type || "Umum",
@@ -93,13 +134,18 @@ export const schoolServices = {
         updated_at: s.updatedAt.toISOString(),
       }))
 
-      const totalPages = Math.max(1, Math.ceil(total / validLimit))
+      const nextCursor =
+        hasMore && result.length > 0 ? result[result.length - 1].id : null
+      const totalPages =
+        total !== undefined ? Math.max(1, Math.ceil(total / validLimit)) : undefined
       return {
         total,
-        page: validPage,
+        page: cursor ? undefined : validPage,
         limit: validLimit,
         total_pages: totalPages,
-        has_more: skip + result.length < total,
+        has_more: hasMore,
+        next_cursor: nextCursor,
+        stats,
         schools: result,
         items: result,
       }

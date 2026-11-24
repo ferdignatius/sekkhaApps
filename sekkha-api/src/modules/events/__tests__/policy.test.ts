@@ -480,4 +480,84 @@ describe("Event Services & State Transitions", () => {
     eventModels.findExistingAttendance = origFindExisting
     eventModels.createAttendance = origCreateAttendance
   })
+
+  it("supports cursor pagination, summary breakdown, and method/search filters in listAttendances", async () => {
+    const origFindBasic = eventModels.findEventBasic
+    const origFindMany = eventModels.findEventAttendances
+    const origSummary = eventModels.getEventAttendanceSummary
+
+    let capturedTake = 0
+    let capturedOpts: any
+    let summaryCalls = 0
+
+    eventModels.findEventBasic = async () =>
+      ({
+        id: "evt_cur",
+        title: "Puja",
+        eventDate: new Date(),
+        status: "active",
+      }) as any
+    eventModels.getEventAttendanceSummary = async () => {
+      summaryCalls++
+      return { total_attended: 5, qr_count: 3, manual_count: 2, late_count: 1 }
+    }
+    eventModels.findEventAttendances = async (_eventId, skipOrOpts, take) => {
+      capturedOpts = skipOrOpts
+      capturedTake = take ?? 0
+      return [
+        {
+          id: "att_10",
+          userId: "usr_10",
+          method: "qr",
+          pointsEarned: 50,
+          isLate: false,
+          latePenaltyApplied: 0,
+          badgeActivityId: null,
+          badgeActivity: null,
+          badgeBonusPoints: 0,
+          isFinalized: false,
+          scannedAt: new Date("2026-11-20T10:00:00Z"),
+          user: { role: "member", userNumber: BigInt("2026112010"), profile: { name: "A", school: null } },
+        },
+        {
+          id: "att_11",
+          userId: "usr_11",
+          method: "qr",
+          pointsEarned: 50,
+          isLate: false,
+          latePenaltyApplied: 0,
+          badgeActivityId: null,
+          badgeActivity: null,
+          badgeBonusPoints: 0,
+          isFinalized: false,
+          scannedAt: new Date("2026-11-20T10:01:00Z"),
+          user: { role: "member", userNumber: BigInt("2026112011"), profile: { name: "B", school: null } },
+        },
+      ] as any
+    }
+
+    try {
+      const first = await eventServices.listAttendances("evt_cur", "usr_admin", true, 1, 1, {
+        paginated: true,
+      })
+      expect(capturedTake).toBe(2)
+      expect(summaryCalls).toBe(1)
+      expect(first.attendances).toHaveLength(1)
+      expect(first.has_more).toBe(true)
+      expect(first.next_cursor).toBe("att_10")
+      expect(first.qr_count).toBe(3)
+
+      const next = await eventServices.listAttendances("evt_cur", "usr_admin", true, 1, 1, {
+        cursor: "att_10",
+        method: "qr",
+      })
+      expect(capturedOpts.cursorId).toBe("att_10")
+      expect(summaryCalls).toBe(1)
+      expect(next.has_more).toBe(true)
+    } finally {
+      eventModels.findEventBasic = origFindBasic
+      eventModels.findEventAttendances = origFindMany
+      eventModels.getEventAttendanceSummary = origSummary
+    }
+  })
 })

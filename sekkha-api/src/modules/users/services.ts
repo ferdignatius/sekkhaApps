@@ -444,25 +444,32 @@ export const userServices = {
     }
   },
 
-  async getPointTransactions(userId: string, limit: number = 20) {
-    const raw = await userModels.findUserPointTransactions(userId, limit)
-    const stats = await prisma.userStats.findUnique({ where: { userId } })
+  async getPointTransactions(userId: string, limit: number = 15, cursor?: string) {
+    const safeLimit = Math.min(Math.max(limit, 1), 50)
+    const raw = await userModels.findUserPointTransactions(userId, safeLimit + 1, cursor)
+    const hasMore = raw.length > safeLimit
+    const pageRows = hasMore ? raw.slice(0, safeLimit) : raw
+    const stats = cursor ? null : await prisma.userStats.findUnique({ where: { userId } })
     let currentBalance = stats?.points ?? 0
 
-    const items = raw.map((pt) => {
-      const balance = currentBalance
-      currentBalance -= pt.amount
+    const items = pageRows.map((pt) => {
+      const balance = cursor ? undefined : currentBalance
+      if (!cursor) {
+        currentBalance -= pt.amount
+      }
       return {
         id: pt.id,
         points: pt.amount,
         points_delta: pt.amount,
         type: pt.type,
         description: pt.description || "",
-        running_balance: balance,
+        ...(balance !== undefined ? { running_balance: balance } : {}),
         created_at: new Date(pt.createdAt).toISOString(),
       }
     })
-    return { items }
+    const nextCursor =
+      hasMore && items.length > 0 ? items[items.length - 1].id : null
+    return { items, has_more: hasMore, next_cursor: nextCursor }
   },
 
   async requestChangePasswordOtp(userId: string, currentPass?: string) {

@@ -125,6 +125,8 @@ export const eventServices = {
       month?: string
       year?: string
       search?: string
+      cursor?: string
+      paginated?: boolean
     }
   ) {
     await this.autoCloseExpiredActiveEvents().catch(() => {})
@@ -207,10 +209,15 @@ export const eventServices = {
     const whereClause: PrismaTypes.EventWhereInput =
       andConditions.length > 0 ? { AND: andConditions } : {}
 
+    const cursor = filters?.cursor?.trim() || undefined
+    const isPaginatedResponse = Boolean(cursor || filters?.paginated)
+
     const query = {
       isPrivileged,
-      page: validPage,
+      page: cursor ? undefined : validPage,
       limit: validLimit,
+      cursor: cursor || null,
+      paginated: isPaginatedResponse,
       status: filters?.status || null,
       event_type_id: filters?.event_type_id || null,
       month: filters?.month || null,
@@ -218,19 +225,29 @@ export const eventServices = {
       search: filters?.search?.trim() || null,
     }
 
-    const list = await cached(
+    const result = await cached(
       CacheKeys.events(userRole || "anon", JSON.stringify(query)),
       15,
       async () => {
-        const events = await eventModels.findEvents(whereClause, skip, validLimit)
-        for (const ev of events) {
+        const rawEvents = isPaginatedResponse
+          ? await eventModels.findEvents(
+              whereClause,
+              cursor ? { cursorId: cursor } : skip,
+              validLimit + 1
+            )
+          : await eventModels.findEvents(whereClause, skip, validLimit)
+
+        const hasMore = isPaginatedResponse && rawEvents.length > validLimit
+        const pageEvents = hasMore ? rawEvents.slice(0, validLimit) : rawEvents
+
+        for (const ev of pageEvents) {
           if (isActiveEventExpired(ev.status, ev.eventDate)) {
             await closeExpiredEventSafely(ev.id)
             ;(ev as any).status = "closed"
           }
         }
 
-        return events.map((e) => ({
+        const mapped = pageEvents.map((e) => ({
           id: e.id,
           title: e.title,
           description: e.description,
@@ -269,17 +286,31 @@ export const eventServices = {
               }
             : null,
         }))
+
+        if (!isPaginatedResponse) {
+          return mapped
+        }
+
+        const nextCursor =
+          hasMore && mapped.length > 0 ? mapped[mapped.length - 1].id : null
+        return {
+          items: mapped,
+          has_more: hasMore,
+          next_cursor: nextCursor,
+          limit: validLimit,
+        }
       }
     )
 
-    for (const ev of list) {
+    const itemsList = Array.isArray(result) ? result : result.items
+    for (const ev of itemsList) {
       if (isActiveEventExpired(ev.status, ev.event_date)) {
         await closeExpiredEventSafely(ev.id)
         ;(ev as any).status = "closed"
       }
     }
 
-    return list
+    return result
   },
 
   async getEventDetail(id: string, userRole: string, isPrivileged: boolean) {
@@ -1464,7 +1495,13 @@ export const eventServices = {
     callerId: string,
     isPrivileged: boolean,
     page = 1,
-    limit = 100
+    limit = 100,
+    options?: {
+      cursor?: string
+      method?: string
+      search?: string
+      paginated?: boolean
+    }
   ) {
     const safePage = Math.max(1, page)
     const safeLimit = Math.min(200, Math.max(1, limit))
@@ -1482,6 +1519,8 @@ export const eventServices = {
           is_finalized: event.status === "closed",
           attendances: [],
           my_attendance: null,
+          has_more: false,
+          next_cursor: null,
         }
       }
 
@@ -1510,21 +1549,99 @@ export const eventServices = {
         is_finalized: event.status === "closed",
         attendances: [mapped],
         my_attendance: mapped,
+        has_more: false,
+        next_cursor: null,
       }
     }
 
-    const totalCount = await eventModels.countEventAttendances(eventId)
-    const attendances = await eventModels.findEventAttendances(
-      eventId,
-      (safePage - 1) * safeLimit,
-      safeLimit
-    )
+    const cursor = options?.cursor?.trim() || undefined
+    const methodFilter = options?.method?.trim().toLowerCase()
+    const searchQuery = options?.search?.trim() || ""
+    const hasFilterOrSearch =
+      Boolean(searchQuery) ||
+      Boolean(methodFilter && methodFilter !== "all")
+    const isServerCursorMode = Boolean(cursor || options?.paginated || hasFilterOrSearch)
+
+    const whereParts: PrismaTypes.AttendanceWhereInput[] = []
+    if (methodFilter === "qr") {
+      whereParts.push({ method: "qr" })
+    } else if (methodFilter === "manual") {
+      whereParts.push({ method: "manual" })
+    } else if (methodFilter === "late") {
+      whereParts.push({ isLate: true })
+    }
+
+    if (searchQuery) {
+      const isNum = /^\d{1,18}$/.test(searchQuery)
+      whereParts.push({
+        user: {
+          OR: [
+            { profile: { name: { contains: searchQuery, mode: "insensitive" } } },
+            { profile: { school: { name: { contains: searchQuery, mode: "insensitive" } } } },
+            ...(isNum ? [{ userNumber: BigInt(searchQuery) }] : []),
+          ],
+        },
+      })
+    }
+
+    const extraWhere: PrismaTypes.AttendanceWhereInput | undefined =
+      whereParts.length > 0 ? { AND: whereParts } : undefined
+
+    const rawRows = isServerCursorMode
+      ? await eventModels.findEventAttendances(
+          eventId,
+          cursor
+            ? { cursorId: cursor, where: extraWhere }
+            : { skip: (safePage - 1) * safeLimit, where: extraWhere },
+          safeLimit + 1
+        )
+      : await eventModels.findEventAttendances(
+          eventId,
+          (safePage - 1) * safeLimit,
+          safeLimit
+        )
+
+    const hasMore = isServerCursorMode && rawRows.length > safeLimit
+    const pageRows = hasMore ? rawRows.slice(0, safeLimit) : rawRows
+    const nextCursor =
+      hasMore && pageRows.length > 0 ? pageRows[pageRows.length - 1].id : null
+
+    let totalCount: number | undefined
+    let filteredTotal: number | undefined
+    let qrCount: number | undefined
+    let manualCount: number | undefined
+    let lateCount: number | undefined
+
+    if (isServerCursorMode) {
+      if (!cursor) {
+        const [summary, filtered] = await Promise.all([
+          eventModels.getEventAttendanceSummary(eventId),
+          extraWhere
+            ? eventModels.countEventAttendances(eventId, extraWhere)
+            : Promise.resolve(undefined),
+        ])
+        totalCount = summary.total_attended
+        qrCount = summary.qr_count
+        manualCount = summary.manual_count
+        lateCount = summary.late_count
+        filteredTotal = filtered ?? summary.total_attended
+      }
+    } else {
+      totalCount = await eventModels.countEventAttendances(eventId)
+      filteredTotal = totalCount
+    }
 
     return {
       event_id: eventId,
       total_attended: totalCount,
+      filtered_total: filteredTotal,
+      qr_count: qrCount,
+      manual_count: manualCount,
+      late_count: lateCount,
       is_finalized: event.status === "closed",
-      attendances: attendances.map((a) => ({
+      has_more: hasMore,
+      next_cursor: nextCursor,
+      attendances: pageRows.map((a) => ({
         attendance_id: a.id,
         user_id: a.userId,
         name: a.user.profile?.name ?? "Sekkha Member",

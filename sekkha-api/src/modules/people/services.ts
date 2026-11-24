@@ -101,6 +101,7 @@ export type ListMembersQuery = {
   status?: "all" | "claimed" | "unclaimed"
   role?: "all" | "member" | "activist" | "organizer" | "admin" | "umat" | "aktivis" | "pengurus"
   school_id?: string
+  cursor?: string
   page: number
   limit: number
 }
@@ -112,6 +113,7 @@ export const peopleServices = {
     const rawSearch = (queryParams.search || "").trim()
     const claimedStatus = queryParams.claimed_status || queryParams.status || "all"
     const roleFilter = queryParams.role || "all"
+    const cursor = queryParams.cursor?.trim() || undefined
     const { page, limit } = queryParams
 
     const cacheKey = CacheKeys.peopleDirectory(
@@ -121,7 +123,8 @@ export const peopleServices = {
           claimed_status: claimedStatus,
           role: roleFilter,
           school_id: queryParams.school_id || "",
-          page,
+          cursor: cursor || "",
+          page: cursor ? undefined : page,
           limit,
         },
         role: currentUser?.role || "anon",
@@ -169,35 +172,60 @@ export const peopleServices = {
 
       const skip = (page - 1) * limit
 
-      const [totalMatching, rawMembers, roleCounts, claimCounts] = await Promise.all([
-        peopleModels.count(where),
-        peopleModels.findMany(where, limit, skip),
-        peopleModels.countByRole(),
-        peopleModels.countByClaimStatus(),
-      ])
+      const [totalMatching, rawMembers, roleCounts, claimCounts] = cursor
+        ? [
+            undefined,
+            await peopleModels.findMany(where, limit + 1, { cursorId: cursor }),
+            undefined,
+            undefined,
+          ]
+        : await Promise.all([
+            peopleModels.count(where),
+            peopleModels.findMany(where, limit + 1, skip),
+            peopleModels.countByRole(),
+            peopleModels.countByClaimStatus(),
+          ])
 
-      const stats = {
-        total: 0,
-        member: 0,
-        activist: 0,
-        organizer: 0,
-        claimed: 0,
-        unclaimed: 0,
+      const hasMore = rawMembers.length > limit
+      const pageRows = hasMore ? rawMembers.slice(0, limit) : rawMembers
+      const nextCursor =
+        hasMore && pageRows.length > 0 ? pageRows[pageRows.length - 1].id : null
+
+      let stats:
+        | {
+            total: number
+            member: number
+            activist: number
+            organizer: number
+            claimed: number
+            unclaimed: number
+          }
+        | undefined
+
+      if (roleCounts && claimCounts) {
+        stats = {
+          total: 0,
+          member: 0,
+          activist: 0,
+          organizer: 0,
+          claimed: 0,
+          unclaimed: 0,
+        }
+
+        roleCounts.forEach((row) => {
+          stats!.total += row._count._all
+          if (row.role === "member") stats!.member = row._count._all
+          if (row.role === "activist") stats!.activist = row._count._all
+          if (row.role === "organizer" || row.role === "admin") stats!.organizer += row._count._all
+        })
+
+        claimCounts.forEach((row) => {
+          if (row.isClaimed) stats!.claimed += row._count._all
+          else stats!.unclaimed += row._count._all
+        })
       }
 
-      roleCounts.forEach((row) => {
-        stats.total += row._count._all
-        if (row.role === "member") stats.member = row._count._all
-        if (row.role === "activist") stats.activist = row._count._all
-        if (row.role === "organizer" || row.role === "admin") stats.organizer += row._count._all
-      })
-
-      claimCounts.forEach((row) => {
-        if (row.isClaimed) stats.claimed += row._count._all
-        else stats.unclaimed += row._count._all
-      })
-
-      const items = rawMembers.map((m) => {
+      const items = pageRows.map((m) => {
         return {
           id: m.id,
           user_number: m.userNumber ? Number(m.userNumber) : null,
@@ -209,20 +237,27 @@ export const peopleServices = {
         }
       })
 
-      const totalPages = Math.max(1, Math.ceil(totalMatching / limit))
+      const totalPages =
+        totalMatching !== undefined
+          ? Math.max(1, Math.ceil(totalMatching / limit))
+          : undefined
 
       return {
         items,
         pagination: {
-          page,
+          page: cursor ? undefined : page,
           limit,
           total: totalMatching,
           total_pages: totalPages,
+          has_more: hasMore,
+          next_cursor: nextCursor,
         },
-        page,
+        page: cursor ? undefined : page,
         limit,
         total: totalMatching,
         totalPages,
+        has_more: hasMore,
+        next_cursor: nextCursor,
         stats,
       }
     })

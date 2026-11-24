@@ -180,9 +180,70 @@ export interface SchoolDto {
   updated_at?: string
 }
 
+export interface SchoolDirectoryStats {
+  total: number
+  senior_high: number
+  university: number
+  linked_users: number
+}
+
+export interface PaginatedSchoolsResponse {
+  items: SchoolDto[]
+  total?: number
+  has_more: boolean
+  next_cursor: string | null
+  stats?: SchoolDirectoryStats
+}
+
 export type SchoolRequestDto = SchoolDto
 
 export const schoolsApi = {
+  listCursor: (
+    params?: {
+      search?: string
+      type?: string
+      is_active?: boolean
+      cursor?: string | null
+      limit?: number
+      include_stats?: boolean
+    },
+    requestOptions?: { signal?: AbortSignal }
+  ): Promise<PaginatedSchoolsResponse> => {
+    const q = new URLSearchParams()
+    q.set("paginated", "true")
+    q.set("limit", String(params?.limit ?? 20))
+    if (params?.cursor) q.set("cursor", params.cursor)
+    if (params?.include_stats) q.set("include_stats", "true")
+    if (params?.search) q.set("search", params.search)
+    if (params?.type && params.type !== "all") q.set("type", params.type)
+    if (params?.is_active !== undefined) {
+      q.set("is_active", String(params.is_active))
+    }
+
+    return api
+      .get<any>(
+        `/configure/schools?${q.toString()}`,
+        requestOptions?.signal ? { signal: requestOptions.signal } : undefined
+      )
+      .then((res) => {
+        const items: SchoolDto[] = Array.isArray(res)
+          ? res
+          : Array.isArray(res?.items)
+            ? res.items
+            : Array.isArray(res?.data)
+              ? res.data
+              : Array.isArray(res?.schools)
+                ? res.schools
+                : []
+        return {
+          items,
+          total: typeof res?.total === "number" ? res.total : undefined,
+          has_more: Boolean(res?.has_more),
+          next_cursor: res?.next_cursor ?? null,
+          stats: res?.stats,
+        }
+      })
+  },
   list: (
     params?: { search?: string; type?: string; is_active?: boolean } | string
   ) => {

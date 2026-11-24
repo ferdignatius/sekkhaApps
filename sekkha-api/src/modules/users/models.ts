@@ -192,7 +192,7 @@ export const userModels = {
     })
   },
 
-  findUserPointTransactions(userId: string, take: number = 20) {
+  findUserPointTransactions(userId: string, take: number = 20, cursor?: string) {
     return prisma.pointTransaction.findMany({
       where: { userId },
       select: {
@@ -202,8 +202,9 @@ export const userModels = {
         description: true,
         createdAt: true,
       },
-      orderBy: { createdAt: "desc" },
-      take: Math.min(Math.max(take, 1), 50),
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      take: Math.min(Math.max(take, 1), 51),
     })
   },
 

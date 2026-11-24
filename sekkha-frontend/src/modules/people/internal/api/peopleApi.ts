@@ -78,10 +78,12 @@ export interface UpdateMemberPayload {
 
 export interface PaginatedMembersResponse {
   items: MemberDto[]
-  total: number
-  page: number
+  total?: number
+  page?: number
   limit: number
-  totalPages: number
+  totalPages?: number
+  has_more?: boolean
+  next_cursor?: string | null
   stats?: {
     total: number
     member?: number
@@ -97,10 +99,11 @@ export interface ListMembersParams {
   claimed_status?: string
   role?: string
   school_id?: string
+  cursor?: string
 }
 
 export interface ListPaginatedMembersParams extends ListMembersParams {
-  page: number
+  page?: number
   limit?: number
 }
 
@@ -140,6 +143,7 @@ export const peopleApi = {
     if (params?.role && params.role !== "all")
       searchParams.set("role", params.role)
     if (params?.school_id) searchParams.set("school_id", params.school_id)
+    if (params?.cursor) searchParams.set("cursor", params.cursor)
     if (params?.page !== undefined)
       searchParams.set("page", params.page.toString())
     if (params?.limit !== undefined)
@@ -148,7 +152,11 @@ export const peopleApi = {
     const apiOpts = requestOptions?.signal
       ? { signal: requestOptions.signal }
       : undefined
-    if (params?.page !== undefined || params?.limit !== undefined) {
+    if (
+      params?.page !== undefined ||
+      params?.limit !== undefined ||
+      params?.cursor !== undefined
+    ) {
       return api.get<PaginatedMembersResponse>(
         `/people/members${qs ? `?${qs}` : ""}`,
         apiOpts

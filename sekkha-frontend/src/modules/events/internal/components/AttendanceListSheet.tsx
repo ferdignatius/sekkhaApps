@@ -2,15 +2,13 @@
 // Apple HIG Inset Grouped List for Attendance Records.
 // Standardized strictly with Sekkha Design System (DESIGN.md & AGENTS.md).
 
-import { useState, useMemo, useEffect, useRef } from "react"
+import { useState, useMemo, useEffect, useRef, useCallback } from "react"
 import {
   QrCodeIcon,
   XIcon,
   Trash2Icon,
   LockIcon,
   SearchIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
   UsersIcon,
   ClipboardListIcon,
   ClockIcon,
@@ -31,9 +29,21 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { InfiniteScrollFooter } from "@/components/common/InfiniteScrollFooter"
 import { usePaginatedDropdown } from "@/hooks/usePaginatedDropdown"
+import { useDebouncedSearch } from "@/hooks/useDebounce"
+import { useInfiniteScrollSentinel } from "@/hooks/useInfiniteScrollSentinel"
 import { DROPDOWN_PAGE_SIZE, normalizePaginatedResult } from "@/lib/pagination"
 import { api } from "@/lib/api"
 import { getInitials } from "@/lib/initials"
+
+export interface AttendanceListMeta {
+  totalCount?: number
+  filteredTotal?: number
+  qrCount?: number
+  manualCount?: number
+  lateCount?: number
+  hasMore?: boolean
+  nextCursor?: string | null
+}
 
 interface BadgeActivityOption {
   id: string
@@ -46,6 +56,7 @@ interface BadgeActivityOption {
 interface AttendanceListSheetProps {
   eventId?: string
   records: AttendanceRecord[]
+  attendanceMeta?: AttendanceListMeta
   role: UserRole | null
   isClosed?: boolean
   onDeleteRecord?: (userId: string) => void
@@ -354,6 +365,7 @@ function SwipeableAttendanceRow({
 export function AttendanceListSheet({
   eventId,
   records,
+  attendanceMeta,
   role,
   isClosed = false,
   onDeleteRecord,
@@ -365,6 +377,26 @@ export function AttendanceListSheet({
   const canWaiveLate = isAdmin && !isClosed
 
   const [localRecords, setLocalRecords] = useState<AttendanceRecord[]>(records)
+  const [serverSummary, setServerSummary] = useState<AttendanceListMeta | null>(
+    attendanceMeta ?? null
+  )
+  const [serverActive, setServerActive] = useState(
+    Boolean(attendanceMeta?.hasMore)
+  )
+  const [serverHasMore, setServerHasMore] = useState(
+    Boolean(attendanceMeta?.hasMore)
+  )
+  const [serverNextCursor, setServerNextCursor] = useState<string | null>(
+    attendanceMeta?.nextCursor ?? null
+  )
+  const [serverFilteredTotal, setServerFilteredTotal] = useState<
+    number | undefined
+  >(attendanceMeta?.filteredTotal ?? attendanceMeta?.totalCount)
+  const [loadingFilter, setLoadingFilter] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
+  const listAbortRef = useRef<AbortController | null>(null)
+
   const [deleteTarget, setDeleteTarget] = useState<AttendanceRecord | null>(
     null
   )
@@ -396,30 +428,151 @@ export function AttendanceListSheet({
     enabled: isEditable && Boolean(badgePickerTarget),
   })
   const [searchQuery, setSearchQuery] = useState("")
+  const [debouncedSearchQuery, flushAttendanceSearch] =
+    useDebouncedSearch(searchQuery)
   const [filterMethod, setFilterMethod] = useState<
     "all" | "qr" | "manual" | "late"
   >("all")
-  const [currentPage, setCurrentPage] = useState(1)
+
+  useEffect(() => {
+    return () => {
+      listAbortRef.current?.abort()
+    }
+  }, [])
 
   useEffect(() => {
     setLocalRecords(records)
   }, [records])
 
-  const displayRecords = localRecords.length > 0 ? localRecords : records
+  useEffect(() => {
+    if (!attendanceMeta) return
+    setServerSummary(attendanceMeta)
+    if (attendanceMeta.hasMore) {
+      setServerActive(true)
+    }
+    setServerHasMore(Boolean(attendanceMeta.hasMore))
+    setServerNextCursor(attendanceMeta.nextCursor ?? null)
+    setServerFilteredTotal(
+      attendanceMeta.filteredTotal ?? attendanceMeta.totalCount
+    )
+  }, [attendanceMeta])
+
+  const displayRecords = localRecords
+
+  const fetchServerAttendances = useCallback(
+    async (options: {
+      cursor?: string | null
+      method: "all" | "qr" | "manual" | "late"
+      search: string
+    }) => {
+      if (!eventId) return
+      const isLoadMore = Boolean(options.cursor)
+      if (!isLoadMore) {
+        listAbortRef.current?.abort()
+      }
+      const controller = new AbortController()
+      if (!isLoadMore) {
+        listAbortRef.current = controller
+      }
+      try {
+        if (isLoadMore) {
+          setLoadingMore(true)
+        } else {
+          setLoadingFilter(true)
+        }
+
+        const qs = new URLSearchParams({
+          paginated: "true",
+          limit: String(PAGE_SIZE),
+        })
+        if (options.cursor) qs.set("cursor", options.cursor)
+        if (options.method !== "all") qs.set("method", options.method)
+        if (options.search.trim()) qs.set("search", options.search.trim())
+
+        const data = await api.get<any>(
+          `/events/${eventId}/attendances?${qs.toString()}`,
+          { signal: controller.signal }
+        )
+        if (controller.signal.aborted) return
+
+        const incoming: AttendanceRecord[] = Array.isArray(data)
+          ? data
+          : (data?.attendances ?? [])
+
+        setServerActive(true)
+        if (isLoadMore) {
+          setLocalRecords((prev) => {
+            const seen = new Set(prev.map((r) => r.user_id))
+            const unique = incoming.filter((r) => !seen.has(r.user_id))
+            return [...prev, ...unique]
+          })
+        } else {
+          setLocalRecords(incoming)
+          if (typeof data?.total_attended === "number") {
+            setServerSummary({
+              totalCount: data.total_attended,
+              qrCount: data.qr_count,
+              manualCount: data.manual_count,
+              lateCount: data.late_count,
+              filteredTotal: data.filtered_total ?? data.total_attended,
+              hasMore: Boolean(data.has_more),
+              nextCursor: data.next_cursor ?? null,
+            })
+          }
+          if (typeof data?.filtered_total === "number") {
+            setServerFilteredTotal(data.filtered_total)
+          }
+        }
+        setServerHasMore(Boolean(data?.has_more))
+        setServerNextCursor(data?.next_cursor ?? null)
+      } catch (err: any) {
+        if (err?.name === "AbortError") return
+        console.error("Failed to fetch filtered attendees:", err)
+      } finally {
+        if (isLoadMore) {
+          setLoadingMore(false)
+        } else if (!controller.signal.aborted) {
+          setLoadingFilter(false)
+        }
+      }
+    },
+    [eventId]
+  )
+
+  const didMountFilterRef = useRef(false)
+  useEffect(() => {
+    if (!didMountFilterRef.current) {
+      didMountFilterRef.current = true
+      return
+    }
+    if (!serverActive || !eventId) return
+    void fetchServerAttendances({
+      method: filterMethod,
+      search: debouncedSearchQuery,
+    })
+  }, [
+    serverActive,
+    eventId,
+    filterMethod,
+    debouncedSearchQuery,
+    fetchServerAttendances,
+  ])
 
   // ── Metrics Calculation (Top Summary) ──
   const metrics = useMemo(() => {
-    const total = displayRecords.length
-    const qr = displayRecords.filter((r) => r.method === "qr").length
-    const manual = displayRecords.filter((r) => r.method === "manual").length
-    const late = displayRecords.filter((r) => r.is_late).length
-    const points = displayRecords.reduce((acc, r) => {
-      const base = r.points_earned ?? r.base_points ?? 50
-      const bonus = r.badge_bonus_points ?? 0
-      return acc + base + bonus
-    }, 0)
-    return { total, qr, manual, late, points }
-  }, [displayRecords])
+    const localTotal = displayRecords.length
+    const localQr = displayRecords.filter((r) => r.method === "qr").length
+    const localManual = displayRecords.filter(
+      (r) => r.method === "manual"
+    ).length
+    const localLate = displayRecords.filter((r) => r.is_late).length
+    return {
+      total: serverSummary?.totalCount ?? localTotal,
+      qr: serverSummary?.qrCount ?? localQr,
+      manual: serverSummary?.manualCount ?? localManual,
+      late: serverSummary?.lateCount ?? localLate,
+    }
+  }, [displayRecords, serverSummary])
 
   // ── Assign Badge Activity ──
   async function handleAssignBadgeActivity(
@@ -505,6 +658,7 @@ export function AttendanceListSheet({
 
   // ── Filtering & Searching ──
   const filteredRecords = useMemo(() => {
+    if (serverActive) return displayRecords
     return displayRecords.filter((rec) => {
       if (filterMethod === "qr" && rec.method !== "qr") return false
       if (filterMethod === "manual" && rec.method !== "manual") return false
@@ -519,19 +673,52 @@ export function AttendanceListSheet({
       }
       return true
     })
-  }, [displayRecords, filterMethod, searchQuery])
+  }, [serverActive, displayRecords, filterMethod, searchQuery])
 
   useEffect(() => {
-    setCurrentPage(1)
+    setVisibleCount(PAGE_SIZE)
   }, [searchQuery, filterMethod])
 
-  // ── Pagination Calculation ──
-  const totalPages = Math.max(1, Math.ceil(filteredRecords.length / PAGE_SIZE))
-  const safePage = Math.min(currentPage, totalPages)
   const paginatedRecords = useMemo(() => {
-    const start = (safePage - 1) * PAGE_SIZE
-    return filteredRecords.slice(start, start + PAGE_SIZE)
-  }, [filteredRecords, safePage])
+    if (serverActive) return filteredRecords
+    return filteredRecords.slice(0, visibleCount)
+  }, [serverActive, filteredRecords, visibleCount])
+
+  const effectiveHasMore = serverActive
+    ? serverHasMore
+    : visibleCount < filteredRecords.length
+  const effectiveTotalCount = serverActive
+    ? (serverFilteredTotal ?? Math.max(metrics.total, filteredRecords.length))
+    : filteredRecords.length
+
+  const handleLoadMore = useCallback(() => {
+    if (loadingMore) return
+    if (serverActive) {
+      if (serverNextCursor) {
+        void fetchServerAttendances({
+          cursor: serverNextCursor,
+          method: filterMethod,
+          search: debouncedSearchQuery,
+        })
+      }
+      return
+    }
+    setVisibleCount((prev) => prev + PAGE_SIZE)
+  }, [
+    loadingMore,
+    serverActive,
+    serverNextCursor,
+    fetchServerAttendances,
+    filterMethod,
+    debouncedSearchQuery,
+  ])
+
+  const sentinelRef = useInfiniteScrollSentinel({
+    hasMore: effectiveHasMore,
+    loading: loadingFilter,
+    loadingMore,
+    onLoadMore: handleLoadMore,
+  })
 
   return (
     <div className="space-y-4 text-left font-sans">
@@ -608,6 +795,11 @@ export function AttendanceListSheet({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                flushAttendanceSearch()
+              }
+            }}
             placeholder="Search by member name, ID, or school..."
             className="min-h-[42px] w-full rounded-full border border-[#e5e5e5] bg-[#fffaf0] pr-10 pl-10 text-xs text-[#0a0a0a] shadow-2xs placeholder:text-[#767676] focus:border-[#0a0a0a] focus:bg-[#faf5e8] focus:outline-none sm:text-sm"
           />
@@ -673,57 +865,17 @@ export function AttendanceListSheet({
         </div>
       )}
 
-      {/* ── 4. Scalable Pagination Bar ── */}
-      {filteredRecords.length > PAGE_SIZE && (
-        <div className="flex flex-col items-center justify-between gap-3 rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0] p-3 text-xs shadow-2xs sm:flex-row sm:px-4">
-          <div className="text-[#6a6a6a]">
-            Showing{" "}
-            <strong className="text-[#0a0a0a]">
-              {(safePage - 1) * PAGE_SIZE + 1}
-            </strong>{" "}
-            –{" "}
-            <strong className="text-[#0a0a0a]">
-              {Math.min(safePage * PAGE_SIZE, filteredRecords.length)}
-            </strong>{" "}
-            of{" "}
-            <strong className="text-[#0a0a0a]">{filteredRecords.length}</strong>{" "}
-            attendees
-          </div>
-
-          <div className="flex items-center gap-1.5">
-            <button
-              type="button"
-              disabled={safePage <= 1}
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              className={`flex min-h-[34px] items-center gap-1 rounded-full border px-3 py-1 font-semibold transition-all ${
-                safePage <= 1
-                  ? "cursor-not-allowed border-transparent text-[#6a6a6a]"
-                  : "cursor-pointer border-[#e5e5e5] bg-[#faf5e8] text-[#0a0a0a] shadow-2xs hover:bg-[#ebe6d6]"
-              }`}
-            >
-              <ChevronLeftIcon className="size-3.5" />
-              <span>Previous</span>
-            </button>
-
-            <span className="px-2 font-bold text-[#0a0a0a]">
-              {safePage} / {totalPages}
-            </span>
-
-            <button
-              type="button"
-              disabled={safePage >= totalPages}
-              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              className={`flex min-h-[34px] items-center gap-1 rounded-full border px-3 py-1 font-semibold transition-all ${
-                safePage >= totalPages
-                  ? "cursor-not-allowed border-transparent text-[#6a6a6a]"
-                  : "cursor-pointer border-[#e5e5e5] bg-[#faf5e8] text-[#0a0a0a] shadow-2xs hover:bg-[#ebe6d6]"
-              }`}
-            >
-              <span>Next</span>
-              <ChevronRightIcon className="size-3.5" />
-            </button>
-          </div>
-        </div>
+      {/* ── 4. Scalable Infinite Scroll Footer ── */}
+      {(paginatedRecords.length > 0 || loadingFilter) && (
+        <InfiniteScrollFooter
+          hasMore={effectiveHasMore}
+          isLoadingMore={loadingMore || loadingFilter}
+          loadedCount={paginatedRecords.length}
+          totalCount={effectiveTotalCount}
+          sentinelRef={sentinelRef}
+          onLoadMore={handleLoadMore}
+          itemLabel="attendees"
+        />
       )}
 
       {/* ── 5. Service Role (Badge Activity) Assignment Modal ── */}

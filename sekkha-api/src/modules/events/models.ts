@@ -2,7 +2,15 @@ import { prisma } from "../../lib/prisma"
 import type { Prisma } from "@prisma/client"
 
 export const eventModels = {
-  findEvents(whereClause: Prisma.EventWhereInput, skip: number, take: number) {
+  findEvents(
+    whereClause: Prisma.EventWhereInput,
+    skipOrOptions: number | { skip?: number; cursorId?: string } = 0,
+    take = 50
+  ) {
+    const opts =
+      typeof skipOrOptions === "number"
+        ? { skip: skipOrOptions }
+        : skipOrOptions
     return prisma.event.findMany({
       where: whereClause,
       include: {
@@ -12,8 +20,10 @@ export const eventModels = {
           select: { attendances: true },
         },
       },
-      orderBy: { eventDate: "asc" },
-      skip,
+      orderBy: [{ eventDate: "asc" }, { id: "asc" }],
+      ...(opts.cursorId
+        ? { cursor: { id: opts.cursorId }, skip: 1 }
+        : { skip: opts.skip ?? 0 }),
       take,
     })
   },
@@ -157,9 +167,19 @@ export const eventModels = {
     })
   },
 
-  findEventAttendances(eventId: string, skip = 0, take = 100) {
+  findEventAttendances(
+    eventId: string,
+    skipOrOptions:
+      | number
+      | { skip?: number; cursorId?: string; where?: Prisma.AttendanceWhereInput } = 0,
+    take = 100
+  ) {
+    const opts =
+      typeof skipOrOptions === "number"
+        ? { skip: skipOrOptions }
+        : skipOrOptions
     return prisma.attendance.findMany({
-      where: { eventId },
+      where: { eventId, ...(opts.where || {}) },
       include: {
         user: {
           select: {
@@ -183,14 +203,31 @@ export const eventModels = {
           },
         },
       },
-      orderBy: { scannedAt: "desc" },
-      skip,
+      orderBy: [{ scannedAt: "desc" }, { id: "desc" }],
+      ...(opts.cursorId
+        ? { cursor: { id: opts.cursorId }, skip: 1 }
+        : { skip: opts.skip ?? 0 }),
       take,
     })
   },
 
-  countEventAttendances(eventId: string) {
-    return prisma.attendance.count({ where: { eventId } })
+  countEventAttendances(eventId: string, extraWhere?: Prisma.AttendanceWhereInput) {
+    return prisma.attendance.count({ where: { eventId, ...(extraWhere || {}) } })
+  },
+
+  async getEventAttendanceSummary(eventId: string) {
+    const [total, qrCount, manualCount, lateCount] = await Promise.all([
+      prisma.attendance.count({ where: { eventId } }),
+      prisma.attendance.count({ where: { eventId, method: "qr" } }),
+      prisma.attendance.count({ where: { eventId, method: "manual" } }),
+      prisma.attendance.count({ where: { eventId, isLate: true } }),
+    ])
+    return {
+      total_attended: total,
+      qr_count: qrCount,
+      manual_count: manualCount,
+      late_count: lateCount,
+    }
   },
 
   createEvent(data: Prisma.EventCreateInput) {

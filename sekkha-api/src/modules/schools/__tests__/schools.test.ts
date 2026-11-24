@@ -355,5 +355,68 @@ describe("Schools Module — Redis Caching, Invalidations & Configure Route Isol
     expect(paths).toContain("/school-requests/:id/reject")
     expect(paths.indexOf("/schools/pending")).toBeLessThan(paths.indexOf("/schools/:id"))
   })
+
+  it("supports cursor lookahead pagination and skips count/stats on cursor scroll", async () => {
+    const origFind = schoolModels.findSchools
+    const origCount = schoolModels.countSchoolsByWhere
+    const origStats = schoolModels.getSchoolDirectoryStats
+    const origBackfill = schoolModels.backfillApprovedSchoolRequesters
+
+    let countCalls = 0
+    let statsCalls = 0
+    let capturedTake = 0
+    let capturedSkipOrOpts: any
+
+    schoolModels.backfillApprovedSchoolRequesters = async () => {}
+    schoolModels.countSchoolsByWhere = async () => {
+      countCalls++
+      return 5
+    }
+    schoolModels.getSchoolDirectoryStats = async () => {
+      statsCalls++
+      return { total: 5, senior_high: 3, university: 2, linked_users: 12 }
+    }
+    schoolModels.findSchools = async (_where, limit, skipOrOpts) => {
+      capturedTake = limit
+      capturedSkipOrOpts = skipOrOpts
+      return [1, 2, 3].map(makeSchoolRecord) as any
+    }
+
+    try {
+      const initial = await schoolServices.getSchools({
+        limit: 2,
+        includeStats: true,
+      })
+      expect(capturedTake).toBe(3)
+      expect(countCalls).toBe(1)
+      expect(statsCalls).toBe(1)
+      expect(initial.schools).toHaveLength(2)
+      expect(initial.has_more).toBe(true)
+      expect(initial.next_cursor).toBe("sch_2")
+      expect(initial.stats).toEqual({
+        total: 5,
+        senior_high: 3,
+        university: 2,
+        linked_users: 12,
+      })
+
+      const nextPage = await schoolServices.getSchools({
+        limit: 2,
+        cursor: "sch_2",
+        includeStats: true,
+      })
+      expect(capturedTake).toBe(3)
+      expect(capturedSkipOrOpts).toEqual({ cursorId: "sch_2" })
+      expect(countCalls).toBe(1)
+      expect(statsCalls).toBe(1)
+      expect(nextPage.has_more).toBe(true)
+      expect(nextPage.next_cursor).toBe("sch_2")
+    } finally {
+      schoolModels.findSchools = origFind
+      schoolModels.countSchoolsByWhere = origCount
+      schoolModels.getSchoolDirectoryStats = origStats
+      schoolModels.backfillApprovedSchoolRequesters = origBackfill
+    }
+  })
 })
 

@@ -581,7 +581,7 @@ describe("EventsPage Category Filter Dropdown — Initial 5 + Infinite Scroll", 
       if (url === "/events/evt_deep") {
         return detailPromise as any
       }
-      if (url === "/events/evt_deep/attendances") {
+      if (url.startsWith("/events/evt_deep/attendances")) {
         return Promise.resolve({ attendances: [] }) as any
       }
       return Promise.resolve([]) as any
@@ -607,7 +607,9 @@ describe("EventsPage Category Filter Dropdown — Initial 5 + Infinite Scroll", 
 
     // Both detail and attendances start in parallel, while monthly & master category fetches are deferred
     expect(getSpy).toHaveBeenCalledWith("/events/evt_deep", { noCache: true })
-    expect(getSpy).toHaveBeenCalledWith("/events/evt_deep/attendances")
+    expect(getSpy).toHaveBeenCalledWith(
+      expect.stringContaining("/events/evt_deep/attendances")
+    )
     expect(getSpy).not.toHaveBeenCalledWith(expect.stringContaining("month="))
 
     const todayKey = toWibKey(new Date())
@@ -666,5 +668,66 @@ describe("EventsPage Category Filter Dropdown — Initial 5 + Infinite Scroll", 
     })
 
     window.history.replaceState({}, "", "/events")
+  })
+
+  it("loads next search chunk via cursor InfiniteScrollFooter Load more in search mode", async () => {
+    window.history.replaceState({}, "", "/events")
+    const todayKey = toWibKey(new Date())
+
+    const getSpy = vi.spyOn(api, "get").mockImplementation((url: string) => {
+      if (url.includes("/configure/event-types")) {
+        return Promise.resolve([]) as any
+      }
+      if (url.includes("/events?search=Dhamma") && url.includes("cursor=evt_1")) {
+        return Promise.resolve({
+          items: [
+            makeEvent("evt_2", "Dhamma Talk 2", todayKey, "14:00", "scheduled"),
+          ],
+          has_more: false,
+          next_cursor: null,
+        }) as any
+      }
+      if (url.includes("/events?search=Dhamma")) {
+        return Promise.resolve({
+          items: [
+            makeEvent("evt_1", "Dhamma Talk 1", todayKey, "09:00", "scheduled"),
+          ],
+          has_more: true,
+          next_cursor: "evt_1",
+        }) as any
+      }
+      return Promise.resolve([]) as any
+    })
+
+    const authState: AuthState = {
+      ...initialAuthState,
+      status: "authenticated",
+      userId: "usr_org_1",
+      role: "organizer",
+      name: "Organizer Sekkha",
+    }
+
+    render(
+      <AuthContext.Provider value={{ authState } as any}>
+        <EventsPage />
+      </AuthContext.Provider>
+    )
+
+    fireEvent.click(screen.getByRole("button", { name: /Search events/i }))
+    const input = screen.getByPlaceholderText(/Search events/i)
+    fireEvent.change(input, { target: { value: "Dhamma" } })
+    fireEvent.keyDown(input, { key: "Enter" })
+
+    await waitFor(() => {
+      expect(screen.getByText("Dhamma Talk 1")).toBeTruthy()
+    })
+
+    fireEvent.click(screen.getByRole("button", { name: /Load more/i }))
+    await waitFor(() => {
+      expect(screen.getByText("Dhamma Talk 2")).toBeTruthy()
+    })
+    expect(getSpy).toHaveBeenCalledWith(
+      expect.stringContaining("cursor=evt_1")
+    )
   })
 })

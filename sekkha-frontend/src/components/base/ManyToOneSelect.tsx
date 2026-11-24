@@ -390,7 +390,7 @@ export function ManyToOneSelect({
               role="listbox"
               data-slot="select-infinite-list"
               onScroll={handleListScroll}
-              className="max-h-60 overflow-y-auto overscroll-contain p-1.5 focus:outline-none"
+              className="max-h-48 overflow-y-auto overscroll-contain p-1.5 focus:outline-none"
             >
               {loading ? (
                 <li className="flex items-center justify-center gap-1.5 py-6 text-center text-xs text-[#6a6a6a]">

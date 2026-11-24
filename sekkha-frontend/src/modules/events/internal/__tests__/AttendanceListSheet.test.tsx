@@ -207,10 +207,13 @@ describe("AttendanceListSheet Service Role Picker — Initial 5 + Infinite Scrol
     expect(screen.queryByText("On Time")).toBeNull()
     expect(screen.queryByTitle("Total points distributed")).toBeNull()
 
-    // Pagination uses 25 per page (30 items = 2 pages instead of 3)
-    expect(screen.getByText("1 / 2")).toBeDefined()
+    // Infinite scroll shows initial 25 items and Load more button instead of Previous/Next
+    expect(screen.queryByText("1 / 2")).toBeNull()
     expect(screen.getByText("Member 25")).toBeDefined()
     expect(screen.queryByText("Member 26")).toBeNull()
+    fireEvent.click(screen.getByRole("button", { name: /Load more/i }))
+    expect(screen.getByText("Member 26")).toBeDefined()
+    expect(screen.getByText("Member 30")).toBeDefined()
 
     // Late quick filter isolates late attendee
     fireEvent.click(screen.getByRole("button", { name: /Late · 1/i }))
@@ -242,5 +245,68 @@ describe("AttendanceListSheet Service Role Picker — Initial 5 + Infinite Scrol
     expect(screen.getByText(/Remove Draft Attendance Record\?/i)).toBeDefined()
     fireEvent.click(screen.getByRole("button", { name: /Yes, Remove Record/i }))
     expect(onDeleteRecord).toHaveBeenCalledWith("usr_1")
+  })
+
+  it("supports server-side cursor Load more and method filtering when attendanceMeta.hasMore is true", async () => {
+    const getSpy = vi.spyOn(api, "get").mockResolvedValueOnce({
+      event_id: "evt_srv",
+      total_attended: 3,
+      filtered_total: 3,
+      qr_count: 2,
+      manual_count: 1,
+      late_count: 0,
+      has_more: false,
+      next_cursor: null,
+      attendances: [
+        {
+          attendance_id: "att_2",
+          user_id: "usr_2",
+          name: "Loaded Attendee 2",
+          role: "member",
+          method: "qr",
+          points_earned: 50,
+          scanned_at: "2026-11-11T09:05:00Z",
+        },
+      ],
+    })
+
+    render(
+      <AttendanceListSheet
+        eventId="evt_srv"
+        role="organizer"
+        records={[
+          {
+            attendance_id: "att_1",
+            user_id: "usr_1",
+            name: "Initial Attendee 1",
+            role: "member",
+            method: "qr",
+            points_earned: 50,
+            scanned_at: "2026-11-11T09:00:00Z",
+          } as any,
+        ]}
+        attendanceMeta={{
+          totalCount: 3,
+          qrCount: 2,
+          manualCount: 1,
+          lateCount: 0,
+          hasMore: true,
+          nextCursor: "att_1",
+        }}
+      />
+    )
+
+    expect(screen.getByText("All · 3")).toBeDefined()
+    expect(screen.getByText("QR · 2")).toBeDefined()
+    fireEvent.click(screen.getByRole("button", { name: /Load more/i }))
+
+    await waitFor(() => {
+      expect(screen.getByText("Loaded Attendee 2")).toBeDefined()
+    })
+    expect(screen.getByText("Initial Attendee 1")).toBeDefined()
+    expect(getSpy).toHaveBeenCalledWith(
+      expect.stringContaining("/events/evt_srv/attendances?paginated=true&limit=25&cursor=att_1"),
+      expect.objectContaining({ signal: expect.any(AbortSignal) })
+    )
   })
 })

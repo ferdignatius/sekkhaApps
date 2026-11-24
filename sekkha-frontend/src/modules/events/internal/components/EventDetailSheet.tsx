@@ -37,6 +37,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { AttendanceListSheet } from "./AttendanceListSheet"
+import type { AttendanceListMeta } from "./AttendanceListSheet"
 import { ResponsiveFormModal } from "@/components/common/ResponsiveFormModal"
 import { formatAudienceRolesLabel } from "@/lib/eventAudience"
 import { DateTimePicker } from "@/components/common/DateTimePicker"
@@ -66,6 +67,7 @@ export interface EventDetailSheetProps {
     eventDate?: string
   ) => void | Promise<void>
   attendances?: AttendanceRecord[]
+  attendanceMeta?: AttendanceListMeta
   onRecordAttendance?: (eventId: string, record: AttendanceRecord) => void
   onDeleteAttendance?: (userId: string) => void
   onRefreshAttendances?: () => void
@@ -214,6 +216,7 @@ export function EventDetailSheet({
   onDuplicate,
   onStatusChange,
   attendances = [],
+  attendanceMeta,
   onDeleteAttendance,
   onRefreshAttendances,
 }: EventDetailSheetProps) {
@@ -279,7 +282,8 @@ export function EventDetailSheet({
   const locationContext = getLocationContext(event.location)
   const latePenaltyPoints = event.late_penalty_points ?? 0
   const totalAttendeeCount =
-    attendances.length > 0 ? attendances.length : (event.total_attendees ?? 0)
+    attendanceMeta?.totalCount ??
+    (attendances.length > 0 ? attendances.length : (event.total_attendees ?? 0))
   const previewAttendees = attendances.slice(0, 4)
   const remainingAttendees = Math.max(
     0,
@@ -1182,6 +1186,7 @@ export function EventDetailSheet({
                 <AttendanceListSheet
                   eventId={event.id}
                   records={attendances}
+                  attendanceMeta={attendanceMeta}
                   role={role}
                   isClosed={isClosed}
                   onDeleteRecord={onDeleteAttendance}
@@ -1332,7 +1337,7 @@ export function EventDetailSheet({
                     <div className="flex items-center gap-2">
                       <ClipboardListIcon className="size-4.5 text-ink" />
                       <h3 className="text-base font-bold text-ink">
-                        Recorded Attendees ({attendances.length})
+                        Recorded Attendees ({totalAttendeeCount})
                       </h3>
                     </div>
                   </div>
@@ -1340,6 +1345,7 @@ export function EventDetailSheet({
                   <AttendanceListSheet
                     eventId={event.id}
                     records={attendances}
+                    attendanceMeta={attendanceMeta}
                     role={role}
                     isClosed={isClosed}
                     onDeleteRecord={onDeleteAttendance}

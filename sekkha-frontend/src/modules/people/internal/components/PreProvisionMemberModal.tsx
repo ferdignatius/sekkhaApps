@@ -379,7 +379,7 @@ export function PreProvisionMemberModal({
                   { value: "__none__", label: "None / Not set" },
                   ...verifiedSchools.map((sch) => ({
                     value: sch.id,
-                    label: `${sch.name} (${sch.type})`,
+                    label: sch.name,
                   })),
                 ]}
               />

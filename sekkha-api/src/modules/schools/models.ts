@@ -20,7 +20,15 @@ export const schoolModels = {
     })
   },
 
-  findSchools(whereClause: Prisma.SchoolWhereInput, limit: number, skip = 0) {
+  findSchools(
+    whereClause: Prisma.SchoolWhereInput,
+    limit: number,
+    skipOrOptions: number | { skip?: number; cursorId?: string } = 0
+  ) {
+    const opts =
+      typeof skipOrOptions === "number"
+        ? { skip: skipOrOptions }
+        : skipOrOptions
     return prisma.school.findMany({
       where: whereClause,
       include: {
@@ -28,10 +36,32 @@ export const schoolModels = {
           select: { profiles: true },
         },
       },
-      orderBy: [{ name: "asc" }],
-      skip,
+      orderBy: [{ name: "asc" }, { id: "asc" }],
+      ...(opts.cursorId
+        ? { cursor: { id: opts.cursorId }, skip: 1 }
+        : { skip: opts.skip ?? 0 }),
       take: limit,
     })
+  },
+
+  async getSchoolDirectoryStats(baseWhere: Prisma.SchoolWhereInput) {
+    const [total, seniorHigh, university, linkedUsers] = await Promise.all([
+      prisma.school.count({ where: baseWhere }),
+      prisma.school.count({ where: { ...baseWhere, type: "SMA/SMK" } }),
+      prisma.school.count({ where: { ...baseWhere, type: "Universitas" } }),
+      prisma.userProfile.count({
+        where: {
+          schoolId: { not: null },
+          school: baseWhere,
+        },
+      }),
+    ])
+    return {
+      total,
+      senior_high: seniorHigh,
+      university,
+      linked_users: linkedUsers,
+    }
   },
 
   countProfilesBySchoolName(schoolName: string) {

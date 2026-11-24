@@ -29,6 +29,7 @@ import { useDebouncedSearch } from "@/hooks/useDebounce"
 import { Skeleton } from "@/components/ui/skeleton"
 import { EventCard } from "./EventCard"
 import { EventDetailSheet } from "./EventDetailSheet"
+import type { AttendanceListMeta } from "./AttendanceListSheet"
 import { EventForm, extractRecentLocations, extractRecentTimes } from "./EventForm"
 import {
   getAccessibleCategories,
@@ -38,6 +39,7 @@ import {
 } from "../masterdata"
 import { InfiniteScrollFooter } from "@/components/common/InfiniteScrollFooter"
 import { usePaginatedDropdown } from "@/hooks/usePaginatedDropdown"
+import { useInfiniteScrollSentinel } from "@/hooks/useInfiniteScrollSentinel"
 import { DROPDOWN_PAGE_SIZE } from "@/lib/pagination"
 import type { EventCategoryItem } from "../masterdata"
 import type {
@@ -129,6 +131,10 @@ export function EventsPage() {
 
   const [events, setEvents] = useState<EventListItem[]>([])
   const [loadingEvents, setLoadingEvents] = useState(true)
+  const [loadingMoreSearchEvents, setLoadingMoreSearchEvents] = useState(false)
+  const [searchHasMore, setSearchHasMore] = useState(false)
+  const [searchNextCursor, setSearchNextCursor] = useState<string | null>(null)
+  const searchAbortRef = useRef<AbortController | null>(null)
   const [view, setView] = useState<View>(() =>
     getEventIdFromSearch() ? "detail" : "calendar"
   )
@@ -310,6 +316,8 @@ export function EventsPage() {
     if (view === "detail") return
     const q = debouncedSearchQuery.trim()
     if (!q) {
+      setSearchHasMore(false)
+      setSearchNextCursor(null)
       const monthParam = formatMonthParam(activeMonth)
       if (eventsCache[monthParam]) {
         setEvents(eventsCache[monthParam])
@@ -320,16 +328,22 @@ export function EventsPage() {
     }
 
     let cancelled = false
+    searchAbortRef.current?.abort()
     const controller = new AbortController()
+    searchAbortRef.current = controller
     async function searchEvents() {
       try {
         setLoadingEvents(true)
-        const data = await api.get<EventListItem[]>(
-          `/events?search=${encodeURIComponent(q)}&year=${activeYear}&page=1&limit=50`,
-          { schema: EventsResponseSchema, signal: controller.signal }
+        const res = await api.get<any>(
+          `/events?search=${encodeURIComponent(q)}&year=${activeYear}&paginated=true&limit=20`,
+          { signal: controller.signal }
         )
         if (!cancelled) {
-          setEvents(data)
+          const rawItems = Array.isArray(res) ? res : (res?.items ?? [])
+          const parsed = EventsResponseSchema.parse(rawItems) as EventListItem[]
+          setEvents(parsed)
+          setSearchHasMore(Boolean(!Array.isArray(res) && res?.has_more))
+          setSearchNextCursor(!Array.isArray(res) ? (res?.next_cursor ?? null) : null)
         }
       } catch (err: any) {
         if (err?.name === "AbortError") return
@@ -345,9 +359,53 @@ export function EventsPage() {
     }
   }, [debouncedSearchQuery, activeYear, view])
 
-  // Attendance records keyed by event id (only fetched on demand for pengurus/admin)
+  const loadMoreSearchEvents = useCallback(async () => {
+    const q = debouncedSearchQuery.trim()
+    if (!q || !searchHasMore || !searchNextCursor || loadingMoreSearchEvents) {
+      return
+    }
+    try {
+      setLoadingMoreSearchEvents(true)
+      const res = await api.get<any>(
+        `/events?search=${encodeURIComponent(q)}&year=${activeYear}&paginated=true&limit=20&cursor=${encodeURIComponent(searchNextCursor)}`
+      )
+      const rawItems = Array.isArray(res) ? res : (res?.items ?? [])
+      const parsed = EventsResponseSchema.parse(rawItems) as EventListItem[]
+      setEvents((prev) => {
+        const seen = new Set(prev.map((ev) => ev.id))
+        const incoming = parsed.filter((ev) => !seen.has(ev.id))
+        return [...prev, ...incoming]
+      })
+      setSearchHasMore(Boolean(!Array.isArray(res) && res?.has_more))
+      setSearchNextCursor(!Array.isArray(res) ? (res?.next_cursor ?? null) : null)
+    } catch (err) {
+      console.warn("Load more event search error:", err)
+    } finally {
+      setLoadingMoreSearchEvents(false)
+    }
+  }, [
+    debouncedSearchQuery,
+    activeYear,
+    searchHasMore,
+    searchNextCursor,
+    loadingMoreSearchEvents,
+  ])
+
+  const searchEventsSentinelRef = useInfiniteScrollSentinel({
+    hasMore: Boolean(debouncedSearchQuery.trim()) && searchHasMore,
+    loading: loadingEvents,
+    loadingMore: loadingMoreSearchEvents,
+    onLoadMore: () => {
+      void loadMoreSearchEvents()
+    },
+  })
+
+  // Attendance records & pagination summary keyed by event id (only fetched on demand)
   const [attendances, setAttendances] = useState<
     Record<string, AttendanceRecord[]>
+  >({})
+  const [attendanceMeta, setAttendanceMeta] = useState<
+    Record<string, AttendanceListMeta>
   >({})
 
   function handleSelectEvent(ev: EventListItem) {
@@ -458,11 +516,38 @@ export function EventsPage() {
 
   async function loadEventAttendances(eventId: string) {
     try {
-      const data = await api.get<any>(`/events/${eventId}/attendances`)
+      const data = await api.get<any>(
+        `/events/${eventId}/attendances?paginated=true&limit=25`
+      )
       const list: AttendanceRecord[] = Array.isArray(data)
         ? data
         : (data?.attendances ?? [])
       setAttendances((prev) => ({ ...prev, [eventId]: list }))
+      if (!Array.isArray(data) && data) {
+        setAttendanceMeta((prev) => ({
+          ...prev,
+          [eventId]: {
+            totalCount:
+              typeof data.total_attended === "number"
+                ? data.total_attended
+                : list.length,
+            filteredTotal:
+              typeof data.filtered_total === "number"
+                ? data.filtered_total
+                : undefined,
+            qrCount:
+              typeof data.qr_count === "number" ? data.qr_count : undefined,
+            manualCount:
+              typeof data.manual_count === "number"
+                ? data.manual_count
+                : undefined,
+            lateCount:
+              typeof data.late_count === "number" ? data.late_count : undefined,
+            hasMore: Boolean(data.has_more),
+            nextCursor: data.next_cursor ?? null,
+          },
+        }))
+      }
     } catch (err) {
       console.error("Failed to load event attendances:", err)
     }
@@ -904,6 +989,7 @@ export function EventsPage() {
                   : undefined
               }
               attendances={attendances[selected.id] ?? []}
+              attendanceMeta={attendanceMeta[selected.id]}
               onRecordAttendance={handleRecordAttendance}
               onRefreshAttendances={() => loadEventAttendances(selected.id)}
               onDeleteAttendance={
@@ -1516,6 +1602,18 @@ export function EventsPage() {
                           onClick={() => handleSelectEvent(ev)}
                         />
                       ))}
+                      {Boolean(debouncedSearchQuery.trim()) && (
+                        <InfiniteScrollFooter
+                          hasMore={searchHasMore}
+                          isLoadingMore={loadingMoreSearchEvents}
+                          loadedCount={listedEvents.length}
+                          sentinelRef={searchEventsSentinelRef}
+                          onLoadMore={() => {
+                            void loadMoreSearchEvents()
+                          }}
+                          itemLabel="events"
+                        />
+                      )}
                     </div>
                   )}
       </CollapsibleBottomSheet>

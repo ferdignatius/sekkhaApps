@@ -66,6 +66,11 @@ export const eventControllers = {
       const month = req.query.month ? String(req.query.month) : undefined
       const year = req.query.year ? String(req.query.year) : undefined
       const search = typeof req.query.search === "string" ? req.query.search : undefined
+      const cursor =
+        typeof req.query.cursor === "string" && req.query.cursor.trim()
+          ? req.query.cursor.trim()
+          : undefined
+      const paginated = req.query.paginated === "true"
 
       const result = await eventServices.listEvents(userRole, isPrivileged, page, limit, {
         status,
@@ -73,6 +78,8 @@ export const eventControllers = {
         month,
         year,
         search,
+        cursor,
+        paginated,
       })
 
       res.json({
@@ -295,9 +302,31 @@ export const eventControllers = {
       const callerId = req.user?.userId || ""
       const isPrivileged = callerRole === "organizer" || callerRole === "admin"
 
+      const cursor =
+        typeof req.query.cursor === "string" && req.query.cursor.trim()
+          ? req.query.cursor.trim()
+          : undefined
+      const method =
+        typeof req.query.method === "string" && req.query.method.trim()
+          ? req.query.method.trim().toLowerCase()
+          : undefined
+      const search =
+        typeof req.query.search === "string" && req.query.search.trim()
+          ? req.query.search.trim()
+          : undefined
+      const paginated = req.query.paginated === "true"
       const page = Math.max(1, parseInt(req.query.page as string, 10) || 1)
-      const limit = Math.min(200, Math.max(1, parseInt(req.query.limit as string, 10) || 100))
-      const result = await eventServices.listAttendances(id, callerId, isPrivileged, page, limit)
+      const defaultLimit = cursor || paginated ? 25 : 100
+      const limit = Math.min(
+        200,
+        Math.max(1, parseInt(req.query.limit as string, 10) || defaultLimit)
+      )
+      const result = await eventServices.listAttendances(id, callerId, isPrivileged, page, limit, {
+        cursor,
+        method,
+        search,
+        paginated,
+      })
 
       res.json({
         status: "success",

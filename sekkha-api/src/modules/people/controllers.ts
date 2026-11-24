@@ -11,6 +11,7 @@ export const ListMembersQuerySchema = z.object({
     .enum(["all", "member", "activist", "organizer", "admin", "umat", "aktivis", "pengurus"])
     .default("all"),
   school_id: z.string().trim().optional(),
+  cursor: z.string().trim().min(1).optional(),
   page: z.coerce.number().int().min(1).max(100_000).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(20),
 })

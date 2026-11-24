@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Link } from "@tanstack/react-router"
 import {
   GraduationCapIcon,
@@ -13,9 +13,16 @@ import {
   XIcon,
 } from "lucide-react"
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
+import { InfiniteScrollFooter } from "@/components/common/InfiniteScrollFooter"
 import { useAuth } from "@/modules/auth"
+import { useDebouncedSearch } from "@/hooks/useDebounce"
+import { useInfiniteScrollSentinel } from "@/hooks/useInfiniteScrollSentinel"
 import { schoolsApi } from "../api/configureApi"
-import type { SchoolDto, SchoolRequestDto } from "../api/configureApi"
+import type {
+  SchoolDirectoryStats,
+  SchoolDto,
+  SchoolRequestDto,
+} from "../api/configureApi"
 import { Button } from "@/components/base/Button"
 import { Card } from "@/components/base/Card"
 import { Chip } from "@/components/base/Chip"
@@ -24,6 +31,7 @@ import { Input } from "@/components/base/Input"
 import { toast } from "@/components/base"
 
 const SCHOOL_TYPES = ["SMP", "SMA/SMK", "Universitas", "Umum"] as const
+const PAGE_SIZE = 20
 
 export function SchoolPage() {
   const { authState } = useAuth()
@@ -37,33 +45,96 @@ export function SchoolPage() {
     "directory"
   )
   const [schools, setSchools] = useState<SchoolDto[]>([])
+  const [totalSchools, setTotalSchools] = useState(0)
+  const [hasMore, setHasMore] = useState(false)
+  const [nextCursor, setNextCursor] = useState<string | null>(null)
+  const [schoolStats, setSchoolStats] = useState<SchoolDirectoryStats | null>(
+    null
+  )
   const [pendingRequests, setPendingRequests] = useState<SchoolRequestDto[]>([])
   const [loadingSchools, setLoadingSchools] = useState(true)
+  const [loadingMoreSchools, setLoadingMoreSchools] = useState(false)
   const [loadingRequests, setLoadingRequests] = useState(false)
   const [processingId, setProcessingId] = useState<string | null>(null)
   const [search, setSearch] = useState("")
+  const [debouncedSearch, flushSchoolSearch] = useDebouncedSearch(search)
   const [typeFilter, setTypeFilter] = useState("all")
   const [feedback, setFeedback] = useState<{
     type: "success" | "error"
     message: string
   } | null>(null)
+  const listAbortRef = useRef<AbortController | null>(null)
 
-  const fetchSchools = async () => {
-    try {
-      setLoadingSchools(true)
-      const data = await schoolsApi.list({ is_active: undefined })
-      setSchools(data)
-    } catch {
-      setFeedback({
-        type: "error",
-        message: "Failed to load institutions list.",
-      })
-    } finally {
-      setLoadingSchools(false)
+  useEffect(() => {
+    return () => {
+      listAbortRef.current?.abort()
     }
-  }
+  }, [])
 
-  const fetchRequests = async () => {
+  const fetchSchools = useCallback(
+    async (options: { cursor?: string | null } = {}) => {
+      const { cursor } = options
+      const isLoadMore = Boolean(cursor)
+      if (!isLoadMore) {
+        listAbortRef.current?.abort()
+      }
+      const controller = new AbortController()
+      if (!isLoadMore) {
+        listAbortRef.current = controller
+      }
+      try {
+        if (isLoadMore) {
+          setLoadingMoreSchools(true)
+        } else {
+          setLoadingSchools(true)
+        }
+        const res = await schoolsApi.listCursor(
+          {
+            search: debouncedSearch.trim() || undefined,
+            type: typeFilter,
+            cursor: cursor ?? undefined,
+            limit: PAGE_SIZE,
+            include_stats: !isLoadMore,
+          },
+          { signal: controller.signal }
+        )
+        if (controller.signal.aborted) return
+
+        if (isLoadMore) {
+          setSchools((prev) => {
+            const seen = new Set(prev.map((s) => s.id))
+            const incoming = res.items.filter((s) => !seen.has(s.id))
+            return [...prev, ...incoming]
+          })
+        } else {
+          setSchools(res.items)
+          setTotalSchools(res.total ?? res.items.length)
+          if (res.stats) {
+            setSchoolStats(res.stats)
+          }
+        }
+        setHasMore(res.has_more)
+        setNextCursor(res.next_cursor)
+      } catch (err: any) {
+        if (err?.name === "AbortError") return
+        if (!isLoadMore) {
+          setFeedback({
+            type: "error",
+            message: "Failed to load institutions list.",
+          })
+        }
+      } finally {
+        if (isLoadMore) {
+          setLoadingMoreSchools(false)
+        } else if (!controller.signal.aborted) {
+          setLoadingSchools(false)
+        }
+      }
+    },
+    [debouncedSearch, typeFilter]
+  )
+
+  const fetchRequests = useCallback(async () => {
     if (!canReview) return
     try {
       setLoadingRequests(true)
@@ -74,14 +145,28 @@ export function SchoolPage() {
     } finally {
       setLoadingRequests(false)
     }
-  }
+  }, [canReview])
 
   useEffect(() => {
     void fetchSchools()
+  }, [fetchSchools])
+
+  useEffect(() => {
     if (canReview) {
       void fetchRequests()
     }
-  }, [canReview])
+  }, [canReview, fetchRequests])
+
+  const sentinelRef = useInfiniteScrollSentinel({
+    hasMore: activeTab === "directory" && hasMore,
+    loading: loadingSchools,
+    loadingMore: loadingMoreSchools,
+    onLoadMore: () => {
+      if (nextCursor && !loadingMoreSchools) {
+        void fetchSchools({ cursor: nextCursor })
+      }
+    },
+  })
 
   const handleApprove = async (id: string, name: string) => {
     try {
@@ -131,49 +216,33 @@ export function SchoolPage() {
     }
   }
 
-  const filtered = useMemo(() => {
-    const q = search.toLowerCase().trim()
-    return schools.filter((s) => {
-      const matchesSearch = !q || s.name.toLowerCase().includes(q)
+  const filtered = schools
 
-      const matchesType = typeFilter === "all" ? true : s.type === typeFilter
-
-      return matchesSearch && matchesType
-    })
-  }, [schools, search, typeFilter])
-
-  const {
-    totalLinkedUsers,
-    seniorHighCount,
-    universityCount,
-    activeCount,
-    inactiveCount,
-  } = useMemo(() => {
-    let linked = 0
-    let seniorHigh = 0
-    let university = 0
-    let active = 0
-    let inactive = 0
-    for (const s of schools) {
-      linked += s.userCount ?? 0
-      if (s.type === "SMA/SMK") seniorHigh++
-      if (s.type === "Universitas") university++
-      if (s.is_active === false) {
-        inactive++
-      } else {
-        active++
+  const { totalLinkedUsers, seniorHighCount, universityCount, totalStatCount } =
+    useMemo(() => {
+      if (schoolStats) {
+        return {
+          totalLinkedUsers: schoolStats.linked_users,
+          seniorHighCount: schoolStats.senior_high,
+          universityCount: schoolStats.university,
+          totalStatCount: schoolStats.total,
+        }
       }
-    }
-    return {
-      totalLinkedUsers: linked,
-      seniorHighCount: seniorHigh,
-      universityCount: university,
-      activeCount: active,
-      inactiveCount: inactive,
-    }
-  }, [schools])
-  void activeCount
-  void inactiveCount
+      let linked = 0
+      let seniorHigh = 0
+      let university = 0
+      for (const s of schools) {
+        linked += s.userCount ?? 0
+        if (s.type === "SMA/SMK") seniorHigh++
+        if (s.type === "Universitas") university++
+      }
+      return {
+        totalLinkedUsers: linked,
+        seniorHighCount: seniorHigh,
+        universityCount: university,
+        totalStatCount: totalSchools || schools.length,
+      }
+    }, [schools, schoolStats, totalSchools])
 
   return (
     <main className="min-h-screen bg-[#fffaf0] pb-24 text-left font-sans">
@@ -295,7 +364,7 @@ export function SchoolPage() {
               <Card className="rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] p-4 shadow-2xs">
                 <p className="text-xs text-[#6a6a6a]">Total Institutions</p>
                 <p className="mt-1 text-2xl font-black text-[#0a0a0a]">
-                  {schools.length}
+                  {totalStatCount}
                 </p>
               </Card>
               <Card className="rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] p-4 shadow-2xs">
@@ -331,6 +400,11 @@ export function SchoolPage() {
                   placeholder="Search institution name..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      flushSchoolSearch()
+                    }
+                  }}
                   startIcon={<SearchIcon className="size-4 text-[#6a6a6a]" />}
                 />
               </div>
@@ -343,7 +417,7 @@ export function SchoolPage() {
                     onClick={() => setTypeFilter(t)}
                     className="shrink-0 text-xs"
                   >
-                    {t === "all" ? `All (${schools.length})` : t}
+                    {t === "all" ? `All (${totalStatCount})` : t}
                   </Chip>
                 ))}
               </div>
@@ -419,6 +493,22 @@ export function SchoolPage() {
                   </Card>
                 ))}
               </div>
+            )}
+
+            {!loadingSchools && filtered.length > 0 && (
+              <InfiniteScrollFooter
+                hasMore={hasMore}
+                isLoadingMore={loadingMoreSchools}
+                loadedCount={filtered.length}
+                totalCount={totalSchools || undefined}
+                sentinelRef={sentinelRef}
+                onLoadMore={() => {
+                  if (nextCursor && !loadingMoreSchools) {
+                    void fetchSchools({ cursor: nextCursor })
+                  }
+                }}
+                itemLabel="schools"
+              />
             )}
           </div>
         )}

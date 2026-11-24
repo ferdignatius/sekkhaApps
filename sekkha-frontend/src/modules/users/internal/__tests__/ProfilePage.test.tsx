@@ -29,6 +29,7 @@ vi.mock("../api/userApi", () => ({
     getProfile: vi.fn(),
     updateProfile: vi.fn(),
     getPointsHistory: vi.fn(),
+    getPointsHistoryPage: vi.fn(),
     getActivityHeatmap: vi.fn(),
     getVerifiedSchools: vi.fn(),
     requestChangePasswordOtp: vi.fn(),
@@ -219,12 +220,30 @@ describe("ProfilePage UI/UX, Layout & Behavioral Improvements", () => {
     consoleSpy.mockRestore()
   })
 
-  it("uses unclipped concise mobile tab labels and progressive 10-item PointsLedger with error retry and no duplicate Current Balance box", async () => {
+  it("uses unclipped concise mobile tab labels and cursor-paginated PointsLedger with error retry and no duplicate Current Balance box", async () => {
     const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {})
     vi.mocked(userApi.getProfile).mockResolvedValueOnce(mockProfile)
-    vi.mocked(userApi.getPointsHistory)
+    vi.mocked(userApi.getPointsHistoryPage)
       .mockRejectedValueOnce(new Error("History timeout"))
-      .mockResolvedValueOnce(makeTransactions(15))
+      .mockResolvedValueOnce({
+        items: makeTransactions(15),
+        has_more: true,
+        next_cursor: "tx_15",
+      })
+      .mockResolvedValueOnce({
+        items: [
+          {
+            id: "tx_16",
+            points: 50,
+            points_delta: 50,
+            type: "event_attendance",
+            description: "Transaction 16",
+            created_at: "2026-10-16T09:00:00Z",
+          },
+        ],
+        has_more: false,
+        next_cursor: null,
+      })
 
     renderProfilePage()
 
@@ -261,18 +280,19 @@ describe("ProfilePage UI/UX, Layout & Behavioral Improvements", () => {
     // No redundant Current Balance box
     expect(screen.queryByText("Current Balance")).toBeNull()
 
-    // Progressive display: 3 shown initially, remaining 12 hidden behind Show More
-    expect(screen.getByText("Transaction 3")).toBeDefined()
-    expect(screen.queryByText("Transaction 4")).toBeNull()
-
-    fireEvent.click(screen.getByRole("button", { name: /Show More/i }))
-
-    expect(screen.getByText("Transaction 13")).toBeDefined()
-    expect(screen.queryByText("Transaction 14")).toBeNull()
-
-    fireEvent.click(screen.getByRole("button", { name: /Show More/i }))
-
+    // Server-paginated chunking: 15 items loaded first, cursor Load more appends tx_16
     expect(screen.getByText("Transaction 15")).toBeDefined()
+    expect(screen.queryByText("Transaction 16")).toBeNull()
+
+    fireEvent.click(screen.getByRole("button", { name: /Load more/i }))
+
+    await waitFor(() => {
+      expect(screen.getByText("Transaction 16")).toBeDefined()
+    })
+    expect(userApi.getPointsHistoryPage).toHaveBeenLastCalledWith({
+      limit: 15,
+      cursor: "tx_15",
+    })
     consoleSpy.mockRestore()
   })
 

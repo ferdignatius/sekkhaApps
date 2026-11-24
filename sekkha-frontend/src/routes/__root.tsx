@@ -37,6 +37,14 @@ export const Route = createRootRoute({
         content: "#FFFBF5",
       },
       {
+        name: "color-scheme",
+        content: "light only",
+      },
+      {
+        name: "supported-color-schemes",
+        content: "light",
+      },
+      {
         name: "mobile-web-app-capable",
         content: "yes",
       },
@@ -166,7 +174,11 @@ function RootComponent() {
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="id" style={{ backgroundColor: "#fffaf0", colorScheme: "light" }}>
+    <html
+      lang="id"
+      className="light"
+      style={{ backgroundColor: "#fffaf0", colorScheme: "light only" }}
+    >
       <head>
         <HeadContent />
       </head>

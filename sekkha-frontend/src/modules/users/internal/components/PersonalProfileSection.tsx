@@ -30,6 +30,8 @@ interface PersonalProfileSectionProps {
   onProfileUpdated: (updated: UserProfileDto) => void
   onToast: (message: string, type?: "success" | "error") => void
   onGoToSecurity?: () => void
+  defaultEditing?: boolean
+  onClose?: () => void
 }
 
 const NO_SCHOOL_VALUE = "__none__"
@@ -40,8 +42,10 @@ export function PersonalProfileSection({
   onProfileUpdated,
   onToast,
   onGoToSecurity,
+  defaultEditing = false,
+  onClose,
 }: PersonalProfileSectionProps) {
-  const [isEditing, setIsEditing] = useState(false)
+  const [isEditing, setIsEditing] = useState(defaultEditing)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -89,7 +93,11 @@ export function PersonalProfileSection({
   function handleCancel() {
     setError(null)
     setSchoolSearch("")
-    setIsEditing(false)
+    if (onClose) {
+      onClose()
+    } else {
+      setIsEditing(false)
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -142,7 +150,11 @@ export function PersonalProfileSection({
 
       onProfileUpdated(updated)
       onToast("Personal profile updated successfully", "success")
-      setIsEditing(false)
+      if (onClose) {
+        onClose()
+      } else {
+        setIsEditing(false)
+      }
     } catch (err: any) {
       console.error("Failed to update profile:", err)
       const msg =
@@ -352,6 +364,49 @@ export function PersonalProfileSection({
                 />
               </div>
             )}
+
+            <div className="rounded-[16px] border border-hairline bg-surface-soft/55 p-3.5 sm:col-span-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5 text-[11px] font-bold tracking-wider text-text-muted uppercase">
+                  <MailIcon className="size-3.5" />
+                  <span>Email Address</span>
+                </div>
+                {profile.email_verified ? (
+                  <Badge variant="mint" className="gap-1 text-[10px]">
+                    <ShieldCheckIcon className="size-3" />
+                    <span>Verified</span>
+                  </Badge>
+                ) : (
+                  <Badge variant="ochre" className="gap-1 text-[10px]">
+                    <AlertCircleIcon className="size-3" />
+                    <span>Unverified</span>
+                  </Badge>
+                )}
+              </div>
+              <p className="mt-1.5 truncate text-sm font-bold text-ink">
+                {profile.email || "Not set"}
+              </p>
+              <p className="mt-1 text-xs text-text-muted">
+                Read-only here. Update your verified email in{" "}
+                {onGoToSecurity ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose?.()
+                      onGoToSecurity()
+                    }}
+                    className="cursor-pointer font-bold text-ink underline underline-offset-2 hover:opacity-80"
+                  >
+                    Security &amp; Settings
+                  </button>
+                ) : (
+                  <span className="font-bold text-ink">
+                    Security &amp; Settings
+                  </span>
+                )}
+                .
+              </p>
+            </div>
           </div>
 
           <div className="flex flex-col-reverse gap-2.5 border-t border-hairline pt-4 sm:flex-row sm:justify-end">

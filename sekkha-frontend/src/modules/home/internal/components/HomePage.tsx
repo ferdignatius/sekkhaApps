@@ -436,7 +436,7 @@ export function HomePage() {
       <div className="relative overflow-hidden bg-gradient-to-b from-[#f6e8c8] via-[#faf2dd] to-[#f4e7c6] md:overflow-visible md:bg-none">
         {/* Mobile Hero Wallpaper spanning seamlessly behind top bar & hero */}
         <img
-          src="/home-background.svg"
+          src="/home-background.webp"
           alt=""
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 h-full w-full object-cover object-right-bottom select-none md:hidden"
@@ -477,7 +477,7 @@ export function HomePage() {
 
             {/* Desktop Hero Wallpaper + Soft Readability Scrim */}
             <img
-              src="/home-background.svg"
+              src="/home-background.webp"
               alt=""
               aria-hidden="true"
               className="pointer-events-none hidden h-full w-full object-cover object-right select-none md:absolute md:inset-0 md:block"

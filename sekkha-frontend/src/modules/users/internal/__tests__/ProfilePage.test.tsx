@@ -75,11 +75,6 @@ function makeTransactions(count: number): PointTransactionDto[] {
   }))
 }
 
-function switchTab(tabElement: HTMLElement) {
-  fireEvent.mouseDown(tabElement, { button: 0 })
-  fireEvent.click(tabElement)
-}
-
 function renderProfilePage(overrides?: { logout?: ReturnType<typeof vi.fn> }) {
   const logout = overrides?.logout ?? vi.fn()
   const authState: AuthState = {
@@ -199,7 +194,7 @@ describe("ProfilePage UI/UX, Layout & Behavioral Improvements", () => {
   })
 
   it("renders recoverable error card with Try Again button when loading profile fails", async () => {
-    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {})
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => { })
     vi.mocked(userApi.getProfile)
       .mockRejectedValueOnce(new Error("Network error"))
       .mockResolvedValueOnce(mockProfile)
@@ -221,7 +216,7 @@ describe("ProfilePage UI/UX, Layout & Behavioral Improvements", () => {
   })
 
   it("uses unclipped concise mobile tab labels and cursor-paginated PointsLedger with error retry and no duplicate Current Balance box", async () => {
-    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {})
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => { })
     vi.mocked(userApi.getProfile).mockResolvedValueOnce(mockProfile)
     vi.mocked(userApi.getPointsHistoryPage)
       .mockRejectedValueOnce(new Error("History timeout"))
@@ -251,16 +246,10 @@ describe("ProfilePage UI/UX, Layout & Behavioral Improvements", () => {
       expect(screen.getByTestId("profile-hero-card")).toBeDefined()
     })
 
-    // 3 responsive tabs exist cleanly
-    expect(screen.getByRole("tab", { name: /Pass/i })).toBeDefined()
-    expect(screen.getByRole("tab", { name: /Profile/i })).toBeDefined()
-    expect(screen.getByRole("tab", { name: /Security/i })).toBeDefined()
-
-    // DigitalMemberCard keeps single-row actions and prominent Enlarge QR
-    const enlargeBtn = screen.getByRole("button", { name: /Enlarge QR/i })
-    expect(enlargeBtn.className).toContain("bg-[#0a0a0a]")
-    const actionsRow = enlargeBtn.parentElement!
-    expect(actionsRow.className).toContain("grid-cols-3")
+    // Tabless single-page Profile with top-bar Member Pass & Settings buttons
+    expect(screen.queryByRole("tablist")).toBeNull()
+    expect(screen.getByRole("button", { name: /Member Pass/i })).toBeDefined()
+    expect(screen.getByRole("button", { name: /Settings/i })).toBeDefined()
 
     // PointsLedger error state recovers via Try Again
     await waitFor(() => {
@@ -293,10 +282,20 @@ describe("ProfilePage UI/UX, Layout & Behavioral Improvements", () => {
       limit: 15,
       cursor: "tx_15",
     })
+
+    // Clicking Member Pass button in top bar opens DigitalMemberCard bottom drawer and toggles Enlarge QR inline
+    fireEvent.click(screen.getByRole("button", { name: /Member Pass/i }))
+    const enlargeBtn = await screen.findByRole("button", { name: /Enlarge QR/i })
+    expect(enlargeBtn.className).toContain("bg-[#0a0a0a]")
+    const actionsRow = enlargeBtn.parentElement!
+    expect(actionsRow.className).toContain("grid-cols-3")
+    fireEvent.click(enlargeBtn)
+    expect(screen.getByTestId("digital-member-card-enlarged-qr")).toBeDefined()
+    expect(screen.getByRole("button", { name: /Show Card/i })).toBeDefined()
     consoleSpy.mockRestore()
   })
 
-  it("lazy-loads verified schools only when entering Edit Profile and displays read-only email hint in View Mode", async () => {
+  it("lazy-loads verified schools only when opening Edit Profile modal from Hero Card and displays read-only email hint", async () => {
     vi.mocked(userApi.getProfile).mockResolvedValueOnce(mockProfile)
     vi.mocked(userApi.getPointsHistory).mockResolvedValueOnce([])
 
@@ -309,24 +308,7 @@ describe("ProfilePage UI/UX, Layout & Behavioral Improvements", () => {
     // Not fetched on initial /profile mount
     expect(userApi.getVerifiedSchools).not.toHaveBeenCalled()
 
-    switchTab(screen.getByRole("tab", { name: /Profile/i }))
-
-    await waitFor(() => {
-      expect(screen.getByText("Personal Information")).toBeDefined()
-    })
-
-    // Still not fetched in View Mode!
-    expect(userApi.getVerifiedSchools).not.toHaveBeenCalled()
-
-    // Read-only Email row + interactive hint pointing to Security tab
-    expect(screen.getByText("admin@sekkha.com")).toBeDefined()
-    expect(
-      within(screen.getByRole("tabpanel")).getByRole("button", {
-        name: /Security & Settings/i,
-      })
-    ).toBeDefined()
-
-    // Enter Edit Mode -> fetches verified schools lazily with limit=5 and loads page 2 on scroll
+    // Prepare school mocks before clicking Edit Profile in Hero Card
     if (!HTMLElement.prototype.scrollIntoView) {
       HTMLElement.prototype.scrollIntoView = vi.fn()
     }
@@ -360,6 +342,7 @@ describe("ProfilePage UI/UX, Layout & Behavioral Improvements", () => {
     fireEvent.click(screen.getByRole("button", { name: /Edit Profile/i }))
 
     await waitFor(() => {
+      expect(screen.getByText("Personal Information")).toBeDefined()
       expect(userApi.getVerifiedSchools).toHaveBeenCalledTimes(1)
       expect(userApi.getVerifiedSchools).toHaveBeenCalledWith({
         page: 1,
@@ -367,6 +350,14 @@ describe("ProfilePage UI/UX, Layout & Behavioral Improvements", () => {
         search: undefined,
       })
     })
+
+    // Read-only Email row + interactive hint pointing to Security & Settings
+    expect(screen.getByText("admin@sekkha.com")).toBeDefined()
+    expect(
+      screen.getByRole("button", {
+        name: /Security & Settings/i,
+      })
+    ).toBeDefined()
 
     const schoolTrigger = await waitFor(() => {
       const el = screen.getByRole("combobox") as HTMLButtonElement
@@ -403,7 +394,8 @@ describe("ProfilePage UI/UX, Layout & Behavioral Improvements", () => {
     })
   })
 
-  it("renders Sign Out prominently at the bottom of the page across tabs with confirmation dialog and avoids duplicating Sign Out inside Security tab", async () => {
+  it("opens Settings view from top-bar gear button with grouped Help/Legal, Security navigation, Sign Out, and Delete Account", async () => {
+    window.history.replaceState({}, "", "/profile")
     vi.mocked(userApi.getProfile).mockResolvedValueOnce(mockProfile)
     vi.mocked(userApi.getPointsHistory).mockResolvedValueOnce([])
 
@@ -414,25 +406,30 @@ describe("ProfilePage UI/UX, Layout & Behavioral Improvements", () => {
       expect(screen.getByTestId("profile-hero-card")).toBeDefined()
     })
 
-    // Bottom Sign Out card is directly visible on initial Pass tab & tucked into left rail on desktop
-    const layoutGrid = screen.getByTestId("profile-layout-grid")
-    expect(layoutGrid.className).toContain("lg:grid-cols-12")
+    // Main view keeps Profile clean without bottom Sign Out clutter
+    expect(screen.queryByTestId("profile-signout-section")).toBeNull()
 
-    const bottomSignOutSection = screen.getByTestId("profile-signout-section")
-    expect(bottomSignOutSection.className).toContain("lg:row-start-2")
-    const signOutBtn = within(bottomSignOutSection).getByRole("button", {
-      name: /Sign Out/i,
-    })
+    // Open Settings via top-bar gear button
+    fireEvent.click(screen.getByRole("button", { name: /Settings/i }))
 
-    // Switch to Security tab and check there is no duplicate Session & Sign Out card inside Security tab
-    switchTab(screen.getByRole("tab", { name: /Security/i }))
+    const settingsView = await screen.findByTestId("profile-settings-view")
+    expect(within(settingsView).getByText(/Password & Email Security/i)).toBeDefined()
+    expect(within(settingsView).getByText(/Help & Support/i)).toBeDefined()
+    expect(within(settingsView).getByText(/About Sekkha/i)).toBeDefined()
+    expect(within(settingsView).getByText(/Privacy Policy/i)).toBeDefined()
+    expect(within(settingsView).getByRole("button", { name: /Delete Account/i })).toBeDefined()
+
+    // Navigate into Security sub-view and verify Change Account Password is shown without duplicate Delete Zone
+    fireEvent.click(within(settingsView).getByText(/Password & Email Security/i))
     await waitFor(() => {
       expect(screen.getByText("Change Account Password")).toBeDefined()
     })
-    expect(screen.getAllByRole("button", { name: /Sign Out/i })).toHaveLength(1)
+    expect(screen.queryByText(/Danger Zone — Delete Account/i)).toBeNull()
 
-    // Trigger Sign Out confirmation dialog and confirm logout
-    fireEvent.click(signOutBtn)
+    // Back to Settings and confirm Sign Out
+    fireEvent.click(screen.getByRole("button", { name: /^Back$/i }))
+    const backToSettings = await screen.findByTestId("profile-settings-view")
+    fireEvent.click(within(backToSettings).getByRole("button", { name: /Sign Out/i }))
 
     await waitFor(() => {
       expect(screen.getByText("Confirm Sign Out")).toBeDefined()
@@ -444,31 +441,35 @@ describe("ProfilePage UI/UX, Layout & Behavioral Improvements", () => {
     await waitFor(() => {
       expect(logout).toHaveBeenCalledTimes(1)
     })
+    window.history.replaceState({}, "", "/profile")
   })
 
-  it("renders WeeklyActivityHeatmap at top focused on active month (1 box = 1 week) and expands/collapses full year", async () => {
+  it("renders 52-week contribution graph without month grouping and shows date range + activity count popover on click", async () => {
+    window.history.replaceState({}, "", "/profile")
     vi.mocked(userApi.getProfile).mockResolvedValueOnce(mockProfile)
     vi.mocked(userApi.getPointsHistory).mockResolvedValueOnce([])
 
     renderProfilePage()
 
     const heatmapCard = await screen.findByTestId("weekly-activity-heatmap")
-    expect(within(heatmapCard).getByText("Weekly Activity")).toBeDefined()
-    expect(within(heatmapCard).getByText("Nov 2026")).toBeDefined()
-    expect(within(heatmapCard).getByText("2 check-ins")).toBeDefined()
+    expect(within(heatmapCard).getByText("activities in 2026", { exact: false })).toBeDefined()
+    expect(within(heatmapCard).getByText("52 Weeks")).toBeDefined()
+    expect(within(heatmapCard).queryByText("W1")).toBeNull()
+    expect(within(heatmapCard).queryByRole("button", { name: /Full Year/i })).toBeNull()
 
-    // Collapsed by default: only active month weekly boxes (W1..W4), not Oct
-    expect(within(heatmapCard).getByText("W1")).toBeDefined()
-    expect(within(heatmapCard).queryByText("Oct")).toBeNull()
+    const grid = within(heatmapCard).getByTestId("contribution-grid-52")
+    const cells = within(grid).getAllByRole("button")
+    expect(cells).toHaveLength(52)
 
-    // Expand to Full Year
-    fireEvent.click(within(heatmapCard).getByRole("button", { name: /Full Year/i }))
-    expect(within(heatmapCard).getByText("2026")).toBeDefined()
-    expect(within(heatmapCard).getByText("3 check-ins")).toBeDefined()
-    expect(within(heatmapCard).getByText("Oct")).toBeDefined()
+    // Clicking a week square opens popover showing week date range and activity count
+    const targetCell = within(grid).getByRole("button", {
+      name: /Nov 2–8, 2026: 1 activity/i,
+    })
+    fireEvent.click(targetCell)
 
-    // Collapse back to Active Month
-    fireEvent.click(within(heatmapCard).getByRole("button", { name: /Active Month/i }))
-    expect(within(heatmapCard).getByText("Nov 2026")).toBeDefined()
+    await waitFor(() => {
+      expect(screen.getByText("Nov 2–8, 2026")).toBeDefined()
+      expect(screen.getByText("1 activity")).toBeDefined()
+    })
   })
 })

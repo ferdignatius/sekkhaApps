@@ -1,8 +1,11 @@
 import { useMemo, useState } from "react"
-import { AnimatePresence, motion, useReducedMotion } from "motion/react"
-import { CalendarDaysIcon, ChevronDownIcon } from "lucide-react"
+import { CalendarDaysIcon } from "lucide-react"
 import { Badge, Card } from "@/components/base"
-import { motionTokens } from "@/components/ui/activity-heatmap-utils/motion-tokens"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 
 export interface WeeklyActivityBucket {
@@ -15,11 +18,13 @@ export interface WeeklyActivityBucket {
 
 export interface WeeklyActivityHeatmapProps {
   year: number
-  activeMonth: number // 0..11
+  activeMonth?: number // retained for API compatibility
   weeks: WeeklyActivityBucket[]
   isLoading?: boolean
   className?: string
 }
+
+const TOTAL_WEEKS = 52
 
 const MONTHS_SHORT = [
   "Jan",
@@ -37,11 +42,11 @@ const MONTHS_SHORT = [
 ] as const
 
 const LEVEL_CLASSES = [
-  "bg-[#f2ede0] border-black/[0.06] text-text-muted",
-  "bg-[#b8eae0] border-teal-700/15 text-teal-950",
-  "bg-[#6fd6c4] border-teal-700/25 text-teal-950",
-  "bg-[#1ea896] border-teal-800/30 text-white",
-  "bg-[#0f766e] border-teal-900/40 text-white",
+  "bg-[#f2ede0] border-black/[0.06]",
+  "bg-[#b8eae0] border-teal-700/15",
+  "bg-[#6fd6c4] border-teal-700/25",
+  "bg-[#1ea896] border-teal-800/30",
+  "bg-[#0f766e] border-teal-900/40",
 ] as const
 
 function getLevel(count: number): 0 | 1 | 2 | 3 | 4 {
@@ -52,7 +57,7 @@ function getLevel(count: number): 0 | 1 | 2 | 3 | 4 {
   return 4
 }
 
-function formatWeekRange(startIso: string, endIso: string): string {
+function formatWeekRangeWithYear(startIso: string, endIso: string): string {
   const start = new Date(`${startIso}T00:00:00Z`)
   const end = new Date(`${endIso}T00:00:00Z`)
   if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
@@ -60,272 +65,187 @@ function formatWeekRange(startIso: string, endIso: string): string {
   }
   const sMonth = MONTHS_SHORT[start.getUTCMonth()] ?? ""
   const eMonth = MONTHS_SHORT[end.getUTCMonth()] ?? ""
+  const endYear = end.getUTCFullYear()
   if (sMonth === eMonth) {
-    return `${sMonth} ${start.getUTCDate()}–${end.getUTCDate()}`
+    return `${sMonth} ${start.getUTCDate()}–${end.getUTCDate()}, ${endYear}`
   }
-  return `${sMonth} ${start.getUTCDate()} – ${eMonth} ${end.getUTCDate()}`
+  return `${sMonth} ${start.getUTCDate()} – ${eMonth} ${end.getUTCDate()}, ${endYear}`
+}
+
+function buildFiftyTwoWeeks(
+  weeks: WeeklyActivityBucket[],
+  year: number
+): WeeklyActivityBucket[] {
+  if (weeks.length >= TOTAL_WEEKS) {
+    return weeks.slice(-TOTAL_WEEKS)
+  }
+
+  const byStart = new Map(weeks.map((w) => [w.week_start, w]))
+  const jan1 = new Date(Date.UTC(year, 0, 1))
+  const jan1Day = jan1.getUTCDay()
+  const diffToMon = jan1Day === 0 ? -6 : 1 - jan1Day
+  const firstMonday = new Date(jan1.getTime() + diffToMon * 86_400_000)
+
+  const filled: WeeklyActivityBucket[] = []
+  for (let i = 0; i < TOTAL_WEEKS; i++) {
+    const start = new Date(firstMonday.getTime() + i * 7 * 86_400_000)
+    const end = new Date(start.getTime() + 6 * 86_400_000)
+    const startIso = start.toISOString().slice(0, 10)
+    const endIso = end.toISOString().slice(0, 10)
+    const existing = byStart.get(startIso)
+    if (existing) {
+      filled.push(existing)
+    } else {
+      const month = start.getUTCMonth()
+      filled.push({
+        week_start: startIso,
+        week_end: endIso,
+        month,
+        week_of_month: Math.ceil(start.getUTCDate() / 7),
+        count: 0,
+      })
+    }
+  }
+  return filled
 }
 
 /**
- * Weekly Activity Heatmap for ProfilePage:
- * 1 box = 1 week (Event Check-ins). Defaults to the active month (4–5 weekly boxes)
- * and expands smoothly to show all 12 months of the year.
+ * 52-week contribution graph (13x4 grid, 1 square = 1 week).
+ * Clicking any square opens an anchored popover with the week's date range and activity count.
  */
 export function WeeklyActivityHeatmap({
   year,
-  activeMonth,
   weeks,
   isLoading = false,
   className,
 }: WeeklyActivityHeatmapProps) {
-  const reduced = useReducedMotion()
-  const [expanded, setExpanded] = useState(false)
-  const [selectedWeek, setSelectedWeek] = useState<WeeklyActivityBucket | null>(
-    null
+  const [openWeekKey, setOpenWeekKey] = useState<string | null>(null)
+
+  const gridWeeks = useMemo(
+    () => buildFiftyTwoWeeks(weeks, year),
+    [weeks, year]
   )
 
-  const activeMonthWeeks = useMemo(
-    () => weeks.filter((w) => w.month === activeMonth),
-    [weeks, activeMonth]
-  )
-
-  const weeksByMonth = useMemo(() => {
-    const grouped: WeeklyActivityBucket[][] = Array.from(
-      { length: 12 },
-      () => []
-    )
-    for (const wk of weeks) {
-      if (wk.month >= 0 && wk.month < 12) {
-        grouped[wk.month].push(wk)
-      }
-    }
-    return grouped
-  }, [weeks])
-
-  const activeMonthTotal = useMemo(
-    () => activeMonthWeeks.reduce((sum, w) => sum + w.count, 0),
-    [activeMonthWeeks]
-  )
   const yearTotal = useMemo(
-    () => weeks.reduce((sum, w) => sum + w.count, 0),
-    [weeks]
+    () => gridWeeks.reduce((sum, w) => sum + w.count, 0),
+    [gridWeeks]
   )
-
-  const activeMonthLabel = MONTHS_SHORT[activeMonth] ?? "Month"
-  const displayedTotal = expanded ? yearTotal : activeMonthTotal
-  const displayedPeriod = expanded
-    ? String(year)
-    : `${activeMonthLabel} ${year}`
-
-  const inspectedWeek =
-    selectedWeek ??
-    activeMonthWeeks[activeMonthWeeks.length - 1] ??
-    weeks[weeks.length - 1] ??
-    null
 
   return (
     <Card
       variant="canvas"
       data-testid="weekly-activity-heatmap"
       className={cn(
-        "border-hairline p-3.5 shadow-2xs sm:rounded-[18px] sm:p-4",
+        "border-hairline p-4 shadow-2xs sm:rounded-[20px] sm:p-5",
         className
       )}
     >
-      {/* Compact Header Row */}
+      {/* Header Summary */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2">
           <div className="flex size-7 shrink-0 items-center justify-center rounded-[8px] bg-teal-50 text-clay-teal">
             <CalendarDaysIcon className="size-3.5" aria-hidden="true" />
           </div>
-          <div className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
-            <h2 className="truncate text-xs font-bold text-ink">
-              Weekly Activity
-            </h2>
-            <Badge variant="secondary" size="sm" className="px-1.5 py-0 font-mono text-[10px]">
-              {displayedPeriod}
-            </Badge>
-            <span aria-hidden="true" className="text-[11px] text-text-muted">
-              ·
-            </span>
-            <span className="text-[11px] font-medium text-text-muted tabular-nums">
-              {isLoading
-                ? "Loading..."
-                : `${displayedTotal} ${displayedTotal === 1 ? "check-in" : "check-ins"}`}
-            </span>
+          <div className="min-w-0">
+            <p className="text-xs font-bold text-ink">
+              {isLoading ? (
+                "Loading activity..."
+              ) : (
+                <>
+                  <span className="font-mono font-extrabold text-clay-teal tabular-nums">
+                    {yearTotal}
+                  </span>{" "}
+                  {yearTotal === 1 ? "activity" : "activities"} in {year}
+                </>
+              )}
+            </p>
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setExpanded((prev) => !prev)}
-          aria-expanded={expanded}
-          className="inline-flex h-7 shrink-0 cursor-pointer items-center gap-1 rounded-full border border-hairline bg-surface-soft px-2.5 text-[11px] font-bold text-ink transition-colors hover:bg-surface-card"
+        <Badge
+          variant="secondary"
+          size="sm"
+          className="shrink-0 px-2 py-0.5 font-mono text-[10px]"
         >
-          <span>{expanded ? "Active Month" : "Full Year"}</span>
-          <ChevronDownIcon
-            className={cn(
-              "size-3 text-text-muted transition-transform duration-200",
-              expanded && "rotate-180 text-ink"
-            )}
-            aria-hidden="true"
-          />
-        </button>
+          52 Weeks
+        </Badge>
       </div>
 
-      {/* Active Month View (Default: 1 box = 1 week, full-width flex row) */}
-      {!expanded && (
-        <div className="mt-2.5">
-          <div
-            role="group"
-            aria-label={`Weekly check-ins for ${activeMonthLabel} ${year}`}
-            className="flex w-full gap-1.5"
-          >
-            {activeMonthWeeks.map((wk, idx) => {
-              const level = getLevel(wk.count)
-              const isSelected = inspectedWeek?.week_start === wk.week_start
-              const rangeLabel = formatWeekRange(wk.week_start, wk.week_end)
-              return (
-                <motion.button
-                  key={wk.week_start}
-                  type="button"
-                  initial={reduced ? false : { opacity: 0, scale: 0.92 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{
-                    duration: 0.18,
-                    delay: reduced ? 0 : idx * 0.03,
-                    ease: [...motionTokens.ease.enter],
-                  }}
-                  onClick={() => setSelectedWeek(wk)}
-                  onMouseEnter={() => setSelectedWeek(wk)}
-                  onFocus={() => setSelectedWeek(wk)}
-                  aria-pressed={isSelected}
-                  aria-label={`Week ${wk.week_of_month} (${rangeLabel}): ${wk.count} ${wk.count === 1 ? "check-in" : "check-ins"}`}
-                  className={cn(
-                    "flex h-9 min-w-0 flex-1 cursor-pointer items-center justify-center gap-1 rounded-[8px] border text-center transition-all outline-none",
-                    LEVEL_CLASSES[level],
-                    isSelected
-                      ? "ring-1.5 ring-ink ring-offset-1"
-                      : "hover:scale-[1.02]"
-                  )}
+      {/* 52-Week Contribution Grid (13 columns x 4 rows) */}
+      {isLoading ? (
+        <div
+          aria-busy="true"
+          className="mt-3 grid grid-cols-13 gap-1.5 sm:gap-2"
+        >
+          {Array.from({ length: TOTAL_WEEKS }).map((_, idx) => (
+            <div
+              key={idx}
+              className="aspect-square w-full animate-pulse rounded-[5px] bg-[#f2ede0] sm:rounded-[6px]"
+            />
+          ))}
+        </div>
+      ) : (
+        <div
+          role="group"
+          aria-label={`52-week activity contribution graph for ${year}`}
+          data-testid="contribution-grid-52"
+          className="mt-3 grid grid-cols-13 gap-1.5 sm:gap-2"
+        >
+          {gridWeeks.map((wk) => {
+            const level = getLevel(wk.count)
+            const weekRange = formatWeekRangeWithYear(
+              wk.week_start,
+              wk.week_end
+            )
+            const key = wk.week_start
+            const isOpen = openWeekKey === key
+
+            return (
+              <Popover
+                key={key}
+                open={isOpen}
+                onOpenChange={(nextOpen) =>
+                  setOpenWeekKey(nextOpen ? key : null)
+                }
+              >
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label={`${weekRange}: ${wk.count} ${wk.count === 1 ? "activity" : "activities"}`}
+                    className={cn(
+                      "aspect-square w-full cursor-pointer rounded-[5px] border transition-transform hover:scale-110 focus-visible:ring-2 focus-visible:ring-ink focus-visible:outline-none active:scale-95 sm:rounded-[6px]",
+                      LEVEL_CLASSES[level],
+                      isOpen && "ring-2 ring-ink ring-offset-1"
+                    )}
+                  />
+                </PopoverTrigger>
+                <PopoverContent
+                  side="top"
+                  sideOffset={6}
+                  className="w-auto min-w-[170px] gap-1 rounded-[14px] border border-hairline bg-canvas px-3.5 py-2.5 text-left text-xs text-ink shadow-lg"
                 >
-                  <span className="text-[10px] font-bold opacity-75">
-                    W{wk.week_of_month}
-                  </span>
-                  <span className="font-mono text-xs font-extrabold tabular-nums">
-                    {wk.count}
-                  </span>
-                </motion.button>
-              )
-            })}
-          </div>
+                  <p className="font-bold text-ink">{weekRange}</p>
+                  <p className="font-mono text-[11px] font-semibold text-clay-teal tabular-nums">
+                    {wk.count} {wk.count === 1 ? "activity" : "activities"}
+                  </p>
+                </PopoverContent>
+              </Popover>
+            )
+          })}
         </div>
       )}
 
-      {/* Expanded Full-Year View: Borderless 2-Column Inline Matrix (Jan–Jun left, Jul–Dec right) */}
-      <AnimatePresence initial={false}>
-        {expanded && (
-          <motion.div
-            initial={reduced ? false : { opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={reduced ? undefined : { opacity: 0, height: 0 }}
-            transition={{ duration: 0.2, ease: [...motionTokens.ease.enter] }}
-            className="overflow-hidden"
-          >
-            <div
-              role="group"
-              aria-label={`Weekly check-ins for ${year}`}
-              className="mt-2.5 grid grid-flow-col grid-rows-6 gap-x-4 gap-y-1.5"
-            >
-              {MONTHS_SHORT.map((monthLabel, monthIdx) => {
-                const monthWeeks = weeksByMonth[monthIdx] ?? []
-                const isCurrentMonth = monthIdx === activeMonth
-                return (
-                  <div
-                    key={monthLabel}
-                    className="flex items-center gap-2 py-0.5"
-                  >
-                    <span
-                      className={cn(
-                        "w-7 shrink-0 text-[10px] font-bold tracking-wider uppercase",
-                        isCurrentMonth
-                          ? "text-clay-teal underline decoration-clay-teal/60 underline-offset-2"
-                          : "text-text-muted"
-                      )}
-                    >
-                      {monthLabel}
-                    </span>
-                    <div className="flex flex-1 items-center gap-1">
-                      {monthWeeks.map((wk) => {
-                        const level = getLevel(wk.count)
-                        const isSelected =
-                          inspectedWeek?.week_start === wk.week_start
-                        const rangeLabel = formatWeekRange(
-                          wk.week_start,
-                          wk.week_end
-                        )
-                        return (
-                          <button
-                            key={wk.week_start}
-                            type="button"
-                            onClick={() => setSelectedWeek(wk)}
-                            onMouseEnter={() => setSelectedWeek(wk)}
-                            onFocus={() => setSelectedWeek(wk)}
-                            aria-label={`${monthLabel} W${wk.week_of_month} (${rangeLabel}): ${wk.count} ${wk.count === 1 ? "check-in" : "check-ins"}`}
-                            className={cn(
-                              "h-3.5 min-w-0 flex-1 cursor-pointer rounded-[3px] border transition-transform outline-none",
-                              LEVEL_CLASSES[level],
-                              isSelected
-                                ? "scale-105 ring-1.5 ring-ink ring-offset-1"
-                                : "hover:scale-105"
-                            )}
-                          />
-                        )
-                      })}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Compact Footer: Inspected Week Readout + Clay Teal Scale Legend */}
-      <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 border-t border-hairline pt-2 text-[11px]">
-        <span className="font-medium text-ink tabular-nums">
-          {inspectedWeek ? (
-            <>
-              <span className="font-bold">
-                W{inspectedWeek.week_of_month}
-              </span>{" "}
-              <span className="text-text-muted">
-                ({formatWeekRange(inspectedWeek.week_start, inspectedWeek.week_end)})
-              </span>{" "}
-              ·{" "}
-              <span className="font-bold text-clay-teal">
-                {inspectedWeek.count}{" "}
-                {inspectedWeek.count === 1 ? "check-in" : "check-ins"}
-              </span>
-            </>
-          ) : (
-            <span className="text-text-muted">Tap a week to inspect</span>
-          )}
-        </span>
-
-        <span
-          className="inline-flex items-center gap-1 text-[10px] font-semibold text-text-muted"
-          aria-hidden="true"
-        >
-          <span>Less</span>
-          {LEVEL_CLASSES.map((cls, idx) => (
-            <span
-              key={idx}
-              className={cn("size-2.5 rounded-[3px] border", cls)}
-            />
-          ))}
-          <span>More</span>
-        </span>
+      {/* Compact Intensity Legend */}
+      <div className="mt-3 flex items-center justify-end gap-1.5 text-[10px] font-medium text-text-muted">
+        <span>Less</span>
+        {LEVEL_CLASSES.map((cls, idx) => (
+          <span
+            key={idx}
+            aria-hidden="true"
+            className={cn("size-2.5 rounded-[3px] border", cls)}
+          />
+        ))}
+        <span>More</span>
       </div>
     </Card>
   )

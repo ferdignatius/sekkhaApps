@@ -4,6 +4,7 @@ import {
   CopyIcon,
   CheckIcon,
   Maximize2Icon,
+  Minimize2Icon,
   PrinterIcon,
   ShieldCheckIcon,
   SparklesIcon,
@@ -24,6 +25,7 @@ export interface DigitalMemberCardProps {
   currentStreak?: number
   streakStatus?: "active" | "paused" | "inactive" | "expired"
   isClaimed?: boolean
+  inlineEnlargeQr?: boolean
   onCopyMemberId?: (memberId: string) => void
 }
 
@@ -102,6 +104,7 @@ export function DigitalMemberCard({
   currentStreak,
   streakStatus = "active",
   isClaimed,
+  inlineEnlargeQr = false,
   onCopyMemberId,
 }: DigitalMemberCardProps) {
   const [copied, setCopied] = useState(false)
@@ -137,224 +140,255 @@ export function DigitalMemberCard({
     ROLE_CARD_STYLES[normalizedRole] || ROLE_CARD_STYLES.member
 
   return (
-    <div className="space-y-4">
-      {/* ── HIG PHYSICAL/DIGITAL MEMBER CARD (1.586 : 1 Standard Ratio) ── */}
-      <div
-        className={`relative overflow-hidden rounded-[22px] border p-4 transition-all duration-300 sm:min-h-[220px] sm:p-6 ${roleCardStyles.cardBg}`}
-      >
-        {/* Subtle Specular Top Highlight */}
+    <div className="w-full max-w-full min-w-0 space-y-3.5">
+      {inlineEnlargeQr && showEnlargeQr ? (
+        /* ── INLINE ENLARGED QR VIEW (Used Inside Drawer — No Stacked Second Popup) ── */
         <div
-          className={`pointer-events-none absolute inset-0 bg-gradient-to-b ${roleCardStyles.accentGlow}`}
-        />
-
-        <div className="relative z-10 flex h-full flex-col justify-between gap-3.5 sm:gap-5">
-          {/* Card Top: Logo, Subtitle & Role Chip */}
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex min-w-0 items-center gap-2 sm:gap-2.5">
-              <div className="flex size-8 shrink-0 items-center justify-center rounded-[10px] bg-white/90 p-1.5 shadow-xs sm:size-9">
-                <img
-                  src="/sekkha_logo.svg"
-                  alt="Sekkha"
-                  className="size-full object-contain"
-                  onError={(e) => {
-                    ;(e.target as HTMLElement).style.display = "none"
-                  }}
-                />
+          data-testid="digital-member-card-enlarged-qr"
+          className="flex flex-col items-center justify-center rounded-[22px] border border-hairline bg-surface-soft p-5 text-center shadow-xs"
+        >
+          <p className="text-[11px] font-bold tracking-wider text-text-muted uppercase">
+            Check-In QR Code
+          </p>
+          <div className="mt-3 rounded-[18px] border-2 border-ink bg-white p-4 shadow-md">
+            {memberIdStr ? (
+              <QRCode
+                value={memberIdStr}
+                size={196}
+                className="size-[180px] sm:size-[196px]"
+                viewBox="0 0 256 256"
+              />
+            ) : (
+              <div className="flex size-[180px] items-center justify-center text-xs font-semibold text-text-muted">
+                QR Code unavailable
               </div>
-              <div className="min-w-0">
-                <p
-                  className={`truncate text-[9px] font-bold tracking-wider uppercase sm:text-[11px] sm:tracking-widest ${roleCardStyles.headerSub}`}
-                >
-                  Sekkha Dhamma Community
-                </p>
-                <h4 className="truncate text-[11px] font-black tracking-tight uppercase sm:text-sm">
-                  Official Identity Pass
-                </h4>
-              </div>
-            </div>
-
-            <span
-              className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold capitalize sm:px-2.5 sm:text-xs ${roleCardStyles.badge}`}
-            >
-              <ShieldCheckIcon className="size-3" />
-              <span>{ROLE_DISPLAY_NAMES[normalizedRole] || normalizedRole}</span>
-            </span>
+            )}
           </div>
+          <p className="mt-3 font-mono text-base font-black tracking-widest text-ink">
+            {memberIdStr || "—"}
+          </p>
+          <p className="mt-0.5 max-w-full truncate text-xs font-semibold text-text-muted">
+            {name || "Community Member"}
+          </p>
+        </div>
+      ) : (
+        /* ── HIG PHYSICAL/DIGITAL MEMBER CARD (Responsive, Never Clipped) ── */
+        <div
+          className={`relative w-full max-w-full overflow-hidden rounded-[22px] border p-4 transition-all duration-300 sm:p-5 ${roleCardStyles.cardBg}`}
+        >
+          {/* Subtle Specular Top Highlight */}
+          <div
+            className={`pointer-events-none absolute inset-0 bg-gradient-to-b ${roleCardStyles.accentGlow}`}
+          />
 
-          {/* Card Middle: Member Name & Tap-to-Enlarge High-Contrast QR Code */}
-          <div className="flex items-center justify-between gap-3 py-0.5 sm:gap-4 sm:py-1">
-            <div className="min-w-0 flex-1 space-y-1">
-              <p
-                className={`text-[11px] font-medium tracking-wider uppercase ${roleCardStyles.subtext}`}
-              >
-                Cardholder Name
-              </p>
-              <h3 className="truncate text-lg font-bold tracking-tight sm:text-xl md:text-2xl">
-                {name || "Community Member"}
-              </h3>
-
-              {username && (
-                <p
-                  className={`font-mono text-xs font-semibold ${roleCardStyles.subtext}`}
-                >
-                  @{username}
-                </p>
-              )}
-
-              <div className="pt-2">
-                <p
-                  className={`text-[10px] font-medium tracking-widest uppercase ${roleCardStyles.subtext}`}
-                >
-                  Member ID
-                </p>
-                <p
-                  className={`font-mono text-sm font-black tracking-widest sm:text-base ${roleCardStyles.numberText}`}
-                >
-                  {memberIdStr || "—"}
-                </p>
+          <div className="relative z-10 flex w-full min-w-0 flex-col justify-between gap-3.5 sm:gap-4">
+            {/* Card Top: Logo, Subtitle & Role Chip */}
+            <div className="flex min-w-0 items-center justify-between gap-2">
+              <div className="flex min-w-0 flex-1 items-center gap-2">
+                <div className="flex size-8 shrink-0 items-center justify-center rounded-[10px] bg-white/90 p-1.5 shadow-xs">
+                  <img
+                    src="/sekkha_logo.svg"
+                    alt="Sekkha"
+                    className="size-full object-contain"
+                    onError={(e) => {
+                      ;(e.target as HTMLElement).style.display = "none"
+                    }}
+                  />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p
+                    className={`truncate text-[9px] font-bold tracking-wider uppercase sm:text-[10px] ${roleCardStyles.headerSub}`}
+                  >
+                    Sekkha Dhamma Community
+                  </p>
+                  <h4 className="truncate text-[11px] font-black tracking-tight uppercase sm:text-xs">
+                    Official Identity Pass
+                  </h4>
+                </div>
               </div>
 
-              {school && (
-                <div className="flex items-center gap-1.5 pt-1 text-xs">
-                  <GraduationCapIcon
-                    className={`size-3.5 ${roleCardStyles.subtext}`}
-                  />
-                  <span
-                    className={`truncate text-xs font-medium ${roleCardStyles.subtext}`}
-                  >
-                    {school}
-                  </span>
-                </div>
-              )}
-
-              {(points !== undefined || currentStreak !== undefined) && (
-                <div className="flex flex-wrap items-center gap-1.5 pt-2">
-                  {points !== undefined && (
-                    <span
-                      className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold ${roleCardStyles.badge}`}
-                    >
-                      <SparklesIcon className="size-2.5" />
-                      <span>{points.toLocaleString("en-US")} Pts</span>
-                    </span>
-                  )}
-                  {currentStreak !== undefined && (
-                    <span
-                      className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold ${roleCardStyles.badge}`}
-                    >
-                      <FlameIcon className="size-2.5 fill-current" />
-                      <span>
-                        {streakStatus === "paused" && currentStreak > 0
-                          ? `${currentStreak} Wk Paused`
-                          : `${currentStreak} Wk Streak`}
-                      </span>
-                    </span>
-                  )}
-                </div>
-              )}
+              <span
+                className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold capitalize sm:px-2.5 sm:text-[11px] ${roleCardStyles.badge}`}
+              >
+                <ShieldCheckIcon className="size-3 shrink-0" />
+                <span>{ROLE_DISPLAY_NAMES[normalizedRole] || normalizedRole}</span>
+              </span>
             </div>
 
-            {/* Interactive Tap-to-Enlarge QR Code Container */}
-            <button
-              type="button"
-              onClick={() => memberIdStr && setShowEnlargeQr(true)}
-              disabled={!memberIdStr}
-              aria-label="Tap QR code to enlarge"
-              title="Tap to enlarge QR code"
-              className="group flex shrink-0 cursor-pointer flex-col items-center rounded-[14px] focus-visible:ring-2 focus-visible:ring-clay-ochre focus-visible:outline-none disabled:cursor-default"
-            >
-              <div className="rounded-[12px] border border-black/10 bg-white p-1.5 shadow-sm transition-transform group-hover:scale-105 group-active:scale-95 sm:rounded-[14px] sm:p-2.5">
-                {memberIdStr ? (
-                  <QRCode
-                    value={memberIdStr}
-                    size={96}
-                    className="size-[76px] sm:size-[96px]"
-                    viewBox="0 0 256 256"
-                  />
-                ) : (
-                  <div className="flex size-[76px] items-center justify-center text-[10px] font-semibold text-neutral-400 sm:size-24">
-                    No QR
+            {/* Card Middle: Member Name & Tap-to-Enlarge High-Contrast QR Code */}
+            <div className="flex min-w-0 items-center justify-between gap-3 py-0.5">
+              <div className="min-w-0 flex-1 space-y-1 overflow-hidden">
+                <p
+                  className={`text-[10px] font-medium tracking-wider uppercase ${roleCardStyles.subtext}`}
+                >
+                  Cardholder Name
+                </p>
+                <h3 className="truncate text-base font-bold tracking-tight sm:text-xl">
+                  {name || "Community Member"}
+                </h3>
+
+                {username && (
+                  <p
+                    className={`truncate font-mono text-xs font-semibold ${roleCardStyles.subtext}`}
+                  >
+                    @{username}
+                  </p>
+                )}
+
+                <div className="pt-1.5">
+                  <p
+                    className={`text-[9px] font-medium tracking-widest uppercase ${roleCardStyles.subtext}`}
+                  >
+                    Member ID
+                  </p>
+                  <p
+                    className={`truncate font-mono text-sm font-black tracking-widest sm:text-base ${roleCardStyles.numberText}`}
+                  >
+                    {memberIdStr || "—"}
+                  </p>
+                </div>
+
+                {school && (
+                  <div className="flex min-w-0 items-center gap-1.5 pt-0.5 text-xs">
+                    <GraduationCapIcon
+                      className={`size-3.5 shrink-0 ${roleCardStyles.subtext}`}
+                    />
+                    <span
+                      className={`min-w-0 flex-1 truncate text-xs font-medium ${roleCardStyles.subtext}`}
+                      title={school}
+                    >
+                      {school}
+                    </span>
+                  </div>
+                )}
+
+                {(points !== undefined || currentStreak !== undefined) && (
+                  <div className="flex flex-wrap items-center gap-1.5 pt-1.5">
+                    {points !== undefined && (
+                      <span
+                        className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold ${roleCardStyles.badge}`}
+                      >
+                        <SparklesIcon className="size-2.5 shrink-0" />
+                        <span>{points.toLocaleString("en-US")} Pts</span>
+                      </span>
+                    )}
+                    {currentStreak !== undefined && (
+                      <span
+                        className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold ${roleCardStyles.badge}`}
+                      >
+                        <FlameIcon className="size-2.5 shrink-0 fill-current" />
+                        <span>
+                          {streakStatus === "paused" && currentStreak > 0
+                            ? `${currentStreak} Wk Paused`
+                            : `${currentStreak} Wk Streak`}
+                        </span>
+                      </span>
+                    )}
                   </div>
                 )}
               </div>
-              <p className="mt-1 text-[9px] font-bold tracking-widest text-neutral-400 uppercase">
-                <span className="sm:hidden">Tap QR</span>
-                <span className="hidden sm:inline">Scan Code</span>
-              </p>
-            </button>
-          </div>
 
-          {/* Card Footer: Joined Date & Account Status */}
-          <div
-            className={`flex items-center justify-between border-t border-black/5 pt-2.5 text-[10px] font-medium sm:text-xs ${roleCardStyles.footerText}`}
-          >
-            <span>
-              {memberSince ? `Member since ${memberSince}` : "Active Member"}
-            </span>
-            <span className="flex items-center gap-1 font-mono text-[10px] tracking-wider uppercase opacity-80">
-              <SparklesIcon className="size-2.5" />
-              {isClaimed === false ? "Pre-Provisioned Pass" : "Secured Pass"}
-            </span>
+              {/* Interactive Tap-to-Enlarge QR Code Container */}
+              <button
+                type="button"
+                onClick={() => memberIdStr && setShowEnlargeQr(true)}
+                disabled={!memberIdStr}
+                aria-label="Tap QR code to enlarge"
+                title="Tap to enlarge QR code"
+                className="group flex shrink-0 cursor-pointer flex-col items-center rounded-[14px] focus-visible:ring-2 focus-visible:ring-clay-ochre focus-visible:outline-none disabled:cursor-default"
+              >
+                <div className="rounded-[12px] border border-black/10 bg-white p-1.5 shadow-sm transition-transform group-hover:scale-105 group-active:scale-95 sm:p-2">
+                  {memberIdStr ? (
+                    <QRCode
+                      value={memberIdStr}
+                      size={84}
+                      className="size-[72px] sm:size-[84px]"
+                      viewBox="0 0 256 256"
+                    />
+                  ) : (
+                    <div className="flex size-[72px] items-center justify-center text-[10px] font-semibold text-neutral-400 sm:size-[84px]">
+                      No QR
+                    </div>
+                  )}
+                </div>
+                <p className="mt-1 text-[9px] font-bold tracking-widest text-neutral-400 uppercase">
+                  Tap QR
+                </p>
+              </button>
+            </div>
+
+            {/* Card Footer: Joined Date & Account Status */}
+            <div
+              className={`flex min-w-0 items-center justify-between gap-2 border-t border-black/5 pt-2.5 text-[10px] font-medium sm:text-xs ${roleCardStyles.footerText}`}
+            >
+              <span className="truncate">
+                {memberSince ? `Member since ${memberSince}` : "Active Member"}
+              </span>
+              <span className="flex shrink-0 items-center gap-1 font-mono text-[10px] tracking-wider uppercase opacity-80">
+                <SparklesIcon className="size-2.5 shrink-0" />
+                {isClaimed === false ? "Pre-Provisioned Pass" : "Secured Pass"}
+              </span>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* ── CARD ACTION BUTTONS ── */}
-      <div className="grid grid-cols-3 gap-2 pt-1 sm:gap-2.5">
+      <div className="grid grid-cols-3 gap-2 pt-0.5 sm:gap-2.5">
         <Button
           variant="outlined"
           type="button"
           onClick={handleCopyId}
           disabled={!memberIdStr}
-          className="h-11 w-full justify-center gap-1.5 rounded-[12px] px-2 text-xs font-semibold sm:px-3 sm:text-sm"
+          className="h-11 w-full justify-center gap-1.5 rounded-[12px] px-2 text-xs font-semibold sm:px-3"
         >
           {copied ? (
             <CheckIcon className="size-4 shrink-0 text-emerald-600" />
           ) : (
             <CopyIcon className="size-4 shrink-0" />
           )}
-          <span className="truncate">
-            {copied ? (
-              "Copied!"
-            ) : (
-              <>
-                <span className="sm:hidden">Copy ID</span>
-                <span className="hidden sm:inline">Copy Member ID</span>
-              </>
-            )}
-          </span>
+          <span className="truncate">{copied ? "Copied!" : "Copy ID"}</span>
         </Button>
 
         <Button
           variant="filled"
           type="button"
-          onClick={() => setShowEnlargeQr(true)}
+          onClick={() => setShowEnlargeQr((prev) => (inlineEnlargeQr ? !prev : true))}
           disabled={!memberIdStr}
-          className="h-11 w-full justify-center gap-1.5 rounded-[12px] px-2 text-xs font-semibold sm:px-3 sm:text-sm"
+          className="h-11 w-full justify-center gap-1.5 rounded-[12px] px-2 text-xs font-semibold sm:px-3"
         >
-          <Maximize2Icon className="size-4 shrink-0" />
-          <span className="truncate">Enlarge QR</span>
+          {inlineEnlargeQr && showEnlargeQr ? (
+            <>
+              <Minimize2Icon className="size-4 shrink-0" />
+              <span className="truncate">Show Card</span>
+            </>
+          ) : (
+            <>
+              <Maximize2Icon className="size-4 shrink-0" />
+              <span className="truncate">Enlarge QR</span>
+            </>
+          )}
         </Button>
 
         <Button
           variant="outlined"
           type="button"
           onClick={handlePrint}
-          className="h-11 w-full justify-center gap-1.5 rounded-[12px] px-2 text-xs font-semibold sm:px-3 sm:text-sm"
+          className="h-11 w-full justify-center gap-1.5 rounded-[12px] px-2 text-xs font-semibold sm:px-3"
         >
           <PrinterIcon className="size-4 shrink-0" />
-          <span className="truncate">
-            <span className="sm:hidden">Print</span>
-            <span className="hidden sm:inline">Print Card</span>
-          </span>
+          <span className="truncate">Print</span>
         </Button>
       </div>
 
-      <MemberQrModal
-        open={showEnlargeQr}
-        onClose={() => setShowEnlargeQr(false)}
-        userNumber={memberIdStr}
-        name={name}
-      />
+      {!inlineEnlargeQr && (
+        <MemberQrModal
+          open={showEnlargeQr}
+          onClose={() => setShowEnlargeQr(false)}
+          userNumber={memberIdStr}
+          name={name}
+        />
+      )}
     </div>
   )
 }

@@ -95,7 +95,10 @@ describe("MemberQrModal", () => {
       />
     )
 
-    const backdrop = screen.getByRole("presentation")
+    const backdrop = document.querySelector(
+      '[data-slot="drawer-overlay"]'
+    ) as HTMLElement
+    expect(backdrop).not.toBeNull()
     fireEvent.mouseDown(backdrop)
     expect(handleClose).toHaveBeenCalledTimes(1)
   })

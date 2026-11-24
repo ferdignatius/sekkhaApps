@@ -353,6 +353,13 @@ export function PeoplePage() {
     roleFilter,
     claimStatusFilter,
   })
+  const listAbortRef = useRef<AbortController | null>(null)
+
+  useEffect(() => {
+    return () => {
+      listAbortRef.current?.abort()
+    }
+  }, [])
 
   // Fetch paginated & filtered data from API (resetting page to 1 without double-fetching)
   useEffect(() => {
@@ -397,17 +404,25 @@ export function PeoplePage() {
   async function loadData(options: { silent?: boolean } = {}) {
     if (!isOrganizerOrAdmin) return
     const { silent = false } = options
+    listAbortRef.current?.abort()
+    const controller = new AbortController()
+    listAbortRef.current = controller
     try {
       if (!silent) {
         setLoading(true)
       }
-      const res = (await peopleApi.listMembers({
-        search: debouncedSearchQuery.trim() || undefined,
-        role: roleFilter,
-        claimed_status: claimStatusFilter,
-        page: currentPage,
-        limit: pageSize,
-      })) as PaginatedMembersResponse
+      const res = (await peopleApi.listMembers(
+        {
+          search: debouncedSearchQuery.trim() || undefined,
+          role: roleFilter,
+          claimed_status: claimStatusFilter,
+          page: currentPage,
+          limit: pageSize,
+        },
+        { signal: controller.signal }
+      )) as PaginatedMembersResponse
+
+      if (controller.signal.aborted) return
 
       setMembers(res.items || [])
       setTotalItems(res.total || 0)
@@ -422,13 +437,14 @@ export function PeoplePage() {
           unclaimed: res.stats.unclaimed ?? 0,
         })
       }
-    } catch (err) {
+    } catch (err: any) {
+      if (err?.name === "AbortError") return
       console.error("Failed to load People data:", err)
       if (!silent) {
         showToast("Failed to load member data", "error")
       }
     } finally {
-      if (!silent) {
+      if (!silent && !controller.signal.aborted) {
         setLoading(false)
       }
     }

@@ -238,15 +238,22 @@ export const configureServices = {
     }
     cleanCode = candidateCode
 
-    const applyLatePenalty = data.apply_late_penalty ?? true
-    const defaultMaxLateMinutes = applyLatePenalty ? (data.default_max_late_minutes ?? 30) : 0
-    const defaultLatePenaltyPoints = applyLatePenalty ? (data.default_late_penalty_points ?? 15) : 0
+    const countsTowardStreak = data.counts_toward_streak ?? true
+    const defaultMaxLateMinutes = countsTowardStreak
+      ? (data.apply_late_penalty === false ? 0 : (data.default_max_late_minutes ?? 30))
+      : 0
+    const defaultLatePenaltyPoints = countsTowardStreak
+      ? (data.apply_late_penalty === false ? 0 : (data.default_late_penalty_points ?? 15))
+      : 0
+    const applyLatePenalty =
+      countsTowardStreak &&
+      (data.apply_late_penalty ?? defaultLatePenaltyPoints > 0) &&
+      defaultLatePenaltyPoints > 0
     const audience = resolveAudiencePolicy({
       targetRoles: data.default_target_roles,
       visibility: data.default_visibility,
       fallbackVisibility: "all",
     })
-    const countsTowardStreak = data.counts_toward_streak ?? true
 
     const type = await configureModels.createEventType({
       code: cleanCode,
@@ -321,12 +328,30 @@ export const configureServices = {
     if (data.color !== undefined) updateData.color = data.color.trim()
     if (data.description !== undefined) updateData.description = data.description ? data.description.trim() : null
     if (data.default_point_reward !== undefined) updateData.defaultPointReward = data.default_point_reward
-    if (data.apply_late_penalty !== undefined) updateData.applyLatePenalty = data.apply_late_penalty
-    if (data.default_max_late_minutes !== undefined) updateData.defaultMaxLateMinutes = data.default_max_late_minutes
-    if (data.default_late_penalty_points !== undefined) updateData.defaultLatePenaltyPoints = data.default_late_penalty_points
-    if (data.apply_late_penalty === false) {
-      if (data.default_max_late_minutes === undefined) updateData.defaultMaxLateMinutes = 0
-      if (data.default_late_penalty_points === undefined) updateData.defaultLatePenaltyPoints = 0
+    const effectiveCountsTowardStreak =
+      data.counts_toward_streak ?? existing.countsTowardStreak ?? true
+    if (data.counts_toward_streak !== undefined) {
+      updateData.countsTowardStreak = data.counts_toward_streak
+    }
+    if (!effectiveCountsTowardStreak) {
+      updateData.applyLatePenalty = false
+      updateData.defaultMaxLateMinutes = 0
+      updateData.defaultLatePenaltyPoints = 0
+    } else {
+      if (data.default_max_late_minutes !== undefined) updateData.defaultMaxLateMinutes = data.default_max_late_minutes
+      if (data.default_late_penalty_points !== undefined) updateData.defaultLatePenaltyPoints = data.default_late_penalty_points
+      if (data.apply_late_penalty === false) {
+        if (data.default_max_late_minutes === undefined) updateData.defaultMaxLateMinutes = 0
+        if (data.default_late_penalty_points === undefined) updateData.defaultLatePenaltyPoints = 0
+        updateData.applyLatePenalty = false
+      } else {
+        const nextPenaltyPoints =
+          data.default_late_penalty_points ?? existing.defaultLatePenaltyPoints ?? 15
+        updateData.applyLatePenalty =
+          data.apply_late_penalty !== undefined
+            ? data.apply_late_penalty && nextPenaltyPoints > 0
+            : nextPenaltyPoints > 0
+      }
     }
     if (data.default_target_roles !== undefined || data.default_visibility !== undefined) {
       const audience = resolveAudiencePolicy({
@@ -337,7 +362,6 @@ export const configureServices = {
       updateData.defaultTargetRoles = audience.targetRoles
       updateData.defaultVisibility = audience.visibility
     }
-    if (data.counts_toward_streak !== undefined) updateData.countsTowardStreak = data.counts_toward_streak
     if (data.is_active !== undefined) updateData.isActive = data.is_active
 
     // Auto-sync code from label (or explicit code)

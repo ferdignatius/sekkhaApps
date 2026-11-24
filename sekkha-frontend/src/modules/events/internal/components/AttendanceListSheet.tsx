@@ -2,10 +2,9 @@
 // Apple HIG Inset Grouped List for Attendance Records.
 // Standardized strictly with Sekkha Design System (DESIGN.md & AGENTS.md).
 
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo, useEffect, useRef } from "react"
 import {
   QrCodeIcon,
-  SparklesIcon,
   XIcon,
   Trash2Icon,
   LockIcon,
@@ -17,11 +16,19 @@ import {
   ClockIcon,
   AwardIcon,
   CheckIcon,
+  MoreVerticalIcon,
 } from "lucide-react"
 import type { AttendanceRecord, UserRole } from "../types"
 import { ConfirmDialog } from "@/components/base/AlertDialog"
 import { Badge } from "@/components/base/Badge"
 import { toast } from "@/components/base"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { InfiniteScrollFooter } from "@/components/common/InfiniteScrollFooter"
 import { usePaginatedDropdown } from "@/hooks/usePaginatedDropdown"
 import { DROPDOWN_PAGE_SIZE, normalizePaginatedResult } from "@/lib/pagination"
@@ -45,7 +52,8 @@ interface AttendanceListSheetProps {
   onRefresh?: () => void
 }
 
-const PAGE_SIZE = 10
+const PAGE_SIZE = 25
+const SWIPE_THRESHOLD = 64
 
 function formatTime(iso: string): string {
   try {
@@ -56,6 +64,291 @@ function formatTime(iso: string): string {
   } catch {
     return "-"
   }
+}
+
+interface SwipeableAttendanceRowProps {
+  rec: AttendanceRecord
+  isEditable: boolean
+  isPengurus: boolean
+  canWaiveLate: boolean
+  onOpenBadgePicker: (rec: AttendanceRecord) => void
+  onRemoveBadgeActivity: (userId: string) => void
+  onWaiveLate: (userId: string) => void
+  onRequestDelete: (rec: AttendanceRecord) => void
+}
+
+function SwipeableAttendanceRow({
+  rec,
+  isEditable,
+  isPengurus,
+  canWaiveLate,
+  onOpenBadgePicker,
+  onRemoveBadgeActivity,
+  onWaiveLate,
+  onRequestDelete,
+}: SwipeableAttendanceRowProps) {
+  const [swipeOffset, setSwipeOffset] = useState(0)
+  const dragRef = useRef<{
+    pointerId: number
+    startX: number
+    startY: number
+    lockedAxis: "x" | "y" | null
+  } | null>(null)
+
+  const basePoints = rec.points_earned ?? rec.base_points ?? 50
+  const bonusPoints = rec.badge_bonus_points ?? 0
+  const totalPoints = basePoints + bonusPoints
+
+  const metaParts = [
+    formatTime(rec.scanned_at),
+    rec.method === "qr" ? "QR" : "Manual",
+    rec.role?.toUpperCase() || "MEMBER",
+    rec.user_number || null,
+    rec.school && rec.school !== "Umum" ? rec.school : null,
+  ].filter(Boolean)
+
+  function handlePointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    if (!isEditable) return
+    const target = e.target as HTMLElement | null
+    if (target?.closest("button, a, [role='menuitem']")) return
+    if (e.pointerType === "mouse" && e.button !== 0) return
+    dragRef.current = {
+      pointerId: e.pointerId,
+      startX: e.clientX,
+      startY: e.clientY,
+      lockedAxis: null,
+    }
+  }
+
+  function handlePointerMove(e: React.PointerEvent<HTMLDivElement>) {
+    const state = dragRef.current
+    if (!state || state.pointerId !== e.pointerId) return
+    const dx = e.clientX - state.startX
+    const dy = e.clientY - state.startY
+    if (!state.lockedAxis) {
+      if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return
+      if (Math.abs(dy) > Math.abs(dx)) {
+        state.lockedAxis = "y"
+        setSwipeOffset(0)
+        return
+      }
+      state.lockedAxis = "x"
+    }
+    if (state.lockedAxis === "x") {
+      setSwipeOffset(Math.max(-108, Math.min(108, dx)))
+    }
+  }
+
+  function finishSwipe(e: React.PointerEvent<HTMLDivElement>, trigger: boolean) {
+    const state = dragRef.current
+    if (!state || state.pointerId !== e.pointerId) return
+    const dx = e.clientX - state.startX
+    const wasHorizontal = state.lockedAxis === "x"
+    dragRef.current = null
+    setSwipeOffset(0)
+
+    if (!trigger) return
+    if ((wasHorizontal && dx >= SWIPE_THRESHOLD) || swipeOffset >= SWIPE_THRESHOLD) {
+      onOpenBadgePicker(rec)
+    } else if (
+      (wasHorizontal && dx <= -SWIPE_THRESHOLD) ||
+      swipeOffset <= -SWIPE_THRESHOLD
+    ) {
+      onRequestDelete(rec)
+    }
+  }
+
+  const isSwipingRight = swipeOffset > 4
+  const isSwipingLeft = swipeOffset < -4
+
+  return (
+    <div
+      data-testid={`attendance-row-${rec.user_id}`}
+      className="relative overflow-hidden bg-[#fffaf0]"
+    >
+      {/* Swipe Reveal Action Layer */}
+      {isEditable && (isSwipingRight || isSwipingLeft) && (
+        <div
+          aria-hidden="true"
+          className={`absolute inset-0 flex items-center justify-between px-4 text-xs font-bold text-white transition-colors ${
+            isSwipingRight
+              ? Math.abs(swipeOffset) >= SWIPE_THRESHOLD
+                ? "bg-[#1a3a3a]"
+                : "bg-[#1a3a3a]/80"
+              : Math.abs(swipeOffset) >= SWIPE_THRESHOLD
+                ? "bg-rose-600"
+                : "bg-rose-500/80"
+          }`}
+        >
+          <span
+            className={`inline-flex items-center gap-1.5 ${
+              isSwipingRight ? "opacity-100" : "opacity-0"
+            }`}
+          >
+            <AwardIcon className="size-4" />
+            <span>Service Role</span>
+          </span>
+          <span
+            className={`inline-flex items-center gap-1.5 ${
+              isSwipingLeft ? "opacity-100" : "opacity-0"
+            }`}
+          >
+            <span>Remove</span>
+            <Trash2Icon className="size-4" />
+          </span>
+        </div>
+      )}
+
+      {/* Foreground Compact Row */}
+      <div
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={(e) => finishSwipe(e, true)}
+        onPointerCancel={(e) => finishSwipe(e, false)}
+        style={{
+          transform: swipeOffset !== 0 ? `translateX(${swipeOffset}px)` : undefined,
+          touchAction: isEditable ? "pan-y" : undefined,
+        }}
+        className={`relative flex items-center justify-between gap-2.5 bg-[#fffaf0] px-3 py-2.5 select-none hover:bg-[#faf5e8]/70 sm:px-4 ${
+          swipeOffset === 0 ? "transition-transform duration-150 ease-out" : ""
+        }`}
+      >
+        <div className="flex min-w-0 flex-1 items-center gap-2.5">
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-full border border-[#e5e5e5] bg-[#faf5e8] text-[11px] font-bold text-[#0a0a0a]">
+            {getInitials(rec.name)}
+          </div>
+
+          <div className="min-w-0 flex-1 space-y-0.5">
+            <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+              <span className="max-w-full truncate text-[13px] font-bold text-[#0a0a0a] sm:text-sm">
+                {rec.name}
+              </span>
+
+              {rec.is_late && (
+                <Badge
+                  variant="destructive"
+                  size="sm"
+                  className="gap-1 px-1.5 py-0 text-[10px] font-semibold"
+                >
+                  <ClockIcon className="size-2.5" />
+                  <span>Late (-{rec.late_penalty_applied ?? 15})</span>
+                  {canWaiveLate && (
+                    <button
+                      type="button"
+                      onClick={() => onWaiveLate(rec.user_id)}
+                      className="ml-0.5 inline-flex size-4 shrink-0 cursor-pointer items-center justify-center rounded-full hover:bg-white/25"
+                      title="Admin: Remove late status"
+                      aria-label="Remove late status"
+                    >
+                      <XIcon className="size-2.5" />
+                    </button>
+                  )}
+                </Badge>
+              )}
+
+              {rec.badge_activity && (
+                <span className="inline-flex max-w-[180px] items-center gap-1 rounded-full border border-[#e5e5e5] bg-[#faf5e8] px-2 py-0.5 text-[10px] font-semibold text-[#0a0a0a]">
+                  <AwardIcon className="size-2.5 shrink-0 text-[#9a6e14]" />
+                  <span className="truncate">{rec.badge_activity}</span>
+                  <span className="shrink-0 font-bold">
+                    +{rec.badge_bonus_points ?? 30}
+                  </span>
+                  {isEditable && (
+                    <button
+                      type="button"
+                      onClick={() => onRemoveBadgeActivity(rec.user_id)}
+                      className="inline-flex size-3.5 shrink-0 cursor-pointer items-center justify-center rounded-full text-[#6a6a6a] hover:bg-[#e5e5e5] hover:text-[#0a0a0a]"
+                      title="Remove service role"
+                      aria-label="Remove role"
+                    >
+                      <XIcon className="size-2.5" />
+                    </button>
+                  )}
+                </span>
+              )}
+            </div>
+
+            <p className="truncate text-[11px] text-[#6a6a6a]">
+              {metaParts.join(" · ")}
+            </p>
+          </div>
+        </div>
+
+        {/* Right: Clean Points Text + More Menu (⋮) */}
+        <div className="flex shrink-0 items-center gap-1">
+          <span className="text-xs font-bold text-[#0a0a0a] tabular-nums">
+            +{totalPoints} Pts
+          </span>
+
+          {isPengurus &&
+            (isEditable ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label={`Actions for ${rec.name}`}
+                    title={`Actions for ${rec.name}`}
+                    className="inline-flex size-9 cursor-pointer items-center justify-center rounded-full text-[#6a6a6a] transition-colors hover:bg-[#ebe6d6] hover:text-[#0a0a0a]"
+                  >
+                    <MoreVerticalIcon className="size-4" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="end"
+                  className="w-48 rounded-2xl border border-[#e5e5e5] bg-[#fffaf0] p-1.5 shadow-lg"
+                >
+                  <DropdownMenuItem
+                    onClick={() => onOpenBadgePicker(rec)}
+                    className="flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-[#0a0a0a] hover:bg-[#faf5e8]"
+                  >
+                    <AwardIcon className="size-3.5 text-[#9a6e14]" />
+                    <span>
+                      {rec.badge_activity
+                        ? "Change Service Role"
+                        : "Assign Service Role"}
+                    </span>
+                  </DropdownMenuItem>
+                  {rec.badge_activity && (
+                    <DropdownMenuItem
+                      onClick={() => onRemoveBadgeActivity(rec.user_id)}
+                      className="flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-[#6a6a6a] hover:bg-[#faf5e8] hover:text-[#0a0a0a]"
+                    >
+                      <XIcon className="size-3.5" />
+                      <span>Remove Service Role</span>
+                    </DropdownMenuItem>
+                  )}
+                  {canWaiveLate && rec.is_late && (
+                    <DropdownMenuItem
+                      onClick={() => onWaiveLate(rec.user_id)}
+                      className="flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-[#0a0a0a] hover:bg-[#faf5e8]"
+                    >
+                      <ClockIcon className="size-3.5 text-amber-600" />
+                      <span>Remove Late Status</span>
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuSeparator className="my-1 border-t border-[#e5e5e5]" />
+                  <DropdownMenuItem
+                    onClick={() => onRequestDelete(rec)}
+                    className="flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-50"
+                  >
+                    <Trash2Icon className="size-3.5 text-rose-600" />
+                    <span>Remove Check-In</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <span
+                className="inline-flex size-8 items-center justify-center text-[#8a8a8a]"
+                title="Finalized"
+                aria-label="Finalized"
+              >
+                <LockIcon className="size-3.5" />
+              </span>
+            ))}
+        </div>
+      </div>
+    </div>
+  )
 }
 
 export function AttendanceListSheet({
@@ -103,9 +396,9 @@ export function AttendanceListSheet({
     enabled: isEditable && Boolean(badgePickerTarget),
   })
   const [searchQuery, setSearchQuery] = useState("")
-  const [filterMethod, setFilterMethod] = useState<"all" | "qr" | "manual">(
-    "all"
-  )
+  const [filterMethod, setFilterMethod] = useState<
+    "all" | "qr" | "manual" | "late"
+  >("all")
   const [currentPage, setCurrentPage] = useState(1)
 
   useEffect(() => {
@@ -215,6 +508,7 @@ export function AttendanceListSheet({
     return displayRecords.filter((rec) => {
       if (filterMethod === "qr" && rec.method !== "qr") return false
       if (filterMethod === "manual" && rec.method !== "manual") return false
+      if (filterMethod === "late" && !rec.is_late) return false
 
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim()
@@ -241,61 +535,69 @@ export function AttendanceListSheet({
 
   return (
     <div className="space-y-4 text-left font-sans">
-      {/* ── 1. Compact Single-Row Filter & Total Points Bar ── */}
-      <div className="flex items-center justify-between gap-2">
-        <div className="scrollbar-none flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto pb-0.5">
-          <button
-            type="button"
-            onClick={() => setFilterMethod("all")}
-            className={`inline-flex min-h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold transition-all ${
-              filterMethod === "all"
-                ? "border-[#0a0a0a] bg-[#0a0a0a] text-white shadow-2xs"
-                : "border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] hover:bg-[#faf5e8]"
-            }`}
-            title="Show all attendees"
-          >
-            <UsersIcon className="size-3.5" />
-            <span>All · {metrics.total}</span>
-          </button>
+      {/* ── 1. Clean Single-Row Filter Bar (All / QR / Manual / Late) ── */}
+      <div className="scrollbar-none flex items-center gap-1.5 overflow-x-auto pb-0.5">
+        <button
+          type="button"
+          onClick={() => setFilterMethod("all")}
+          className={`inline-flex min-h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold transition-all ${
+            filterMethod === "all"
+              ? "border-[#0a0a0a] bg-[#0a0a0a] text-white shadow-2xs"
+              : "border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] hover:bg-[#faf5e8]"
+          }`}
+          title="Show all attendees"
+        >
+          <UsersIcon className="size-3.5" />
+          <span>All · {metrics.total}</span>
+        </button>
 
-          <button
-            type="button"
-            onClick={() => setFilterMethod(filterMethod === "qr" ? "all" : "qr")}
-            className={`inline-flex min-h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold transition-all ${
-              filterMethod === "qr"
-                ? "border-[#0a0a0a] bg-[#0a0a0a] text-white shadow-2xs"
-                : "border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] hover:bg-[#faf5e8]"
-            }`}
-            title="Filter only QR Code check-ins"
-          >
-            <QrCodeIcon className="size-3.5" />
-            <span>QR · {metrics.qr}</span>
-          </button>
+        <button
+          type="button"
+          onClick={() => setFilterMethod(filterMethod === "qr" ? "all" : "qr")}
+          className={`inline-flex min-h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold transition-all ${
+            filterMethod === "qr"
+              ? "border-[#0a0a0a] bg-[#0a0a0a] text-white shadow-2xs"
+              : "border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] hover:bg-[#faf5e8]"
+          }`}
+          title="Filter only QR Code check-ins"
+        >
+          <QrCodeIcon className="size-3.5" />
+          <span>QR · {metrics.qr}</span>
+        </button>
 
+        <button
+          type="button"
+          onClick={() =>
+            setFilterMethod(filterMethod === "manual" ? "all" : "manual")
+          }
+          className={`inline-flex min-h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold transition-all ${
+            filterMethod === "manual"
+              ? "border-[#0a0a0a] bg-[#0a0a0a] text-white shadow-2xs"
+              : "border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] hover:bg-[#faf5e8]"
+          }`}
+          title="Filter only manual check-ins"
+        >
+          <ClipboardListIcon className="size-3.5" />
+          <span>Manual · {metrics.manual}</span>
+        </button>
+
+        {metrics.late > 0 && (
           <button
             type="button"
             onClick={() =>
-              setFilterMethod(filterMethod === "manual" ? "all" : "manual")
+              setFilterMethod(filterMethod === "late" ? "all" : "late")
             }
             className={`inline-flex min-h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold transition-all ${
-              filterMethod === "manual"
-                ? "border-[#0a0a0a] bg-[#0a0a0a] text-white shadow-2xs"
-                : "border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] hover:bg-[#faf5e8]"
+              filterMethod === "late"
+                ? "border-rose-700 bg-rose-600 text-white shadow-2xs"
+                : "border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100"
             }`}
-            title="Filter only manual check-ins"
+            title="Filter only late attendees"
           >
-            <ClipboardListIcon className="size-3.5" />
-            <span>Manual · {metrics.manual}</span>
+            <ClockIcon className="size-3.5" />
+            <span>Late · {metrics.late}</span>
           </button>
-        </div>
-
-        <span
-          className="inline-flex min-h-9 shrink-0 items-center gap-1 rounded-full border border-[#e5e5e5] bg-[#fffaf0] px-3 py-1 text-xs font-bold text-[#0a0a0a] shadow-2xs"
-          title="Total points distributed"
-        >
-          <SparklesIcon className="size-3.5 text-[#0a0a0a]" />
-          <span>+{metrics.points} Pts</span>
-        </span>
+        )}
       </div>
 
       {/* ── 2. Search Toolbar ── */}
@@ -353,148 +655,21 @@ export function AttendanceListSheet({
         </div>
       ) : (
         <div className="divide-y divide-[#e5e5e5] overflow-hidden rounded-[20px] border border-[#e5e5e5] bg-[#fffaf0] shadow-xs">
-          {paginatedRecords.map((rec, idx) => {
-            const basePoints = rec.points_earned ?? rec.base_points ?? 50
-            const bonusPoints = rec.badge_bonus_points ?? 0
-            const totalPoints = basePoints + bonusPoints
-
-            return (
-              <div
-                key={`${rec.user_id}-${idx}`}
-                className="flex flex-col gap-2.5 p-3.5 transition-colors hover:bg-[#faf5e8]/60 sm:p-4"
-              >
-                {/* Upper Row: Avatar, Full-Width Identity & Points */}
-                <div className="flex items-start justify-between gap-2.5">
-                  <div className="flex min-w-0 flex-1 items-center gap-3">
-                    <div className="flex size-10 shrink-0 items-center justify-center rounded-[14px] border border-[#e5e5e5] bg-[#faf5e8] text-xs font-bold text-[#0a0a0a] shadow-2xs">
-                      {getInitials(rec.name)}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-bold text-[#0a0a0a]">
-                        {rec.name}
-                      </p>
-                      <p className="mt-0.5 truncate text-xs text-[#6a6a6a]">
-                        {[
-                          rec.role ? rec.role.toUpperCase() : null,
-                          rec.user_number,
-                          rec.school,
-                          formatTime(rec.scanned_at),
-                          rec.method === "qr" ? "QR" : "Manual",
-                        ]
-                          .filter(Boolean)
-                          .join(" · ")}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Right: Total Points Pill */}
-                  <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[#e5e5e5] bg-[#faf5e8] px-2.5 py-1 text-xs font-bold text-[#0a0a0a] shadow-2xs">
-                    <SparklesIcon className="size-3 text-[#0a0a0a]" />
-                    <span>+{totalPoints} Pts</span>
-                  </span>
-                </div>
-
-                {/* Lower Row: Late Status, Service Role Badge Activity, 44pt Actions */}
-                <div className="flex items-center justify-between gap-2 border-t border-[#e5e5e5] pt-2">
-                  <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-                    {/* Late Arrival Badge */}
-                    {rec.is_late ? (
-                      <Badge
-                        variant="destructive"
-                        size="sm"
-                        className="gap-1 text-[11px] font-medium"
-                      >
-                        <ClockIcon className="size-3" />
-                        <span>
-                          Late (-{rec.late_penalty_applied ?? 15} Pts)
-                        </span>
-                        {canWaiveLate && (
-                          <button
-                            type="button"
-                            onClick={() => void handleWaiveLatePenalty(rec.user_id)}
-                            className="ml-0.5 inline-flex size-4 shrink-0 cursor-pointer items-center justify-center rounded-full hover:bg-white/25"
-                            title="Admin: Remove late status"
-                            aria-label="Remove late status"
-                          >
-                            <XIcon className="size-3" />
-                          </button>
-                        )}
-                      </Badge>
-                    ) : (
-                      <Badge
-                        variant="secondary"
-                        size="sm"
-                        className="gap-1 text-[11px] font-medium text-[#0a0a0a]"
-                      >
-                        <CheckIcon className="size-3 text-[#0a0a0a]" />
-                        <span>On Time</span>
-                      </Badge>
-                    )}
-
-                    {/* Service Role Badge Activity */}
-                    {rec.badge_activity ? (
-                      <span className="inline-flex max-w-full items-center gap-1 rounded-full border border-[#e5e5e5] bg-[#faf5e8] px-2.5 py-1 text-[11px] font-semibold text-[#0a0a0a] shadow-2xs">
-                        <AwardIcon className="size-3 shrink-0 text-[#0a0a0a]" />
-                        <span className="truncate">{rec.badge_activity}</span>
-                        <span className="shrink-0 font-bold text-[#0a0a0a]">
-                          (+{rec.badge_bonus_points ?? 30})
-                        </span>
-                        {isEditable && (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              handleAssignBadgeActivity(rec.user_id, null)
-                            }
-                            className="ml-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full text-[#6a6a6a] hover:bg-[#e5e5e5] hover:text-[#0a0a0a]"
-                            title="Remove role"
-                            aria-label="Remove role"
-                          >
-                            <XIcon className="size-3" />
-                          </button>
-                        )}
-                      </span>
-                    ) : (
-                      isEditable && (
-                        <button
-                          type="button"
-                          onClick={() => setBadgePickerTarget(rec)}
-                          className="inline-flex min-h-9 cursor-pointer items-center gap-1 rounded-full border border-[#e5e5e5] bg-[#faf5e8] px-3 py-1 text-[11px] font-medium text-[#6a6a6a] shadow-2xs hover:border-[#0a0a0a] hover:bg-[#ebe6d6] hover:text-[#0a0a0a]"
-                        >
-                          <AwardIcon className="size-3 text-[#0a0a0a]" />
-                          <span>+ Assign Service Role</span>
-                        </button>
-                      )
-                    )}
-                  </div>
-
-                  {/* Organizer Management Actions (44pt HIG mobile touch target) */}
-                  {isPengurus && (
-                    <div className="flex shrink-0 items-center">
-                      {isEditable ? (
-                        <button
-                          type="button"
-                          onClick={() => setDeleteTarget(rec)}
-                          className="inline-flex size-11 cursor-pointer items-center justify-center rounded-full border border-[#e5e5e5] bg-[#faf5e8] text-[#6a6a6a] shadow-2xs transition-all hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700 active:scale-95 sm:h-9 sm:w-auto sm:px-3"
-                          title="Remove draft check-in"
-                          aria-label="Remove draft check-in"
-                        >
-                          <Trash2Icon className="size-4 sm:size-3.5" />
-                          <span className="ml-1 hidden text-xs font-medium sm:inline">
-                            Delete
-                          </span>
-                        </button>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 text-xs font-medium text-[#6a6a6a]">
-                          <LockIcon className="size-3" />
-                          <span>Finalized</span>
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )
-          })}
+          {paginatedRecords.map((rec, idx) => (
+            <SwipeableAttendanceRow
+              key={`${rec.user_id}-${idx}`}
+              rec={rec}
+              isEditable={isEditable}
+              isPengurus={isPengurus}
+              canWaiveLate={canWaiveLate}
+              onOpenBadgePicker={(target) => setBadgePickerTarget(target)}
+              onRemoveBadgeActivity={(userId) =>
+                void handleAssignBadgeActivity(userId, null)
+              }
+              onWaiveLate={(userId) => void handleWaiveLatePenalty(userId)}
+              onRequestDelete={(target) => setDeleteTarget(target)}
+            />
+          ))}
         </div>
       )}
 

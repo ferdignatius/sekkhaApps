@@ -426,32 +426,20 @@ export function EventDetailSheet({
 
       if (isActive) {
         return (
-          <div className="grid grid-cols-2 gap-2.5">
-            <button
-              type="button"
-              onClick={() =>
-                navigate({
-                  to: "/events/scan",
-                  search: { eventId: event.id },
-                })
-              }
-              className="flex min-h-[46px] cursor-pointer items-center justify-center gap-2 rounded-full bg-ink px-4 py-2.5 text-xs font-bold text-canvas shadow-xs transition-all hover:bg-ink/90 active:scale-[0.98] sm:text-sm"
-              title="Open live QR scanner"
-            >
-              <CameraIcon className="size-4 text-canvas" />
-              <span>Live Scanner</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setPendingAction("close")}
-              className="flex min-h-[46px] cursor-pointer items-center justify-center gap-2 rounded-full border border-ink bg-surface-card px-4 py-2.5 text-xs font-bold text-ink shadow-xs transition-all hover:bg-surface-soft active:scale-[0.98] sm:text-sm"
-              title="Close & complete this event"
-            >
-              <LockIcon className="size-4 text-ink" />
-              <span>Finalize Event</span>
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() =>
+              navigate({
+                to: "/events/scan",
+                search: { eventId: event.id },
+              })
+            }
+            className="flex min-h-[46px] w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-ink px-6 py-2.5 text-xs font-bold text-canvas shadow-xs transition-all hover:bg-ink/90 active:scale-[0.98] sm:text-sm"
+            title="Open live QR scanner"
+          >
+            <CameraIcon className="size-4 text-canvas" />
+            <span>Live Scanner</span>
+          </button>
         )
       }
 
@@ -573,13 +561,17 @@ export function EventDetailSheet({
           <div className="flex items-center justify-between gap-3 p-3">
             <span className="font-medium text-text-muted">Late Policy</span>
             <span className="text-right font-bold text-ink">
-              {event.max_late_minutes ?? 15}m grace ·{" "}
-              {latePenaltyPoints <= 0 ? (
-                <span className="text-text-muted">No penalty</span>
+              {event.counts_toward_streak === false ? (
+                <span className="text-text-muted">No Penalty (Optional)</span>
+              ) : latePenaltyPoints <= 0 ? (
+                <span className="text-text-muted">No Penalty (0 Pts)</span>
               ) : (
-                <span className="text-rose-700">
-                  -{latePenaltyPoints} Pts after
-                </span>
+                <>
+                  {event.max_late_minutes ?? 15}m grace ·{" "}
+                  <span className="text-rose-700">
+                    -{latePenaltyPoints} Pts after
+                  </span>
+                </>
               )}
             </span>
           </div>
@@ -894,6 +886,15 @@ export function EventDetailSheet({
                     {(isActive || (!isClosed && !isCancelled)) && (
                       <>
                         <DropdownMenuSeparator className="my-1 border-t border-hairline" />
+                        {isActive && (
+                          <DropdownMenuItem
+                            onClick={() => setPendingAction("close")}
+                            className="flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-ink hover:bg-surface-soft"
+                          >
+                            <LockIcon className="size-3.5 text-ink" />
+                            <span>Finalize Event</span>
+                          </DropdownMenuItem>
+                        )}
                         <DropdownMenuItem
                           onClick={() => setPendingAction("cancel")}
                           className="flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-50"

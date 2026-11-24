@@ -192,12 +192,17 @@ export function AttendanceScanPage() {
     {
       enabled: isPengurus && !isDebouncedNumeric,
       delayMs: 0,
+      minChars: 2,
     }
   )
 
+  const trimmedQuery = searchQuery.trim()
+  const isWaitingForMinChars =
+    trimmedQuery.length > 0 && trimmedQuery.length < 2 && !isNumericQuery
   const isSearchPending =
-    searchQuery.trim().length > 0 &&
-    (searchQuery.trim() !== debouncedSearchQuery.trim() || searchingSimilar)
+    !isWaitingForMinChars &&
+    trimmedQuery.length > 0 &&
+    (trimmedQuery !== debouncedSearchQuery.trim() || searchingSimilar)
 
   // Bottom pill swipe-up gesture state for opening standard ResponsiveFormModal drawer
   const pillTouchStartYRef = useRef<number | null>(null)

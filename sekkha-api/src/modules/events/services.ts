@@ -396,14 +396,18 @@ export const eventServices = {
       seasonId = activeSeason?.id
     }
 
-    const applyLatePenalty = eventType.applyLatePenalty ?? true
+    const countsTowardStreak =
+      body.counts_toward_streak ?? eventType.countsTowardStreak ?? true
+    const applyLatePenalty = countsTowardStreak && (eventType.applyLatePenalty ?? true)
     const pointReward = body.point_reward ?? eventType.defaultPointReward ?? 50
-    const maxLateMinutes =
-      body.max_late_minutes ??
-      (applyLatePenalty ? (eventType.defaultMaxLateMinutes ?? 30) : 0)
-    const latePenaltyPoints =
-      body.late_penalty_points ??
-      (applyLatePenalty ? (eventType.defaultLatePenaltyPoints ?? 15) : 0)
+    const maxLateMinutes = countsTowardStreak
+      ? (body.max_late_minutes ??
+        (applyLatePenalty ? (eventType.defaultMaxLateMinutes ?? 30) : 0))
+      : 0
+    const latePenaltyPoints = countsTowardStreak
+      ? (body.late_penalty_points ??
+        (applyLatePenalty ? (eventType.defaultLatePenaltyPoints ?? 15) : 0))
+      : 0
     const audience = resolveAudiencePolicy({
       targetRoles: body.target_roles,
       visibility: body.visibility,
@@ -411,8 +415,6 @@ export const eventServices = {
       fallbackVisibility: eventType.defaultVisibility ?? "all",
     })
     const visibility = audience.visibility
-    const countsTowardStreak =
-      body.counts_toward_streak ?? eventType.countsTowardStreak ?? true
 
     const event = await prisma.event.create({
       data: {
@@ -535,6 +537,9 @@ export const eventServices = {
           })
         : null
 
+    const effectiveCountsTowardStreak =
+      body.counts_toward_streak ?? current.countsTowardStreak ?? true
+
     const event = await prisma.event.update({
       where: { id },
       data: {
@@ -554,8 +559,12 @@ export const eventServices = {
         ...(eventTypeId !== undefined && { eventTypeId }),
         ...(body.season_id !== undefined && { seasonId: body.season_id }),
         ...(body.point_reward !== undefined && { pointReward: body.point_reward }),
-        ...(body.max_late_minutes !== undefined && { maxLateMinutes: body.max_late_minutes }),
-        ...(body.late_penalty_points !== undefined && { latePenaltyPoints: body.late_penalty_points }),
+        ...(!effectiveCountsTowardStreak
+          ? { maxLateMinutes: 0, latePenaltyPoints: 0 }
+          : {
+              ...(body.max_late_minutes !== undefined && { maxLateMinutes: body.max_late_minutes }),
+              ...(body.late_penalty_points !== undefined && { latePenaltyPoints: body.late_penalty_points }),
+            }),
       },
       include: { type: true },
     })
@@ -1249,12 +1258,14 @@ export const eventServices = {
       throw new AppError("Participant has already attended", 409, "ALREADY_ATTENDED")
     }
 
-    // Evaluate Late Penalty (if late_penalty_points <= 0, late policy is disabled and isLate is always false)
-    const maxLateMinutes = event.maxLateMinutes ?? 30
-    const latePenaltyPoints = event.latePenaltyPoints ?? 15
+    // Evaluate Late Penalty (optional events or late_penalty_points <= 0 disable late penalties completely)
+    const countsTowardStreak = event.countsTowardStreak ?? true
+    const maxLateMinutes = countsTowardStreak ? (event.maxLateMinutes ?? 30) : 0
+    const latePenaltyPoints = countsTowardStreak ? (event.latePenaltyPoints ?? 15) : 0
     const scheduledTime = new Date(event.eventDate).getTime()
     const nowTime = Date.now()
     const isLate =
+      countsTowardStreak &&
       latePenaltyPoints > 0 &&
       nowTime > scheduledTime + maxLateMinutes * 60 * 1000
     const latePenaltyApplied = isLate ? latePenaltyPoints : 0

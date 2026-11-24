@@ -1,7 +1,15 @@
 import { useCallback, useEffect, useState } from "react"
 
-/** Standard debounce delay (1s) for server-backed search inputs to prevent API bursts. */
-export const SEARCH_DEBOUNCE_MS = 1000
+/** Standard debounce delay (400ms) for server-backed search inputs. */
+export const SEARCH_DEBOUNCE_MS = 400
+
+/** Minimum character length before auto-triggering a server search (numeric IDs & Enter bypass). */
+export const SEARCH_MIN_CHARS = 2
+
+export interface DebouncedSearchOptions {
+  delay?: number
+  minChars?: number
+}
 
 /**
  * Hook to debounce a value by a specified delay in milliseconds.
@@ -30,18 +38,36 @@ export function useDebounce<T>(value: T, delay = SEARCH_DEBOUNCE_MS): T {
 
 /**
  * Debounced search hook returning `[debouncedValue, flushNow]`.
- * Typing waits `delay` ms (default 1000ms), clearing resets immediately,
- * and calling `flushNow()` (e.g. on Enter key) commits the current query right away.
+ * - Typing waits `delay` ms (default 400ms).
+ * - Queries shorter than `minChars` (default 2, except numeric IDs) do not trigger
+ *   automatic server queries, while clearing resets immediately.
+ * - Calling `flushNow()` (e.g. on Enter key) commits the current query right away.
  */
 export function useDebouncedSearch(
   value: string,
-  delay = SEARCH_DEBOUNCE_MS
+  delayOrOptions: number | DebouncedSearchOptions = SEARCH_DEBOUNCE_MS
 ): [string, () => void] {
+  const delay =
+    typeof delayOrOptions === "number"
+      ? delayOrOptions
+      : (delayOrOptions.delay ?? SEARCH_DEBOUNCE_MS)
+  const minChars =
+    typeof delayOrOptions === "number"
+      ? SEARCH_MIN_CHARS
+      : (delayOrOptions.minChars ?? SEARCH_MIN_CHARS)
+
   const [debouncedValue, setDebouncedValue] = useState(value)
 
   useEffect(() => {
-    if (value.trim() === "") {
+    const trimmed = value.trim()
+    if (trimmed === "") {
       setDebouncedValue(value)
+      return
+    }
+
+    const isNumeric = /^\d+$/.test(trimmed)
+    if (!isNumeric && trimmed.length < minChars) {
+      setDebouncedValue("")
       return
     }
 
@@ -52,7 +78,7 @@ export function useDebouncedSearch(
     return () => {
       clearTimeout(timer)
     }
-  }, [value, delay])
+  }, [value, delay, minChars])
 
   const flushNow = useCallback(() => {
     setDebouncedValue(value)

@@ -130,7 +130,8 @@ export interface SimilarMembersResponse {
 
 export const peopleApi = {
   listMembers: ((
-    params?: ListMembersParams & { page?: number; limit?: number }
+    params?: ListMembersParams & { page?: number; limit?: number },
+    requestOptions?: { signal?: AbortSignal }
   ) => {
     const searchParams = new URLSearchParams()
     if (params?.search) searchParams.set("search", params.search)
@@ -144,15 +145,28 @@ export const peopleApi = {
     if (params?.limit !== undefined)
       searchParams.set("limit", params.limit.toString())
     const qs = searchParams.toString()
+    const apiOpts = requestOptions?.signal
+      ? { signal: requestOptions.signal }
+      : undefined
     if (params?.page !== undefined || params?.limit !== undefined) {
       return api.get<PaginatedMembersResponse>(
-        `/people/members${qs ? `?${qs}` : ""}`
+        `/people/members${qs ? `?${qs}` : ""}`,
+        apiOpts
       )
     }
-    return api.get<MemberDto[]>(`/people/members${qs ? `?${qs}` : ""}`)
+    return api.get<MemberDto[]>(
+      `/people/members${qs ? `?${qs}` : ""}`,
+      apiOpts
+    )
   }) as {
-    (params: ListPaginatedMembersParams): Promise<PaginatedMembersResponse>
-    (params?: ListMembersParams): Promise<MemberDto[]>
+    (
+      params: ListPaginatedMembersParams,
+      requestOptions?: { signal?: AbortSignal }
+    ): Promise<PaginatedMembersResponse>
+    (
+      params?: ListMembersParams,
+      requestOptions?: { signal?: AbortSignal }
+    ): Promise<MemberDto[]>
   },
 
   getMember: (id: string) => api.get<MemberDetailDto>(`/people/members/${id}`),

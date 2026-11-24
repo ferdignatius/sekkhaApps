@@ -367,13 +367,17 @@ export function EventTypePage() {
                     </span>
                     <span
                       className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${
-                        type.apply_late_penalty === false
+                        type.counts_toward_streak === false ||
+                        type.apply_late_penalty === false ||
+                        (type.default_late_penalty_points ?? 15) <= 0
                           ? "border-[#e5e5e5] bg-[#ebe6d6]/70 text-[#6a6a6a]"
                           : "border-clay-ochre/30 bg-[#FFF9F2] text-[#0a0a0a]"
                       }`}
                     >
                       <ShieldCheckIcon className="size-3 text-clay-ochre" />
-                      {type.apply_late_penalty === false
+                      {type.counts_toward_streak === false ||
+                      type.apply_late_penalty === false ||
+                      (type.default_late_penalty_points ?? 15) <= 0
                         ? "No Late Penalty"
                         : `${type.default_max_late_minutes ?? 30}m / -${type.default_late_penalty_points ?? 15} pts`}
                     </span>

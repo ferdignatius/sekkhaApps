@@ -131,8 +131,8 @@ Field legacy `visibility` (`all` \| `member` \| `activist` \| `organizer`) tetap
 Pada antarmuka pembuatan dan penyuntingan event (`EventForm`), kolom **Access Right (`target_roles`)** dan **Attendance Requirement (`counts_toward_streak`)** otomatis diisi (*inherited*) dari konfigurasi Event Type / Kategori terpilih (`default_target_roles` dan `counts_toward_streak`), namun **tetap dapat di-override secara fleksibel per event** di dalam panel **Optional Settings**:
 * Jika `target_roles` tidak dikirim eksplisit saat pembuatan event, backend otomatis mewarisi nilainya dari `eventType.defaultTargetRoles` (atau menurunkan dari `visibility`).
 * Status keikutsertaan streak ditampilkan tegas sebagai:
-  * **`Mandatory Event (Affects Weekly Streak)`** (`counts_toward_streak: true`) — Wajib untuk menjaga/menambah weekly streak dan dihitung dalam *community active weeks*.
-  * **`Optional Event (Does Not Affect Streak)`** (`counts_toward_streak: false`) — Kehadiran tetap memberikan Karma Points, namun **tidak memengaruhi weekly streak** maupun *Perfect Month bonus*.
+  * **`Mandatory Event (Affects Weekly Streak)`** (`counts_toward_streak: true`) — Wajib untuk menjaga/menambah weekly streak, dihitung dalam *community active weeks*, dan dapat mengaktifkan kebijakan **Apply Late Penalty**.
+  * **`Optional Event (Does Not Affect Streak)`** (`counts_toward_streak: false`) — Kehadiran tetap memberikan Karma Points, **tidak memengaruhi weekly streak** maupun *Perfect Month bonus*, dan **kebijakan keterlambatan otomatis dinonaktifkan/dikunci OFF** (`max_late_minutes = 0`, `late_penalty_points = 0`, tanpa penalti terlambat).
 
 Dengan pendekatan ini, form tetap ringkas (kebijakan standar sudah terisi otomatis oleh kategori) sekaligus fleksibel untuk kasus pengecualian di lapangan tanpa harus menduplikasi Event Type.
 
@@ -185,7 +185,7 @@ Dengan pendekatan ini, form tetap ringkas (kebijakan standar sudah terisi otomat
       * Untuk ruangan fisik vihara: menampilkan subjudul `"Vihara Sekkha Community Center"` dengan tautan Google Maps menggunakan query `"Vihara Sekkha <location>"`.
     * **Seva Reward & Event Rules**: Menampilkan reward poin dan kebijakan keterlambatan; apabila `late_penalty_points === 0`, baris **Late Penalty** menampilkan `"No Penalty (0 Pts)"` alih-alih angka penalti minus.
   * Panel Action Buttons:
-    * Tombol status transition ("Start Event", "Finalize Event", "Cancel Event", "Reschedule Event") sesuai status berjalan (khusus `organizer`/`admin`). Saat event `cancel`, muncul tombol **"Reschedule Event"** untuk mengatur tanggal baru dan mengembalikan status ke `scheduled`.
+    * Tombol status transition ("Start Event", "Cancel Event", "Reschedule Event") sesuai status berjalan (khusus `organizer`/`admin`). Saat event `active`, aksi **"Finalize Event"** ditempatkan di dalam menu dropdown **`...` (More actions)** untuk mencegah klik tidak sengaja (dan event `active` juga otomatis di-close oleh sistem bila melewati `event_date` WIB). Saat event `cancel`, muncul tombol **"Reschedule Event"** untuk mengatur tanggal baru dan mengembalikan status ke `scheduled`.
     * Tombol **"Live Scanner"**: Tampil saat event `active` **khusus untuk role `organizer` dan `admin`** (`activist` tidak memiliki akses).
     * Tombol **"Manage Attendance List"**: Tampil pada tab Attendance **khusus untuk `organizer` dan `admin`**.
     * Tombol **"Edit Event"**, **"Duplicate Event"**, dan **"Delete Event"**: Khusus `organizer` dan `admin`.
@@ -198,10 +198,10 @@ Dengan pendekatan ini, form tetap ringkas (kebijakan standar sudah terisi otomat
   2. **Section 2 — Schedule & Venue**:
      * `DateTimePickerPopover`: menggunakan semantic token `DESIGN.md` (`z-[120]`), chip pilihan tanggal cepat (**`Today`**, **`Tomorrow`**, **`Next Sun`**), preset waktu cepat (**`08:00`**, **`09:00`**, **`13:00`**, **`17:00`**, **`19:00`**) + custom time input, serta menonaktifkan tanggal masa lampau (`disablePastDates`) saat membuat event baru.
      * `Location`: input teks bebas (*free-text*) dilengkapi dropdown **"Recent Locations"** yang menampilkan maksimal **3 lokasi berbeda terakhir** yang pernah digunakan oleh event sebelumnya (tanpa chip/autofill lokasi hardcode).
-  3. **Section 3 — Attendance & Late Policy**:
-     * **Apply Late Penalty Toggle (`<Switch>`)**: Mengontrol penerapan potongan poin keterlambatan per event.
-       * Saat **OFF**: `max_late_minutes` dan `late_penalty_points` diset ke `0` dan input detail disembunyikan. Jika `late_penalty_points === 0`, deteksi keterlambatan dinonaktifkan sepenuhnya sehingga peserta tidak pernah ditandai `is_late: true` dan tidak dikenakan penalti poin meski hadir berjam-jam setelah acara dimulai.
-       * Saat **ON**: Menampilkan input `Grace Period (minutes)` (`max_late_minutes`) dan `Late Penalty (points)` (`late_penalty_points`) yang dapat diedit, dengan default awal mengikuti master data Event Type (misal 15 menit & 15 poin).
+  3. **Section 3 — Mandatory & Late Arrival Policy (Tergabung)**:
+     * Tidak ada toggle terpisah untuk *Apply Late Penalty*; pengaturan toleransi keterlambatan digabung langsung ke switch **Mandatory Event (Affects Weekly Streak)** (`counts_toward_streak`):
+       * Saat **OFF** (*Optional Event*): field `Grace Period` & `Penalty Deduction` disembunyikan, dan server menetapkan `max_late_minutes = 0`, `late_penalty_points = 0` (tanpa penalti terlambat).
+       * Saat **ON** (*Mandatory Event*): menampilkan input **`Grace Period (minutes)`** (`0-180`) dan **`Penalty Deduction (Karma Points)`** (`0-100`, isi `0` apabila event mandatory tersebut tidak mengenakan potongan poin terlambat), dengan default mengikuti Event Type.
 * **Field Form & Validasi Inti**:
   * `title`: Nama Acara (wajib, min 3 karakter).
   * `description`: Deskripsi lengkap kegiatan (opsional).

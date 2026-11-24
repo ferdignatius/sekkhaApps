@@ -320,17 +320,19 @@ export function EventsPage() {
     }
 
     let cancelled = false
+    const controller = new AbortController()
     async function searchEvents() {
       try {
         setLoadingEvents(true)
         const data = await api.get<EventListItem[]>(
           `/events?search=${encodeURIComponent(q)}&year=${activeYear}&page=1&limit=50`,
-          { schema: EventsResponseSchema }
+          { schema: EventsResponseSchema, signal: controller.signal }
         )
         if (!cancelled) {
           setEvents(data)
         }
-      } catch (err) {
+      } catch (err: any) {
+        if (err?.name === "AbortError") return
         console.warn("Event search error:", err)
       } finally {
         if (!cancelled) setLoadingEvents(false)
@@ -339,6 +341,7 @@ export function EventsPage() {
     void searchEvents()
     return () => {
       cancelled = true
+      controller.abort()
     }
   }, [debouncedSearchQuery, activeYear, view])
 

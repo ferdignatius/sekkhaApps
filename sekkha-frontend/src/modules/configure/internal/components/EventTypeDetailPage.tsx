@@ -63,7 +63,6 @@ export function EventTypeDetailPage() {
   const [label, setLabel] = useState("")
   const [color, setColor] = useState("#4262FF")
   const [defaultPointReward, setDefaultPointReward] = useState("50")
-  const [applyLatePenalty, setApplyLatePenalty] = useState(true)
   const [defaultMaxLateMinutes, setDefaultMaxLateMinutes] = useState("30")
   const [defaultLatePenaltyPoints, setDefaultLatePenaltyPoints] = useState("15")
   const [defaultTargetRoles, setDefaultTargetRoles] = useState<
@@ -98,13 +97,13 @@ export function EventTypeDetailPage() {
           setLabel(found.label)
           setColor(found.color)
           setDefaultPointReward(String(found.default_point_reward))
-          const lateEnabled = found.apply_late_penalty ?? true
-          setApplyLatePenalty(lateEnabled)
+          const isMandatory = found.counts_toward_streak ?? true
+          setCountsTowardStreak(isMandatory)
           setDefaultMaxLateMinutes(
-            String(lateEnabled ? (found.default_max_late_minutes ?? 30) : 0)
+            String(isMandatory ? (found.default_max_late_minutes ?? 30) : 0)
           )
           setDefaultLatePenaltyPoints(
-            String(lateEnabled ? (found.default_late_penalty_points ?? 15) : 0)
+            String(isMandatory ? (found.default_late_penalty_points ?? 15) : 0)
           )
           setDefaultTargetRoles(
             normalizeTargetRoles(
@@ -112,7 +111,6 @@ export function EventTypeDetailPage() {
               found.default_visibility
             )
           )
-          setCountsTowardStreak(found.counts_toward_streak ?? true)
           setIsActive(found.is_active)
           setDescription(found.description || "")
         } else {
@@ -154,18 +152,18 @@ export function EventTypeDetailPage() {
       return
     }
 
-    const parsedGrace = applyLatePenalty
+    const parsedGrace = countsTowardStreak
       ? parseBoundedInteger(defaultMaxLateMinutes, 0, 180)
       : 0
-    if (applyLatePenalty && parsedGrace === null) {
+    if (countsTowardStreak && parsedGrace === null) {
       setErrorMessage("Grace period must be between 0 and 180 minutes.")
       return
     }
 
-    const parsedPenalty = applyLatePenalty
+    const parsedPenalty = countsTowardStreak
       ? parseBoundedInteger(defaultLatePenaltyPoints, 0, 100)
       : 0
-    if (applyLatePenalty && parsedPenalty === null) {
+    if (countsTowardStreak && parsedPenalty === null) {
       setErrorMessage("Penalty deduction must be between 0 and 100 points.")
       return
     }
@@ -178,7 +176,7 @@ export function EventTypeDetailPage() {
         color: color.trim().toUpperCase(),
         description: description.trim() || null,
         default_point_reward: parsedPoints,
-        apply_late_penalty: applyLatePenalty,
+        apply_late_penalty: countsTowardStreak && (parsedPenalty ?? 0) > 0,
         default_max_late_minutes: parsedGrace ?? 0,
         default_late_penalty_points: parsedPenalty ?? 0,
         default_target_roles: defaultTargetRoles,
@@ -414,71 +412,7 @@ export function EventTypeDetailPage() {
               />
             </div>
 
-            {/* Default Late Penalty Settings */}
-            <div className="space-y-3 rounded-[14px] border border-[#e5e5e5] bg-[#fffaf0] p-4">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <label
-                    htmlFor="et-detail-late-penalty"
-                    className="cursor-pointer text-xs font-bold text-[#0a0a0a]"
-                  >
-                    Apply Late Penalty by Default
-                  </label>
-                  <p className="text-[11px] text-[#6a6a6a]">
-                    {applyLatePenalty
-                      ? `Enabled (${defaultMaxLateMinutes || "0"}m grace, -${defaultLatePenaltyPoints || "0"} pts)`
-                      : "Disabled (No late penalty when creating events with this category)"}
-                  </p>
-                </div>
-                <Switch
-                  id="et-detail-late-penalty"
-                  disabled={!isAdmin}
-                  checked={applyLatePenalty}
-                  onCheckedChange={(checked) => {
-                    setApplyLatePenalty(checked)
-                    if (
-                      checked &&
-                      (defaultMaxLateMinutes === "0" || !defaultMaxLateMinutes) &&
-                      (defaultLatePenaltyPoints === "0" || !defaultLatePenaltyPoints)
-                    ) {
-                      setDefaultMaxLateMinutes("30")
-                      setDefaultLatePenaltyPoints("15")
-                    }
-                  }}
-                />
-              </div>
-
-              {applyLatePenalty && (
-                <div className="grid grid-cols-1 gap-3 rounded-xl border border-[#E5E0D5]/80 bg-[#FFF9F2] p-3.5 sm:grid-cols-2">
-                  <Input
-                    label="Grace Period (Minutes)"
-                    type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    disabled={!isAdmin}
-                    value={defaultMaxLateMinutes}
-                    onChange={(e) =>
-                      setDefaultMaxLateMinutes(sanitizeIntegerInput(e.target.value))
-                    }
-                    helperText="Allowed minutes after start before penalty (0 - 180)."
-                  />
-                  <Input
-                    label="Penalty Deduction (Karma Points)"
-                    type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    disabled={!isAdmin}
-                    value={defaultLatePenaltyPoints}
-                    onChange={(e) =>
-                      setDefaultLatePenaltyPoints(sanitizeIntegerInput(e.target.value))
-                    }
-                    helperText="Points deducted when checking in late (0 - 100)."
-                  />
-                </div>
-              )}
-            </div>
-
-            {/* Default Access Right & Weekly Streak Policy */}
+            {/* Default Access Right, Mandatory Streak & Late Arrival Policy */}
             <div className="space-y-4 rounded-[14px] border border-[#e5e5e5] bg-[#fffaf0] p-4">
               <div className="space-y-2">
                 <div className="flex items-center gap-1.5">
@@ -524,32 +458,73 @@ export function EventTypeDetailPage() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between gap-4 border-t border-[#e5e5e5] pt-3.5">
-                <div className="space-y-0.5">
-                  <label
-                    htmlFor="et-detail-counts-streak"
-                    className="flex cursor-pointer items-center gap-1.5 text-xs font-bold text-[#0a0a0a]"
-                  >
-                    <FlameIcon className="size-3.5 text-[#c28e20]" />
-                    <span>
+              <div className="space-y-3 border-t border-[#e5e5e5] pt-3.5">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="space-y-0.5">
+                    <label
+                      htmlFor="et-detail-counts-streak"
+                      className="flex cursor-pointer items-center gap-1.5 text-xs font-bold text-[#0a0a0a]"
+                    >
+                      <FlameIcon className="size-3.5 text-[#c28e20]" />
+                      <span>
+                        {countsTowardStreak
+                          ? "Mandatory Event (Affects Weekly Streak)"
+                          : "Optional Event (Does Not Affect Streak)"}
+                      </span>
+                    </label>
+                    <p className="text-[11px] text-[#6a6a6a]">
                       {countsTowardStreak
-                        ? "Mandatory Event (Affects Weekly Streak)"
-                        : "Optional Event (Does Not Affect Streak)"}
-                    </span>
-                  </label>
-                  <p className="text-[11px] text-[#6a6a6a]">
-                    Mandatory events require attendance to maintain weekly
-                    streaks. Turn off for optional activities—members still earn
-                    Karma Points without breaking streaks.
-                  </p>
+                        ? "Tracks weekly attendance streaks and applies the late arrival policy below (set Penalty Deduction to 0 for no deduction)."
+                        : "Optional events do not affect weekly streaks and never apply late penalties."}
+                    </p>
+                  </div>
+                  <Switch
+                    id="et-detail-counts-streak"
+                    disabled={!isAdmin}
+                    checked={countsTowardStreak}
+                    onCheckedChange={(checked) => {
+                      setCountsTowardStreak(checked)
+                      if (checked) {
+                        if (!defaultMaxLateMinutes || defaultMaxLateMinutes === "0") {
+                          setDefaultMaxLateMinutes("30")
+                        }
+                        if (!defaultLatePenaltyPoints || defaultLatePenaltyPoints === "0") {
+                          setDefaultLatePenaltyPoints("15")
+                        }
+                      }
+                    }}
+                    aria-label="Mandatory Event for Weekly Streak"
+                  />
                 </div>
-                <Switch
-                  id="et-detail-counts-streak"
-                  disabled={!isAdmin}
-                  checked={countsTowardStreak}
-                  onCheckedChange={setCountsTowardStreak}
-                  aria-label="Mandatory Event for Weekly Streak"
-                />
+
+                {countsTowardStreak && (
+                  <div className="grid grid-cols-1 gap-3 rounded-xl border border-[#E5E0D5]/80 bg-[#FFF9F2] p-3.5 sm:grid-cols-2">
+                    <Input
+                      label="Grace Period (Minutes)"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      disabled={!isAdmin}
+                      value={defaultMaxLateMinutes}
+                      onChange={(e) =>
+                        setDefaultMaxLateMinutes(sanitizeIntegerInput(e.target.value))
+                      }
+                      helperText="Allowed minutes after start before penalty (0 - 180)."
+                    />
+                    <Input
+                      label="Penalty Deduction (Karma Points)"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      disabled={!isAdmin}
+                      value={defaultLatePenaltyPoints}
+                      onChange={(e) =>
+                        setDefaultLatePenaltyPoints(sanitizeIntegerInput(e.target.value))
+                      }
+                      helperText="Points deducted when checking in late (0 - 100; 0 = no deduction)."
+                    />
+                  </div>
+                )}
               </div>
             </div>
 

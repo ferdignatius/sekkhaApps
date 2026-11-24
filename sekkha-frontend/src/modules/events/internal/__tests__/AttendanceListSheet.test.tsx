@@ -62,7 +62,27 @@ describe("AttendanceListSheet Service Role Picker — Initial 5 + Infinite Scrol
       />
     )
 
-    fireEvent.click(screen.getByRole("button", { name: /Assign Service Role/i }))
+    // Swipe right opens Service Role picker modal (also accessible via ⋮ menu)
+    const row = screen.getByTestId("attendance-row-usr_1")
+    const swipeSurface = row.lastElementChild as HTMLElement
+    fireEvent.pointerDown(swipeSurface, {
+      pointerId: 1,
+      pointerType: "touch",
+      clientX: 20,
+      clientY: 20,
+    })
+    fireEvent.pointerMove(swipeSurface, {
+      pointerId: 1,
+      pointerType: "touch",
+      clientX: 110,
+      clientY: 22,
+    })
+    fireEvent.pointerUp(swipeSurface, {
+      pointerId: 1,
+      pointerType: "touch",
+      clientX: 110,
+      clientY: 22,
+    })
 
     await waitFor(() => {
       expect(getSpy).toHaveBeenCalledWith(
@@ -118,7 +138,7 @@ describe("AttendanceListSheet Service Role Picker — Initial 5 + Infinite Scrol
         records={[lateRecord]}
       />
     )
-    expect(screen.getByText(/Late \(-15 Pts\)/i)).toBeDefined()
+    expect(screen.getByText(/Late \(-15\)/i)).toBeDefined()
     expect(
       screen.queryByRole("button", { name: /Remove late status/i })
     ).toBeNull()
@@ -155,8 +175,72 @@ describe("AttendanceListSheet Service Role Picker — Initial 5 + Infinite Scrol
         "/events/evt_1/attendances/usr_late/waive-late",
         {}
       )
-      expect(screen.getByText("On Time")).toBeDefined()
+      expect(screen.queryByText(/Late \(-15\)/i)).toBeNull()
       expect(onRefresh).toHaveBeenCalled()
     })
+  })
+
+  it("supports swipe left to confirm deletion, Late filter pill, and 25/page pagination without Total Pts pill", () => {
+    const records = Array.from({ length: 30 }, (_, i) => ({
+      user_id: `usr_${i + 1}`,
+      user_number: `20261101${String(i + 1).padStart(2, "0")}`,
+      name: `Member ${i + 1}`,
+      role: "member",
+      method: i % 2 === 0 ? "qr" : "manual",
+      is_late: i === 0,
+      late_penalty_applied: i === 0 ? 15 : 0,
+      points_earned: i === 0 ? 35 : 50,
+      scanned_at: "2026-11-11T09:00:00Z",
+    })) as any
+
+    const onDeleteRecord = vi.fn()
+    render(
+      <AttendanceListSheet
+        eventId="evt_1"
+        role="organizer"
+        records={records}
+        onDeleteRecord={onDeleteRecord}
+      />
+    )
+
+    // No noisy On Time pill and no Total Pts pill on top filter bar
+    expect(screen.queryByText("On Time")).toBeNull()
+    expect(screen.queryByTitle("Total points distributed")).toBeNull()
+
+    // Pagination uses 25 per page (30 items = 2 pages instead of 3)
+    expect(screen.getByText("1 / 2")).toBeDefined()
+    expect(screen.getByText("Member 25")).toBeDefined()
+    expect(screen.queryByText("Member 26")).toBeNull()
+
+    // Late quick filter isolates late attendee
+    fireEvent.click(screen.getByRole("button", { name: /Late · 1/i }))
+    expect(screen.getByText("Member 1")).toBeDefined()
+    expect(screen.queryByText("Member 2")).toBeNull()
+
+    // Swipe left opens confirmation dialog and confirms delete
+    const swipeSurface = screen.getByTestId("attendance-row-usr_1")
+      .lastElementChild as HTMLElement
+    fireEvent.pointerDown(swipeSurface, {
+      pointerId: 2,
+      pointerType: "touch",
+      clientX: 200,
+      clientY: 20,
+    })
+    fireEvent.pointerMove(swipeSurface, {
+      pointerId: 2,
+      pointerType: "touch",
+      clientX: 100,
+      clientY: 22,
+    })
+    fireEvent.pointerUp(swipeSurface, {
+      pointerId: 2,
+      pointerType: "touch",
+      clientX: 100,
+      clientY: 22,
+    })
+
+    expect(screen.getByText(/Remove Draft Attendance Record\?/i)).toBeDefined()
+    fireEvent.click(screen.getByRole("button", { name: /Yes, Remove Record/i }))
+    expect(onDeleteRecord).toHaveBeenCalledWith("usr_1")
   })
 })

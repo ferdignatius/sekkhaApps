@@ -424,4 +424,60 @@ describe("Event Services & State Transitions", () => {
     eventModels.findExistingAttendance = origFindExisting
     eventModels.updateAttendance = origUpdateAttendance
   })
+
+  it("recordAttendance never marks attendees late or deducts penalty points on optional events (countsTowardStreak = false)", async () => {
+    const origFindBasic = eventModels.findEventBasic
+    const origFindUser = eventModels.findUserForAttendance
+    const origFindExisting = eventModels.findExistingAttendance
+    const origCreateAttendance = eventModels.createAttendance
+
+    const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000)
+    eventModels.findEventBasic = async () =>
+      ({
+        id: "evt_opt",
+        title: "Volunteer Seva",
+        eventDate: twoHoursAgo,
+        pointReward: 80,
+        maxLateMinutes: 15,
+        latePenaltyPoints: 15,
+        countsTowardStreak: false,
+        status: "active",
+        type: { code: "volunteer", label: "Volunteer", defaultPointReward: 80 },
+      } as any)
+    eventModels.findUserForAttendance = async () =>
+      ({
+        id: "usr_mem_opt",
+        userNumber: BigInt("2026110101"),
+        role: "member",
+        profile: { name: "Sari", school: null },
+      } as any)
+    eventModels.findExistingAttendance = async () => null
+
+    let createdPayload: any = null
+    eventModels.createAttendance = async (data: any) => {
+      createdPayload = data
+      return {
+        id: "att_opt_1",
+        ...data,
+        scannedAt: new Date(),
+      } as any
+    }
+
+    const res = await eventServices.recordAttendance("usr_org", "evt_opt", {
+      user_id: "usr_mem_opt",
+      method: "qr",
+    })
+
+    expect(createdPayload.isLate).toBe(false)
+    expect(createdPayload.latePenaltyApplied).toBe(0)
+    expect(createdPayload.pointsEarned).toBe(80)
+    expect(res.is_late).toBe(false)
+    expect(res.late_penalty_applied).toBe(0)
+    expect(res.points_earned).toBe(80)
+
+    eventModels.findEventBasic = origFindBasic
+    eventModels.findUserForAttendance = origFindUser
+    eventModels.findExistingAttendance = origFindExisting
+    eventModels.createAttendance = origCreateAttendance
+  })
 })

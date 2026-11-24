@@ -110,6 +110,7 @@ describe("EventForm & EventDetailSheet Enhancements", () => {
             description: "Fellowship social event",
             default_point_reward: 30,
             apply_late_penalty: false,
+            counts_toward_streak: false,
             default_max_late_minutes: 0,
             default_late_penalty_points: 0,
             is_active: true,
@@ -188,7 +189,7 @@ describe("EventForm & EventDetailSheet Enhancements", () => {
       expect(descArea.value).toContain("📢 Acara: Weekly Dhamma Class")
     })
 
-    // 4. Manual edit preserves custom description, while Sync template re-enables live sync
+    // 4. Manual edit preserves custom description
     fireEvent.change(descArea, { target: { value: "Custom user notes" } })
 
     const socialCatBtn = await screen.findByRole("radio", {
@@ -199,10 +200,11 @@ describe("EventForm & EventDetailSheet Enhancements", () => {
     // Selecting a category must NOT overwrite or auto-fill Event name
     expect(titleInput.value).toBe("Weekly Dhamma Class")
 
-    const lateSwitch = screen.getByRole("switch", {
-      name: /apply late penalty/i,
+    const mandatorySwitch = screen.getByRole("switch", {
+      name: /mandatory event/i,
     })
-    expect(lateSwitch.getAttribute("data-state")).toBe("unchecked")
+    expect(mandatorySwitch.getAttribute("data-state")).toBe("unchecked")
+    expect(screen.queryByLabelText(/Grace Period/i)).toBeNull()
     expect(descArea.value).toBe("Custom user notes")
 
     fireEvent.change(titleInput, { target: { value: "Social Meetup" } })
@@ -213,17 +215,11 @@ describe("EventForm & EventDetailSheet Enhancements", () => {
     })
     fireEvent.click(chantingCatBtn)
 
-    expect(lateSwitch.getAttribute("data-state")).toBe("checked")
+    expect(mandatorySwitch.getAttribute("data-state")).toBe("checked")
     expect((screen.getByLabelText(/Grace Period/i) as HTMLInputElement).value).toBe("45")
-    expect((screen.getByLabelText(/Penalty Deduction/i) as HTMLInputElement).value).toBe("20")
+    expect((screen.getByLabelText(/Penalty \(Karma Points\)/i) as HTMLInputElement).value).toBe("20")
     expect(descArea.value).toBe("Custom user notes")
-
-    // Clicking Sync template restores dynamic tracking of title & location
-    fireEvent.click(screen.getByRole("button", { name: /sync template/i }))
-    await waitFor(() => {
-      expect(descArea.value).toContain("📢 Acara: Social Meetup")
-      expect(descArea.value).toContain("📍 Tempat: Dharmasala Utama")
-    })
+    expect(screen.queryByRole("button", { name: /sync template/i })).toBeNull()
   })
 
   it("shares both event details and URL via navigator.share and clipboard fallback in EventDetailSheet", async () => {
@@ -392,6 +388,43 @@ describe("EventForm & EventDetailSheet Enhancements", () => {
     ).toBeTruthy()
   })
 
+  it("places Finalize Event inside More actions menu when active instead of main CTA bar", async () => {
+    const activeEvent: EventListItem = {
+      id: "evt_active_menu",
+      title: "Live Puja",
+      event_type: "regular_puja",
+      event_date: new Date(Date.now() + 3600000).toISOString(),
+      location: "Vihara Sekkha",
+      point_reward: 50,
+      status: "active",
+      tag: "regular_puja",
+    }
+
+    renderWithRole(
+      <EventDetailSheet
+        event={activeEvent}
+        role="organizer"
+        attendances={[]}
+        onClose={vi.fn()}
+        onStatusChange={vi.fn()}
+      />,
+      "organizer",
+      "usr_org_1"
+    )
+
+    expect(
+      screen.getAllByRole("button", { name: /live scanner/i }).length
+    ).toBeGreaterThan(0)
+    expect(screen.queryByText("Finalize Event")).toBeNull()
+
+    fireEvent.pointerDown(screen.getByRole("button", { name: /more actions/i }))
+    const finalizeItem = await screen.findByText("Finalize Event")
+    expect(finalizeItem).toBeTruthy()
+
+    fireEvent.click(finalizeItem)
+    expect(await screen.findByText("Close & Finalize Event?")).toBeTruthy()
+  })
+
   it("shows Reset to Draft option in More actions only for admin when event status is closed", async () => {
     const closedEvent: EventListItem = {
       id: "evt_closed_admin",
@@ -496,7 +529,7 @@ describe("EventForm & EventDetailSheet Enhancements", () => {
     fireEvent.click(screen.getByRole("button", { name: /3\. Optional Settings/i }))
 
     const graceInput = screen.getByLabelText(/Grace Period/i) as HTMLInputElement
-    const penaltyInput = screen.getByLabelText(/Penalty Deduction/i) as HTMLInputElement
+    const penaltyInput = screen.getByLabelText(/Penalty \(Karma Points\)/i) as HTMLInputElement
 
     // Clearing fields leaves them "" instead of forcing 0 or 1
     fireEvent.change(graceInput, { target: { value: "" } })
@@ -510,7 +543,7 @@ describe("EventForm & EventDetailSheet Enhancements", () => {
       (await screen.findAllByText(/Grace period must be between 0 and 180 minutes/i)).length
     ).toBeGreaterThan(0)
     expect(
-      screen.getAllByText(/Penalty deduction must be between 1 and 100 points/i).length
+      screen.getAllByText(/Penalty deduction must be between 0 and 100 points/i).length
     ).toBeGreaterThan(0)
     expect(handleSubmit).not.toHaveBeenCalled()
 
@@ -567,7 +600,7 @@ describe("EventForm & EventDetailSheet Enhancements", () => {
     fireEvent.click(strictBtn)
     fireEvent.click(screen.getByRole("button", { name: /3\. Optional Settings/i }))
     expect((screen.getByLabelText(/Grace Period/i) as HTMLInputElement).value).toBe("0")
-    expect((screen.getByLabelText(/Penalty Deduction/i) as HTMLInputElement).value).toBe("20")
+    expect((screen.getByLabelText(/Penalty \(Karma Points\)/i) as HTMLInputElement).value).toBe("20")
   })
 
   it("renders mobile peek-up Attendance sheet with stacked attendee initials without Maps URL pill, and opens MemberQrModal for members", async () => {
@@ -754,10 +787,21 @@ describe("EventForm & EventDetailSheet Enhancements", () => {
     })
     expect(streakSwitch.getAttribute("aria-checked")).toBe("false")
 
+    // When Optional (Mandatory OFF), there is no separate late toggle and Grace/Penalty inputs are hidden
+    expect(
+      screen.queryByRole("switch", { name: /Apply Late Penalty/i })
+    ).toBeNull()
+    expect(screen.queryByLabelText(/Grace Period/i)).toBeNull()
+    expect(screen.queryByLabelText(/Penalty Deduction/i)).toBeNull()
+
     // Pick multiple roles: disable Activist, enable Member -> ["member", "organizer"] & toggle Mandatory ON
     fireEvent.click(activistCheckbox)
     fireEvent.click(memberCheckbox)
     fireEvent.click(streakSwitch)
+
+    // Enabling Mandatory reveals Grace Period & Penalty (Karma Points) (allowing 0-100 points)
+    expect((screen.getByLabelText(/Grace Period/i) as HTMLInputElement).value).toBe("30")
+    expect((screen.getByLabelText(/Penalty \(Karma Points\)/i) as HTMLInputElement).value).toBe("15")
 
     fireEvent.click(screen.getByRole("button", { name: /Create Event/i }))
     await waitFor(() => {
@@ -767,6 +811,36 @@ describe("EventForm & EventDetailSheet Enhancements", () => {
           target_roles: ["member", "organizer"],
           visibility: "member",
           counts_toward_streak: true,
+          max_late_minutes: 30,
+          late_penalty_points: 15,
+        })
+      )
+    })
+
+    // Allowing 0 points penalty while keeping Event Mandatory
+    fireEvent.change(screen.getByLabelText(/Penalty \(Karma Points\)/i), {
+      target: { value: "0" },
+    })
+    fireEvent.click(screen.getByRole("button", { name: /Create Event/i }))
+    await waitFor(() => {
+      expect(handleSubmit).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          counts_toward_streak: true,
+          late_penalty_points: 0,
+        })
+      )
+    })
+
+    // Turning Mandatory back OFF hides late inputs and zeroes out late penalty payload
+    fireEvent.click(streakSwitch)
+    expect(screen.queryByLabelText(/Grace Period/i)).toBeNull()
+    fireEvent.click(screen.getByRole("button", { name: /Create Event/i }))
+    await waitFor(() => {
+      expect(handleSubmit).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          counts_toward_streak: false,
+          max_late_minutes: 0,
+          late_penalty_points: 0,
         })
       )
     })

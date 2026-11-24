@@ -239,7 +239,8 @@ export function EventForm({
         if (Array.isArray(types) && types.length > 0) {
           const mapped: CategoryOption[] = types.map((t) => {
             const hex = t.color || "#4262FF"
-            const applyLatePenalty = t.apply_late_penalty ?? true
+            const isMandatoryCat = t.counts_toward_streak ?? true
+            const applyLatePenalty = isMandatoryCat && (t.apply_late_penalty ?? true)
             const resolvedRoles = normalizeTargetRoles(
               t.default_target_roles ?? t.target_roles,
               t.default_visibility ?? t.visibility
@@ -275,6 +276,9 @@ export function EventForm({
           if (!initial?.id && selectedTypeIdRef.current) {
             const matched = mapped.find((c) => c.id === selectedTypeIdRef.current)
             if (matched) {
+              if (!isStreakPolicyEditedRef.current) {
+                setCountsTowardStreak(matched.countsTowardStreak ?? true)
+              }
               if (!isLatePolicyEditedRef.current) {
                 syncCategoryLatePolicy(matched)
               }
@@ -282,9 +286,6 @@ export function EventForm({
                 setTargetRoles(
                   normalizeTargetRoles(matched.target_roles, matched.visibility)
                 )
-              }
-              if (!isStreakPolicyEditedRef.current) {
-                setCountsTowardStreak(matched.countsTowardStreak ?? true)
               }
             }
           }
@@ -429,27 +430,21 @@ export function EventForm({
     }
   }, [recentLocations, recentTimes])
 
-  const [applyLatePenalty, setApplyLatePenalty] = useState<boolean>(() => {
-    if (initial?.late_penalty_points !== undefined) {
-      return (initial.late_penalty_points ?? 0) > 0
-    }
-    return true
-  })
-  const [maxLateMinutes, setMaxLateMinutes] = useState<string>(
-    initial?.max_late_minutes && initial.max_late_minutes > 0
-      ? String(initial.max_late_minutes)
-      : "30"
-  )
-  const [latePenaltyPoints, setLatePenaltyPoints] = useState<string>(
-    initial?.late_penalty_points && initial.late_penalty_points > 0
-      ? String(initial.late_penalty_points)
-      : "15"
-  )
-  const [targetRoles, setTargetRoles] = useState<TargetAudienceRole[]>(() =>
-    normalizeTargetRoles(initial?.target_roles, initial?.visibility ?? "all")
-  )
   const [countsTowardStreak, setCountsTowardStreak] = useState<boolean>(
     () => initial?.counts_toward_streak ?? true
+  )
+  const [maxLateMinutes, setMaxLateMinutes] = useState<string>(() => {
+    if (initial?.counts_toward_streak === false) return "0"
+    if (initial?.max_late_minutes !== undefined) return String(initial.max_late_minutes)
+    return "30"
+  })
+  const [latePenaltyPoints, setLatePenaltyPoints] = useState<string>(() => {
+    if (initial?.counts_toward_streak === false) return "0"
+    if (initial?.late_penalty_points !== undefined) return String(initial.late_penalty_points)
+    return "15"
+  })
+  const [targetRoles, setTargetRoles] = useState<TargetAudienceRole[]>(() =>
+    normalizeTargetRoles(initial?.target_roles, initial?.visibility ?? "all")
   )
   const [showOptionalSettings, setShowOptionalSettings] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -461,24 +456,31 @@ export function EventForm({
   const isVisibilityEditedRef = useRef(false)
   const isStreakPolicyEditedRef = useRef(false)
 
-  function syncCategoryLatePolicy(cat: CategoryOption) {
-    const shouldApplyLate =
+  function syncCategoryLatePolicy(cat: CategoryOption, mandatoryOverride?: boolean) {
+    const isMandatory = mandatoryOverride ?? (cat.countsTowardStreak ?? true)
+    if (!isMandatory) {
+      setMaxLateMinutes("0")
+      setLatePenaltyPoints("0")
+      return
+    }
+    const useCategoryLate =
       cat.applyLatePenalty !== undefined
         ? cat.applyLatePenalty
         : (cat.defaultLatePenaltyPoints ?? 15) > 0
-    setApplyLatePenalty(shouldApplyLate)
-    if (shouldApplyLate) {
-      setMaxLateMinutes(
-        cat.defaultMaxLateMinutes !== undefined && cat.defaultMaxLateMinutes >= 0
-          ? String(cat.defaultMaxLateMinutes)
-          : "30"
-      )
-      setLatePenaltyPoints(
-        cat.defaultLatePenaltyPoints !== undefined && cat.defaultLatePenaltyPoints >= 0
-          ? String(cat.defaultLatePenaltyPoints)
-          : "15"
-      )
-    }
+    setMaxLateMinutes(
+      useCategoryLate && cat.defaultMaxLateMinutes !== undefined && cat.defaultMaxLateMinutes >= 0
+        ? String(cat.defaultMaxLateMinutes)
+        : useCategoryLate
+          ? "30"
+          : "0"
+    )
+    setLatePenaltyPoints(
+      useCategoryLate && cat.defaultLatePenaltyPoints !== undefined && cat.defaultLatePenaltyPoints >= 0
+        ? String(cat.defaultLatePenaltyPoints)
+        : useCategoryLate
+          ? "15"
+          : "0"
+    )
   }
 
   // Handle Category Select (syncs late penalty defaults without overwriting Event name)
@@ -495,13 +497,16 @@ export function EventForm({
     }
     setSelectedTypeId(cat.id)
     if (!initial?.id) {
+      const nextMandatory = isStreakPolicyEditedRef.current
+        ? countsTowardStreak
+        : (cat.countsTowardStreak ?? true)
+      if (!isStreakPolicyEditedRef.current) {
+        setCountsTowardStreak(nextMandatory)
+      }
       isLatePolicyEditedRef.current = false
-      syncCategoryLatePolicy(cat)
+      syncCategoryLatePolicy(cat, nextMandatory)
       if (!isVisibilityEditedRef.current) {
         setTargetRoles(normalizeTargetRoles(cat.target_roles, cat.visibility))
-      }
-      if (!isStreakPolicyEditedRef.current) {
-        setCountsTowardStreak(cat.countsTowardStreak ?? true)
       }
     }
   }
@@ -527,20 +532,20 @@ export function EventForm({
       errs.event_date = "Event date cannot be in the past"
     }
 
-    const parsedGrace = applyLatePenalty
+    const parsedGrace = countsTowardStreak
       ? parseBoundedInteger(maxLateMinutes, 0, 180)
       : 0
-    const parsedPenalty = applyLatePenalty
-      ? parseBoundedInteger(latePenaltyPoints, 1, 100)
+    const parsedPenalty = countsTowardStreak
+      ? parseBoundedInteger(latePenaltyPoints, 0, 100)
       : 0
 
-    if (applyLatePenalty) {
+    if (countsTowardStreak) {
       if (parsedGrace === null) {
         errs.maxLateMinutes = "Grace period must be between 0 and 180 minutes"
       }
       if (parsedPenalty === null) {
         errs.latePenaltyPoints =
-          "Penalty deduction must be between 1 and 100 points"
+          "Penalty deduction must be between 0 and 100 points"
       }
     }
 
@@ -938,8 +943,8 @@ export function EventForm({
                 ? "Mandatory (streak)"
                 : "Optional (no streak)"}{" "}
               ·{" "}
-              {applyLatePenalty
-                ? `Late: -${latePenaltyPoints || "0"} pts (${maxLateMinutes || "0"}m)`
+              {countsTowardStreak && Number(latePenaltyPoints || "0") > 0
+                ? `Late: -${latePenaltyPoints} pts (${maxLateMinutes || "0"}m)`
                 : "No late penalty"}
             </p>
           </div>
@@ -959,30 +964,9 @@ export function EventForm({
                   htmlFor="ev-desc"
                   className="text-xs font-bold text-ink"
                 >
-                  Description{" "}
-                  <span className="text-[11px] font-normal text-text-muted">
-                    (Optional)
-                  </span>
+                  Description
                 </label>
                 <div className="flex items-center gap-1.5">
-                  {!initial?.id && isDescriptionEdited && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsDescriptionEdited(false)
-                        setDescription(
-                          buildDefaultEventDescription({
-                            title,
-                            eventDate: eventDate || undefined,
-                            location,
-                          })
-                        )
-                      }}
-                      className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-hairline bg-canvas px-2 py-1 text-[11px] font-semibold text-text-muted transition-colors hover:bg-surface-card hover:text-ink"
-                    >
-                      Sync template
-                    </button>
-                  )}
                   <button
                     type="button"
                     onClick={() => setIsDescExpanded((prev) => !prev)}
@@ -1070,14 +1054,13 @@ export function EventForm({
                     <FlameIcon className="size-4 text-[#c28e20]" />
                     <span>
                       {countsTowardStreak
-                        ? "Mandatory Event (Affects Weekly Streak)"
-                        : "Optional Event (Does Not Affect Streak)"}
+                        ? "Mandatory Event (Affects Streak)"
+                        : "Optional Event (Doesn't Affect Streak)"}
                     </span>
                   </label>
                   <p className="text-[11px] leading-relaxed text-text-muted">
-                    Mandatory events maintain weekly streaks. Turn off for
-                    optional events—members still earn Karma Points without
-                    affecting streaks.
+                    Mandatory events maintain weekly streaks & late penalty. Turn off for
+                    optional events
                   </p>
                 </div>
                 <Switch
@@ -1085,42 +1068,33 @@ export function EventForm({
                   checked={countsTowardStreak}
                   onCheckedChange={(checked) => {
                     isStreakPolicyEditedRef.current = true
+                    isLatePolicyEditedRef.current = true
                     setCountsTowardStreak(checked)
+                    if (!checked) {
+                      setMaxLateMinutes("0")
+                      setLatePenaltyPoints("0")
+                      setErrors((prev) => {
+                        if (!prev.maxLateMinutes && !prev.latePenaltyPoints) return prev
+                        const next = { ...prev }
+                        delete next.maxLateMinutes
+                        delete next.latePenaltyPoints
+                        return next
+                      })
+                    } else {
+                      if (!maxLateMinutes || maxLateMinutes === "0") {
+                        setMaxLateMinutes("30")
+                      }
+                      if (!latePenaltyPoints || latePenaltyPoints === "0") {
+                        setLatePenaltyPoints("15")
+                      }
+                    }
                   }}
                   aria-label="Mandatory Event (Affects Weekly Streak)"
                 />
               </div>
-            </div>
 
-            {/* Attendance & Late Arrival Policy */}
-            <div className="space-y-3 border-t border-hairline pt-3.5">
-              <div className="flex items-center justify-between gap-3">
-                <div className="space-y-0.5">
-                  <label
-                    htmlFor="ev-late-penalty-toggle"
-                    id="event-policy-heading"
-                    className="flex cursor-pointer items-center gap-2 text-xs font-bold text-ink sm:text-sm"
-                  >
-                    <ShieldCheckIcon className="size-4 text-clay-teal" />
-                    <span>Apply Late Penalty</span>
-                  </label>
-                  <p className="text-[11px] leading-relaxed text-text-muted">
-                    Deduct karma points if members check in past the arrival grace period.
-                  </p>
-                </div>
-                <Switch
-                  id="ev-late-penalty-toggle"
-                  checked={applyLatePenalty}
-                  onCheckedChange={(checked) => {
-                    isLatePolicyEditedRef.current = true
-                    setApplyLatePenalty(checked)
-                  }}
-                  aria-label="Apply Late Penalty"
-                />
-              </div>
-
-              {applyLatePenalty && (
-                <div className="grid grid-cols-2 gap-2.5 border-t border-hairline pt-3 sm:gap-3">
+              {countsTowardStreak && (
+                <div className="grid grid-cols-2 gap-2.5 border-t border-hairline/70 pt-3 sm:gap-3">
                   <div className="space-y-1">
                     <label
                       htmlFor="ev-grace-minutes"
@@ -1163,7 +1137,7 @@ export function EventForm({
                       htmlFor="ev-penalty-points"
                       className="text-[11px] font-bold text-text-muted"
                     >
-                      Penalty Deduction (Karma Points)
+                      Penalty (Karma Points)
                     </label>
                     <input
                       id="ev-penalty-points"
@@ -1182,7 +1156,7 @@ export function EventForm({
                           })
                         }
                       }}
-                      placeholder="1 – 100"
+                      placeholder="0 – 100"
                       aria-invalid={Boolean(errors.latePenaltyPoints)}
                       className={`h-10 w-full rounded-xl border bg-canvas px-3 font-mono text-base font-bold text-ink outline-none focus:ring-1 sm:text-sm ${errors.latePenaltyPoints
                         ? "border-rose-400 focus:border-rose-500 focus:ring-rose-400"

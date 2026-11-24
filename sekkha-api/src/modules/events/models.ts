@@ -41,6 +41,7 @@ export const eventModels = {
         pointReward: true,
         maxLateMinutes: true,
         latePenaltyPoints: true,
+        countsTowardStreak: true,
         status: true,
         type: { select: { code: true, label: true, defaultPointReward: true } },
       },

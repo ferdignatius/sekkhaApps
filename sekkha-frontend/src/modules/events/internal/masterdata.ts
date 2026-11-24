@@ -179,9 +179,9 @@ export const DEFAULT_CATEGORIES: EventCategoryItem[] = [
     text: "text-[#EC4899]",
     dot: "bg-[#EC4899]",
     points: 80,
-    applyLatePenalty: true,
-    maxLateMinutes: 30,
-    latePenaltyPoints: 15,
+    applyLatePenalty: false,
+    maxLateMinutes: 0,
+    latePenaltyPoints: 0,
     is_active: true,
     colorHex: "#EC4899",
     defaultVisibility: "all",
@@ -240,7 +240,8 @@ const STORAGE_KEYS = {
 
 function mapEventTypeDtoToCategory(t: any): EventCategoryItem {
   const hex = t.color || "#4262FF"
-  const applyLatePenalty = t.apply_late_penalty ?? true
+  const countsTowardStreak = t.counts_toward_streak ?? true
+  const applyLatePenalty = countsTowardStreak && (t.apply_late_penalty ?? true)
   return {
     id: t.id,
     tag: t.code,

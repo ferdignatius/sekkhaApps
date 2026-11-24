@@ -96,7 +96,8 @@ describe("PeoplePage 2-Column Mobile Grid, Fast Loading & Directory Isolation", 
 
     // Default page size divides cleanly across 2, 3, and 4 columns and keeps initial payload fast
     expect(listSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ page: 1, limit: 12 })
+      expect.objectContaining({ page: 1, limit: 12 }),
+      expect.objectContaining({ signal: expect.any(AbortSignal) })
     )
     // Schools dropdown is lazy-loaded only when opening Add Member modal
     expect(schoolsSpy).not.toHaveBeenCalled()

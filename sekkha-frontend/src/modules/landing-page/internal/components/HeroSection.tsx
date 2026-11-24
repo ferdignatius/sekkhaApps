@@ -1,5 +1,16 @@
+import { useState, useCallback } from "react"
 import { motion } from "motion/react"
-import { Button, Card } from "@/components/base"
+import {
+  ArrowRightIcon,
+  Bolt,
+  CheckCircle2Icon,
+  DownloadIcon,
+  FlameIcon,
+  QrCodeIcon,
+} from "lucide-react"
+import { Button } from "@/components/base"
+import { InstallAppGuideDialog } from "@/components/common/InstallAppPrompt"
+import { usePwaInstall } from "@/hooks/usePwaInstall"
 import { DashboardMockup } from "./DashboardMockup"
 
 interface HeroSectionProps {
@@ -10,87 +21,146 @@ interface HeroSectionProps {
 const EASE = "easeOut"
 
 export function HeroSection({ headline, subheadline }: HeroSectionProps) {
+  const [installGuideOpen, setInstallGuideOpen] = useState(false)
+  const { isInstalled, isIos, promptInstall } = usePwaInstall()
+
+  const handleInstallApp = useCallback(async () => {
+    const result = await promptInstall()
+    if (result === "manual") {
+      setInstallGuideOpen(true)
+    }
+  }, [promptInstall])
+
   return (
     <section
       aria-labelledby="hero-heading"
-      className="relative w-full overflow-hidden py-14 md:py-20"
+      className="relative w-full overflow-hidden pt-12 pb-16 md:pt-18 md:pb-24"
     >
-      {/* Subtle warm Clay canvas backdrop per DESIGN.md */}
-      <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-b from-sekkha-surface/60 via-sekkha-canvas to-sekkha-canvas" />
+      {/* Warm Sekkha Sunrise backdrop + subtle sanctuary pavilion silhouette */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 -z-20 bg-gradient-to-b from-[#FFE0C2]/45 via-[#FAF0DF]/40 to-sekkha-canvas"
+      />
+      <img
+        src="/Serene%20Sky%20Garden%20Pavilion.webp"
+        alt=""
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 -z-10 h-full w-full object-cover object-center opacity-20 mix-blend-multiply select-none"
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-32 bg-gradient-to-t from-sekkha-canvas to-transparent"
+      />
 
-      <div className="relative z-10 mx-auto w-full max-w-[1280px] px-4 md:px-8">
-        {/* Badge */}
-        <motion.div
-          className="mb-6 flex justify-center"
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.55, ease: EASE, delay: 0 }}
-        >
-          <span className="text-body-sm inline-flex items-center gap-2 rounded-full border border-sekkha-hairline bg-sekkha-surface px-4 py-1.5 font-medium text-sekkha-ink shadow-xs">
-            ✨ Youth Digital Platform • Vihara Tri Maha Dharma
-          </span>
-        </motion.div>
-
-        {/* Headline */}
+      <div className="relative z-10 mx-auto flex w-full max-w-[1280px] flex-col items-center px-4 text-center md:px-8">
         <motion.h1
           id="hero-heading"
-          className="md:text-display-xl mx-auto max-w-[860px] text-center text-4xl leading-[1.05] font-medium tracking-[-1.5px] text-sekkha-ink sm:text-5xl sm:tracking-[-2px] md:tracking-[-2.5px]"
-          initial={{ opacity: 0, y: 24 }}
+          className="max-w-[820px] text-4xl leading-[1.06] font-extrabold tracking-tight text-sekkha-ink sm:text-5xl md:text-[3.5rem]"
+          initial={{ opacity: 0, y: 22 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.55, ease: EASE, delay: 0.08 }}
+          transition={{ duration: 0.55, ease: EASE, delay: 0.05 }}
         >
           {headline}
         </motion.h1>
 
-        {/* Subheadline */}
         <motion.p
-          className="text-body-md mx-auto mt-6 max-w-[660px] text-center leading-relaxed font-normal text-sekkha-slate md:text-lg"
-          initial={{ opacity: 0, y: 24 }}
+          className="text-body-md mt-5 max-w-[620px] leading-relaxed font-normal text-sekkha-slate md:text-lg"
+          initial={{ opacity: 0, y: 22 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.55, ease: EASE, delay: 0.16 }}
+          transition={{ duration: 0.55, ease: EASE, delay: 0.14 }}
         >
           {subheadline}
         </motion.p>
 
-        {/* CTA Group */}
+        {/* Centered CTA Group: Join for Free + Download App (PWA) + Explore Events link */}
         <motion.div
-          className="mt-8 flex w-full flex-col items-center justify-center gap-4 sm:w-auto sm:flex-row"
-          initial={{ opacity: 0, y: 24 }}
+          className="mt-8 flex w-full flex-col items-center gap-3"
+          initial={{ opacity: 0, y: 22 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.55, ease: EASE, delay: 0.24 }}
+          transition={{ duration: 0.55, ease: EASE, delay: 0.22 }}
         >
-          <Button
-            variant="primary"
-            className="h-[44px] w-full rounded-[12px] bg-sekkha-primary px-6 font-semibold text-white shadow-xs hover:bg-clay-primary-active sm:w-auto"
-            asChild
-          >
-            <a href="/sign-up" role="button" className="font-semibold !text-white">
-              Join for Free
-            </a>
-          </Button>
-          <Button
-            variant="secondary"
-            className="h-[44px] w-full rounded-[12px] border border-sekkha-hairline bg-sekkha-canvas px-6 font-semibold text-sekkha-ink shadow-xs hover:bg-sekkha-surface sm:w-auto"
-            asChild
-          >
-            <a
-              href="#events"
-              role="button"
-              className="font-semibold !text-sekkha-ink"
+          <div className="flex w-full flex-col items-center justify-center gap-3 sm:w-auto sm:flex-row">
+            <Button
+              variant="primary"
+              className="h-[46px] w-full rounded-full bg-[#0a0a0a] px-8 font-semibold text-white shadow-sm hover:bg-[#1f1f1f] sm:w-auto"
+              asChild
             >
-              Explore Events
-            </a>
-          </Button>
+              <a
+                href="/sign-up"
+                role="button"
+                className="font-semibold !text-white"
+              >
+                Join for Free
+              </a>
+            </Button>
+
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={isInstalled}
+              onClick={() => void handleInstallApp()}
+              className="h-[46px] w-full rounded-full border border-[#e5dec9] bg-white/90 px-7 font-semibold text-sekkha-ink shadow-xs hover:bg-sekkha-surface sm:w-auto"
+            >
+              {isInstalled ? (
+                <span className="inline-flex items-center gap-2 text-clay-teal">
+                  <CheckCircle2Icon className="size-4" />
+                  <span>App Installed</span>
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-2">
+                  <DownloadIcon className="size-4" />
+                  <span>Download App</span>
+                </span>
+              )}
+            </Button>
+          </div>
+
+          <a
+            href="#events"
+            role="button"
+            className="inline-flex min-h-[38px] items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-semibold text-sekkha-slate transition-colors hover:text-sekkha-ink"
+          >
+            <span>Explore Events</span>
+            <ArrowRightIcon className="size-3.5" />
+          </a>
         </motion.div>
 
-        {/* Interactive Sekkha v2.x Workspace Preview */}
-        <Card
-          variant="soft"
-          className="mt-10 rounded-[24px] border border-sekkha-hairline bg-sekkha-surface/70 p-4 shadow-xs sm:p-6"
+        {/* Centered Trust Highlights */}
+        <motion.div
+          className="mt-5 flex flex-wrap items-center justify-center gap-x-6 gap-y-2.5 text-xs font-semibold text-sekkha-slate"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, ease: EASE, delay: 0.28 }}
         >
+          <span className="inline-flex items-center gap-1.5">
+            <QrCodeIcon className="size-4 text-clay-teal" />
+            Instant QR Check-In
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <Bolt className="size-4 text-[#c28e20]" />
+            Daily Karma Points
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <FlameIcon className="size-4 text-clay-ochre" />
+            Weekly Streak
+          </span>
+        </motion.div>
+
+        {/* Centered Floating App Card Showcase with Subtle Radial Aura */}
+        <div className="relative mt-11 flex w-full justify-center">
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute top-1/2 left-1/2 -z-10 h-[340px] w-[420px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#FFE0C2]/55 blur-3xl sm:w-[560px]"
+          />
           <DashboardMockup />
-        </Card>
+        </div>
       </div>
+
+      <InstallAppGuideDialog
+        open={installGuideOpen}
+        onOpenChange={setInstallGuideOpen}
+        isIos={isIos}
+      />
     </section>
   )
 }

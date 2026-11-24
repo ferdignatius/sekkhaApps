@@ -21,28 +21,25 @@ export function FeatureSection({ features }: FeatureSectionProps) {
     >
       <div className="mx-auto w-full max-w-[1280px] px-4 md:px-8">
         <motion.div
-          className="mb-14 text-center"
+          className="mb-12 text-center md:mb-14"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.55, ease: "easeOut" }}
         >
-          <span className="text-caption-uppercase mb-4 inline-flex items-center gap-1.5 rounded-full border border-sekkha-hairline bg-sekkha-surface px-3.5 py-1 tracking-[1.5px] text-sekkha-ink shadow-xs">
-            ⭐ Youth Programs &amp; Features
-          </span>
           <h2
             id="features-heading"
-            className="md:text-display-lg text-center text-3xl leading-tight font-medium tracking-[-1px] text-sekkha-ink sm:text-4xl sm:tracking-[-1.5px] md:tracking-[-2px]"
+            className="md:text-display-lg text-center text-3xl leading-tight font-extrabold tracking-tight text-sekkha-ink sm:text-4xl"
           >
-            What Can You Experience?
+            What We Offer
           </h2>
-          <p className="text-body-md mx-auto mt-4 max-w-[600px] text-center text-sekkha-slate md:text-lg">
-            Built for Vihara Tri Maha Dharma youth to connect, serve, and keep
-            consistent weekly mindfulness habits together.
+          <p className="text-body-md mx-auto mt-3.5 max-w-[600px] text-center text-sekkha-slate md:text-lg">
+            Every feature is designed to turn temple attendance, Seva service,
+            and weekly fellowship into a meaningful habit.
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           {features.map((feature, index) => (
             <FeatureCard
               key={feature.title}

@@ -1,34 +1,12 @@
 import { useState } from "react"
 import { motion } from "motion/react"
 import type { EventItem } from "../data/landingContent"
-import { CalendarIcon, MapPinIcon, SparklesIcon } from "lucide-react"
+import { CalendarIcon, MapPinIcon } from "lucide-react"
 
 interface EventsSectionProps {
   heading: string
   subheading: string
   items: EventItem[]
-}
-
-const categoryStyles: Record<
-  EventItem["category"],
-  { bg: string; label: string }
-> = {
-  fellowship: {
-    bg: "bg-clay-mint/35 text-clay-teal border-clay-mint/70",
-    label: "Fellowship",
-  },
-  retreat: {
-    bg: "bg-clay-ochre/20 text-sekkha-ink border-clay-ochre/50",
-    label: "Retreat",
-  },
-  social: {
-    bg: "bg-clay-pink/15 text-sekkha-ink border-clay-pink/35",
-    label: "Social Action",
-  },
-  event: {
-    bg: "bg-clay-lavender/25 text-sekkha-ink border-clay-lavender/55",
-    label: "Special Event",
-  },
 }
 
 export function EventsSection({
@@ -58,12 +36,9 @@ export function EventsSection({
           viewport={{ once: true }}
           transition={{ duration: 0.55, ease: "easeOut" }}
         >
-          <span className="text-caption-uppercase mb-4 inline-flex items-center gap-1.5 rounded-full border border-sekkha-hairline bg-sekkha-surface px-3.5 py-1 tracking-[1.5px] text-sekkha-ink shadow-xs">
-            <SparklesIcon className="size-3.5 text-clay-ochre" /> Agenda &amp; Events
-          </span>
           <h2
             id="events-heading"
-            className="md:text-display-md text-3xl font-medium tracking-[-1px] text-sekkha-ink sm:text-4xl"
+            className="md:text-display-md text-3xl font-extrabold tracking-tight text-sekkha-ink sm:text-4xl"
           >
             {heading}
           </h2>
@@ -104,15 +79,10 @@ export function EventsSection({
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {filteredItems.map((event, i) => {
-              const cat = categoryStyles[event.category] || {
-                bg: "bg-clay-mint/35 text-clay-teal border-clay-mint/60",
-                label: "Event",
-              }
-              return (
+            {filteredItems.map((event, i) => (
                 <motion.article
                   key={event.title}
-                  className="group relative flex flex-col justify-between gap-4 overflow-hidden rounded-2xl border border-sekkha-hairline bg-white p-6 shadow-xs transition-all hover:border-sekkha-hairline-strong hover:shadow-md"
+                  className="group relative flex flex-col justify-between gap-4 overflow-hidden rounded-2xl border border-[#e5dec9] bg-white p-6 shadow-xs transition-all hover:border-sekkha-hairline-strong hover:shadow-md"
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, margin: "-40px" }}
@@ -124,17 +94,6 @@ export function EventsSection({
                   whileHover={{ y: -3, transition: { duration: 0.2 } }}
                 >
                   <div>
-                    <div className="mb-3 flex items-center justify-between gap-2">
-                      <span
-                        className={`text-micro rounded-full border px-2.5 py-0.5 font-semibold ${cat.bg}`}
-                      >
-                        {cat.label}
-                      </span>
-                      <span className="text-micro rounded-full border border-clay-mint/60 bg-clay-mint/25 px-2.5 py-0.5 font-medium text-clay-teal">
-                        Schedule
-                      </span>
-                    </div>
-
                     <h3 className="text-title-md leading-snug font-semibold text-sekkha-ink transition-colors group-hover:text-sekkha-primary">
                       {event.title}
                     </h3>
@@ -151,8 +110,7 @@ export function EventsSection({
                     </p>
                   </div>
                 </motion.article>
-              )
-            })}
+            ))}
           </div>
         )}
 

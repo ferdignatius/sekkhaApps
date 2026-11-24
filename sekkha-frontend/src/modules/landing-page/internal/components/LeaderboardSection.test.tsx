@@ -14,7 +14,7 @@ describe("LeaderboardSection", () => {
     )
 
     expect(container.textContent).not.toMatch(/\bLevel \d+/i)
-    expect(container.textContent).toMatch(/Season Leaderboard/i)
+    expect(container.textContent).toMatch(/Community Leaderboard/i)
     expect(screen.getByText("@sari_dewi")).toBeDefined()
     expect(screen.getAllByText(/Vihara Member/i).length).toBe(5)
   })

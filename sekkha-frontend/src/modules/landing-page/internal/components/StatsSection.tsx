@@ -20,14 +20,14 @@ export function StatsSection({ stats }: StatsSectionProps) {
       </h2>
 
       <div className="mx-auto w-full max-w-[1280px] px-4 md:px-8">
-        <div className="relative overflow-hidden rounded-[24px] border border-sekkha-hairline bg-sekkha-surface p-8 shadow-xs md:p-12">
-          <div className="grid grid-cols-2 items-center justify-center gap-8 lg:grid-cols-4 lg:gap-0 lg:divide-x lg:divide-sekkha-hairline">
+        <div className="relative overflow-hidden rounded-[24px] border border-[#e5dec9] bg-sekkha-surface p-8 shadow-xs md:p-12">
+          <div className="grid grid-cols-2 items-center justify-center gap-8 lg:grid-cols-4 lg:gap-0 lg:divide-x lg:divide-[#e5dec9]">
             {stats.map((stat, index) => (
               <motion.div
                 key={stat.label}
                 className={`flex flex-col items-center text-center ${
                   index >= 2
-                    ? "border-t border-sekkha-hairline pt-8 lg:border-t-0 lg:pt-0"
+                    ? "border-t border-[#e5dec9] pt-8 lg:border-t-0 lg:pt-0"
                     : ""
                 } ${index > 0 ? "lg:pl-8" : ""}`}
                 initial={{ opacity: 0, scale: 0.96 }}
@@ -39,7 +39,7 @@ export function StatsSection({ stats }: StatsSectionProps) {
                   ease: "easeOut",
                 }}
               >
-                <span className="md:text-stat-display text-4xl font-medium tracking-[-1.5px] text-sekkha-ink tabular-nums sm:text-5xl">
+                <span className="md:text-stat-display text-4xl font-extrabold tracking-tight text-sekkha-ink tabular-nums sm:text-5xl">
                   {stat.value}
                 </span>
                 <span className="text-body-md mt-2 font-normal tracking-normal text-sekkha-slate">

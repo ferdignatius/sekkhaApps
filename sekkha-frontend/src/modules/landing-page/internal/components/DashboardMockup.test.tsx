@@ -2,7 +2,7 @@ import { render, screen, fireEvent } from "@testing-library/react"
 import { describe, it, expect } from "vitest"
 import { DashboardMockup } from "./DashboardMockup"
 
-describe("DashboardMockup (Sekkha v2.x Workspace Preview)", () => {
+describe("DashboardMockup (Sekkha v1.3.0 Floating App Card)", () => {
   it("excludes eliminated v1 gamification concepts (Level, XP, Streak Shield, Badge Collection)", () => {
     const { container } = render(<DashboardMockup />)
     const text = container.textContent ?? ""
@@ -15,19 +15,21 @@ describe("DashboardMockup (Sekkha v2.x Workspace Preview)", () => {
     expect(container.querySelector(".font-roobert")).toBeNull()
   })
 
-  it("renders v2.x Digital Member Quick ID, Weekly Streak, Active Season, Daily Dhamma Wisdom, and @username Top 3", () => {
-    render(<DashboardMockup />)
+  it("renders v1.3.0 Home Preview with Digital Member ID, Weekly Streak, Active Season, and decorative backdrop", () => {
+    const { container } = render(<DashboardMockup />)
 
+    expect(screen.getByText(/Good morning\./i)).toBeDefined()
     expect(screen.getByText(/ID 2026111201/i)).toBeDefined()
     expect(screen.getByText(/5 Weeks/i)).toBeDefined()
     expect(screen.getByText(/Vassa Season 2026/i)).toBeDefined()
-    expect(screen.getByText(/@sari_dewi/)).toBeDefined()
-    expect(screen.getByText(/@budi_santoso/)).toBeDefined()
-    expect(screen.getByText(/@mei_ling/)).toBeDefined()
-    expect(screen.getByText(/Daily Dhamma Wisdom/i)).toBeDefined()
+    expect(screen.getByText(/Daily cap 150 pts\/day/i)).toBeDefined()
+
+    const bgImg = container.querySelector('img[src="/home-background.webp"]')
+    expect(bgImg).not.toBeNull()
+    expect(bgImg?.getAttribute("alt")).toBe("")
   })
 
-  it("updates simulated Season Points interactively when toggling attendance or Seva service duties", () => {
+  it("updates simulated Karma Points interactively when toggling attendance or Seva service duties", () => {
     render(<DashboardMockup />)
 
     expect(screen.getByText(/180 pts/i)).toBeDefined()
@@ -41,4 +43,3 @@ describe("DashboardMockup (Sekkha v2.x Workspace Preview)", () => {
     expect(sevaButton.getAttribute("aria-pressed")).toBe("true")
   })
 })
-

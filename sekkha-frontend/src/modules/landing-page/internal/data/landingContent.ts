@@ -66,40 +66,24 @@ export const landingContent: LandingContent = {
 
   features: [
     {
-      title: "Quick-Scan & Manual Attendance",
+      title: "Quick-Scan & Digital Member QR",
       description:
-        "Attend Sunday Puja and youth gatherings, scan event QR codes at arrival, and keep a verified record of every check-in.",
-      tag: "Attendance",
+        "Show your 10-digit Sekkha Member ID and personal QR pass at arrival for instant, verified temple check-in.",
     },
     {
-      title: "Digital Member QR Card",
+      title: "Weekly Streaks & Karma Points",
       description:
-        "Access your unique 10-digit Sekkha Member ID and personal QR card directly from Home or Profile for fast temple check-in.",
-      tag: "Member ID",
-    },
-    {
-      title: "Weekly Attendance Streaks",
-      description:
-        "Stay consistent with automated weekly Sunday streaks, season progress tracking, and inspiring Daily Dhamma Wisdom.",
-      tag: "Consistency",
+        "Build Sunday attendance consistency with weekly streaks, Daily Dhamma Wisdom, and verified Karma Point rewards.",
     },
     {
       title: "Season Leaderboard & Seva",
       description:
-        "Join zero-reset Seasons such as Vassa, Semester, and Annual, earning points for verified attendance and Seva service duties.",
-      tag: "Season",
+        "Participate in zero-reset Vassa Seasons and earn extra points when you serve in MC, usher, or media Seva duties.",
     },
     {
       title: "Event Schedule & Categories",
       description:
-        "Explore Sunday fellowships, retreats, social outreach, and major Buddhist celebrations organized clearly by category.",
-      tag: "Events",
-    },
-    {
-      title: "Account Claim & OTP Security",
-      description:
-        "Pre-provisioned members can claim existing attendance history seamlessly with verified Gmail OTP protection.",
-      tag: "Security",
+        "Discover Sunday fellowships, Dhamma retreats, social action, and major Buddhist celebrations organized cleanly.",
     },
   ],
 
@@ -110,7 +94,7 @@ export const landingContent: LandingContent = {
     },
     {
       value: "50+",
-      label: "Events on This Year",
+      label: "Events This Year",
     },
     {
       value: "10+",

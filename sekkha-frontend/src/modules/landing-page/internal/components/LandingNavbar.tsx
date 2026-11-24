@@ -30,51 +30,35 @@ const NAV_LINKS: NavLink[] = [
 function DesktopCTA({ authState }: { authState: AuthState }) {
   if (authState === "loading") {
     return (
-      <div className="hidden items-center gap-3 md:flex">
-        <div
-          className="animate-pulse rounded-md bg-sekkha-hairline"
-          style={{ width: 100, height: 40 }}
-          aria-hidden="true"
-        />
-        <div
-          className="animate-pulse rounded-md bg-sekkha-hairline"
-          style={{ width: 130, height: 40 }}
-          aria-hidden="true"
-        />
-      </div>
-    )
-  }
-
-  if (authState === "authenticated") {
-    return (
       <div className="hidden items-center md:flex">
-        <Button
-          variant="primary"
-          asChild
-          className="h-[44px] rounded-[12px] bg-sekkha-primary px-5 font-semibold text-white"
-        >
-          <a href="/home">Dashboard</a>
-        </Button>
+        <div
+          className="animate-pulse rounded-full bg-sekkha-hairline"
+          style={{ width: 96, height: 38 }}
+          aria-hidden="true"
+        />
       </div>
     )
   }
 
   return (
-    <div className="hidden items-center gap-3 md:flex">
-      <Button
-        variant="secondary"
-        asChild
-        className="h-[44px] rounded-[12px] border border-sekkha-hairline bg-sekkha-canvas px-5 font-semibold !text-sekkha-ink hover:bg-sekkha-surface"
-      >
-        <a href="/login">Sign In</a>
-      </Button>
-      <Button
-        variant="primary"
-        asChild
-        className="h-[44px] rounded-[12px] bg-sekkha-primary px-5 font-semibold !text-white shadow-xs hover:bg-[#1f1f1f]"
-      >
-        <a href="/sign-up">Join for Free</a>
-      </Button>
+    <div className="hidden items-center md:flex">
+      {authState === "authenticated" ? (
+        <Button
+          variant="primary"
+          asChild
+          className="h-[38px] rounded-full bg-[#0a0a0a] px-5 text-xs font-semibold !text-white shadow-xs transition-colors hover:bg-[#1f1f1f] sm:text-sm"
+        >
+          <a href="/home">Dashboard</a>
+        </Button>
+      ) : (
+        <Button
+          variant="primary"
+          asChild
+          className="h-[38px] rounded-full bg-[#0a0a0a] px-5 text-xs font-semibold !text-white shadow-xs transition-colors hover:bg-[#1f1f1f] sm:text-sm"
+        >
+          <a href="/login">Sign In</a>
+        </Button>
+      )}
     </div>
   )
 }
@@ -85,7 +69,7 @@ function MobileInlineCTA({ authState }: { authState: AuthState }) {
   if (authState === "loading") {
     return (
       <div
-        className="animate-pulse rounded-md bg-sekkha-hairline md:hidden"
+        className="animate-pulse rounded-full bg-sekkha-hairline md:hidden"
         style={{ width: 72, height: 36 }}
         aria-hidden="true"
       />
@@ -97,7 +81,7 @@ function MobileInlineCTA({ authState }: { authState: AuthState }) {
       <Button
         variant="primary"
         asChild
-        className="text-body-sm h-[38px] rounded-[10px] bg-sekkha-primary px-4 py-2 font-semibold text-white md:hidden"
+        className="h-[36px] rounded-full bg-[#0a0a0a] px-4 text-xs font-semibold !text-white md:hidden"
       >
         <a href="/home">Dashboard</a>
       </Button>
@@ -108,7 +92,7 @@ function MobileInlineCTA({ authState }: { authState: AuthState }) {
     <Button
       variant="primary"
       asChild
-      className="text-body-sm h-[38px] rounded-[10px] bg-sekkha-primary px-4 py-2 font-semibold text-white md:hidden"
+      className="h-[36px] rounded-full bg-[#0a0a0a] px-4 text-xs font-semibold !text-white md:hidden"
     >
       <a href="/login">Sign In</a>
     </Button>
@@ -120,8 +104,8 @@ function MobileInlineCTA({ authState }: { authState: AuthState }) {
 function HamburgerIcon({ isOpen }: { isOpen: boolean }) {
   return (
     <svg
-      width={24}
-      height={24}
+      width={22}
+      height={22}
       viewBox="0 0 24 24"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
@@ -250,7 +234,7 @@ function MobileDrawer({
         <>
           {/* Backdrop */}
           <motion.div
-            className="fixed inset-0 z-40 bg-black/20 backdrop-blur-xs"
+            className="pointer-events-auto fixed inset-0 z-40 bg-black/20 backdrop-blur-xs"
             onClick={onClose}
             aria-hidden="true"
             initial={{ opacity: 0 }}
@@ -259,14 +243,14 @@ function MobileDrawer({
             transition={{ duration: 0.2 }}
           />
 
-          {/* Drawer panel */}
+          {/* Floating Drawer Panel */}
           <motion.div
             ref={drawerRef}
             id="mobile-nav-drawer"
             role="dialog"
             aria-modal="true"
             aria-label="Navigation menu"
-            className="fixed inset-x-0 top-16 z-50 max-h-[calc(100dvh-4rem)] overflow-y-auto border-t border-sekkha-hairline bg-sekkha-canvas shadow-lg"
+            className="pointer-events-auto fixed inset-x-4 top-[4.75rem] z-50 mx-auto max-h-[calc(100dvh-5.5rem)] max-w-[1216px] overflow-y-auto rounded-3xl border border-white/75 bg-[#fffaf0]/90 shadow-xl ring-1 ring-[#e5dec9]/80 backdrop-blur-xl"
             initial={{ opacity: 0, y: -12 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}
@@ -274,7 +258,7 @@ function MobileDrawer({
           >
             <nav
               aria-label="Mobile navigation"
-              className="flex flex-col gap-4 px-6 py-6"
+              className="flex flex-col gap-3 px-6 py-5"
             >
               {navLinks.map((link, idx) => (
                 <a
@@ -292,13 +276,13 @@ function MobileDrawer({
               ))}
 
               {/* Extra CTA in drawer */}
-              <div className="flex flex-col gap-3 border-t border-sekkha-hairline pt-3">
+              <div className="flex flex-col gap-2.5 border-t border-[#e5dec9] pt-4">
                 {authState === "unauthenticated" && (
                   <>
                     <Button
                       variant="secondary"
                       asChild
-                      className="h-11 rounded-[12px] border border-sekkha-hairline bg-white font-semibold !text-sekkha-ink"
+                      className="h-11 rounded-full border border-[#e5dec9] bg-white font-semibold !text-sekkha-ink"
                     >
                       <a href="/login" onClick={onClose}>
                         Sign In
@@ -307,7 +291,7 @@ function MobileDrawer({
                     <Button
                       variant="primary"
                       asChild
-                      className="h-11 rounded-[12px] bg-sekkha-primary font-semibold text-white"
+                      className="h-11 rounded-full bg-[#0a0a0a] font-semibold !text-white"
                     >
                       <a href="/sign-up" onClick={onClose}>
                         Join for Free
@@ -319,7 +303,7 @@ function MobileDrawer({
                   <Button
                     variant="primary"
                     asChild
-                    className="h-11 rounded-[12px] bg-sekkha-primary font-semibold text-white"
+                    className="h-11 rounded-full bg-[#0a0a0a] font-semibold !text-white"
                   >
                     <a href="/home" onClick={onClose}>
                       Dashboard
@@ -338,12 +322,7 @@ function MobileDrawer({
 // ─── LandingNavbar ────────────────────────────────────────────────────────────
 
 /**
- * LandingNavbar — sticky top navigation for the Sekkha landing page.
- *
- * Mobile: login/home button always visible beside hamburger icon.
- * Desktop: full nav links + auth CTA on the right.
- *
- * @requirements 1.4, 1.5, 1.6, 2.1–2.10
+ * LandingNavbar — clean glassmorphism capsule navigation bar aligned to container width.
  */
 export function LandingNavbar({ authState, scrollY }: LandingNavbarProps) {
   const [isDrawerOpen, setIsDrawerOpen] = React.useState(false)
@@ -374,77 +353,79 @@ export function LandingNavbar({ authState, scrollY }: LandingNavbarProps) {
   }, [isDrawerOpen])
 
   const hasScrolled = scrollY > 0
-  const isScrolledPastNavbar = scrollY > 64
 
   return (
-    <header
-      className={cn(
-        "sticky top-0 z-50 h-16 bg-sekkha-canvas transition-all duration-300",
-        isScrolledPastNavbar &&
-          "material-thin border-b border-white/50 backdrop-blur-md",
-        hasScrolled && "border-b border-sekkha-hairline shadow-sm"
-      )}
-    >
-      <div className="mx-auto flex h-full w-full max-w-[1280px] items-center justify-between px-4 md:px-8">
-        {/* Logo */}
-        <a
-          href="/"
+    <header className="pointer-events-none sticky top-0 z-50 w-full pt-3 sm:pt-4">
+      <div className="mx-auto w-full max-w-[1280px] px-4 md:px-8">
+        <div
+          data-capsule="true"
           className={cn(
-            "text-heading-5 flex min-h-[44px] shrink-0 items-center gap-2.5 font-bold text-sekkha-ink",
-            "rounded-sm focus-visible:ring-2 focus-visible:ring-sekkha-primary focus-visible:ring-offset-2 focus-visible:outline-none"
+            "pointer-events-auto flex h-14 w-full items-center justify-between gap-4 rounded-full border border-white/75 px-3.5 ring-1 ring-[#e5dec9]/75 backdrop-blur-xl backdrop-saturate-150 transition-all duration-300 sm:h-[60px] sm:px-5",
+            hasScrolled
+              ? "bg-[#fffaf0]/75 shadow-[0_12px_36px_rgba(68,51,28,0.12)]"
+              : "bg-[#fffaf0]/60 shadow-[0_4px_24px_rgba(68,51,28,0.06)]"
           )}
-          aria-label="Sekkha — Back to home"
         >
-          <img
-            src="/sekkha_logo.svg"
-            alt=""
-            className="size-7 object-contain"
-          />
-          <span>Sekkha</span>
-        </a>
+          {/* Logo */}
+          <a
+            href="/"
+            className={cn(
+              "text-heading-5 flex min-h-[44px] shrink-0 items-center gap-2.5 pl-1 font-bold text-sekkha-ink",
+              "rounded-full focus-visible:ring-2 focus-visible:ring-sekkha-primary focus-visible:ring-offset-2 focus-visible:outline-none"
+            )}
+            aria-label="Sekkha — Back to home"
+          >
+            <img
+              src="/sekkha_logo.svg"
+              alt=""
+              className="size-7 object-contain"
+            />
+            <span>Sekkha</span>
+          </a>
 
-        {/* Desktop nav links */}
-        <nav
-          aria-label="Main navigation"
-          className="hidden items-center gap-6 md:flex"
-        >
-          {NAV_LINKS.map((link) => (
-            <a
-              key={link.href}
-              href={link.href}
+          {/* Desktop nav links (centered) */}
+          <nav
+            aria-label="Main navigation"
+            className="hidden items-center gap-7 md:flex"
+          >
+            {NAV_LINKS.map((link) => (
+              <a
+                key={link.href}
+                href={link.href}
+                className={cn(
+                  "text-body-sm font-medium text-sekkha-ink/85 transition-colors hover:text-sekkha-ink",
+                  "rounded-full px-1 py-2 focus-visible:ring-2 focus-visible:ring-sekkha-primary focus-visible:ring-offset-2 focus-visible:outline-none"
+                )}
+              >
+                {link.label}
+              </a>
+            ))}
+          </nav>
+
+          {/* Desktop CTA: single clean pill */}
+          <DesktopCTA authState={authState} />
+
+          {/* Mobile right cluster: inline Sign In / Dashboard pill + hamburger */}
+          <div className="flex items-center gap-1.5 md:hidden">
+            <MobileInlineCTA authState={authState} />
+
+            <button
+              ref={hamburgerRef}
+              type="button"
+              aria-label={
+                isDrawerOpen ? "Close navigation menu" : "Open navigation menu"
+              }
+              aria-expanded={isDrawerOpen}
+              aria-controls="mobile-nav-drawer"
+              onClick={isDrawerOpen ? closeDrawer : openDrawer}
               className={cn(
-                "text-body-sm-medium text-sekkha-ink transition-colors hover:text-sekkha-slate",
-                "rounded-sm py-2 focus-visible:ring-2 focus-visible:ring-sekkha-primary focus-visible:ring-offset-2 focus-visible:outline-none"
+                "flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full text-sekkha-ink",
+                "focus-visible:ring-2 focus-visible:ring-sekkha-primary focus-visible:ring-offset-2 focus-visible:outline-none"
               )}
             >
-              {link.label}
-            </a>
-          ))}
-        </nav>
-
-        {/* Desktop CTA */}
-        <DesktopCTA authState={authState} />
-
-        {/* Mobile right cluster: inline login/home btn + hamburger */}
-        <div className="flex items-center gap-2 md:hidden">
-          <MobileInlineCTA authState={authState} />
-
-          <button
-            ref={hamburgerRef}
-            type="button"
-            aria-label={
-              isDrawerOpen ? "Close navigation menu" : "Open navigation menu"
-            }
-            aria-expanded={isDrawerOpen}
-            aria-controls="mobile-nav-drawer"
-            onClick={isDrawerOpen ? closeDrawer : openDrawer}
-            className={cn(
-              "flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md text-sekkha-ink",
-              "focus-visible:ring-2 focus-visible:ring-sekkha-primary focus-visible:ring-offset-2 focus-visible:outline-none"
-            )}
-          >
-            <HamburgerIcon isOpen={isDrawerOpen} />
-          </button>
+              <HamburgerIcon isOpen={isDrawerOpen} />
+            </button>
+          </div>
         </div>
       </div>
 

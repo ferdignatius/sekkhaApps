@@ -1,4 +1,7 @@
-import { render, screen } from "@testing-library/react"
+import { render, screen, fireEvent, waitFor } from "@testing-library/react"
+import { beforeEach, describe, expect, it, vi } from "vitest"
+import { __resetPwaInstallStoreForTest } from "@/hooks/usePwaInstall"
+import type { BeforeInstallPromptEvent } from "@/hooks/usePwaInstall"
 import { HeroSection } from "./HeroSection"
 
 describe("HeroSection", () => {
@@ -75,5 +78,56 @@ describe("HeroSection", () => {
       />
     )
     expect(screen.getByText("Custom subheadline text.")).toBeDefined()
+  })
+})
+
+describe("HeroSection — Download App (PWA)", () => {
+  beforeEach(() => {
+    __resetPwaInstallStoreForTest({ deferredPrompt: null, installed: false })
+  })
+
+  it('renders "Download App" button and opens InstallAppGuideDialog when native prompt is unavailable', async () => {
+    render(
+      <HeroSection
+        headline="Build Better Products Faster"
+        subheadline="The all-in-one platform to manage your projects and teams."
+      />
+    )
+    const downloadBtn = screen.getByRole("button", { name: /Download App/i })
+    fireEvent.click(downloadBtn)
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/Install Sekkha on Your Home Screen/i)
+      ).toBeDefined()
+    })
+  })
+
+  it('triggers native beforeinstallprompt when available and updates label to "App Installed"', async () => {
+    const mockPrompt = vi.fn().mockResolvedValue(undefined)
+    const fakeEvent = {
+      platforms: ["web"],
+      prompt: mockPrompt,
+      userChoice: Promise.resolve({ outcome: "accepted", platform: "web" }),
+    } as unknown as BeforeInstallPromptEvent
+
+    __resetPwaInstallStoreForTest({
+      deferredPrompt: fakeEvent,
+      installed: false,
+    })
+
+    render(
+      <HeroSection
+        headline="Build Better Products Faster"
+        subheadline="The all-in-one platform to manage your projects and teams."
+      />
+    )
+    const downloadBtn = screen.getByRole("button", { name: /Download App/i })
+    fireEvent.click(downloadBtn)
+
+    await waitFor(() => {
+      expect(mockPrompt).toHaveBeenCalledTimes(1)
+      expect(screen.getByRole("button", { name: /App Installed/i })).toBeDefined()
+    })
   })
 })

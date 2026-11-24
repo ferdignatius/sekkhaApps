@@ -1,6 +1,6 @@
 import { motion } from "motion/react"
 import type { LeaderboardEntry } from "../data/landingContent"
-import { TrophyIcon, Bolt } from "lucide-react"
+import { Bolt } from "lucide-react"
 
 interface LeaderboardSectionProps {
   heading: string
@@ -34,13 +34,9 @@ export function LeaderboardSection({
           viewport={{ once: true }}
           transition={{ duration: 0.55, ease: "easeOut" }}
         >
-          <span className="text-caption-uppercase mb-4 inline-flex items-center gap-1.5 rounded-full border border-sekkha-hairline bg-sekkha-surface px-3.5 py-1 tracking-[1.5px] text-sekkha-ink shadow-xs">
-            <TrophyIcon className="size-3.5 text-clay-ochre" /> Season
-            Leaderboard
-          </span>
           <h2
             id="leaderboard-heading"
-            className="md:text-display-md text-3xl font-medium tracking-[-1px] text-sekkha-ink sm:text-4xl"
+            className="md:text-display-md text-3xl font-extrabold tracking-tight text-sekkha-ink sm:text-4xl"
           >
             {heading}
           </h2>
@@ -50,7 +46,7 @@ export function LeaderboardSection({
         </motion.div>
 
         {/* Leaderboard list container */}
-        <div className="relative w-full rounded-[24px] border border-sekkha-hairline bg-sekkha-surface p-6 shadow-xs md:p-8">
+        <div className="relative w-full rounded-[24px] border border-[#e5dec9] bg-sekkha-surface p-6 shadow-xs md:p-8">
           <ol
             className="flex flex-col gap-3"
             aria-label="Top active members list"

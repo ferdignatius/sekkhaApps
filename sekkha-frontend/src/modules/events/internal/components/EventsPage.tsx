@@ -1479,27 +1479,6 @@ export function EventsPage() {
                       </p>
                     </div>
                   </div>
-
-                  <div className="flex shrink-0 items-center gap-1.5">
-
-                    {/* Create button inside drawer header (reference: "+" on top-right of drawer) */}
-                    {isPengurus && (
-                      <Button
-                        variant="filled"
-                        onClick={() => {
-                          setEditTarget(null)
-                          setFormError(null)
-                          setFormOpen(true)
-                        }}
-                        className="size-9 shrink-0 rounded-full p-0 font-bold shadow-xs active:scale-[0.96] sm:h-9 sm:w-auto sm:px-3.5"
-                        title="Create New Event"
-                        aria-label="Create New Event"
-                      >
-                        <PlusIcon className="size-4" aria-hidden="true" />
-                        <span className="hidden sm:inline">Add Event</span>
-                      </Button>
-                    )}
-                  </div>
                 </div>
         }
         subHeader={
@@ -1617,6 +1596,23 @@ export function EventsPage() {
                     </div>
                   )}
       </CollapsibleBottomSheet>
+
+      {/* Floating Action Button (+ Create New Event) at bottom-right */}
+      {isPengurus && (
+        <button
+          type="button"
+          onClick={() => {
+            setEditTarget(null)
+            setFormError(null)
+            setFormOpen(true)
+          }}
+          aria-label="Create New Event"
+          title="Create New Event"
+          className="fixed right-4 bottom-24 z-40 flex size-14 cursor-pointer items-center justify-center rounded-full bg-ink text-canvas shadow-[0_12px_28px_rgba(10,10,10,0.28)] transition-all hover:bg-ink/90 active:scale-95 md:right-8 md:bottom-8"
+        >
+          <PlusIcon className="size-6" aria-hidden="true" />
+        </button>
+      )}
 
       {/* Create / Edit event modal */}
       <ResponsiveFormModal

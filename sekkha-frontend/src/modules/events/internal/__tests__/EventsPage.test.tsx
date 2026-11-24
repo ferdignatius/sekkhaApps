@@ -554,8 +554,11 @@ describe("EventsPage Category Filter Dropdown — Initial 5 + Infinite Scroll", 
     const drawer = await screen.findByTestId("events-list-drawer")
     expect(drawer.getAttribute("data-expanded")).toBe("false")
 
-    // Add button sits inside the drawer header
-    expect(within(drawer).getByRole("button", { name: /Create New Event/i })).toBeTruthy()
+    // Create New Event is a bottom-right floating action button, not inside the drawer header
+    expect(within(drawer).queryByRole("button", { name: /Create New Event/i })).toBeNull()
+    const createFab = screen.getByRole("button", { name: /Create New Event/i })
+    expect(createFab.className).toContain("fixed")
+    expect(createFab.className).toContain("rounded-full")
 
     // Scrolling the drawer event list down expands it over the calendar
     const scrollArea = screen.getByTestId("events-drawer-scroll")

@@ -431,6 +431,50 @@ describe("People Module RBAC & Self-Protection Guardrails", () => {
       }
     })
 
+    it("returns current_streak and yearly weekly heatmap buckets in getMemberDetail for privileged actors", async () => {
+      const origDetail = peopleModels.findMemberDetail
+      const origYearly = peopleModels.findMemberYearlyAttendances
+      const currentYear = new Date().getUTCFullYear()
+      const sampleDate = new Date(Date.UTC(currentYear, 2, 11, 10, 0, 0))
+
+      peopleModels.findMemberDetail = async () =>
+        makeUserRecord({
+          stats: {
+            points: 850,
+            currentStreak: 4,
+            totalAttendances: 9,
+            lastActivityAt: sampleDate,
+          },
+          attendances: [],
+        }) as any
+
+      let capturedRange: { userId: string; start: Date; end: Date } | null = null
+      peopleModels.findMemberYearlyAttendances = async (userId: string, start: Date, end: Date) => {
+        capturedRange = { userId, start, end }
+        return [
+          {
+            scannedAt: sampleDate,
+            event: { eventDate: sampleDate },
+          },
+        ] as any
+      }
+
+      try {
+        const detail = await peopleServices.getMemberDetail("usr_target_1", ORGANIZER_ACTOR)
+        expect(detail.current_streak).toBe(4)
+        expect(capturedRange?.userId).toBe("usr_target_1")
+        expect(detail.heatmap.year).toBe(currentYear)
+        expect(detail.heatmap.weeks.length).toBeGreaterThanOrEqual(52)
+        expect(detail.heatmap.total_checkins).toBe(1)
+        const nonEmptyWeeks = detail.heatmap.weeks.filter((w) => w.count > 0)
+        expect(nonEmptyWeeks).toHaveLength(1)
+        expect(nonEmptyWeeks[0].count).toBe(1)
+      } finally {
+        peopleModels.findMemberDetail = origDetail
+        peopleModels.findMemberYearlyAttendances = origYearly
+      }
+    })
+
     it("omits detail PII, points, and attendance history from getMembers directory listing", async () => {
       const origCount = peopleModels.count
       const origFindMany = peopleModels.findMany

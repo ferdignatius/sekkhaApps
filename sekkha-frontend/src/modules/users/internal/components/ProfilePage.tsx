@@ -313,7 +313,7 @@ export function ProfilePage() {
                   <div className="inline-flex items-center gap-1.5 rounded-full border border-[#e5dec9] bg-[#faf5e8] px-3.5 py-1.5 text-xs shadow-2xs">
                     <SparklesIcon className="size-3.5 shrink-0 text-clay-ochre" />
                     <span className="font-mono font-extrabold text-ink tabular-nums">
-                      {totalPoints} Pts
+                      {totalPoints}
                     </span>
                     <span className="text-text-muted">Karma Points</span>
                   </div>
@@ -321,8 +321,7 @@ export function ProfilePage() {
                   <div className="inline-flex items-center gap-1.5 rounded-full border border-amber-200/80 bg-amber-50/80 px-3.5 py-1.5 text-xs shadow-2xs">
                     <FlameIcon className="size-3.5 shrink-0 text-amber-600" />
                     <span className="font-extrabold text-amber-950 tabular-nums">
-                      {currentStreak}{" "}
-                      {currentStreak === 1 ? "Week" : "Weeks"}
+                      {currentStreak}
                     </span>
                     <span className="text-amber-800/80">Weekly Streak</span>
                   </div>

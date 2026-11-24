@@ -1,24 +1,45 @@
 import { useState, useEffect, useCallback } from "react"
 import { Link, useNavigate, useParams } from "@tanstack/react-router"
 import {
-  UserIcon,
-  QrCodeIcon,
-  ClockIcon,
   AlertTriangleIcon,
-  CheckCircleIcon,
-  RefreshCwIcon,
   ArrowLeftIcon,
+  ArrowRightIcon,
+  CalendarIcon,
+  CheckCircle2Icon,
+  CheckCircleIcon,
+  CheckIcon,
+  ClockIcon,
+  CopyIcon,
+  FlameIcon,
+  GraduationCapIcon,
+  IdCardIcon,
+  KeyRoundIcon,
+  Maximize2Icon,
+  Minimize2Icon,
+  MoreVerticalIcon,
+  RefreshCwIcon,
+  ShieldAlertIcon,
+  ShieldCheckIcon,
+  SparklesIcon,
+  Trash2Icon,
+  UserIcon,
+  XIcon,
 } from "lucide-react"
 import { useAuth } from "@/modules/auth"
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
 import { DigitalMemberCard } from "@/components/common/DigitalMemberCard"
+import { WeeklyActivityHeatmap } from "@/components/common/WeeklyActivityHeatmap"
 import {
+  Alert,
+  Badge,
   Button,
   Card,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerTitle,
+  FloatingActionButton,
 } from "@/components/base"
 import { Skeleton } from "@/components/ui/skeleton"
 import { safeStorage } from "@/lib/storage"
@@ -28,9 +49,13 @@ import type {
   PeopleRole,
   ResetTemporaryPasswordResponse,
 } from "../api/peopleApi"
-import { MemberIdentityCard } from "./detail/MemberIdentityCard"
-import { MemberGovernanceCard } from "./detail/MemberGovernanceCard"
-import { MemberProfileTab } from "./detail/MemberProfileTab"
+import {
+  formatMemberDate,
+  formatMemberInitials,
+  formatRoleLabel,
+  getRoleAvatarClass,
+  getRoleBadgeVariant,
+} from "../utils/memberFormatters"
 import { MemberAttendanceTab } from "./detail/MemberAttendanceTab"
 import { MemberDetailModals } from "./detail/MemberDetailModals"
 
@@ -56,9 +81,11 @@ export function MemberDetailPage({
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [copiedId, setCopiedId] = useState(false)
-  const [activeTab, setActiveTab] = useState<"profile" | "card" | "attendance">(
-    "profile"
-  )
+
+  // Drawers
+  const [showPassDrawer, setShowPassDrawer] = useState(false)
+  const [isPassDrawerExpanded, setIsPassDrawerExpanded] = useState(false)
+  const [showActionsDrawer, setShowActionsDrawer] = useState(false)
 
   // Modals & Reset Credentials
   const [showRoleModal, setShowRoleModal] = useState(false)
@@ -108,7 +135,9 @@ export function MemberDetailPage({
     if (!memberId) return
     // Clear stale detail state immediately so clicking another member never flashes previous user data
     setMember(null)
-    setActiveTab("profile")
+    setShowPassDrawer(false)
+    setIsPassDrawerExpanded(false)
+    setShowActionsDrawer(false)
     setLoading(true)
     setLoadError(null)
     try {
@@ -250,15 +279,25 @@ export function MemberDetailPage({
     }
   }
 
-  return (
-    <main className="min-h-screen bg-canvas text-left font-sans">
-      <PageBreadcrumb
-        items={[
-          { label: "People", href: "/people" },
-          { label: member?.name || "Member Details" },
-        ]}
-      />
+  const memberNumberStr = member?.user_number ? String(member.user_number) : ""
+  const initials = formatMemberInitials(member?.name)
+  const isResetDisabled = Boolean(
+    isSelf ||
+      member?.is_claimed ||
+      isPrivilegedTargetForOrganizer ||
+      resettingPassword
+  )
 
+  const resetDisabledReason = isSelf
+    ? "Self-management is disabled for governance safety."
+    : isPrivilegedTargetForOrganizer
+      ? "Only Admins can reset Organizer or Admin credentials."
+      : member?.is_claimed
+        ? "Account already claimed. Member must use Forgot Password."
+        : "Generate a fresh temporary password & WhatsApp invite for this unclaimed member."
+
+  return (
+    <main className="min-h-screen bg-[#fffaf0] pb-36 text-left font-sans sm:pb-24 md:pb-14">
       {/* Floating Toast Notification */}
       {toast && (
         <div
@@ -289,199 +328,423 @@ export function MemberDetailPage({
         </div>
       )}
 
-      <div className="px-3.5 py-4 pb-36 sm:px-6 sm:py-6 sm:pb-24 md:px-8 md:pb-12 lg:px-12">
-        <div className="mx-auto max-w-7xl">
+      {/* ── HERO BACKDROP (Matches Profile & Home Warm Sunrise + Pavilion Art) ── */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-[#FFE0C2] via-[#FAF0DF] to-[#F3E2CA] pb-16">
+        <img
+          src="/Serene%20Sky%20Garden%20Pavilion.webp"
+          alt=""
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 h-full w-full object-cover object-center opacity-55 mix-blend-multiply select-none"
+        />
+        <div
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_rgba(255,250,240,0.65)_0%,_transparent_65%)]"
+          aria-hidden="true"
+        />
+
+        <div className="relative z-10">
+          <PageBreadcrumb
+            items={[
+              { label: "People", href: "/people" },
+              { label: member?.name || "Member Details" },
+            ]}
+            onBack={() => navigate({ to: "/people" })}
+          />
+        </div>
+
+        <div className="relative z-10 h-14 sm:h-20 md:h-24" />
+      </div>
+
+      {/* ── CURVED WARM SHEET BODY ── */}
+      <div className="relative z-20 -mt-6 rounded-t-[32px] border-t border-[#e5dec9]/80 bg-[#fffaf0] px-4 pt-0 pb-8 sm:px-6 md:px-8 lg:px-12">
+        <div className="mx-auto max-w-6xl">
           {loading ? (
             <div
               aria-busy="true"
               aria-label="Loading member profile"
-              className="grid grid-cols-1 gap-6 lg:grid-cols-12"
+              className="space-y-6 pt-2"
             >
-              <div className="space-y-4 lg:col-span-4">
-                <div className="space-y-4 rounded-xl border border-hairline bg-surface-soft p-6">
-                  <div className="flex items-center gap-4">
-                    <Skeleton className="size-20 rounded-lg" />
-                    <div className="flex-1 space-y-2">
-                      <Skeleton className="h-6 w-40 rounded-sm" />
-                      <Skeleton className="h-4 w-28 rounded-xs" />
-                    </div>
-                  </div>
-                  <Skeleton className="h-12 w-full rounded-md" />
-                  <div className="grid grid-cols-2 gap-2.5">
-                    <Skeleton className="h-16 rounded-md" />
-                    <Skeleton className="h-16 rounded-md" />
-                  </div>
-                </div>
-                <Skeleton className="h-36 w-full rounded-xl" />
+              <div className="flex items-end justify-between gap-4">
+                <Skeleton className="-mt-10 size-20 rounded-full border-4 border-[#fffaf0] sm:-mt-12 sm:size-24" />
+                <Skeleton className="mt-3 size-10 rounded-full" />
               </div>
-              <div className="space-y-4 lg:col-span-8">
-                <Skeleton className="h-12 w-full rounded-full" />
-                <Skeleton className="h-44 w-full rounded-xl" />
-                <Skeleton className="h-44 w-full rounded-xl" />
+              <div className="space-y-2.5">
+                <Skeleton className="h-7 w-52 rounded-md" />
+                <Skeleton className="h-4 w-40 rounded-sm" />
+                <div className="flex flex-wrap gap-2 pt-1">
+                  <Skeleton className="h-8 w-28 rounded-full" />
+                  <Skeleton className="h-8 w-28 rounded-full" />
+                  <Skeleton className="h-8 w-28 rounded-full" />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 gap-6 border-t border-hairline/70 pt-6 lg:grid-cols-12">
+                <div className="space-y-4 lg:col-span-5">
+                  <Skeleton className="h-48 w-full rounded-xl" />
+                  <Skeleton className="h-56 w-full rounded-xl" />
+                </div>
+                <div className="space-y-4 lg:col-span-7">
+                  <Skeleton className="h-72 w-full rounded-xl" />
+                </div>
               </div>
             </div>
           ) : loadError ? (
-            <Card
-              variant="soft"
-              className="mx-auto max-w-lg space-y-4 rounded-xl border-hairline bg-surface-soft p-8 text-center"
-            >
-              <div className="mx-auto flex size-12 items-center justify-center rounded-lg border border-rose-200 bg-rose-50 text-rose-600">
-                <AlertTriangleIcon className="size-6" aria-hidden="true" />
-              </div>
-              <div className="space-y-1.5">
-                <h1 className="text-base font-bold text-ink sm:text-lg">
-                  Failed to Load Member Profile
-                </h1>
-                <p className="text-xs leading-relaxed text-text-muted sm:text-sm">
-                  {loadError}
-                </p>
-              </div>
-              <div className="flex flex-wrap items-center justify-center gap-2.5 pt-2">
-                <Button variant="outlined" asChild className="rounded-md">
-                  <Link to="/people" className="gap-1.5">
-                    <ArrowLeftIcon className="size-4" aria-hidden="true" />
-                    <span>Back to People</span>
-                  </Link>
-                </Button>
-                <Button
-                  type="button"
-                  variant="filled"
-                  onClick={() => void loadMember()}
-                  className="gap-1.5 rounded-md"
-                >
-                  <RefreshCwIcon className="size-4" aria-hidden="true" />
-                  <span>Try Again</span>
-                </Button>
-              </div>
-            </Card>
+            <div className="pt-8">
+              <Card
+                variant="soft"
+                className="mx-auto max-w-lg space-y-4 rounded-xl border-hairline bg-surface-soft p-8 text-center"
+              >
+                <div className="mx-auto flex size-12 items-center justify-center rounded-lg border border-rose-200 bg-rose-50 text-rose-600">
+                  <AlertTriangleIcon className="size-6" aria-hidden="true" />
+                </div>
+                <div className="space-y-1.5">
+                  <h1 className="text-base font-bold text-ink sm:text-lg">
+                    Failed to Load Member Profile
+                  </h1>
+                  <p className="text-xs leading-relaxed text-text-muted sm:text-sm">
+                    {loadError}
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center justify-center gap-2.5 pt-2">
+                  <Button variant="outlined" asChild className="rounded-md">
+                    <Link to="/people" className="gap-1.5">
+                      <ArrowLeftIcon className="size-4" aria-hidden="true" />
+                      <span>Back to People</span>
+                    </Link>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="filled"
+                    onClick={() => void loadMember()}
+                    className="gap-1.5 rounded-md"
+                  >
+                    <RefreshCwIcon className="size-4" aria-hidden="true" />
+                    <span>Try Again</span>
+                  </Button>
+                </div>
+              </Card>
+            </div>
           ) : !member ? (
-            <Card
-              variant="soft"
-              className="mx-auto max-w-lg space-y-3 rounded-xl border border-dashed border-hairline bg-surface-soft p-10 text-center"
-            >
-              <UserIcon
-                className="mx-auto size-10 text-text-muted/50"
-                aria-hidden="true"
-              />
-              <h1 className="text-base font-bold text-ink">Member Not Found</h1>
-              <p className="text-xs text-text-muted">
-                This member profile could not be found or has been deleted.
-              </p>
-              <div className="pt-2">
-                <Button variant="outlined" asChild className="rounded-md">
-                  <Link to="/people" className="gap-1.5">
-                    <ArrowLeftIcon className="size-4" aria-hidden="true" />
-                    <span>Back to People</span>
-                  </Link>
-                </Button>
-              </div>
-            </Card>
+            <div className="pt-8">
+              <Card
+                variant="soft"
+                className="mx-auto max-w-lg space-y-3 rounded-xl border border-dashed border-hairline bg-surface-soft p-10 text-center"
+              >
+                <UserIcon
+                  className="mx-auto size-10 text-text-muted/50"
+                  aria-hidden="true"
+                />
+                <h1 className="text-base font-bold text-ink">
+                  Member Not Found
+                </h1>
+                <p className="text-xs text-text-muted">
+                  This member profile could not be found or has been deleted.
+                </p>
+                <div className="pt-2">
+                  <Button variant="outlined" asChild className="rounded-md">
+                    <Link to="/people" className="gap-1.5">
+                      <ArrowLeftIcon className="size-4" aria-hidden="true" />
+                      <span>Back to People</span>
+                    </Link>
+                  </Button>
+                </div>
+              </Card>
+            </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
-                {/* ── LEFT COLUMN: IDENTITY & QUICK GOVERNANCE (Sticky Desktop / Top Mobile) ── */}
-                <div className="space-y-4 lg:sticky lg:top-6 lg:col-span-4">
-                  <MemberIdentityCard
-                    member={member}
-                    isSelf={isSelf}
-                    isPrivilegedTargetForOrganizer={
-                      isPrivilegedTargetForOrganizer
-                    }
-                    copiedId={copiedId}
-                    onCopyMemberId={handleCopyMemberId}
-                  />
+              {/* ── AVATAR + TOP-RIGHT MEMBER PASS BUTTON ── */}
+              <div className="flex items-end justify-between gap-4">
+                <div className="relative -mt-10 shrink-0 sm:-mt-12">
+                  <div
+                    className={`flex size-20 items-center justify-center rounded-full border-4 border-[#fffaf0] text-xl font-bold tracking-wider uppercase shadow-md sm:size-24 sm:text-2xl ${getRoleAvatarClass(member.role)}`}
+                    aria-hidden="true"
+                  >
+                    {initials}
+                  </div>
+                  <span
+                    className={`absolute -right-0.5 -bottom-0.5 flex size-7 items-center justify-center rounded-full border-2 border-[#fffaf0] text-white shadow-xs ${
+                      member.is_claimed ? "bg-emerald-600" : "bg-amber-500"
+                    }`}
+                    title={member.is_claimed ? "Claimed Account" : "Unclaimed Account"}
+                    aria-label={member.is_claimed ? "Claimed Account" : "Unclaimed Account"}
+                  >
+                    {member.is_claimed ? (
+                      <CheckCircle2Icon className="size-3.5" aria-hidden="true" />
+                    ) : (
+                      <ClockIcon className="size-3.5" aria-hidden="true" />
+                    )}
+                  </span>
+                </div>
 
-                  {isOrganizerOrAdmin && (
-                    <MemberGovernanceCard
-                      member={member}
-                      isAdmin={isAdmin}
-                      isSelf={isSelf}
-                      isPrivilegedTargetForOrganizer={
-                        isPrivilegedTargetForOrganizer
-                      }
-                      resettingPassword={resettingPassword}
-                      onResetPassword={() => void handleResetPassword()}
-                      onOpenRoleModal={() => setShowRoleModal(true)}
-                      onOpenDeleteModal={() => setShowDeleteModal(true)}
-                    />
+                <div className="flex items-center gap-2 pt-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowPassDrawer(true)}
+                    className="flex size-10 cursor-pointer items-center justify-center rounded-full border border-hairline bg-surface-soft text-ink shadow-2xs transition-colors hover:bg-surface-card active:scale-95"
+                    title="Member Pass & QR Code"
+                    aria-label="Member Pass"
+                  >
+                    <IdCardIcon className="size-4.5" aria-hidden="true" />
+                  </button>
+                </div>
+              </div>
+
+              {/* ── IDENTITY CLUSTER & COMPACT STAT PILLS (Matches ProfilePage) ── */}
+              <div className="mt-3 space-y-3">
+                <div className="min-w-0 space-y-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h1 className="text-xl font-extrabold tracking-tight break-words text-ink sm:text-2xl">
+                      {member.name}
+                    </h1>
+                    <Badge
+                      variant={getRoleBadgeVariant(member.role)}
+                      size="sm"
+                      className="font-bold"
+                    >
+                      {formatRoleLabel(member.role)}
+                    </Badge>
+                    {isSelf && (
+                      <Badge variant="primary" size="sm">
+                        You
+                      </Badge>
+                    )}
+                  </div>
+
+                  {member.username && (
+                    <p className="truncate font-mono text-xs font-semibold text-text-muted sm:text-sm">
+                      @{member.username}
+                    </p>
+                  )}
+
+                  {member.school && (
+                    <p className="flex items-center gap-1.5 pt-0.5 text-xs font-medium text-text-muted">
+                      <GraduationCapIcon
+                        className="size-3.5 shrink-0 text-clay-ochre"
+                        aria-hidden="true"
+                      />
+                      <span className="truncate">{member.school}</span>
+                    </p>
                   )}
                 </div>
 
-                {/* ── RIGHT COLUMN: SEGMENTED DETAILS (PROFILE / ID CARD / ATTENDANCE) ── */}
-                <div className="lg:col-span-8">
-                  <Tabs
-                    value={activeTab}
-                    onValueChange={(val) =>
-                      setActiveTab(val as "profile" | "card" | "attendance")
-                    }
-                    variant="pill"
-                    className="space-y-4"
-                  >
-                    <TabsList className="grid w-full grid-cols-3 p-1">
-                      <TabsTrigger
-                        value="profile"
-                        className="min-h-[44px] w-full"
+                {/* Compact Inline Stat Pills (Matches ProfilePage) */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="inline-flex items-center gap-1.5 rounded-full border border-[#e5dec9] bg-[#faf5e8] px-3.5 py-1.5 text-xs shadow-2xs">
+                    <SparklesIcon
+                      className="size-3.5 shrink-0 text-clay-ochre"
+                      aria-hidden="true"
+                    />
+                    <span className="font-mono font-extrabold text-ink tabular-nums">
+                      {(member.points ?? 0).toLocaleString("en-US")}
+                    </span>
+                    <span className="text-text-muted">Karma Points</span>
+                  </div>
+
+                  <div className="inline-flex items-center gap-1.5 rounded-full border border-amber-200/80 bg-amber-50/80 px-3.5 py-1.5 text-xs shadow-2xs">
+                    <FlameIcon
+                      className="size-3.5 shrink-0 text-amber-600"
+                      aria-hidden="true"
+                    />
+                    <span className="font-extrabold text-amber-950 tabular-nums">
+                      {member.current_streak ?? 0}
+                    </span>
+                    <span className="text-amber-800/80">Weekly Streak</span>
+                  </div>
+                </div>
+
+                {/* Structured Account Details Strip (Email, Member ID, Joined) */}
+                {(member.email || memberNumberStr || member.created_at) && (
+                  <div className="grid grid-cols-1 gap-2 rounded-2xl border border-[#e5dec9]/80 bg-surface-soft/75 p-3 text-xs sm:grid-cols-3">
+                    {member.email && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleCopyValue(member.email!, "Email address")
+                        }
+                        aria-label={`Copy email ${member.email}`}
+                        className="flex min-w-0 cursor-pointer items-center justify-between gap-2 rounded-xl px-2 py-1 text-left transition-colors hover:bg-canvas/70"
                       >
-                        <UserIcon
-                          className="size-4 shrink-0"
+                        <div className="min-w-0">
+                          <span className="block text-[10px] font-bold tracking-wider text-text-muted uppercase">
+                            Email
+                          </span>
+                          <span className="block truncate font-medium text-ink">
+                            {member.email}
+                          </span>
+                        </div>
+                        <CopyIcon
+                          className="size-3.5 shrink-0 text-text-muted"
                           aria-hidden="true"
                         />
-                        <span className="hidden sm:inline">
-                          Profile Information
-                        </span>
-                        <span className="sm:hidden">Profile</span>
-                      </TabsTrigger>
+                      </button>
+                    )}
 
-                      <TabsTrigger value="card" className="min-h-[44px] w-full">
-                        <QrCodeIcon
-                          className="size-4 shrink-0"
-                          aria-hidden="true"
-                        />
-                        <span className="hidden sm:inline">
-                          Digital ID & QR Card
-                        </span>
-                        <span className="sm:hidden">ID Card</span>
-                      </TabsTrigger>
-
-                      <TabsTrigger
-                        value="attendance"
-                        className="min-h-[44px] w-full"
+                    {memberNumberStr && (
+                      <button
+                        type="button"
+                        onClick={() => handleCopyMemberId(memberNumberStr)}
+                        aria-label={`Copy Member ID ${memberNumberStr}`}
+                        className="flex min-w-0 cursor-pointer items-center justify-between gap-2 rounded-xl px-2 py-1 text-left transition-colors hover:bg-canvas/70"
                       >
-                        <ClockIcon
-                          className="size-4 shrink-0"
+                        <div className="min-w-0">
+                          <span className="block text-[10px] font-bold tracking-wider text-text-muted uppercase">
+                            Member ID
+                          </span>
+                          <span className="block truncate font-mono font-semibold text-ink">
+                            #{memberNumberStr}
+                          </span>
+                        </div>
+                        {copiedId ? (
+                          <CheckIcon
+                            className="size-3.5 shrink-0 text-emerald-600"
+                            aria-hidden="true"
+                          />
+                        ) : (
+                          <CopyIcon
+                            className="size-3.5 shrink-0 text-text-muted"
+                            aria-hidden="true"
+                          />
+                        )}
+                      </button>
+                    )}
+
+                    {member.created_at && (
+                      <div className="flex min-w-0 items-center gap-2 px-2 py-1">
+                        <CalendarIcon
+                          className="size-3.5 shrink-0 text-text-muted"
                           aria-hidden="true"
                         />
-                        <span className="hidden sm:inline">
-                          Attendance (
-                          {member.total_attendances ??
-                            member.attendances?.length ??
-                            0}
-                          )
-                        </span>
-                        <span className="sm:hidden">
-                          History (
-                          {member.total_attendances ??
-                            member.attendances?.length ??
-                            0}
-                          )
-                        </span>
-                      </TabsTrigger>
-                    </TabsList>
+                        <div className="min-w-0">
+                          <span className="block text-[10px] font-bold tracking-wider text-text-muted uppercase">
+                            Joined
+                          </span>
+                          <span className="block truncate font-medium text-ink">
+                            {formatMemberDate(member.created_at)}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
 
-                    <TabsContent
-                      value="profile"
-                      className="animate-in duration-150 fade-in"
-                    >
-                      <MemberProfileTab
-                        member={member}
-                        onCopyValue={handleCopyValue}
-                      />
-                    </TabsContent>
+                {/* Contextual Self-Protection or Staff Read-Only Notice */}
+                {isSelf && (
+                  <div className="pt-2">
+                    <Alert
+                      variant="info"
+                      title="Viewing Your Own Account"
+                      description={
+                        <div className="space-y-1.5">
+                          <p>
+                            Editing personal details, changing roles, resetting
+                            temporary passwords, and self-deletion are disabled
+                            here for governance.
+                          </p>
+                          <Link
+                            to="/profile"
+                            className="inline-flex items-center gap-1 font-semibold text-ink underline underline-offset-4 hover:opacity-80"
+                          >
+                            <span>Open Profile Settings</span>
+                            <ArrowRightIcon
+                              className="size-3.5"
+                              aria-hidden="true"
+                            />
+                          </Link>
+                        </div>
+                      }
+                    />
+                  </div>
+                )}
 
-                    <TabsContent
-                      value="card"
-                      className="animate-in duration-150 fade-in"
-                    >
+                {!isSelf && isPrivilegedTargetForOrganizer && (
+                  <div className="pt-2">
+                    <Alert
+                      variant="warning"
+                      title="Read-Only Staff Profile"
+                      description="Organizers have read-only access to Organizer and Admin accounts. Contact an Admin to adjust staff roles or credentials."
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* ── TABLESS CONTENT GRID (Heatmap & Recent Attendance) ── */}
+              <div className="mt-6 grid grid-cols-1 items-start gap-6 border-t border-hairline/70 pt-6 lg:grid-cols-12">
+                <div className="lg:col-span-5">
+                  <WeeklyActivityHeatmap
+                    year={member.heatmap?.year ?? new Date().getFullYear()}
+                    activeMonth={member.heatmap?.active_month}
+                    weeks={member.heatmap?.weeks ?? []}
+                  />
+                </div>
+
+                <div className="lg:col-span-7">
+                  <MemberAttendanceTab
+                    attendances={member.attendances}
+                    totalAttendances={member.total_attendances}
+                  />
+                </div>
+              </div>
+
+              {/* ── DIGITAL MEMBER PASS BOTTOM DRAWER ── */}
+              <Drawer
+                open={showPassDrawer}
+                onOpenChange={(open) => {
+                  setShowPassDrawer(open)
+                  if (!open) setIsPassDrawerExpanded(false)
+                }}
+              >
+                <DrawerContent
+                  className={`flex flex-col transition-[height,max-height] duration-300 ${
+                    isPassDrawerExpanded
+                      ? "h-[96dvh] max-h-[96dvh]"
+                      : "h-[88dvh] max-h-[88dvh]"
+                  }`}
+                >
+                  <DrawerHeader className="flex shrink-0 flex-row items-start justify-between gap-3 border-b border-hairline px-4 pt-2 pb-3 text-left sm:px-6">
+                    <div className="min-w-0 flex-1 space-y-0.5">
+                      <DrawerTitle className="text-base font-bold text-ink">
+                        Digital Member Pass
+                      </DrawerTitle>
+                      <DrawerDescription className="text-xs text-text-muted">
+                        Present this QR code at temple events for instant
+                        check-in.
+                      </DrawerDescription>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setIsPassDrawerExpanded((prev) => !prev)
+                        }
+                        className="flex size-8 cursor-pointer items-center justify-center rounded-full border border-hairline bg-surface-soft text-ink transition-colors hover:bg-surface-card"
+                        aria-label={
+                          isPassDrawerExpanded
+                            ? "Restore drawer height"
+                            : "Expand drawer to full screen"
+                        }
+                        title={
+                          isPassDrawerExpanded
+                            ? "Restore drawer height"
+                            : "Expand drawer to full screen"
+                        }
+                      >
+                        {isPassDrawerExpanded ? (
+                          <Minimize2Icon className="size-4" aria-hidden="true" />
+                        ) : (
+                          <Maximize2Icon className="size-4" aria-hidden="true" />
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowPassDrawer(false)}
+                        className="flex size-8 cursor-pointer items-center justify-center rounded-full border border-hairline bg-surface-soft text-ink transition-colors hover:bg-surface-card"
+                        aria-label="Close Digital Member Pass"
+                      >
+                        <XIcon className="size-4" aria-hidden="true" />
+                      </button>
+                    </div>
+                  </DrawerHeader>
+
+                  <div className="flex-1 overflow-y-auto px-4 py-4 pb-8 sm:px-6">
+                    <div className="mx-auto max-w-md">
                       <DigitalMemberCard
                         name={member.name}
                         userNumber={member.user_number}
@@ -489,27 +752,148 @@ export function MemberDetailPage({
                         school={member.school}
                         joinedAt={member.created_at}
                         username={member.username}
-                        points={member.points}
+                        points={member.points ?? 0}
+                        currentStreak={member.current_streak ?? 0}
                         isClaimed={member.is_claimed}
-                        onCopyMemberId={() =>
-                          showToast("Member ID copied to clipboard!")
-                        }
+                        inlineEnlargeQr={true}
+                        onCopyMemberId={handleCopyMemberId}
                       />
-                    </TabsContent>
+                    </div>
+                  </div>
+                </DrawerContent>
+              </Drawer>
 
-                    <TabsContent
-                      value="attendance"
-                      className="animate-in duration-150 fade-in"
-                    >
-                      <MemberAttendanceTab
-                        attendances={member.attendances}
-                        totalAttendances={member.total_attendances}
-                      />
-                    </TabsContent>
-                  </Tabs>
-                </div>
-              </div>
+              {/* ── 3-DOT ADMINISTRATIVE ACTIONS FAB + DRAWER (Organizer & Admin) ── */}
+              {isOrganizerOrAdmin && (
+                <>
+                  <FloatingActionButton
+                    variant="primary"
+                    size="default"
+                    onClick={() => setShowActionsDrawer(true)}
+                    className="fixed right-4 bottom-24 z-40 rounded-full md:right-8 md:bottom-8"
+                    aria-label="Administrative actions"
+                    title="Administrative actions"
+                    icon={
+                      <MoreVerticalIcon className="size-5" aria-hidden="true" />
+                    }
+                  />
 
+                  <Drawer
+                    open={showActionsDrawer}
+                    onOpenChange={setShowActionsDrawer}
+                  >
+                    <DrawerContent className="h-auto max-h-[82dvh] flex-col">
+                      <DrawerHeader className="flex flex-row items-start justify-between gap-3 border-b border-hairline px-4 pt-2 pb-3 text-left sm:px-6">
+                        <div className="min-w-0 flex-1 space-y-0.5">
+                          <DrawerTitle className="flex items-center gap-2 text-base font-bold text-ink">
+                            <ShieldAlertIcon
+                              className="size-4.5 text-clay-teal"
+                              aria-hidden="true"
+                            />
+                            <span>Administrative Actions</span>
+                          </DrawerTitle>
+                          <DrawerDescription className="text-xs text-text-muted">
+                            {isSelf
+                              ? "Self-management is disabled for governance safety."
+                              : isPrivilegedTargetForOrganizer
+                                ? "Read-only for Organizers on Organizer/Admin accounts."
+                                : `Manage credentials and governance access for ${member.name}.`}
+                          </DrawerDescription>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setShowActionsDrawer(false)}
+                          className="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full border border-hairline bg-surface-soft text-ink transition-colors hover:bg-surface-card"
+                          aria-label="Close Administrative Actions"
+                        >
+                          <XIcon className="size-4" aria-hidden="true" />
+                        </button>
+                      </DrawerHeader>
+
+                      <div className="space-y-3 overflow-y-auto px-4 py-4 pb-8 sm:px-6">
+                        <div className="space-y-1.5">
+                          <Button
+                            type="button"
+                            variant="outlined"
+                            disabled={isResetDisabled}
+                            onClick={() => {
+                              setShowActionsDrawer(false)
+                              void handleResetPassword()
+                            }}
+                            title={resetDisabledReason}
+                            className="min-h-[48px] w-full justify-start gap-2.5 rounded-xl bg-canvas px-4 text-left"
+                          >
+                            <KeyRoundIcon
+                              className="size-4 shrink-0 text-clay-teal"
+                              aria-hidden="true"
+                            />
+                            <span className="font-semibold">
+                              {resettingPassword
+                                ? "Generating Temporary Password..."
+                                : "Reset Password"}
+                            </span>
+                          </Button>
+                          <p className="px-1 text-[11px] leading-snug text-text-muted">
+                            {resetDisabledReason}
+                          </p>
+                        </div>
+
+                        {isAdmin && (
+                          <div className="grid grid-cols-1 gap-3 border-t border-hairline pt-3 sm:grid-cols-2">
+                            <Button
+                              type="button"
+                              variant="outlined"
+                              disabled={isSelf}
+                              onClick={() => {
+                                setShowActionsDrawer(false)
+                                setShowRoleModal(true)
+                              }}
+                              title={
+                                isSelf
+                                  ? "Self-role changes are blocked here."
+                                  : "Change member role"
+                              }
+                              className="min-h-[48px] w-full justify-start gap-2.5 rounded-xl bg-canvas px-4"
+                            >
+                              <ShieldCheckIcon
+                                className="size-4 shrink-0 text-clay-teal"
+                                aria-hidden="true"
+                              />
+                              <span className="font-semibold">Change Role</span>
+                            </Button>
+
+                            <Button
+                              type="button"
+                              variant="danger"
+                              disabled={isSelf}
+                              onClick={() => {
+                                setShowActionsDrawer(false)
+                                setShowDeleteModal(true)
+                              }}
+                              title={
+                                isSelf
+                                  ? "Self-deletion is blocked here."
+                                  : "Delete member account"
+                              }
+                              className="min-h-[48px] w-full justify-start gap-2.5 rounded-xl px-4"
+                            >
+                              <Trash2Icon
+                                className="size-4 shrink-0"
+                                aria-hidden="true"
+                              />
+                              <span className="font-semibold">
+                                Delete Account
+                              </span>
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    </DrawerContent>
+                  </Drawer>
+                </>
+              )}
+
+              {/* ── MODALS: CHANGE ROLE, DELETE CONFIRMATION, RESET CREDENTIALS ── */}
               <MemberDetailModals
                 member={member}
                 isAdmin={isAdmin}
@@ -519,11 +903,11 @@ export function MemberDetailPage({
                 newRole={newRole}
                 onNewRoleChange={setNewRole}
                 savingRole={savingRole}
-                onSubmitRole={(e) => void handleUpdateRole(e)}
+                onSubmitRole={handleUpdateRole}
                 showDeleteModal={showDeleteModal}
                 onDeleteModalChange={setShowDeleteModal}
                 deleting={deleting}
-                onConfirmDelete={() => void handleDeleteMember()}
+                onConfirmDelete={handleDeleteMember}
                 resetCredentials={resetCredentials}
                 onCloseResetCredentials={() => setResetCredentials(null)}
                 copiedInvite={copiedInvite}

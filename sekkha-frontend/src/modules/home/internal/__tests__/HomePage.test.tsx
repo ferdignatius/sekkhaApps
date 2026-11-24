@@ -136,7 +136,8 @@ describe("HomePage Component Tests", () => {
       expect(screen.getByText(/Good (morning|afternoon|evening)\./i)).toBeDefined()
     })
 
-    expect(screen.getByText("420 Pts")).toBeDefined()
+    expect(screen.getByText("420")).toBeDefined()
+    expect(screen.getByText("Karma Points")).toBeDefined()
     expect(screen.getByText("Streak")).toBeDefined()
     expect(screen.getByText("5")).toBeDefined()
     expect(screen.getByText("Sunday Puja & Meditation")).toBeDefined()
@@ -213,5 +214,80 @@ describe("HomePage Component Tests", () => {
 
     fireEvent.change(searchInput, { target: { value: "Leaderboard" } })
     expect(searchInput.value).toBe("Leaderboard")
+  })
+
+  it("maps Home streak animation to 4-tier Lottie assets (Dead/Small/Medium/Big Fire) and handles Paused status", async () => {
+    const cases: Array<{
+      streak: number
+      status: "active" | "paused" | "inactive" | "expired"
+      expectedTier: string
+      expectedAsset: string
+      expectPausedLabel: boolean
+    }> = [
+      {
+        streak: 0,
+        status: "inactive",
+        expectedTier: "dead",
+        expectedAsset: "/streak-pack/streak-dead.json",
+        expectPausedLabel: false,
+      },
+      {
+        streak: 1,
+        status: "active",
+        expectedTier: "small",
+        expectedAsset: "/streak-pack/streak-small.json",
+        expectPausedLabel: false,
+      },
+      {
+        streak: 2,
+        status: "active",
+        expectedTier: "medium",
+        expectedAsset: "/streak-pack/streak-medium.json",
+        expectPausedLabel: false,
+      },
+      {
+        streak: 4,
+        status: "active",
+        expectedTier: "big",
+        expectedAsset: "/streak-pack/streak-big.json",
+        expectPausedLabel: false,
+      },
+      {
+        streak: 5,
+        status: "paused",
+        expectedTier: "dead",
+        expectedAsset: "/streak-pack/streak-dead.json",
+        expectPausedLabel: true,
+      },
+    ]
+
+    for (const c of cases) {
+      vi.mocked(api.get).mockResolvedValueOnce({
+        ...mockDashboardData,
+        streak: {
+          ...mockDashboardData.streak,
+          current_streak: c.streak,
+          status: c.status,
+        },
+      })
+
+      renderHomePage()
+
+      const flame = await screen.findByTestId("streak-flame")
+      expect(flame.getAttribute("data-streak-tier")).toBe(c.expectedTier)
+      expect(flame.getAttribute("data-streak-asset")).toBe(c.expectedAsset)
+
+      if (c.expectPausedLabel) {
+        expect(
+          screen.getByText(/Paused · Attend next event to reactivate/i)
+        ).toBeDefined()
+      } else {
+        expect(
+          screen.queryByText(/Paused · Attend next event to reactivate/i)
+        ).toBeNull()
+      }
+
+      cleanup()
+    }
   })
 })

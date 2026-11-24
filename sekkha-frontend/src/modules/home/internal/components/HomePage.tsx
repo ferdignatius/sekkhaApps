@@ -5,8 +5,8 @@ import { flushSync } from "react-dom"
 import { useAuth } from "@/modules/auth"
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
 import { MemberQrModal } from "@/components/common/MemberQrModal"
+import { StreakFlame } from "@/components/common/StreakFlame"
 import {
-  FlameIcon,
   CalendarIcon,
   MapPinIcon,
   QrCodeIcon,
@@ -548,16 +548,30 @@ export function HomePage() {
                     </div>
 
                     {/* Highlight Utama: Streak */}
-                    <div className="flex items-baseline gap-2 pt-1">
-                      <span className="inline-flex size-10 items-center justify-center self-center rounded-[14px] bg-[#ff4d8b]/15 shadow-2xs sm:size-11">
-                        <FlameIcon className="size-6 text-[#ff4d8b] sm:size-7" />
-                      </span>
-                      <span className="text-5xl leading-none font-black tracking-tight text-[#0a0a0a] tabular-nums sm:text-6xl">
-                        {currentStreak}
-                      </span>
-                      <span className="text-sm text-[#3a352b] sm:text-lg">
-                        Streak
-                      </span>
+                    <div className="space-y-1.5 pt-2">
+                      <div className="flex items-center gap-2.5">
+                        <StreakFlame
+                          count={currentStreak}
+                          status={dashboard?.streak.status}
+                          className="h-12 w-11 sm:h-15 sm:w-13"
+                        />
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-5xl leading-none font-black tracking-tight text-[#0a0a0a] tabular-nums sm:text-6xl">
+                            {currentStreak}
+                          </span>
+                          <span className="text-sm font-medium text-[#3a352b] sm:text-lg">
+                            Streak
+                          </span>
+                        </div>
+                      </div>
+                      {dashboard?.streak.status === "paused" &&
+                        currentStreak > 0 && (
+                          <p className="inline-flex items-center gap-1.5 rounded-full border border-[#ded3b8] bg-[#fffaf0]/85 px-2.5 py-0.5 text-[11px] font-medium text-[#6a6252]">
+                            <span>
+                              Paused · Attend next event to reactivate
+                            </span>
+                          </p>
+                        )}
                     </div>
 
                     {/* Points tepat di bawah Streak (Clean Text) */}

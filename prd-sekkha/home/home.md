@@ -61,9 +61,14 @@ Mengadopsi layout grid responsif 12 kolom (`max-w-7xl mx-auto`) dengan estetika 
   * Siang (12:00 - 16:59): *"Good afternoon, [Name]"*
   * Malam (17:00 - 03:59): *"Good evening, [Name]"*
 * **Statistik Cepat**:
-  * **Current Streak**: Jumlah minggu berturut-turut hadir (`🔥 N Weeks Streak`).
-  * **Season Points**: Poin yang diperoleh dalam musim yang sedang aktif.
-  * **Member ID**: Nomor anggota resmi `userNumber` (mis. `2026102401`).
+  * **Current Streak**: Jumlah minggu berturut-turut hadir (`{N} Streak`) dengan sistem visual api Lottie 4-tier (`/streak-pack/*.json`, seluruh level memakai ukuran & titik pusat seragam dari siluet `streak-big`, tampil menyatu di Hero tanpa kotak latar):
+    * **Dead Fire (Level 0 — `streak-dead.json`)**: `current_streak === 0` atau status `paused` / `inactive` / `expired` — siluet api statis berwarna **abu-abu batu hangat** (tanpa animasi sama sekali, disertai penanda `Paused` bila sedang jeda).
+    * **Small Fire (Level 1 — `streak-small.json`)**: status `active` dengan `current_streak === 1` — api berwarna **emas-amber hangat** (`#F59E0B`–`#EA580C`).
+    * **Medium Fire (Level 2 — `streak-medium.json`)**: status `active` dengan `current_streak === 2` — api berwarna **oranye-merah klasik** (`#FF8016`–`#F44236`).
+    * **Big Fire (Level 3+ — `streak-big.json`)**: status `active` dengan `current_streak >= 3` — api berwarna **crimson-magenta Sekkha** (`#FF4D8B`–`#BE185D`) dengan inti kuning-putih terang.
+  * Animasi aktif berputar **selama 1 menit saat dimuat** lalu berhenti rapi di pose statis (dapat dinyalakan ulang 1 menit saat di-tap), serta langsung statis jika `prefers-reduced-motion` aktif.
+  * **Karma Points**: Total poin jemaat.
+  * **Member ID**: Nomor anggota resmi `userNumber` (mis. `2026102401`) yang tersedia pada Drawer Kartu Anggota Digital.
 * **Tombol Cepat QR Presensi**: Tombol *"Show Member QR"* yang langsung menampilkan modal QR code statis layar penuh dengan kecerahan tinggi untuk mempermudah pemindaian oleh petugas pintu masuk vihara.
 
 ### 3.2. Next Upcoming Event Card
@@ -157,7 +162,7 @@ Dashboard Home menggabungkan data dari endpoint efisien tanpa overhead query:
 | **TC-HOME-10** | Operator Banner Access Isolation | Regular member views dashboard during active event | User has role `member`, an event has status `active` | 1. Log in as member.<br>2. Navigate to `/home`. | No operator banner or camera scanner CTA is rendered. Member only sees the event in the upcoming/live list as an attendee. | Security / RBAC |
 | **TC-HOME-11** | Daily Dhamma Widget | Verse display, refresh, and share | On `/home` page | 1. Verify verse text, chapter, and verse number.<br>2. Click refresh icon button.<br>3. Click copy/share icon button. | 1. Random Dhammapada verse rendered with English translation and Pali source.<br>2. New random verse loaded smoothly.<br>3. Verse text copied to clipboard with success toast notification. | Positive |
 | **TC-HOME-12** | Recent Activities Ledger | Display recent attendances and point transactions | User attended 2 events recently | Check Recent Activity section on `/home`. | Displays list of last 3 attendances with event title, attendance method (`qr` / `manual`), timestamp, and points credited. | Positive |
-| **TC-HOME-13** | Streak Counter Display | User has consecutive weekly attendances | User attended services for 4 consecutive weeks | Observe streak counter badge on hero card. | Displays `🔥 4 Weeks Streak`. Counter matches `calculateWeeklyStreak` backend algorithm accurately. | Positive |
+| **TC-HOME-13** | Streak Counter Display | User has consecutive weekly attendances or paused state | User attended services for 4 consecutive weeks (and tested with 0 / paused) | Observe streak animation & counter on hero card. | Displays `{4} Streak` with **Big Fire** Lottie animation (`/streak-pack/streak-big.json`). For `0`, `inactive`, `expired`, or `paused` status, displays **Dead Fire** (`/streak-pack/streak-dead.json`) plus subtle Paused hint when paused. Counter matches `calculateWeeklyStreak` backend algorithm accurately. | Positive |
 | **TC-HOME-14** | API Envelope & Status Code | Validate `GET /api/home` standard envelope | Authenticated request with Bearer token | Send `GET /api/home` via curl or API client. | Response matches `{ status: "success", code: 200, message: "...", data: { profile, streak, season, events, activities } }`. No top-level leaks outside `data`. | Contract / Compliance |
 | **TC-HOME-15** | Token Expiry / 401 Silent Refresh | Access token expires while viewing `/home` | Access token lifetime 15m passed, valid refresh cookie present | Trigger dashboard refresh or background re-fetch after token expiration. | Client interceptor transparently issues `POST /api/auth/refresh`, obtains new access token, and retries `/home` without session termination. | Security / Edge Case |
 | **TC-HOME-16** | Server Error / Offline Fallback | Backend service down or 500 Internal Error | Backend API unreachable or returns HTTP 500 | Open `/home`. | Skeleton loader stops; error banner displays *"Failed to load dashboard. Please try again."* with a functional "Retry" button. No white-screen crash. | Negative / Resilience |

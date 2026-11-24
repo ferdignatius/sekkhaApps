@@ -25,7 +25,20 @@ export interface MemberDto {
 
 export interface MemberDetailDto extends MemberDto {
   points?: number
+  current_streak?: number
   total_attendances?: number
+  heatmap?: {
+    year: number
+    active_month: number
+    total_checkins: number
+    weeks: Array<{
+      week_start: string
+      week_end: string
+      month: number
+      week_of_month: number
+      count: number
+    }>
+  }
   attendances: Array<{
     id: string
     event_title: string

@@ -76,6 +76,7 @@ export const peopleModels = {
         stats: {
           select: {
             points: true,
+            currentStreak: true,
             totalAttendances: true,
             lastActivityAt: true,
           },
@@ -101,6 +102,22 @@ export const peopleModels = {
           orderBy: { scannedAt: "desc" },
           take: 5,
         },
+      },
+    })
+  },
+
+  findMemberYearlyAttendances(userId: string, start: Date, end: Date) {
+    return prisma.attendance.findMany({
+      where: {
+        userId,
+        OR: [
+          { event: { eventDate: { gte: start, lte: end } } },
+          { scannedAt: { gte: start, lte: end } },
+        ],
+      },
+      select: {
+        scannedAt: true,
+        event: { select: { eventDate: true } },
       },
     })
   },

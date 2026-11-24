@@ -5,6 +5,7 @@ import {
   cleanup,
   waitFor,
   fireEvent,
+  within,
 } from "@testing-library/react"
 import { AuthContext } from "@/modules/auth/internal/context/AuthContext"
 import { initialAuthState } from "@/modules/auth/internal/context/authReducer"
@@ -45,6 +46,21 @@ function makeMemberDetail(
     is_claimed: false,
     created_at: "2026-11-01T00:00:00Z",
     points: 100,
+    current_streak: 2,
+    heatmap: {
+      year: 2026,
+      active_month: 10,
+      total_checkins: 2,
+      weeks: [
+        {
+          week_start: "2026-11-02",
+          week_end: "2026-11-08",
+          month: 10,
+          week_of_month: 1,
+          count: 2,
+        },
+      ],
+    },
     attendances: [],
     ...overrides,
   }
@@ -83,6 +99,16 @@ function renderWithAuth(
   )
 }
 
+async function openActionsDrawer() {
+  const fab = await screen.findByRole("button", {
+    name: /Administrative actions/i,
+  })
+  fireEvent.click(fab)
+  await waitFor(() => {
+    expect(screen.getByText("Administrative Actions")).toBeTruthy()
+  })
+}
+
 describe("MemberDetailPage RBAC & Self-Protection UI Guards", () => {
   it("disables Reset Temp Pass, Change Role, and Delete when Admin views their own account", async () => {
     const adminSelf = makeMemberDetail({
@@ -95,8 +121,10 @@ describe("MemberDetailPage RBAC & Self-Protection UI Guards", () => {
     renderWithAuth("admin", "usr_admin_1", adminSelf)
 
     await waitFor(() => {
-      expect(screen.getByText("Administrative Actions")).toBeTruthy()
+      expect(screen.getByText("You")).toBeTruthy()
     })
+
+    await openActionsDrawer()
 
     const resetBtn = screen.getByRole("button", { name: /Reset Password/i })
     const roleBtn = screen.getByRole("button", { name: /Change Role/i })
@@ -105,7 +133,6 @@ describe("MemberDetailPage RBAC & Self-Protection UI Guards", () => {
     expect((resetBtn as HTMLButtonElement).disabled).toBe(true)
     expect((roleBtn as HTMLButtonElement).disabled).toBe(true)
     expect((deleteBtn as HTMLButtonElement).disabled).toBe(true)
-    expect(screen.getByText("You")).toBeTruthy()
   })
 
   it("enables Change Role and Delete for Admin viewing another claimed account while disabling Reset Password", async () => {
@@ -117,9 +144,7 @@ describe("MemberDetailPage RBAC & Self-Protection UI Guards", () => {
 
     renderWithAuth("admin", "usr_admin_1", otherMember)
 
-    await waitFor(() => {
-      expect(screen.getByText("Administrative Actions")).toBeTruthy()
-    })
+    await openActionsDrawer()
 
     const resetBtn = screen.getByRole("button", { name: /Reset Password/i })
     const roleBtn = screen.getByRole("button", { name: /Change Role/i })
@@ -139,9 +164,7 @@ describe("MemberDetailPage RBAC & Self-Protection UI Guards", () => {
 
     renderWithAuth("organizer", "usr_org_1", unclaimedMember)
 
-    await waitFor(() => {
-      expect(screen.getByText("Administrative Actions")).toBeTruthy()
-    })
+    await openActionsDrawer()
 
     expect(screen.queryByRole("button", { name: /Change Role/i })).toBeNull()
     expect(screen.queryByRole("button", { name: /Delete/i })).toBeNull()
@@ -159,9 +182,7 @@ describe("MemberDetailPage RBAC & Self-Protection UI Guards", () => {
 
     renderWithAuth("organizer", "usr_org_1", claimedMember)
 
-    await waitFor(() => {
-      expect(screen.getByText("Administrative Actions")).toBeTruthy()
-    })
+    await openActionsDrawer()
 
     expect(screen.queryByRole("button", { name: /Change Role/i })).toBeNull()
     expect(screen.queryByRole("button", { name: /Delete/i })).toBeNull()
@@ -178,10 +199,7 @@ describe("MemberDetailPage RBAC & Self-Protection UI Guards", () => {
     })
 
     renderWithAuth("organizer", "usr_org_1", orgSelf)
-
-    await waitFor(() => {
-      expect(screen.getByText("Administrative Actions")).toBeTruthy()
-    })
+    await openActionsDrawer()
 
     const resetBtn = screen.getByRole("button", { name: /Reset Password/i })
     expect((resetBtn as HTMLButtonElement).disabled).toBe(true)
@@ -194,10 +212,7 @@ describe("MemberDetailPage RBAC & Self-Protection UI Guards", () => {
     })
 
     renderWithAuth("organizer", "usr_org_1", unclaimedAdmin)
-
-    await waitFor(() => {
-      expect(screen.getByText("Administrative Actions")).toBeTruthy()
-    })
+    await openActionsDrawer()
 
     const resetAdminBtn = screen.getByRole("button", {
       name: /Reset Password/i,
@@ -206,7 +221,7 @@ describe("MemberDetailPage RBAC & Self-Protection UI Guards", () => {
   })
 })
 
-describe("MemberDetailPage Clay + HIG UI/UX Improvements", () => {
+describe("MemberDetailPage Profile-Style UI/UX & Contribution Graph", () => {
   it("renders self-account governance alert with link to Profile Settings", async () => {
     const adminSelf = makeMemberDetail({
       id: "usr_admin_1",
@@ -246,7 +261,7 @@ describe("MemberDetailPage Clay + HIG UI/UX Improvements", () => {
   })
 
   it("renders recoverable HIG error state with Retry button when API fetch fails", async () => {
-    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {})
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => { })
     const spy = vi
       .spyOn(peopleApi, "getMember")
       .mockRejectedValueOnce(new Error("Network error"))
@@ -276,32 +291,55 @@ describe("MemberDetailPage Clay + HIG UI/UX Improvements", () => {
 
     await waitFor(() => {
       expect(screen.getAllByText("Recovered Member").length).toBeGreaterThan(0)
-      expect(screen.getByText("Direct Communication")).toBeTruthy()
+      expect(screen.getByTestId("weekly-activity-heatmap")).toBeTruthy()
     })
     expect(spy).toHaveBeenCalledTimes(2)
     consoleSpy.mockRestore()
   })
 
-  it("groups profile data into Direct Communication, Academic & Community, and Account Timeline sections without phone or birth date", async () => {
+  it("renders compact header metadata, avatar claim status badge, inline stat pills, and 52-week contribution graph without phone or birth date", async () => {
     const member = makeMemberDetail({
       email: "budi@example.com",
       school: "SMA Negeri 1",
+      is_claimed: true,
+      points: 420,
+      current_streak: 5,
+      total_attendances: 8,
     })
 
     renderWithAuth("admin", "usr_admin_1", member)
 
     await waitFor(() => {
-      expect(screen.getByText("Direct Communication")).toBeTruthy()
+      expect(screen.getByLabelText("Claimed Account")).toBeTruthy()
     })
 
-    expect(screen.getByText("Academic & Community")).toBeTruthy()
-    expect(screen.getByText("Personal & Account Timeline")).toBeTruthy()
+    expect(screen.queryByRole("tablist")).toBeNull()
+    expect(screen.queryByText("Direct Communication")).toBeNull()
     expect(screen.queryByText(/Phone \/ WhatsApp/i)).toBeNull()
     expect(screen.queryByText(/Birth Date/i)).toBeNull()
     expect(screen.getByText("budi@example.com")).toBeTruthy()
+    expect(screen.getByText("SMA Negeri 1")).toBeTruthy()
+    expect(screen.getByText("420")).toBeTruthy()
+    expect(screen.getByText("Karma Points")).toBeTruthy()
+    expect(screen.getByText("5")).toBeTruthy()
+    expect(screen.getByText("Weekly Streak")).toBeTruthy()
+
+    const heatmapCard = screen.getByTestId("weekly-activity-heatmap")
+    const grid = within(heatmapCard).getByTestId("contribution-grid-52")
+    expect(within(grid).getAllByRole("button")).toHaveLength(52)
+
+    const targetCell = within(grid).getByRole("button", {
+      name: /Nov 2–8, 2026: 2 activities/i,
+    })
+    fireEvent.click(targetCell)
+
+    await waitFor(() => {
+      expect(screen.getByText("Nov 2–8, 2026")).toBeTruthy()
+      expect(screen.getByText("2 activities")).toBeTruthy()
+    })
   })
 
-  it("displays DigitalMemberCard and Enlarge QR modal inside the ID Card tab", async () => {
+  it("opens Digital Member Pass drawer with DigitalMemberCard and Enlarge QR control", async () => {
     const member = makeMemberDetail({
       name: "Dewi Lestari",
       user_number: "2026111002",
@@ -311,15 +349,13 @@ describe("MemberDetailPage Clay + HIG UI/UX Improvements", () => {
 
     renderWithAuth("admin", "usr_admin_1", member)
 
-    await waitFor(() => {
-      expect(screen.getAllByText("Dewi Lestari").length).toBeGreaterThan(0)
+    const passBtn = await screen.findByRole("button", {
+      name: /Member Pass/i,
     })
-
-    const idCardTab = screen.getByRole("tab", { name: /ID Card/i })
-    fireEvent.mouseDown(idCardTab, { button: 0 })
-    fireEvent.click(idCardTab)
+    fireEvent.click(passBtn)
 
     await waitFor(() => {
+      expect(screen.getByText("Digital Member Pass")).toBeTruthy()
       expect(screen.getByText("Official Identity Pass")).toBeTruthy()
     })
 
@@ -327,12 +363,24 @@ describe("MemberDetailPage Clay + HIG UI/UX Improvements", () => {
     fireEvent.click(enlargeBtn)
 
     await waitFor(() => {
-      expect(screen.getByRole("dialog")).toBeTruthy()
-      expect(screen.getByText("Check-in QR Code")).toBeTruthy()
+      expect(screen.getByTestId("digital-member-card-enlarged-qr")).toBeTruthy()
+      expect(screen.getByText("Check-In QR Code")).toBeTruthy()
+      expect(screen.getByRole("button", { name: /Show Card/i })).toBeTruthy()
+    })
+
+    const expandDrawerBtn = screen.getByRole("button", {
+      name: /Expand drawer to full screen/i,
+    })
+    fireEvent.click(expandDrawerBtn)
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole("button", { name: /Restore drawer height/i })
+      ).toBeTruthy()
     })
   })
 
-  it("displays Attendance Timeline with method badge and points in the Attendance tab", async () => {
+  it("displays Attendance Timeline directly with method badge and points without tabs", async () => {
     const member = makeMemberDetail({
       attendances: [
         {
@@ -357,26 +405,18 @@ describe("MemberDetailPage Clay + HIG UI/UX Improvements", () => {
     renderWithAuth("admin", "usr_admin_1", member)
 
     await waitFor(() => {
-      expect(screen.getAllByText("Budi Santoso").length).toBeGreaterThan(0)
-    })
-
-    const attendanceTab = screen.getByRole("tab", { name: /Attendance/i })
-    fireEvent.mouseDown(attendanceTab, { button: 0 })
-    fireEvent.click(attendanceTab)
-
-    await waitFor(() => {
       expect(screen.getByText("Sunday Dhamma Service")).toBeTruthy()
       expect(screen.getByText("Youth Meditation Circle")).toBeTruthy()
     })
 
     expect(screen.getByText("QR Scan")).toBeTruthy()
     expect(screen.getByText("Manual Check-in")).toBeTruthy()
-    expect(screen.getByText("+80 Pts")).toBeTruthy()
+    expect(screen.queryByText(/Recent Karma Earned/i)).toBeNull()
     expect(screen.getByText("+50 Pts")).toBeTruthy()
     expect(screen.getByText("+30 Pts")).toBeTruthy()
   })
 
-  it("opens Change Role dialog and Delete ConfirmDialog for Admin viewing another member", async () => {
+  it("opens Change Role dialog and Delete ConfirmDialog via 3-dot Administrative actions FAB", async () => {
     const targetMember = makeMemberDetail({
       id: "usr_target_2",
       name: "Siti Rahma",
@@ -385,19 +425,18 @@ describe("MemberDetailPage Clay + HIG UI/UX Improvements", () => {
 
     renderWithAuth("admin", "usr_admin_1", targetMember)
 
-    await waitFor(() => {
-      expect(screen.getByText("Administrative Actions")).toBeTruthy()
-    })
-
+    await openActionsDrawer()
     fireEvent.click(screen.getByRole("button", { name: /Change Role/i }))
+
     await waitFor(() => {
-      expect(screen.getByRole("dialog")).toBeTruthy()
       expect(screen.getByText("Change Member Role")).toBeTruthy()
     })
 
     fireEvent.click(screen.getByRole("button", { name: /Cancel/i }))
 
+    await openActionsDrawer()
     fireEvent.click(screen.getByRole("button", { name: /Delete/i }))
+
     await waitFor(() => {
       expect(screen.getByRole("alertdialog")).toBeTruthy()
       expect(screen.getByText("Delete Member?")).toBeTruthy()
@@ -407,7 +446,10 @@ describe("MemberDetailPage Clay + HIG UI/UX Improvements", () => {
   it("navigates immediately to /people upon confirming member deletion without artificial delay", async () => {
     const deleteSpy = vi
       .spyOn(peopleApi, "deleteMember")
-      .mockResolvedValue({ success: true, message: "Member deleted successfully." })
+      .mockResolvedValue({
+        success: true,
+        message: "Member deleted successfully.",
+      })
     const targetMember = makeMemberDetail({
       id: "usr_target_del",
       name: "Delete Target",
@@ -416,10 +458,7 @@ describe("MemberDetailPage Clay + HIG UI/UX Improvements", () => {
 
     renderWithAuth("admin", "usr_admin_1", targetMember)
 
-    await waitFor(() => {
-      expect(screen.getByText("Administrative Actions")).toBeTruthy()
-    })
-
+    await openActionsDrawer()
     fireEvent.click(screen.getByRole("button", { name: /Delete/i }))
     await screen.findByRole("alertdialog")
     const confirmDeleteBtn = screen.getByRole("button", {
@@ -454,14 +493,7 @@ describe("MemberDetailPage Clay + HIG UI/UX Improvements", () => {
     renderWithAuth("admin", "usr_admin_1", member)
 
     await waitFor(() => {
-      expect(screen.getByText("24 Events")).toBeTruthy()
-    })
-
-    const attendanceTab = screen.getByRole("tab", { name: /Attendance \(24\)/i })
-    fireEvent.mouseDown(attendanceTab, { button: 0 })
-    fireEvent.click(attendanceTab)
-
-    await waitFor(() => {
+      expect(screen.getByText("Showing latest 5 of 24")).toBeTruthy()
       expect(screen.getByText("Dhamma Event 1")).toBeTruthy()
       expect(screen.getByText("Dhamma Event 5")).toBeTruthy()
     })
@@ -529,4 +561,3 @@ describe("MemberDetailPage Clay + HIG UI/UX Improvements", () => {
     })
   })
 })
-

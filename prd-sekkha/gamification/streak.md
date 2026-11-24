@@ -183,11 +183,22 @@ flowchart TD
 
 | Komponen UI | Lokasi | Representasi State Streak |
 | --- | --- | --- |
-| **Home Dashboard** | `HomePage.tsx` | - **Active**: Lencana oranye menyala `🔥 {streak}x Active` / `🔥 {streak}w Streak`.<br>- **Paused**: Lencana abu-abu `💤 {streak}w Paused (Attend next to reactivate)`. |
+| **Home Dashboard** | `HomePage.tsx` | Aset Lottie api 4-tier menyatu langsung di Hero (`display-only`, tanpa kotak latar):<br>- **Paused / Inactive / Expired / `0` (Level 0)**: Dead Fire (`streak-dead.json`, abu-abu batu hangat statis tanpa animasi) + keterangan `Paused · Attend next event to reactivate` bila status `paused`.<br>- **Active**: `1` = Small Fire (`streak-small.json`, Emas-Amber Hangat), `2` = Medium Fire (`streak-medium.json`, Oranye-Merah Klasik), `3+` = Big Fire (`streak-big.json`, Crimson-Magenta Sekkha). |
 | **Digital Member Card** | `DigitalMemberCard.tsx` | Chip status pada kartu QR:<br>- Active: `🔥 {streak} Wk Streak`<br>- Paused: `💤 {streak} Wk Paused` |
 | **Profil Anggota** | `ProfilePage.tsx` | Menampilkan `Current Streak` (beserta badge status aktif/paused) dan `Longest Streak` (rekor tertinggi abadi). |
 | **Leaderboard** | `LeaderboardPage.tsx` | - **Tab Metrik Dihapus**: Tab pilihan metrik `Streak` **dihapus** dari Leaderboard; Leaderboard murni menampilkan persaingan musiman `Points` dan `Attendance`.<br>- **Primary Tie-Breaker**: Angka streak aktif jemaat dimanfaatkan di balik layar sebagai pemecah seri utama (*primary tie-breaker*) ketika dua anggota memiliki perolehan poin yang sama pada musim bersangkutan. |
 | **Insight Pengurus** | `InsightPage.tsx` | Visualisasi pastoral: Rasio anggota `Active Streak` vs `Paused Streak` vs `At-Risk Expiring` (absen mendekati 1 bulan) untuk follow-up perhatian pengurus. |
+
+### 7.1 Sistem Visual Api Streak 4-Level (Home Hero)
+
+Aset visual api di Hero Dashboard (`HomePage.tsx`) menggunakan file Lottie pada `sekkha-frontend/public/streak-pack/` tanpa kotak latar (tier aktif berputar **selama 1 menit saat dimuat** lalu berhenti rapi dan dapat dinyalakan ulang 1 menit saat di-tap, serta menghormati `prefers-reduced-motion: reduce`):
+
+| Level / Kategori | Kondisi Mapping | Aset Lottie | Skema Warna & Karakteristik Visual |
+| --- | --- | --- | --- |
+| **Level 0 · Dead Fire** | `current_streak === 0` **atau** `status` adalah `paused` / `inactive` / `expired` | `/streak-pack/streak-dead.json` | **Abu-abu batu hangat statis** (`#8C8373`–`#F3EFE6`), ukuran seragam dengan `streak-big`, **tanpa animasi**. Jika `status === "paused"`, tampil penanda `Paused`. |
+| **Level 1 · Small Fire** | `status === "active"` dan `current_streak === 1` | `/streak-pack/streak-small.json` | **Emas-Amber Hangat** (`#EA580C`–`#F59E0B`–`#FBBF24`), ukuran seragam dengan `streak-big`. |
+| **Level 2 · Medium Fire** | `status === "active"` dan `current_streak === 2` | `/streak-pack/streak-medium.json` | **Oranye-Merah Klasik** (`#F44236`–`#F96126`–`#FF8016`), ukuran seragam dengan `streak-big`. |
+| **Level 3+ · Big Fire** | `status === "active"` dan `current_streak >= 3` | `/streak-pack/streak-big.json` | **Crimson-Magenta Sekkha** (`#BE185D`–`#E11D68`–`#FF4D8B`) dengan inti kuning-putih terang, ukuran penuh (`streak-big`). |
 
 ---
 

@@ -6,6 +6,10 @@ import { generateUniqueUserNumber } from "../../lib/userNumber"
 import { encrypt, safeDecrypt, generateBlindIndex } from "../../lib/crypto"
 import { auditLogger } from "../../lib/auditLogger"
 import { AppError } from "../../lib/AppError"
+import {
+  buildYearlyWeeklyHeatmap,
+  getHeatmapQueryRange,
+} from "../../lib/activityHeatmap"
 import { eventbus, DomainEvents } from "../../core/eventbus"
 import { revokeAllUserRefreshTokens } from "../auth"
 import {
@@ -325,6 +329,19 @@ export const peopleServices = {
       throw error
     }
 
+    const now = new Date()
+    const targetYear = now.getUTCFullYear()
+    let heatmapRecords: Array<{ scannedAt: Date | string; event?: { eventDate?: Date | string | null } | null }> = []
+    if (canViewSensitive && typeof peopleModels.findMemberYearlyAttendances === "function") {
+      const { queryStart, queryEnd } = getHeatmapQueryRange(targetYear)
+      try {
+        heatmapRecords = await peopleModels.findMemberYearlyAttendances(id, queryStart, queryEnd)
+      } catch {
+        heatmapRecords = []
+      }
+    }
+    const heatmap = buildYearlyWeeklyHeatmap(heatmapRecords, targetYear, now)
+
     return {
       id: member.id,
       user_number: member.userNumber ? Number(member.userNumber) : null,
@@ -337,10 +354,12 @@ export const peopleServices = {
       role: member.role,
       is_claimed: member.isClaimed ?? true,
       points: canViewSensitive ? member.stats?.points ?? 0 : 0,
+      current_streak: canViewSensitive ? member.stats?.currentStreak ?? 0 : 0,
       total_attendances: canViewSensitive
         ? (member.stats?.totalAttendances ?? member._count?.attendances ?? (member.attendances?.length || 0))
         : 0,
       created_at: new Date(member.createdAt).toISOString(),
+      heatmap,
       attendances: (member.attendances || []).slice(0, 5).map((a: any) => ({
         id: a.id,
         event_title: a.event?.title || "Event",

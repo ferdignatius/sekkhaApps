@@ -7,6 +7,7 @@ import {
   Minimize2Icon,
   PrinterIcon,
   ShieldCheckIcon,
+  Bolt,
   SparklesIcon,
   FlameIcon,
   GraduationCapIcon,
@@ -268,7 +269,7 @@ export function DigitalMemberCard({
                       <span
                         className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold ${roleCardStyles.badge}`}
                       >
-                        <SparklesIcon className="size-2.5 shrink-0" />
+                        <Bolt className="size-2.5 shrink-0" />
                         <span>{points.toLocaleString("en-US")} Pts</span>
                       </span>
                     )}

@@ -1,6 +1,6 @@
 import { motion } from "motion/react"
 import type { LeaderboardEntry } from "../data/landingContent"
-import { TrophyIcon, StarIcon } from "lucide-react"
+import { TrophyIcon, Bolt } from "lucide-react"
 
 interface LeaderboardSectionProps {
   heading: string
@@ -94,7 +94,7 @@ export function LeaderboardSection({
                   </div>
 
                   <div className="flex shrink-0 items-center gap-1.5 rounded-full border border-sekkha-hairline bg-white px-3 py-1">
-                    <StarIcon className="size-3.5 fill-clay-ochre text-clay-ochre" />
+                    <Bolt className="size-3.5 text-clay-ochre" />
                     <span className="text-body-sm font-bold text-sekkha-ink tabular-nums">
                       {entry.points.toLocaleString("en-US")} pts
                     </span>

@@ -2,7 +2,7 @@ import { useState } from "react"
 import { useNavigate } from "@tanstack/react-router"
 import {
   TagIcon,
-  CoinsIcon,
+  Bolt,
   AlertTriangleIcon,
   LockIcon,
   FlameIcon,
@@ -250,7 +250,7 @@ export function EventTypeCreatePage() {
                 onChange={(e) =>
                   setDefaultPointReward(sanitizeIntegerInput(e.target.value))
                 }
-                startIcon={<CoinsIcon className="size-4 text-clay-ochre" />}
+                startIcon={<Bolt className="size-4 text-clay-ochre" />}
                 helperText="Default points awarded for attending events of this type (0 - 10,000)."
               />
             </div>

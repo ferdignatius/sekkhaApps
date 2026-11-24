@@ -5,7 +5,8 @@ import {
   MapPinIcon,
   UsersIcon,
   ClipboardListIcon,
-  SparklesIcon,
+  Bolt,
+  NotebookText,
   PencilIcon,
   ClockIcon,
   CopyIcon,
@@ -516,7 +517,7 @@ export function EventDetailSheet({
     return (
       <div className="space-y-2.5 rounded-2xl border border-hairline bg-surface-soft p-4 shadow-xs sm:space-y-3 sm:p-6">
         <h3 className="flex items-center gap-2 text-sm font-bold text-ink sm:text-base">
-          <SparklesIcon className="size-4 text-ink" />
+          <NotebookText className="size-4 text-ink" />
           <span>About this Event</span>
         </h3>
         {event.description ? (
@@ -549,11 +550,10 @@ export function EventDetailSheet({
                 +{pointsReward} Karma Points
               </span>
               <span
-                className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                  event.counts_toward_streak === false
-                    ? "bg-surface-soft text-text-muted"
-                    : "bg-[#faf5e8] text-[#9a6e14]"
-                }`}
+                className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${event.counts_toward_streak === false
+                  ? "bg-surface-soft text-text-muted"
+                  : "bg-[#faf5e8] text-[#9a6e14]"
+                  }`}
               >
                 {event.counts_toward_streak === false
                   ? "Optional · No Streak"
@@ -668,7 +668,7 @@ export function EventDetailSheet({
                 Karma Points Earned
               </span>
               <p className="mt-1 flex items-center gap-1.5 text-xs font-bold text-emerald-700 sm:text-sm">
-                <SparklesIcon className="size-4 text-emerald-600" />
+                <Bolt className="size-4 text-emerald-600" />
                 <span>+{myRecord.points_earned} Pts</span>
                 {myRecord.is_late && (
                   <span className="rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">

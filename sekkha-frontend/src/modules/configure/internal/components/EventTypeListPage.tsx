@@ -9,7 +9,7 @@ import {
   CheckCircle2Icon,
   XCircleIcon,
   AlertTriangleIcon,
-  CoinsIcon,
+  Bolt,
   ShieldCheckIcon,
 } from "lucide-react"
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
@@ -252,7 +252,7 @@ export function EventTypePage() {
           </Card>
           <Card className="rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] p-4 shadow-2xs">
             <p className="flex items-center gap-1 text-xs text-[#6a6a6a]">
-              <CoinsIcon className="size-3 text-clay-ochre" /> Average Karma Points
+              <Bolt className="size-3 text-clay-ochre" /> Average Karma Points
             </p>
             <p className="mt-1 text-2xl font-black text-[#0a0a0a]">
               {stats.avgPoints}{" "}
@@ -362,7 +362,7 @@ export function EventTypePage() {
                       {type.code}
                     </code>
                     <span className="inline-flex items-center gap-1 rounded-full border border-[#e5e5e5] bg-[#fffaf0] px-2.5 py-0.5 text-[11px] font-bold text-[#0a0a0a]">
-                      <CoinsIcon className="size-3 text-clay-ochre" />
+                      <Bolt className="size-3 text-clay-ochre" />
                       {type.default_point_reward} Pts
                     </span>
                     <span

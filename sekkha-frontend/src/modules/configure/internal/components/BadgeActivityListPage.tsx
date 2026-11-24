@@ -9,7 +9,7 @@ import {
   CheckCircle2Icon,
   XCircleIcon,
   AlertTriangleIcon,
-  CoinsIcon,
+  Bolt,
 } from "lucide-react"
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
 import { useAuth } from "@/modules/auth"
@@ -361,7 +361,7 @@ export function BadgeActivityListPage() {
                 <div className="mt-5 border-t border-[#f0ece1] pt-3.5">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5 rounded-[8px] border border-[#e5e5e5] bg-[#fffaf0] px-2.5 py-1 text-xs font-bold text-[#0a0a0a]">
-                      <CoinsIcon className="size-3.5 text-clay-ochre" />
+                      <Bolt className="size-3.5 text-clay-ochre" />
                       <span>+{item.bonus_points} Pts</span>
                     </div>
 

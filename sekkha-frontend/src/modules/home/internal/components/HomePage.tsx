@@ -9,8 +9,8 @@ import { StreakFlame } from "@/components/common/StreakFlame"
 import {
   CalendarIcon,
   MapPinIcon,
+  Bolt,
   QrCodeIcon,
-  StarIcon,
   SearchIcon,
   SettingsIcon,
   TrophyIcon,
@@ -366,7 +366,7 @@ export function HomePage() {
               label: "Point Rules",
               description:
                 "Define attendance merit multipliers and points scoring logic",
-              icon: SparklesIcon,
+              icon: Bolt,
               bg: "bg-[#0a0a0a]",
               iconColor: "text-white",
               href: "/configure/rules/points",
@@ -576,7 +576,7 @@ export function HomePage() {
 
                     {/* Points tepat di bawah Streak (Clean Text) */}
                     <div className="flex flex-wrap items-center gap-1.5 pt-0.5 text-sm">
-                      <StarIcon className="size-4 shrink-0 fill-[#e8b94a] text-[#c28e20]" />
+                      <Bolt className="size-4 shrink-0 text-[#c28e20]" />
                       <span className="font-extrabold text-[#0a0a0a] tabular-nums">
                         {totalPoints.toLocaleString("en-US")}
                       </span>

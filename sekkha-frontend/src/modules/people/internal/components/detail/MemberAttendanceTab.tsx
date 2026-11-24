@@ -2,7 +2,7 @@ import {
   CalendarCheckIcon,
   ClockIcon,
   QrCodeIcon,
-  SparklesIcon,
+  Bolt,
 } from "lucide-react"
 import { Badge, Card } from "@/components/base"
 import type { MemberDetailDto } from "../../api/peopleApi"
@@ -123,7 +123,7 @@ export function MemberAttendanceTab({
                     variant="ochre"
                     size="sm"
                     icon={
-                      <SparklesIcon className="size-3" aria-hidden="true" />
+                      <Bolt className="size-3" aria-hidden="true" />
                     }
                     className="font-bold"
                   >

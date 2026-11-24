@@ -1,4 +1,4 @@
-import { CrownIcon, ZapIcon } from "lucide-react"
+import { CrownIcon, Bolt } from "lucide-react"
 import type { LeaderboardEntry } from "../types"
 
 const PODIUM_CONFIG: Record<
@@ -116,8 +116,8 @@ function PodiumColumn({
           {displayName}
         </p>
         <p className="mt-0.5 flex items-center justify-center gap-0.5 text-[11px] font-extrabold text-ink sm:text-xs">
-          <ZapIcon
-            className="size-3 shrink-0 fill-clay-ochre text-clay-ochre"
+          <Bolt
+            className="size-3 shrink-0 text-clay-ochre"
             aria-hidden="true"
           />
           <span className="truncate">

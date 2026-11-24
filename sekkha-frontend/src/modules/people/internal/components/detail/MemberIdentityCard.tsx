@@ -6,7 +6,7 @@ import {
   CopyIcon,
   CalendarCheckIcon,
   ShieldCheckIcon,
-  SparklesIcon,
+  Bolt,
   ArrowRightIcon,
 } from "lucide-react"
 import { Alert, Badge, Card } from "@/components/base"
@@ -149,7 +149,7 @@ export function MemberIdentityCard({
 
         <div className="rounded-md border border-hairline bg-canvas p-3">
           <div className="flex items-center gap-1.5 text-[10px] font-bold tracking-wider text-text-muted uppercase">
-            <SparklesIcon className="size-3.5 text-clay-ochre" aria-hidden="true" />
+            <Bolt className="size-3.5 text-clay-ochre" aria-hidden="true" />
             <span>Karma Points</span>
           </div>
           <p className="mt-1 text-base font-bold text-ink">

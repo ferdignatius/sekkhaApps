@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react"
 import {
-  SparklesIcon,
+  Bolt,
   CalendarIcon,
   RefreshCwIcon,
   AlertCircleIcon,
@@ -201,7 +201,7 @@ export function PointsLedger(_props: PointsLedgerProps) {
       ) : transactions.length === 0 ? (
         <div className="rounded-[20px] border border-dashed border-hairline bg-surface-soft/70 p-8 text-center">
           <div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-[14px] border border-hairline bg-canvas text-text-muted">
-            <SparklesIcon className="size-5" />
+            <Bolt className="size-5" />
           </div>
           <p className="text-sm font-bold text-ink">No point history yet</p>
           <p className="mt-1 text-xs text-text-muted">

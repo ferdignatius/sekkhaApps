@@ -2,7 +2,7 @@ import { useState } from "react"
 import { useNavigate } from "@tanstack/react-router"
 import {
   AwardIcon,
-  CoinsIcon,
+  Bolt,
   AlertTriangleIcon,
   LockIcon,
 } from "lucide-react"
@@ -211,7 +211,7 @@ export function BadgeActivityCreatePage() {
                 </span>
               </div>
               <p className="mt-1 flex items-center gap-1 text-[11px] text-[#6a6a6a]">
-                <CoinsIcon className="size-3 text-clay-ochre" />
+                <Bolt className="size-3 text-clay-ochre" />
                 Standard appreciation: +30 Pts per duty service.
               </p>
             </div>

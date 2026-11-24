@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react"
 import {
-  ZapIcon,
+  Bolt,
   PencilIcon,
   ShieldCheckIcon,
   FlameIcon,
@@ -8,7 +8,6 @@ import {
   AlertCircleIcon,
   InfoIcon,
   CheckCircleIcon,
-  SparklesIcon,
   SlidersIcon,
 } from "lucide-react"
 import { Link } from "@tanstack/react-router"
@@ -154,7 +153,7 @@ export function PointsRulesPage() {
         <div className="flex flex-col gap-4 border-b border-[#e5e5e5] pb-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
             <div className="flex size-11 shrink-0 items-center justify-center rounded-[14px] bg-[#0a0a0a] text-white shadow-xs">
-              <ZapIcon className="size-6 text-[#e8b94a]" />
+              <Bolt className="size-6 text-[#e8b94a]" />
             </div>
             <div className="min-w-0">
               <h1 className="text-base font-bold text-[#0a0a0a] sm:text-xl">
@@ -323,7 +322,7 @@ export function PointsRulesPage() {
             {/* Architecture Guidance Card */}
             <div className="rounded-[20px] border border-[#e5e5e5] bg-[#faf5e8] p-5 shadow-xs">
               <div className="flex items-start gap-3">
-                <SparklesIcon className="mt-0.5 size-5 shrink-0 text-[#e8b94a]" />
+                <Bolt className="mt-0.5 size-5 shrink-0 text-[#e8b94a]" />
                 <div className="space-y-1.5">
                   <h3 className="text-xs font-bold text-[#0a0a0a] sm:text-sm">
                     Looking to configure attendance points or service duties?

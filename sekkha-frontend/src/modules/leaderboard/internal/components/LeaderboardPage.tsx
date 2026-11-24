@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useRef, useMemo } from "react"
 import {
-  StarIcon,
+  Bolt,
   CheckSquareIcon,
   TrophyIcon,
   UserIcon,
@@ -36,7 +36,7 @@ const METRIC_OPTIONS: {
     value: "points",
     label: "Karma Points",
     shortLabel: "Karma Points",
-    icon: <StarIcon className="size-4" aria-hidden="true" />,
+    icon: <Bolt className="size-4" aria-hidden="true" />,
   },
   {
     value: "attendance",

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react"
 import {
   IdCardIcon,
+  Bolt,
   FlameIcon,
   ShieldCheckIcon,
   SparklesIcon,
@@ -311,7 +312,7 @@ export function ProfilePage() {
                 {/* Compact Inline Stat Pills */}
                 <div className="flex flex-wrap items-center gap-2 pt-0.5">
                   <div className="inline-flex items-center gap-1.5 rounded-full border border-[#e5dec9] bg-[#faf5e8] px-3.5 py-1.5 text-xs shadow-2xs">
-                    <SparklesIcon className="size-3.5 shrink-0 text-clay-ochre" />
+                    <Bolt className="size-3.5 shrink-0 text-clay-ochre" />
                     <span className="font-mono font-extrabold text-ink tabular-nums">
                       {totalPoints}
                     </span>

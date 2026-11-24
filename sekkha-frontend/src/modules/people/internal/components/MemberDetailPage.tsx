@@ -20,7 +20,7 @@ import {
   RefreshCwIcon,
   ShieldAlertIcon,
   ShieldCheckIcon,
-  SparklesIcon,
+  Bolt,
   Trash2Icon,
   UserIcon,
   XIcon,
@@ -283,9 +283,9 @@ export function MemberDetailPage({
   const initials = formatMemberInitials(member?.name)
   const isResetDisabled = Boolean(
     isSelf ||
-      member?.is_claimed ||
-      isPrivilegedTargetForOrganizer ||
-      resettingPassword
+    member?.is_claimed ||
+    isPrivilegedTargetForOrganizer ||
+    resettingPassword
   )
 
   const resetDisabledReason = isSelf
@@ -306,11 +306,10 @@ export function MemberDetailPage({
           className="fixed top-6 right-6 z-50 animate-in duration-200 fade-in slide-in-from-top-4"
         >
           <div
-            className={`flex items-center gap-2.5 rounded-md border px-4 py-3 shadow-xl ${
-              toast.type === "success"
-                ? "border-emerald-500/40 bg-ink text-white"
-                : "border-rose-400/50 bg-rose-600 text-white"
-            }`}
+            className={`flex items-center gap-2.5 rounded-md border px-4 py-3 shadow-xl ${toast.type === "success"
+              ? "border-emerald-500/40 bg-ink text-white"
+              : "border-rose-400/50 bg-rose-600 text-white"
+              }`}
           >
             {toast.type === "success" ? (
               <CheckCircleIcon
@@ -460,9 +459,8 @@ export function MemberDetailPage({
                     {initials}
                   </div>
                   <span
-                    className={`absolute -right-0.5 -bottom-0.5 flex size-7 items-center justify-center rounded-full border-2 border-[#fffaf0] text-white shadow-xs ${
-                      member.is_claimed ? "bg-emerald-600" : "bg-amber-500"
-                    }`}
+                    className={`absolute -right-0.5 -bottom-0.5 flex size-7 items-center justify-center rounded-full border-2 border-[#fffaf0] text-white shadow-xs ${member.is_claimed ? "bg-emerald-600" : "bg-amber-500"
+                      }`}
                     title={member.is_claimed ? "Claimed Account" : "Unclaimed Account"}
                     aria-label={member.is_claimed ? "Claimed Account" : "Unclaimed Account"}
                   >
@@ -528,7 +526,7 @@ export function MemberDetailPage({
                 {/* Compact Inline Stat Pills (Matches ProfilePage) */}
                 <div className="flex flex-wrap items-center gap-2">
                   <div className="inline-flex items-center gap-1.5 rounded-full border border-[#e5dec9] bg-[#faf5e8] px-3.5 py-1.5 text-xs shadow-2xs">
-                    <SparklesIcon
+                    <Bolt
                       className="size-3.5 shrink-0 text-clay-ochre"
                       aria-hidden="true"
                     />
@@ -692,11 +690,10 @@ export function MemberDetailPage({
                 }}
               >
                 <DrawerContent
-                  className={`flex flex-col transition-[height,max-height] duration-300 ${
-                    isPassDrawerExpanded
-                      ? "h-[96dvh] max-h-[96dvh]"
-                      : "h-[88dvh] max-h-[88dvh]"
-                  }`}
+                  className={`flex flex-col transition-[height,max-height] duration-300 ${isPassDrawerExpanded
+                    ? "h-[96dvh] max-h-[96dvh]"
+                    : "h-[88dvh] max-h-[88dvh]"
+                    }`}
                 >
                   <DrawerHeader className="flex shrink-0 flex-row items-start justify-between gap-3 border-b border-hairline px-4 pt-2 pb-3 text-left sm:px-6">
                     <div className="min-w-0 flex-1 space-y-0.5">

@@ -53,7 +53,7 @@ export const configureModule: ModuleDefinition = {
         {
           label: "Point Rules",
           to: "/configure/rules/points",
-          icon: "Zap",
+          icon: "Bolt",
           hasRoute: true,
         },
       ],

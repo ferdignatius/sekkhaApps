@@ -4,6 +4,20 @@ All notable changes to Sekkha Apps. Semver (`MAJOR.MINOR.PATCH`); newest on top.
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-11-24
+
+### Added
+- **4-Tier Animated Streak Flame (`StreakFlame` & `/streak-pack/*.json`)**: Added reusable Lottie streak flame on `HomePage` with 4 unified-size color-coded tiers (`Dead Fire` static stone-gray for `0`/`paused`/`inactive`/`expired`, `Small Fire` warm amber-gold for `1`, `Medium Fire` classic orange-red for `2`, and `Big Fire` Sekkha crimson-magenta for `3+`), looping for 1 minute on load with tap-to-replay and `prefers-reduced-motion` support.
+- **Profile-Style Member Detail (`MemberDetailPage` & `activityHeatmap.ts`)**: Redesigned `MemberDetailPage` to mirror `ProfilePage` with Warm Sunrise + `/Serene Sky Garden Pavilion.webp` backdrop, curved warm sheet, avatar claimed/unclaimed corner badge, 52-week `WeeklyActivityHeatmap` contribution graph (backed by shared `buildYearlyWeeklyHeatmap` helper and `getMemberDetail` streak/heatmap payload), expandable `DigitalMemberCard` bottom drawer, and 3-dot Administrative Actions FAB drawer.
+- **Profile Settings & Tabless Contribution View (`ProfilePage`, `ProfileSettingsView`, `WeeklyActivityHeatmap`)**: Added dedicated Settings sub-view, `DeleteAccountDialog`, full-width expandable Digital Member Pass drawer with inline QR enlarge, and 52-week contribution grid with date-range popovers.
+
+### Changed
+- **Unified Karma Points Iconography (`Bolt`)**: Standardized Karma Points, `Pts`, Bonus Points, and Point Rules icons across `HomePage`, `ProfilePage`, `PointsLedger`, `DigitalMemberCard`, `MemberDetailPage`, `MemberAttendanceTab`, `EventDetailSheet`, `Leaderboard`, `LandingPage`, and `Configure` modules to `<Bolt />`.
+- **Member Attendance Layout & Light-Only Theme (`MemberAttendanceTab`, `__root.tsx`, `styles.css`)**: Streamlined `MemberAttendanceTab` to a proportional single-row card layout, locked `color-scheme: light only`, and adopted `.webp` hero artwork for Home and Profile.
+
+### Fixed
+- **Lottie Loop-Boundary Flicker (`streak-pack/*.json`)**: Aligned `layers[0].op` with `root.op` across active Lottie files to eliminate the 1-frame blank flash at loop boundaries, and froze all keyframes in `streak-dead.json` (`op: 1`) so Dead Fire stays completely static.
+
 ## [1.2.4] - 2026-11-22
 
 ### Added

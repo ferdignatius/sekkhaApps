@@ -65,6 +65,15 @@ Install dependencies once at the root with `bun install` (workspace lockfile: `b
 6. **Conventional Commits**: Format commit messages: `v<target> - <type>(<scope>): <summary>` atau standar Conventional Commits (`feat:`, `fix:`, `refactor:`, `chore:`).
 7. **Confidence Scoring**: Setiap respon agent wajib diawali skor confidence (contoh: `Confidence: 95%`) beserta justifikasi ringkas.
 8. **Engineering Principles**:
-   - **YAGNI**: Tidak membuat abstraksi spekulatif atau file boilerplate kosong.
-   - **Clean Code & Big-O**: Single Responsibility Principle (SRP), $O(1)$ lookups via sets/maps/indexes, hindari $N+1$ queries.
+   - **DRY (Don't Repeat Yourself)**: Satukan logika berulang ke satu sumber kebenaran (`@/lib/`, `sekkha-api/src/lib/`, `components/common/`). *Do*: ekstrak helper bersama atau parameterize variasi; *Don't*: copy-paste logic validasi, fetch, atau query di beberapa tempat.
+   - **SOLID**:
+     - **Single Responsibility (SRP)**: Satu file/fungsi/komponen hanya memegang satu tanggung jawab. *Do*: jaga pemisahan `controllers.ts`, `services.ts`, dan `models.ts`; *Don't*: campur query database, business logic, dan formatting HTTP/UI dalam satu blok besar.
+     - **Open/Closed (OCP)**: Ekstensi perilaku lewat konfigurasi, tabel mapping, atau komposisi tanpa membongkar alur inti. *Do*: gunakan dictionary/map/registry untuk varian; *Don't*: tumpuk `if/else` atau `switch` baru setiap menambah tipe/varian.
+     - **Liskov Substitution (LSP)**: Implementasi pengganti atau fallback wajib mematuhi kontrak & ekspektasi yang sama. *Do*: jaga konsistensi input/output dan error semantics (misal Redis store vs memory fallback); *Don't*: ubah return shape atau throw error tak terduga pada salah satu implementasi.
+     - **Interface Segregation (ISP)**: Buat kontrak, DTO, dan React props ramping serta spesifik per kebutuhan. *Do*: definisikan tipe kecil yang fokus; *Don't*: oper props/interface gemuk penuh field opsional yang tidak dipakai pemanggil.
+     - **Dependency Inversion (DIP)**: Bergantung pada kontrak publik/abstraksi, bukan detail internal modul lain. *Do*: berkomunikasi lintas modul lewat `EventBus` atau `index.ts`; *Don't*: impor `services.ts` atau folder `internal/` milik modul lain secara langsung.
+   - **KISS (Keep It Simple, Stupid)**: Utamakan kode yang lugas, ringkas, dan mudah dipahami. *Do*: fungsi kecil, shallow nesting, dan early return; *Don't*: buat pola rumit/over-engineered untuk masalah sederhana.
+   - **SoC (Separation of Concerns)**: Pisahkan secara tegas layer presentasi (`components/ui/` → `base/` → `common/`), transport (`@/lib/api`), HTTP (`controllers.ts`), domain logic (`services.ts`), dan kontrak/validasi (`models.ts`). *Do*: jaga enkapsulasi `internal/`; *Don't*: taruh business logic di komponen UI atau query Prisma di controller.
+   - **YAGNI (You Aren't Gonna Need It)**: Implementasikan hanya apa yang dibutuhkan saat ini sesuai PRD. *Do*: kode fokus ke kebutuhan nyata; *Don't*: buat abstraksi spekulatif, opsi mati, atau file boilerplate kosong.
+   - **Performance & Big-O**: Gunakan $O(1)$ lookups via `Set`/`Map`/indexes, hindari $N+1$ queries.
    - **OWASP Security**: Validasi input ketat via Zod, proper auth guards/RBAC, enkripsi PII, dan penanganan error aman tanpa leak stack trace.

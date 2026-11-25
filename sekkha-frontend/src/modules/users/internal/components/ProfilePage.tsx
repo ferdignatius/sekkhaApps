@@ -27,6 +27,11 @@ import {
   Button,
   Card,
   ConfirmDialog,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
   Drawer,
   DrawerContent,
   DrawerDescription,
@@ -34,6 +39,7 @@ import {
   DrawerTitle,
   toast,
 } from "@/components/base"
+import { useIsDesktop } from "@/hooks/useIsDesktop"
 import { useAuth } from "@/modules/auth"
 import { userApi } from "../api/userApi"
 import type { ActivityHeatmapDto, UserProfileDto } from "../api/userApi"
@@ -59,8 +65,8 @@ export function ProfilePage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [view, setView] = useState<ProfileView>(() => getViewFromUrl())
+  const isDesktop = useIsDesktop(640)
   const [showMemberPassModal, setShowMemberPassModal] = useState(false)
-  const [memberPassExpanded, setMemberPassExpanded] = useState(false)
   const [showEditProfileModal, setShowEditProfileModal] = useState(false)
   const [editProfileExpanded, setEditProfileExpanded] = useState(false)
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
@@ -188,46 +194,131 @@ export function ProfilePage() {
 
   const isMainProfileReady = !loading && !error && Boolean(profile) && view === "main"
 
+  const sunriseBanner = (
+    <div className="relative overflow-hidden bg-gradient-to-b from-[#f6e8c8] via-[#faf2dd] to-[#f4e7c6] md:bg-none">
+      <img
+        src="/Serene%20Sky%20Garden%20Pavilion.webp"
+        alt=""
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 h-full w-full object-cover object-right-bottom select-none md:hidden"
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#faf2dd]/85 via-[#faf2dd]/45 to-transparent md:hidden"
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#faf2dd]/55 to-transparent md:hidden"
+      />
+
+      <PageBreadcrumb {...breadcrumbProps} />
+
+      {/* Mobile Banner Spacer for Overlapping Avatar; Desktop Rounded Sunrise Banner */}
+      <div className="h-32 sm:h-36 md:hidden" aria-hidden="true" />
+      <div className="hidden md:block md:px-6 md:pt-2 lg:px-8 xl:px-12">
+        <div className="relative mx-auto h-44 max-w-7xl overflow-hidden rounded-[32px] border border-[#e6decb] bg-gradient-to-b from-[#f6e8c8] via-[#faf2dd] to-[#f4e7c6] shadow-xs lg:h-48">
+          <img
+            src="/Serene%20Sky%20Garden%20Pavilion.webp"
+            alt=""
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 h-full w-full object-cover object-right select-none"
+          />
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#faf2dd]/85 via-[#faf2dd]/45 to-transparent"
+          />
+        </div>
+      </div>
+    </div>
+  )
+
   return (
     <main className="min-h-screen bg-[#fffaf0] font-sans text-ink">
-      {isMainProfileReady && profile ? (
-        <>
-          {/* ── 1. Warm Sekkha Sunrise Hero Backdrop (Same Language as HomePage) ── */}
-          <div className="relative overflow-hidden bg-gradient-to-b from-[#f6e8c8] via-[#faf2dd] to-[#f4e7c6] md:bg-none">
-            <img
-              src="/Serene%20Sky%20Garden%20Pavilion.webp"
-              alt=""
-              aria-hidden="true"
-              className="pointer-events-none absolute inset-0 h-full w-full object-cover object-right-bottom select-none md:hidden"
-            />
-            <div
-              aria-hidden="true"
-              className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#faf2dd]/85 via-[#faf2dd]/45 to-transparent md:hidden"
-            />
-            <div
-              aria-hidden="true"
-              className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#faf2dd]/55 to-transparent md:hidden"
-            />
+      {loading && view === "main" ? (
+        <div
+          data-testid="profile-loading-skeleton"
+          aria-busy="true"
+          aria-label="Loading profile"
+        >
+          {sunriseBanner}
 
-            <PageBreadcrumb {...breadcrumbProps} />
+          {/* Curved Sheet Skeleton Body Matching ProfilePage Layout */}
+          <div className="relative z-10 -mt-6 rounded-t-[32px] border-t border-[#e5dec9]/80 bg-[#fffaf0] px-4 pb-28 shadow-[0_-10px_28px_-6px_rgba(10,10,10,0.07)] sm:px-6 md:mt-0 md:rounded-none md:border-t-0 md:bg-transparent md:px-6 md:pb-12 md:shadow-none lg:px-8 xl:px-12">
+            <div className="mx-auto max-w-7xl space-y-6">
+              <div className="space-y-3.5 md:px-4">
+                <div className="flex items-end justify-between gap-3">
+                  <div className="relative -mt-10 sm:-mt-12 md:-mt-12">
+                    <div className="size-20 animate-pulse rounded-full border-4 border-[#fffaf0] bg-[#efe7d3] shadow-md sm:size-22" />
+                    <span className="absolute -right-0.5 -bottom-0.5 size-7 animate-pulse rounded-full border-2 border-[#fffaf0] bg-[#e5dec9]" />
+                  </div>
+                  <div className="flex items-center gap-2 pt-3">
+                    <div className="size-9 animate-pulse rounded-full border border-[#e5dec9] bg-[#faf5e8]" />
+                    <div className="size-9 animate-pulse rounded-full border border-[#e5dec9] bg-[#faf5e8]" />
+                  </div>
+                </div>
 
-            {/* Mobile Banner Spacer for Overlapping Avatar; Desktop Rounded Sunrise Banner */}
-            <div className="h-32 sm:h-36 md:hidden" aria-hidden="true" />
-            <div className="hidden md:block md:px-6 md:pt-2 lg:px-8 xl:px-12">
-              <div className="relative mx-auto h-44 max-w-7xl overflow-hidden rounded-[32px] border border-[#e6decb] bg-gradient-to-b from-[#f6e8c8] via-[#faf2dd] to-[#f4e7c6] shadow-xs lg:h-48">
-                <img
-                  src="/Serene%20Sky%20Garden%20Pavilion.webp"
-                  alt=""
-                  aria-hidden="true"
-                  className="pointer-events-none absolute inset-0 h-full w-full object-cover object-right select-none"
-                />
-                <div
-                  aria-hidden="true"
-                  className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#faf2dd]/85 via-[#faf2dd]/45 to-transparent"
-                />
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <div className="h-6 w-44 animate-pulse rounded-lg bg-[#efe7d3]" />
+                    <div className="h-5 w-16 animate-pulse rounded-full bg-[#f5efe0]" />
+                  </div>
+                  <div className="h-4 w-24 animate-pulse rounded-md bg-[#f5efe0]" />
+                  <div className="h-3.5 w-40 animate-pulse rounded-md bg-[#f5efe0]" />
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2 pt-0.5">
+                  <div className="h-8 w-32 animate-pulse rounded-full border border-[#e5dec9] bg-[#faf5e8]" />
+                  <div className="h-8 w-32 animate-pulse rounded-full border border-amber-200/70 bg-amber-50/80" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-5 border-t border-hairline/70 pt-5 lg:grid-cols-12 lg:items-start lg:gap-8">
+                {/* Heatmap Skeleton */}
+                <div className="space-y-4 rounded-[20px] border border-[#e5dec9] bg-white/80 p-5 lg:col-span-5 xl:col-span-4">
+                  <div className="flex items-center justify-between">
+                    <div className="h-4 w-36 animate-pulse rounded bg-[#efe7d3]" />
+                    <div className="h-5 w-14 animate-pulse rounded-full bg-[#f5efe0]" />
+                  </div>
+                  <div className="grid grid-cols-7 gap-2">
+                    {Array.from({ length: 28 }).map((_, idx) => (
+                      <div
+                        key={idx}
+                        className="aspect-square animate-pulse rounded-md bg-[#f5efe0]"
+                      />
+                    ))}
+                  </div>
+                  <div className="flex justify-end">
+                    <div className="h-3 w-24 animate-pulse rounded bg-[#f5efe0]" />
+                  </div>
+                </div>
+
+                {/* Points Ledger Skeleton */}
+                <div className="space-y-3 rounded-[20px] border border-[#e5dec9] bg-white/80 p-5 lg:col-span-7 xl:col-span-8">
+                  <div className="flex items-center justify-between pb-1">
+                    <div className="h-4 w-32 animate-pulse rounded bg-[#efe7d3]" />
+                    <div className="h-4 w-16 animate-pulse rounded bg-[#f5efe0]" />
+                  </div>
+                  {Array.from({ length: 3 }).map((_, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-center justify-between gap-3 rounded-2xl border border-[#e5dec9]/70 bg-[#fffaf0] px-4 py-3"
+                    >
+                      <div className="space-y-1.5">
+                        <div className="h-4 w-40 animate-pulse rounded bg-[#efe7d3]" />
+                        <div className="h-3 w-24 animate-pulse rounded bg-[#f5efe0]" />
+                      </div>
+                      <div className="h-6 w-16 animate-pulse rounded-full bg-[#faf0df]" />
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
+        </div>
+      ) : isMainProfileReady && profile ? (
+        <>
+          {/* ── 1. Warm Sekkha Sunrise Hero Backdrop (Same Language as HomePage) ── */}
+          {sunriseBanner}
 
           {/* ── 2. Curved Sheet Body (Overlaps Hero Backdrop like Reference + HomePage) ── */}
           <div className="relative z-10 -mt-6 rounded-t-[32px] border-t border-[#e5dec9]/80 bg-[#fffaf0] px-4 pb-28 shadow-[0_-10px_28px_-6px_rgba(10,10,10,0.07)] sm:px-6 md:mt-0 md:rounded-none md:border-t-0 md:bg-transparent md:px-6 md:pb-12 md:shadow-none lg:px-8 xl:px-12">
@@ -362,29 +453,13 @@ export function ProfilePage() {
               <div
                 data-testid="profile-loading-skeleton"
                 aria-busy="true"
-                aria-label="Loading profile"
-                className="grid grid-cols-1 gap-6 lg:grid-cols-12"
+                aria-label="Loading settings"
+                className="mx-auto w-full max-w-2xl space-y-4"
               >
-                <div className="space-y-6 lg:col-span-5 xl:col-span-4">
-                  <div className="space-y-5 rounded-[24px] border border-hairline bg-canvas p-6">
-                    <div className="flex items-center gap-4">
-                      <div className="size-16 animate-pulse rounded-full bg-surface-soft" />
-                      <div className="flex-1 space-y-2">
-                        <div className="h-5 w-32 animate-pulse rounded bg-surface-soft" />
-                        <div className="h-3.5 w-20 animate-pulse rounded bg-surface-soft" />
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3 border-t border-hairline pt-4">
-                      <div className="h-10 animate-pulse rounded-full bg-surface-soft" />
-                      <div className="h-10 animate-pulse rounded-full bg-surface-soft" />
-                    </div>
-                  </div>
-                  <div className="hidden h-28 animate-pulse rounded-[20px] border border-hairline bg-canvas lg:block" />
-                </div>
-
-                <div className="space-y-4 lg:col-span-7 xl:col-span-8">
-                  <div className="h-56 w-full animate-pulse rounded-[24px] bg-canvas" />
-                  <div className="h-44 w-full animate-pulse rounded-[20px] bg-canvas" />
+                <div className="space-y-4 rounded-[24px] border border-[#e5dec9] bg-white/80 p-6">
+                  <div className="h-5 w-40 animate-pulse rounded bg-[#efe7d3]" />
+                  <div className="h-12 w-full animate-pulse rounded-2xl bg-[#f5efe0]" />
+                  <div className="h-12 w-full animate-pulse rounded-2xl bg-[#f5efe0]" />
                 </div>
               </div>
             ) : error || !profile ? (
@@ -441,51 +516,65 @@ export function ProfilePage() {
         </>
       )}
 
-      {/* ── DRAWER 1: DIGITAL MEMBER PASS (Standard Full-Width Expandable Drawer) ── */}
-      {profile && (
+      {/* ── DRAWER 1: DIGITAL MEMBER PASS (Centered Dialog on Desktop, Fit-Content Drawer on Mobile) ── */}
+      {profile && isDesktop && (
+        <Dialog
+          open={showMemberPassModal}
+          onOpenChange={setShowMemberPassModal}
+        >
+          <DialogContent
+            showCloseButton={false}
+            className="max-h-[90dvh] overflow-y-auto rounded-[24px] border border-hairline bg-[#fffaf0] p-6 text-left font-sans text-[#0a0a0a] shadow-lg sm:max-w-lg"
+          >
+            <div className="mb-4 flex items-start justify-between gap-3 border-b border-hairline pb-3">
+              <DialogHeader className="p-0 text-left">
+                <DialogTitle className="text-base font-bold text-ink">
+                  Digital Member Pass
+                </DialogTitle>
+                <DialogDescription className="mt-0.5 text-xs text-text-muted">
+                  Present your QR code at temple events for instant check-in.
+                </DialogDescription>
+              </DialogHeader>
+              <button
+                type="button"
+                onClick={() => setShowMemberPassModal(false)}
+                aria-label="Close Member Pass"
+                className="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full bg-surface-soft text-text-muted transition-colors hover:bg-surface-card hover:text-ink"
+              >
+                <XIcon className="size-4" />
+              </button>
+            </div>
+            <DigitalMemberCard
+              name={displayName}
+              userNumber={profile.user_number}
+              role={role}
+              school={school}
+              joinedAt={profile.joined_at}
+              username={profile.username}
+              points={totalPoints}
+              currentStreak={currentStreak}
+              inlineEnlargeQr={true}
+              listenForCheckIn={showMemberPassModal}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {profile && !isDesktop && (
         <Drawer
           open={showMemberPassModal}
-          onOpenChange={(nextOpen) => {
-            setShowMemberPassModal(nextOpen)
-            if (!nextOpen) setMemberPassExpanded(false)
-          }}
+          onOpenChange={setShowMemberPassModal}
           repositionInputs={false}
         >
-          <DrawerContent
-            data-expanded={memberPassExpanded ? "true" : "false"}
-            onPointerMove={(e) => {
-              if (!memberPassExpanded && e.movementY < -12) {
-                setMemberPassExpanded(true)
-              }
-            }}
-            className={`z-[100] flex flex-col overflow-hidden rounded-t-[28px] border-t border-[#e5dec9] bg-[#fffaf0] p-0 text-left font-sans shadow-[0_-10px_28px_-4px_rgba(10,10,10,0.12)] transition-[height,max-height,box-shadow] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${memberPassExpanded
-              ? "h-[96dvh] max-h-[96dvh]"
-              : "h-[88dvh] max-h-[88dvh]"
-              }`}
-          >
-            <div
-              onClick={() => setMemberPassExpanded((prev) => !prev)}
-              className="sticky top-0 z-20 flex shrink-0 cursor-pointer items-center justify-center bg-[#fffaf0] py-3"
-            >
-              <div
-                className={`h-1.5 rounded-full transition-all duration-300 ${memberPassExpanded
-                  ? "w-14 bg-[#6a6a6a]/45"
-                  : "w-12 bg-[#6a6a6a]/30"
-                  }`}
-              />
+          <DrawerContent className="z-[100] flex h-auto max-h-[85dvh] flex-col overflow-hidden rounded-t-[28px] border-t border-[#e5dec9] bg-[#fffaf0] p-0 text-left font-sans shadow-[0_-10px_28px_-4px_rgba(10,10,10,0.12)]">
+            <div className="flex shrink-0 items-center justify-center bg-[#fffaf0] py-3">
+              <div className="h-1.5 w-12 rounded-full bg-[#6a6a6a]/30" />
             </div>
-            <div
-              onScroll={(e) => {
-                if (!memberPassExpanded && e.currentTarget.scrollTop > 0) {
-                  setMemberPassExpanded(true)
-                }
-              }}
-              className="scrollbar-none flex-1 overscroll-contain overflow-y-auto px-5 pt-2 pb-10"
-            >
+            <div className="scrollbar-none overscroll-contain overflow-y-auto px-5 pt-1 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
               <div className="mx-auto w-full max-w-xl">
                 <div className="mb-4 flex items-start justify-between gap-3 border-b border-hairline pb-3">
                   <DrawerHeader className="p-0 text-left">
-                    <DrawerTitle className="text-sm font-bold text-ink sm:text-base">
+                    <DrawerTitle className="text-sm font-bold text-ink">
                       Digital Member Pass
                     </DrawerTitle>
                     <DrawerDescription className="mt-0.5 text-xs text-text-muted">
@@ -511,6 +600,7 @@ export function ProfilePage() {
                   points={totalPoints}
                   currentStreak={currentStreak}
                   inlineEnlargeQr={true}
+                  listenForCheckIn={showMemberPassModal}
                 />
               </div>
             </div>

@@ -1,15 +1,80 @@
 import { useEffect, useRef, useState } from "react"
-import { FlameIcon } from "lucide-react"
+import { FlameIcon, SparklesIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 export type StreakStatus = "active" | "paused" | "inactive" | "expired"
-export type StreakFlameTier = "dead" | "small" | "medium" | "big"
+export type StreakFlameTier = "dormant" | "starter" | "rising" | "milestone"
+
+export const STREAK_BASE_ASSET_PATH = "/streak-pack/streak-big.json"
 
 export interface StreakFlameMeta {
   tier: StreakFlameTier
   level: 0 | 1 | 2 | 3
   label: string
   assetPath: string
+}
+
+type RgbTriplet = [number, number, number]
+
+const TIER_GRADIENT_PALETTES: Record<
+  StreakFlameTier,
+  { innerCore: RgbTriplet[]; outerFlame: RgbTriplet[] }
+> = {
+  // Abu-abu: belum aktif / menunggu interaksi / paused
+  dormant: {
+    innerCore: [
+      [245, 245, 244],
+      [231, 229, 228],
+    ],
+    outerFlame: [
+      [120, 113, 108],
+      [168, 162, 158],
+      [214, 211, 209],
+    ],
+  },
+  // Oranye / Kuning: warna awal saat streak baru dimulai & aktif (1 minggu)
+  starter: {
+    innerCore: [
+      [255, 249, 196],
+      [255, 243, 161],
+    ],
+    outerFlame: [
+      [234, 88, 12],
+      [245, 158, 11],
+      [251, 191, 36],
+    ],
+  },
+  // Merah: muncul seiring bertambahnya streak aktif (2-3 minggu)
+  rising: {
+    innerCore: [
+      [254, 240, 138],
+      [252, 165, 165],
+    ],
+    outerFlame: [
+      [220, 38, 38],
+      [239, 68, 68],
+      [248, 113, 113],
+    ],
+  },
+  // Ungu: pencapaian milestone lanjutan (4+ minggu)
+  milestone: {
+    innerCore: [
+      [250, 245, 255],
+      [233, 213, 255],
+    ],
+    outerFlame: [
+      [109, 40, 217],
+      [139, 92, 246],
+      [192, 132, 252],
+    ],
+  },
+}
+
+const TIER_FALLBACK_COLOR: Record<StreakFlameTier, string> = {
+  dormant: "text-[#9c927d]",
+  starter: "text-[#f59e0b]",
+  rising: "text-[#ef4444]",
+  milestone: "text-[#8b5cf6]",
 }
 
 const ACTIVE_ANIMATION_DURATION_MS = 60_000
@@ -36,8 +101,59 @@ function fetchAnimationJson(assetPath: string): Promise<object | null> {
 }
 
 /**
- * Resolves the 4-tier Lottie flame asset for a member's current streak and status.
- * Paused, inactive, expired, or zero streaks render Level 0 (Dead Fire).
+ * Clones the base `streak-big.json` Lottie payload and applies the RGB gradient
+ * palette for the resolved streak tier without fetching separate asset files.
+ */
+export function recolorStreakAnimationData<T extends object>(
+  baseData: T,
+  tier: StreakFlameTier
+): T {
+  const cloned = JSON.parse(JSON.stringify(baseData)) as T
+  const palette = TIER_GRADIENT_PALETTES[tier]
+  let gradientIndex = 0
+
+  function applyPalette(node: unknown) {
+    if (!node || typeof node !== "object") return
+    const record = node as Record<string, unknown>
+
+    if (
+      record.ty === "gf" &&
+      record.g &&
+      typeof record.g === "object" &&
+      (record.g as { k?: { k?: unknown } }).k?.k &&
+      Array.isArray((record.g as { k: { k: unknown[] } }).k.k)
+    ) {
+      const stops =
+        gradientIndex === 0 ? palette.innerCore : palette.outerFlame
+      const colorArray = (record.g as { k: { k: number[] } }).k.k
+      for (
+        let i = 0;
+        i + 3 < colorArray.length && Math.floor(i / 4) < stops.length;
+        i += 4
+      ) {
+        const [r, g, b] = stops[Math.floor(i / 4)]
+        colorArray[i + 1] = Number((r / 255).toFixed(4))
+        colorArray[i + 2] = Number((g / 255).toFixed(4))
+        colorArray[i + 3] = Number((b / 255).toFixed(4))
+      }
+      gradientIndex++
+    }
+
+    for (const value of Object.values(record)) {
+      applyPalette(value)
+    }
+  }
+
+  applyPalette(cloned)
+  return cloned
+}
+
+/**
+ * Resolves the 4-tier streak state backed by a single `/streak-pack/streak-big.json` asset:
+ * - Level 0 (`dormant`): Abu-abu (0 / paused / inactive / expired)
+ * - Level 1 (`starter`): Oranye / Kuning (1 week active)
+ * - Level 2 (`rising`): Merah (2–3 weeks active)
+ * - Level 3 (`milestone`): Ungu + efek milestone (4+ weeks active)
  */
 export function resolveStreakFlameMeta(
   count: number,
@@ -51,36 +167,36 @@ export function resolveStreakFlameMeta(
 
   if (isDormant) {
     return {
-      tier: "dead",
+      tier: "dormant",
       level: 0,
-      label: "Dead Fire",
-      assetPath: "/streak-pack/streak-dead.json",
+      label: "Dormant Flame",
+      assetPath: STREAK_BASE_ASSET_PATH,
     }
   }
 
   if (count === 1) {
     return {
-      tier: "small",
+      tier: "starter",
       level: 1,
-      label: "Small Fire",
-      assetPath: "/streak-pack/streak-small.json",
+      label: "Starter Flame",
+      assetPath: STREAK_BASE_ASSET_PATH,
     }
   }
 
-  if (count === 2) {
+  if (count <= 3) {
     return {
-      tier: "medium",
+      tier: "rising",
       level: 2,
-      label: "Medium Fire",
-      assetPath: "/streak-pack/streak-medium.json",
+      label: "Rising Flame",
+      assetPath: STREAK_BASE_ASSET_PATH,
     }
   }
 
   return {
-    tier: "big",
+    tier: "milestone",
     level: 3,
-    label: "Big Fire",
-    assetPath: "/streak-pack/streak-big.json",
+    label: "Purple Milestone Flame",
+    assetPath: STREAK_BASE_ASSET_PATH,
   }
 }
 
@@ -91,10 +207,9 @@ export interface StreakFlameProps {
 }
 
 /**
- * 4-tier Lottie streak flame powered by `/public/streak-pack/*.json`.
- * Level 0 (Dead Fire) renders static stone-gray Lottie art with no animation;
- * active tiers loop for 1 minute then rest cleanly (restarts 1-minute timer on tap,
- * and respects `prefers-reduced-motion`).
+ * 4-tier Lottie streak flame powered by a single `/public/streak-pack/streak-big.json`
+ * asset dynamically recolored per tier (Abu-abu statis, Oranye/Kuning, Merah, and
+ * Ungu + subtle aura/sparkles for milestone achievements).
  */
 export function StreakFlame({ count, status, className }: StreakFlameProps) {
   const meta = resolveStreakFlameMeta(count, status)
@@ -107,9 +222,10 @@ export function StreakFlame({ count, status, className }: StreakFlameProps) {
     pause: () => void
     play: () => void
   } | null>(null)
-  const [loadedAsset, setLoadedAsset] = useState<string | null>(null)
-  const lottieReady = loadedAsset === meta.assetPath
-  const isStaticTier = meta.tier === "dead"
+  const [loadedTier, setLoadedTier] = useState<StreakFlameTier | null>(null)
+  const lottieReady = loadedTier === meta.tier
+  const isStaticTier = meta.tier === "dormant"
+  const isMilestoneTier = meta.tier === "milestone"
 
   function clearStopTimer() {
     if (stopTimerRef.current !== null && typeof window !== "undefined") {
@@ -148,21 +264,22 @@ export function StreakFlame({ count, status, className }: StreakFlameProps) {
 
     void (async () => {
       try {
-        const [lottieModule, animationData] = await Promise.all([
+        const [lottieModule, baseAnimationData] = await Promise.all([
           import("lottie-web/build/player/lottie_light"),
           fetchAnimationJson(meta.assetPath),
         ])
-        if (cancelled || !animationData) return
+        if (cancelled || !baseAnimationData) return
 
         const lottie = lottieModule.default ?? lottieModule
         if (typeof lottie?.loadAnimation !== "function") return
 
+        const themedData = recolorStreakAnimationData(baseAnimationData, meta.tier)
         const anim = lottie.loadAnimation({
           container,
           renderer: "svg",
           loop: shouldAnimate,
           autoplay: shouldAnimate,
-          animationData,
+          animationData: themedData,
           rendererSettings: {
             preserveAspectRatio: "xMidYMid meet",
           },
@@ -175,7 +292,7 @@ export function StreakFlame({ count, status, className }: StreakFlameProps) {
         } else {
           scheduleStopTimer(anim)
         }
-        setLoadedAsset(meta.assetPath)
+        setLoadedTier(meta.tier)
       } catch {
         // Keep accessible vector fallback if Lottie player is unavailable
       }
@@ -190,7 +307,7 @@ export function StreakFlame({ count, status, className }: StreakFlameProps) {
         animRef.current = null
       }
     }
-  }, [meta.assetPath, isStaticTier])
+  }, [meta.assetPath, meta.tier, isStaticTier])
 
   function handleReplay() {
     if (isStaticTier || !animRef.current) return
@@ -211,6 +328,7 @@ export function StreakFlame({ count, status, className }: StreakFlameProps) {
       data-streak-level={meta.level}
       data-streak-asset={meta.assetPath}
       data-streak-animated={isStaticTier ? "false" : "timed"}
+      data-streak-milestone={isMilestoneTier ? "true" : "false"}
       onClick={handleReplay}
       aria-hidden="true"
       className={cn(
@@ -223,14 +341,27 @@ export function StreakFlame({ count, status, className }: StreakFlameProps) {
         ref={containerRef}
         className={cn(
           "size-full [&>svg]:h-full [&>svg]:w-full",
+          isMilestoneTier && "drop-shadow-[0_0_12px_rgba(139,92,246,0.45)]",
           !lottieReady && "opacity-0"
         )}
       />
+      {isMilestoneTier && (
+        <>
+          <SparklesIcon
+            aria-hidden="true"
+            className="pointer-events-none absolute -top-0.5 -right-0.5 size-3.5 animate-pulse text-[#a855f7] drop-shadow-[0_0_6px_rgba(168,85,247,0.65)]"
+          />
+          <SparklesIcon
+            aria-hidden="true"
+            className="pointer-events-none absolute bottom-1 -left-1 size-2.5 animate-pulse text-[#c084fc] [animation-delay:350ms]"
+          />
+        </>
+      )}
       {!lottieReady && (
         <FlameIcon
           className={cn(
             "absolute inset-0 m-auto size-9 sm:size-11",
-            meta.tier === "dead" ? "text-[#9c927d]" : "text-[#ff6a2b]"
+            TIER_FALLBACK_COLOR[meta.tier]
           )}
         />
       )}

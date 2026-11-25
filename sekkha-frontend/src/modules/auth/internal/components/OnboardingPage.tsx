@@ -17,6 +17,7 @@ import { useAuth } from "@/modules/auth"
 import { Button, Input, ManyToOneSelect } from "@/components/base"
 import type { ManyToOneSelectOption } from "@/components/base"
 import { ResponsiveFormModal } from "@/components/common/ResponsiveFormModal"
+import { SuccessCelebrationModal } from "@/components/common/SuccessLottie"
 import { useDebounce } from "@/hooks/useDebounce"
 import { usePaginatedDropdown } from "@/hooks/usePaginatedDropdown"
 import { DROPDOWN_PAGE_SIZE, fetchSchoolsPaginated } from "@/lib/pagination"
@@ -44,6 +45,7 @@ export function OnboardingPage() {
   const [submitting, setSubmitting] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [successToast, setSuccessToast] = useState<string | null>(null)
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
 
   // Profile Form State:
   // Step 1: username & name (MANDATORY)
@@ -330,8 +332,8 @@ export function OnboardingPage() {
         })
       )
 
-      // Proceed directly to /home (NO PRODUCT TOUR)
-      await navigate({ to: "/home" })
+      // Celebrate completion briefly with success animation, then navigate to /home
+      setShowSuccessModal(true)
     } catch (err: any) {
       setErrorMsg(err.message || "Failed to complete onboarding.")
     } finally {
@@ -750,6 +752,18 @@ export function OnboardingPage() {
           </form>
         </div>
       </ResponsiveFormModal>
+
+      <SuccessCelebrationModal
+        open={showSuccessModal}
+        title="Welcome to Sekkha!"
+        description="Your profile is all set. Redirecting to your community dashboard..."
+        actionLabel="Go to Dashboard"
+        autoCloseMs={1800}
+        onComplete={() => {
+          setShowSuccessModal(false)
+          void navigate({ to: "/home" })
+        }}
+      />
     </main>
   )
 }

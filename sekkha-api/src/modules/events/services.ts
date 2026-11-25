@@ -1334,10 +1334,16 @@ export const eventServices = {
       details: { eventId, userId: user.id, method, isLate },
     })
 
+    const scannedAtIso = attendance.scannedAt.toISOString()
+
     eventbus.publish(DomainEvents.ATTENDANCE_RECORDED, {
       userId: user.id,
       eventId,
       method,
+      eventTitle: event.title,
+      isLate,
+      pointsEarned,
+      scannedAt: scannedAtIso,
     })
 
     return {
@@ -1351,7 +1357,7 @@ export const eventServices = {
       is_late: isLate,
       late_penalty_applied: latePenaltyApplied,
       is_finalized: false,
-      scanned_at: attendance.scannedAt.toISOString(),
+      scanned_at: scannedAtIso,
     }
   },
 

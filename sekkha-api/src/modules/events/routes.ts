@@ -7,6 +7,12 @@ export const eventsRouter: Router = Router()
 // GET /api/events — List events with role-based visibility filtering
 eventsRouter.get("/", requireAuth, eventControllers.listEvents)
 
+// GET /api/events/attendance/stream — Real-time SSE check-in push for member QR screen
+eventsRouter.get("/attendance/stream", requireAuth, eventControllers.streamMyAttendance)
+
+// GET /api/events/attendance/latest — Polling fallback for latest check-in notification
+eventsRouter.get("/attendance/latest", requireAuth, eventControllers.getMyLatestAttendance)
+
 // GET /api/events/:id — Detail event with role-based visibility guard
 eventsRouter.get("/:id", requireAuth, eventControllers.getEventDetail)
 

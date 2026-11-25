@@ -183,7 +183,7 @@ flowchart TD
 
 | Komponen UI | Lokasi | Representasi State Streak |
 | --- | --- | --- |
-| **Home Dashboard** | `HomePage.tsx` | Aset Lottie api 4-tier menyatu langsung di Hero (`display-only`, tanpa kotak latar):<br>- **Paused / Inactive / Expired / `0` (Level 0)**: Dead Fire (`streak-dead.json`, abu-abu batu hangat statis tanpa animasi) + keterangan `Paused · Attend next event to reactivate` bila status `paused`.<br>- **Active**: `1` = Small Fire (`streak-small.json`, Emas-Amber Hangat), `2` = Medium Fire (`streak-medium.json`, Oranye-Merah Klasik), `3+` = Big Fire (`streak-big.json`, Crimson-Magenta Sekkha). |
+| **Home Dashboard** | `HomePage.tsx` | Aset Lottie api 4-tier berbasis **satu file `/streak-pack/streak-big.json`** yang diwarnai dinamis per tier (`display-only`, tanpa kotak latar):<br>- **Dormant (`0` / `paused` / `inactive` / `expired`, Level 0)**: Abu-abu statis tanpa animasi + keterangan `Paused · Attend next event to reactivate` bila status `paused`.<br>- **Active**: `1` = Oranye / Kuning (`starter`), `2–3` = Merah (`rising`), `4+` = Ungu + aura & efek sparkle lanjutan (`milestone`). |
 | **Digital Member Card** | `DigitalMemberCard.tsx` | Chip status pada kartu QR:<br>- Active: `🔥 {streak} Wk Streak`<br>- Paused: `💤 {streak} Wk Paused` |
 | **Profil Anggota** | `ProfilePage.tsx` | Menampilkan `Current Streak` (beserta badge status aktif/paused) dan `Longest Streak` (rekor tertinggi abadi). |
 | **Leaderboard** | `LeaderboardPage.tsx` | - **Tab Metrik Dihapus**: Tab pilihan metrik `Streak` **dihapus** dari Leaderboard; Leaderboard murni menampilkan persaingan musiman `Points` dan `Attendance`.<br>- **Primary Tie-Breaker**: Angka streak aktif jemaat dimanfaatkan di balik layar sebagai pemecah seri utama (*primary tie-breaker*) ketika dua anggota memiliki perolehan poin yang sama pada musim bersangkutan. |
@@ -195,10 +195,10 @@ Aset visual api di Hero Dashboard (`HomePage.tsx`) menggunakan file Lottie pada 
 
 | Level / Kategori | Kondisi Mapping | Aset Lottie | Skema Warna & Karakteristik Visual |
 | --- | --- | --- | --- |
-| **Level 0 · Dead Fire** | `current_streak === 0` **atau** `status` adalah `paused` / `inactive` / `expired` | `/streak-pack/streak-dead.json` | **Abu-abu batu hangat statis** (`#8C8373`–`#F3EFE6`), ukuran seragam dengan `streak-big`, **tanpa animasi**. Jika `status === "paused"`, tampil penanda `Paused`. |
-| **Level 1 · Small Fire** | `status === "active"` dan `current_streak === 1` | `/streak-pack/streak-small.json` | **Emas-Amber Hangat** (`#EA580C`–`#F59E0B`–`#FBBF24`), ukuran seragam dengan `streak-big`. |
-| **Level 2 · Medium Fire** | `status === "active"` dan `current_streak === 2` | `/streak-pack/streak-medium.json` | **Oranye-Merah Klasik** (`#F44236`–`#F96126`–`#FF8016`), ukuran seragam dengan `streak-big`. |
-| **Level 3+ · Big Fire** | `status === "active"` dan `current_streak >= 3` | `/streak-pack/streak-big.json` | **Crimson-Magenta Sekkha** (`#BE185D`–`#E11D68`–`#FF4D8B`) dengan inti kuning-putih terang, ukuran penuh (`streak-big`). |
+| **Level 0 · Dormant** | `current_streak === 0` **atau** `status` adalah `paused` / `inactive` / `expired` | `/streak-pack/streak-big.json` *(recolor dinamis)* | **Abu-abu batu hangat statis** (`#78716C`–`#D6D3D1`), **tanpa animasi**. Jika `status === "paused"`, tampil penanda `Paused`. |
+| **Level 1 · Starter** | `status === "active"` dan `current_streak === 1` | `/streak-pack/streak-big.json` *(recolor dinamis)* | **Oranye / Kuning Hangat** (`#EA580C`–`#F59E0B`–`#FBBF24`), warna awal saat streak dimulai & aktif. |
+| **Level 2 · Rising** | `status === "active"` dan `current_streak` `2–3` | `/streak-pack/streak-big.json` *(recolor dinamis)* | **Merah Menyala** (`#DC2626`–`#EF4444`–`#F87171`), muncul seiring bertambahnya minggu aktif. |
+| **Level 3 · Milestone** | `status === "active"` dan `current_streak >= 4` | `/streak-pack/streak-big.json` *(recolor dinamis)* | **Ungu Royal** (`#6D28D9`–`#8B5CF6`–`#C084FC`) dengan inti lavender-putih terang, aura ungu lembut, dan efek bintang sparkle lanjutan. |
 
 ---
 

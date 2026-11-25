@@ -59,6 +59,10 @@ export interface AttendanceRecordedPayload {
   userId: string
   eventId: string
   method: string
+  eventTitle?: string
+  isLate?: boolean
+  pointsEarned?: number
+  scannedAt?: string
 }
 
 export interface BadgeEarnedPayload {

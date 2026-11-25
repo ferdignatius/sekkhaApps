@@ -1,9 +1,14 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect } from "react"
 import { Drawer as DrawerPrimitive } from "vaul"
 import QRCode from "react-qr-code"
 import { XIcon } from "lucide-react"
 import {
   Button,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
   Drawer,
   DrawerDescription,
   DrawerHeader,
@@ -11,7 +16,9 @@ import {
   DrawerPortal,
   DrawerTitle,
 } from "@/components/base"
-import { cn } from "@/lib/utils"
+import { useIsDesktop } from "@/hooks/useIsDesktop"
+import { useAttendanceCheckInListener } from "@/hooks/useAttendanceCheckInListener"
+import { QrCheckInSuccessOverlay } from "@/components/common/QrCheckInSuccessOverlay"
 
 export interface MemberQrModalProps {
   open: boolean
@@ -20,6 +27,7 @@ export interface MemberQrModalProps {
   name?: string | null
   title?: string
   description?: string
+  listenForCheckIn?: boolean
 }
 
 export function MemberQrModal({
@@ -29,15 +37,13 @@ export function MemberQrModal({
   name,
   title = "Check-in QR Code",
   description = "Show this code to organizers at the entrance",
+  listenForCheckIn = true,
 }: MemberQrModalProps) {
-  const [isExpanded, setIsExpanded] = useState(false)
-  const dragStartYRef = useRef<number | null>(null)
-
-  useEffect(() => {
-    if (open) {
-      setIsExpanded(false)
-    }
-  }, [open])
+  const isDesktop = useIsDesktop(640)
+  const memberIdStr = userNumber ? String(userNumber) : ""
+  const { checkInSuccess, dismiss } = useAttendanceCheckInListener(
+    open && listenForCheckIn && Boolean(memberIdStr)
+  )
 
   useEffect(() => {
     if (!open) return
@@ -50,7 +56,94 @@ export function MemberQrModal({
 
   if (!open) return null
 
-  const memberIdStr = userNumber ? String(userNumber) : ""
+  const qrCard = (
+    <div className="relative mx-auto flex w-full flex-col items-center justify-center overflow-hidden rounded-[24px] border border-hairline bg-surface-soft p-5 text-center shadow-2xs sm:p-6">
+      <QrCheckInSuccessOverlay
+        notification={checkInSuccess}
+        onDismiss={dismiss}
+      />
+      <div className="rounded-[20px] border-2 border-ink bg-white p-4 shadow-md sm:p-5">
+        {memberIdStr ? (
+          <QRCode
+            value={memberIdStr}
+            size={208}
+            style={{
+              height: "auto",
+              maxWidth: "100%",
+              width: "208px",
+            }}
+            viewBox="0 0 256 256"
+          />
+        ) : (
+          <div className="flex size-[208px] items-center justify-center text-xs font-semibold text-text-muted">
+            QR Code unavailable
+          </div>
+        )}
+      </div>
+      <p className="mt-4 font-mono text-lg font-black tracking-widest text-ink">
+        {memberIdStr || "—"}
+      </p>
+      {name && (
+        <p className="mt-1 text-xs font-semibold text-text-muted sm:text-sm">
+          {name}
+        </p>
+      )}
+    </div>
+  )
+
+  if (isDesktop) {
+    return (
+      <Dialog
+        open={open}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen) onClose()
+        }}
+      >
+        <DialogContent
+          aria-labelledby="member-qr-modal-title"
+          showCloseButton={false}
+          className="rounded-[24px] border border-hairline bg-[#fffaf0] p-6 font-sans text-sm text-[#0a0a0a] shadow-lg sm:max-w-md"
+        >
+          <div className="mb-3 flex items-start justify-between gap-3 border-b border-[#e5e5e5] pb-3 text-left">
+            <DialogHeader className="p-0 text-left">
+              <DialogTitle
+                id="member-qr-modal-title"
+                className="text-base font-bold text-[#0a0a0a]"
+              >
+                {title}
+              </DialogTitle>
+              {description && (
+                <DialogDescription className="mt-0.5 text-xs font-medium text-[#6a6a6a]">
+                  {description}
+                </DialogDescription>
+              )}
+            </DialogHeader>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close"
+              className="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full bg-surface-soft text-text-muted transition-colors hover:bg-surface-card hover:text-ink"
+            >
+              <XIcon className="size-4" />
+            </button>
+          </div>
+
+          {qrCard}
+
+          <div className="mt-4">
+            <Button
+              variant="filled"
+              type="button"
+              onClick={onClose}
+              className="min-h-[44px] w-full rounded-[14px] text-sm font-semibold active:scale-[0.98]"
+            >
+              Done
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    )
+  }
 
   return (
     <Drawer
@@ -69,55 +162,21 @@ export function MemberQrModal({
         />
         <DrawerPrimitive.Content
           data-slot="drawer-content"
-          data-expanded={isExpanded ? "true" : "false"}
           aria-labelledby="member-qr-modal-title"
-          onPointerDown={(e) => {
-            dragStartYRef.current = e.clientY
-          }}
-          onPointerMove={(e) => {
-            if (dragStartYRef.current === null) return
-            const deltaY = e.clientY - dragStartYRef.current
-            if (!isExpanded && deltaY < -16) {
-              setIsExpanded(true)
-              dragStartYRef.current = null
-            }
-          }}
-          onPointerUp={() => {
-            dragStartYRef.current = null
-          }}
-          className={cn(
-            "fixed inset-x-0 bottom-0 z-[100] flex flex-col overflow-hidden rounded-t-[28px] border-t border-[#e5dec9] bg-[#fffaf0] p-0 font-sans text-sm text-[#0a0a0a] shadow-[0_-10px_28px_-4px_rgba(10,10,10,0.12)] backdrop-blur-none transition-[height,max-height,box-shadow] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] outline-none",
-            isExpanded ? "h-[96dvh] max-h-[96dvh]" : "h-[88dvh] max-h-[88dvh]"
-          )}
+          className="fixed inset-x-0 bottom-0 z-[100] flex h-auto max-h-[85dvh] flex-col overflow-hidden rounded-t-[28px] border-t border-[#e5dec9] bg-[#fffaf0] p-0 font-sans text-sm text-[#0a0a0a] shadow-[0_-10px_28px_-4px_rgba(10,10,10,0.12)] backdrop-blur-none outline-none"
         >
-          {/* Sticky Drag Handle Header (Tap or Drag Up to Expand Full Screen) */}
-          <div
-            onClick={() => setIsExpanded((prev) => !prev)}
-            className="sticky top-0 z-20 flex shrink-0 cursor-pointer items-center justify-center bg-[#fffaf0] py-3"
-          >
-            <div
-              className={cn(
-                "h-1.5 rounded-full transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]",
-                isExpanded ? "w-14 bg-[#6a6a6a]/45" : "w-12 bg-[#6a6a6a]/30"
-              )}
-            />
+          {/* Compact Drag Handle */}
+          <div className="flex shrink-0 items-center justify-center bg-[#fffaf0] py-3">
+            <div className="h-1.5 w-12 rounded-full bg-[#6a6a6a]/30" />
           </div>
 
-          {/* Scrollable Container matching ResponsiveFormModal */}
-          <div
-            onScroll={(e) => {
-              if (!isExpanded && e.currentTarget.scrollTop > 0) {
-                setIsExpanded(true)
-              }
-            }}
-            className="scrollbar-none flex flex-1 flex-col overscroll-contain overflow-y-auto px-5 pt-2 pb-6"
-          >
-            {/* Header */}
+          {/* Fit-Content Body */}
+          <div className="scrollbar-none flex flex-col overscroll-contain overflow-y-auto px-5 pt-1 pb-4">
             <div className="mb-3 flex items-start justify-between gap-3 border-b border-[#e5e5e5] pb-3 text-left">
               <DrawerHeader className="p-0 text-left">
                 <DrawerTitle
                   id="member-qr-modal-title"
-                  className="text-sm font-bold text-[#0a0a0a] sm:text-base"
+                  className="text-sm font-bold text-[#0a0a0a]"
                 >
                   {title}
                 </DrawerTitle>
@@ -137,49 +196,19 @@ export function MemberQrModal({
               </button>
             </div>
 
-            {/* High-Contrast QR Container centered in standard tall drawer */}
-            <div className="mx-auto flex w-full max-w-md flex-1 flex-col items-center justify-center rounded-[24px] border border-hairline bg-surface-soft p-6 text-center shadow-2xs">
-              <div className="rounded-[20px] border-2 border-ink bg-white p-5 shadow-md">
-                {memberIdStr ? (
-                  <QRCode
-                    value={memberIdStr}
-                    size={220}
-                    style={{
-                      height: "auto",
-                      maxWidth: "100%",
-                      width: "220px",
-                    }}
-                    viewBox="0 0 256 256"
-                  />
-                ) : (
-                  <div className="flex size-[220px] items-center justify-center text-xs font-semibold text-text-muted">
-                    QR Code unavailable
-                  </div>
-                )}
-              </div>
-              <p className="mt-4 font-mono text-lg font-black tracking-widest text-ink">
-                {memberIdStr || "—"}
-              </p>
-              {name && (
-                <p className="mt-1 text-xs font-semibold text-text-muted sm:text-sm">
-                  {name}
-                </p>
-              )}
-            </div>
+            {qrCard}
           </div>
 
-          {/* Sticky Footer Action matching ResponsiveFormModal */}
+          {/* Footer Action */}
           <div className="shrink-0 border-t border-[#e5e5e5]/70 bg-[#fffaf0] px-5 pt-2.5 pb-[max(1rem,env(safe-area-inset-bottom))]">
-            <div className="mx-auto w-full max-w-md">
-              <Button
-                variant="filled"
-                type="button"
-                onClick={onClose}
-                className="min-h-[44px] w-full rounded-[14px] text-sm font-semibold active:scale-[0.98]"
-              >
-                Done
-              </Button>
-            </div>
+            <Button
+              variant="filled"
+              type="button"
+              onClick={onClose}
+              className="min-h-[44px] w-full rounded-[14px] text-sm font-semibold active:scale-[0.98]"
+            >
+              Done
+            </Button>
           </div>
         </DrawerPrimitive.Content>
       </DrawerPortal>

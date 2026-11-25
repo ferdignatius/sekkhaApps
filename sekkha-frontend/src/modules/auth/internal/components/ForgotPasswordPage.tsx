@@ -4,7 +4,6 @@ import {
   KeyRoundIcon,
   ArrowLeftIcon,
   ArrowRightIcon,
-  CheckCircle2Icon,
   AlertCircleIcon,
   SparklesIcon,
   RefreshCwIcon,
@@ -15,6 +14,7 @@ import {
   ShieldCheckIcon,
 } from "lucide-react"
 import { Button } from "@/components/base/Button"
+import { SuccessLottie } from "@/components/common/SuccessLottie"
 import { api } from "@/lib/api"
 import { validateGmailField } from "@/lib/emailValidation"
 
@@ -236,15 +236,17 @@ export function ForgotPasswordPage() {
       <div className="relative z-10 w-full max-w-[460px] animate-in space-y-6 duration-200 zoom-in-95 fade-in">
         {/* Brand Header */}
         <div className="space-y-2 text-center">
-          <div className="mx-auto flex size-12 items-center justify-center rounded-[16px] bg-[#0a0a0a] text-white shadow-xs">
-            {step === "success" ? (
-              <CheckCircle2Icon className="size-6 text-[#22c55e]" />
-            ) : step === "new-password" ? (
-              <ShieldCheckIcon className="size-6 text-[#e8b94a]" />
-            ) : (
-              <KeyRoundIcon className="size-5.5 text-[#e8b94a]" />
-            )}
-          </div>
+          {step === "success" ? (
+            <SuccessLottie className="mx-auto size-20" />
+          ) : (
+            <div className="mx-auto flex size-12 items-center justify-center rounded-[16px] bg-[#0a0a0a] text-white shadow-xs">
+              {step === "new-password" ? (
+                <ShieldCheckIcon className="size-6 text-[#e8b94a]" />
+              ) : (
+                <KeyRoundIcon className="size-5.5 text-[#e8b94a]" />
+              )}
+            </div>
+          )}
           <h1 className="text-2xl font-bold tracking-tight text-[#0a0a0a]">
             {step === "email" && "Forgot Password?"}
             {step === "otp" && "Verify Code"}

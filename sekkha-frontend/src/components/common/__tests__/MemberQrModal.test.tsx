@@ -102,4 +102,42 @@ describe("MemberQrModal", () => {
     fireEvent.mouseDown(backdrop)
     expect(handleClose).toHaveBeenCalledTimes(1)
   })
+
+  it("renders centered Dialog instead of bottom Drawer on desktop viewports", () => {
+    const originalMatchMedia = window.matchMedia
+    Object.defineProperty(window, "matchMedia", {
+      writable: true,
+      value: vi.fn().mockImplementation((query: string) => ({
+        matches: query.includes("min-width: 640px"),
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    })
+
+    try {
+      render(
+        <MemberQrModal
+          open={true}
+          onClose={vi.fn()}
+          userNumber="SKH-1234"
+          name="Brother Metta"
+        />
+      )
+
+      expect(screen.getByRole("dialog")).toBeDefined()
+      expect(document.querySelector('[data-slot="drawer-overlay"]')).toBeNull()
+      expect(document.querySelector('[data-slot="dialog-content"]')).not.toBeNull()
+      expect(screen.getByText("SKH-1234")).toBeDefined()
+    } finally {
+      Object.defineProperty(window, "matchMedia", {
+        writable: true,
+        value: originalMatchMedia,
+      })
+    }
+  })
 })

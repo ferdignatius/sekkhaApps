@@ -14,6 +14,8 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/base"
 import { MemberQrModal } from "@/components/common/MemberQrModal"
+import { QrCheckInSuccessOverlay } from "@/components/common/QrCheckInSuccessOverlay"
+import { useAttendanceCheckInListener } from "@/hooks/useAttendanceCheckInListener"
 
 export interface DigitalMemberCardProps {
   name: string
@@ -27,6 +29,7 @@ export interface DigitalMemberCardProps {
   streakStatus?: "active" | "paused" | "inactive" | "expired"
   isClaimed?: boolean
   inlineEnlargeQr?: boolean
+  listenForCheckIn?: boolean
   onCopyMemberId?: (memberId: string) => void
 }
 
@@ -106,12 +109,16 @@ export function DigitalMemberCard({
   streakStatus = "active",
   isClaimed,
   inlineEnlargeQr = false,
+  listenForCheckIn = false,
   onCopyMemberId,
 }: DigitalMemberCardProps) {
   const [copied, setCopied] = useState(false)
   const [showEnlargeQr, setShowEnlargeQr] = useState(false)
 
   const memberIdStr = userNumber ? String(userNumber) : ""
+  const { checkInSuccess, dismiss } = useAttendanceCheckInListener(
+    listenForCheckIn && Boolean(memberIdStr)
+  )
 
   function handleCopyId() {
     if (!memberIdStr) return
@@ -146,8 +153,12 @@ export function DigitalMemberCard({
         /* ── INLINE ENLARGED QR VIEW (Used Inside Drawer — No Stacked Second Popup) ── */
         <div
           data-testid="digital-member-card-enlarged-qr"
-          className="flex flex-col items-center justify-center rounded-[22px] border border-hairline bg-surface-soft p-5 text-center shadow-xs"
+          className="relative flex flex-col items-center justify-center overflow-hidden rounded-[22px] border border-hairline bg-surface-soft p-5 text-center shadow-xs"
         >
+          <QrCheckInSuccessOverlay
+            notification={checkInSuccess}
+            onDismiss={dismiss}
+          />
           <p className="text-[11px] font-bold tracking-wider text-text-muted uppercase">
             Check-In QR Code
           </p>
@@ -388,6 +399,7 @@ export function DigitalMemberCard({
           onClose={() => setShowEnlargeQr(false)}
           userNumber={memberIdStr}
           name={name}
+          listenForCheckIn={listenForCheckIn}
         />
       )}
     </div>

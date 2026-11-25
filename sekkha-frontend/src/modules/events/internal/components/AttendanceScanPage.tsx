@@ -8,7 +8,6 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { useNavigate, useSearch } from "@tanstack/react-router"
 import {
   ArrowLeftIcon,
-  CheckCircle2Icon,
   SearchIcon,
   AlertTriangleIcon,
   UserPlusIcon,
@@ -30,6 +29,7 @@ import {
 import type { MemberDto, SimilarMemberDto } from "@/modules/people"
 import type { EventListItem, AttendanceRecord, UserRole } from "../types"
 import { ResponsiveFormModal } from "@/components/common/ResponsiveFormModal"
+import { SuccessLottie } from "@/components/common/SuccessLottie"
 import { QrScannerCamera } from "./QrScannerCamera"
 
 interface RecentScanItem {
@@ -758,8 +758,8 @@ export function AttendanceScanPage() {
               }`}
           >
             {lastFeedback.type === "success" ? (
-              <div className="flex size-7 shrink-0 items-center justify-center rounded-xl bg-emerald-500/30 text-emerald-300">
-                <CheckCircle2Icon className="size-4 text-emerald-400" />
+              <div className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-emerald-500/25">
+                <SuccessLottie className="size-7" />
               </div>
             ) : (
               <div

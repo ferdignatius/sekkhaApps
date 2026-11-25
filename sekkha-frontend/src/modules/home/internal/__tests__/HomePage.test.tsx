@@ -227,36 +227,36 @@ describe("HomePage Component Tests", () => {
       {
         streak: 0,
         status: "inactive",
-        expectedTier: "dead",
-        expectedAsset: "/streak-pack/streak-dead.json",
+        expectedTier: "dormant",
+        expectedAsset: "/streak-pack/streak-big.json",
         expectPausedLabel: false,
       },
       {
         streak: 1,
         status: "active",
-        expectedTier: "small",
-        expectedAsset: "/streak-pack/streak-small.json",
+        expectedTier: "starter",
+        expectedAsset: "/streak-pack/streak-big.json",
         expectPausedLabel: false,
       },
       {
-        streak: 2,
+        streak: 3,
         status: "active",
-        expectedTier: "medium",
-        expectedAsset: "/streak-pack/streak-medium.json",
+        expectedTier: "rising",
+        expectedAsset: "/streak-pack/streak-big.json",
         expectPausedLabel: false,
       },
       {
         streak: 4,
         status: "active",
-        expectedTier: "big",
+        expectedTier: "milestone",
         expectedAsset: "/streak-pack/streak-big.json",
         expectPausedLabel: false,
       },
       {
         streak: 5,
         status: "paused",
-        expectedTier: "dead",
-        expectedAsset: "/streak-pack/streak-dead.json",
+        expectedTier: "dormant",
+        expectedAsset: "/streak-pack/streak-big.json",
         expectPausedLabel: true,
       },
     ]
@@ -276,6 +276,9 @@ describe("HomePage Component Tests", () => {
       const flame = await screen.findByTestId("streak-flame")
       expect(flame.getAttribute("data-streak-tier")).toBe(c.expectedTier)
       expect(flame.getAttribute("data-streak-asset")).toBe(c.expectedAsset)
+      expect(flame.getAttribute("data-streak-milestone")).toBe(
+        c.expectedTier === "milestone" ? "true" : "false"
+      )
 
       if (c.expectPausedLabel) {
         expect(

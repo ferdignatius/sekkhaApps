@@ -2,6 +2,13 @@ import type { Request, Response, NextFunction } from "express"
 import { z } from "zod"
 import { eventServices } from "./services"
 import { canRecordAttendance } from "./policy"
+import {
+  ensureAttendanceStreamSubscribed,
+  getLatestAttendanceNotification,
+  registerAttendanceSseClient,
+} from "./internal/attendanceStream"
+
+ensureAttendanceStreamSubscribed()
 
 export const CreateEventSchema = z.object({
   title: z
@@ -425,6 +432,26 @@ export const eventControllers = {
         })
         return
       }
+      next(err)
+    }
+  },
+
+  streamMyAttendance(req: Request, res: Response): void {
+    const userId = req.user!.userId
+    registerAttendanceSseClient(userId, req, res)
+  },
+
+  async getMyLatestAttendance(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const userId = req.user!.userId
+      const latest = await getLatestAttendanceNotification(userId)
+      res.json({
+        status: "success",
+        code: 200,
+        message: "Latest attendance status retrieved",
+        data: { latest },
+      })
+    } catch (err) {
       next(err)
     }
   },

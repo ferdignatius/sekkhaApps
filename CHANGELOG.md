@@ -4,6 +4,16 @@ All notable changes to Sekkha Apps. Semver (`MAJOR.MINOR.PATCH`); newest on top.
 
 ## [Unreleased]
 
+## [1.3.2] - 2026-11-25
+
+### Added
+- **Fellowship Group & Shared Virtual Pet PRD (`prd-sekkha/gamification/fellowshipGroupPet.md`)**: Drafted MVP specification for Activist+-led fellowship groups (max 5 members/group), referral auto-join integration, shared group pet mood/lifecycle, and Home widget + detail drawer UI.
+
+### Changed
+- **Core Web Vitals & Asset Delivery (`HeroSection`, `DashboardMockup`, `LandingPage`, `styles.css`)**: Downscaled and compressed background WebP assets (~139 KB saved), removed unused `@fontsource-variable/geist` import, preloaded the Hero background image with `fetchPriority="high"`, removed above-the-fold entrance opacity delays, added explicit image dimensions, and applied `content-visibility: auto` to below-the-fold Landing Page sections.
+- **Background Asset Reorganization (`/background/*`)**: Updated references for `/background/home-background.webp` and `/background/profile-backgorund.webp` across `HomePage`, `ProfilePage`, `MemberDetailPage`, `HeroSection`, and `DashboardMockup`.
+- **Landing Page Primary CTA (`HeroSection`, `CTABanner`, `LandingNavbar`)**: Updated `Join for Free` CTAs to `Sign In` (`/login`) and removed the duplicate mobile drawer CTA button.
+
 ## [1.3.1] - 2026-11-25
 
 ### Added

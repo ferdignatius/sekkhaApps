@@ -22,6 +22,13 @@ const config = defineConfig({
           changeOrigin: true,
         },
       },
+      handlers: [
+        {
+          route: "/api/**",
+          handler: "./src/server/api-proxy.ts",
+          env: "prod",
+        },
+      ],
     }),
     // this is the plugin that enables path aliases
     viteTsConfigPaths({

@@ -115,7 +115,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
             }
           }
         } else {
-          safeStorage.removeItem(STORAGE_KEY)
+          // coordinatedRefreshSession already clears STORAGE_KEY on confirmed 401/403;
+          // keep stored token on transient 5xx/rate-limit/network failures so future retries can recover.
           dispatch({ type: "AUTH_VERIFY_FAILED" })
           return
         }
@@ -139,7 +140,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
               activeToken = refreshed.accessToken
               verifiedUser = refreshed.user
             } else {
-              safeStorage.removeItem(STORAGE_KEY)
+              // Storage is already cleared by coordinatedRefreshSession on confirmed 401/403.
               dispatch({ type: "AUTH_VERIFY_FAILED" })
               return
             }

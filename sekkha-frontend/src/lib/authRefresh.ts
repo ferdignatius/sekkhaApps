@@ -1,3 +1,4 @@
+import { resolveApiBaseUrl } from "./apiConfig"
 import { safeStorage } from "./storage"
 import { isJwtExpired } from "./jwt"
 
@@ -49,21 +50,6 @@ export function resetRefreshCoordinatorForTests(): void {
   inFlightTabRefresh = null
   rateLimitedUntil = 0
   safeStorage.removeItem(REFRESH_LOCK_KEY)
-}
-
-function getApiBaseUrl(): string {
-  if (import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL
-  }
-  if (
-    import.meta.env.DEV &&
-    typeof window !== "undefined" &&
-    window.location.hostname !== "localhost" &&
-    window.location.hostname !== "127.0.0.1"
-  ) {
-    return "/api"
-  }
-  return "http://localhost:4000/api"
 }
 
 function postAuthChannelMessage(message: {
@@ -216,7 +202,7 @@ async function performSingleRefreshHttp(): Promise<UnifiedRefreshResult> {
   const timeoutId = setTimeout(() => controller.abort(), REFRESH_FETCH_TIMEOUT_MS)
 
   try {
-    const response = await fetch(`${getApiBaseUrl()}/auth/refresh`, {
+    const response = await fetch(`${resolveApiBaseUrl()}/auth/refresh`, {
       method: "POST",
       credentials: "include",
       headers: {

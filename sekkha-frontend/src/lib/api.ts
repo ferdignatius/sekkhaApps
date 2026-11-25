@@ -2,27 +2,11 @@
 // Supports credentials: "include" for HttpOnly cookies, auto-refresh on 401, and Zod response validation.
 
 import type { ZodType } from "zod"
+import { API_BASE_URL } from "./apiConfig"
 import { safeStorage } from "./storage"
 import { isJwtExpired } from "./jwt"
 import { coordinatedRefreshSession } from "./authRefresh"
 import type { UnifiedRefreshResult } from "./authRefresh"
-
-function resolveApiBaseUrl(): string {
-  if (import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL
-  }
-  if (
-    import.meta.env.DEV &&
-    typeof window !== "undefined" &&
-    window.location.hostname !== "localhost" &&
-    window.location.hostname !== "127.0.0.1"
-  ) {
-    return "/api"
-  }
-  return "http://localhost:4000/api"
-}
-
-const API_BASE_URL = resolveApiBaseUrl()
 
 export { API_BASE_URL }
 

@@ -600,4 +600,36 @@ describe("Property 6: Auth_State Terinisialisasi Benar Berdasarkan Kondisi local
     unmount()
     vi.restoreAllMocks()
   })
+
+  it("preserves stored access token when /auth/refresh fails with transient 502 error", async () => {
+    const expiredPayload = btoa(
+      JSON.stringify({ sub: "user-1", exp: Math.floor(Date.now() / 1000) - 60 })
+    )
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_")
+      .replace(/=+$/, "")
+    const expiredJwt = `eyJhbGciOiJIUzI1NiJ9.${expiredPayload}.sig`
+
+    localStorage.clear()
+    localStorage.setItem(STORAGE_KEY, expiredJwt)
+
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 502,
+      json: () => Promise.resolve({ message: "Bad Gateway" }),
+    } as Response)
+    vi.stubGlobal("fetch", fetchMock)
+
+    const { unmount } = renderAuthProvider()
+
+    await waitFor(() => {
+      expect(screen.getByTestId("status").textContent).toBe("unauthenticated")
+    })
+
+    // Transient backend outage must NOT wipe the localStorage token so subsequent reload can retry refresh
+    expect(localStorage.getItem(STORAGE_KEY)).toBe(expiredJwt)
+
+    unmount()
+    vi.restoreAllMocks()
+  })
 })

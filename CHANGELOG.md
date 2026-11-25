@@ -4,6 +4,17 @@ All notable changes to Sekkha Apps. Semver (`MAJOR.MINOR.PATCH`); newest on top.
 
 ## [Unreleased]
 
+## [1.3.1] - 2026-11-25
+
+### Added
+- **Real-Time QR Check-In `SuccessLottie` Notification (`attendanceStream.ts`, `useAttendanceCheckInListener`, `QrCheckInSuccessOverlay`)**: Added SSE attendance stream (`GET /api/events/attendance/stream`) with 3s short-polling fallback (`GET /api/events/attendance/latest`) so members viewing their QR code immediately see the `SuccessLottie` animation, event title, `On Time`/`Late` badge, and `+N pts` pill when scanned by an organizer.
+- **Reusable `SuccessLottie` Component (`/assets/success.json`)**: Added `SuccessLottie` & `SuccessLottieModal` across `ForgotPasswordPage`, `OnboardingPage`, `AttendanceScanPage`, and QR check-in overlays.
+- **Responsive Breakpoint Hook & Monorepo Guidelines (`useIsDesktop.ts`, `AGENTS.md`)**: Added shared `useIsDesktop` hook and documented monorepo engineering standards in `AGENTS.md`.
+
+### Changed
+- **Responsive QR Drawers (`MemberQrModal`, `ProfilePage`)**: Replaced forced `88dvh`/`96dvh` expandable drawers with fit-content bottom `Drawer` on mobile (`< 640px`) and centered `Dialog` on desktop (`sm:max-w-md` for Home/Events QR, `sm:max-w-lg` for Profile Digital Member Pass).
+- **Streak & Profile Skeleton Refinements (`StreakFlame`, `ProfilePage`)**: Refined streak tier styling and profile loading skeleton layout.
+
 ## [1.3.0] - 2026-11-24
 
 ### Added

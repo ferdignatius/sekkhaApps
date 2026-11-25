@@ -77,7 +77,7 @@ export async function revokeToken(token: string): Promise<void> {
         (await import("../../../lib/redis")).redis.set(`auth:revoked:${tokenHash}`, "1", "EX", ttlSeconds),
         (await import("../../../lib/redis")).redis.del(`auth:token:${tokenHash}`, `auth:session:${tokenHash}`),
       ])
-    } catch (err) {
+    } catch {
       if (isProductionStoreRequired()) {
         throw new AppError("Revocation store unavailable", 503, "REVOCATION_STORE_UNAVAILABLE")
       }

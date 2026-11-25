@@ -278,7 +278,7 @@ export async function peekRefreshTokenStatus(refreshToken: string): Promise<Refr
           }
         }
       }
-    } catch (err) {
+    } catch {
       if (requireSharedStore()) {
         throw new Error("Refresh token store unavailable")
       }
@@ -354,7 +354,7 @@ export async function commitRefreshTokenRotation(
           redis.srem(familyRefreshSetKey(oldRecord.familyId), oldHash),
         ]).catch(() => {})
       }
-    } catch (err) {
+    } catch {
       await revokeRefreshToken(newRefreshToken, oldRecord.userId).catch(() => {})
       if (requireSharedStore()) {
         throw new Error("Refresh token store unavailable")

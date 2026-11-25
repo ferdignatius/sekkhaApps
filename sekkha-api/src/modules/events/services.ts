@@ -313,7 +313,7 @@ export const eventServices = {
     return result
   },
 
-  async getEventDetail(id: string, userRole: string, isPrivileged: boolean) {
+  async getEventDetail(id: string, userRole: string, _isPrivileged: boolean) {
     const detail = await cached(
       CacheKeys.eventDetail(id, userRole || "anon"),
       30,

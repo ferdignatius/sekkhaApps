@@ -61,7 +61,7 @@ function clearRefreshCookie(res: Response) {
 export async function handleRegisterRequest(req: Request, res: Response, next: NextFunction) {
   try {
     const body = RequestRegisterOtpSchema.parse(req.body)
-    const result = await service.requestRegisterOtp(body)
+    await service.requestRegisterOtp(body)
     apiSuccess(res, 200, "Registration OTP sent", { expires_in_seconds: 600 })
   } catch (err) {
     next(err)
@@ -84,7 +84,7 @@ export async function handleRegisterVerifyOtp(req: Request, res: Response, next:
 export async function handleResendOtp(req: Request, res: Response, next: NextFunction) {
   try {
     const body = ResendOtpSchema.parse(req.body)
-    const result = await service.resendRegisterOtp(body)
+    await service.resendRegisterOtp(body)
     apiSuccess(res, 200, "Registration OTP resent", { expires_in_seconds: 600 })
   } catch (err) {
     next(err)

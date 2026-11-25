@@ -316,7 +316,6 @@ async function computeAndCacheLeaderboardInternal(periodTarget?: LeaderboardPeri
             isAllTimeFallback && pointsByUser.size === 0
               ? (u.stats?.points ?? 0)
               : (pointsByUser.get(u.id) ?? 0)
-          const streakCount = u.stats?.currentStreak ?? 0
 
           const val = metric === "points" ? pointsCount : attendanceCount
 

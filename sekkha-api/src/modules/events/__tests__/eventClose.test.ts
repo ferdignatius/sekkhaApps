@@ -8,7 +8,7 @@ import { redis } from "../../../lib/redis"
 describe("Event Closure Point Distribution & Milestone Bonuses", () => {
   it("awards streak_monthly_bonus with daily cap immunity when user is near or at cap", async () => {
     let createdPointTxs: any[] = []
-    let updatedStats: any[] = []
+    const updatedStats: any[] = []
 
     const eventDate = new Date("2026-02-22T10:00:00Z")
     const originalTransaction = prisma.$transaction
@@ -1104,7 +1104,7 @@ describe("Admin-Only Reset Closed Event to Draft (Scheduled)", () => {
 
   it("credits points without altering currentStreak or awarding streak bonus when closing an optional event (countsTowardStreak: false)", async () => {
     let createdPointTxs: any[] = []
-    let updatedStats: any[] = []
+    const updatedStats: any[] = []
 
     const eventDate = new Date("2026-04-12T10:00:00Z")
     const origTx = prisma.$transaction

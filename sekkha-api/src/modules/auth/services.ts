@@ -40,7 +40,6 @@ import {
 } from "./internal/otpStore"
 import {
   saveRefreshToken,
-  verifyAndRotateRefreshTokenRecord,
   revokeRefreshToken,
   revokeTokenFamily,
   revokeAllUserRefreshTokens,

@@ -3,8 +3,8 @@ import { z } from "zod"
 import {
   getLeaderboardSnapshot,
   filterAndRankLeaderboardEntries,
-  MetricType,
 } from "./services"
+import type { MetricType } from "./services"
 
 export const leaderboardControllers = {
   async getLeaderboard(req: Request, res: Response, next: NextFunction): Promise<void> {

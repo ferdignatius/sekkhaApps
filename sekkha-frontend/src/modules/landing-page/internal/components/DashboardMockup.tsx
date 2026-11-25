@@ -65,20 +65,19 @@ export function DashboardMockup() {
   )
 
   return (
-    <motion.div
-      className="relative mx-auto w-full max-w-[520px] text-left select-none"
-      initial={{ opacity: 0, y: 28 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.65, ease: "easeOut", delay: 0.18 }}
-    >
+    <div className="relative mx-auto w-full max-w-[520px] text-left select-none">
       {/* Floating Sekkha App Card (Warm Clay Canvas Frame) */}
       <div className="overflow-hidden rounded-[28px] border border-[#e5dec9] bg-[#fffaf0] text-sekkha-ink shadow-[0_20px_50px_-15px_rgba(68,51,28,0.14)]">
         {/* Warm Sunrise Mini Hero Banner */}
         <div className="relative overflow-hidden bg-gradient-to-br from-[#FFE0C2] via-[#FAF0DF] to-[#fffaf0] px-5 pt-5 pb-9">
           <img
-            src="/home-background.webp"
+            src="/background/home-background.webp"
             alt=""
             aria-hidden="true"
+            width={520}
+            height={180}
+            fetchPriority="low"
+            decoding="async"
             className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-55 mix-blend-multiply select-none"
           />
           <div
@@ -221,6 +220,6 @@ export function DashboardMockup() {
           </div>
         </div>
       </div>
-    </motion.div>
+    </div>
   )
 }

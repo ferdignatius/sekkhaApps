@@ -278,26 +278,15 @@ function MobileDrawer({
               {/* Extra CTA in drawer */}
               <div className="flex flex-col gap-2.5 border-t border-[#e5dec9] pt-4">
                 {authState === "unauthenticated" && (
-                  <>
-                    <Button
-                      variant="secondary"
-                      asChild
-                      className="h-11 rounded-full border border-[#e5dec9] bg-white font-semibold !text-sekkha-ink"
-                    >
-                      <a href="/login" onClick={onClose}>
-                        Sign In
-                      </a>
-                    </Button>
-                    <Button
-                      variant="primary"
-                      asChild
-                      className="h-11 rounded-full bg-[#0a0a0a] font-semibold !text-white"
-                    >
-                      <a href="/sign-up" onClick={onClose}>
-                        Join for Free
-                      </a>
-                    </Button>
-                  </>
+                  <Button
+                    variant="primary"
+                    asChild
+                    className="h-11 rounded-full bg-[#0a0a0a] font-semibold !text-white"
+                  >
+                    <a href="/login" onClick={onClose}>
+                      Sign In
+                    </a>
+                  </Button>
                 )}
                 {authState === "authenticated" && (
                   <Button
@@ -378,6 +367,9 @@ export function LandingNavbar({ authState, scrollY }: LandingNavbarProps) {
             <img
               src="/sekkha_logo.svg"
               alt=""
+              width={28}
+              height={28}
+              decoding="async"
               className="size-7 object-contain"
             />
             <span>Sekkha</span>

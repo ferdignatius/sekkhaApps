@@ -27,7 +27,7 @@ describe("CTABanner", () => {
 
     fireEvent.click(
       screen.getByRole("button", {
-        name: /(join for free|join now|bergabung sekarang)/i,
+        name: /(sign in|join for free|join now|bergabung sekarang)/i,
       })
     )
 
@@ -52,7 +52,7 @@ describe("CTABanner", () => {
 
       fireEvent.click(
         screen.getByRole("button", {
-          name: /(join for free|join now|bergabung sekarang)/i,
+          name: /(sign in|join for free|join now|bergabung sekarang)/i,
         })
       )
     } finally {

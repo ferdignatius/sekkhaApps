@@ -35,6 +35,10 @@ export function LandingFooter({ navColumns }: LandingFooterProps) {
               <img
                 src="/sekkha_logo.svg"
                 alt=""
+                width={24}
+                height={24}
+                loading="lazy"
+                decoding="async"
                 className="size-6 object-contain"
               />
               <span>Sekkha</span>

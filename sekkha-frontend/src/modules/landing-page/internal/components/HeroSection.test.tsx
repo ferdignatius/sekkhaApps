@@ -27,10 +27,10 @@ describe("HeroSection", () => {
   })
 
   // Requirement 3.3 — primary CTA button rendered
-  it('renders the "Join for Free" CTA button', () => {
+  it('renders the "Sign In" CTA button', () => {
     render(<HeroSection {...defaultProps} />)
     const primaryCta = screen.getByRole("button", {
-      name: /(join for free|bergabung sekarang)/i,
+      name: /(sign in|join for free|bergabung sekarang)/i,
     })
     expect(primaryCta).toBeDefined()
   })
@@ -47,13 +47,13 @@ describe("HeroSection", () => {
   // Both CTA buttons rendered together
   it("renders both CTA buttons", () => {
     render(<HeroSection {...defaultProps} />)
-    const joinCta = screen.getByRole("button", {
-      name: /(join for free|bergabung sekarang)/i,
+    const signInCta = screen.getByRole("button", {
+      name: /(sign in|join for free|bergabung sekarang)/i,
     })
     const exploreCta = screen.getByRole("button", {
       name: /(explore events|lihat kegiatan)/i,
     })
-    expect(joinCta).toBeDefined()
+    expect(signInCta).toBeDefined()
     expect(exploreCta).toBeDefined()
   })
 

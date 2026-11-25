@@ -24,7 +24,7 @@ describe("DashboardMockup (Sekkha v1.3.0 Floating App Card)", () => {
     expect(screen.getByText(/Vassa Season 2026/i)).toBeDefined()
     expect(screen.getByText(/Daily cap 150 pts\/day/i)).toBeDefined()
 
-    const bgImg = container.querySelector('img[src="/home-background.webp"]')
+    const bgImg = container.querySelector('img[src="/background/home-background.webp"]')
     expect(bgImg).not.toBeNull()
     expect(bgImg?.getAttribute("alt")).toBe("")
   })

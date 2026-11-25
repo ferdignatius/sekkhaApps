@@ -38,9 +38,9 @@ export function LandingPage() {
 
   const handleSignUpNavigate = async () => {
     try {
-      await router.navigate({ to: "/sign-up" as string })
+      await router.navigate({ to: "/login" as string })
     } catch {
-      setErrorMessage("Sign-up page is currently unavailable.")
+      setErrorMessage("Sign-in page is currently unavailable.")
     }
   }
 
@@ -76,26 +76,36 @@ export function LandingPage() {
             subheadline={landingContent.hero.subheadline}
           />
 
-          <FeatureSection features={landingContent.features} />
+          <div className="[content-visibility:auto] [contain-intrinsic-size:auto_500px]">
+            <FeatureSection features={landingContent.features} />
+          </div>
 
-          <StatsSection stats={landingContent.stats} />
+          <div className="[content-visibility:auto] [contain-intrinsic-size:auto_320px]">
+            <StatsSection stats={landingContent.stats} />
+          </div>
 
-          <EventsSection
-            heading={landingContent.events.heading}
-            subheading={landingContent.events.subheading}
-            items={landingContent.events.items}
-          />
+          <div className="[content-visibility:auto] [contain-intrinsic-size:auto_560px]">
+            <EventsSection
+              heading={landingContent.events.heading}
+              subheading={landingContent.events.subheading}
+              items={landingContent.events.items}
+            />
+          </div>
 
-          <LeaderboardSection
-            heading={landingContent.leaderboard.heading}
-            subheading={landingContent.leaderboard.subheading}
-            entries={landingContent.leaderboard.entries}
-          />
+          <div className="[content-visibility:auto] [contain-intrinsic-size:auto_520px]">
+            <LeaderboardSection
+              heading={landingContent.leaderboard.heading}
+              subheading={landingContent.leaderboard.subheading}
+              entries={landingContent.leaderboard.entries}
+            />
+          </div>
 
-          <CTABanner
-            heading={landingContent.ctaBanner.heading}
-            onSignUpNavigate={handleSignUpNavigate}
-          />
+          <div className="[content-visibility:auto] [contain-intrinsic-size:auto_360px]">
+            <CTABanner
+              heading={landingContent.ctaBanner.heading}
+              onSignUpNavigate={handleSignUpNavigate}
+            />
+          </div>
         </main>
 
         {/* Footer */}

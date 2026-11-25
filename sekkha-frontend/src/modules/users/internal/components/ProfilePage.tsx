@@ -197,7 +197,7 @@ export function ProfilePage() {
   const sunriseBanner = (
     <div className="relative overflow-hidden bg-gradient-to-b from-[#f6e8c8] via-[#faf2dd] to-[#f4e7c6] md:bg-none">
       <img
-        src="/Serene%20Sky%20Garden%20Pavilion.webp"
+        src="/background/profile-backgorund.webp"
         alt=""
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 h-full w-full object-cover object-right-bottom select-none md:hidden"
@@ -218,7 +218,7 @@ export function ProfilePage() {
       <div className="hidden md:block md:px-6 md:pt-2 lg:px-8 xl:px-12">
         <div className="relative mx-auto h-44 max-w-7xl overflow-hidden rounded-[32px] border border-[#e6decb] bg-gradient-to-b from-[#f6e8c8] via-[#faf2dd] to-[#f4e7c6] shadow-xs lg:h-48">
           <img
-            src="/Serene%20Sky%20Garden%20Pavilion.webp"
+            src="/background/profile-backgorund.webp"
             alt=""
             aria-hidden="true"
             className="pointer-events-none absolute inset-0 h-full w-full object-cover object-right select-none"

@@ -72,7 +72,7 @@ export function CTABanner({ heading, onSignUpNavigate }: CTABannerProps) {
               onClick={onSignUpNavigate}
               className="h-[44px] rounded-[12px] bg-sekkha-primary px-8 font-semibold text-white shadow-xs transition-colors hover:bg-clay-primary-active"
             >
-              Join for Free
+              Sign In
             </Button>
           </motion.div>
         </div>

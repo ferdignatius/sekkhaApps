@@ -176,13 +176,13 @@ describe("LandingNavbar — hamburger menu toggle", () => {
     expect(dialog.textContent).toContain("Leaderboard")
   })
 
-  it('drawer shows "Join for Free" when unauthenticated', () => {
+  it('drawer shows "Sign In" when unauthenticated', () => {
     renderNavbar("unauthenticated")
     const hamburger = getHamburgerButton()
     fireEvent.click(hamburger)
 
     const dialog = screen.getByRole("dialog")
-    expect(dialog.textContent).toContain("Join for Free")
+    expect(dialog.textContent).toContain("Sign In")
   })
 
   it('drawer shows "Dashboard" when authenticated', () => {

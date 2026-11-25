@@ -330,7 +330,7 @@ export function MemberDetailPage({
       {/* ── HERO BACKDROP (Matches Profile & Home Warm Sunrise + Pavilion Art) ── */}
       <div className="relative overflow-hidden bg-gradient-to-br from-[#FFE0C2] via-[#FAF0DF] to-[#F3E2CA] pb-16">
         <img
-          src="/Serene%20Sky%20Garden%20Pavilion.webp"
+          src="/background/profile-backgorund.webp"
           alt=""
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 h-full w-full object-cover object-center opacity-55 mix-blend-multiply select-none"

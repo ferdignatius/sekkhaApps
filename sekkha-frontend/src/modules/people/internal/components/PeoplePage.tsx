@@ -723,7 +723,7 @@ export function PeoplePage() {
           onClick={() => setShowCreateModal(true)}
           aria-label="Add Member"
           title="Add Member"
-          className="fixed right-4 bottom-24 z-40 flex size-14 cursor-pointer items-center justify-center rounded-full bg-ink text-canvas shadow-[0_12px_28px_rgba(10,10,10,0.28)] transition-all hover:bg-ink/90 active:scale-95 md:right-8 md:bottom-8"
+          className="fixed right-4 bottom-[calc(6.75rem+env(safe-area-inset-bottom))] z-40 flex size-14 cursor-pointer items-center justify-center rounded-full bg-ink text-canvas shadow-[0_12px_28px_rgba(10,10,10,0.28)] transition-all hover:bg-ink/90 active:scale-95 md:right-8 md:bottom-8"
         >
           <PlusIcon className="size-6" aria-hidden="true" />
         </button>

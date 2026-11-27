@@ -146,6 +146,7 @@ export function PointsRulesPage() {
           { label: "Rules" },
           { label: "Point Rules" },
         ]}
+        backTo="/home"
       />
 
       <div className="mx-auto max-w-7xl space-y-5 px-3.5 py-4 sm:px-6 sm:py-6 md:px-8">

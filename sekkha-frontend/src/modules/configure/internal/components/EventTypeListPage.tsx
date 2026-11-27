@@ -1,64 +1,59 @@
+// feature/configure/components/EventTypeListPage
+// Event Types Master Data list page — aligned with SchoolPage layout & design tokens.
+
 import { useEffect, useMemo, useState } from "react"
-import { useNavigate } from "@tanstack/react-router"
+import { Link, useNavigate } from "@tanstack/react-router"
 import {
-  TagIcon,
+  AlertCircleIcon,
+  ChevronRightIcon,
   PlusIcon,
   SearchIcon,
-  PencilIcon,
-  Trash2Icon,
-  CheckCircle2Icon,
-  XCircleIcon,
-  AlertTriangleIcon,
-  Bolt,
-  ShieldCheckIcon,
+  TagIcon,
+  XIcon,
 } from "lucide-react"
-import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
-import { useAuth } from "@/modules/auth"
-import { eventTypesApi } from "../api/configureApi"
-import type { EventTypeDto } from "../api/configureApi"
-import { formatAudienceRolesLabel, normalizeTargetRoles } from "@/lib/eventAudience"
+
+import { Badge } from "@/components/base/Badge"
 import { Button } from "@/components/base/Button"
 import { Card } from "@/components/base/Card"
 import { Input } from "@/components/base/Input"
-import { toast } from "@/components/base"
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/base/Dialog"
+import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
+import { useIsDesktop } from "@/hooks/useIsDesktop"
+import { useAuth } from "@/modules/auth"
+
+import { eventTypesApi } from "../api/configureApi"
+import type { EventTypeDto } from "../api/configureApi"
+
+type StatusFilter = "all" | "active" | "inactive"
+
+function formatLatePolicy(type: EventTypeDto): string {
+  if (!type.apply_late_penalty) return "No late penalty"
+  const pts = type.default_late_penalty_points ?? 0
+  return pts > 0 ? `Late -${pts} pts` : "Late penalty"
+}
 
 export function EventTypePage() {
   const navigate = useNavigate()
   const { authState } = useAuth()
   const isAdmin =
     authState.status === "authenticated" && authState.role === "admin"
+  const isDesktop = useIsDesktop(640)
 
   const [eventTypes, setEventTypes] = useState<EventTypeDto[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState("")
-  const [statusFilter, setStatusFilter] = useState<
-    "all" | "active" | "inactive"
-  >("all")
-  const [actionError, setActionError] = useState<string | null>(null)
-
-  // Dialog states
-  const [itemToDelete, setItemToDelete] = useState<EventTypeDto | null>(null)
-  const [deleting, setDeleting] = useState(false)
-  const [conflictItem, setConflictItem] = useState<{
-    item: EventTypeDto
-    message: string
-  } | null>(null)
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all")
 
   const fetchEventTypes = async () => {
+    setLoading(true)
+    setError(null)
     try {
-      setLoading(true)
       const data = await eventTypesApi.list()
       setEventTypes(data)
-    } catch (err: any) {
-      setActionError(err?.message || "Failed to load event types")
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to load event types"
+      )
     } finally {
       setLoading(false)
     }
@@ -89,463 +84,295 @@ export function EventTypePage() {
   const stats = useMemo(() => {
     const total = eventTypes.length
     const active = eventTypes.filter((t) => t.is_active).length
-    const inactive = total - active
+    const mandatory = eventTypes.filter(
+      (t) => t.counts_toward_streak !== false
+    ).length
     const avgPoints =
       total > 0
         ? Math.round(
-            eventTypes.reduce(
-              (acc, t) => acc + (t.default_point_reward || 0),
-              0
-            ) / total
-          )
+          eventTypes.reduce((sum, t) => sum + t.default_point_reward, 0) /
+          total
+        )
         : 0
-    return { total, active, inactive, avgPoints }
+    return { total, active, mandatory, avgPoints }
   }, [eventTypes])
 
-  const handleToggleStatus = async (item: EventTypeDto) => {
-    if (!isAdmin) return
-    try {
-      const nextActive = !item.is_active
-      await eventTypesApi.update(item.id, { is_active: nextActive })
-      setEventTypes((prev) =>
-        prev.map((t) =>
-          t.id === item.id ? { ...t, is_active: nextActive } : t
-        )
-      )
-      toast.success(
-        `Category "${item.label}" ${nextActive ? "activated" : "deactivated"}.`
-      )
-    } catch (err: any) {
-      const msg = err?.message || "Failed to update event type status"
-      setActionError(msg)
-      toast.error(msg)
-    }
-  }
-
-  const handleDeleteConfirm = async () => {
-    if (!itemToDelete) return
-    setDeleting(true)
-    try {
-      const deletedLabel = itemToDelete.label
-      await eventTypesApi.remove(itemToDelete.id)
-      setEventTypes((prev) => prev.filter((t) => t.id !== itemToDelete.id))
-      setItemToDelete(null)
-      toast.success(`Category "${deletedLabel}" deleted.`)
-    } catch (err: any) {
-      const msg = err?.message || ""
-      if (
-        err?.status === 409 ||
-        msg.includes("currently in use") ||
-        msg.includes("relasi")
-      ) {
-        setConflictItem({
-          item: itemToDelete,
-          message:
-            msg ||
-            "This event type is already associated with existing events in the system and cannot be permanently deleted. You can deactivate it instead so it no longer appears when creating new events.",
-        })
-        setItemToDelete(null)
-      } else {
-        const errText = msg || "Failed to delete event type"
-        setActionError(errText)
-        toast.error(errText)
-      }
-    } finally {
-      setDeleting(false)
-    }
-  }
-
-  const handleDeactivateInstead = async () => {
-    if (!conflictItem) return
-    try {
-      const targetLabel = conflictItem.item.label
-      await eventTypesApi.update(conflictItem.item.id, { is_active: false })
-      setEventTypes((prev) =>
-        prev.map((t) =>
-          t.id === conflictItem.item.id ? { ...t, is_active: false } : t
-        )
-      )
-      setConflictItem(null)
-      toast.success(`Category "${targetLabel}" deactivated.`)
-    } catch (err: any) {
-      const msg = err?.message || "Failed to deactivate event type"
-      setActionError(msg)
-      toast.error(msg)
-    }
-  }
+  const hasFilters = search.trim().length > 0 || statusFilter !== "all"
 
   return (
-    <main className="min-h-screen bg-[#fffaf0] pb-24 text-left font-sans">
+    <main className="min-h-screen bg-[#fffaf0] pb-28 text-left font-sans md:pb-16">
       <PageBreadcrumb
         items={[
           { label: "Configure" },
           { label: "Master Data" },
           { label: "Event Types" },
         ]}
+        backTo="/home"
       />
 
-      <div className="mx-auto max-w-7xl space-y-6 px-3.5 py-4 sm:px-6 md:px-8">
-        {/* Header */}
-        <div className="flex flex-col justify-between gap-4 border-b border-[#e5e5e5] pb-5 sm:flex-row sm:items-center">
-          <div className="flex items-center gap-3">
-            <div className="flex size-11 items-center justify-center rounded-[14px] bg-[#0a0a0a] text-white shadow-2xs">
-              <TagIcon className="size-6 text-[#e8b94a]" />
+      <div className="mx-auto max-w-7xl space-y-4 px-3.5 py-2 sm:space-y-5 sm:px-6 sm:py-4 md:px-8">
+        {/* Desktop Header (hidden on mobile where PageBreadcrumb already shows title) */}
+        <div className="hidden items-center justify-between gap-4 border-b border-[#e5dec9] pb-4 sm:flex">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-[12px] border border-[#e5dec9] bg-[#faf5e8] text-[#0a0a0a]">
+              <TagIcon className="size-5" aria-hidden="true" />
             </div>
-            <div>
-              <h1 className="text-xl font-bold tracking-tight text-[#0a0a0a]">
+            <div className="min-w-0">
+              <h1 className="truncate text-xl font-semibold tracking-tight text-[#0a0a0a]">
                 Event Types Master Data
               </h1>
-              <p className="text-xs text-[#6a6a6a]">
-                Classify event categories, visual theme colors, and default
-                point rewards.
+              <p className="truncate text-xs text-[#6a6a6a]">
+                Manage event categories, default karma rewards, and attendance
+                rules
               </p>
             </div>
           </div>
+
           {isAdmin && (
             <Button
-              onClick={() =>
-                void navigate({ to: "/configure/master/event-type/new" })
-              }
-              className="h-10 gap-2 rounded-[12px] bg-[#0a0a0a] px-4 text-xs font-bold text-white shadow-xs hover:bg-[#222]"
+              asChild
+              className="h-10 shrink-0 gap-2 rounded-full bg-[#0a0a0a] px-4 text-xs font-semibold text-white shadow-2xs hover:bg-[#262626]"
             >
-              <PlusIcon className="size-4" />
-              Add Event Type
+              <Link to="/configure/master/event-type/new">
+                <PlusIcon className="size-4" aria-hidden="true" />
+                Add Event Type
+              </Link>
             </Button>
           )}
         </div>
 
-        {/* Global Error Banner */}
-        {actionError && (
-          <div className="flex items-center justify-between rounded-[12px] border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">
+        {/* Load Error Alert */}
+        {error && (
+          <div className="flex items-center justify-between gap-3 rounded-[14px] border border-destructive/30 bg-destructive/10 p-3.5 text-xs font-medium text-destructive">
             <div className="flex items-center gap-2">
-              <AlertTriangleIcon className="size-4 shrink-0 text-destructive" />
-              <span>{actionError}</span>
+              <AlertCircleIcon className="size-4 shrink-0" aria-hidden="true" />
+              <span>{error}</span>
             </div>
             <button
-              onClick={() => setActionError(null)}
-              className="font-bold underline hover:no-underline"
+              type="button"
+              onClick={() => void fetchEventTypes()}
+              className="shrink-0 cursor-pointer rounded-lg px-2.5 py-1 font-semibold hover:bg-black/5"
             >
-              Close
+              Retry
             </button>
           </div>
         )}
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Card className="rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] p-4 shadow-2xs">
-            <p className="text-xs text-[#6a6a6a]">Total Event Types</p>
-            <p className="mt-1 text-2xl font-black text-[#0a0a0a]">
+        {/* 2x2 Stats Grid on Mobile, 4-Col Stats Strip on Desktop */}
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-3">
+          <Card className="rounded-[14px] border border-[#e5dec9] bg-[#faf5e8] p-3.5 shadow-none sm:p-4">
+            <p className="text-xs font-medium text-[#6a6a6a]">Total Types</p>
+            <p className="mt-1 text-xl font-bold tabular-nums text-[#0a0a0a] sm:text-2xl">
               {stats.total}
             </p>
           </Card>
-          <Card className="rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] p-4 shadow-2xs">
-            <p className="text-xs text-[#6a6a6a]">Active Types</p>
-            <p className="mt-1 text-2xl font-black text-clay-success">
+          <Card className="rounded-[14px] border border-[#e5dec9] bg-[#faf5e8] p-3.5 shadow-none sm:p-4">
+            <p className="text-xs font-medium text-[#6a6a6a]">Active</p>
+            <p className="mt-1 text-xl font-bold tabular-nums text-[#0a0a0a] sm:text-2xl">
               {stats.active}
             </p>
           </Card>
-          <Card className="rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] p-4 shadow-2xs">
-            <p className="text-xs text-[#6a6a6a]">Inactive Types</p>
-            <p className="mt-1 text-2xl font-black text-[#6a6a6a]">
-              {stats.inactive}
+          <Card className="rounded-[14px] border border-[#e5dec9] bg-[#faf5e8] p-3.5 shadow-none sm:p-4">
+            <p className="text-xs font-medium text-[#6a6a6a]">
+              Mandatory Streak
+            </p>
+            <p className="mt-1 text-xl font-bold tabular-nums text-[#0a0a0a] sm:text-2xl">
+              {stats.mandatory}
             </p>
           </Card>
-          <Card className="rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] p-4 shadow-2xs">
-            <p className="flex items-center gap-1 text-xs text-[#6a6a6a]">
-              <Bolt className="size-3 text-clay-ochre" /> Average Karma Points
-            </p>
-            <p className="mt-1 text-2xl font-black text-[#0a0a0a]">
-              {stats.avgPoints}{" "}
-              <span className="text-xs font-normal text-[#6a6a6a]">pts</span>
+          <Card className="rounded-[14px] border border-[#e5dec9] bg-[#faf5e8] p-3.5 shadow-none sm:p-4">
+            <p className="text-xs font-medium text-[#6a6a6a]">Avg Reward</p>
+            <p className="mt-1 text-xl font-bold tabular-nums text-[#0a0a0a] sm:text-2xl">
+              {stats.avgPoints} pts
             </p>
           </Card>
         </div>
 
-        {/* Filters & Search */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="w-full sm:max-w-xs">
+        {/* Search & Rounded-Full Filter Chips */}
+        <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+          <div className="relative w-full sm:max-w-xs">
             <Input
-              className="border border-[#e5e5e5] bg-[#fffaf0] text-[#0a0a0a] placeholder:text-[#8a8a8a] focus:bg-[#fffaf0]"
-              placeholder="Search by code, label, description..."
+              className="rounded-full border border-[#e5dec9] bg-[#fffaf0] pr-9"
+              placeholder="Search event types..."
+              aria-label="Search event types"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              startIcon={<SearchIcon className="size-4 text-[#6a6a6a]" />}
-            />
-          </div>
-          <div className="flex items-center gap-1.5 self-start sm:self-auto">
-            {(["all", "active", "inactive"] as const).map((key) => {
-              const active = statusFilter === key
-              const labels = {
-                all: "All",
-                active: "Active",
-                inactive: "Inactive",
+              startIcon={
+                <SearchIcon
+                  className="size-4 text-[#6a6a6a]"
+                  aria-hidden="true"
+                />
               }
+            />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch("")}
+                aria-label="Clear search"
+                className="absolute top-1/2 right-3 flex size-5 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-[#e5dec9]/70 text-[#6a6a6a] hover:bg-[#0a0a0a] hover:text-white"
+              >
+                <XIcon className="size-3" aria-hidden="true" />
+              </button>
+            )}
+          </div>
+
+          <div className="scrollbar-none -mx-3.5 flex items-center gap-1.5 overflow-x-auto px-3.5 py-0.5 sm:mx-0 sm:gap-2 sm:px-0">
+            {(
+              [
+                { key: "all", label: `All · ${stats.total}` },
+                { key: "active", label: "Active" },
+                { key: "inactive", label: "Inactive" },
+              ] as const
+            ).map((chip) => {
+              const selected = statusFilter === chip.key
               return (
                 <button
-                  key={key}
+                  key={chip.key}
                   type="button"
-                  onClick={() => setStatusFilter(key)}
-                  className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-all ${
-                    active
-                      ? "bg-[#0a0a0a] text-white shadow-2xs"
-                      : "border border-[#e5e5e5] bg-[#faf5e8] text-[#6a6a6a] hover:bg-[#ebe6d6] hover:text-[#0a0a0a]"
+                  aria-pressed={selected}
+                  onClick={() => setStatusFilter(chip.key)}
+                  className={`inline-flex min-h-9 shrink-0 cursor-pointer items-center rounded-full border px-3 py-1.5 text-xs font-semibold tabular-nums transition-colors active:scale-95 ${
+                    selected
+                      ? "border-[#0a0a0a] bg-[#0a0a0a] text-white shadow-2xs"
+                      : "border-[#e5dec9] bg-[#fffaf0] text-[#0a0a0a] hover:bg-[#faf5e8]"
                   }`}
                 >
-                  {labels[key]}
+                  {chip.label}
                 </button>
               )
             })}
           </div>
         </div>
 
-        {/* Responsive Card Grid View (Replaces rigid table) */}
+        {/* Event Types Cards */}
         {loading ? (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {Array.from({ length: 3 }).map((_, i) => (
+          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 sm:gap-3 lg:grid-cols-3">
+            {Array.from({ length: 4 }).map((_, i) => (
               <div
                 key={i}
-                className="h-44 animate-pulse rounded-[20px] border border-[#e5e5e5] bg-[#faf5e8] p-5 shadow-2xs"
+                className="h-20 animate-pulse rounded-[16px] border border-[#e5dec9] bg-[#faf5e8] p-4 sm:h-24"
               />
             ))}
           </div>
         ) : filteredTypes.length === 0 ? (
-          <div className="rounded-[20px] border border-[#e5e5e5] bg-[#faf5e8] py-16 text-center shadow-2xs">
-            <TagIcon className="mx-auto size-10 text-[#6a6a6a]/40" />
+          <div className="rounded-[18px] border border-[#e5dec9] bg-[#faf5e8] py-14 text-center">
+            <TagIcon
+              className="mx-auto size-9 text-[#6a6a6a]/45"
+              aria-hidden="true"
+            />
             <p className="mt-3 text-sm font-semibold text-[#0a0a0a]">
-              No event types found
+              {hasFilters
+                ? "No event types found"
+                : "No event types configured yet"}
             </p>
             <p className="mt-1 text-xs text-[#6a6a6a]">
-              Try adjusting your search keyword or status filter.
+              {hasFilters
+                ? "Try adjusting your search query or status filter"
+                : "Create an event type to start organizing community events"}
             </p>
+            {hasFilters ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSearch("")
+                  setStatusFilter("all")
+                }}
+                className="mt-4 rounded-full border-[#e5dec9] bg-[#fffaf0] text-xs font-semibold text-[#0a0a0a]"
+              >
+                Reset Filters
+              </Button>
+            ) : (
+              isAdmin && (
+                <Button
+                  size="sm"
+                  onClick={() =>
+                    void navigate({ to: "/configure/master/event-type/new" })
+                  }
+                  className="mt-4 rounded-full bg-[#0a0a0a] px-4 text-xs font-semibold text-white hover:bg-[#262626]"
+                >
+                  <PlusIcon className="mr-1.5 size-3.5" aria-hidden="true" />
+                  Add Event Type
+                </Button>
+              )
+            )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredTypes.map((type) => (
-              <Card
-                key={type.id}
-                className="group relative flex flex-col justify-between overflow-hidden rounded-[20px] border border-[#e5e5e5] bg-[#faf5e8] p-5 shadow-2xs transition-all hover:border-[#0a0a0a]/30 hover:shadow-xs"
-              >
-                {/* Visual Top Accent Strip */}
-                <div
-                  className="absolute top-0 left-0 h-1.5 w-full"
-                  style={{ backgroundColor: type.color }}
-                />
-
-                <div className="space-y-3">
-                  {/* Card Title & Status Badge */}
-                  <div className="flex items-start justify-between gap-2 pt-1">
-                    <div className="flex items-center gap-2.5">
-                      <span
-                        className="size-3.5 shrink-0 rounded-full border border-black/10 shadow-2xs"
-                        style={{ backgroundColor: type.color }}
-                      />
-                      <h3 className="text-base font-bold tracking-tight text-[#0a0a0a]">
-                        {type.label}
-                      </h3>
-                    </div>
-                    {type.is_active ? (
-                      <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-clay-success/30 bg-clay-success/15 px-2.5 py-0.5 text-[11px] font-bold text-clay-success">
-                        <CheckCircle2Icon className="size-3" />
-                        Active
-                      </span>
-                    ) : (
-                      <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[#e5e5e5] bg-[#ebe6d6] px-2.5 py-0.5 text-[11px] font-bold text-[#6a6a6a]">
-                        <XCircleIcon className="size-3" />
-                        Inactive
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Badges: Code, Point Reward & Late Penalty */}
-                  <div className="flex flex-wrap items-center gap-2">
-                    <code className="rounded-[6px] border border-[#e5e5e5] bg-[#fffaf0] px-2 py-0.5 font-mono text-[11px] font-bold text-[#0a0a0a]">
-                      {type.code}
-                    </code>
-                    <span className="inline-flex items-center gap-1 rounded-full border border-[#e5e5e5] bg-[#fffaf0] px-2.5 py-0.5 text-[11px] font-bold text-[#0a0a0a]">
-                      <Bolt className="size-3 text-clay-ochre" />
-                      {type.default_point_reward} Pts
-                    </span>
-                    <span
-                      className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${
-                        type.counts_toward_streak === false ||
-                        type.apply_late_penalty === false ||
-                        (type.default_late_penalty_points ?? 15) <= 0
-                          ? "border-[#e5e5e5] bg-[#ebe6d6]/70 text-[#6a6a6a]"
-                          : "border-clay-ochre/30 bg-[#FFF9F2] text-[#0a0a0a]"
-                      }`}
-                    >
-                      <ShieldCheckIcon className="size-3 text-clay-ochre" />
-                      {type.counts_toward_streak === false ||
-                      type.apply_late_penalty === false ||
-                      (type.default_late_penalty_points ?? 15) <= 0
-                        ? "No Late Penalty"
-                        : `${type.default_max_late_minutes ?? 30}m / -${type.default_late_penalty_points ?? 15} pts`}
-                    </span>
-                    <span
-                      className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${
-                        type.counts_toward_streak === false
-                          ? "border-[#e5e5e5] bg-[#ebe6d6]/70 text-[#6a6a6a]"
-                          : "border-emerald-500/30 bg-emerald-500/10 text-emerald-800"
-                      }`}
-                    >
-                      {type.counts_toward_streak === false
-                        ? "Optional • No Streak"
-                        : "Mandatory • Streak"}
-                    </span>
-                    {(() => {
-                      const roles = normalizeTargetRoles(
-                        type.default_target_roles,
-                        type.default_visibility
-                      )
-                      if (roles.length >= 3) return null
-                      return (
-                        <span className="inline-flex items-center rounded-full border border-[#e5e5e5] bg-[#fffaf0] px-2.5 py-0.5 text-[11px] font-semibold text-[#0a0a0a]">
-                          {formatAudienceRolesLabel(
-                            type.default_target_roles,
-                            type.default_visibility
-                          )}
-                        </span>
-                      )
-                    })()}
-                    <span className="font-mono text-[10px] text-[#6a6a6a] uppercase">
-                      {type.color}
-                    </span>
-                  </div>
-
-                  {/* Description */}
-                  <p className="line-clamp-2 text-xs leading-relaxed text-[#3a3a3a]">
-                    {type.description || "No additional description."}
-                  </p>
-                </div>
-
-                {/* Footer Action Buttons */}
-                <div className="mt-4 flex items-center justify-between border-t border-[#f0ece1] pt-3">
-                  {isAdmin ? (
-                    <button
-                      type="button"
-                      onClick={() => void handleToggleStatus(type)}
-                      className="text-xs font-semibold text-[#6a6a6a] transition-colors hover:text-[#0a0a0a]"
-                    >
-                      {type.is_active ? "Deactivate" : "Activate"}
-                    </button>
-                  ) : (
-                    <div />
-                  )}
-
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        void navigate({
-                          to: "/configure/master/event-type/$categoryId",
-                          params: { categoryId: type.id },
-                        })
-                      }
-                      className="flex items-center gap-1 rounded-[10px] border border-[#e5e5e5] bg-[#fffaf0] px-3 py-1.5 text-xs font-bold text-[#0a0a0a] transition-colors hover:border-[#0a0a0a] hover:bg-[#ebe6d6]"
-                    >
-                      <PencilIcon className="size-3.5" />
-                      Edit
-                    </button>
-                    {isAdmin && (
-                      <button
-                        type="button"
-                        onClick={() => setItemToDelete(type)}
-                        className="rounded-[10px] border border-destructive/30 bg-[#fffaf0] p-1.5 text-destructive transition-colors hover:bg-destructive/10"
-                        title="Delete"
+          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 sm:gap-3 lg:grid-cols-3">
+            {filteredTypes.map((type) => {
+              const isMandatory = type.counts_toward_streak !== false
+              return (
+                <Link
+                  key={type.id}
+                  to="/configure/master/event-type/$categoryId"
+                  params={{ categoryId: type.id }}
+                  className="group flex items-center justify-between gap-3 rounded-[16px] border border-[#e5dec9] bg-[#fffaf0] p-4 shadow-2xs transition-colors hover:border-[#d4cbb3] hover:bg-[#faf5e8] active:bg-[#faf5e8]"
+                >
+                  <div className="min-w-0 flex-1 space-y-1.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex min-w-0 items-center gap-2.5">
+                        <span
+                          className="size-3 shrink-0 rounded-full ring-1 ring-black/10"
+                          style={{ backgroundColor: type.color || "#4262FF" }}
+                          aria-hidden="true"
+                        />
+                        <p className="truncate text-sm font-semibold text-[#0a0a0a]">
+                          {type.label}
+                        </p>
+                      </div>
+                      <Badge
+                        variant="secondary"
+                        size="sm"
+                        className="shrink-0 border border-[#e5dec9] bg-[#faf5e8] font-semibold tabular-nums text-[#0a0a0a]"
                       >
-                        <Trash2Icon className="size-3.5" />
-                      </button>
-                    )}
+                        {type.default_point_reward} Pts
+                      </Badge>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex min-w-0 items-center gap-1.5 truncate text-xs text-[#6a6a6a] tabular-nums">
+                        <span>{formatLatePolicy(type)}</span>
+                        <span aria-hidden="true">·</span>
+                        <span>{isMandatory ? "Streak" : "Optional"}</span>
+                        <span aria-hidden="true">·</span>
+                        <span className="inline-flex items-center gap-1">
+                          <span
+                            className={`size-1.5 rounded-full ${
+                              type.is_active
+                                ? "bg-emerald-600"
+                                : "bg-neutral-400"
+                            }`}
+                            aria-hidden="true"
+                          />
+                          {type.is_active ? "Active" : "Inactive"}
+                        </span>
+                      </div>
+                      <ChevronRightIcon
+                        className="size-4 shrink-0 text-[#6a6a6a] transition-transform group-hover:translate-x-0.5"
+                        aria-hidden="true"
+                      />
+                    </div>
                   </div>
-                </div>
-              </Card>
-            ))}
+                </Link>
+              )
+            })}
           </div>
         )}
       </div>
 
-      {/* Delete Confirmation Modal */}
-      <Dialog
-        open={Boolean(itemToDelete)}
-        onOpenChange={(open) => !open && setItemToDelete(null)}
-      >
-        <DialogContent className="max-w-md rounded-[20px] border border-[#e5e5e5] bg-[#fffaf0] p-6 shadow-md">
-          <DialogHeader>
-            <div className="mb-2 flex size-10 items-center justify-center rounded-full bg-destructive/10 text-destructive">
-              <AlertTriangleIcon className="size-5" />
-            </div>
-            <DialogTitle className="text-base font-bold text-[#0a0a0a]">
-              Delete Event Type "{itemToDelete?.label}"?
-            </DialogTitle>
-            <DialogDescription className="text-xs text-[#6a6a6a]">
-              This operation will permanently delete{" "}
-              <strong>{itemToDelete?.code}</strong>. If this event type is
-              linked to existing events or activities, deletion will be blocked
-              to maintain data integrity.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="mt-4 flex gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setItemToDelete(null)}
-              className="rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] text-xs font-bold text-[#0a0a0a] hover:bg-[#ebe6d6]"
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              disabled={deleting}
-              onClick={() => void handleDeleteConfirm()}
-              className="rounded-[12px] bg-destructive text-xs font-bold text-white hover:bg-destructive/90"
-            >
-              {deleting ? "Deleting..." : "Yes, Delete"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* 409 Conflict In-Use Modal */}
-      <Dialog
-        open={Boolean(conflictItem)}
-        onOpenChange={(open) => !open && setConflictItem(null)}
-      >
-        <DialogContent className="max-w-md rounded-[20px] border border-[#e5e5e5] bg-[#fffaf0] p-6 shadow-md">
-          <DialogHeader>
-            <div className="mb-2 flex size-10 items-center justify-center rounded-full bg-clay-warning/10 text-clay-warning">
-              <AlertTriangleIcon className="size-5" />
-            </div>
-            <DialogTitle className="text-base font-bold text-[#0a0a0a]">
-              Event Type Currently in Use
-            </DialogTitle>
-            <DialogDescription className="text-xs text-[#3a3a3a]">
-              {conflictItem?.message}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="mt-2 rounded-[12px] border border-clay-warning/30 bg-clay-warning/10 p-3 text-xs text-[#0a0a0a]">
-            💡 <strong className="text-clay-warning">Recommendation:</strong> Deactivate this event type
-            instead. Existing events will remain intact, and this type will no
-            longer appear when creating new events.
-          </div>
-          <DialogFooter className="mt-4 flex gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setConflictItem(null)}
-              className="rounded-[12px] border border-[#e5e5e5] bg-[#faf5e8] text-xs font-bold text-[#0a0a0a] hover:bg-[#ebe6d6]"
-            >
-              Close
-            </Button>
-            <Button
-              type="button"
-              onClick={() => void handleDeactivateInstead()}
-              className="rounded-[12px] bg-[#0a0a0a] text-xs font-bold text-white hover:bg-[#262626]"
-            >
-              Deactivate Instead
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Mobile Floating Action Button */}
+      {!isDesktop && isAdmin && (
+        <button
+          type="button"
+          onClick={() =>
+            void navigate({ to: "/configure/master/event-type/new" })
+          }
+          aria-label="Add Event Type"
+          className="fixed right-4 bottom-[calc(7.5rem+env(safe-area-inset-bottom))] z-30 flex size-13 items-center justify-center rounded-full bg-[#0a0a0a] text-white shadow-lg transition-transform active:scale-95 sm:hidden"
+        >
+          <PlusIcon className="size-6" aria-hidden="true" />
+        </button>
+      )}
     </main>
   )
 }

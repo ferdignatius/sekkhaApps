@@ -18,6 +18,8 @@ import { InfiniteScrollFooter } from "@/components/common/InfiniteScrollFooter"
 import { useAuth } from "@/modules/auth"
 import { useDebouncedSearch } from "@/hooks/useDebounce"
 import { useInfiniteScrollSentinel } from "@/hooks/useInfiniteScrollSentinel"
+import { useIsDesktop } from "@/hooks/useIsDesktop"
+import { notifySchoolRequestsChanged } from "@/hooks/usePendingSchoolRequestsCount"
 import { schoolsApi } from "../api/configureApi"
 import type {
   SchoolDirectoryStats,
@@ -26,7 +28,6 @@ import type {
 } from "../api/configureApi"
 import { Button } from "@/components/base/Button"
 import { Card } from "@/components/base/Card"
-import { Chip } from "@/components/base/Chip"
 import { Badge } from "@/components/base/Badge"
 import { Input } from "@/components/base/Input"
 import {
@@ -49,6 +50,7 @@ export function SchoolPage() {
     authState.status === "authenticated" &&
     (authState.role === "admin" || authState.role === "organizer")
 
+  const isDesktop = useIsDesktop(640)
   const [activeTab, setActiveTab] = useState<"directory" | "requests">(
     "directory"
   )
@@ -188,6 +190,7 @@ export function SchoolPage() {
       setProcessingId(id)
       await schoolsApi.acceptRequest(id)
       toast.success(`School "${name}" approved and added to directory`)
+      notifySchoolRequestsChanged()
       await Promise.all([fetchRequests(), fetchSchools()])
     } catch (err: any) {
       toast.error(err?.message || `Failed to approve school "${name}"`)
@@ -248,6 +251,7 @@ export function SchoolPage() {
           : `School request "${target.name}" rejected`
       )
       setRejectTarget(null)
+      notifySchoolRequestsChanged()
       await Promise.all([
         fetchRequests(),
         ...(assignSchool ? [fetchSchools()] : []),
@@ -295,17 +299,18 @@ export function SchoolPage() {
           { label: "Master Data" },
           { label: "Schools & Universities" },
         ]}
+        backTo="/home"
       />
 
-      <div className="mx-auto max-w-7xl space-y-5 px-3.5 py-4 sm:px-6 md:px-8">
-        {/* Header */}
-        <div className="flex items-center justify-between gap-4 border-b border-[#e5dec9] pb-4">
+      <div className="mx-auto max-w-7xl space-y-4 px-3.5 py-2 sm:space-y-5 sm:px-6 sm:py-4 md:px-8">
+        {/* Desktop Header (hidden on mobile where PageBreadcrumb already shows title) */}
+        <div className="hidden items-center justify-between gap-4 border-b border-[#e5dec9] pb-4 sm:flex">
           <div className="flex min-w-0 items-center gap-3">
             <div className="flex size-10 shrink-0 items-center justify-center rounded-[12px] border border-[#e5dec9] bg-[#faf5e8] text-[#0a0a0a]">
               <GraduationCapIcon className="size-5" aria-hidden="true" />
             </div>
             <div className="min-w-0">
-              <h1 className="truncate text-lg font-semibold tracking-tight text-[#0a0a0a] sm:text-xl">
+              <h1 className="truncate text-xl font-semibold tracking-tight text-[#0a0a0a]">
                 Schools & Universities
               </h1>
               <p className="truncate text-xs text-[#6a6a6a]">
@@ -317,7 +322,7 @@ export function SchoolPage() {
           {isAdmin && (
             <Button
               asChild
-              className="hidden h-10 shrink-0 gap-2 rounded-[12px] bg-[#0a0a0a] px-4 text-xs font-semibold text-white shadow-2xs hover:bg-[#262626] sm:inline-flex"
+              className="h-10 shrink-0 gap-2 rounded-full bg-[#0a0a0a] px-4 text-xs font-semibold text-white shadow-2xs hover:bg-[#262626]"
             >
               <Link to="/configure/master/school/new">
                 <PlusIcon className="size-4" aria-hidden="true" />
@@ -346,11 +351,11 @@ export function SchoolPage() {
 
         {/* Segmented Tab Navigation (Organizer & Admin) */}
         {canReview && (
-          <div className="grid grid-cols-2 gap-1 rounded-[14px] border border-[#e5dec9] bg-[#f3eee0] p-1 sm:inline-flex">
+          <div className="grid grid-cols-2 gap-1 rounded-full border border-[#e5dec9] bg-[#f3eee0] p-1 sm:inline-flex">
             <button
               type="button"
               onClick={() => setActiveTab("directory")}
-              className={`flex min-h-9 cursor-pointer items-center justify-center gap-2 rounded-[10px] px-3.5 py-1.5 text-xs font-semibold transition-all ${
+              className={`flex min-h-9 cursor-pointer items-center justify-center gap-2 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all ${
                 activeTab === "directory"
                   ? "bg-[#fffaf0] text-[#0a0a0a] shadow-2xs"
                   : "text-[#6a6a6a] hover:text-[#0a0a0a]"
@@ -366,7 +371,7 @@ export function SchoolPage() {
             <button
               type="button"
               onClick={() => setActiveTab("requests")}
-              className={`flex min-h-9 cursor-pointer items-center justify-center gap-2 rounded-[10px] px-3.5 py-1.5 text-xs font-semibold transition-all ${
+              className={`flex min-h-9 cursor-pointer items-center justify-center gap-2 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all ${
                 activeTab === "requests"
                   ? "bg-[#fffaf0] text-[#0a0a0a] shadow-2xs"
                   : "text-[#6a6a6a] hover:text-[#0a0a0a]"
@@ -375,7 +380,7 @@ export function SchoolPage() {
               <ClockIcon className="size-3.5 shrink-0" aria-hidden="true" />
               <span className="truncate">Pending Requests</span>
               {pendingRequests.length > 0 && (
-                <span className="rounded-full bg-[#d97706] px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-white">
+                <span className="rounded-full bg-rose-600 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-white">
                   {pendingRequests.length}
                 </span>
               )}
@@ -385,46 +390,68 @@ export function SchoolPage() {
 
         {/* TAB 1: DIRECTORY */}
         {activeTab === "directory" && (
-          <div className="space-y-4 sm:space-y-5">
-            {/* Compact Stats Strip */}
-            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-3">
-              <Card className="rounded-[14px] border border-[#e5dec9] bg-[#faf5e8] p-3 shadow-none sm:p-4">
-                <p className="text-xs font-medium text-[#6a6a6a]">
-                  Total Institutions
-                </p>
-                <p className="mt-1 text-xl font-bold tabular-nums text-[#0a0a0a] sm:text-2xl">
-                  {totalStatCount}
-                </p>
-              </Card>
-              <Card className="rounded-[14px] border border-[#e5dec9] bg-[#faf5e8] p-3 shadow-none sm:p-4">
-                <p className="text-xs font-medium text-[#6a6a6a]">SMA/SMK</p>
-                <p className="mt-1 text-xl font-bold tabular-nums text-[#0a0a0a] sm:text-2xl">
-                  {seniorHighCount}
-                </p>
-              </Card>
-              <Card className="rounded-[14px] border border-[#e5dec9] bg-[#faf5e8] p-3 shadow-none sm:p-4">
-                <p className="text-xs font-medium text-[#6a6a6a]">
-                  University
-                </p>
-                <p className="mt-1 text-xl font-bold tabular-nums text-[#0a0a0a] sm:text-2xl">
-                  {universityCount}
-                </p>
-              </Card>
-              <Card className="rounded-[14px] border border-[#e5dec9] bg-[#faf5e8] p-3 shadow-none sm:p-4">
-                <p className="text-xs font-medium text-[#6a6a6a]">
+          <div className="space-y-3.5 sm:space-y-5">
+            {!isDesktop ? (
+              /* Mobile Compact Summary Strip */
+              <div className="flex items-center justify-between rounded-[14px] border border-[#e5dec9] bg-[#faf5e8] px-3.5 py-2.5 text-xs text-[#6a6a6a]">
+                <span>
+                  <strong className="font-semibold tabular-nums text-[#0a0a0a]">
+                    {totalStatCount}
+                  </strong>{" "}
+                  {totalStatCount === 1 ? "Institution" : "Institutions"}
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <UsersIcon
+                    className="size-3.5 text-[#6a6a6a]"
+                    aria-hidden="true"
+                  />
+                  <strong className="font-semibold tabular-nums text-[#0a0a0a]">
+                    {totalLinkedUsers}
+                  </strong>{" "}
                   Connected Youth
-                </p>
-                <p className="mt-1 text-xl font-bold tabular-nums text-[#0a0a0a] sm:text-2xl">
-                  {totalLinkedUsers}
-                </p>
-              </Card>
-            </div>
+                </span>
+              </div>
+            ) : (
+              /* Desktop 4-Col Stats Strip */
+              <div className="grid grid-cols-4 gap-3">
+                <Card className="rounded-[14px] border border-[#e5dec9] bg-[#faf5e8] p-4 shadow-none">
+                  <p className="text-xs font-medium text-[#6a6a6a]">
+                    Total Institutions
+                  </p>
+                  <p className="mt-1 text-2xl font-bold tabular-nums text-[#0a0a0a]">
+                    {totalStatCount}
+                  </p>
+                </Card>
+                <Card className="rounded-[14px] border border-[#e5dec9] bg-[#faf5e8] p-4 shadow-none">
+                  <p className="text-xs font-medium text-[#6a6a6a]">SMA/SMK</p>
+                  <p className="mt-1 text-2xl font-bold tabular-nums text-[#0a0a0a]">
+                    {seniorHighCount}
+                  </p>
+                </Card>
+                <Card className="rounded-[14px] border border-[#e5dec9] bg-[#faf5e8] p-4 shadow-none">
+                  <p className="text-xs font-medium text-[#6a6a6a]">
+                    University
+                  </p>
+                  <p className="mt-1 text-2xl font-bold tabular-nums text-[#0a0a0a]">
+                    {universityCount}
+                  </p>
+                </Card>
+                <Card className="rounded-[14px] border border-[#e5dec9] bg-[#faf5e8] p-4 shadow-none">
+                  <p className="text-xs font-medium text-[#6a6a6a]">
+                    Connected Youth
+                  </p>
+                  <p className="mt-1 text-2xl font-bold tabular-nums text-[#0a0a0a]">
+                    {totalLinkedUsers}
+                  </p>
+                </Card>
+              </div>
+            )}
 
-            {/* Search & Level Filter Chips */}
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            {/* Search & Rounded-Full Level Filter Chips */}
+            <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
               <div className="relative w-full sm:max-w-xs">
                 <Input
-                  className="border border-[#e5dec9] bg-[#fffaf0] pr-9"
+                  className="rounded-full border border-[#e5dec9] bg-[#fffaf0] pr-9"
                   placeholder="Search institutions..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
@@ -445,35 +472,42 @@ export function SchoolPage() {
                     type="button"
                     onClick={() => setSearch("")}
                     aria-label="Clear search"
-                    className="absolute top-1/2 right-2.5 flex size-5 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-[#e5dec9]/70 text-[#6a6a6a] hover:bg-[#0a0a0a] hover:text-white"
+                    className="absolute top-1/2 right-3 flex size-5 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-[#e5dec9]/70 text-[#6a6a6a] hover:bg-[#0a0a0a] hover:text-white"
                   >
                     <XIcon className="size-3" aria-hidden="true" />
                   </button>
                 )}
               </div>
 
-              <div className="scrollbar-none -mx-3.5 flex items-center gap-2 overflow-x-auto px-3.5 py-0.5 sm:mx-0 sm:px-0">
-                {["all", ...SCHOOL_TYPES].map((t) => (
-                  <Chip
-                    key={t}
-                    variant="filter"
-                    selected={typeFilter === t}
-                    onClick={() => setTypeFilter(t)}
-                    className="min-h-9 shrink-0 text-xs tabular-nums"
-                  >
-                    {t === "all" ? `All (${totalStatCount})` : t}
-                  </Chip>
-                ))}
+              <div className="scrollbar-none -mx-3.5 flex items-center gap-1.5 overflow-x-auto px-3.5 py-0.5 sm:mx-0 sm:gap-2 sm:px-0">
+                {["all", ...SCHOOL_TYPES].map((t) => {
+                  const selected = typeFilter === t
+                  return (
+                    <button
+                      key={t}
+                      type="button"
+                      aria-pressed={selected}
+                      onClick={() => setTypeFilter(t)}
+                      className={`inline-flex min-h-9 shrink-0 cursor-pointer items-center rounded-full border px-3 py-1.5 text-xs font-semibold tabular-nums transition-colors active:scale-95 ${
+                        selected
+                          ? "border-[#0a0a0a] bg-[#0a0a0a] text-white shadow-2xs"
+                          : "border-[#e5dec9] bg-[#fffaf0] text-[#0a0a0a] hover:bg-[#faf5e8]"
+                      }`}
+                    >
+                      {t === "all" ? `All · ${totalStatCount}` : t}
+                    </button>
+                  )
+                })}
               </div>
             </div>
 
-            {/* Responsive Directory Card Grid */}
+            {/* Responsive Directory View: Grouped List on Mobile, Card Grid on Desktop */}
             {loadingSchools ? (
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {Array.from({ length: 6 }).map((_, i) => (
                   <div
                     key={i}
-                    className="h-24 animate-pulse rounded-[16px] border border-[#e5dec9] bg-[#faf5e8] p-4"
+                    className="h-20 animate-pulse rounded-[16px] border border-[#e5dec9] bg-[#faf5e8] p-4 sm:h-24"
                   />
                 ))}
               </div>
@@ -490,10 +524,65 @@ export function SchoolPage() {
                   Try adjusting your search query or level filter
                 </p>
               </div>
-            ) : (
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            ) : !isDesktop ? (
+              /* Mobile Grouped List */
+              <div className="divide-y divide-[#e5dec9] overflow-hidden rounded-[20px] border border-[#e5dec9] bg-[#fffaf0] shadow-2xs">
                 {filtered.map((s) => {
                   const isActive = s.is_active !== false
+                  const count = s.userCount ?? 0
+                  return (
+                    <Link
+                      key={s.id}
+                      to="/configure/master/school/$schoolId"
+                      params={{ schoolId: s.id }}
+                      className="flex items-center justify-between gap-3 px-4 py-3.5 transition-colors active:bg-[#faf5e8]"
+                    >
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <div className="flex items-center gap-2">
+                          <p className="truncate text-sm font-semibold text-[#0a0a0a]">
+                            {s.name}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-[#6a6a6a]">
+                          <span className="tabular-nums">
+                            {count} {count === 1 ? "Member" : "Members"}
+                          </span>
+                          <span>·</span>
+                          <span className="inline-flex items-center gap-1">
+                            <span
+                              className={`size-1.5 rounded-full ${
+                                isActive ? "bg-emerald-600" : "bg-neutral-400"
+                              }`}
+                              aria-hidden="true"
+                            />
+                            {isActive ? "Active" : "Inactive"}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex shrink-0 items-center gap-2">
+                        <Badge
+                          variant="secondary"
+                          size="sm"
+                          className="border border-[#e5dec9] bg-[#faf5e8] font-medium text-[#0a0a0a]"
+                        >
+                          {s.type || "Umum"}
+                        </Badge>
+                        <ChevronRightIcon
+                          className="size-4 text-[#6a6a6a]"
+                          aria-hidden="true"
+                        />
+                      </div>
+                    </Link>
+                  )
+                })}
+              </div>
+            ) : (
+              /* Desktop Card Grid */
+              <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+                {filtered.map((s) => {
+                  const isActive = s.is_active !== false
+                  const count = s.userCount ?? 0
                   return (
                     <Link
                       key={s.id}
@@ -503,7 +592,7 @@ export function SchoolPage() {
                     >
                       <Card className="flex h-full flex-col justify-between gap-3 rounded-[16px] border border-[#e5dec9] bg-[#faf5e8] p-4 shadow-none transition-colors hover:border-[#0a0a0a]/30 hover:bg-[#f5efe0]">
                         <div className="flex items-start justify-between gap-2.5">
-                          <h3 className="line-clamp-1 text-sm font-semibold tracking-tight text-[#0a0a0a] sm:text-base">
+                          <h3 className="line-clamp-1 text-base font-semibold tracking-tight text-[#0a0a0a]">
                             {s.name}
                           </h3>
                           <Badge
@@ -522,7 +611,7 @@ export function SchoolPage() {
                                 className="size-3.5 text-[#6a6a6a]"
                                 aria-hidden="true"
                               />
-                              {s.userCount ?? 0} Members
+                              {count} {count === 1 ? "Member" : "Members"}
                             </span>
                             <span className="inline-flex items-center gap-1.5 font-medium">
                               <span
@@ -692,7 +781,7 @@ export function SchoolPage() {
           to="/configure/master/school/new"
           aria-label="Add Institution"
           title="Add Institution"
-          className="fixed right-4 bottom-[calc(6.75rem+env(safe-area-inset-bottom))] z-40 flex size-14 items-center justify-center rounded-full bg-ink text-canvas shadow-[0_12px_28px_rgba(10,10,10,0.28)] transition-all hover:bg-ink/90 active:scale-95 sm:hidden"
+          className="fixed right-4 bottom-[calc(7.5rem+env(safe-area-inset-bottom))] z-40 flex size-14 items-center justify-center rounded-full bg-ink text-canvas shadow-[0_12px_28px_rgba(10,10,10,0.28)] transition-all hover:bg-ink/90 active:scale-95 sm:hidden"
         >
           <PlusIcon className="size-6" aria-hidden="true" />
         </Link>

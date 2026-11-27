@@ -33,6 +33,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
+import { usePendingSchoolRequestsCount } from "@/hooks/usePendingSchoolRequestsCount"
 import { useAuth } from "@/modules/auth"
 import type { UserRole } from "@/modules/auth"
 import { api } from "@/lib/api"
@@ -121,6 +122,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const userId = authState.status === "authenticated" ? authState.userId : null
   const role = authState.status === "authenticated" ? authState.role : null
   const isPengurus = role === "organizer" || role === "admin"
+  const pendingSchoolCount = usePendingSchoolRequestsCount(isPengurus)
 
   // ── Build nav items dari Registry (profile stays in user dropdown) ─────
   const mainNavItems = activeModules
@@ -307,6 +309,11 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                 const isSectionActive = section.items.some((item) =>
                   pathname.startsWith(item.to)
                 )
+                const sectionHasPendingSchools =
+                  pendingSchoolCount > 0 &&
+                  section.items.some(
+                    (item) => item.to === "/configure/master/school"
+                  )
 
                 return (
                   <Collapsible
@@ -327,10 +334,29 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                           )}
                         >
                           {SectionIcon && (
-                            <SectionIcon className="size-4 shrink-0 text-[#6a6a6a]" />
+                            <span className="relative shrink-0">
+                              <SectionIcon className="size-4 text-[#6a6a6a]" />
+                              {sectionHasPendingSchools && (
+                                <span
+                                  aria-hidden="true"
+                                  className="absolute -top-0.5 -right-0.5 hidden size-2 rounded-full bg-rose-600 group-data-[collapsible=icon]:block"
+                                />
+                              )}
+                            </span>
                           )}
                           <span className="truncate">{section.label}</span>
-                          <ChevronRightIcon className="ml-auto size-4 text-[#6a6a6a] transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                          {sectionHasPendingSchools && (
+                            <span
+                              aria-hidden="true"
+                              className="ml-auto size-2 shrink-0 rounded-full bg-rose-600"
+                            />
+                          )}
+                          <ChevronRightIcon
+                            className={cn(
+                              "size-4 text-[#6a6a6a] transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90",
+                              !sectionHasPendingSchools && "ml-auto"
+                            )}
+                          />
                         </SidebarMenuButton>
                       </CollapsibleTrigger>
                       <CollapsibleContent>
@@ -369,6 +395,12 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                                       <span className="truncate">
                                         {item.label}
                                       </span>
+                                      {item.to === "/configure/master/school" &&
+                                        pendingSchoolCount > 0 && (
+                                          <span className="ml-auto rounded-full bg-rose-600 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-white">
+                                            {pendingSchoolCount}
+                                          </span>
+                                        )}
                                     </Link>
                                   ) : (
                                     <a
@@ -388,6 +420,12 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                                       <span className="truncate">
                                         {item.label}
                                       </span>
+                                      {item.to === "/configure/master/school" &&
+                                        pendingSchoolCount > 0 && (
+                                          <span className="ml-auto rounded-full bg-rose-600 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-white">
+                                            {pendingSchoolCount}
+                                          </span>
+                                        )}
                                     </a>
                                   )}
                                 </SidebarMenuSubButton>

@@ -70,6 +70,7 @@ describe("RequestSchoolModal", () => {
       total: 1,
       page: 1,
       limit: 5,
+      total_pages: 1,
       has_more: false,
     })
     const postSpy = vi.spyOn(api, "post")

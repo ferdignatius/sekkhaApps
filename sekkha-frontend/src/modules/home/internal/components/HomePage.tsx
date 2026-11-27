@@ -22,6 +22,7 @@ import {
   SparklesIcon,
   ChevronRightIcon,
 } from "lucide-react"
+import { usePendingSchoolRequestsCount } from "@/hooks/usePendingSchoolRequestsCount"
 import { api } from "@/lib/api"
 import { DhammaWidget } from "./DhammaWidget"
 import { Link } from "@tanstack/react-router"
@@ -189,6 +190,7 @@ export function HomePage() {
 
   const isPengurus =
     role === "organizer" || role === "pengurus" || role === "admin"
+  const pendingSchoolCount = usePendingSchoolRequestsCount(isPengurus)
   const canAccessPeople = isPengurus
 
   // 8 Primary Quick Access Items for Home (Clay 6-Color Palette)
@@ -650,9 +652,17 @@ export function HomePage() {
                   const content = (
                     <div className="group flex cursor-pointer flex-col items-center text-center">
                       <div
-                        className={`flex size-12 items-center justify-center rounded-[16px] sm:size-14 sm:rounded-[18px] ${item.bg} ${item.iconColor} shadow-2xs transition-transform duration-150 group-hover:scale-105 group-active:scale-90 group-active:opacity-85`}
+                        className={`relative flex size-12 items-center justify-center rounded-[16px] sm:size-14 sm:rounded-[18px] ${item.bg} ${item.iconColor} shadow-2xs transition-transform duration-150 group-hover:scale-105 group-active:scale-90 group-active:opacity-85`}
                       >
                         <Icon className="size-5 sm:size-6" />
+                        {item.id === "see-more" && pendingSchoolCount > 0 && (
+                          <span
+                            aria-label={`${pendingSchoolCount} pending school requests`}
+                            className="absolute -top-1.5 -right-1.5 flex min-w-[18px] items-center justify-center rounded-full bg-rose-600 px-1 py-0.5 text-[10px] leading-none font-bold tabular-nums text-white shadow-xs"
+                          >
+                            {pendingSchoolCount}
+                          </span>
+                        )}
                       </div>
                       <span className="mt-1.5 line-clamp-2 flex min-h-[2.4em] items-center justify-center text-center text-[10px] leading-tight font-medium text-[#0a0a0a] sm:mt-2 sm:text-xs">
                         {item.label}
@@ -1037,6 +1047,11 @@ export function HomePage() {
                               {item.label}
                             </span>
                           </div>
+                          {item.id === "schools" && pendingSchoolCount > 0 && (
+                            <span className="shrink-0 rounded-full bg-rose-600 px-2 py-0.5 text-[10px] font-semibold tabular-nums text-white">
+                              {pendingSchoolCount}
+                            </span>
+                          )}
                           <ChevronRightIcon className="size-4 shrink-0 text-[#6a6a6a] transition-transform group-hover:translate-x-0.5" />
                         </>
                       )

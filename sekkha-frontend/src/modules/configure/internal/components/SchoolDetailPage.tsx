@@ -7,6 +7,8 @@ import {
   Trash2Icon,
   CheckCircle2Icon,
   AlertCircleIcon,
+  MoreVerticalIcon,
+  PencilIcon,
 } from "lucide-react"
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
 import { useAuth } from "@/modules/auth"
@@ -26,6 +28,13 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/base/Dialog"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 const SCHOOL_TYPES = [
   { value: "SMP", label: "Junior High School (SMP)" },
@@ -49,6 +58,7 @@ export function SchoolDetailPage() {
   const [type, setType] = useState("SMA/SMK")
   const [isActive, setIsActive] = useState(true)
 
+  const [isEditing, setIsEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [feedback, setFeedback] = useState<{
     type: "success" | "error"
@@ -114,6 +124,7 @@ export function SchoolDetailPage() {
       })
 
       setSchool((prev) => (prev ? { ...prev, ...updated } : updated))
+      setIsEditing(false)
       const okMsg = "Institution details updated successfully."
       setFeedback({
         type: "success",
@@ -214,7 +225,7 @@ export function SchoolDetailPage() {
   const memberCount = school.userCount ?? 0
 
   return (
-    <main className="min-h-screen bg-[#fffaf0] pb-24 text-left font-sans">
+    <main className="min-h-screen bg-[#fffaf0] pb-28 text-left font-sans md:pb-16">
       <PageBreadcrumb
         items={[
           { label: "Configure" },
@@ -228,35 +239,38 @@ export function SchoolDetailPage() {
         onBack={() => void navigate({ to: "/configure/master/school" })}
       />
 
-      <div className="mx-auto max-w-7xl space-y-6 px-3.5 py-4 sm:px-6 md:px-8">
-        {/* Status Badge */}
-        <div className="flex justify-end">
-          <Badge
-            variant={isActive ? "secondary" : "outline"}
-            className={
-              isActive
-                ? "border border-clay-success/30 bg-clay-success/15 font-semibold text-clay-success"
-                : "border border-[#e5e5e5] bg-[#ebe6d6] text-[#6a6a6a]"
-            }
-          >
-            {isActive ? "Active Institution" : "Inactive / Archived"}
-          </Badge>
+      <div className="mx-auto max-w-3xl space-y-4 px-3.5 py-2 sm:space-y-5 sm:px-6 sm:py-5 md:px-8">
+        {/* Desktop Header (hidden on mobile where PageBreadcrumb already shows school name) */}
+        <div className="hidden items-center justify-between gap-4 border-b border-[#e5dec9] pb-4 sm:flex">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-[12px] border border-[#e5dec9] bg-[#faf5e8] text-[#0a0a0a]">
+              <GraduationCapIcon className="size-5" aria-hidden="true" />
+            </div>
+            <div className="min-w-0">
+              <h1 className="truncate text-xl font-semibold tracking-tight text-[#0a0a0a]">
+                {school.name}
+              </h1>
+              <p className="truncate text-xs text-[#6a6a6a]">
+                Manage educational institution profile and master data
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* Feedback Message */}
         {feedback && (
           <div
-            className={`flex items-center justify-between gap-3 rounded-[14px] border p-4 text-xs font-medium shadow-2xs ${
+            className={`flex items-center justify-between gap-3 rounded-[14px] border p-3.5 text-xs font-medium ${
               feedback.type === "success"
-                ? "border-clay-success/30 bg-clay-success/15 text-clay-success"
+                ? "border-emerald-600/30 bg-emerald-50 text-emerald-800"
                 : "border-destructive/30 bg-destructive/10 text-destructive"
             }`}
           >
             <div className="flex items-center gap-2">
               {feedback.type === "success" ? (
-                <CheckCircle2Icon className="size-4 shrink-0 text-clay-success" />
+                <CheckCircle2Icon className="size-4 shrink-0" />
               ) : (
-                <AlertCircleIcon className="size-4 shrink-0 text-destructive" />
+                <AlertCircleIcon className="size-4 shrink-0" />
               )}
               <span>{feedback.message}</span>
             </div>
@@ -270,45 +284,114 @@ export function SchoolDetailPage() {
           </div>
         )}
 
-        {/* Main Details Card */}
-        <Card className="rounded-[24px] border border-[#e5e5e5] bg-[#faf5e8] p-6 shadow-2xs sm:p-8">
-          <div className="mb-6 flex items-start justify-between border-b border-[#f0ece1] pb-5">
-            <div className="flex items-center gap-3">
-              <div className="flex size-12 items-center justify-center rounded-[16px] bg-[#0a0a0a] text-white shadow-2xs">
-                <GraduationCapIcon className="size-6 text-clay-ochre" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold tracking-tight text-[#0a0a0a]">
-                  {school.name}
-                </h1>
-                <p className="text-xs text-[#6a6a6a]">
-                  Manage educational institution profile and master data
-                  records.
-                </p>
-              </div>
+        {/* Unified Summary Strip + 3-Dot Actions */}
+        <div className="flex items-center justify-between gap-3 rounded-[16px] border border-[#e5dec9] bg-[#faf5e8] px-4 py-3">
+          <div className="flex items-center gap-2.5">
+            <UsersIcon className="size-4 text-[#6a6a6a]" aria-hidden="true" />
+            <span className="text-xs font-medium text-[#6a6a6a]">
+              <strong className="font-semibold tabular-nums text-[#0a0a0a]">
+                {memberCount}
+              </strong>{" "}
+              Active Youth
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge
+              variant={isActive ? "secondary" : "outline"}
+              className={
+                isActive
+                  ? "border border-emerald-600/25 bg-emerald-50 font-semibold text-emerald-700"
+                  : "border border-[#e5dec9] bg-[#ebe6d6] text-[#6a6a6a]"
+              }
+            >
+              {isActive ? "Active" : "Inactive"}
+            </Badge>
+
+            {isAdmin && !isEditing && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label="Institution actions"
+                    title="Institution actions"
+                    className="flex size-8 cursor-pointer items-center justify-center rounded-full border border-[#e5dec9] bg-[#fffaf0] text-[#0a0a0a] transition-colors hover:bg-[#efe8d6]"
+                  >
+                    <MoreVerticalIcon className="size-4" aria-hidden="true" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="end"
+                  className="w-44 rounded-[16px] border border-[#e5dec9] bg-[#fffaf0] p-1.5 shadow-lg"
+                >
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setFeedback(null)
+                      setIsEditing(true)
+                    }}
+                    className="cursor-pointer gap-2 rounded-[10px] text-xs font-semibold text-[#0a0a0a]"
+                  >
+                    <PencilIcon className="size-3.5" aria-hidden="true" />
+                    <span>Edit Institution</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator className="my-1 bg-[#e5dec9]" />
+                  <DropdownMenuItem
+                    onClick={() => setShowDeleteModal(true)}
+                    className="cursor-pointer gap-2 rounded-[10px] text-xs font-semibold text-destructive focus:bg-destructive/10 focus:text-destructive"
+                  >
+                    <Trash2Icon className="size-3.5" aria-hidden="true" />
+                    <span>Delete Institution</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
+        </div>
+
+        {/* Read-Only Detail View vs Inline Edit Form */}
+        {!isEditing ? (
+          <div className="divide-y divide-[#e5dec9] overflow-hidden rounded-[20px] border border-[#e5dec9] bg-[#faf5e8]">
+            <div className="px-4 py-3.5 sm:px-6 sm:py-4">
+              <p className="text-[11px] font-medium text-[#6a6a6a]">
+                Institution Name
+              </p>
+              <p className="mt-1 text-sm font-semibold text-[#0a0a0a] sm:text-base">
+                {school.name}
+              </p>
+            </div>
+            <div className="px-4 py-3.5 sm:px-6 sm:py-4">
+              <p className="text-[11px] font-medium text-[#6a6a6a]">
+                Education Level
+              </p>
+              <p className="mt-1 text-sm font-semibold text-[#0a0a0a]">
+                {SCHOOL_TYPES.find((t) => t.value === (school.type || "Umum"))
+                  ?.label ||
+                  school.type ||
+                  "General / Other Institution"}
+              </p>
+            </div>
+            <div className="px-4 py-3.5 sm:px-6 sm:py-4">
+              <p className="text-[11px] font-medium text-[#6a6a6a]">
+                Active in Onboarding
+              </p>
+              <p className="mt-1 text-sm font-semibold text-[#0a0a0a]">
+                {school.is_active !== false
+                  ? "Visible during registration"
+                  : "Hidden from registration"}
+              </p>
             </div>
           </div>
-
-          {/* Social Proof Meta Pill */}
-          <div className="mb-6 rounded-[16px] border border-[#e5e5e5] bg-[#fffaf0] p-4 shadow-2xs">
-            <div className="flex items-center gap-2.5">
-              <UsersIcon className="size-5 text-clay-ochre" />
-              <div>
-                <p className="text-xs text-[#6a6a6a]">Connected Congregation</p>
-                <p className="text-base font-bold text-[#0a0a0a]">
-                  {memberCount} Active Youth
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <form onSubmit={handleSave} className="space-y-5">
+        ) : (
+          <form
+            onSubmit={handleSave}
+            className="space-y-4 rounded-[20px] border border-[#e5dec9] bg-[#faf5e8] p-4 sm:space-y-5 sm:p-6"
+          >
             <Input
               label="Institution Name"
               required
               disabled={!isAdmin}
               value={name}
               onChange={(e) => setName(e.target.value)}
+              className="border-[#e5dec9] bg-[#fffaf0]"
               helperText="Official school, vocational, or university name."
             />
 
@@ -322,17 +405,17 @@ export function SchoolDetailPage() {
 
             {/* Active Status Toggle for Admin */}
             {isAdmin && (
-              <div className="flex items-center justify-between rounded-[14px] border border-[#e5e5e5] bg-[#fffaf0] p-4">
-                <div>
-                  <p className="text-xs font-bold text-[#0a0a0a]">
+              <div className="flex items-center justify-between gap-4 rounded-[14px] border border-[#e5dec9] bg-[#fffaf0] p-3.5 sm:p-4">
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold text-[#0a0a0a]">
                     Active in Onboarding
                   </p>
-                  <p className="text-[11px] text-[#6a6a6a]">
-                    When active, members can search and select this institution
-                    during registration.
+                  <p className="mt-0.5 text-[11px] leading-relaxed text-[#6a6a6a]">
+                    Members can search and select this institution during
+                    registration.
                   </p>
                 </div>
-                <label className="relative inline-flex cursor-pointer items-center">
+                <label className="relative inline-flex shrink-0 cursor-pointer items-center">
                   <input
                     type="checkbox"
                     checked={isActive}
@@ -344,30 +427,35 @@ export function SchoolDetailPage() {
               </div>
             )}
 
-            {/* Admin Action Buttons */}
+            {/* Edit Mode Action Buttons */}
             {isAdmin && (
-              <div className="flex items-center justify-between border-t border-[#f0ece1] pt-5">
+              <div className="flex flex-col-reverse gap-2.5 border-t border-[#e5dec9] pt-4 sm:flex-row sm:items-center sm:justify-end">
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => setShowDeleteModal(true)}
-                  className="gap-2 rounded-[12px] border border-destructive/30 text-xs font-semibold text-destructive hover:bg-destructive/10"
+                  disabled={saving}
+                  onClick={() => {
+                    setName(school.name)
+                    setType(school.type || "Umum")
+                    setIsActive(school.is_active !== false)
+                    setIsEditing(false)
+                  }}
+                  className="min-h-11 w-full rounded-full border border-[#e5dec9] bg-[#fffaf0] text-xs font-semibold text-[#0a0a0a] hover:bg-[#efe8d6] sm:w-auto sm:px-5"
                 >
-                  <Trash2Icon className="size-4" />
-                  Delete Institution
+                  Cancel
                 </Button>
 
                 <Button
                   type="submit"
                   disabled={saving}
-                  className="rounded-[12px] bg-[#0a0a0a] px-6 text-xs font-bold text-white shadow-xs hover:bg-[#262626]"
+                  className="min-h-11 w-full rounded-full bg-[#0a0a0a] px-6 text-xs font-semibold text-white shadow-2xs hover:bg-[#262626] sm:w-auto"
                 >
                   {saving ? "Saving Changes..." : "Save Changes"}
                 </Button>
               </div>
             )}
           </form>
-        </Card>
+        )}
       </div>
 
       {/* Delete Confirmation Dialog */}

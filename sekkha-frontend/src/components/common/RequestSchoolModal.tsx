@@ -7,6 +7,7 @@ import {
 import { Button, Input, Select } from "@/components/base"
 import { ResponsiveFormModal } from "@/components/common/ResponsiveFormModal"
 import { useDebounce } from "@/hooks/useDebounce"
+import { notifySchoolRequestsChanged } from "@/hooks/usePendingSchoolRequestsCount"
 import { api } from "@/lib/api"
 import { fetchSchoolsPaginated } from "@/lib/pagination"
 
@@ -116,6 +117,7 @@ export function RequestSchoolModal({
         type: level,
       })
       const created = (res?.data || res) as CreatedSchoolRequest
+      notifySchoolRequestsChanged()
       onOpenChange(false)
       onCreated({
         id: created.id,

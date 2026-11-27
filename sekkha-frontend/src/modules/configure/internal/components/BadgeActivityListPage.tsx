@@ -155,6 +155,7 @@ export function BadgeActivityListPage() {
             { label: "Master Data", href: "/configure/master/badge-activity" },
             { label: "Badge Activity" },
           ]}
+          backTo="/home"
         />
 
         {/* Header Section */}

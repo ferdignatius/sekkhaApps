@@ -24,6 +24,7 @@ export interface BreadcrumbEntry {
 interface PageBreadcrumbProps {
   items: BreadcrumbEntry[]
   onBack?: () => void
+  backTo?: string
   showBack?: boolean
   actions?: React.ReactNode
 }
@@ -33,6 +34,7 @@ interface PageBreadcrumbProps {
 export function PageBreadcrumb({
   items,
   onBack,
+  backTo,
   showBack,
   actions,
 }: PageBreadcrumbProps) {
@@ -55,15 +57,26 @@ export function PageBreadcrumb({
         <div className="mx-auto flex min-h-[48px] max-w-7xl items-center justify-between gap-3 sm:min-h-[52px]">
           {/* ── Left: Back Button ── */}
           {shouldShowBack ? (
-            <button
-              type="button"
-              onClick={handleBack}
-              className="flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-full border border-white/80 bg-[#faf5e8]/80 text-[#0a0a0a] shadow-2xs ring-1 ring-black/[0.04] backdrop-blur-xl transition-all hover:bg-[#faf5e8] active:scale-95"
-              title="Back to previous page"
-              aria-label="Back"
-            >
-              <ArrowLeftIcon className="size-4.5 text-[#0a0a0a]" />
-            </button>
+            backTo && !onBack ? (
+              <Link
+                to={backTo as "/"}
+                className="flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-full border border-white/80 bg-[#faf5e8]/80 text-[#0a0a0a] shadow-2xs ring-1 ring-black/[0.04] backdrop-blur-xl transition-all hover:bg-[#faf5e8] active:scale-95"
+                title="Back to previous page"
+                aria-label="Back"
+              >
+                <ArrowLeftIcon className="size-4.5 text-[#0a0a0a]" />
+              </Link>
+            ) : (
+              <button
+                type="button"
+                onClick={handleBack}
+                className="flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-full border border-white/80 bg-[#faf5e8]/80 text-[#0a0a0a] shadow-2xs ring-1 ring-black/[0.04] backdrop-blur-xl transition-all hover:bg-[#faf5e8] active:scale-95"
+                title="Back to previous page"
+                aria-label="Back"
+              >
+                <ArrowLeftIcon className="size-4.5 text-[#0a0a0a]" />
+              </button>
+            )
           ) : null}
 
           {/* ── Center: Desktop Breadcrumb & Mobile Page Title ── */}

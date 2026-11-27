@@ -1583,7 +1583,6 @@ export const eventServices = {
         user: {
           OR: [
             { profile: { name: { contains: searchQuery, mode: "insensitive" } } },
-            { profile: { school: { name: { contains: searchQuery, mode: "insensitive" } } } },
             ...(isNum ? [{ userNumber: BigInt(searchQuery) }] : []),
           ],
         },
@@ -1652,8 +1651,6 @@ export const eventServices = {
         user_id: a.userId,
         name: a.user.profile?.name ?? "Sekkha Member",
         user_number: a.user.userNumber ? String(a.user.userNumber) : "",
-        role: a.user.role,
-        school: a.user.profile?.school?.name ?? "Umum",
         method: a.method,
         points_earned: a.pointsEarned,
         is_late: a.isLate,

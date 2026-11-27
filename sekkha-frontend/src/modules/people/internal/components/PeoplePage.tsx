@@ -305,23 +305,13 @@ export function PeoplePage() {
       .catch(() => showToast("Clipboard access denied.", "error"))
   }
 
-  const hasActiveFilters = roleFilter !== "all" || claimStatusFilter !== "all"
-  const activeFilterSummary = [
-    roleFilter !== "all"
-      ? roleFilter === "organizer"
-        ? "Organizers"
-        : roleFilter === "member"
-          ? "Members"
-          : "Activists"
-      : null,
-    claimStatusFilter !== "all"
-      ? claimStatusFilter === "claimed"
-        ? "Claimed"
-        : "Unclaimed"
-      : null,
-  ]
-    .filter(Boolean)
-    .join(" · ")
+  const hasAccountFilter = claimStatusFilter !== "all"
+  const activeAccountSummary =
+    claimStatusFilter === "claimed"
+      ? "Claimed"
+      : claimStatusFilter === "unclaimed"
+        ? "Unclaimed"
+        : ""
 
   return (
     <main className="flex min-h-screen flex-col bg-canvas text-left font-sans antialiased">
@@ -329,81 +319,30 @@ export function PeoplePage() {
         items={[{ label: "People" }]}
         actions={
           <div className="flex items-center gap-1.5">
-            {/* Combined Role & Claim Status Filter Dropdown */}
+            {/* Account Status Filter Dropdown */}
             <div className="relative" ref={filterDropdownRef}>
               <button
                 type="button"
                 onClick={() => setFilterDropdownOpen((prev) => !prev)}
-                aria-label="Filter members"
+                aria-label="Filter account status"
                 aria-expanded={filterDropdownOpen}
-                title="Filter members"
+                title="Filter account status"
                 className={`flex h-9 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-full border transition-all active:scale-95 sm:h-10 ${
-                  hasActiveFilters
+                  hasAccountFilter
                     ? "border-[#0a0a0a] bg-[#0a0a0a] px-3 text-xs font-semibold text-white shadow-xs"
                     : "w-9 border-[#ded6c2] bg-[#faf5e8]/90 text-[#0a0a0a] shadow-2xs hover:bg-[#f5efe0] sm:w-10"
                 }`}
               >
                 <FilterIcon className="size-4 shrink-0" aria-hidden="true" />
-                {hasActiveFilters && (
+                {hasAccountFilter && (
                   <span className="max-w-[110px] truncate">
-                    {activeFilterSummary}
+                    {activeAccountSummary}
                   </span>
                 )}
               </button>
 
               {filterDropdownOpen && (
-                <div className="absolute top-full right-0 z-50 mt-2 w-60 animate-in space-y-2 rounded-[22px] border border-[#ded5c0] bg-[#faf5e8]/95 p-2.5 text-left shadow-[0_16px_40px_rgba(0,0,0,0.14)] ring-1 ring-black/[0.05] backdrop-blur-2xl zoom-in-95 fade-in">
-                  <div className="space-y-0.5">
-                    <p className="px-2.5 py-1 text-[10px] font-bold tracking-wider text-[#6a6a6a] uppercase">
-                      Role
-                    </p>
-                    {(
-                      [
-                        { id: "all", label: "All Roles", count: stats.total || 0, dotColor: null },
-                        { id: "organizer", label: "Organizers", count: stats.organizer ?? 0, dotColor: "#1a3a3a" },
-                        { id: "member", label: "Members", count: stats.member ?? 0, dotColor: "#e8b94a" },
-                        { id: "activist", label: "Activists", count: stats.activist ?? 0, dotColor: "#8b5cf6" },
-                      ] as const
-                    ).map((opt) => {
-                      const isSelected = roleFilter === opt.id
-                      return (
-                        <button
-                          key={opt.id}
-                          type="button"
-                          onClick={() => {
-                            setRoleFilter(
-                              opt.id === "all" || isSelected ? "all" : opt.id
-                            )
-                            setFilterDropdownOpen(false)
-                          }}
-                          className={`flex w-full cursor-pointer items-center justify-between rounded-[12px] px-2.5 py-1.5 text-xs font-semibold transition-colors ${
-                            isSelected
-                              ? "bg-[#fffaf0] font-bold text-[#0a0a0a] shadow-2xs"
-                              : "text-[#6a6a6a] hover:bg-[#fffaf0]/80 hover:text-[#0a0a0a]"
-                          }`}
-                        >
-                          <span className="flex items-center gap-2">
-                            {opt.dotColor && (
-                              <span
-                                className="size-2 shrink-0 rounded-full"
-                                style={{ backgroundColor: opt.dotColor }}
-                                aria-hidden="true"
-                              />
-                            )}
-                            <span>
-                              {opt.label} · {opt.count}
-                            </span>
-                          </span>
-                          {isSelected && (
-                            <CheckIcon className="size-3.5 text-[#0a0a0a]" />
-                          )}
-                        </button>
-                      )
-                    })}
-                  </div>
-
-                  <div className="h-px bg-black/[0.06]" />
-
+                <div className="absolute top-full right-0 z-50 mt-2 w-56 animate-in space-y-2 rounded-[22px] border border-[#ded5c0] bg-[#faf5e8]/95 p-2.5 text-left shadow-[0_16px_40px_rgba(0,0,0,0.14)] ring-1 ring-black/[0.05] backdrop-blur-2xl zoom-in-95 fade-in">
                   <div className="space-y-0.5">
                     <p className="px-2.5 py-1 text-[10px] font-bold tracking-wider text-[#6a6a6a] uppercase">
                       Account Status
@@ -439,19 +378,18 @@ export function PeoplePage() {
                     })}
                   </div>
 
-                  {hasActiveFilters && (
+                  {hasAccountFilter && (
                     <>
                       <div className="h-px bg-black/[0.06]" />
                       <button
                         type="button"
                         onClick={() => {
-                          setRoleFilter("all")
                           setClaimStatusFilter("all")
                           setFilterDropdownOpen(false)
                         }}
                         className="w-full cursor-pointer rounded-[12px] px-2.5 py-1.5 text-center text-xs font-bold text-[#0a0a0a] hover:bg-[#fffaf0]"
                       >
-                        Reset Filters
+                        Reset Status
                       </button>
                     </>
                   )}
@@ -569,6 +507,52 @@ export function PeoplePage() {
                   Clear filters
                 </button>
               )}
+            </div>
+
+            {/* Role Filter Chips */}
+            <div
+              role="group"
+              aria-label="Filter members by role"
+              className="scrollbar-none -mx-3.5 flex items-center gap-2 overflow-x-auto px-3.5 py-0.5 sm:mx-0 sm:flex-wrap sm:px-0"
+            >
+              {(
+                [
+                  { id: "all", label: "All", count: stats.total || 0, dotColor: null },
+                  { id: "organizer", label: "Organizers", count: stats.organizer ?? 0, dotColor: "#1a3a3a" },
+                  { id: "member", label: "Members", count: stats.member ?? 0, dotColor: "#e8b94a" },
+                  { id: "activist", label: "Activists", count: stats.activist ?? 0, dotColor: "#8b5cf6" },
+                ] as const
+              ).map((opt) => {
+                const isSelected = roleFilter === opt.id
+                return (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    aria-pressed={isSelected}
+                    onClick={() =>
+                      setRoleFilter(
+                        opt.id === "all" || isSelected ? "all" : opt.id
+                      )
+                    }
+                    className={`inline-flex min-h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-bold transition-all active:scale-95 ${
+                      isSelected
+                        ? "border-[#0a0a0a] bg-[#0a0a0a] text-white shadow-2xs"
+                        : "border-[#e5dec9] bg-[#fffaf0] text-[#0a0a0a] hover:bg-[#faf5e8]"
+                    }`}
+                  >
+                    {opt.dotColor && (
+                      <span
+                        className="size-2 shrink-0 rounded-full"
+                        style={{ backgroundColor: opt.dotColor }}
+                        aria-hidden="true"
+                      />
+                    )}
+                    <span>
+                      {opt.label} · {opt.count}
+                    </span>
+                  </button>
+                )
+              })}
             </div>
 
             {loading ? (

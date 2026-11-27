@@ -201,7 +201,7 @@ describe("Schools Module — Redis Caching, Invalidations & Configure Route Isol
     }
   })
 
-  it("caches getSchoolStats under CacheKeys.schoolStats(school) without class_grade key bloat while echoing class_grade", async () => {
+  it("caches getSchoolStats under CacheKeys.schoolStats(school)", async () => {
     const origCountProfiles = schoolModels.countProfilesBySchoolName
     const cache = withRedisMock()
 
@@ -212,21 +212,17 @@ describe("Schools Module — Redis Caching, Invalidations & Configure Route Isol
     }
 
     try {
-      const resA = await schoolServices.getSchoolStats("SMA Tri Ratna", "11 IPA")
-      const resB = await schoolServices.getSchoolStats("SMA Tri Ratna", "12 IPS")
+      const resA = await schoolServices.getSchoolStats("SMA Tri Ratna")
+      const resB = await schoolServices.getSchoolStats("SMA Tri Ratna")
 
       expect(queryCalls).toBe(1)
       expect(resA).toEqual({
         school: "SMA Tri Ratna",
-        class_grade: "11 IPA",
         totalInSchool: 18,
-        totalInClass: 0,
       })
       expect(resB).toEqual({
         school: "SMA Tri Ratna",
-        class_grade: "12 IPS",
         totalInSchool: 18,
-        totalInClass: 0,
       })
       expect(cache.store.has(CacheKeys.schoolStats("SMA Tri Ratna"))).toBe(true)
       expect(cache.store.size).toBe(1)
@@ -287,6 +283,23 @@ describe("Schools Module — Redis Caching, Invalidations & Configure Route Isol
       before = cache.scannedPatterns.length
       await schoolServices.rejectSchoolRequest("sch_1", "rev_1")
       expectInvalidatedAll("reject", before)
+
+      // 2b. rejectSchoolRequest with assignSchoolId -> validates active target school & reassigns
+      let capturedAssignId: string | null | undefined
+      schoolModels.findSchoolById = async (targetId: string) =>
+        targetId === "sch_target"
+          ? ({ ...makeSchoolRecord(9), id: "sch_target", name: "Active Target School", status: "active", isActive: true } as any)
+          : ({ ...makeSchoolRecord(1), status: "pending", requestedBy: "usr_1" } as any)
+      schoolModels.rejectSchool = async (_id, _rev, assignId) => {
+        capturedAssignId = assignId
+        return { ...makeSchoolRecord(1), status: "cancel", isActive: false } as any
+      }
+      const reassignedRes = await schoolServices.rejectSchoolRequest("sch_1", "rev_1", "sch_target")
+      expect(capturedAssignId).toBe("sch_target")
+      expect(reassignedRes.reassigned_school).toEqual({ id: "sch_target", name: "Active Target School" })
+      await expect(
+        schoolServices.rejectSchoolRequest("sch_1", "rev_1", "sch_1")
+      ).rejects.toThrow(/rejected school itself/i)
 
       // 3. createSchool
       schoolModels.findSchoolByName = async () => null

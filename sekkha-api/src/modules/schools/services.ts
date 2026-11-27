@@ -205,7 +205,7 @@ export const schoolServices = {
     }
   },
 
-  async rejectSchoolRequest(id: string, reviewerId: string) {
+  async rejectSchoolRequest(id: string, reviewerId: string, assignSchoolId?: string | null) {
     const existing = await schoolModels.findSchoolById(id)
     if (!existing) {
       throw new AppError("School not found", 404, "SCHOOL_NOT_FOUND")
@@ -214,8 +214,31 @@ export const schoolServices = {
       throw new AppError("School request has already been processed", 400, "SCHOOL_ALREADY_PROCESSED")
     }
 
-    const updated = await schoolModels.rejectSchool(id, reviewerId)
+    let targetSchool: { id: string; name: string } | null = null
+    if (assignSchoolId) {
+      if (assignSchoolId === id) {
+        throw new AppError("Cannot assign users to the rejected school itself", 400, "INVALID_TARGET_SCHOOL")
+      }
+      const target = await schoolModels.findSchoolById(assignSchoolId)
+      if (!target) {
+        throw new AppError("Target school not found", 404, "SCHOOL_NOT_FOUND")
+      }
+      if (target.status !== "active" || !target.isActive) {
+        throw new AppError("Target school must be active", 400, "TARGET_SCHOOL_NOT_ACTIVE")
+      }
+      targetSchool = { id: target.id, name: target.name }
+    }
+
+    const updated = await schoolModels.rejectSchool(
+      id,
+      reviewerId,
+      targetSchool?.id ?? null,
+      existing.requestedBy
+    )
     await invalidateSchoolRelatedCaches(id, "reject")
+    if (targetSchool) {
+      await invalidateSchoolRelatedCaches(targetSchool.id, "update")
+    }
     return {
       id: updated.id,
       name: updated.name,
@@ -223,39 +246,29 @@ export const schoolServices = {
       status: updated.status,
       is_active: updated.isActive,
       userCount: updated._count.profiles,
+      reassigned_school: targetSchool,
     }
   },
 
-  async getSchoolStats(schoolName: string, classGrade: string = "") {
+  async getSchoolStats(schoolName: string) {
     const trimmedSchool = schoolName.trim()
-    const trimmedGrade = classGrade.trim()
 
     if (!trimmedSchool) {
       return {
         school: "",
-        class_grade: trimmedGrade,
         totalInSchool: 0,
-        totalInClass: 0,
       }
     }
 
     const cacheKey = CacheKeys.schoolStats(trimmedSchool)
-    const baseStats = await cached(cacheKey, 300, async () => {
+    return cached(cacheKey, 300, async () => {
       const totalInSchool = await schoolModels.countProfilesBySchoolName(trimmedSchool)
 
       return {
         school: trimmedSchool,
         totalInSchool,
-        totalInClass: 0,
       }
     })
-
-    return {
-      school: baseStats.school,
-      class_grade: trimmedGrade,
-      totalInSchool: baseStats.totalInSchool,
-      totalInClass: baseStats.totalInClass,
-    }
   },
 
   async createSchool(data: { name: string; type?: string }) {

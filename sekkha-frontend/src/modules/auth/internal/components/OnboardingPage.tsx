@@ -14,9 +14,9 @@ import {
 } from "lucide-react"
 import { api } from "@/lib/api"
 import { useAuth } from "@/modules/auth"
-import { Button, Input, ManyToOneSelect } from "@/components/base"
+import { Button, ManyToOneSelect } from "@/components/base"
 import type { ManyToOneSelectOption } from "@/components/base"
-import { ResponsiveFormModal } from "@/components/common/ResponsiveFormModal"
+import { RequestSchoolModal } from "@/components/common/RequestSchoolModal"
 import { SuccessCelebrationModal } from "@/components/common/SuccessLottie"
 import { useDebounce } from "@/hooks/useDebounce"
 import { usePaginatedDropdown } from "@/hooks/usePaginatedDropdown"
@@ -63,9 +63,7 @@ export function OnboardingPage() {
   const [selectedSchoolCache, setSelectedSchoolCache] =
     useState<SchoolOption | null>(null)
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false)
-  const [requestName, setRequestName] = useState("")
-  const [requestSubmitting, setRequestSubmitting] = useState(false)
-  const [requestError, setRequestError] = useState<string | null>(null)
+  const [requestInitialName, setRequestInitialName] = useState("")
 
   const {
     items: schools,
@@ -142,9 +140,9 @@ export function OnboardingPage() {
           u.username ||
           (u.email
             ? u.email
-                .split("@")[0]
-                .toLowerCase()
-                .replace(/[^a-z0-9_.]/g, "")
+              .split("@")[0]
+              .toLowerCase()
+              .replace(/[^a-z0-9_.]/g, "")
             : "")
 
         setProfileForm((prev) => ({
@@ -160,10 +158,10 @@ export function OnboardingPage() {
             await api.get(
               `/configure/schools?limit=5&include_pending=true&search=${encodeURIComponent(u.school)}`
             )
-          } catch {}
+          } catch { }
         }
       })
-      .catch(() => {})
+      .catch(() => { })
   }, [])
 
   // Fetch similar users stats when school changes
@@ -260,47 +258,8 @@ export function OnboardingPage() {
   }
 
   function handleOpenRequestModal(searchTerm: string) {
-    setRequestName(searchTerm.trim())
-    setRequestError(null)
+    setRequestInitialName(searchTerm.trim())
     setIsRequestModalOpen(true)
-  }
-
-  async function handleSubmitSchoolRequest(e: React.FormEvent) {
-    e.preventDefault()
-    const trimmed = requestName.trim()
-    if (!trimmed || trimmed.length < 2) {
-      setRequestError("School name must be at least 2 characters.")
-      return
-    }
-
-    try {
-      setRequestSubmitting(true)
-      setRequestError(null)
-      const res: any = await api.post("/configure/school-requests", {
-        name: trimmed,
-      })
-      const created = res?.data || res
-      setIsRequestModalOpen(false)
-
-      if (created && created.name) {
-        handleSchoolChange(created.name, {
-          id: created.id,
-          name: created.name,
-          type: created.type || "Umum",
-          status: created.status || "pending",
-          userCount: created.userCount || 1,
-        })
-      }
-
-      setSuccessToast(
-        `Registration request for "${trimmed}" has been submitted and selected for your profile.`
-      )
-      setTimeout(() => setSuccessToast(null), 6000)
-    } catch (err: any) {
-      setRequestError(err.message || "Failed to submit school request.")
-    } finally {
-      setRequestSubmitting(false)
-    }
   }
 
   async function handleFinishOnboarding(skipped: boolean = false) {
@@ -369,11 +328,10 @@ export function OnboardingPage() {
           <div className="flex items-center justify-between gap-1 sm:gap-2">
             {/* Step 1 Indicator */}
             <div
-              className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold transition-all sm:px-3 sm:py-1.5 ${
-                step === "profile"
-                  ? "bg-[#0a0a0a] text-white"
-                  : "border border-[#22c55e]/30 bg-[#22c55e]/15 text-[#22c55e]"
-              }`}
+              className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold transition-all sm:px-3 sm:py-1.5 ${step === "profile"
+                ? "bg-[#0a0a0a] text-white"
+                : "border border-[#22c55e]/30 bg-[#22c55e]/15 text-[#22c55e]"
+                }`}
             >
               <span className="flex size-4 items-center justify-center rounded-full bg-current/20 text-[10px] font-bold sm:size-5 sm:text-[11px]">
                 {step !== "profile" ? <CheckIcon className="size-3" /> : "1"}
@@ -384,19 +342,17 @@ export function OnboardingPage() {
             {/* Line 1 */}
             <div className="relative mx-1 h-0.5 flex-1 overflow-hidden rounded-full bg-[#e5e5e5]">
               <div
-                className={`h-full bg-[#0a0a0a] transition-all duration-300 ${
-                  step === "school" ? "w-full" : "w-0"
-                }`}
+                className={`h-full bg-[#0a0a0a] transition-all duration-300 ${step === "school" ? "w-full" : "w-0"
+                  }`}
               />
             </div>
 
             {/* Step 2 Indicator */}
             <div
-              className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold transition-all sm:px-3 sm:py-1.5 ${
-                step === "school"
-                  ? "bg-[#0a0a0a] text-white"
-                  : "border border-[#e5e5e5] bg-[#faf5e8] text-[#6a6a6a]"
-              }`}
+              className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold transition-all sm:px-3 sm:py-1.5 ${step === "school"
+                ? "bg-[#0a0a0a] text-white"
+                : "border border-[#e5e5e5] bg-[#faf5e8] text-[#6a6a6a]"
+                }`}
             >
               <span className="flex size-4 items-center justify-center rounded-full bg-current/20 text-[10px] font-bold sm:size-5 sm:text-[11px]">
                 2
@@ -587,23 +543,26 @@ export function OnboardingPage() {
                   searchPlaceholder="Search school or university..."
                   itemLabel="schools"
                   emptyText="No matching school found."
+                  renderEmptyAction={(query, closeMenu) =>
+                    query.trim().length >= 2 ? (
+                      <div className="mt-3">
+                        <Button
+                          type="button"
+                          variant="outlined"
+                          size="sm"
+                          onClick={() => {
+                            closeMenu()
+                            handleOpenRequestModal(query)
+                          }}
+                          className="h-8 gap-1 rounded-full px-3 text-[11px] font-bold"
+                        >
+                          <PlusIcon className="size-3.5" />
+                          <span>Request &quot;{query.trim()}&quot;</span>
+                        </Button>
+                      </div>
+                    ) : null
+                  }
                 />
-
-                <div className="flex flex-wrap items-center justify-between gap-2 pt-0.5">
-                  <p className="text-[11px] text-[#6a6a6a]">
-                    Can&apos;t find your institution in the list?
-                  </p>
-                  <Button
-                    type="button"
-                    variant="outlined"
-                    size="sm"
-                    onClick={() => handleOpenRequestModal(schoolSearch)}
-                    className="h-8 gap-1 rounded-full px-3 text-[11px] font-bold"
-                  >
-                    <PlusIcon className="size-3.5" />
-                    <span>Request New School</span>
-                  </Button>
-                </div>
               </div>
 
               {/* Social Proof Peer Widget */}
@@ -699,59 +658,34 @@ export function OnboardingPage() {
         </div>
       </div>
 
-      {/* ─────────────────────────────────────────────────────────────────── */}
-      {/* MODAL: REQUEST NEW SCHOOL (ResponsiveFormModal + Sekkha Base UI)    */}
-      {/* ─────────────────────────────────────────────────────────────────── */}
-      <ResponsiveFormModal
+      <RequestSchoolModal
         open={isRequestModalOpen}
-        onOpenChange={(open) => {
-          setIsRequestModalOpen(open)
-          if (!open) setRequestError(null)
-        }}
-        title="Request New School"
+        onOpenChange={setIsRequestModalOpen}
+        initialName={requestInitialName}
         description="Submitted requests remain Pending until verified by administrators. You can proceed with onboarding right away without waiting for approval."
-        maxWidth="max-w-md"
-      >
-        <div className="space-y-4 text-left">
-          {requestError && (
-            <div className="flex items-center gap-2 rounded-[12px] border border-[#ef4444]/20 bg-[#ef4444]/10 p-3 text-xs font-medium text-[#ef4444]">
-              <AlertTriangleIcon className="size-4 shrink-0" />
-              <span>{requestError}</span>
-            </div>
-          )}
-
-          <form onSubmit={handleSubmitSchoolRequest} className="space-y-4">
-            <Input
-              label="School / Campus Name"
-              type="text"
-              required
-              placeholder="e.g. SMA Maitreya or University of Indonesia"
-              value={requestName}
-              onChange={(e) => setRequestName(e.target.value)}
-              startIcon={<GraduationCapIcon className="size-4" />}
-            />
-
-            <div className="flex flex-row gap-2.5 border-t border-hairline pt-4 sm:justify-end">
-              <Button
-                type="button"
-                variant="outlined"
-                onClick={() => setIsRequestModalOpen(false)}
-                className="flex-1 rounded-xl sm:flex-none"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                variant="primary"
-                disabled={requestSubmitting}
-                className="flex-[2] rounded-xl sm:flex-none"
-              >
-                {requestSubmitting ? "Submitting..." : "Submit Request"}
-              </Button>
-            </div>
-          </form>
-        </div>
-      </ResponsiveFormModal>
+        onSelectExisting={(existing) => {
+          handleSchoolChange(existing.name, {
+            id: existing.id,
+            name: existing.name,
+            type: existing.type || "Umum",
+            status: existing.status || "active",
+            userCount: existing.userCount || 0,
+          })
+        }}
+        onCreated={(created) => {
+          handleSchoolChange(created.name, {
+            id: created.id,
+            name: created.name,
+            type: created.type || "Umum",
+            status: created.status || "pending",
+            userCount: created.userCount || 1,
+          })
+          setSuccessToast(
+            `Registration request for "${created.name}" has been submitted and selected for your profile.`
+          )
+          setTimeout(() => setSuccessToast(null), 6000)
+        }}
+      />
 
       <SuccessCelebrationModal
         open={showSuccessModal}

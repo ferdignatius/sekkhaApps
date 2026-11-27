@@ -10,6 +10,7 @@ import {
   Building2Icon,
   AlertCircleIcon,
   CheckIcon,
+  ChevronRightIcon,
   XIcon,
 } from "lucide-react"
 import { PageBreadcrumb } from "@/components/common/PageBreadcrumb"
@@ -28,7 +29,14 @@ import { Card } from "@/components/base/Card"
 import { Chip } from "@/components/base/Chip"
 import { Badge } from "@/components/base/Badge"
 import { Input } from "@/components/base/Input"
-import { toast } from "@/components/base"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  toast,
+} from "@/components/base"
 
 const SCHOOL_TYPES = ["SMP", "SMA/SMK", "Universitas", "Umum"] as const
 const PAGE_SIZE = 20
@@ -59,10 +67,19 @@ export function SchoolPage() {
   const [search, setSearch] = useState("")
   const [debouncedSearch, flushSchoolSearch] = useDebouncedSearch(search)
   const [typeFilter, setTypeFilter] = useState("all")
-  const [feedback, setFeedback] = useState<{
-    type: "success" | "error"
-    message: string
-  } | null>(null)
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [rejectTarget, setRejectTarget] = useState<SchoolRequestDto | null>(
+    null
+  )
+  const [rejectMode, setRejectMode] = useState<"clear" | "assign">("clear")
+  const [assignSchoolSearch, setAssignSchoolSearch] = useState("")
+  const [debouncedAssignSearch] = useDebouncedSearch(assignSchoolSearch)
+  const [assignSchoolOptions, setAssignSchoolOptions] = useState<SchoolDto[]>(
+    []
+  )
+  const [loadingAssignSchools, setLoadingAssignSchools] = useState(false)
+  const [selectedAssignSchool, setSelectedAssignSchool] =
+    useState<SchoolDto | null>(null)
   const listAbortRef = useRef<AbortController | null>(null)
 
   useEffect(() => {
@@ -87,6 +104,7 @@ export function SchoolPage() {
           setLoadingMoreSchools(true)
         } else {
           setLoadingSchools(true)
+          setLoadError(null)
         }
         const res = await schoolsApi.listCursor(
           {
@@ -118,10 +136,7 @@ export function SchoolPage() {
       } catch (err: any) {
         if (err?.name === "AbortError") return
         if (!isLoadMore) {
-          setFeedback({
-            type: "error",
-            message: "Failed to load institutions list.",
-          })
+          setLoadError("Failed to load institutions list.")
         }
       } finally {
         if (isLoadMore) {
@@ -171,46 +186,74 @@ export function SchoolPage() {
   const handleApprove = async (id: string, name: string) => {
     try {
       setProcessingId(id)
-      setFeedback(null)
       await schoolsApi.acceptRequest(id)
-      const okMsg = `School "${name}" approved successfully and added to directory.`
-      setFeedback({
-        type: "success",
-        message: okMsg,
-      })
-      toast.success(okMsg)
+      toast.success(`School "${name}" approved and added to directory`)
       await Promise.all([fetchRequests(), fetchSchools()])
     } catch (err: any) {
-      const errMsg = err?.message || `Failed to approve school "${name}".`
-      setFeedback({
-        type: "error",
-        message: errMsg,
-      })
-      toast.error(errMsg)
+      toast.error(err?.message || `Failed to approve school "${name}"`)
     } finally {
       setProcessingId(null)
     }
   }
 
-  const handleReject = async (id: string, name: string) => {
+  const openRejectDialog = (target: SchoolRequestDto) => {
+    setRejectTarget(target)
+    setRejectMode("clear")
+    setAssignSchoolSearch("")
+    setSelectedAssignSchool(null)
+  }
+
+  useEffect(() => {
+    if (!rejectTarget || rejectMode !== "assign") return
+    const controller = new AbortController()
+    setLoadingAssignSchools(true)
+    schoolsApi
+      .listCursor(
+        {
+          search: debouncedAssignSearch.trim() || undefined,
+          limit: 10,
+          include_stats: false,
+        },
+        { signal: controller.signal }
+      )
+      .then((res) => {
+        if (!controller.signal.aborted) {
+          setAssignSchoolOptions(
+            res.items.filter((item) => item.id !== rejectTarget.id)
+          )
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setLoadingAssignSchools(false)
+        }
+      })
+    return () => controller.abort()
+  }, [rejectTarget, rejectMode, debouncedAssignSearch])
+
+  const handleConfirmReject = async () => {
+    if (!rejectTarget) return
+    if (rejectMode === "assign" && !selectedAssignSchool) return
+    const target = rejectTarget
+    const assignSchool = rejectMode === "assign" ? selectedAssignSchool : null
     try {
-      setProcessingId(id)
-      setFeedback(null)
-      await schoolsApi.rejectRequest(id)
-      const okMsg = `School request "${name}" has been rejected.`
-      setFeedback({
-        type: "success",
-        message: okMsg,
+      setProcessingId(target.id)
+      await schoolsApi.rejectRequest(target.id, {
+        assign_school_id: assignSchool ? assignSchool.id : null,
       })
-      toast.success(okMsg)
-      await fetchRequests()
+      toast.success(
+        assignSchool
+          ? `Request "${target.name}" rejected and waiting users assigned to "${assignSchool.name}"`
+          : `School request "${target.name}" rejected`
+      )
+      setRejectTarget(null)
+      await Promise.all([
+        fetchRequests(),
+        ...(assignSchool ? [fetchSchools()] : []),
+      ])
     } catch (err: any) {
-      const errMsg = err?.message || `Failed to reject school "${name}".`
-      setFeedback({
-        type: "error",
-        message: errMsg,
-      })
-      toast.error(errMsg)
+      toast.error(err?.message || `Failed to reject school "${target.name}"`)
     } finally {
       setProcessingId(null)
     }
@@ -245,7 +288,7 @@ export function SchoolPage() {
     }, [schools, schoolStats, totalSchools])
 
   return (
-    <main className="min-h-screen bg-[#fffaf0] pb-24 text-left font-sans">
+    <main className="min-h-screen bg-[#fffaf0] pb-28 text-left font-sans md:pb-16">
       <PageBreadcrumb
         items={[
           { label: "Configure" },
@@ -254,101 +297,85 @@ export function SchoolPage() {
         ]}
       />
 
-      <div className="mx-auto max-w-7xl space-y-6 px-3.5 py-4 sm:px-6 md:px-8">
+      <div className="mx-auto max-w-7xl space-y-5 px-3.5 py-4 sm:px-6 md:px-8">
         {/* Header */}
-        <div className="flex flex-col justify-between gap-4 border-b border-[#e5e5e5] pb-5 sm:flex-row sm:items-center">
-          <div className="flex items-center gap-3">
-            <div className="flex size-11 items-center justify-center rounded-[14px] bg-[#0a0a0a] text-white shadow-2xs">
-              <GraduationCapIcon className="size-6 text-clay-ochre" />
+        <div className="flex items-center justify-between gap-4 border-b border-[#e5dec9] pb-4">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-[12px] border border-[#e5dec9] bg-[#faf5e8] text-[#0a0a0a]">
+              <GraduationCapIcon className="size-5" aria-hidden="true" />
             </div>
-            <div>
-              <h1 className="text-xl font-bold tracking-tight text-[#0a0a0a]">
+            <div className="min-w-0">
+              <h1 className="truncate text-lg font-semibold tracking-tight text-[#0a0a0a] sm:text-xl">
                 Schools & Universities
               </h1>
-              <p className="text-xs text-[#6a6a6a]">
-                Official master directory of educational institutions for
-                congregation and youth.
+              <p className="truncate text-xs text-[#6a6a6a]">
+                Verified educational institutions for congregation and youth
               </p>
             </div>
           </div>
+
           {isAdmin && (
             <Button
               asChild
-              className="h-10 gap-2 rounded-[12px] bg-[#0a0a0a] px-4 text-xs font-bold text-white shadow-xs hover:bg-[#262626]"
+              className="hidden h-10 shrink-0 gap-2 rounded-[12px] bg-[#0a0a0a] px-4 text-xs font-semibold text-white shadow-2xs hover:bg-[#262626] sm:inline-flex"
             >
               <Link to="/configure/master/school/new">
-                <PlusIcon className="size-4" />
+                <PlusIcon className="size-4" aria-hidden="true" />
                 Add Institution
               </Link>
             </Button>
           )}
         </div>
 
-        {/* Feedback Alert */}
-        {feedback && (
-          <div
-            className={`flex items-center justify-between gap-3 rounded-[14px] border p-4 text-xs font-medium shadow-2xs ${
-              feedback.type === "success"
-                ? "border-clay-success/30 bg-clay-success/15 text-clay-success"
-                : "border-destructive/30 bg-destructive/10 text-destructive"
-            }`}
-          >
+        {/* Load Error Alert */}
+        {loadError && (
+          <div className="flex items-center justify-between gap-3 rounded-[14px] border border-destructive/30 bg-destructive/10 p-3.5 text-xs font-medium text-destructive">
             <div className="flex items-center gap-2">
-              {feedback.type === "success" ? (
-                <CheckCircle2Icon className="size-4 shrink-0 text-clay-success" />
-              ) : (
-                <AlertCircleIcon className="size-4 shrink-0 text-destructive" />
-              )}
-              <span>{feedback.message}</span>
+              <AlertCircleIcon className="size-4 shrink-0" aria-hidden="true" />
+              <span>{loadError}</span>
             </div>
             <button
               type="button"
-              onClick={() => setFeedback(null)}
-              className="rounded p-1 hover:bg-black/5"
+              onClick={() => void fetchSchools()}
+              className="shrink-0 cursor-pointer rounded-lg px-2.5 py-1 font-semibold hover:bg-black/5"
             >
-              <XIcon className="size-3.5" />
+              Retry
             </button>
           </div>
         )}
 
-        {/* Tab Navigation (Organizer & Admin) */}
+        {/* Segmented Tab Navigation (Organizer & Admin) */}
         {canReview && (
-          <div className="flex items-center gap-2 border-b border-[#e5e5e5] pb-2">
+          <div className="grid grid-cols-2 gap-1 rounded-[14px] border border-[#e5dec9] bg-[#f3eee0] p-1 sm:inline-flex">
             <button
               type="button"
               onClick={() => setActiveTab("directory")}
-              className={`flex items-center gap-2 rounded-[10px] px-3.5 py-2 text-xs font-bold transition-all ${
+              className={`flex min-h-9 cursor-pointer items-center justify-center gap-2 rounded-[10px] px-3.5 py-1.5 text-xs font-semibold transition-all ${
                 activeTab === "directory"
-                  ? "bg-[#0a0a0a] text-white shadow-xs"
-                  : "border border-[#e5e5e5] bg-[#faf5e8] text-[#6a6a6a] hover:bg-[#ebe6d6] hover:text-[#0a0a0a]"
+                  ? "bg-[#fffaf0] text-[#0a0a0a] shadow-2xs"
+                  : "text-[#6a6a6a] hover:text-[#0a0a0a]"
               }`}
             >
-              <Building2Icon className="size-3.5" />
-              <span>Verified Directory</span>
-              <span
-                className={`py-0.2 rounded-full px-1.5 text-[10px] ${
-                  activeTab === "directory"
-                    ? "bg-white/20 text-white"
-                    : "bg-[#e5e5e5] text-[#0a0a0a]"
-                }`}
-              >
-                {schools.length}
+              <Building2Icon className="size-3.5 shrink-0" aria-hidden="true" />
+              <span className="truncate">Verified Directory</span>
+              <span className="rounded-full bg-[#e5dec9]/70 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-[#0a0a0a]">
+                {totalStatCount}
               </span>
             </button>
 
             <button
               type="button"
               onClick={() => setActiveTab("requests")}
-              className={`flex items-center gap-2 rounded-[10px] px-3.5 py-2 text-xs font-bold transition-all ${
+              className={`flex min-h-9 cursor-pointer items-center justify-center gap-2 rounded-[10px] px-3.5 py-1.5 text-xs font-semibold transition-all ${
                 activeTab === "requests"
-                  ? "bg-[#0a0a0a] text-white shadow-xs"
-                  : "border border-[#e5e5e5] bg-[#faf5e8] text-[#6a6a6a] hover:bg-[#ebe6d6] hover:text-[#0a0a0a]"
+                  ? "bg-[#fffaf0] text-[#0a0a0a] shadow-2xs"
+                  : "text-[#6a6a6a] hover:text-[#0a0a0a]"
               }`}
             >
-              <ClockIcon className="size-3.5" />
-              <span>Pending Requests</span>
+              <ClockIcon className="size-3.5 shrink-0" aria-hidden="true" />
+              <span className="truncate">Pending Requests</span>
               {pendingRequests.length > 0 && (
-                <span className="py-0.2 rounded-full bg-clay-warning px-1.5 text-[10px] font-black text-white">
+                <span className="rounded-full bg-[#d97706] px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-white">
                   {pendingRequests.length}
                 </span>
               )}
@@ -358,46 +385,47 @@ export function SchoolPage() {
 
         {/* TAB 1: DIRECTORY */}
         {activeTab === "directory" && (
-          <div className="space-y-6">
-            {/* Stats Grid */}
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-              <Card className="rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] p-4 shadow-2xs">
-                <p className="text-xs text-[#6a6a6a]">Total Institutions</p>
-                <p className="mt-1 text-2xl font-black text-[#0a0a0a]">
+          <div className="space-y-4 sm:space-y-5">
+            {/* Compact Stats Strip */}
+            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-3">
+              <Card className="rounded-[14px] border border-[#e5dec9] bg-[#faf5e8] p-3 shadow-none sm:p-4">
+                <p className="text-xs font-medium text-[#6a6a6a]">
+                  Total Institutions
+                </p>
+                <p className="mt-1 text-xl font-bold tabular-nums text-[#0a0a0a] sm:text-2xl">
                   {totalStatCount}
                 </p>
               </Card>
-              <Card className="rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] p-4 shadow-2xs">
-                <p className="text-xs text-[#6a6a6a]">
-                  Senior & Vocational (SMA/SMK)
-                </p>
-                <p className="mt-1 text-2xl font-black text-[#0a0a0a]">
+              <Card className="rounded-[14px] border border-[#e5dec9] bg-[#faf5e8] p-3 shadow-none sm:p-4">
+                <p className="text-xs font-medium text-[#6a6a6a]">SMA/SMK</p>
+                <p className="mt-1 text-xl font-bold tabular-nums text-[#0a0a0a] sm:text-2xl">
                   {seniorHighCount}
                 </p>
               </Card>
-              <Card className="rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] p-4 shadow-2xs">
-                <p className="text-xs text-[#6a6a6a]">Higher Education</p>
-                <p className="mt-1 text-2xl font-black text-[#0a0a0a]">
+              <Card className="rounded-[14px] border border-[#e5dec9] bg-[#faf5e8] p-3 shadow-none sm:p-4">
+                <p className="text-xs font-medium text-[#6a6a6a]">
+                  University
+                </p>
+                <p className="mt-1 text-xl font-bold tabular-nums text-[#0a0a0a] sm:text-2xl">
                   {universityCount}
                 </p>
               </Card>
-              <Card className="rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] p-4 shadow-2xs">
-                <p className="flex items-center gap-1 text-xs text-[#6a6a6a]">
-                  <UsersIcon className="size-3 text-clay-ochre" /> Connected
-                  Youth
+              <Card className="rounded-[14px] border border-[#e5dec9] bg-[#faf5e8] p-3 shadow-none sm:p-4">
+                <p className="text-xs font-medium text-[#6a6a6a]">
+                  Connected Youth
                 </p>
-                <p className="mt-1 text-2xl font-black text-[#0a0a0a]">
+                <p className="mt-1 text-xl font-bold tabular-nums text-[#0a0a0a] sm:text-2xl">
                   {totalLinkedUsers}
                 </p>
               </Card>
             </div>
 
-            {/* Filters & Search */}
+            {/* Search & Level Filter Chips */}
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="w-full sm:max-w-xs">
+              <div className="relative w-full sm:max-w-xs">
                 <Input
-                  className="border border-[#e5e5e5] bg-[#fffaf0]"
-                  placeholder="Search institution name..."
+                  className="border border-[#e5dec9] bg-[#fffaf0] pr-9"
+                  placeholder="Search institutions..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   onKeyDown={(e) => {
@@ -405,17 +433,33 @@ export function SchoolPage() {
                       flushSchoolSearch()
                     }
                   }}
-                  startIcon={<SearchIcon className="size-4 text-[#6a6a6a]" />}
+                  startIcon={
+                    <SearchIcon
+                      className="size-4 text-[#6a6a6a]"
+                      aria-hidden="true"
+                    />
+                  }
                 />
+                {search && (
+                  <button
+                    type="button"
+                    onClick={() => setSearch("")}
+                    aria-label="Clear search"
+                    className="absolute top-1/2 right-2.5 flex size-5 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-[#e5dec9]/70 text-[#6a6a6a] hover:bg-[#0a0a0a] hover:text-white"
+                  >
+                    <XIcon className="size-3" aria-hidden="true" />
+                  </button>
+                )}
               </div>
-              <div className="flex gap-2 overflow-x-auto pb-1">
+
+              <div className="scrollbar-none -mx-3.5 flex items-center gap-2 overflow-x-auto px-3.5 py-0.5 sm:mx-0 sm:px-0">
                 {["all", ...SCHOOL_TYPES].map((t) => (
                   <Chip
                     key={t}
                     variant="filter"
                     selected={typeFilter === t}
                     onClick={() => setTypeFilter(t)}
-                    className="shrink-0 text-xs"
+                    className="min-h-9 shrink-0 text-xs tabular-nums"
                   >
                     {t === "all" ? `All (${totalStatCount})` : t}
                   </Chip>
@@ -423,75 +467,82 @@ export function SchoolPage() {
               </div>
             </div>
 
-            {/* Responsive Clay Card Grid View */}
+            {/* Responsive Directory Card Grid */}
             {loadingSchools ? (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {Array.from({ length: 6 }).map((_, i) => (
                   <div
                     key={i}
-                    className="h-36 animate-pulse rounded-[20px] border border-[#e5e5e5] bg-[#faf5e8] p-5 shadow-2xs"
+                    className="h-24 animate-pulse rounded-[16px] border border-[#e5dec9] bg-[#faf5e8] p-4"
                   />
                 ))}
               </div>
             ) : filtered.length === 0 ? (
-              <div className="rounded-[20px] border border-[#e5e5e5] bg-[#faf5e8] py-16 text-center shadow-2xs">
-                <GraduationCapIcon className="mx-auto size-10 text-[#6a6a6a]/40" />
+              <div className="rounded-[18px] border border-[#e5dec9] bg-[#faf5e8] py-14 text-center">
+                <GraduationCapIcon
+                  className="mx-auto size-9 text-[#6a6a6a]/45"
+                  aria-hidden="true"
+                />
                 <p className="mt-3 text-sm font-semibold text-[#0a0a0a]">
                   No institutions found
                 </p>
                 <p className="mt-1 text-xs text-[#6a6a6a]">
-                  Try adjusting your search query or institution level filter.
+                  Try adjusting your search query or level filter
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {filtered.map((s) => (
-                  <Card
-                    key={s.id}
-                    className="group relative flex flex-col justify-between overflow-hidden rounded-[20px] border border-[#e5e5e5] bg-[#faf5e8] p-5 shadow-2xs transition-all hover:border-[#0a0a0a]/30 hover:shadow-xs"
-                  >
-                    <div className="space-y-3">
-                      <div className="flex items-start justify-between gap-2">
-                        <h3 className="line-clamp-1 text-base font-bold tracking-tight text-[#0a0a0a]">
-                          {s.name}
-                        </h3>
-                        <Badge
-                          variant="secondary"
-                          size="sm"
-                          className="shrink-0 border border-[#e5e5e5] bg-[#fffaf0] font-semibold text-[#0a0a0a]"
-                        >
-                          {s.type || "Umum"}
-                        </Badge>
-                      </div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {filtered.map((s) => {
+                  const isActive = s.is_active !== false
+                  return (
+                    <Link
+                      key={s.id}
+                      to="/configure/master/school/$schoolId"
+                      params={{ schoolId: s.id }}
+                      className="group block rounded-[16px] focus-visible:ring-2 focus-visible:ring-[#0a0a0a] focus-visible:outline-none"
+                    >
+                      <Card className="flex h-full flex-col justify-between gap-3 rounded-[16px] border border-[#e5dec9] bg-[#faf5e8] p-4 shadow-none transition-colors hover:border-[#0a0a0a]/30 hover:bg-[#f5efe0]">
+                        <div className="flex items-start justify-between gap-2.5">
+                          <h3 className="line-clamp-1 text-sm font-semibold tracking-tight text-[#0a0a0a] sm:text-base">
+                            {s.name}
+                          </h3>
+                          <Badge
+                            variant="secondary"
+                            size="sm"
+                            className="shrink-0 border border-[#e5dec9] bg-[#fffaf0] font-medium text-[#0a0a0a]"
+                          >
+                            {s.type || "Umum"}
+                          </Badge>
+                        </div>
 
-                      <div className="flex items-center gap-2 text-xs text-[#6a6a6a]">
-                        <span className="flex items-center gap-1 font-semibold text-[#0a0a0a]">
-                          <UsersIcon className="size-3.5 text-clay-ochre" />
-                          {s.userCount ?? 0} Members
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="mt-4 flex items-center justify-between border-t border-[#f0ece1] pt-3">
-                      <span
-                        className={`text-[11px] font-semibold ${
-                          s.is_active === false
-                            ? "text-[#8a8a8a]"
-                            : "text-clay-success"
-                        }`}
-                      >
-                        {s.is_active === false ? "Inactive" : "Active"}
-                      </span>
-                      <Link
-                        to="/configure/master/school/$schoolId"
-                        params={{ schoolId: s.id }}
-                        className="flex items-center gap-1 rounded-[10px] border border-[#e5e5e5] bg-[#fffaf0] px-3 py-1.5 text-xs font-bold text-[#0a0a0a] transition-colors hover:border-[#0a0a0a] hover:bg-[#ebe6d6]"
-                      >
-                        View Details
-                      </Link>
-                    </div>
-                  </Card>
-                ))}
+                        <div className="flex items-center justify-between gap-2 text-xs text-[#6a6a6a]">
+                          <div className="flex items-center gap-3">
+                            <span className="inline-flex items-center gap-1.5 font-medium tabular-nums text-[#0a0a0a]">
+                              <UsersIcon
+                                className="size-3.5 text-[#6a6a6a]"
+                                aria-hidden="true"
+                              />
+                              {s.userCount ?? 0} Members
+                            </span>
+                            <span className="inline-flex items-center gap-1.5 font-medium">
+                              <span
+                                className={`size-1.5 rounded-full ${
+                                  isActive ? "bg-emerald-600" : "bg-neutral-400"
+                                }`}
+                                aria-hidden="true"
+                              />
+                              {isActive ? "Active" : "Inactive"}
+                            </span>
+                          </div>
+                          <ChevronRightIcon
+                            className="size-4 shrink-0 text-[#6a6a6a] transition-transform group-hover:translate-x-0.5 group-hover:text-[#0a0a0a]"
+                            aria-hidden="true"
+                          />
+                        </div>
+                      </Card>
+                    </Link>
+                  )
+                })}
               </div>
             )}
 
@@ -516,35 +567,37 @@ export function SchoolPage() {
         {/* TAB 2: PENDING REQUESTS */}
         {activeTab === "requests" && canReview && (
           <div className="space-y-4">
-            <div className="rounded-[16px] border border-[#e5e5e5] bg-[#faf5e8] p-4 shadow-2xs">
+            <div className="rounded-[14px] border border-[#e5dec9] bg-[#faf5e8] px-4 py-3">
               <p className="text-xs text-[#6a6a6a]">
                 New institution requests submitted by youth during onboarding.
-                Approving will immediately add them to the verified directory
-                for all members.
+                Approving adds them to the verified directory.
               </p>
             </div>
 
             {loadingRequests ? (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {Array.from({ length: 3 }).map((_, i) => (
                   <div
                     key={i}
-                    className="h-40 animate-pulse rounded-[20px] border border-[#e5e5e5] bg-[#faf5e8] p-5 shadow-2xs"
+                    className="h-36 animate-pulse rounded-[16px] border border-[#e5dec9] bg-[#faf5e8] p-4"
                   />
                 ))}
               </div>
             ) : pendingRequests.length === 0 ? (
-              <div className="rounded-[20px] border border-[#e5e5e5] bg-[#faf5e8] py-16 text-center shadow-2xs">
-                <CheckCircle2Icon className="mx-auto size-10 text-clay-success/50" />
+              <div className="rounded-[18px] border border-[#e5dec9] bg-[#faf5e8] py-14 text-center">
+                <CheckCircle2Icon
+                  className="mx-auto size-9 text-emerald-600/60"
+                  aria-hidden="true"
+                />
                 <p className="mt-3 text-sm font-semibold text-[#0a0a0a]">
                   No pending requests
                 </p>
                 <p className="mt-1 text-xs text-[#6a6a6a]">
-                  All institution requests have been reviewed and processed.
+                  All institution requests have been reviewed
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {pendingRequests.map((r) => {
                   const reqName = r.name
                   const reqType = r.type || "SMA/SMK"
@@ -553,17 +606,17 @@ export function SchoolPage() {
                   return (
                     <Card
                       key={r.id}
-                      className="flex flex-col justify-between overflow-hidden rounded-[20px] border border-clay-warning/40 bg-[#faf5e8] p-5 shadow-2xs"
+                      className="flex flex-col justify-between gap-3 rounded-[16px] border border-[#e5dec9] bg-[#faf5e8] p-4 shadow-none"
                     >
-                      <div className="space-y-3">
+                      <div className="space-y-2.5">
                         <div className="flex items-start justify-between gap-2">
-                          <h3 className="line-clamp-1 text-base font-bold text-[#0a0a0a]">
+                          <h3 className="line-clamp-1 text-sm font-semibold text-[#0a0a0a] sm:text-base">
                             {reqName}
                           </h3>
                           <Badge
                             variant="secondary"
                             size="sm"
-                            className="border border-clay-warning/40 bg-clay-warning/15 font-bold text-clay-warning"
+                            className="shrink-0 border border-[#e5dec9] bg-[#fffaf0] font-medium text-[#0a0a0a]"
                           >
                             {reqType}
                           </Badge>
@@ -571,21 +624,24 @@ export function SchoolPage() {
 
                         <div className="space-y-1 text-xs text-[#6a6a6a]">
                           <p className="flex items-center gap-1.5">
-                            <UsersIcon className="size-3.5 text-[#6a6a6a]" />
-                            <span>
-                              Requested by:{" "}
-                              <strong className="text-[#0a0a0a]">
+                            <UsersIcon
+                              className="size-3.5 shrink-0 text-[#6a6a6a]"
+                              aria-hidden="true"
+                            />
+                            <span className="truncate">
+                              Requested by{" "}
+                              <strong className="font-semibold text-[#0a0a0a]">
                                 {r.requester_name || "Community Member"}
                               </strong>
                               {r.userCount !== undefined && r.userCount > 0 && (
-                                <span className="ml-1 text-[11px] text-[#8a8a8a]">
-                                  ({r.userCount} {r.userCount === 1 ? "user" : "users"} waiting)
+                                <span className="ml-1 text-[11px] tabular-nums text-[#8a8a8a]">
+                                  ({r.userCount} waiting)
                                 </span>
                               )}
                             </span>
                           </p>
                           <p className="text-[11px] text-[#8a8a8a]">
-                            Submitted:{" "}
+                            Submitted{" "}
                             {r.created_at
                               ? new Date(r.created_at).toLocaleDateString(
                                   "en-US",
@@ -600,24 +656,24 @@ export function SchoolPage() {
                         </div>
                       </div>
 
-                      <div className="mt-4 flex items-center gap-2 border-t border-[#f0ece1] pt-3">
+                      <div className="flex items-center gap-2 border-t border-[#e5dec9]/70 pt-3">
                         <Button
                           size="sm"
                           disabled={isBusy}
                           onClick={() => void handleApprove(r.id, reqName)}
-                          className="flex-1 gap-1.5 rounded-[10px] bg-clay-success text-xs font-bold text-white hover:bg-clay-success/90"
+                          className="min-h-10 flex-1 gap-1.5 rounded-[10px] bg-emerald-700 text-xs font-semibold text-white hover:bg-emerald-800"
                         >
-                          <CheckIcon className="size-3.5" />
+                          <CheckIcon className="size-3.5" aria-hidden="true" />
                           {isBusy ? "Processing..." : "Approve"}
                         </Button>
                         <Button
                           size="sm"
                           variant="outline"
                           disabled={isBusy}
-                          onClick={() => void handleReject(r.id, reqName)}
-                          className="gap-1.5 rounded-[10px] border border-destructive/30 text-xs font-bold text-destructive hover:bg-destructive/10"
+                          onClick={() => openRejectDialog(r)}
+                          className="min-h-10 gap-1.5 rounded-[10px] border border-destructive/30 text-xs font-semibold text-destructive hover:bg-destructive/10"
                         >
-                          <XIcon className="size-3.5" />
+                          <XIcon className="size-3.5" aria-hidden="true" />
                           Reject
                         </Button>
                       </div>
@@ -629,6 +685,187 @@ export function SchoolPage() {
           </div>
         )}
       </div>
+
+      {/* Mobile Floating + FAB (Consistent with People & Events) */}
+      {isAdmin && (
+        <Link
+          to="/configure/master/school/new"
+          aria-label="Add Institution"
+          title="Add Institution"
+          className="fixed right-4 bottom-[calc(6.75rem+env(safe-area-inset-bottom))] z-40 flex size-14 items-center justify-center rounded-full bg-ink text-canvas shadow-[0_12px_28px_rgba(10,10,10,0.28)] transition-all hover:bg-ink/90 active:scale-95 sm:hidden"
+        >
+          <PlusIcon className="size-6" aria-hidden="true" />
+        </Link>
+      )}
+
+      {/* Reject & Optional Reassign Dialog */}
+      <Dialog
+        open={Boolean(rejectTarget)}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen && !processingId) {
+            setRejectTarget(null)
+          }
+        }}
+      >
+        <DialogContent className="rounded-[24px] border border-[#e5dec9] bg-[#fffaf0] p-5 text-left font-sans text-[#0a0a0a] shadow-lg sm:max-w-md sm:p-6">
+          <DialogHeader className="text-left">
+            <DialogTitle className="text-base font-semibold text-[#0a0a0a]">
+              Reject School Request
+            </DialogTitle>
+            <DialogDescription className="text-xs text-[#6a6a6a]">
+              Rejecting{" "}
+              <strong className="font-semibold text-[#0a0a0a]">
+                {rejectTarget?.name}
+              </strong>
+              . Choose whether to leave waiting users unassigned or move them to
+              an active institution.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="mt-2 space-y-2.5">
+            <button
+              type="button"
+              onClick={() => setRejectMode("clear")}
+              className={`flex w-full cursor-pointer items-start gap-3 rounded-[14px] border p-3 text-left transition-colors ${
+                rejectMode === "clear"
+                  ? "border-[#0a0a0a] bg-[#faf5e8]"
+                  : "border-[#e5dec9] bg-[#fffaf0] hover:bg-[#faf5e8]/70"
+              }`}
+            >
+              <span
+                className={`mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full border ${
+                  rejectMode === "clear"
+                    ? "border-[#0a0a0a] bg-[#0a0a0a]"
+                    : "border-[#c7bfa8]"
+                }`}
+              >
+                {rejectMode === "clear" && (
+                  <span className="size-1.5 rounded-full bg-white" />
+                )}
+              </span>
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-[#0a0a0a]">
+                  Reject & Leave Unassigned
+                </p>
+                <p className="mt-0.5 text-[11px] text-[#6a6a6a]">
+                  Clear this pending institution from waiting user profiles.
+                </p>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setRejectMode("assign")}
+              className={`flex w-full cursor-pointer items-start gap-3 rounded-[14px] border p-3 text-left transition-colors ${
+                rejectMode === "assign"
+                  ? "border-[#0a0a0a] bg-[#faf5e8]"
+                  : "border-[#e5dec9] bg-[#fffaf0] hover:bg-[#faf5e8]/70"
+              }`}
+            >
+              <span
+                className={`mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full border ${
+                  rejectMode === "assign"
+                    ? "border-[#0a0a0a] bg-[#0a0a0a]"
+                    : "border-[#c7bfa8]"
+                }`}
+              >
+                {rejectMode === "assign" && (
+                  <span className="size-1.5 rounded-full bg-white" />
+                )}
+              </span>
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-[#0a0a0a]">
+                  Reject & Assign to Active School
+                </p>
+                <p className="mt-0.5 text-[11px] text-[#6a6a6a]">
+                  Move waiting users into an existing verified school.
+                </p>
+              </div>
+            </button>
+
+            {rejectMode === "assign" && (
+              <div className="space-y-2 rounded-[14px] border border-[#e5dec9] bg-[#faf5e8] p-3">
+                <Input
+                  value={assignSchoolSearch}
+                  onChange={(e) => setAssignSchoolSearch(e.target.value)}
+                  placeholder="Search active school..."
+                  className="h-9 border border-[#e5dec9] bg-[#fffaf0] text-xs"
+                  startIcon={
+                    <SearchIcon
+                      className="size-3.5 text-[#6a6a6a]"
+                      aria-hidden="true"
+                    />
+                  }
+                />
+
+                <div className="max-h-44 space-y-1 overflow-y-auto pr-0.5">
+                  {loadingAssignSchools ? (
+                    <p className="py-3 text-center text-xs text-[#6a6a6a]">
+                      Loading active schools...
+                    </p>
+                  ) : assignSchoolOptions.length === 0 ? (
+                    <p className="py-3 text-center text-xs text-[#6a6a6a]">
+                      No matching active schools found
+                    </p>
+                  ) : (
+                    assignSchoolOptions.map((opt) => {
+                      const isPicked = selectedAssignSchool?.id === opt.id
+                      return (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          onClick={() => setSelectedAssignSchool(opt)}
+                          className={`flex w-full cursor-pointer items-center justify-between gap-2 rounded-[10px] px-2.5 py-2 text-left text-xs transition-colors ${
+                            isPicked
+                              ? "bg-[#0a0a0a] font-semibold text-white"
+                              : "bg-[#fffaf0] text-[#0a0a0a] hover:bg-[#efe8d6]"
+                          }`}
+                        >
+                          <span className="truncate">{opt.name}</span>
+                          <span
+                            className={`shrink-0 text-[10px] ${
+                              isPicked ? "text-white/80" : "text-[#6a6a6a]"
+                            }`}
+                          >
+                            {opt.type || "Umum"}
+                          </span>
+                        </button>
+                      )
+                    })
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="mt-4 flex items-center justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={Boolean(processingId)}
+              onClick={() => setRejectTarget(null)}
+              className="min-h-10 rounded-[10px] border-[#e5dec9] text-xs font-semibold"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              disabled={
+                Boolean(processingId) ||
+                (rejectMode === "assign" && !selectedAssignSchool)
+              }
+              onClick={() => void handleConfirmReject()}
+              className="min-h-10 rounded-[10px] bg-destructive text-xs font-semibold text-white hover:bg-destructive/90"
+            >
+              {processingId
+                ? "Processing..."
+                : rejectMode === "assign"
+                  ? "Reject & Assign"
+                  : "Confirm Reject"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </main>
   )
 }

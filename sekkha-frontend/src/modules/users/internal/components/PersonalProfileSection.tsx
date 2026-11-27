@@ -10,6 +10,7 @@ import {
   MailIcon,
   ShieldCheckIcon,
   AlertCircleIcon,
+  PlusIcon,
 } from "lucide-react"
 import {
   Alert,
@@ -19,6 +20,7 @@ import {
   Input,
   ManyToOneSelect,
 } from "@/components/base"
+import { RequestSchoolModal } from "@/components/common/RequestSchoolModal"
 import { useDebounce } from "@/hooks/useDebounce"
 import { usePaginatedDropdown } from "@/hooks/usePaginatedDropdown"
 import { DROPDOWN_PAGE_SIZE } from "@/lib/pagination"
@@ -35,7 +37,6 @@ interface PersonalProfileSectionProps {
 }
 
 const NO_SCHOOL_VALUE = "__none__"
-const OTHER_SCHOOL_VALUE = "__other__"
 
 export function PersonalProfileSection({
   profile,
@@ -52,11 +53,10 @@ export function PersonalProfileSection({
   const [username, setUsername] = useState(profile.username || "")
   const [name, setName] = useState(profile.name || "")
   const [selectedSchoolId, setSelectedSchoolId] = useState(
-    profile.school_id || (profile.school ? OTHER_SCHOOL_VALUE : NO_SCHOOL_VALUE)
+    profile.school_id || NO_SCHOOL_VALUE
   )
-  const [customSchool, setCustomSchool] = useState(
-    !profile.school_id && profile.school ? profile.school : ""
-  )
+  const [isRequestModalOpen, setIsRequestModalOpen] = useState(false)
+  const [requestInitialName, setRequestInitialName] = useState("")
   const [selectedSchoolLabel, setSelectedSchoolLabel] = useState<string | null>(
     null
   )
@@ -68,11 +68,7 @@ export function PersonalProfileSection({
     if (isEditing) return
     setUsername(profile.username || "")
     setName(profile.name || "")
-    setSelectedSchoolId(
-      profile.school_id ||
-        (profile.school ? OTHER_SCHOOL_VALUE : NO_SCHOOL_VALUE)
-    )
-    setCustomSchool(!profile.school_id && profile.school ? profile.school : "")
+    setSelectedSchoolId(profile.school_id || NO_SCHOOL_VALUE)
   }, [profile, isEditing])
 
   const {
@@ -121,20 +117,12 @@ export function PersonalProfileSection({
       setError("Full name must be at least 2 characters.")
       return
     }
-    if (selectedSchoolId === OTHER_SCHOOL_VALUE && !customSchool.trim()) {
-      setError("Please enter your school name or pick one from the list.")
-      return
-    }
-
     setSaving(true)
     try {
       let schoolIdPayload: string | null = null
       let schoolNamePayload: string | null = null
 
-      if (selectedSchoolId === OTHER_SCHOOL_VALUE) {
-        schoolIdPayload = null
-        schoolNamePayload = customSchool.trim() || null
-      } else if (selectedSchoolId !== NO_SCHOOL_VALUE) {
+      if (selectedSchoolId !== NO_SCHOOL_VALUE) {
         schoolIdPayload = selectedSchoolId
         const matched = verifiedSchools.find((s) => s.id === selectedSchoolId)
         schoolNamePayload =
@@ -169,7 +157,6 @@ export function PersonalProfileSection({
 
   const hasSelectedInList =
     selectedSchoolId === NO_SCHOOL_VALUE ||
-    selectedSchoolId === OTHER_SCHOOL_VALUE ||
     verifiedSchools.some((s) => s.id === selectedSchoolId) ||
     profile.school_id === selectedSchoolId
 
@@ -191,7 +178,6 @@ export function PersonalProfileSection({
     ...(!hasSelectedInList && selectedSchoolLabel && selectedSchoolId
       ? [{ value: selectedSchoolId, label: selectedSchoolLabel }]
       : []),
-    { value: OTHER_SCHOOL_VALUE, label: "Other / Enter school manually..." },
   ]
 
   return (
@@ -350,20 +336,29 @@ export function PersonalProfileSection({
                 placeholder="Select school or university..."
                 searchPlaceholder="Search school or university..."
                 itemLabel="schools"
+                emptyText="No matching school found."
+                renderEmptyAction={(query, closeMenu) =>
+                  query.trim().length >= 2 ? (
+                    <div className="mt-3">
+                      <Button
+                        type="button"
+                        variant="outlined"
+                        size="sm"
+                        onClick={() => {
+                          closeMenu()
+                          setRequestInitialName(query.trim())
+                          setIsRequestModalOpen(true)
+                        }}
+                        className="h-8 gap-1 rounded-full px-3 text-[11px] font-bold"
+                      >
+                        <PlusIcon className="size-3.5" />
+                        <span>Request &quot;{query.trim()}&quot;</span>
+                      </Button>
+                    </div>
+                  ) : null
+                }
               />
             </div>
-
-            {selectedSchoolId === OTHER_SCHOOL_VALUE && (
-              <div className="sm:col-span-2">
-                <Input
-                  label="Custom School / Institution Name"
-                  value={customSchool}
-                  onChange={(e) => setCustomSchool(e.target.value)}
-                  placeholder="Enter full school or university name"
-                  startIcon={<GraduationCapIcon className="size-4" />}
-                />
-              </div>
-            )}
 
             <div className="rounded-[16px] border border-hairline bg-surface-soft/55 p-3.5 sm:col-span-2">
               <div className="flex flex-wrap items-center justify-between gap-2">
@@ -442,6 +437,28 @@ export function PersonalProfileSection({
           </div>
         </form>
       )}
+
+      <RequestSchoolModal
+        open={isRequestModalOpen}
+        onOpenChange={setIsRequestModalOpen}
+        initialName={requestInitialName}
+        onSelectExisting={(existing) => {
+          setSelectedSchoolId(existing.id)
+          setSelectedSchoolLabel(
+            existing.status === "pending"
+              ? `${existing.name} (Pending review)`
+              : existing.name
+          )
+        }}
+        onCreated={(created) => {
+          setSelectedSchoolId(created.id)
+          setSelectedSchoolLabel(`${created.name} (Pending review)`)
+          onToast(
+            `School request "${created.name}" submitted and selected.`,
+            "success"
+          )
+        }}
+      />
     </Card>
   )
 }

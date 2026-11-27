@@ -185,11 +185,9 @@ export const eventModels = {
           select: {
             id: true,
             userNumber: true,
-            role: true,
             profile: {
               select: {
                 name: true,
-                school: { select: { name: true } },
               },
             },
           },

@@ -293,8 +293,14 @@ export const schoolsApi = {
     }),
   acceptRequest: (id: string, review_note?: string) =>
     api.post(`/configure/schools/${id}/approve`, { review_note }),
-  rejectRequest: (id: string, review_note?: string) =>
-    api.post(`/configure/schools/${id}/reject`, { review_note }),
+  rejectRequest: (
+    id: string,
+    payload?: string | { assign_school_id?: string | null; review_note?: string }
+  ) =>
+    api.post(
+      `/configure/schools/${id}/reject`,
+      typeof payload === "string" ? { review_note: payload } : (payload ?? {})
+    ),
 }
 
 // ─── Badge Activities (Master Data) ──────────────────────────────────────────

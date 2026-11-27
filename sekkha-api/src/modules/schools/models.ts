@@ -216,12 +216,30 @@ export const schoolModels = {
     })
   },
 
-  async rejectSchool(id: string, reviewerId: string) {
+  async rejectSchool(
+    id: string,
+    reviewerId: string,
+    assignSchoolId?: string | null,
+    requestedBy?: string | null
+  ) {
     return prisma.$transaction(async (tx) => {
-      await tx.userProfile.updateMany({
-        where: { schoolId: id },
-        data: { schoolId: null },
-      })
+      if (assignSchoolId) {
+        await tx.userProfile.updateMany({
+          where: { schoolId: id },
+          data: { schoolId: assignSchoolId },
+        })
+        if (requestedBy) {
+          await tx.userProfile.updateMany({
+            where: { userId: requestedBy, schoolId: null },
+            data: { schoolId: assignSchoolId },
+          })
+        }
+      } else {
+        await tx.userProfile.updateMany({
+          where: { schoolId: id },
+          data: { schoolId: null },
+        })
+      }
 
       return tx.school.update({
         where: { id },

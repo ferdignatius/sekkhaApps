@@ -108,8 +108,8 @@ describe("PeoplePage 2-Column Mobile Grid, Fast Loading & Directory Isolation", 
     expect(addFab.className).toContain("fixed")
     expect(addFab.className).toContain("rounded-full")
 
-    fireEvent.click(screen.getByRole("button", { name: /Filter members/i }))
-    expect(screen.getByText(/Organizers · 2/i)).toBeTruthy()
+    expect(screen.getByRole("button", { name: /Organizers · 2/i })).toBeTruthy()
+    fireEvent.click(screen.getByRole("button", { name: /Filter account status/i }))
     expect(screen.getByText(/All Accounts/i)).toBeTruthy()
 
     fireEvent.click(screen.getByRole("button", { name: /Search members/i }))

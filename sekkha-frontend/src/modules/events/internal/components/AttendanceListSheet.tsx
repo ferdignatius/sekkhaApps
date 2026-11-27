@@ -113,9 +113,6 @@ function SwipeableAttendanceRow({
   const metaParts = [
     formatTime(rec.scanned_at),
     rec.method === "qr" ? "QR" : "Manual",
-    rec.role?.toUpperCase() || "MEMBER",
-    rec.user_number || null,
-    rec.school && rec.school !== "Umum" ? rec.school : null,
   ].filter(Boolean)
 
   function handlePointerDown(e: React.PointerEvent<HTMLDivElement>) {
@@ -668,8 +665,7 @@ export function AttendanceListSheet({
         const q = searchQuery.toLowerCase().trim()
         const nameMatch = rec.name.toLowerCase().includes(q)
         const idMatch = rec.user_number?.toLowerCase().includes(q)
-        const schoolMatch = rec.school?.toLowerCase().includes(q)
-        return nameMatch || idMatch || schoolMatch
+        return nameMatch || idMatch
       }
       return true
     })
@@ -800,7 +796,7 @@ export function AttendanceListSheet({
                 flushAttendanceSearch()
               }
             }}
-            placeholder="Search by member name, ID, or school..."
+            placeholder="Search by member name or ID..."
             className="min-h-[42px] w-full rounded-full border border-[#e5e5e5] bg-[#fffaf0] pr-10 pl-10 text-xs text-[#0a0a0a] shadow-2xs placeholder:text-[#767676] focus:border-[#0a0a0a] focus:bg-[#faf5e8] focus:outline-none sm:text-sm"
           />
           {searchQuery && (

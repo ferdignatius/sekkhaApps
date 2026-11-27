@@ -43,6 +43,10 @@ export interface ManyToOneSelectProps {
   onSearchChange?: (search: string) => void
   clientFilter?: boolean
   emptyText?: string
+  renderEmptyAction?: (
+    searchQuery: string,
+    closeMenu: () => void
+  ) => React.ReactNode
   itemLabel?: string
   clearable?: boolean
   loading?: boolean
@@ -77,6 +81,7 @@ export function ManyToOneSelect({
   onSearchChange,
   clientFilter = true,
   emptyText = "No options found",
+  renderEmptyAction,
   itemLabel = "options",
   clearable = false,
   loading = false,
@@ -401,8 +406,9 @@ export function ManyToOneSelect({
                   <span>Loading...</span>
                 </li>
               ) : displayedOptions.length === 0 ? (
-                <li className="px-3 py-6 text-center text-xs text-[#6a6a6a]">
-                  {emptyText}
+                <li className="px-3 py-5 text-center text-xs text-[#6a6a6a]">
+                  <p>{emptyText}</p>
+                  {renderEmptyAction?.(currentSearch, () => setIsOpen(false))}
                 </li>
               ) : (
                 displayedOptions.map((opt, idx) => {

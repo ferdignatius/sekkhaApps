@@ -97,4 +97,75 @@ describe("SchoolPage — Cursor Infinite Scroll", () => {
       expect.objectContaining({ signal: expect.any(AbortSignal) })
     )
   })
+
+  it("allows rejecting a pending school request and assigning waiting users to an active school", async () => {
+    vi.spyOn(schoolsApi, "listCursor").mockResolvedValue({
+      items: [
+        {
+          id: "sch_active",
+          name: "Universitas Multimedia Nusantara",
+          type: "Universitas",
+          is_active: true,
+          status: "active",
+          userCount: 12,
+        },
+      ],
+      total: 1,
+      has_more: false,
+      next_cursor: null,
+      stats: { total: 1, senior_high: 0, university: 1, linked_users: 12 },
+    })
+    vi.spyOn(schoolsApi, "requests").mockResolvedValue([
+      {
+        id: "sch_pending_1",
+        name: "UMN Duplicate",
+        type: "Universitas",
+        is_active: false,
+        status: "pending",
+        requester_name: "Budi",
+        userCount: 2,
+      },
+    ])
+    const rejectSpy = vi
+      .spyOn(schoolsApi, "rejectRequest")
+      .mockResolvedValue({ status: "success" } as any)
+
+    const authState: AuthState = {
+      ...initialAuthState,
+      status: "authenticated",
+      userId: "usr_admin",
+      role: "admin",
+      name: "Admin Sekkha",
+    }
+
+    render(
+      <AuthContext.Provider value={{ authState } as any}>
+        <SchoolPage />
+      </AuthContext.Provider>
+    )
+
+    const requestsTab = await screen.findByRole("button", {
+      name: /Pending Requests/i,
+    })
+    fireEvent.click(requestsTab)
+
+    const rejectBtn = await screen.findByRole("button", { name: /^Reject$/i })
+    fireEvent.click(rejectBtn)
+
+    expect(screen.getByText(/Reject School Request/i)).toBeTruthy()
+    fireEvent.click(screen.getByText(/Reject & Assign to Active School/i))
+
+    const activeOption = await screen.findByRole("button", {
+      name: /Universitas Multimedia Nusantara/i,
+    })
+    fireEvent.click(activeOption)
+
+    fireEvent.click(screen.getByRole("button", { name: /Reject & Assign$/i }))
+
+    await waitFor(() => {
+      expect(rejectSpy).toHaveBeenCalledWith("sch_pending_1", {
+        assign_school_id: "sch_active",
+      })
+    })
+  })
 })

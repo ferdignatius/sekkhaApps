@@ -21,6 +21,11 @@ export const RequestSchoolSchema = z.object({
   type: SchoolTypeSchema.optional(),
 })
 
+export const RejectSchoolSchema = z.object({
+  assign_school_id: z.string().trim().min(1).optional().nullable(),
+  review_note: z.string().trim().max(500).optional(),
+})
+
 export const schoolControllers = {
   async getSchools(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -148,7 +153,12 @@ export const schoolControllers = {
         return
       }
       const reviewerId = req.user!.userId
-      const result = await schoolServices.rejectSchoolRequest(id, reviewerId)
+      const parsed = RejectSchoolSchema.parse(req.body ?? {})
+      const result = await schoolServices.rejectSchoolRequest(
+        id,
+        reviewerId,
+        parsed.assign_school_id ?? null
+      )
       res.json({
         status: "success",
         code: 200,
@@ -181,8 +191,7 @@ export const schoolControllers = {
   async getSchoolStats(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const school = typeof req.query.school === "string" ? req.query.school : ""
-      const classGrade = typeof req.query.class_grade === "string" ? req.query.class_grade : ""
-      const result = await schoolServices.getSchoolStats(school, classGrade)
+      const result = await schoolServices.getSchoolStats(school)
       res.json(result)
     } catch (err) {
       next(err)

@@ -4,6 +4,15 @@ All notable changes to Sekkha Apps. Semver (`MAJOR.MINOR.PATCH`); newest on top.
 
 ## [Unreleased]
 
+## [1.3.3] - 2026-11-27
+
+### Added
+- **Schools & Event Management Modules**: Added school request onboarding/profile search flow, pending school request badges across tabs/sidebar/quick-access, and Events/People/Configure module pages and UI components.
+
+### Changed
+- **Configure Master Data UI (`EventTypeListPage`, `EventTypeDetailPage`, `SchoolPage`, `SchoolDetailPage`)**: Aligned `EventTypeListPage` with `SchoolPage` (full-width responsive container, 2x2/4-col stats grid, `rounded-full` search with `startIcon` and filter chips, clickable cards, and mobile FAB). Updated `EventTypeDetailPage` and `SchoolDetailPage` to default to read-only mode with a 3-dot action menu (Edit / Delete).
+- **Navigation Back Behavior**: Standardized `PageBreadcrumb` back targets (`backTo="/home"` on top-level master data menus, back-to-directory/list on detail pages).
+
 ## [1.3.2] - 2026-11-25
 
 ### Added

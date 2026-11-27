@@ -231,11 +231,10 @@ export function EventTypePage() {
                   type="button"
                   aria-pressed={selected}
                   onClick={() => setStatusFilter(chip.key)}
-                  className={`inline-flex min-h-9 shrink-0 cursor-pointer items-center rounded-full border px-3 py-1.5 text-xs font-semibold tabular-nums transition-colors active:scale-95 ${
-                    selected
-                      ? "border-[#0a0a0a] bg-[#0a0a0a] text-white shadow-2xs"
-                      : "border-[#e5dec9] bg-[#fffaf0] text-[#0a0a0a] hover:bg-[#faf5e8]"
-                  }`}
+                  className={`inline-flex min-h-9 shrink-0 cursor-pointer items-center rounded-full border px-3 py-1.5 text-xs font-semibold tabular-nums transition-colors active:scale-95 ${selected
+                    ? "border-[#0a0a0a] bg-[#0a0a0a] text-white shadow-2xs"
+                    : "border-[#e5dec9] bg-[#fffaf0] text-[#0a0a0a] hover:bg-[#faf5e8]"
+                    }`}
                 >
                   {chip.label}
                 </button>
@@ -337,11 +336,10 @@ export function EventTypePage() {
                         <span aria-hidden="true">·</span>
                         <span className="inline-flex items-center gap-1">
                           <span
-                            className={`size-1.5 rounded-full ${
-                              type.is_active
-                                ? "bg-emerald-600"
-                                : "bg-neutral-400"
-                            }`}
+                            className={`size-1.5 rounded-full ${type.is_active
+                              ? "bg-emerald-600"
+                              : "bg-neutral-400"
+                              }`}
                             aria-hidden="true"
                           />
                           {type.is_active ? "Active" : "Inactive"}

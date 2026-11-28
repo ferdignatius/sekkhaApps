@@ -58,7 +58,7 @@ export const Route = createRootRoute({
       },
       {
         name: "apple-mobile-web-app-title",
-        content: "Sekkha",
+        content: "Sekkha Apps",
       },
       {
         httpEquiv: "Content-Security-Policy",
